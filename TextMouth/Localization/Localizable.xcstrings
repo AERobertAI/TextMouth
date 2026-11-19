@@ -23812,7 +23812,15 @@
       "comment" : "Error shown when the book was removed from the library during a transcription."
     },
     "The book was imported." : {
-      "comment" : "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it."
+      "comment" : "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro se importó."
+          }
+        }
+      }
     },
     "The book's EPUB file is only in the cloud, so it can't be written until the book is downloaded." : {
       "comment" : "First sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud, and writing to the file is on. EPUB is a format name."
@@ -23845,7 +23853,15 @@
       "comment" : "Last sentence of an import failure: a section of a segmented audiobook does not fit the audio file it names, so the book's navigation (its manifest or headings) does not match its audio."
     },
     "The book's package and content paths do not match a managed library location." : {
-      "comment" : "Why a book's files were not deleted: its paths do not lie inside the library. Follows \"Import failed: \"."
+      "comment" : "Why a book's files were not deleted: its paths do not lie inside the library. Follows \"Import failed: \".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Las rutas del paquete y del contenido del libro no coinciden con una ubicación administrada de la biblioteca."
+          }
+        }
+      }
     },
     "The book's text as %@, made from its Markdown." : {
       "comment" : "The hint of a text checkbox in the Export dialog while its text is converted. %@ is the name of the format, such as HTML or RTF."
@@ -23872,7 +23888,15 @@
       "comment" : "Why a spoken audio export was refused: the book's voice can't be recorded. %@ is the name of the Voice button in the book's reader."
     },
     "The bookInfo.json file did not read back as it was written." : {
-      "comment" : "Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written."
+      "comment" : "Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo bookInfo.json no se leyó de vuelta tal como se escribió."
+          }
+        }
+      }
     },
     "The books are in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -23916,7 +23940,15 @@
       "comment" : "How a sentence names the cloud service when it is unknown, at the start of the sentence, so it has a capital letter."
     },
     "The copy just imported is incomplete." : {
-      "comment" : "First sentence of the last paragraph of the question asked about a duplicate book whose new copy is missing chapters. What it lacks follows."
+      "comment" : "First sentence of the last paragraph of the question asked about a duplicate book whose new copy is missing chapters. What it lacks follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La copia recién importada está incompleta."
+          }
+        }
+      }
     },
     "The copy made in the library did not match the original, so the copy was discarded." : {
       "comment" : "Why a book could not move into the current library format: the copy differed from the original."
@@ -23936,10 +23968,26 @@
       }
     },
     "The cue sheet “%@” is too large to read." : {
-      "comment" : "Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name."
+      "comment" : "Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo CUE “%@” es demasiado grande para leerlo."
+          }
+        }
+      }
     },
     "The cue sheet “%@” names none of the audio beside it, so its headings were not used." : {
-      "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name."
+      "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo CUE “%@” no nombra ningún audio junto a él, así que no se usaron sus encabezados."
+          }
+        }
+      }
     },
     "The current data directory does not exist." : {
       "comment" : "Why a move of the data directory was refused: the folder it would move from is missing."
@@ -23997,7 +24045,15 @@
       "comment" : "First sentence of the confirmation that deletes one feed item's download. %@ is the episode's or article's title."
     },
     "The download was stopped." : {
-      "comment" : "Why a feed item's download ended: it was stopped."
+      "comment" : "Why a feed item's download ended: it was stopped.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se detuvo la descarga."
+          }
+        }
+      }
     },
     "The downloads of %@ weren't removed: %@" : {
       "comment" : "Announcement that Remove Download did not remove several books' files. %1$@ is a count of books, such as \"3 books\"; %2$@ is their titles as a list.",
@@ -24032,16 +24088,48 @@
       "comment" : "Said when the audio editor's save fails. A sentence giving the reason follows."
     },
     "The episode leaves the list for good, and its download, if any, is deleted." : {
-      "comment" : "First sentence of the confirmation before an episode is deleted from its feed."
+      "comment" : "First sentence of the confirmation before an episode is deleted from its feed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El episodio sale de la lista para siempre, y su descarga, si la tiene, se elimina."
+          }
+        }
+      }
     },
     "The episode leaves the list for good; the book it became in your library stays." : {
-      "comment" : "First sentence of the confirmation before an episode that was moved into the library is deleted from its feed."
+      "comment" : "First sentence of the confirmation before an episode that was moved into the library is deleted from its feed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El episodio sale de la lista para siempre; el libro en que se convirtió en tu biblioteca se queda."
+          }
+        }
+      }
     },
     "The existing copy's files are deleted permanently and cannot be recovered." : {
-      "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files are deleted permanently."
+      "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files are deleted permanently.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los archivos de la copia existente se eliminan de forma permanente y no se pueden recuperar."
+          }
+        }
+      }
     },
     "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." : {
-      "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files go to the Trash."
+      "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files go to the Trash.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los archivos de la copia existente van a la Papelera, pero volver a colocarlos no devolverá esa copia a tu biblioteca."
+          }
+        }
+      }
     },
     "The export was stopped before the rest." : {
       "comment" : "A sentence of what an export says once it ends: it was stopped after it wrote some items."
@@ -24050,7 +24138,15 @@
       "comment" : "Sentence of the second confirmation that deletes a folder: one feed stays. %@ is the feed's title in quotation marks. \"Feed Info\" names a sheet."
     },
     "The feed at %@ is empty." : {
-      "comment" : "Why a feed could not be refreshed or subscribed to: its document is empty. %@ is the feed's server, such as example.com."
+      "comment" : "Why a feed could not be refreshed or subscribed to: its document is empty. %@ is the feed's server, such as example.com.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal de %@ está vacío."
+          }
+        }
+      }
     },
     "The feed at %@ is larger than the %lld MB TextMouth reads." : {
       "comment" : "Why a feed could not be read: it is too large. %@ is the server's host name; %lld is the size limit in megabytes.",
@@ -24072,6 +24168,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El canal de %@ supera los %lld MB que TextMouth lee."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El canal de %@ supera los %lld MB que TextMouth lee."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El canal de %@ supera los %lld MB que TextMouth lee."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -24083,17 +24203,47 @@
             "state" : "new",
             "value" : "The feed is damaged at line %1$@: %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal está dañado en la línea %1$@: %2$@."
+          }
         }
       }
     },
     "The feed leaves your library, with its list of articles and its settings." : {
-      "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of articles."
+      "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of articles.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal sale de tu biblioteca, con su lista de artículos y sus ajustes."
+          }
+        }
+      }
     },
     "The feed leaves your library, with its list of episodes and its settings." : {
-      "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of episodes."
+      "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of episodes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal sale de tu biblioteca, con su lista de episodios y sus ajustes."
+          }
+        }
+      }
     },
     "The feed leaves your library, with its list of items and its settings." : {
-      "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of episodes and articles."
+      "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of episodes and articles.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal sale de tu biblioteca, con su lista de elementos y sus ajustes."
+          }
+        }
+      }
     },
     "The feed stays in your library with its settings and %@, and %@ checks it again." : {
       "comment" : "A sentence of the confirmation before Unsubscribe: the feed stays, with its settings and its downloads. The first %@ is the downloads, such as \"its 2 downloaded episodes\"; the second is the name of the Resubscribe command.",
@@ -24103,17 +24253,47 @@
             "state" : "new",
             "value" : "The feed stays in your library with its settings and %1$@, and %2$@ checks it again."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal se queda en tu biblioteca con sus ajustes y %1$@, y %2$@ lo vuelve a revisar."
+          }
         }
       }
     },
     "The feed stays in your library with its settings, and %@ checks it again." : {
-      "comment" : "A sentence of the confirmation before Unsubscribe: the feed stays, with its settings. %@ is the name of the Resubscribe command."
+      "comment" : "A sentence of the confirmation before Unsubscribe: the feed stays, with its settings. %@ is the name of the Resubscribe command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal se queda en tu biblioteca con sus ajustes, y %@ lo vuelve a revisar."
+          }
+        }
+      }
     },
     "The feed “%@” stays with it." : {
-      "comment" : "The last line of the alert when Delete Feed could not delete one of the feed's items: the feed stays with it. %@ is the feed's title."
+      "comment" : "The last line of the alert when Delete Feed could not delete one of the feed's items: the feed stays with it. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal “%@” se queda con él."
+          }
+        }
+      }
     },
     "The feed “%@” stays with them." : {
-      "comment" : "The last line of the alert when Delete Feed could not delete several of the feed's items: the feed stays with them. %@ is the feed's title."
+      "comment" : "The last line of the alert when Delete Feed could not delete several of the feed's items: the feed stays with them. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El canal “%@” se queda con ellos."
+          }
+        }
+      }
     },
     "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another." : {
       "comment" : "Sentence of the second confirmation that deletes a folder: several feeds stay. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" names a sheet."
@@ -24243,10 +24423,26 @@
       }
     },
     "The file's address isn't a web address TextMouth can open." : {
-      "comment" : "Why a feed item's download failed: its address is not an http or https address."
+      "comment" : "Why a feed item's download failed: its address is not an http or https address.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La dirección del archivo no es una dirección web que TextMouth pueda abrir."
+          }
+        }
+      }
     },
     "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again." : {
-      "comment" : "What the duplicate question says when the new copy's files are gone while the question waited. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button."
+      "comment" : "What the duplicate question says when the new copy's files are gone while the question waited. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los archivos de la copia nueva de “%@” ya no están en la biblioteca, así que no se puede conservar. Elige Cancelar y luego importa el archivo otra vez."
+          }
+        }
+      }
     },
     "The files that couldn't be read are listed." : {
       "comment" : "Sentence of the results of Compare Libraries saying the unread files are listed below."
@@ -24304,16 +24500,48 @@
       "comment" : "Error shown when a folder edit would leave the folder exactly as it is."
     },
     "The folder chosen for this feed is no longer in the library. Choose another folder." : {
-      "comment" : "Why Subscribe refused: the folder chosen for the feed was removed from the library."
+      "comment" : "Why Subscribe refused: the folder chosen for the feed was removed from the library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta elegida para este canal ya no está en la biblioteca. Elige otra carpeta."
+          }
+        }
+      }
     },
     "The folder chosen is no longer in the library. Choose another folder." : {
-      "comment" : "Why Move to Library did nothing: the folder chosen was removed from the library. Follows \"Could not move to the library: \"."
+      "comment" : "Why Move to Library did nothing: the folder chosen was removed from the library. Follows \"Could not move to the library: \".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta elegida ya no está en la biblioteca. Elige otra carpeta."
+          }
+        }
+      }
     },
     "The folder chosen to hold the feed's folder is no longer in the library. Choose another one." : {
-      "comment" : "Why Subscribe could not make the feed's folder: the folder chosen to hold it was removed from the library."
+      "comment" : "Why Subscribe could not make the feed's folder: the folder chosen to hold it was removed from the library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta elegida para contener la carpeta del canal ya no está en la biblioteca. Elige otra."
+          }
+        }
+      }
     },
     "The folder for this feed is no longer in the library. Choose another folder for it." : {
-      "comment" : "Why a feed's episode could not be downloaded: the feed's folder was removed from the library."
+      "comment" : "Why a feed's episode could not be downloaded: the feed's folder was removed from the library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta de este canal ya no está en la biblioteca. Elige otra carpeta para él."
+          }
+        }
+      }
     },
     "The folder holds %lld DAISY books (%@)." : {
       "comment" : "First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas.",
@@ -24354,7 +24582,15 @@
       "comment" : "Why the library can't be used: the folder exists but holds no library."
     },
     "The folder of %@ is no longer in the library." : {
-      "comment" : "What VoiceOver says when a feed's row is opened and its library folder was removed. %@ is the feed's title."
+      "comment" : "What VoiceOver says when a feed's row is opened and its library folder was removed. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta de %@ ya no está en la biblioteca."
+          }
+        }
+      }
     },
     "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk." : {
       "comment" : "Error shown when two folders moved together would land on the same name. %1$@ and %2$@ are the two folders' names, in straight double quotes. %3$@ is where they go: a folder's location in straight double quotes, or the name of the library's top level.",
@@ -24371,10 +24607,26 @@
       "comment" : "The hint of the To pop-up in the Export dialog's spoken audio options."
     },
     "The headings from %@ run past the end of the audio, so the tracks were imported without them." : {
-      "comment" : "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them."
+      "comment" : "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los encabezados de %@ pasan del final del audio, así que las pistas se importaron sin ellos."
+          }
+        }
+      }
     },
     "The import was stopped before its end." : {
-      "comment" : "What the Import OPML sheet says once the listener stopped the import before its end."
+      "comment" : "What the Import OPML sheet says once the listener stopped the import before its end.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La importación se detuvo antes de terminar."
+          }
+        }
+      }
     },
     "The index is not changed until you choose %@ or %@, which stay available from %@ at the top of the library." : {
       "comment" : "Last sentence of what Continue Reading does. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button.",
@@ -24388,10 +24640,26 @@
       }
     },
     "The label file “%@” matches no audio file beside it by name, so its headings were not used." : {
-      "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because no audio file beside it has its name. %@ is the label file's name."
+      "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because no audio file beside it has its name. %@ is the label file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo de etiquetas “%@” no coincide por nombre con ningún archivo de audio junto a él, así que no se usaron sus encabezados."
+          }
+        }
+      }
     },
     "The labels of the label file “%@” run past the end of its audio, so its headings were not used." : {
-      "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name."
+      "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Las etiquetas del archivo de etiquetas “%@” pasan del final de su audio, así que no se usaron sus encabezados."
+          }
+        }
+      }
     },
     "The language of the braille code for reading and writing braille." : {
       "comment" : "The hint of the language pop-up in the Braille tab of Settings."
@@ -24414,10 +24682,26 @@
       "comment" : "Error text when the library's folder can't be used. It follows what failed, as in \"Listening statistics could not be saved: The library at /Volumes/Backup/TextMouth isn't available.\" %@ is the folder's path."
     },
     "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back." : {
-      "comment" : "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title."
+      "comment" : "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se puede acceder a la biblioteca, así que TextMouth no puede conservar la copia nueva de “%@”. Responde de nuevo cuando vuelva."
+          }
+        }
+      }
     },
     "The library can't move books now. Try again once it is available." : {
-      "comment" : "Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows \"Could not move to the library: \"."
+      "comment" : "Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows \"Could not move to the library: \".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca no puede mover libros ahora. Inténtalo de nuevo cuando esté disponible."
+          }
+        }
+      }
     },
     "The library can't move while a book is open. Close %@ first." : {
       "comment" : "Why a move of the library was refused: a book is open in a reader. %@ is the book's title, in quotation marks."
@@ -24502,7 +24786,15 @@
       }
     },
     "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then." : {
-      "comment" : "The note under the List and download controls: when a change takes effect. %@ is the name of the List and download choice."
+      "comment" : "The note under the List and download controls: when a change takes effect. %@ is the name of the List and download choice.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La lista sigue de inmediato un cambio de %@; lo que se descarga o se elimina espera a que el cambio lleve diez segundos, y VoiceOver lo anuncia entonces."
+          }
+        }
+      }
     },
     "The manifest of %@ can't be edited: %@" : {
       "comment" : "Message when a book's manifest could not be readied for editing. %1$@ is the book's title; %2$@ is the reason, a sentence from the system or TextMouth.",
@@ -24699,16 +24991,40 @@
       "comment" : "First sentence of why a book could not move into the current library format. %@ is the path of the original."
     },
     "The original file could not be deleted: %@" : {
-      "comment" : "Alert about the original file of an imported book that could not be deleted, its name not known. %@ is the reason, a sentence of the system's."
+      "comment" : "Alert about the original file of an imported book that could not be deleted, its name not known. %@ is the reason, a sentence of the system's.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo eliminar el archivo original: %@"
+          }
+        }
+      }
     },
     "The original file could not be moved to the Trash: %@" : {
-      "comment" : "Alert about the original file of an imported book that could not be moved to the Trash, its name not known. %@ is the reason, a sentence of the system's."
+      "comment" : "Alert about the original file of an imported book that could not be moved to the Trash, its name not known. %@ is the reason, a sentence of the system's.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo mover el archivo original a la Papelera: %@"
+          }
+        }
+      }
     },
     "The original file is missing from %@." : {
       "comment" : "Why a book could not move into the current library format. %@ is the path where the original file should be."
     },
     "The original file was kept." : {
-      "comment" : "Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch."
+      "comment" : "Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se conservó el archivo original."
+          }
+        }
+      }
     },
     "The original file was kept: TextMouth imported only the DAISY book “%@” from the archive “%@”." : {
       "comment" : "Notice after one DAISY book was imported from an archive of other books, so the original file was kept. %1$@ is the book's title and %2$@ the archive's file name. A sentence about the other books follows.",
@@ -24717,6 +25033,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The original file was kept: TextMouth imported only the DAISY book “%1$@” from the archive “%2$@”."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se conservó el archivo original: TextMouth importó solo el libro DAISY “%1$@” del archivo comprimido “%2$@”."
           }
         }
       }
@@ -24729,17 +25051,47 @@
             "state" : "new",
             "value" : "The original file was kept: TextMouth imported the audio of “%1$@” from the archive “%2$@”, and the archive is the only copy of its text."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se conservó el archivo original: TextMouth importó el audio de “%1$@” del archivo comprimido “%2$@”, y ese archivo es la única copia de su texto."
+          }
         }
       }
     },
     "The original file was kept: it is a folder, and an import never deletes a folder." : {
-      "comment" : "Notice after a book was imported from a folder, such as an RTFD: the original was kept because an import never deletes a folder."
+      "comment" : "Notice after a book was imported from a folder, such as an RTFD: the original was kept because an import never deletes a folder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se conservó el archivo original: es una carpeta, y una importación nunca elimina una carpeta."
+          }
+        }
+      }
     },
     "The original file will be moved to the Trash after a successful import." : {
-      "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files go to the Trash."
+      "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files go to the Trash.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo original se moverá a la Papelera tras una importación correcta."
+          }
+        }
+      }
     },
     "The original file will be permanently deleted after a successful import." : {
-      "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files are deleted permanently."
+      "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files are deleted permanently.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo original se eliminará de forma permanente tras una importación correcta."
+          }
+        }
+      }
     },
     "The original file will remain untouched after import." : {
       "comment" : "Caption in Storage settings when the original file is kept after an import."
@@ -24758,6 +25110,12 @@
             "state" : "new",
             "value" : "The original file “%1$@” could not be deleted: %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo eliminar el archivo original “%1$@”: %2$@"
+          }
         }
       }
     },
@@ -24768,6 +25126,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The original file “%1$@” could not be moved to the Trash: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo mover a la Papelera el archivo original “%1$@”: %2$@"
           }
         }
       }
@@ -24802,7 +25166,15 @@
       "comment" : "Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank."
     },
     "The page at %@ is larger than TextMouth reads." : {
-      "comment" : "Why a feed article's download failed: the web page is too large. %@ is the server's host name."
+      "comment" : "Why a feed article's download failed: the web page is too large. %@ is the server's host name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La página de %@ supera el tamaño que TextMouth lee."
+          }
+        }
+      }
     },
     "The part of the book chosen has no words to speak." : {
       "comment" : "Why a spoken audio export was refused: the chosen part of the book has no words."
@@ -24822,16 +25194,40 @@
       "comment" : "Said when the audio editor couldn't find the audio's pauses. A sentence giving the reason follows."
     },
     "The place, bookmarks, and transcript kept for it are deleted too." : {
-      "comment" : "A sentence of the confirmation before a feed's episode or article is deleted: what TextMouth kept of the listener's for it goes too."
+      "comment" : "A sentence of the confirmation before a feed's episode or article is deleted: what TextMouth kept of the listener's for it goes too.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El lugar, los marcadores y la transcripción que se conservaron para él también se eliminan."
+          }
+        }
+      }
     },
     "The playlist “%@” is not a complete, valid playlist file." : {
-      "comment" : "Refusal of an XSPF playlist that is not a readable XML playlist. %@ is the playlist's file name."
+      "comment" : "Refusal of an XSPF playlist that is not a readable XML playlist. %@ is the playlist's file name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La lista de reproducción “%@” no es un archivo de lista completo y válido."
+          }
+        }
+      }
     },
     "The playlist “%@” is too large to read." : {
       "comment" : "Why a playlist file could not be imported: it is larger than the most TextMouth reads. %@ is the playlist's file name."
     },
     "The playlist “%@” uses XML entities of its own, which TextMouth does not read." : {
-      "comment" : "Refusal of an XSPF playlist that declares XML entities of its own. %@ is the playlist's file name."
+      "comment" : "Refusal of an XSPF playlist that declares XML entities of its own. %@ is the playlist's file name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La lista de reproducción “%@” usa entidades XML propias, que TextMouth no lee."
+          }
+        }
+      }
     },
     "The podcast directory at %@ couldn't answer the search (error %@). Try again later." : {
       "comment" : "Why a podcast search failed: the directory answered with an error. The first %@ is the server's host name; the second is the error's number, an identifier written without digit grouping, such as 503.",
@@ -24841,11 +25237,25 @@
             "state" : "new",
             "value" : "The podcast directory at %1$@ couldn't answer the search (error %2$@). Try again later."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio de podcasts de %1$@ no pudo responder a la búsqueda (error %2$@). Inténtalo de nuevo más tarde."
+          }
         }
       }
     },
     "The podcast directory at %@ couldn't be found." : {
-      "comment" : "Why a podcast search failed: no server answers at the directory's address. %@ is the server's host name."
+      "comment" : "Why a podcast search failed: no server answers at the directory's address. %@ is the server's host name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se encontró el directorio de podcasts de %@."
+          }
+        }
+      }
     },
     "The podcast directory at %@ couldn't be reached: %@" : {
       "comment" : "Why a podcast search failed: the connection failed. The first %@ is the server's host name; the second is the reason, a phrase from the system or from TextMouth, such as \"the server sent no answer\".",
@@ -24854,6 +25264,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The podcast directory at %1$@ couldn't be reached: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo conectar con el directorio de podcasts de %1$@: %2$@"
           }
         }
       }
@@ -24878,23 +25294,87 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El directorio de podcasts de %@ no respondió durante %lld de segundos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El directorio de podcasts de %@ no respondió durante %lld segundo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El directorio de podcasts de %@ no respondió durante %lld segundos."
+                }
+              }
+            }
+          }
         }
       }
     },
     "The podcast directory can't be searched on this network, which limits data." : {
-      "comment" : "Why a podcast search did not run: the network has data limits."
+      "comment" : "Why a podcast search did not run: the network has data limits.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se puede buscar en el directorio de podcasts en esta red, que limita los datos."
+          }
+        }
+      }
     },
     "The podcast directory couldn't answer the search. Try again later." : {
-      "comment" : "Why a podcast search failed: the directory's address answers that nothing is there."
+      "comment" : "Why a podcast search failed: the directory's address answers that nothing is there.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio de podcasts no pudo responder a la búsqueda. Inténtalo de nuevo más tarde."
+          }
+        }
+      }
     },
     "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again." : {
-      "comment" : "Why a podcast search failed: the directory limits searches to about 20 a minute."
+      "comment" : "Why a podcast search failed: the directory limits searches to about 20 a minute.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio de podcasts rechazó la búsqueda; permite unas 20 por minuto. Espera un minuto e inténtalo de nuevo."
+          }
+        }
+      }
     },
     "The podcast directory sent an answer TextMouth can't read. Try again later." : {
-      "comment" : "Why a podcast search failed: the directory's answer could not be read."
+      "comment" : "Why a podcast search failed: the directory's answer could not be read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio de podcasts envió una respuesta que TextMouth no puede leer. Inténtalo de nuevo más tarde."
+          }
+        }
+      }
     },
     "The podcast directory's answer is larger than TextMouth reads." : {
-      "comment" : "Why a podcast search failed: the answer is too large."
+      "comment" : "Why a podcast search failed: the answer is too large.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La respuesta del directorio de podcasts supera el tamaño que TextMouth lee."
+          }
+        }
+      }
     },
     "The podcast's own transcript, downloaded with the episode on %@." : {
       "comment" : "Sentence saying a podcast episode's transcript is the one the podcast published. %@ is a date."
@@ -24918,10 +25398,26 @@
       "comment" : "Part of the outcome of saving a rebuilt library index: where the old index's copy is kept. %@ is the copy's path."
     },
     "The publisher has removed this feed." : {
-      "comment" : "Why a feed could not be fetched: the server says the publisher removed it for good (error 410)."
+      "comment" : "Why a feed could not be fetched: the server says the publisher removed it for good (error 410).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El editor ha eliminado este canal."
+          }
+        }
+      }
     },
     "The publisher has removed this file." : {
-      "comment" : "Why a feed item's download failed: the server says the publisher removed the file for good (error 410)."
+      "comment" : "Why a feed item's download failed: the server says the publisher removed the file for good (error 410).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El editor ha eliminado este archivo."
+          }
+        }
+      }
     },
     "The reading list is empty. To add a book, choose Add to Reading List from its actions." : {
       "comment" : "The only row of the iPhone's empty Reading List. \"Add to Reading List\" is the name of a book's action, so keep it the same as that action's label."
@@ -25013,7 +25509,15 @@
       "comment" : "Error in the Record window when saving: the recorded take holds no audio that can be read."
     },
     "The refresh of %@ was stopped." : {
-      "comment" : "Why a feed's refresh ended: it was stopped. %@ is the feed's title or server."
+      "comment" : "Why a feed's refresh ended: it was stopped. %@ is the feed's title or server.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se detuvo la actualización de %@."
+          }
+        }
+      }
     },
     "The refused text began before this passage, at character %@." : {
       "comment" : "A line of the speech refusal report: the refused text began before the passage shown. %@ is the character offset where it began, written without digit grouping."
@@ -25031,10 +25535,26 @@
       "comment" : "Last sentence of what Rebuild Library Index does: where the old data stays. %@ is the saved copy's path."
     },
     "The search couldn't be sent, because the directory's address isn't a web address." : {
-      "comment" : "Why a podcast search failed: the directory's address is not an http or https address."
+      "comment" : "Why a podcast search failed: the directory's address is not an http or https address.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo enviar la búsqueda, porque la dirección del directorio no es una dirección web."
+          }
+        }
+      }
     },
     "The search was stopped." : {
-      "comment" : "Why a podcast search ended: it was stopped."
+      "comment" : "Why a podcast search ended: it was stopped.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se detuvo la búsqueda."
+          }
+        }
+      }
     },
     "The selected data directory is not empty." : {
       "comment" : "First sentence of why a move of the data directory was refused: the new location already holds something."
@@ -25043,13 +25563,37 @@
       "comment" : "Said by the audio editor's Trim to Selection when the selection is all of the audio."
     },
     "The server %@ couldn't be found." : {
-      "comment" : "Why a feed item's download failed: no server answers at its address. %@ is the server's host name."
+      "comment" : "Why a feed item's download failed: no server answers at its address. %@ is the server's host name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se encontró el servidor %@."
+          }
+        }
+      }
     },
     "The server %@ couldn't be found. Check the address." : {
-      "comment" : "Why a feed could not be fetched: no server answers at its address. %@ is the server's host name, such as example.com."
+      "comment" : "Why a feed could not be fetched: no server answers at its address. %@ is the server's host name, such as example.com.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se encontró el servidor %@. Revisa la dirección."
+          }
+        }
+      }
     },
     "The server says the file is gone." : {
-      "comment" : "Why a feed item's download failed: the server says nothing is at the address (error 404)."
+      "comment" : "Why a feed item's download failed: the server says nothing is at the address (error 404).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El servidor dice que el archivo ya no existe."
+          }
+        }
+      }
     },
     "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place." : {
       "comment" : "Summary under the heading of the report of a refusal, on the Mac and the iPhone: what happened, and that Play tries again."
@@ -25061,7 +25605,15 @@
       "comment" : "Said when a punch-in's recording is asked to use a stretch that is not inside the recording."
     },
     "The subscriptions couldn't be saved: %@" : {
-      "comment" : "Why the subscriptions could not be exported. %@ is the reason, from the system."
+      "comment" : "Why the subscriptions could not be exported. %@ is the reason, from the system.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudieron guardar las suscripciones: %@"
+          }
+        }
+      }
     },
     "The text changed since the search; moved to the nearest match." : {
       "comment" : "Announcement when the book's text changed since the search and the reader moved to the nearest match."
@@ -25099,7 +25651,15 @@
       "comment" : "First sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells."
     },
     "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used." : {
-      "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because its tracks lie past the end of its audio. %@ is the cue sheet's name."
+      "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because its tracks lie past the end of its audio. %@ is the cue sheet's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Las pistas del archivo CUE “%@” pasan del final de su audio, así que no se usaron sus encabezados."
+          }
+        }
+      }
     },
     "The transcript and the text made from it are deleted." : {
       "comment" : "First sentence of the question asked before an audiobook's transcript is deleted."
@@ -25117,7 +25677,15 @@
       "comment" : "Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name."
     },
     "The transcript file found beside the new copy's audio replaces the existing copy's transcript." : {
-      "comment" : "Part of the question asked about a duplicate audiobook: the transcript file found beside the new copy's audio takes the place of the library copy's transcript."
+      "comment" : "Part of the question asked about a duplicate audiobook: the transcript file found beside the new copy's audio takes the place of the library copy's transcript.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo de transcripción que se encontró junto al audio de la copia nueva reemplaza la transcripción de la copia existente."
+          }
+        }
+      }
     },
     "The transcript files beside the audio weren't attached: %@" : {
       "comment" : "Notice after an import: the transcript files beside each track's audio were not attached. %@ is the reason, a sentence."
@@ -25206,13 +25774,37 @@
       "comment" : "Last sentence of why Remove Download was refused for a book the listener keeps and the reading list keeps too: what to do after choosing Stop Keeping on This Mac. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it."
     },
     "There are no feeds to refresh." : {
-      "comment" : "What VoiceOver says when Refresh All Feeds finds no feed in the library."
+      "comment" : "What VoiceOver says when Refresh All Feeds finds no feed in the library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay canales que actualizar."
+          }
+        }
+      }
     },
     "There are no subscriptions to export." : {
-      "comment" : "What Export OPML says when the library has no feed."
+      "comment" : "What Export OPML says when the library has no feed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay suscripciones que exportar."
+          }
+        }
+      }
     },
     "There are no subscriptions to export: every feed in your library is unsubscribed." : {
-      "comment" : "What Export OPML says when every feed in the library is unsubscribed, which an export leaves out."
+      "comment" : "What Export OPML says when every feed in the library is unsubscribed, which an export leaves out.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay suscripciones que exportar: todos los canales de tu biblioteca tienen la suscripción cancelada."
+          }
+        }
+      }
     },
     "There is a file at %@, not a folder." : {
       "comment" : "First sentence of why the chosen location can't be used: a file is there. %@ is the path.\nWhy the library can't be used: a file sits where the library's folder should be. %@ is the path."
@@ -25250,6 +25842,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "There is not enough free disk space to convert %1$@: it needs %2$@ free."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay suficiente espacio libre en el disco para convertir %1$@: necesita %2$@ libres."
           }
         }
       }
@@ -25315,10 +25913,26 @@
       }
     },
     "There isn't room on this Mac for this episode (%@)." : {
-      "comment" : "Why a feed's episode could not be downloaded: the disk is too full. %@ is the file's size with its unit, such as 61 MB."
+      "comment" : "Why a feed's episode could not be downloaded: the disk is too full. %@ is the file's size with its unit, such as 61 MB.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay espacio en esta Mac para este episodio (%@)."
+          }
+        }
+      }
     },
     "There isn’t enough free space on the disk." : {
-      "comment" : "Why an import failed when the disk is full. Said instead of the system's own sentence, which names a hidden internal file."
+      "comment" : "Why an import failed when the disk is full. Said instead of the system's own sentence, which names a hidden internal file.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay suficiente espacio libre en el disco."
+          }
+        }
+      }
     },
     "There's an empty filter between two commas." : {
       "comment" : "Problem found in a typed filter chain (the audio editor's Apply Filter and the filter presets): two commas in a row leave a filter with nothing in it."
@@ -25327,7 +25941,15 @@
       "comment" : "Said when the audio editor has no audio after the cursor to preview a filter on."
     },
     "There's no feed at that address any more." : {
-      "comment" : "Why a feed could not be fetched: the address answers that nothing is there (error 404)."
+      "comment" : "Why a feed could not be fetched: the address answers that nothing is there (error 404).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ya no hay ningún canal en esa dirección."
+          }
+        }
+      }
     },
     "There's no library in %@ to use, and none to move there while the library isn't available." : {
       "comment" : "First sentence of why the chosen folder can't be used: it holds no library and there is none to move. %@ is the folder's path."
@@ -25375,10 +25997,26 @@
       "comment" : "Why an EPUB book could not be imported: every chapter in it is blank."
     },
     "This Feed Uses Plain http" : {
-      "comment" : "Title of the warning shown once after subscribing to a feed whose address uses plain http, which is not encrypted. Title case."
+      "comment" : "Title of the warning shown once after subscribing to a feed whose address uses plain http, which is not encrypted. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este canal usa http simple"
+          }
+        }
+      }
     },
     "This Feed's Settings" : {
-      "comment" : "Heading of the group of settings a feed can have of its own, in Feed Info. Title case."
+      "comment" : "Heading of the group of settings a feed can have of its own, in Feed Info. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajustes de este canal"
+          }
+        }
+      }
     },
     "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it." : {
       "comment" : "Why a Kindle (KFX) book could not be imported: its pages are fixed layouts or pictures, as in a comic or a print replica, with no text that flows."
@@ -25408,16 +26046,40 @@
       "comment" : "A sentence of why the library can't open: this Mac has no record of the library's identity, so the identity file can't be restored from it."
     },
     "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again." : {
-      "comment" : "Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server."
+      "comment" : "Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta Mac no tiene conexión, así que no se puede actualizar %@. Conéctate a internet e inténtalo de nuevo."
+          }
+        }
+      }
     },
     "This Mac is offline, so the book can't be downloaded from %@." : {
       "comment" : "First sentence of why a book can't be downloaded: the Mac is offline. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."
     },
     "This Mac is offline, so the directory can't be searched. Connect to the internet and try again." : {
-      "comment" : "Why a podcast search failed: this Mac has no internet."
+      "comment" : "Why a podcast search failed: this Mac has no internet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta Mac no tiene conexión, así que no se puede buscar en el directorio. Conéctate a internet e inténtalo de nuevo."
+          }
+        }
+      }
     },
     "This Mac is offline, so “%@” can't be downloaded. Connect to the internet and try again." : {
-      "comment" : "Why a feed item's download failed: this Mac has no internet. %@ is the item's title."
+      "comment" : "Why a feed item's download failed: this Mac has no internet. %@ is the item's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta Mac no tiene conexión, así que no se puede descargar “%@”. Conéctate a internet e inténtalo de nuevo."
+          }
+        }
+      }
     },
     "This Mac no longer has the chosen table, “%@”; choose another." : {
       "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table of this Mac is gone. %@ is the table's stored name, \"mac:\" and its file name."
@@ -25465,10 +26127,26 @@
       }
     },
     "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads." : {
-      "comment" : "Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names."
+      "comment" : "Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este archivo XML no es un libro DTBook, un documento XML de Word 2003 ni un archivo de braille PEF, los únicos XML que TextMouth lee."
+          }
+        }
+      }
     },
     "This article has no description." : {
-      "comment" : "What Show Description says for an article that has no description."
+      "comment" : "What Show Description says for an article that has no description.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este artículo no tiene descripción."
+          }
+        }
+      }
     },
     "This audio has no chapter markers." : {
       "comment" : "Said by the audio editor's chapter commands when the audio has no chapter markers."
@@ -25524,7 +26202,15 @@
       "comment" : "Announcement when a page command is used in a book that has no pages."
     },
     "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it." : {
-      "comment" : "Why a book's files were not deleted: it has no package inside the library. Follows \"Import failed: \". \"Remove it from the library only\" is a choice of the removal commands."
+      "comment" : "Why a book's files were not deleted: it has no package inside the library. Follows \"Import failed: \". \"Remove it from the library only\" is a choice of the removal commands.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este libro no tiene un paquete administrado válido. Quítalo solo de la biblioteca, o repara su almacenamiento antes de eliminarlo."
+          }
+        }
+      }
     },
     "This book has only one page." : {
       "comment" : "Announcement when a page command is used in a book that has one page, so there is no other page to go to."
@@ -25576,13 +26262,37 @@
       "comment" : "Heading of the error alert's list when Remove from Library Only removed one book but could not delete the bookInfo.json file in its package. bookInfo.json is a file name. The book's title and the reason follow on the next line."
     },
     "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts." : {
-      "comment" : "What Play says for a book whose Ogg audio failed to convert at this launch."
+      "comment" : "What Play says for a book whose Ogg audio failed to convert at this launch.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo convertir el audio de este libro de Ogg a AAC. TextMouth volverá a intentarlo la próxima vez que se inicie."
+          }
+        }
+      }
     },
     "This book's audio is being converted from Ogg to AAC. It plays when that ends." : {
-      "comment" : "What Play says while the book's Ogg audio is being converted to AAC."
+      "comment" : "What Play says while the book's Ogg audio is being converted to AAC.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El audio de este libro se está convirtiendo de Ogg a AAC. Se reproducirá cuando termine."
+          }
+        }
+      }
     },
     "This book's audio needs converting from Ogg to AAC. TextMouth is converting it now, and it plays when that ends." : {
-      "comment" : "What Play says for a book found still in Ogg, whose conversion TextMouth starts."
+      "comment" : "What Play says for a book found still in Ogg, whose conversion TextMouth starts.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El audio de este libro necesita convertirse de Ogg a AAC. TextMouth lo está convirtiendo ahora y se reproducirá cuando termine."
+          }
+        }
+      }
     },
     "This book's only page is %@." : {
       "comment" : "First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping."
@@ -25594,10 +26304,26 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is."
     },
     "This comic book archive holds more than the %@ pictures TextMouth reads." : {
-      "comment" : "Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted."
+      "comment" : "Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este archivo de cómic contiene más de las %@ imágenes que TextMouth lee."
+          }
+        }
+      }
     },
     "This comic book archive holds no pictures TextMouth can read." : {
-      "comment" : "Why a comic book archive was refused at import: it holds no picture TextMouth reads."
+      "comment" : "Why a comic book archive was refused at import: it holds no picture TextMouth reads.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este archivo de cómic no contiene imágenes que TextMouth pueda leer."
+          }
+        }
+      }
     },
     "This document holds more than %@, the most TextMouth reads from one document." : {
       "comment" : "Why a document could not be imported: it is larger than the most TextMouth reads from one document. %@ is that limit with its unit, such as \"64 MB\"."
@@ -25606,46 +26332,142 @@
       "comment" : "First sentence of why a document could not be imported: it is locked with a password TextMouth does not have."
     },
     "This download isn't in its feed's folder, so TextMouth left its files as they are." : {
-      "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder."
+      "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta descarga no está en la carpeta de su canal, así que TextMouth dejó sus archivos como están."
+          }
+        }
+      }
     },
     "This episode has no description." : {
-      "comment" : "What Show Description says for an episode that has no description."
+      "comment" : "What Show Description says for an episode that has no description.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este episodio no tiene descripción."
+          }
+        }
+      }
     },
     "This explanation appears only once." : {
       "comment" : "Last sentence of the Edit Manifest explanation: it is shown only the first time.\nLast sentence of the Edit Text explanation: it is shown only the first time."
     },
     "This feed is no longer in your library." : {
-      "comment" : "Feed Info's line for a feed whose record went while the sheet was open."
+      "comment" : "Feed Info's line for a feed whose record went while the sheet was open.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este canal ya no está en tu biblioteca."
+          }
+        }
+      }
     },
     "This feed needs a password, which TextMouth can't send yet." : {
-      "comment" : "Why a feed could not be fetched: the server asks for a password."
+      "comment" : "Why a feed could not be fetched: the server asks for a password.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este canal necesita una contraseña, que TextMouth todavía no puede enviar."
+          }
+        }
+      }
     },
     "This file" : {
       "comment" : "Stands for a file's name at the start of a sentence about refusing it, when no name is known: \"This file is in Ogg, which...\"."
     },
     "This file could not be read as a Word 2003 XML document." : {
-      "comment" : "Why a file was refused at import: it could not be read as a Word 2003 XML document. A sentence saying it may be damaged follows."
+      "comment" : "Why a file was refused at import: it could not be read as a Word 2003 XML document. A sentence saying it may be damaged follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer este archivo como documento XML de Word 2003."
+          }
+        }
+      }
     },
     "This file could not be read as a Word 97-2003 document." : {
-      "comment" : "Why a file was refused at import: it could not be read as a Word 97-2003 (.doc) document. A sentence saying it may be damaged follows."
+      "comment" : "Why a file was refused at import: it could not be read as a Word 97-2003 (.doc) document. A sentence saying it may be damaged follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer este archivo como documento de Word 97-2003."
+          }
+        }
+      }
     },
     "This file could not be read as a comic book archive. It may be damaged, or another kind of file." : {
-      "comment" : "Why a file was refused at import: it is no ZIP archive, so it cannot be a comic book archive. Two sentences."
+      "comment" : "Why a file was refused at import: it is no ZIP archive, so it cannot be a comic book archive. Two sentences.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer este archivo como archivo de cómic. Puede estar dañado, o ser otro tipo de archivo."
+          }
+        }
+      }
     },
     "This file could not be read as a picture. It may be damaged, or another kind of file." : {
-      "comment" : "Why a file was refused at import: its bytes are no picture at all. Two sentences."
+      "comment" : "Why a file was refused at import: its bytes are no picture at all. Two sentences.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer este archivo como imagen. Puede estar dañado, o ser otro tipo de archivo."
+          }
+        }
+      }
     },
     "This file could not be read as a rich text document with attachments." : {
-      "comment" : "Why a file was refused at import: it could not be read as a rich text (RTFD) document with attachments. A sentence saying it may be damaged follows."
+      "comment" : "Why a file was refused at import: it could not be read as a rich text (RTFD) document with attachments. A sentence saying it may be damaged follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer este archivo como documento de texto enriquecido con adjuntos."
+          }
+        }
+      }
     },
     "This file could not be read as a rich text document." : {
-      "comment" : "Why a file was refused at import: it could not be read as a rich text (RTF) document. A sentence saying it may be damaged follows."
+      "comment" : "Why a file was refused at import: it could not be read as a rich text (RTF) document. A sentence saying it may be damaged follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer este archivo como documento de texto enriquecido."
+          }
+        }
+      }
     },
     "This file could not be read as an OpenDocument text document." : {
-      "comment" : "Why a file was refused at import: it could not be read as an OpenDocument text (.odt) document. A sentence saying it may be damaged follows."
+      "comment" : "Why a file was refused at import: it could not be read as an OpenDocument text (.odt) document. A sentence saying it may be damaged follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer este archivo como documento de texto de OpenDocument."
+          }
+        }
+      }
     },
     "This file has no text to read." : {
-      "comment" : "Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup."
+      "comment" : "Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este archivo no tiene texto que leer."
+          }
+        }
+      }
     },
     "This file holds only part of a Kindle book. Open the book's main .kfx file." : {
       "comment" : "Why a Kindle (KFX) file could not be imported: it is a part of a book, such as the metadata file beside the main file, and what to do. .kfx is a file extension and stays as it is."
@@ -25663,7 +26485,15 @@
       "comment" : "Why a file could not be imported as a web archive (.webarchive, which Safari saves): it does not hold a main page."
     },
     "This file needs a password, which TextMouth can't send yet." : {
-      "comment" : "Why a feed item's download failed: the server asks for a password."
+      "comment" : "Why a feed item's download failed: the server asks for a password.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este archivo necesita una contraseña, que TextMouth todavía no puede enviar."
+          }
+        }
+      }
     },
     "This file's markup nests more than %@ levels deep, which TextMouth can't read safely." : {
       "comment" : "First sentence of why a file was refused: its markup has elements inside elements more levels deep than TextMouth reads. %@ is the most levels, a number."
@@ -25713,7 +26543,15 @@
       }
     },
     "This picture could not be decoded. It may be damaged." : {
-      "comment" : "Why a picture was refused at import: the system could not decode it. Two sentences."
+      "comment" : "Why a picture was refused at import: the system could not decode it. Two sentences.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo decodificar esta imagen. Puede estar dañada."
+          }
+        }
+      }
     },
     "This picture holds %lld pages, more than the %@ TextMouth reads." : {
       "comment" : "Why a picture of many pages, such as a TIFF, was refused at import. %1$lld is the number of pages it holds and %2$@ the limit, already formatted.",
@@ -25731,6 +26569,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "This picture holds %lld pages, more than the %@ TextMouth reads."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Esta imagen contiene %lld de páginas, más de las %@ que TextMouth lee."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Esta imagen contiene %lld página, más de las %@ que TextMouth lee."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Esta imagen contiene %lld páginas, más de las %@ que TextMouth lee."
                 }
               }
             }
@@ -25754,6 +26616,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "This picture is %@, larger than the %lld megapixels TextMouth reads."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Esta imagen mide %@, más de %lld de megapíxeles, el límite que TextMouth lee."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Esta imagen mide %@, más de %lld megapíxel, el límite que TextMouth lee."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Esta imagen mide %@, más de %lld megapíxeles, el límite que TextMouth lee."
                 }
               }
             }
@@ -25951,7 +26837,15 @@
       "comment" : "Line of the move sheet that says where the library is going. %@ is the new location's path."
     },
     "To download it again, choose %@ on its row." : {
-      "comment" : "After Cancel stops one feed download that only the listener's Download brings back. %@ is the name of the Download command."
+      "comment" : "After Cancel stops one feed download that only the listener's Download brings back. %@ is the name of the Download command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para descargarlo de nuevo, elige %@ en su fila."
+          }
+        }
+      }
     },
     "To download the other %lld again, choose %@ on their rows." : {
       "comment" : "After Cancel stops feed downloads, the rest of which only the listener's Download brings back. The first %lld is how many; %@ is the name of the Download command.",
@@ -25973,26 +26867,90 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Para descargar de nuevo los otros %lld, elige %@ en sus filas."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Para descargar de nuevo el otro (%lld), elige %@ en su fila."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Para descargar de nuevo los otros %lld, elige %@ en sus filas."
+                }
+              }
+            }
+          }
         }
       }
     },
     "To download the other one again, choose %@ on its row." : {
-      "comment" : "After Cancel stops feed downloads, the one other of which only the listener's Download brings back. %@ is the name of the Download command."
+      "comment" : "After Cancel stops feed downloads, the one other of which only the listener's Download brings back. %@ is the name of the Download command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para descargar de nuevo el otro, elige %@ en su fila."
+          }
+        }
+      }
     },
     "To download them again, choose %@ on their rows." : {
-      "comment" : "After Cancel stops several feed downloads that only the listener's Download brings back. %@ is the name of the Download command."
+      "comment" : "After Cancel stops several feed downloads that only the listener's Download brings back. %@ is the name of the Download command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para descargarlos de nuevo, elige %@ en sus filas."
+          }
+        }
+      }
     },
     "To free the space anyway, choose Show in Finder, then %@." : {
       "comment" : "Second sentence of why Remove Download was refused: how to free the space by hand. Show in Finder is a command's name. %@ is a clause that tells what to do in the cloud service's own app, such as \"choose Remove Download\"."
     },
     "To keep an article, choose %@ on its row first." : {
-      "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of articles. %@ is the name of the Move to Library command."
+      "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of articles. %@ is the name of the Move to Library command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para conservar un artículo, elige primero %@ en su fila."
+          }
+        }
+      }
     },
     "To keep an episode, choose %@ on its row first." : {
-      "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command."
+      "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para conservar un episodio, elige primero %@ en su fila."
+          }
+        }
+      }
     },
     "To keep an item, choose %@ on its row first." : {
-      "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of episodes and articles. %@ is the name of the Move to Library command."
+      "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of episodes and articles. %@ is the name of the Move to Library command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para conservar un elemento, elige primero %@ en su fila."
+          }
+        }
+      }
     },
     "To let it go, take it off the reading list, or clear %@ in the Reading List's options." : {
       "comment" : "Last sentence of why Stop Keeping on This Mac cannot let a book go: the reading list keeps it. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it."
@@ -26015,7 +26973,15 @@
       }
     },
     "To use it, choose %@ on the Text tab in Settings." : {
-      "comment" : "Advice after the refusal of a pronunciation lexicon on the Mac. %@ is the title of the import button on the Text tab of Settings, which is another string of the app."
+      "comment" : "Advice after the refusal of a pronunciation lexicon on the Mac. %@ is the title of the import button on the Text tab of Settings, which is another string of the app.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para usarlo, elige %@ en la pestaña Texto de Ajustes."
+          }
+        }
+      }
     },
     "To use it, open the book and choose %@ from the Book menu." : {
       "comment" : "Last sentence of a notice after an import, saying how to attach the transcript file by hand. %@ is the name of the Attach Transcript command in the Book menu."
@@ -26101,7 +27067,15 @@
       "comment" : "Label of the pop-up that chooses which audio track of a book to edit."
     },
     "Track %@" : {
-      "comment" : "Heading of a track that a cue sheet gives no title, made at import. %@ is the track's number from the sheet, an identifier written without digit grouping."
+      "comment" : "Heading of a track that a cue sheet gives no title, made at import. %@ is the track's number from the sheet, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pista %@"
+          }
+        }
+      }
     },
     "Transcribe" : {
       "comment" : "Button of the Transcribe Audio sheet that starts transcribing the audiobook.\nButton of the question offered after an import that opens Transcribe Audio for the new audiobook."
@@ -26315,7 +27289,15 @@
       "comment" : "Hint of the Go to Percent field: what the user may type. 47.5 is an example number; write it as the language writes numbers."
     },
     "Type a podcast's title or publisher, then press Return to search Apple's directory" : {
-      "comment" : "VoiceOver hint of the podcast search field. Return is the Return key."
+      "comment" : "VoiceOver hint of the podcast search field. Return is the Return key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escribe el título o el editor de un podcast y pulsa Return para buscar en el directorio de Apple"
+          }
+        }
+      }
     },
     "Type a time, such as 12:04.3, 1:02:03, or 75.5." : {
       "comment" : "Shown or spoken when a time field holds nothing, or something that is not a time (Go to Time, Insert Silence, the reader's Go to Time). The examples are clock times and seconds."
@@ -26324,7 +27306,15 @@
       "comment" : "Second sentence of that message: what to do."
     },
     "Type or paste a feed or web page address, then press Return" : {
-      "comment" : "VoiceOver hint of the field where the listener types a feed's address. Return is the Return key."
+      "comment" : "VoiceOver hint of the field where the listener types a feed's address. Return is the Return key.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escribe o pega la dirección de un canal o de una página web y pulsa Return"
+          }
+        }
+      }
     },
     "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions." : {
       "comment" : "Third sentence of the Edit Manifest explanation. TextEdit is the Mac's text editor; Smart Quotes, Edit and Substitutions are its menu names, so use the words macOS shows for them."
@@ -26399,7 +27389,15 @@
       "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\"."
     },
     "Unknown duration" : {
-      "comment" : "Spoken in place of a length of time that is not a usable number, such as an enormous or missing length."
+      "comment" : "Spoken in place of a length of time that is not a usable number, such as an enormous or missing length.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Duración desconocida"
+          }
+        }
+      }
     },
     "Unopened" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book never opened.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .unopened."
@@ -26476,13 +27474,37 @@
       "comment" : "Label of the path of the unreadable library index file, on the library index recovery sheet."
     },
     "Unsubscribe" : {
-      "comment" : "Title of the command that stops checking a feed when it acts at once, and of the confirmation's button. Title case."
+      "comment" : "Title of the command that stops checking a feed when it acts at once, and of the confirmation's button. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelar suscripción"
+          }
+        }
+      }
     },
     "Unsubscribe from %@?" : {
-      "comment" : "Title of the confirmation before Unsubscribe. %@ is the feed's title."
+      "comment" : "Title of the confirmation before Unsubscribe. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Cancelar la suscripción a %@?"
+          }
+        }
+      }
     },
     "Unsubscribed" : {
-      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.\nThe note after a feed's title while the listener is unsubscribed from it, so TextMouth does not check it. Title case."
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.\nThe note after a feed's title while the listener is unsubscribed from it, so TextMouth does not check it. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sin suscripción"
+          }
+        }
+      }
     },
     "Unsubscribed from %@: TextMouth no longer checks it for new articles%@." : {
       "comment" : "What VoiceOver says once Unsubscribe is done, for a feed of articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.",
@@ -26491,6 +27513,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se canceló la suscripción a %1$@: TextMouth ya no lo revisa en busca de artículos nuevos%2$@."
           }
         }
       }
@@ -26503,6 +27531,12 @@
             "state" : "new",
             "value" : "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se canceló la suscripción a %1$@: TextMouth ya no lo revisa en busca de episodios nuevos%2$@."
+          }
         }
       }
     },
@@ -26514,20 +27548,50 @@
             "state" : "new",
             "value" : "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se canceló la suscripción a %1$@: TextMouth ya no lo revisa en busca de elementos nuevos%2$@."
+          }
         }
       }
     },
     "Unsubscribe…" : {
-      "comment" : "Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case."
+      "comment" : "Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelar suscripción…"
+          }
+        }
+      }
     },
     "Unsupported audio format." : {
       "comment" : "Why an audio file could not be imported: TextMouth does not read its audio format."
     },
     "Unsupported file format: .%@" : {
-      "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows."
+      "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Formato de archivo no admitido: .%@"
+          }
+        }
+      }
     },
     "Unsupported file format: .%@." : {
-      "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows."
+      "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Formato de archivo no admitido: .%@."
+          }
+        }
+      }
     },
     "Until then, changing the location and rebuilding the directory are unavailable." : {
       "comment" : "Last sentence of the Storage settings explanation while the library index can't be read."
@@ -26677,16 +27741,48 @@
       "comment" : "Caption above the sound effects volume slider in Settings. %lld is the volume as a percentage from 0 to 100; the percent sign after it is written as %%."
     },
     "WMA" : {
-      "comment" : "The name of the Windows Media Audio format, as people say it. Inside sentences about importing a file of that format."
+      "comment" : "The name of the Windows Media Audio format, as people say it. Inside sentences about importing a file of that format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WMA"
+          }
+        }
+      }
     },
     "WMV video" : {
-      "comment" : "The name of the Windows Media Video format, as people say it. Inside sentences about importing a file of that format."
+      "comment" : "The name of the Windows Media Video format, as people say it. Inside sentences about importing a file of that format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "video WMV"
+          }
+        }
+      }
     },
     "Wait until the export ends" : {
-      "comment" : "What to do before trying again, when a book's download is being exported and cannot be deleted or replaced. Written without a full stop."
+      "comment" : "What to do before trying again, when a book's download is being exported and cannot be deleted or replaced. Written without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Espera a que termine la exportación"
+          }
+        }
+      }
     },
     "Wait until the transcription ends, or cancel it" : {
-      "comment" : "What to do before trying again, when a book's download is being transcribed and cannot be deleted or replaced. Written without a full stop."
+      "comment" : "What to do before trying again, when a book's download is being transcribed and cannot be deleted or replaced. Written without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Espera a que termine la transcripción, o cancélala"
+          }
+        }
+      }
     },
     "Waiting for Sync" : {
       "comment" : "Note in the library list: the book's files have not arrived on this Mac from the sync service yet."
@@ -26713,10 +27809,26 @@
       "comment" : "Progress text while a move of the library waits for an import to finish first."
     },
     "Waiting for the data directory move to finish..." : {
-      "comment" : "Line of the import overlay while a move of the data directory holds an import back. Ends with an ellipsis written as three full stops."
+      "comment" : "Line of the import overlay while a move of the data directory holds an import back. Ends with an ellipsis written as three full stops.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que termine el cambio de ubicación del directorio de datos..."
+          }
+        }
+      }
     },
     "Waiting to Download" : {
-      "comment" : "The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case."
+      "comment" : "The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando para descargar"
+          }
+        }
+      }
     },
     "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash." : {
       "comment" : "First sentence of the warning shown under the metadata editor's switch while it is on. MD5 is the name of a checksum and stays as written."
@@ -26725,13 +27837,37 @@
       "comment" : "Name of the book format of a Safari web archive (.webarchive), shown in a book's information, the format column, and the duplicate finder."
     },
     "Web page" : {
-      "comment" : "Label of an item's web page in Show Description."
+      "comment" : "Label of an item's web page in Show Description.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Página web"
+          }
+        }
+      }
     },
     "Web site" : {
-      "comment" : "Label of the feed's web site in Feed Info."
+      "comment" : "Label of the feed's web site in Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sitio web"
+          }
+        }
+      }
     },
     "WebM" : {
-      "comment" : "The name of the WebM format. Inside sentences about importing a file of that format."
+      "comment" : "The name of the WebM format. Inside sentences about importing a file of that format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WebM"
+          }
+        }
+      }
     },
     "What a book of this kind moves by until it has a unit of its own." : {
       "comment" : "Hint of the two iPhone Settings rows that choose a navigation unit, one for text books and one for audiobooks."
@@ -26773,6 +27909,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "What was kept for %lld removed downloads was deleted."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se eliminó lo que se conservó para %lld descargas quitadas."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se eliminó lo que se conservó para %lld descarga quitada."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se eliminó lo que se conservó para %lld descargas quitadas."
                 }
               }
             }
@@ -26876,7 +28036,15 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .whenApplicable."
     },
     "When New Episodes Arrive" : {
-      "comment" : "Heading of the third group of the Feeds tab of Settings: alerts and notifications. Title case."
+      "comment" : "Heading of the third group of the Feeds tab of Settings: alerts and notifications. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cuando llegan episodios nuevos"
+          }
+        }
+      }
     },
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.\nLabel of the pop-up button in a folder's settings choosing what happens when one of its books ends.",
@@ -26914,7 +28082,15 @@
       "comment" : "VoiceOver hint of the Regular Expression checkbox in the Search Library window. ICU is the name of the regular expression syntax, and stays as written."
     },
     "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own" : {
-      "comment" : "VoiceOver hint of the checkbox that makes a feed follow the global setting. %@ is the name of the Feeds tab of Settings."
+      "comment" : "VoiceOver hint of the checkbox that makes a feed follow the global setting. %@ is the name of the Feeds tab of Settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si está activado, este canal sigue el ajuste de Ajustes, %@; desactívalo para darle uno propio"
+          }
+        }
+      }
     },
     "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result" : {
       "comment" : "VoiceOver hint of the Auto-play after navigation checkbox in the Playback settings."
@@ -27052,7 +28228,15 @@
       "comment" : "A part of a substitution rule's spoken summary: the rule matches whole words only."
     },
     "Windows Media" : {
-      "comment" : "The name of the Windows Media container format, as people say it. Inside sentences about importing a file of that format."
+      "comment" : "The name of the Windows Media container format, as people say it. Inside sentences about importing a file of that format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows Media"
+          }
+        }
+      }
     },
     "Windows-1250 (Central European)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
@@ -27154,7 +28338,15 @@
       "comment" : "Name of the book format of a Microsoft Word document (.docx), shown in a book's information, the format column, and the duplicate finder."
     },
     "Word count" : {
-      "comment" : "Label of a book's number of words in its read-only Book Information sheet."
+      "comment" : "Label of a book's number of words in its read-only Book Information sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Número de palabras"
+          }
+        }
+      }
     },
     "Words per minute" : {
       "comment" : "Label of the voice sheet's speed slider, shown beside it.\nTitle of the default speed slider in the Voice settings."
@@ -27187,7 +28379,15 @@
       "comment" : "Last sentence of the library index recovery sheet: what still works, and what does not until an option is chosen."
     },
     "You can recover it from the Trash until the Trash is emptied." : {
-      "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Move to Trash button: the file can be recovered from the Trash."
+      "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Move to Trash button: the file can be recovered from the Trash.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Puedes recuperarlo de la Papelera hasta que la vacíes."
+          }
+        }
+      }
     },
     "You cleaned it up on %@." : {
       "comment" : "Sentence of Book Information's Transcript detail saying when the user cleaned up the transcript. %@ is a date, such as \"October 5, 2026\"."
@@ -27205,13 +28405,37 @@
       "comment" : "Line of the Transcribe Audio sheet warning that transcribing again replaces the user's own edits. %@ is a date, such as \"October 5, 2026\"."
     },
     "You will be asked whether to delete the original file permanently after each import." : {
-      "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files are deleted permanently."
+      "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files are deleted permanently.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se te preguntará si eliminar el archivo original de forma permanente después de cada importación."
+          }
+        }
+      }
     },
     "You will be asked whether to move the original file to the Trash after each import." : {
-      "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files go to the Trash."
+      "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files go to the Trash.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se te preguntará si mover el archivo original a la Papelera después de cada importación."
+          }
+        }
+      }
     },
     "You're already subscribed to %@." : {
-      "comment" : "Why Subscribe refused: the feed is already in the library. %@ is the feed's title."
+      "comment" : "Why Subscribe refused: the feed is already in the library. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ya tienes una suscripción a %@."
+          }
+        }
+      }
     },
     "Your Mac's library isn't touched." : {
       "comment" : "Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays."
@@ -27273,7 +28497,15 @@
       "comment" : "Library view editor: the name a folder condition gives a folder that is no longer in the library, inside a filter's description such as \"folder is a folder no longer in the library\"."
     },
     "a kind the system does not name" : {
-      "comment" : "Stands for the system's description of a kind of picture it has no description for, inside parentheses: \"TextMouth can't read this kind of picture (a kind the system does not name).\""
+      "comment" : "Stands for the system's description of a kind of picture it has no description for, inside parentheses: \"TextMouth can't read this kind of picture (a kind the system does not name).\"",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "un tipo que el sistema no nombra"
+          }
+        }
+      }
     },
     "a menu command has one shortcut" : {
       "comment" : "The reason, said after \"not recorded\", why a second key cannot be added to a menu command's shortcut. Lower case, since it follows a colon."
@@ -27282,7 +28514,15 @@
       "comment" : "The reason, said after \"not recorded\", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon."
     },
     "a package of its name is in both its library folder and its feed's" : {
-      "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in both folders. Lower case, without a full stop."
+      "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in both folders. Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "hay un paquete con su nombre tanto en su carpeta de la biblioteca como en la de su canal"
+          }
+        }
+      }
     },
     "about %@" : {
       "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence. %@ is a length of time in words, such as \"6 minutes\" or \"1 hour, 5 minutes\".\nPart of a checkbox's label in the Export dialog for text whose size is only close. %@ is a size such as 12 KB."
@@ -27320,10 +28560,26 @@
       }
     },
     "adding it to the library" : {
-      "comment" : "What a feed download is doing once its file has come: it is being imported as a book. Follows the download's progress line after a comma. Lower case, without a full stop."
+      "comment" : "What a feed download is doing once its file has come: it is being imported as a book. Follows the download's progress line after a comma. Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "agregándolo a la biblioteca"
+          }
+        }
+      }
     },
     "adding it to the library folder" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, adding it to the library folder\") and, capitalized by the app, starts a failure (\"Adding it to the library folder failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, adding it to the library folder\") and, capitalized by the app, starts a failure (\"Adding it to the library folder failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "agregándolo a la carpeta de la biblioteca"
+          }
+        }
+      }
     },
     "all %lld files" : {
       "comment" : "End of the transcription progress bar's spoken value once every audio file is transcribed, after \"100 percent, \". %lld is the number of files.",
@@ -27406,7 +28662,15 @@
       }
     },
     "at once" : {
-      "comment" : "The value of the days after playing that a download is deleted, when it is 0: the download is deleted as soon as it has played. Lower case."
+      "comment" : "The value of the days after playing that a download is deleted, when it is 0: the download is deleted as soon as it has played. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "de inmediato"
+          }
+        }
+      }
     },
     "at the top of the library" : {
       "comment" : "Where a copy of the library files a book, inside a sentence of Compare Libraries: not in any folder."
@@ -27415,7 +28679,15 @@
       "comment" : "Where the cursor is, said after \"the cursor is\": before the book's first page. %@ is the first page's label, an identifier written without digit grouping."
     },
     "bookmarks" : {
-      "comment" : "The bookmarks that a deleted download or several kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case."
+      "comment" : "The bookmarks that a deleted download or several kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "marcadores"
+          }
+        }
+      }
     },
     "books" : {
       "comment" : "Library view editor: the kind of row books, in lower case inside a filter's description such as \"Lists books and feeds\"."
@@ -27430,7 +28702,15 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The row's word for a view TextMouth made."
     },
     "by %@" : {
-      "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.\nWho publishes a podcast, in the line under its title in the search results. %@ is the publisher's name."
+      "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.\nWho publishes a podcast, in the line under its title in the search results. %@ is the publisher's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "de %@"
+          }
+        }
+      }
     },
     "changes to books" : {
       "comment" : "What the saving failure of books' records is about, as a noun phrase inside a sentence, with no capital letter."
@@ -27475,13 +28755,37 @@
       }
     },
     "checking its format" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking its format\") and, capitalized by the app, starts a failure (\"Checking its format failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking its format\") and, capitalized by the app, starts a failure (\"Checking its format failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "comprobando su formato"
+          }
+        }
+      }
     },
     "checking the package" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking the package\") and, capitalized by the app, starts a failure (\"Checking the package failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking the package\") and, capitalized by the app, starts a failure (\"Checking the package failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "comprobando el paquete"
+          }
+        }
+      }
     },
     "choose %@ again" : {
-      "comment" : "The next step after a refusal to delete a feed whose download is in use: \"Close it, then choose Delete Feed… again.\" %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow \"then\"."
+      "comment" : "The next step after a refusal to delete a feed whose download is in use: \"Close it, then choose Delete Feed… again.\" %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow \"then\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "elige %@ de nuevo"
+          }
+        }
+      }
     },
     "choose Make online-only" : {
       "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Dropbox. Make online-only is Dropbox's own command name."
@@ -27499,16 +28803,48 @@
       "comment" : "Reason after a colon: a rebuild left the book's text file alone because it is only in the cloud. content.md is a file name and stays as written."
     },
     "converting its DAISY audio" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its DAISY audio\") and, capitalized by the app, starts a failure (\"Converting its DAISY audio failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its DAISY audio\") and, capitalized by the app, starts a failure (\"Converting its DAISY audio failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "convirtiendo su audio DAISY"
+          }
+        }
+      }
     },
     "converting its audio" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its audio\") and, capitalized by the app, starts a failure (\"Converting its audio failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its audio\") and, capitalized by the app, starts a failure (\"Converting its audio failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "convirtiendo su audio"
+          }
+        }
+      }
     },
     "copying it into the library" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, copying it into the library\") and, capitalized by the app, starts a failure (\"Copying it into the library failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, copying it into the library\") and, capitalized by the app, starts a failure (\"Copying it into the library failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "copiándolo en la biblioteca"
+          }
+        }
+      }
     },
     "creating its package" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, creating its package\") and, capitalized by the app, starts a failure (\"Creating its package failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, creating its package\") and, capitalized by the app, starts a failure (\"Creating its package failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "creando su paquete"
+          }
+        }
+      }
     },
     "custom" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The row's word for a view the listener made."
@@ -27523,7 +28859,15 @@
       "comment" : "What deleting a book's files does when they are deleted permanently, as a verb phrase in lower case inside a sentence: \"asks whether to delete the files permanently or keep them\"."
     },
     "deleting its download" : {
-      "comment" : "What the listener tried, inside the sentence that says why a feed episode's download cannot be deleted yet: \"is being transcribed, and deleting its download now would lose the transcript\". Written as a phrase that can follow \"and\" and start a clause."
+      "comment" : "What the listener tried, inside the sentence that says why a feed episode's download cannot be deleted yet: \"is being transcribed, and deleting its download now would lose the transcript\". Written as a phrase that can follow \"and\" and start a clause.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "eliminar su descarga"
+          }
+        }
+      }
     },
     "dot %@" : {
       "comment" : "How VoiceOver says a braille cell with one raised dot. %@ is the dot's number, 1 to 8, an identifier."
@@ -27547,7 +28891,15 @@
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in every window.\": all windows. Lower case in English, since it is in the middle of a sentence."
     },
     "extracting the archive" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, extracting the archive\") and, capitalized by the app, starts a failure (\"Extracting the archive failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, extracting the archive\") and, capitalized by the app, starts a failure (\"Extracting the archive failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "extrayendo el archivo comprimido"
+          }
+        }
+      }
     },
     "fading out" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
@@ -27707,13 +29059,37 @@
       "comment" : "Status of a language's speech model that is on this Mac, said after the language's name in the Transcribe Audio sheet and Settings."
     },
     "is being exported, and %@ now would stop the export" : {
-      "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being exported. %@ is what the listener tried, a phrase such as \"deleting its download\" or \"replacing it\", which starts the second part of the sentence."
+      "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being exported. %@ is what the listener tried, a phrase such as \"deleting its download\" or \"replacing it\", which starts the second part of the sentence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "se está exportando, y %@ ahora detendría la exportación"
+          }
+        }
+      }
     },
     "is being transcribed, and %@ now would lose the transcript" : {
-      "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being transcribed. %@ is what the listener tried, a phrase such as \"deleting its download\" or \"replacing it\", which starts the second part of the sentence."
+      "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being transcribed. %@ is what the listener tried, a phrase such as \"deleting its download\" or \"replacing it\", which starts the second part of the sentence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "se está transcribiendo, y %@ ahora haría perder la transcripción"
+          }
+        }
+      }
     },
     "is open in a reader" : {
-      "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is open in a reader. A request to close it follows."
+      "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is open in a reader. A request to close it follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "está abierto en un lector"
+          }
+        }
+      }
     },
     "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app."
@@ -27731,7 +29107,15 @@
       "comment" : "Why a braille table of this Mac was refused, ending a sentence. %@ is the version of liblouis, the braille library, written as a version number."
     },
     "it downloads once this Mac is on a network without data limits" : {
-      "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row. Lower case, without a full stop."
+      "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row. Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "se descargará cuando esta Mac esté en una red sin límites de datos"
+          }
+        }
+      }
     },
     "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows." : {
       "comment" : "Reason after a colon: the edited transcript's number of chapters no longer matches the audiobook's; begins in lower case. %1$@ and %2$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.",
@@ -27770,11 +29154,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "mide %@, más de %lld de megapíxeles"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "mide %@, más de %lld megapíxel"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "mide %@, más de %lld megapíxeles"
+                }
+              }
+            }
+          }
         }
       }
     },
     "it is a kind of picture TextMouth can't read (%@)" : {
-      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: a kind of picture TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\". Starts with a lowercase letter, with no full stop."
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: a kind of picture TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\". Starts with a lowercase letter, with no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es un tipo de imagen que TextMouth no puede leer (%@)"
+          }
+        }
+      }
     },
     "it isn't UTF-8 text. Save it as UTF-8, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding."
@@ -27783,7 +29199,15 @@
       "comment" : "Reason after a colon, for an audiobook whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding."
     },
     "it lasts no time" : {
-      "comment" : "The reason inside \"The audio converted from <file> failed its check: <reason>.\": the converted file has no length at all. Starts with a lowercase letter and has no full stop, which the sentence adds."
+      "comment" : "The reason inside \"The audio converted from <file> failed its check: <reason>.\": the converted file has no length at all. Starts with a lowercase letter and has no full stop, which the sentence adds.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "no dura nada"
+          }
+        }
+      }
     },
     "it needs more than %lld MB of memory" : {
       "comment" : "Why a braille table of this Mac was refused, ending a sentence. %lld is the most memory a table may need, in megabytes.",
@@ -27809,7 +29233,15 @@
       }
     },
     "it needs room for %@ on this Mac" : {
-      "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row: the disk lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop."
+      "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row: the disk lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "necesita espacio para %@ en esta Mac"
+          }
+        }
+      }
     },
     "it translates too slowly, under %lld KB a second" : {
       "comment" : "Why a braille table of this Mac was refused, ending a sentence. %lld is the least speed a table may have, in kilobytes of text a second.",
@@ -27857,6 +29289,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "sus %lld de artículos descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "su único artículo descargado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "sus %lld artículos descargados"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -27880,6 +29336,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "sus %lld de episodios descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "su único episodio descargado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "sus %lld episodios descargados"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -27899,6 +29379,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "its %lld downloaded items"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "sus %lld de elementos descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "su único elemento descargado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "sus %lld elementos descargados"
                 }
               }
             }
@@ -27929,22 +29433,70 @@
       }
     },
     "its contents do not match the checksum stored with them" : {
-      "comment" : "Why a page's file in a comic book archive is damaged, after \"its file is damaged or incomplete:\": its bytes do not match the checksum the archive stores for them. Starts with a lowercase letter, with no full stop."
+      "comment" : "Why a page's file in a comic book archive is damaged, after \"its file is damaged or incomplete:\": its bytes do not match the checksum the archive stores for them. Starts with a lowercase letter, with no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su contenido no coincide con la suma de comprobación guardada con él"
+          }
+        }
+      }
     },
     "its downloaded article" : {
-      "comment" : "The one downloaded article of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."
+      "comment" : "The one downloaded article of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su artículo descargado"
+          }
+        }
+      }
     },
     "its downloaded episode" : {
-      "comment" : "The one downloaded episode of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."
+      "comment" : "The one downloaded episode of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su episodio descargado"
+          }
+        }
+      }
     },
     "its downloaded item" : {
-      "comment" : "The one downloaded item, an episode or an article, of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."
+      "comment" : "The one downloaded item, an episode or an article, of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su elemento descargado"
+          }
+        }
+      }
     },
     "its file could not be read as a picture" : {
-      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is no picture. Starts with a lowercase letter, with no full stop."
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is no picture. Starts with a lowercase letter, with no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su archivo no se pudo leer como imagen"
+          }
+        }
+      }
     },
     "its file is damaged or incomplete: %@" : {
-      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is damaged. %@ is the reason, which the archive reader gives in English or `failsChecksum`. Starts with a lowercase letter, with no full stop."
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is damaged. %@ is the reason, which the archive reader gives in English or `failsChecksum`. Starts with a lowercase letter, with no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su archivo está dañado o incompleto: %@"
+          }
+        }
+      }
     },
     "its files are deleted permanently and cannot be recovered" : {
       "comment" : "A clause about one book's files when it is deleted permanently, inside a sentence of a removal confirmation."
@@ -27956,16 +29508,48 @@
       "comment" : "A clause about one book's files when it is removed from the library only, inside a sentence of a removal confirmation."
     },
     "its package is in neither its library folder nor its feed's" : {
-      "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in neither folder. Lower case, without a full stop."
+      "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in neither folder. Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su paquete no está ni en la carpeta de su biblioteca ni en la de su canal"
+          }
+        }
+      }
     },
     "its picture could not be decoded" : {
-      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: the system could not decode its picture. Starts with a lowercase letter, with no full stop."
+      "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: the system could not decode its picture. Starts with a lowercase letter, with no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su imagen no se pudo decodificar"
+          }
+        }
+      }
     },
     "its row names no package the library manages" : {
-      "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library, after \"“Title” stays in its feed:\". Lower case, without a full stop."
+      "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library, after \"“Title” stays in its feed:\". Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "su fila no nombra ningún paquete que administre la biblioteca"
+          }
+        }
+      }
     },
     "keeping the place of your feed downloads for next time" : {
-      "comment" : "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop."
+      "comment" : "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "conservando el lugar de tus descargas de canales para la próxima vez"
+          }
+        }
+      }
     },
     "less than a minute" : {
       "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence, for a transcription that takes under 45 seconds."
@@ -28020,7 +29604,15 @@
       }
     },
     "more than %@" : {
-      "comment" : "A feed's size when it is longer than TextMouth reads. %@ is the size, such as \"2000 episodes\" or just \"2000\"."
+      "comment" : "A feed's size when it is longer than TextMouth reads. %@ is the size, such as \"2000 episodes\" or just \"2000\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "más de %@"
+          }
+        }
+      }
     },
     "more than %lld" : {
       "comment" : "A book's total number of matches when the count stopped at its limit, inside a longer sentence such as \"Show the first 500 of more than 1,000 matches\". %lld is the number the count stopped at.",
@@ -28071,11 +29663,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "anida citas, listas o énfasis a más de %lld de niveles de profundidad"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "anida citas, listas o énfasis a más de %lld nivel de profundidad"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "anida citas, listas o énfasis a más de %lld niveles de profundidad"
+                }
+              }
+            }
+          }
         }
       }
     },
     "never" : {
-      "comment" : "What the caption of the delete-after-playing setting says while the setting is off: \"Delete downloads after playing: never\". Lower case."
+      "comment" : "What the caption of the delete-after-playing setting says while the setting is off: \"Delete downloads after playing: never\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nunca"
+          }
+        }
+      }
     },
     "newer places in %lld books" : {
       "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many books have a newer place in this copy, a count.",
@@ -28119,7 +29743,15 @@
       "comment" : "Said in place of a list of filters or options when there are none, inside a filter message such as \"Its options are none.\""
     },
     "none downloaded" : {
-      "comment" : "What the announcement that a run of feed downloads ended says when no download finished. Lower case."
+      "comment" : "What the announcement that a run of feed downloads ended says when no download finished. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ninguno descargado"
+          }
+        }
+      }
     },
     "not added today" : {
       "comment" : "Library view editor: a condition inside a filter's description: the item was not added today."
@@ -28180,7 +29812,15 @@
       "comment" : "Status of a language that the speech recognizer cannot transcribe, said after the language's name in the Transcribe Audio sheet and Settings."
     },
     "nothing new." : {
-      "comment" : "What Refresh All Feeds found when no feed has anything new, after \"Refreshed 3 feeds:\". Lower case, with its full stop."
+      "comment" : "What Refresh All Feeds found when no feed has anything new, after \"Refreshed 3 feeds:\". Lower case, with its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "nada nuevo."
+          }
+        }
+      }
     },
     "off" : {
       "comment" : "The value of a Reading List option that is switched off, in lower case, inside a sentence of Compare Libraries: \"Reading list: “Skip finished books” is on in this copy and off in the other copy.\""
@@ -28203,7 +29843,15 @@
       }
     },
     "only at launch and when you ask" : {
-      "comment" : "What the caption of the refresh interval says while the setting is off: \"Refresh feeds every: only at launch and when you ask\". Lower case."
+      "comment" : "What the caption of the refresh interval says while the setting is off: \"Refresh feeds every: only at launch and when you ask\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "solo al abrir y cuando lo pidas"
+          }
+        }
+      }
     },
     "only the latest from each feed" : {
       "comment" : "Library view editor: a clause at the end of a filter's description, said when the view lists only the newest item of each feed."
@@ -28241,7 +29889,15 @@
       "comment" : "What the failure to remove the original files of imported books is about, as a noun phrase inside a sentence, with no capital letter."
     },
     "own settings" : {
-      "comment" : "The settings of their own that a deleted download or several kept, a noun inside a list such as \"the place and own settings kept for 1 removed download\". Lower case."
+      "comment" : "The settings of their own that a deleted download or several kept, a noun inside a list such as \"the place and own settings kept for 1 removed download\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ajustes propios"
+          }
+        }
+      }
     },
     "page %@" : {
       "comment" : "Names one page of a PDF, in a sentence about which pages were read. %@ is the page's number, an identifier written without digit grouping."
@@ -28253,10 +29909,26 @@
       "comment" : "A reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the folder.\nA reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the library's folder."
     },
     "place" : {
-      "comment" : "The place in the book that a deleted download kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case."
+      "comment" : "The place in the book that a deleted download kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "lugar"
+          }
+        }
+      }
     },
     "places" : {
-      "comment" : "The places in books that several deleted downloads kept, a noun inside a list such as \"the places and bookmarks kept for 3 removed downloads\". Lower case."
+      "comment" : "The places in books that several deleted downloads kept, a noun inside a list such as \"the places and bookmarks kept for 3 removed downloads\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "lugares"
+          }
+        }
+      }
     },
     "quiet" : {
       "comment" : "A word describing the microphone's loudness in the Record window: too quiet to be heard well. Lower case, since it follows figures."
@@ -28265,13 +29937,37 @@
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in reader windows.\": the windows where a book is read. Lower case in English, since it is in the middle of a sentence."
     },
     "reading its audio" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its audio\") and, capitalized by the app, starts a failure (\"Reading its audio failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its audio\") and, capitalized by the app, starts a failure (\"Reading its audio failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "leyendo su audio"
+          }
+        }
+      }
     },
     "reading its manifest" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its manifest\") and, capitalized by the app, starts a failure (\"Reading its manifest failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its manifest\") and, capitalized by the app, starts a failure (\"Reading its manifest failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "leyendo su manifiesto"
+          }
+        }
+      }
     },
     "reading its text" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its text\") and, capitalized by the app, starts a failure (\"Reading its text failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its text\") and, capitalized by the app, starts a failure (\"Reading its text failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "leyendo su texto"
+          }
+        }
+      }
     },
     "reading state is %@" : {
       "comment" : "Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished."
@@ -28280,7 +29976,15 @@
       "comment" : "Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished."
     },
     "reading the file" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading the file\") and, capitalized by the app, starts a failure (\"Reading the file failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading the file\") and, capitalized by the app, starts a failure (\"Reading the file failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "leyendo el archivo"
+          }
+        }
+      }
     },
     "reading the text of %lld books again in another encoding" : {
       "comment" : "What the Mac is still doing when the user quits, said after \"Quit is waiting for\" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.",
@@ -28312,13 +30016,37 @@
       "comment" : "A small tag in a substitution rule's row: the rule's pattern is a regular expression. Short for regular expression, in lower case."
     },
     "returning it to the library" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, returning it to the library\") and, capitalized by the app, starts a failure (\"Returning it to the library failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, returning it to the library\") and, capitalized by the app, starts a failure (\"Returning it to the library failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "devolviéndolo a la biblioteca"
+          }
+        }
+      }
     },
     "saving its bookInfo.json file" : {
-      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, saving its bookInfo.json file\") and, capitalized by the app, starts a failure (\"Saving its bookInfo.json file failed: ...\"). Starts with a lowercase letter and has no full stop."
+      "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, saving its bookInfo.json file\") and, capitalized by the app, starts a failure (\"Saving its bookInfo.json file failed: ...\"). Starts with a lowercase letter and has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "guardando su archivo bookInfo.json"
+          }
+        }
+      }
     },
     "saving the changes to your feed subscriptions" : {
-      "comment" : "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop."
+      "comment" : "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "guardando los cambios de tus suscripciones a canales"
+          }
+        }
+      }
     },
     "second" : {
       "comment" : "Ordinal word 2nd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
@@ -28461,6 +30189,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "lo que se conservó (%@) para %lld descargas quitadas"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "lo que se conservó (%@) para %lld descarga quitada"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "lo que se conservó (%@) para %lld descargas quitadas"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -28501,7 +30253,15 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows \"Windows-1252 (Western European)\" for a file whose bytes say nothing of their encoding and that no guess was made for."
     },
     "the download ended without a file" : {
-      "comment" : "The reason a download from a feed's server failed: it ended and left no file. Follows \"<server> couldn't be reached:\". Lower case, without a full stop."
+      "comment" : "The reason a download from a feed's server failed: it ended and left no file. Follows \"<server> couldn't be reached:\". Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "la descarga terminó sin un archivo"
+          }
+        }
+      }
     },
     "the download of “%@”" : {
       "comment" : "What a sentence calls one feed item's downloaded files, inside a sentence, in lower case. %@ is the episode's or article's title."
@@ -28510,7 +30270,15 @@
       "comment" : "Reason after a colon: an edited transcript could not be matched to the audiobook's audio; begins in lower case."
     },
     "the feed “%@”" : {
-      "comment" : "The feed itself, first in the list of what Delete Feed deleted, inside the announcement \"Deleted the feed “Finish It!”, its 5 downloaded episodes, and ...\". %@ is the feed's title. Lower case."
+      "comment" : "The feed itself, first in the list of what Delete Feed deleted, inside the announcement \"Deleted the feed “Finish It!”, its 5 downloaded episodes, and ...\". %@ is the feed's title. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "el canal “%@”"
+          }
+        }
+      }
     },
     "the file %@ could not be read quickly enough" : {
       "comment" : "A clause that ends a longer sentence about an audio file that cannot play: the disk was too slow. %@ is the file's name, such as 03.mp3."
@@ -28566,13 +30334,37 @@
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in the recording window.\": the Record window. Lower case in English, since it is in the middle of a sentence."
     },
     "the server" : {
-      "comment" : "What a message calls a feed's server when its address names no host, as in \"the server sent no answer\". Lower case."
+      "comment" : "What a message calls a feed's server when its address names no host, as in \"the server sent no answer\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "el servidor"
+          }
+        }
+      }
     },
     "the server sent no answer" : {
-      "comment" : "The reason a connection to a feed's server failed: it sent nothing back. Follows \"<server> couldn't be reached:\". Lower case, without a full stop."
+      "comment" : "The reason a connection to a feed's server failed: it sent nothing back. Follows \"<server> couldn't be reached:\". Lower case, without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "el servidor no envió ninguna respuesta"
+          }
+        }
+      }
     },
     "the top of your library" : {
-      "comment" : "Where a book is when it is in no library folder, as in \"Moved “Ep. 368” into the top of your library.\" Lower case."
+      "comment" : "Where a book is when it is in no library folder, as in \"Moved “Ep. 368” into the top of your library.\" Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "la parte superior de tu biblioteca"
+          }
+        }
+      }
     },
     "their files are deleted permanently and cannot be recovered" : {
       "comment" : "A clause about several books' files when they are deleted permanently, inside a sentence of a removal confirmation."
@@ -28593,7 +30385,15 @@
       "comment" : "What the Compare Libraries sheet calls the library in use inside a sentence, in lower case: \"Book only in this copy\"."
     },
     "this format" : {
-      "comment" : "Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in \"TextMouth can't read “Clip” as this format.\""
+      "comment" : "Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in \"TextMouth can't read “Clip” as this format.\"",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "este formato"
+          }
+        }
+      }
     },
     "title or author contains “%@”" : {
       "comment" : "Library view editor: a condition inside a filter's description. %@ is the text the listener typed to look for."
@@ -28602,19 +30402,51 @@
       "comment" : "Library view editor: a condition inside a filter's description. %@ is the text the listener typed to look for."
     },
     "today at %@" : {
-      "comment" : "A moment on the day of the check. %@ is the time of day, such as 3:05 PM. Lower case."
+      "comment" : "A moment on the day of the check. %@ is the time of day, such as 3:05 PM. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "hoy a las %@"
+          }
+        }
+      }
     },
     "too loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: peaks reach the top and are cut off. Lower case, since it follows figures."
     },
     "transcript" : {
-      "comment" : "The transcript that a deleted download kept, a noun inside a list such as \"the place and transcript kept for 1 removed download\". Lower case."
+      "comment" : "The transcript that a deleted download kept, a noun inside a list such as \"the place and transcript kept for 1 removed download\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "transcripción"
+          }
+        }
+      }
     },
     "transcripts" : {
-      "comment" : "The transcripts that several deleted downloads kept, a noun inside a list such as \"the places and transcripts kept for 3 removed downloads\". Lower case."
+      "comment" : "The transcripts that several deleted downloads kept, a noun inside a list such as \"the places and transcripts kept for 3 removed downloads\". Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "transcripciones"
+          }
+        }
+      }
     },
     "try again" : {
-      "comment" : "The next step after a refusal, when the listener repeats the command: \"Close it, then try again.\" Written in lower case, without a full stop, to follow \"then\"."
+      "comment" : "The next step after a refusal, when the listener repeats the command: \"Close it, then try again.\" Written in lower case, without a full stop, to follow \"then\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "vuelve a intentarlo"
+          }
+        }
+      }
     },
     "unknown length" : {
       "comment" : "A length of audio that is no length (not a finite number of seconds), said in a sentence, such as \"Cut unknown length.\""
@@ -28654,6 +30486,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "lo que se conservó para %lld descargas quitadas"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "lo que se conservó para %lld descarga quitada"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "lo que se conservó para %lld descargas quitadas"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -28664,7 +30520,15 @@
       "comment" : "A small tag in a substitution rule's row: the rule matches whole words only. In lower case."
     },
     "yesterday at %@" : {
-      "comment" : "A moment on the day before the check. %@ is the time of day, such as 9:00 AM. Lower case."
+      "comment" : "A moment on the day before the check. %@ is the time of day, such as 9:00 AM. Lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ayer a las %@"
+          }
+        }
+      }
     },
     "you stopped the comparison" : {
       "comment" : "A reason, in a clause with no capital letter and no full stop, that Use This Library could not tell which copy of the library is newer: the listener cancelled the comparison."
@@ -28678,6 +30542,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "“%1$@” (%2$@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "“%1$@” (%2$@)"
           }
         }
@@ -28728,7 +30598,15 @@
       }
     },
     "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again." : {
-      "comment" : "What the duplicate question says when the library's copy changed while the new copy was being made ready. %@ is the book's title. \"Replace Existing\" is a button of the question."
+      "comment" : "What the duplicate question says when the library's copy changed while the new copy was being made ready. %@ is the book's title. \"Replace Existing\" is a button of the question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” cambió mientras se reemplazaba, así que TextMouth dejó ambas copias como están. Elige Reemplazar el existente de nuevo."
+          }
+        }
+      }
     },
     "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@" : {
       "comment" : "Failure notice: a book's files could not be put back after a move failed. %1$@ is the book's title; %2$@ is where its files are now; %3$@ is where they belong; %4$@ is the reason, a sentence from the system.",
@@ -28756,13 +30634,37 @@
       }
     },
     "“%@” downloads once this Mac is on a network without data limits." : {
-      "comment" : "Why a feed item's download did not run now: the network has data limits. Says the same as the row's wait reason. %@ is the item's title."
+      "comment" : "Why a feed item's download did not run now: the network has data limits. Says the same as the row's wait reason. %@ is the item's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” se descargará cuando esta Mac esté en una red sin límites de datos."
+          }
+        }
+      }
     },
     "“%@” holds no DAISY book and no audio tracks to import as one book." : {
-      "comment" : "What the library says as a folder chosen to import holds no DAISY book and no audio tracks. %@ is the folder's name. A sentence about what it holds follows."
+      "comment" : "What the library says as a folder chosen to import holds no DAISY book and no audio tracks. %@ is the folder's name. A sentence about what it holds follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” no contiene ningún libro DAISY ni pistas de audio para importar como un solo libro."
+          }
+        }
+      }
     },
     "“%@” holds no sound to import." : {
-      "comment" : "Why a file was not imported: it holds no sound, such as a video without a sound track. %@ is the file's name."
+      "comment" : "Why a file was not imported: it holds no sound, such as a video without a sound track. %@ is the file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” no contiene sonido que importar."
+          }
+        }
+      }
     },
     "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again." : {
       "comment" : "Why a spoken audio export was refused: the book's voice is a Personal Voice. %1$@ is the voice's name and %2$@ the name of the Voice button in the book's reader.",
@@ -28776,10 +30678,26 @@
       }
     },
     "“%@” is a pronunciation lexicon, not a playlist." : {
-      "comment" : "Refusal of a .pls file that is a pronunciation lexicon, not a playlist. %@ is the file's name."
+      "comment" : "Refusal of a .pls file that is a pronunciation lexicon, not a playlist. %@ is the file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” es un léxico de pronunciación, no una lista de reproducción."
+          }
+        }
+      }
     },
     "“%@” is already being added to the library." : {
-      "comment" : "What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title."
+      "comment" : "What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” ya se está agregando a la biblioteca."
+          }
+        }
+      }
     },
     "“%@” is an XML file, but not a pronunciation lexicon." : {
       "comment" : "Message of the alert when a file chosen as a pronunciation lexicon is XML of another kind. %@ is the file's name."
@@ -28843,6 +30761,12 @@
             "state" : "new",
             "value" : "“%1$@” matches “%2$@”, already in your library. Replace the existing copy, or keep both as separate books?"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” coincide con “%2$@”, que ya está en tu biblioteca. ¿Quieres reemplazar la copia existente o conservar ambas como libros separados?"
+          }
         }
       }
     },
@@ -28854,6 +30778,12 @@
             "state" : "new",
             "value" : "“%1$@” needs %2$@ free"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” necesita %2$@ libres"
+          }
         }
       }
     },
@@ -28864,6 +30794,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "“%1$@” no longer waits to download; it downloads when you choose %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” ya no espera para descargarse; se descargará cuando elijas %2$@."
           }
         }
       }
@@ -28918,6 +30854,12 @@
             "state" : "new",
             "value" : "“%1$@”, %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”, %2$@"
+          }
         }
       }
     },
@@ -28927,6 +30869,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "“%1$@”, %2$@: %3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "“%1$@”, %2$@: %3$@"
           }
         }
