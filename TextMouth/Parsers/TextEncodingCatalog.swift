@@ -106,7 +106,7 @@ enum TextEncodingCatalog {
                               comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.")
             case .macCentralEuropean:
                 return String(localized: "Mac Central European",
-                              comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. "Mac" stays as it is.")
+                              comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.")
             case .windows1251:
                 return String(localized: "Windows-1251 (Cyrillic)",
                               comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.")
@@ -124,7 +124,7 @@ enum TextEncodingCatalog {
                               comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.")
             case .macCyrillic:
                 return String(localized: "Mac Cyrillic",
-                              comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. "Mac" stays as it is.")
+                              comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.")
             case .windows1253:
                 return String(localized: "Windows-1253 (Greek)",
                               comment: "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.")
