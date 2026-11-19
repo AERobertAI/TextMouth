@@ -15877,6 +15877,20 @@
         }
       }
     },
+    "TextMouth stopped %@ because %@, and won't try again until TextMouth is closed and opened again." : {
+      "comment" : "Said when a library call inside the iPhone app ran too long and was abandoned. %1$@ is the work's name, such as \"the braille translation\" (English until its area converts); %2$@ is why it was stopped, such as \"it ran longer than 11 seconds\" (English until the watchdog's area converts). Read after an import's own words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth stopped %1$@ because %2$@, and won't try again until TextMouth is closed and opened again."
+          }
+        }
+      }
+    },
+    "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again." : {
+      "comment" : "Said when a library call inside the iPhone app is refused because an earlier one was abandoned for taking too long. %@ is the work's name, such as \"the braille translation\" (English until its area converts). Read after an import's own words."
+    },
     "TextMouth stopped reading this document because %@." : {
       "comment" : "Why a document was refused at import: the program that reads it ran too long or used too much memory and was stopped. %@ is the reason, a clause in English that follows \"because\"."
     },

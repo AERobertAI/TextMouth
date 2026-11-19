@@ -38,6 +38,7 @@ TextMouth/Models/FolderOperationConflict.swift
 TextMouth/Models/FolderSettingsWording.swift
 TextMouth/Models/ImportDecision.swift
 TextMouth/Models/ImportProgressWording.swift
+TextMouth/Models/InProcessEngineWording.swift
 TextMouth/Models/JSONValue.swift
 TextMouth/Models/KeyboardShortcut.swift
 TextMouth/Models/LeadingArticleWording.swift

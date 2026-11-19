@@ -13,9 +13,6 @@ import Foundation
 /// thread and all, so a listener who only switched back to TextMouth would
 /// hear the same refusal (the review of November 16, finding 1).
 enum InProcessEngineWording {
-    /// What every sentence ends with: when the engine will try again.
-    private static let untilRelaunched = "won't try again until TextMouth is closed and opened again"
-
     /// A call abandoned past its limit: "TextMouth stopped the braille
     /// translation because it ran longer than 11 seconds, and won't try
     /// again until TextMouth is closed and opened again." The reason is the
@@ -24,14 +21,18 @@ enum InProcessEngineWording {
     /// since a call whose time was already spent when it began still ran for
     /// some.
     static func abandoned(_ work: String, seconds: TimeInterval) -> String {
-        let reason = WatchedProcess.KillReason.tookTooLong(seconds: max(1, seconds)).words
-        return "TextMouth stopped \(work) because \(reason), and \(untilRelaunched)."
+        // `work` and `reason` are English fragments of other areas (the engine's
+        // owner names its work; the watchdog words its reason) until those convert.
+        let reason = WatchedProcess.KillReason.tookTooLong(seconds: max(1, seconds)).words // l10n: no (inside this sentence until the watchdog's area converts)
+        return String(localized: "TextMouth stopped \(work) because \(reason), and won't try again until TextMouth is closed and opened again.",
+                      comment: "Said when a library call inside the iPhone app ran too long and was abandoned. %1$@ is the work's name, such as \"the braille translation\" (English until its area converts); %2$@ is why it was stopped, such as \"it ran longer than 11 seconds\" (English until the watchdog's area converts). Read after an import's own words.")
     }
 
     /// A call refused because an earlier one was abandoned: "TextMouth
     /// stopped the braille translation earlier because it took too long,
     /// and won't try again until TextMouth is closed and opened again."
     static func refused(_ work: String) -> String {
-        "TextMouth stopped \(work) earlier because it took too long, and \(untilRelaunched)."
+        String(localized: "TextMouth stopped \(work) earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+               comment: "Said when a library call inside the iPhone app is refused because an earlier one was abandoned for taking too long. %@ is the work's name, such as \"the braille translation\" (English until its area converts). Read after an import's own words.")
     }
 }
