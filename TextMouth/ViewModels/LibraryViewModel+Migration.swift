@@ -2589,7 +2589,7 @@ struct TextMouthRelauncher {
         // (phase 0): opening throws, so Use This Library reports it, and
         // quitting does nothing, so this instance carries on.
         return TextMouthRelauncher(
-            openNewInstance: { throw IOSUnavailable.feature("Opening TextMouth again") // l10n: no (a feature name in an error the iPhone never shows) },
+            openNewInstance: { throw IOSUnavailable.feature("Opening TextMouth again") }, // l10n: no (a feature name in an error the iPhone never shows)
             quit: {}
         )
         #endif

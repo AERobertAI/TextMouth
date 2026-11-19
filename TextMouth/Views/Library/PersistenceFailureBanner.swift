@@ -31,7 +31,7 @@ struct PersistenceFailureBanner: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.orange.opacity(0.15))
             .accessibilityElement(children: .contain)
-            .accessibilityLabel(Self.bannerLabel)
+            .accessibilityLabel(PersistenceFailureBannerRowView.bannerLabel)
         }
     }
 }
