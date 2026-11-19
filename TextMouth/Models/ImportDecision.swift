@@ -235,9 +235,15 @@ struct ImportDecisionWording: Equatable {
     let replacesAcrossKinds: Bool
 
     /// The title of a duplicate's question.
-    static let duplicateTitle = "Duplicate Book Found"
+    static var duplicateTitle: String {
+        String(localized: "Duplicate Book Found",
+               comment: "Title of the question asked when a book just imported matches one already in the library. Title case.")
+    }
     /// The title of a ZIP archive's folder question.
-    static let zipFolderTitle = "Create Folder for Imported Books?"
+    static var zipFolderTitle: String {
+        String(localized: "Create Folder for Imported Books?",
+               comment: "Title of the question asked when a ZIP archive added several books: whether to put them in a new folder. Title case.")
+    }
 
     /// The wording of `decision`, the question at `position` of the `total`
     /// asked since none was waiting.
@@ -283,9 +289,7 @@ struct ImportDecisionWording: Equatable {
             originalFile = deletion
         case .zipFolder(let batch):
             title = Self.counted(Self.zipFolderTitle, position: position, total: total)
-            message = "\(CountWording.books(batch.books.count)) were imported from "
-                + "“\(batch.archiveURL.lastPathComponent)”. "
-                + "Would you like to create a new folder to hold them?"
+            message = Self.zipFolderMessage(count: batch.books.count, archive: batch.archiveURL.lastPathComponent)
             originalFile = nil
         case .transcriptionOffer(let offer):
             title = Self.counted(TranscriptionWording.offerQuestionTitle, position: position, total: total)
@@ -297,7 +301,18 @@ struct ImportDecisionWording: Equatable {
     /// What VoiceOver announces when the question appears: its title, then
     /// what it asks.
     var announcement: String {
-        "\(Self.endingSentence(title)) \(message)"
+        SentenceWording.joined([Self.endingSentence(title), message])
+    }
+
+    /// What the question about a ZIP archive's books asks: how many books
+    /// came from the archive named `archive`, and whether to put them in a
+    /// new folder.
+    private static func zipFolderMessage(count: Int, archive: String) -> String {
+        let imported = String(localized: "\(count) books were imported from “\(archive)”.",
+                              comment: "First sentence of the question asked when a ZIP archive added several books. %1$lld is the number of books and %2$@ the archive's file name.")
+        let ask = String(localized: "Would you like to create a new folder to hold them?",
+                         comment: "Second sentence of the question asked when a ZIP archive added several books: whether to put them in a new folder. \"Them\" is the books.")
+        return SentenceWording.joined([imported, ask])
     }
 
     /// `title` followed by the question's place, as in "Duplicate Book
@@ -305,8 +320,13 @@ struct ImportDecisionWording: Equatable {
     /// title that ends in a question mark already pauses there.
     static func counted(_ title: String, position: Int, total: Int) -> String {
         guard total > 1 else { return title }
-        let separator = title.hasSuffix("?") ? " " : ", "
-        return "\(title)\(separator)\(position) of \(total)"
+        // A title that ends in a question mark already pauses there.
+        if title.hasSuffix("?") {
+            return String(localized: "\(title) \(position) of \(total)",
+                          comment: "A question's title followed by its place among the questions waiting, when the title ends in a question mark. %1$@ is the title, %2$lld the question's place and %3$lld the number of questions, such as \"Create Folder for Imported Books? 2 of 3\".")
+        }
+        return String(localized: "\(title), \(position) of \(total)",
+                      comment: "A question's title, a comma, then its place among the questions waiting. %1$@ is the title, %2$lld the question's place and %3$lld the number of questions, such as \"Duplicate Book Found, 2 of 3\".")
     }
 
     /// What Replace Existing keeps of the library's copy of a text book, and
@@ -315,41 +335,48 @@ struct ImportDecisionWording: Equatable {
     /// words nothing finds keeps its place in the text), and an edit of the
     /// old text is kept as a copy, never laid over the new text
     /// (`DuplicateReplacement`).
-    static let replacingKeepsTextSentence =
-        "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text "
-        + "wherever those are found, and its settings, folder, and place on the reading list. "
-        + "An edit of its text is kept beside the new text as a copy, not applied to it."
+    static var replacingKeepsTextSentence: String {
+        String(localized: "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text wherever those are found, and its settings, folder, and place on the reading list. An edit of its text is kept beside the new text as a copy, not applied to it.",
+               comment: "Part of the question asked about a duplicate book that is read from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy.")
+    }
 
     /// What Replace Existing keeps of the library's copy of an audiobook,
     /// and what it does not (ST04): its transcript only for the same audio,
     /// and never its audio edits or an edit of its manifest (FR17), which
     /// are edits of the old copy's files; its places follow their tracks, or
     /// their times (`DuplicateReplacement.movedAudioPlaces`).
-    static let replacingKeepsAudioSentence =
-        "\(replacingKeepsAudioPlaces), and its transcript when the audio is the same. \(audioEditsNotKept)"
+    static var replacingKeepsAudioSentence: String {
+        let kept = String(localized: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same.",
+                          comment: "Part of the question asked about a duplicate audiobook: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy. A sentence about what is not kept follows.")
+        return SentenceWording.joined([kept, audioEditsNotKept])
+    }
 
     /// What Replace Existing keeps of an audiobook when the new copy brought
     /// a transcript from a file beside its audio (FMT23) and the existing
     /// copy's transcript is kept over it (`DuplicateReplacement.TranscriptOutcome.keepsExisting`).
-    static let replacingKeepsAudioOverBroughtTranscriptSentence =
-        "\(replacingKeepsAudioPlaces), and its transcript when the audio is the same, rather than "
-        + "the transcript file found beside the new copy's audio. \(audioEditsNotKept)"
+    static var replacingKeepsAudioOverBroughtTranscriptSentence: String {
+        let kept = String(localized: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same, rather than the transcript file found beside the new copy's audio.",
+                          comment: "Part of the question asked about a duplicate audiobook whose new copy came with a transcript file beside its audio: Replace Existing keeps the library copy's own transcript over that file. \"The existing copy\" is the library's copy. A sentence about what is not kept follows.")
+        return SentenceWording.joined([kept, audioEditsNotKept])
+    }
 
     /// What Replace Existing keeps of an audiobook when the transcript the
     /// new copy brought from a file beside its audio takes the place of the
     /// existing copy's (`DuplicateReplacement.TranscriptOutcome.broughtReplacesExisting`).
-    static let replacingWithBroughtTranscriptSentence =
-        "\(replacingKeepsAudioPlaces). The transcript file found beside the new copy's audio replaces "
-        + "the existing copy's transcript. \(audioEditsNotKept)"
-
-    /// What every sentence of what Replace Existing keeps of an audiobook
-    /// begins with.
-    private static let replacingKeepsAudioPlaces =
-        "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list"
+    static var replacingWithBroughtTranscriptSentence: String {
+        let kept = String(localized: "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list.",
+                          comment: "Part of the question asked about a duplicate audiobook whose new copy came with a transcript file beside its audio: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy. Sentences about the transcript and what is not kept follow.")
+        let transcript = String(localized: "The transcript file found beside the new copy's audio replaces the existing copy's transcript.",
+                                comment: "Part of the question asked about a duplicate audiobook: the transcript file found beside the new copy's audio takes the place of the library copy's transcript.")
+        return SentenceWording.joined([kept, transcript, audioEditsNotKept])
+    }
 
     /// What every sentence of what Replace Existing keeps of an audiobook
     /// ends with.
-    private static let audioEditsNotKept = "Edits of its audio or of its manifest are not kept."
+    private static var audioEditsNotKept: String {
+        String(localized: "Edits of its audio or of its manifest are not kept.",
+               comment: "Last sentence of what Replace Existing keeps of a duplicate audiobook: the library copy's edits of its audio or of its manifest are lost.")
+    }
 
     /// What Replace Existing keeps when one copy is an audiobook and the
     /// other is not (ST04): only the book's place in the library. A place in
@@ -360,10 +387,10 @@ struct ImportDecisionWording: Equatable {
     /// tells the copies apart by how TextMouth reads them, never calling one
     /// "not an audiobook": a DAISY talking book, which TextMouth reads from
     /// its text, is an audiobook to its owner (ST04 verify, finding 2).
-    static let replacingAcrossKindsSentence =
-        "One copy is played from its recording and the other is read aloud from its text, so replacing keeps "
-        + "only the existing copy's folder and place on the reading list, not its reading position, "
-        + "its bookmarks and their notes, or its settings."
+    static var replacingAcrossKindsSentence: String {
+        String(localized: "One copy is played from its recording and the other is read aloud from its text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, its bookmarks and their notes, or its settings.",
+               comment: "Part of the question asked about a duplicate where one copy is an audiobook played from a recording and the other is read aloud from text: what Replace Existing keeps of the library's copy. \"The existing copy\" is the library's copy.")
+    }
 
     /// What Replace Existing keeps of the library's copy, in the format
     /// `existing`, for a new copy in the format `new`: chosen from both
@@ -392,9 +419,11 @@ struct ImportDecisionWording: Equatable {
     /// the files go in a removal's own words (`RemovalMode`).
     static func replacedCopySentence(movesToTrash: Bool) -> String {
         guard !movesToTrash else {
-            return "The existing copy's files go to the Trash, but putting them back won't return that copy to your library."
+            return String(localized: "The existing copy's files go to the Trash, but putting them back won't return that copy to your library.",
+                          comment: "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files go to the Trash.")
         }
-        return RemovalMode.deletePermanently.filesClause(of: "The existing copy's") + "."
+        return String(localized: "The existing copy's files are deleted permanently and cannot be recovered.",
+                      comment: "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files are deleted permanently.")
     }
 
     /// What a duplicate's question asks: which file matches which book, the
@@ -413,23 +442,30 @@ struct ImportDecisionWording: Equatable {
         let newCopy = duplicate.book.sourceFilePath
             .flatMap { $0.isEmpty ? nil : URL(fileURLWithPath: $0).lastPathComponent }
             ?? duplicate.book.title
-        let choice = "“\(newCopy)” matches “\(matchingTitle)”, which is already in your library. "
-            + "Replace the existing copy, or keep both as separate books?"
+        let choice = String(localized: "“\(newCopy)” matches “\(matchingTitle)”, which is already in your library. Replace the existing copy, or keep both as separate books?",
+                            comment: "First paragraph of the question asked when a book just imported matches one in the library. %1$@ is the new copy's file name (or its title when it came from no file) and %2$@ the title of the library's copy.")
         let kept = replacingKeepsSentence(
             existing: matchingFormat,
             new: duplicate.book.format,
             transcript: duplicate.transcriptOutcome
         )
-        let question = choice + "\n\n" + kept + " " + replacedCopySentence(movesToTrash: movesToTrash)
-        guard let warning = duplicate.warning else { return question }
-        return question + "\n\nThe copy just imported is incomplete. \(warning)"
+        // Paragraphs: the choice, what is kept and where the old copy goes,
+        // and, for an incomplete copy, what it lacks.
+        var paragraphs = [choice, SentenceWording.joined([kept, replacedCopySentence(movesToTrash: movesToTrash)])]
+        if let warning = duplicate.warning {
+            let incomplete = String(localized: "The copy just imported is incomplete.",
+                                    comment: "First sentence of the last paragraph of the question asked about a duplicate book whose new copy is missing chapters. What it lacks follows.")
+            paragraphs.append(SentenceWording.joined([incomplete, warning]))
+        }
+        return paragraphs.joined(separator: "\n\n")
     }
 
     /// `text` ending a sentence: as it is when it ends in a full stop,
     /// question mark, or exclamation mark, and with a full stop otherwise.
     private static func endingSentence(_ text: String) -> String {
         guard let last = text.last, !".?!".contains(last) else { return text }
-        return text + "."
+        return String(localized: "\(text).",
+                      comment: "Ends a title with a full stop so it reads as a sentence before the question that follows. %@ is the title.")
     }
 }
 
@@ -445,8 +481,8 @@ enum DuplicateCopyWording {
     /// keep the new copy of “Atlas of Tides”. Answer again once the library
     /// is back." The copy is intact, so Cancel is not offered.
     static func libraryUnreachable(bookTitle: String) -> String {
-        "The library can't be reached right now, so TextMouth can't keep the new copy of “\(bookTitle)”. "
-            + "Answer again once the library is back."
+        String(localized: "The library can't be reached right now, so TextMouth can't keep the new copy of “\(bookTitle)”. Answer again once the library is back.",
+               comment: "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title.")
     }
 
     /// What they say when the new copy's package is gone while its question
@@ -456,8 +492,8 @@ enum DuplicateCopyWording {
     /// file again." The file the copy came from, which an unanswered copy
     /// never deletes, can be imported again.
     static func copyGone(bookTitle: String) -> String {
-        "The files of the new copy of “\(bookTitle)” are no longer in the library, so it can't be kept. "
-            + "Choose Cancel, then import the file again."
+        String(localized: "The files of the new copy of “\(bookTitle)” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again.",
+               comment: "What the duplicate question says when the new copy's files are gone while the question waited. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button.")
     }
 
     /// What Keep Both says when the mark that the copy waits for an answer
@@ -465,22 +501,26 @@ enum DuplicateCopyWording {
     /// “Atlas of Tides”. Choose Cancel to discard the copy, then import the
     /// file again."
     static func markerStays(bookTitle: String) -> String {
-        "TextMouth could not keep the new copy of “\(bookTitle)”. "
-            + "Choose Cancel to discard the copy, then import the file again."
+        String(localized: "TextMouth could not keep the new copy of “\(bookTitle)”. Choose Cancel to discard the copy, then import the file again.",
+               comment: "What the duplicate question says when Keep Both could not take the waiting mark off the new copy. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button.")
     }
 
     /// What an answer says, keeping its question, while the answer to a
     /// question is being carried out off the main actor (Replace Existing of
     /// a book that takes a while to read again): no other answer acts
     /// meanwhile.
-    static let answerUnderWay = "TextMouth is still carrying out your last answer. Wait until it finishes."
+    static var answerUnderWay: String {
+        String(localized: "TextMouth is still carrying out your last answer. Wait until it finishes.",
+               comment: "What an import question says when it is answered again while the previous answer is still being carried out.")
+    }
 
     /// What VoiceOver hears as Replace Existing begins for the book titled
     /// `bookTitle`, which can take a moment (a long braille book is read
     /// again in the braille file characters it was read in): the sheet's
     /// buttons are dimmed until the answer is done.
     static func replacing(bookTitle: String) -> String {
-        "Replacing “\(bookTitle)”. This can take a moment."
+        String(localized: "Replacing “\(bookTitle)”. This can take a moment.",
+               comment: "VoiceOver announcement as Replace Existing begins for a duplicate book; the sheet's buttons are dimmed until it is done. %@ is the book's title.")
     }
 
     /// Why what would rewrite the text of the book titled `bookTitle`, or
@@ -489,7 +529,8 @@ enum DuplicateCopyWording {
     /// a second re-read of it, Edit Text, Redo Text Extraction, a second
     /// replacement, and a reader opening it.
     static func replacingRefusal(bookTitle: String) -> String {
-        "TextMouth is replacing “\(bookTitle)” with the new copy. Try again when that finishes."
+        String(localized: "TextMouth is replacing “\(bookTitle)” with the new copy. Try again when that finishes.",
+               comment: "Why an action on a book is refused while Replace Existing makes the new copy ready, such as Edit Text or opening the book. %@ is the book's title.")
     }
 
     /// What Replace Existing says, keeping the question, when the library's
@@ -497,13 +538,16 @@ enum DuplicateCopyWording {
     /// being made ready to take its place: what the replacement carried over
     /// would be out of date. Both copies are left as they are.
     static func changedWhileReplacing(bookTitle: String) -> String {
-        "“\(bookTitle)” changed while it was being replaced, so TextMouth left both copies as they are. "
-            + "Choose Replace Existing again."
+        String(localized: "“\(bookTitle)” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+               comment: "What the duplicate question says when the library's copy changed while the new copy was being made ready. %@ is the book's title. \"Replace Existing\" is a button of the question.")
     }
 
     /// The title of the alert that tells of copies the launch moved to the
     /// Trash.
-    static let unansweredTrashedTitle = "Duplicate Copies Moved to the Trash"
+    static var unansweredTrashedTitle: String {
+        String(localized: "Duplicate Copies Moved to the Trash",
+               comment: "Title of the alert that tells of new copies of duplicate books that the launch moved to the Trash. Title case.")
+    }
 
     /// What the launch says once it has moved the new copies of `titles`
     /// to the Trash, because the question whether to keep each as a
@@ -513,20 +557,18 @@ enum DuplicateCopyWording {
     /// Trash and choose Put Back." Up to three books are named; more are
     /// counted.
     static func unansweredTrashed(titles: [String]) -> String {
-        let one = titles.count == 1
-        let subject: String
         switch titles.count {
         case 1:
-            subject = "the new copy of “\(titles[0])”"
+            return String(localized: "TextMouth moved the new copy of “\(titles[0])” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+                          comment: "Alert after the launch moved the new copy of one duplicate book to the Trash, because its question was never answered. %@ is the book's title. \"Put Back\" is Finder's command in the Trash.")
         case 2...3:
-            subject = "the new copies of \(CountWording.list(titles.map { "“\($0)”" }))"
+            let listed = CountWording.list(titles.map { "“\($0)”" })
+            return String(localized: "TextMouth moved the new copies of \(listed) to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+                          comment: "Alert after the launch moved the new copies of two or three duplicate books to the Trash, because their questions were never answered. %@ is their titles in curly quotes, listed as a sentence lists them. \"Put Back\" is Finder's command in the Trash.")
         default:
-            subject = "\(titles.count) new copies of duplicate books"
+            return String(localized: "TextMouth moved \(titles.count) new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+                          comment: "Alert after the launch moved the new copies of four or more duplicate books to the Trash, because their questions were never answered. %lld is the number of books. \"Put Back\" is Finder's command in the Trash.")
         }
-        return "TextMouth moved \(subject) to the Trash, because the \(one ? "question" : "questions") "
-            + "whether to keep \(one ? "it" : "them") as \(one ? "a duplicate" : "duplicates") "
-            + "\(one ? "was" : "were") never answered before TextMouth closed. "
-            + "To get \(one ? "it" : "them") back, open the Trash and choose Put Back."
     }
 }
 
@@ -543,17 +585,16 @@ enum DAISYArchiveWording {
     /// "TextMouth imported only the DAISY book “Harbour Pilots” from the
     /// archive “pilots.zip”" in the first.
     static func originalKept(bookTitle: String, leftovers: DAISYArchiveLeftovers) -> String {
-        let archive = "the archive “\(leftovers.archiveName)”"
+        let name = leftovers.archiveName
         let lead = leftovers.holdsText
-            ? "TextMouth imported the audio of “\(bookTitle)” from \(archive), and the archive is the only copy of its text"
-            : "TextMouth imported only the DAISY book “\(bookTitle)” from \(archive)"
-        var notice = "The original file was kept: \(lead)."
+            ? String(localized: "The original file was kept: TextMouth imported the audio of “\(bookTitle)” from the archive “\(name)”, and the archive is the only copy of its text.",
+                     comment: "Notice after the audio of a DAISY book was imported from an archive that keeps its text, so the original file was kept. %1$@ is the book's title and %2$@ the archive's file name.")
+            : String(localized: "The original file was kept: TextMouth imported only the DAISY book “\(bookTitle)” from the archive “\(name)”.",
+                     comment: "Notice after one DAISY book was imported from an archive of other books, so the original file was kept. %1$@ is the book's title and %2$@ the archive's file name. A sentence about the other books follows.")
         let others = leftovers.otherBookCount
-        if others > 0 {
-            let phrase = CountWording.phrase(others, singular: "other book", plural: "other books")
-            notice += " The archive also holds \(phrase) that \(others == 1 ? "was" : "were") not imported; "
-                + "unzip it to import \(others == 1 ? "it" : "them")."
-        }
-        return notice
+        guard others > 0 else { return lead }
+        let rest = String(localized: "The archive also holds \(others) other books that were not imported; unzip it to import them.",
+                          comment: "Second sentence of the notice about an archive that holds other books than the one imported. %lld is the number of other books.")
+        return SentenceWording.joined([lead, rest])
     }
 }

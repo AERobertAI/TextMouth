@@ -234,7 +234,7 @@ enum OwnAudioConverter {
         }
         let input = AVAssetWriterInput(mediaType: .audio, outputSettings: settings.outputSettings)
         input.expectsMediaDataInRealTime = false
-        guard writer.canAdd(input) else { throw AudioEditError.renderFailed("the writer refused the audio") }
+        guard writer.canAdd(input) else { throw AudioEditError.renderFailed("the writer refused the audio") } // l10n: no (a technical reason in English inside AudioEditError.renderFailed, as the other writers give it)
         writer.add(input)
         let items = metadataItems(for: tags)
         if !items.isEmpty { writer.metadata = items }

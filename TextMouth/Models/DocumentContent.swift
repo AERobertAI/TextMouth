@@ -328,8 +328,12 @@ struct HeadingPosition: Equatable {
     /// book without headings (callers drop empty parts rather than speak them).
     var label: String {
         guard count > 0 else { return "" }
-        guard let number else { return "Before heading 1 of \(count)" }
-        return "Heading \(number) of \(count)"
+        guard let number else {
+            return String(localized: "Before heading 1 of \(count)",
+                          comment: "Where the reader is when it precedes the first heading of a book. %lld is the number of headings in the book.")
+        }
+        return String(localized: "Heading \(number) of \(count)",
+                      comment: "Where the reader is: the heading it is in. %1$lld is that heading's place among the book's headings and %2$lld the number of headings.")
     }
 
     /// The containing heading's text, or nil before the first heading or when
@@ -526,7 +530,10 @@ enum SleepTimerDuration: Hashable {
 enum TimeFormatting {
     /// Format seconds to h:mm:ss or m:ss (for visual display)
     static func format(_ seconds: TimeInterval) -> String {
-        guard let totalSeconds = wholeSeconds(seconds) else { return "Unknown" }
+        guard let totalSeconds = wholeSeconds(seconds) else {
+            return String(localized: "Unknown",
+                          comment: "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.")
+        }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let secs = totalSeconds % 60
@@ -539,7 +546,10 @@ enum TimeFormatting {
     /// Format seconds as spoken words for VoiceOver (e.g. "1 hour, 3 minutes, 45 seconds").
     /// Omits zero-valued leading fields so "0:54:35" becomes "54 minutes, 35 seconds".
     static func spoken(_ seconds: TimeInterval) -> String {
-        guard let totalSeconds = wholeSeconds(seconds) else { return "Unknown duration" }
+        guard let totalSeconds = wholeSeconds(seconds) else {
+            return String(localized: "Unknown duration",
+                          comment: "Spoken in place of a length of time that is not a usable number, such as an enormous or missing length.")
+        }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
         let secs = totalSeconds % 60

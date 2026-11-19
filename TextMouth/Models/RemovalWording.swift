@@ -146,26 +146,6 @@ enum RemovalMode: Equatable, CaseIterable {
         }
     }
 
-    /// The English of `spokenLabel(_:)`, for the sentences of
-    /// `OriginalFileDeletionWording`, which glue it into English sentences
-    /// of their own until that area converts (FR34).
-    func spokenAction(_ object: String) -> String {
-        switch self {
-        case .keepFiles: return "Remove \(object) from the library and keep the files" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
-        case .moveToTrash: return "Move \(object) to the Trash" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
-        case .deletePermanently: return "Delete \(object) permanently" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
-        }
-    }
-
-    /// What happens to the files of `owner`, a possessive such as "its" or
-    /// "The existing copy's", as a clause: "its files go to the Trash, where
-    /// you can recover them until the Trash is emptied". English only: it
-    /// is a piece of `ImportDecision`'s English sentences until that area
-    /// converts (FR34); this area's own sentences use `filesClause(plural:)`.
-    func filesClause(of owner: String) -> String {
-        "\(owner) files \(outcomePhrase(plural: true))" // l10n: no (inside ImportDecision's English sentences until that area converts)
-    }
-
     /// What happens to what this removal deletes, as the words after their
     /// subject, agreeing with one thing or several (`plural`): "go to the
     /// Trash, where you can recover them until the Trash is emptied", "is
