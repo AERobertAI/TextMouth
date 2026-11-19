@@ -6998,6 +6998,18 @@
     "Download the book, then try again." : {
       "comment" : "Ends a message saying the book's audio is only in the cloud: what to do about it."
     },
+    "Download the next article before this one ends" : {
+      "comment" : "Label of the switch in a news feed's Feed Info that downloads the next article before the playing one ends."
+    },
+    "Download the next book before this one ends" : {
+      "comment" : "Label of a switch that downloads the next book before the playing one ends (a folder's settings do not show it today)."
+    },
+    "Download the next episode before this one ends" : {
+      "comment" : "Label of the switch in a podcast feed's Feed Info that downloads the next episode before the playing one ends."
+    },
+    "Download the next item before this one ends" : {
+      "comment" : "Label of the switch in a feed's Feed Info that downloads the next item before the playing one ends."
+    },
     "Download them first: select them in the library, then choose %@." : {
       "comment" : "What to do about several books only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now."
     },
@@ -11818,8 +11830,14 @@
     "Play half a second after each move" : {
       "comment" : "Label of the switch in Storage settings (Audio Editing) that makes the audio editor play half a second at the cursor after each move."
     },
+    "Play the article above" : {
+      "comment" : "A choice of the pop-up button that sets what happens when a news article ends: play the article above it in the list."
+    },
+    "Play the article below" : {
+      "comment" : "A choice of the pop-up button that sets what happens when a news article ends: play the article below it in the list."
+    },
     "Play the book above" : {
-      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.",
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.\nA choice of the pop-up button that sets what happens when a book ends: play the book above it in the folder.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -11830,7 +11848,7 @@
       }
     },
     "Play the book below" : {
-      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.",
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.\nA choice of the pop-up button that sets what happens when a book ends: play the book below it in the folder.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -11839,6 +11857,18 @@
           }
         }
       }
+    },
+    "Play the episode above" : {
+      "comment" : "A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode above it in the list."
+    },
+    "Play the episode below" : {
+      "comment" : "A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode below it in the list."
+    },
+    "Play the item above" : {
+      "comment" : "A choice of the pop-up button that sets what happens when a feed's item ends: play the item above it in the list."
+    },
+    "Play the item below" : {
+      "comment" : "A choice of the pop-up button that sets what happens when a feed's item ends: play the item below it in the list."
     },
     "Playback" : {
       "comment" : "Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.\nName of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls.\nTitle of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it."
@@ -13920,8 +13950,11 @@
     "Skip backward: %@" : {
       "comment" : "What VoiceOver says for the playback bar's skip backward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\"."
     },
+    "Skip finished articles" : {
+      "comment" : "Label of the switch in a news feed's Feed Info that passes over articles already finished."
+    },
     "Skip finished books" : {
-      "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.",
+      "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.\nLabel of the switch in a folder's settings that passes over books already finished.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -13930,6 +13963,12 @@
           }
         }
       }
+    },
+    "Skip finished episodes" : {
+      "comment" : "Label of the switch in a podcast feed's Feed Info that passes over episodes already finished."
+    },
+    "Skip finished items" : {
+      "comment" : "Label of the switch in a feed's Feed Info that passes over items already finished."
     },
     "Skip forward unit" : {
       "comment" : "VoiceOver label of the Skip Forward pop-up in the Playback settings."
@@ -14369,7 +14408,7 @@
       "comment" : "Said when the audio editor's window can't close because a change, save, or export is under way."
     },
     "Stop" : {
-      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nA choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.\nButton of the Compare Libraries sheet that stops the comparison.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".\nName of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.\nTitle of the button in the Record window that stops recording and saves it.\nTitle of the button that stops a running search in the Search Library window.",
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nA choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.\nA choice of the pop-up button that sets what happens when an item ends: stop when it ends.\nButton of the Compare Libraries sheet that stops the comparison.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".\nName of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.\nTitle of the button in the Record window that stops recording and saves it.\nTitle of the button that stops a running search in the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -18360,7 +18399,7 @@
       "comment" : "VoiceOver label of the Use Default Location button in Storage settings."
     },
     "Use the global setting (%@)" : {
-      "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.\nThe first choice of the Audio Info pop-up for a book's original audio: follow the global setting. %@ is that setting's name, such as \"Keep\".\nTitle of the checkbox that makes a feed follow the global setting. %@ is the global setting's value, such as \"Every item listed, newest 5 downloaded\".",
+      "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.\nA choice of the pop-up button that sets what happens when an item ends, in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as Continue to Next Book.\nThe first choice of the Audio Info pop-up for a book's original audio: follow the global setting. %@ is that setting's name, such as \"Keep\".\nTitle of the checkbox that makes a feed follow the global setting. %@ is the global setting's value, such as \"Every item listed, newest 5 downloaded\".",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -18472,6 +18511,18 @@
     "What happens when a book finishes playing" : {
       "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
     },
+    "What happens when one of this feed's articles ends: play the article below it or the one above it in the list, stop, or follow the global setting" : {
+      "comment" : "VoiceOver hint of the pop-up button in a news feed's Feed Info that sets what happens when one of its articles ends."
+    },
+    "What happens when one of this feed's episodes ends: play the episode below it or the one above it in the list, stop, or follow the global setting" : {
+      "comment" : "VoiceOver hint of the pop-up button in a podcast feed's Feed Info that sets what happens when one of its episodes ends."
+    },
+    "What happens when one of this feed's items ends: play the item below it or the one above it in the list, stop, or follow the global setting" : {
+      "comment" : "VoiceOver hint of the pop-up button in a feed's Feed Info that sets what happens when one of its items ends."
+    },
+    "What happens when one of this folder's books ends: play the book below it or the one above it in the folder, stop, or follow the global setting" : {
+      "comment" : "VoiceOver hint of the pop-up button in a folder's settings that sets what happens when one of its books ends."
+    },
     "What happens when you hold Shift and skip backward" : {
       "comment" : "VoiceOver hint of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name."
     },
@@ -18510,6 +18561,98 @@
         }
       }
     },
+    "When %lld minutes or less of the article playing are left, download the article that plays next, if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of the Download the next article switch in a news feed's Feed Info. %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less of the article playing are left, download the article that plays next, if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less of the article playing are left, download the article that plays next, if it is not on this Mac yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "When %lld minutes or less of the book playing are left, download the book that plays next, if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of a switch that downloads the next book (a folder's settings do not show it today). %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less of the book playing are left, download the book that plays next, if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less of the book playing are left, download the book that plays next, if it is not on this Mac yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "When %lld minutes or less of the episode playing are left, download the episode that plays next, if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of the Download the next episode switch in a podcast feed's Feed Info. %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less of the episode playing are left, download the episode that plays next, if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less of the episode playing are left, download the episode that plays next, if it is not on this Mac yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "When %lld minutes or less of the item playing are left, download the item that plays next, if it is not on this Mac yet" : {
+      "comment" : "VoiceOver hint of the Download the next item switch in a feed's Feed Info. %lld is the number of minutes left that start the download.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minute or less of the item playing are left, download the item that plays next, if it is not on this Mac yet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "When %lld minutes or less of the item playing are left, download the item that plays next, if it is not on this Mac yet"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "When Applicable" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .whenApplicable."
     },
@@ -18517,7 +18660,7 @@
       "comment" : "Heading of the third group of the Feeds tab of Settings: alerts and notifications. Title case."
     },
     "When a book ends" : {
-      "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.",
+      "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.\nLabel of the pop-up button in a folder's settings choosing what happens when one of its books ends.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -18529,6 +18672,15 @@
     },
     "When a book is deleted, %@." : {
       "comment" : "First sentence of the explanation in Storage settings of what removing a book does. %@ says what happens to the book's files, such as \"its files go to the Trash, where you can recover them until the Trash is emptied\"."
+    },
+    "When an article ends" : {
+      "comment" : "Label of the pop-up button in a news feed's Feed Info choosing what happens when one of its articles ends."
+    },
+    "When an episode ends" : {
+      "comment" : "Label of the pop-up button in a podcast feed's Feed Info choosing what happens when one of its episodes ends."
+    },
+    "When an item ends" : {
+      "comment" : "Label of the pop-up button in a feed's Feed Info choosing what happens when one of its items ends."
     },
     "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The." : {
       "comment" : "First sentence of the note under the Leading Articles pop-up, shown where articles are ignored. Names the languages whose articles TextMouth skips; Le, Die, and The are example articles and stay as written."
@@ -18553,6 +18705,18 @@
     },
     "When enabled, use \\b in the pattern for word boundaries" : {
       "comment" : "VoiceOver hint of the Regular expression switch in the substitution rule editor. \\b is regular expression syntax and stays as written."
+    },
+    "When listening goes on to another article, pass over the articles already finished" : {
+      "comment" : "VoiceOver hint of the Skip finished articles switch in a news feed's Feed Info."
+    },
+    "When listening goes on to another book, pass over the books already finished" : {
+      "comment" : "VoiceOver hint of the Skip finished books switch in a folder's settings."
+    },
+    "When listening goes on to another episode, pass over the episodes already finished" : {
+      "comment" : "VoiceOver hint of the Skip finished episodes switch in a podcast feed's Feed Info."
+    },
+    "When listening goes on to another item, pass over the items already finished" : {
+      "comment" : "VoiceOver hint of the Skip finished items switch in a feed's Feed Info."
     },
     "When off, its files are deleted permanently and cannot be recovered." : {
       "comment" : "Second sentence of the hint of the setting that moves deleted files to the Trash: what happens with the setting off."

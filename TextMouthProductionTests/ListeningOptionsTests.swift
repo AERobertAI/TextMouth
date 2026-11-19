@@ -342,23 +342,13 @@ final class ListeningOptionsTests: XCTestCase {
 
     // MARK: - The Wording
 
-    /// The nouns, and the one a feed's noun becomes.
-    func testTheNounsAndTheArticleBeforeEach() {
+    /// The one a feed's noun becomes. (The sentences each noun makes are
+    /// written whole for each, and the tests below pin them.)
+    func testTheNounAFeedsNounBecomes() {
         typealias Noun = ListeningOptionsWording.Noun
         XCTAssertEqual(Noun(.episode), .episode)
         XCTAssertEqual(Noun(.article), .article)
         XCTAssertEqual(Noun(.item), .item)
-        let expected: [(Noun, String, String, String)] = [
-            (.episode, "episode", "episodes", "an"),
-            (.article, "article", "articles", "an"),
-            (.item, "item", "items", "an"),
-            (.book, "book", "books", "a"),
-        ]
-        for (noun, singular, plural, article) in expected {
-            XCTAssertEqual(noun.singular, singular)
-            XCTAssertEqual(noun.plural, plural)
-            XCTAssertEqual(noun.article, article)
-        }
     }
 
     /// The label of the choice of what happens when an item ends.
@@ -372,14 +362,16 @@ final class ListeningOptionsTests: XCTestCase {
     /// The names of the four choices, the first naming the global setting's
     /// own value, whatever that is.
     func testTheContinuationChoicesForEveryNoun() {
-        for noun in [ListeningOptionsWording.Noun.episode, .article, .item, .book] {
+        // Each noun, as the sentences name it.
+        let nouns: [(ListeningOptionsWording.Noun, String)] = [(.episode, "episode"), (.article, "article"), (.item, "item"), (.book, "book")]
+        for (noun, name) in nouns {
             XCTAssertEqual(
                 ListeningOptionsWording.continuationTitle(.playBookBelow, noun: noun, global: .stop),
-                "Play the \(noun.singular) below"
+                "Play the \(name) below"
             )
             XCTAssertEqual(
                 ListeningOptionsWording.continuationTitle(.playBookAbove, noun: noun, global: .stop),
-                "Play the \(noun.singular) above"
+                "Play the \(name) above"
             )
             XCTAssertEqual(ListeningOptionsWording.continuationTitle(.stop, noun: noun, global: .continueNext), "Stop")
             XCTAssertEqual(
