@@ -25,11 +25,12 @@ final class SpanishUITests: TextMouthUITestCase {
         let reader = try elementsInOrder(of: app)
         let timerValue = reader.first { $0.label == "Sleep Timer" }?.value
         XCTAssertEqual(timerValue, "Desactivado", "The reader's Sleep Timer read: \(Self.describe(reader))")
-        // The reader's button, the sheet's title, and its Close button are the reader's words, still English.
-        let elements = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
+        // The reader's button and the sheet's title are the reader's words, still English; Close is the Mac's
+        // own localized word since the pilot's review (finding 4), so the sheet is not half English.
+        let elements = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Cerrar", in: app)
         keepScreenshot(of: app, named: "Sleep Timer sheet in Spanish")
         assertOrder([
-            "Sleep Timer", "Close",
+            "Sleep Timer", "Cerrar",  // "Close"
             "Nuevo temporizador",  // "New Timer"
             "Temporizador de 10 minutos",  // "Set timer for %lld minutes", other
             "Temporizador de 60 minutos",
@@ -55,11 +56,11 @@ final class SpanishUITests: TextMouthUITestCase {
     func testTheBookmarksSheetIsInSpanish() throws {
         let app = try launchIntoTheReader(arguments: Self.spanish)
         // The reader's button and the sheet's title are the reader's words, still English; Done is the sheet's own.
-        let elements = try openReaderSheet("Bookmarks", titled: "Bookmarks", waitingFor: "Hecho", in: app)
+        let elements = try openReaderSheet("Bookmarks", titled: "Bookmarks", waitingFor: "OK", in: app)
         keepScreenshot(of: app, named: "Bookmarks sheet in Spanish")
         assertOrder([
             "Bookmarks",
-            "Hecho",  // "Done"
+            "OK",  // "Done" (the review: Apple's Spanish shows OK; a native speaker decides)
             "Agregar marcador",  // "Add Bookmark"
             "Aún no hay marcadores.…",  // "No bookmarks yet.", then the help, read as one element
         ], in: elements)
