@@ -41,9 +41,9 @@ extension LibraryViewModel {
         }
         // Nothing qualified: either nothing lies that way, or all that does
         // is finished.
-        return .nothing(note: booksBeyond(book, going: direction).isEmpty
-            ? EndOfBookWording.noMoreBooksInFolderNote
-            : EndOfBookWording.onlyFinishedBooksInFolderNote(going: direction))
+        return booksBeyond(book, going: direction).isEmpty
+            ? Self.nothingMoreInFolder
+            : Self.onlyFinishedInFolder(going: direction)
     }
 
     /// What follows `book`, an item of the feed `feedID`, in the feed's
@@ -59,7 +59,7 @@ extension LibraryViewModel {
         // book's link names (its file may have been replaced).
         let itemID = book.feedLink?.itemID
         guard let current = items.firstIndex(where: { $0.state.bookID == book.id || $0.id == itemID }) else {
-            return .nothing(note: EndOfBookWording.noMoreBooksInFolderNote)
+            return Self.nothingMoreInFolder
         }
         // The listing's positions stand for its items, as in `booksBeyond`.
         // Items moved into the library are the library's, not the feed's.
@@ -67,7 +67,7 @@ extension LibraryViewModel {
             .map { items[$0] }
             .filter { $0.state.libraryBookID == nil }
         guard !beyond.isEmpty else {
-            return .nothing(note: EndOfBookWording.noMoreBooksInFolderNote)
+            return Self.nothingMoreInFolder
         }
         // Each downloaded item's row, found by one pass over the library.
         let rows = Dictionary(library.books.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
@@ -82,6 +82,21 @@ extension LibraryViewModel {
                 return .episodeToDownload(feedID: feedID, item: item)
             }
         }
-        return .nothing(note: EndOfBookWording.onlyFinishedBooksInFolderNote(going: direction))
+        return Self.onlyFinishedInFolder(going: direction)
+    }
+
+    /// The succession of a folder with no book that way: the note and its
+    /// English log name from one place, so no call site writes one without
+    /// the other.
+    private static var nothingMoreInFolder: BookSuccession {
+        .nothing(note: EndOfBookWording.noMoreBooksInFolderNote, logName: EndOfBookWording.noMoreBooksInFolderLogName)
+    }
+
+    /// The succession of a folder whose books that way are all finished.
+    private static func onlyFinishedInFolder(going direction: ReadingList.Direction) -> BookSuccession {
+        .nothing(
+            note: EndOfBookWording.onlyFinishedBooksInFolderNote(going: direction),
+            logName: EndOfBookWording.onlyFinishedBooksInFolderLogName(going: direction)
+        )
     }
 }

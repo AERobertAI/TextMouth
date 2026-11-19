@@ -65,7 +65,12 @@ final class PhoneLibraryVocabularyTests: XCTestCase {
         XCTAssertTrue(sheet.contains("LabeledContent(\"\(PhoneLibraryVocabulary.wordCountRow)\")"))
         XCTAssertTrue(sheet.contains("Button(\"\(PhoneAppWording.save)\")"))
         XCTAssertTrue(sheet.contains("Button(\"\(PhoneAppWording.cancel)\")"))
-        XCTAssertTrue(reader.contains("announceToVoiceOver(\"\(PhoneLibraryVocabulary.metadataUpdated)\")"))
+        // The Mac reader's words after a save are its localized static, which the
+        // phone reads rather than copies (FR35): the same words, their English
+        // unchanged, and the reader's source says them through the static.
+        XCTAssertEqual(PhoneLibraryVocabulary.metadataUpdated, ReaderViewModel.metadataUpdatedAnnouncement)
+        XCTAssertEqual(ReaderViewModel.metadataUpdatedAnnouncement, "Metadata updated")
+        XCTAssertTrue(reader.contains("announceToVoiceOver(Self.metadataUpdatedAnnouncement)"))
     }
 
     /// An EPUB's and an audiobook's Book Info words are the Mac's metadata

@@ -1,7 +1,2251 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-
+    "%@ adds a bookmark at the current position." : {
+      "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ agrega un marcador en la posición actual."
+          }
+        }
+      }
+    },
+    "%@ adds one at the current position." : {
+      "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list, when the add command has no keyboard shortcut. %@ is the name of the Add Bookmark button above the list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ agrega uno en la posición actual."
+          }
+        }
+      }
+    },
+    "%@ is already in the reading list." : {
+      "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ya está en la lista de lectura."
+          }
+        }
+      }
+    },
+    "%@ isn't in the reading list." : {
+      "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: the one book selected is not on the list. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ no está en la lista de lectura."
+          }
+        }
+      }
+    },
+    "%@ remaining" : {
+      "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "quedan %@"
+          }
+        }
+      }
+    },
+    "%lld books were already in it." : {
+      "comment" : "Second sentence of the announcement after books were added to the reading list: some chosen were on it already. %lld is how many.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book was already in it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books were already in it."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de libros ya estaban en ella."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro ya estaba en ella."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libros ya estaban en ella."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books were not in it." : {
+      "comment" : "Second sentence of the announcement after books were taken off the reading list: some chosen were not on it. %lld is how many.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book was not in it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books were not in it."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de libros no estaban en ella."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro no estaba en ella."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libros no estaban en ella."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld minutes" : {
+      "comment" : "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minutes"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de minutos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld minuto"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "A New Window" : {
+      "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una ventana nueva"
+          }
+        }
+      }
+    },
+    "A new timer replaces the one running." : {
+      "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs: setting one of the timers below stops it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un temporizador nuevo reemplaza al que está en curso."
+          }
+        }
+      }
+    },
+    "Add" : {
+      "comment" : "Button of the panel for adding a bookmark: adds it, with the note written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agregar"
+          }
+        }
+      }
+    },
+    "Add %lld Books to Reading List" : {
+      "comment" : "Context menu item for the books selected in the Library: adds them to the reading list. Title case. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Book to Reading List"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld Books to Reading List"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Agregar %lld de libros a la lista de lectura"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Agregar %lld libro a la lista de lectura"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Agregar %lld libros a la lista de lectura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add %lld books to the reading list" : {
+      "comment" : "VoiceOver label of the Library's edit-mode bar button that adds the selected books to the reading list. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld book to the reading list"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Add %lld books to the reading list"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Agregar %lld de libros a la lista de lectura"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Agregar %lld libro a la lista de lectura"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Agregar %lld libros a la lista de lectura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add Bookmark" : {
+      "comment" : "Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agregar marcador"
+          }
+        }
+      }
+    },
+    "Added %lld books to the reading list." : {
+      "comment" : "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se agregaron %lld libros a la lista de lectura."
+          }
+        }
+      }
+    },
+    "Added to reading list: %@" : {
+      "comment" : "VoiceOver announcement after one book was added to the reading list. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agregado a la lista de lectura: %@"
+          }
+        }
+      }
+    },
+    "Adds the selected books to the end of the reading list." : {
+      "comment" : "VoiceOver hint of the Library's edit-mode bar button Add to Reading List.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agrega los libros seleccionados al final de la lista de lectura."
+          }
+        }
+      }
+    },
+    "Adjust minutes" : {
+      "comment" : "VoiceOver label of the stepper beside the sleep timer sheet's custom minutes field.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajustar minutos"
+          }
+        }
+      }
+    },
+    "Asks for an optional note, then marks the reading position." : {
+      "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pide una nota opcional y luego marca la posición de lectura."
+          }
+        }
+      }
+    },
+    "Available only while this feed's articles go on to another article when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Disponible solo mientras los artículos de este canal pasan a otro artículo al terminar uno"
+          }
+        }
+      }
+    },
+    "Available only while this feed's episodes go on to another episode when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next episode in pop-up button in a podcast feed's Feed Info: when it can be used.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Disponible solo mientras los episodios de este canal pasan a otro episodio al terminar uno"
+          }
+        }
+      }
+    },
+    "Available only while this feed's items go on to another item when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next item in pop-up button in a feed's Feed Info: when it can be used.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Disponible solo mientras los elementos de este canal pasan a otro elemento al terminar uno"
+          }
+        }
+      }
+    },
+    "Available only while this folder's books go on to another book when one ends" : {
+      "comment" : "VoiceOver hint of the dimmed Open the next book in pop-up button in a folder's settings: when it can be used.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Disponible solo mientras los libros de esta carpeta pasan a otro libro al terminar uno"
+          }
+        }
+      }
+    },
+    "Bookmark %@" : {
+      "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador %@"
+          }
+        }
+      }
+    },
+    "Bookmark %@ added" : {
+      "comment" : "VoiceOver announcement after a bookmark was added at the reading position. %@ is the new bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador %@ agregado"
+          }
+        }
+      }
+    },
+    "Bookmark %@ removed" : {
+      "comment" : "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %@ is that bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador %@ eliminado"
+          }
+        }
+      }
+    },
+    "Bookmark %@, %@, Note: %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$@, %2$@, Note: %3$@, added %4$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador %1$@, %2$@, Nota: %3$@, agregado el %4$@"
+          }
+        }
+      }
+    },
+    "Bookmark %@, %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$@, %2$@, added %3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador %1$@, %2$@, agregado el %3$@"
+          }
+        }
+      }
+    },
+    "Bookmark %@, Note: %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$@, Note: %2$@, added %3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador %1$@, Nota: %2$@, agregado el %3$@"
+          }
+        }
+      }
+    },
+    "Bookmark %@, added %@" : {
+      "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the day it was added, such as October 9, 2026.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$@, added %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcador %1$@, agregado el %2$@"
+          }
+        }
+      }
+    },
+    "Bookmark note" : {
+      "comment" : "VoiceOver label of the note field when adding a bookmark or editing its note.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nota del marcador"
+          }
+        }
+      }
+    },
+    "Bookmarks" : {
+      "comment" : "The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marcadores"
+          }
+        }
+      }
+    },
+    "Cancel" : {
+      "comment" : "Button that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelar"
+          }
+        }
+      }
+    },
+    "Cancel Timer" : {
+      "comment" : "Button of the sleep timer sheet that stops the running timer.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelar temporizador"
+          }
+        }
+      }
+    },
+    "Chooses what a book opened from the list does when it ends." : {
+      "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige qué hace un libro abierto desde la lista al terminar."
+          }
+        }
+      }
+    },
+    "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes." : {
+      "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige dónde se abre el siguiente libro: en esta ventana o en una nueva. Un libro abierto en otra ventana pasa al frente y, si eliges %@, esta ventana se cierra."
+          }
+        }
+      }
+    },
+    "Chooses where this feed's next article opens." : {
+      "comment" : "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige dónde se abre el siguiente artículo de este canal."
+          }
+        }
+      }
+    },
+    "Chooses where this feed's next episode opens." : {
+      "comment" : "VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige dónde se abre el siguiente episodio de este canal."
+          }
+        }
+      }
+    },
+    "Chooses where this feed's next item opens." : {
+      "comment" : "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige dónde se abre el siguiente elemento de este canal."
+          }
+        }
+      }
+    },
+    "Chooses where this folder's next book opens." : {
+      "comment" : "VoiceOver hint of the Open the next book in pop-up button in a folder's settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige dónde se abre el siguiente libro de esta carpeta."
+          }
+        }
+      }
+    },
+    "Close" : {
+      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cerrar"
+          }
+        }
+      }
+    },
+    "Could not add the bookmark: “%@” is no longer in the library." : {
+      "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo agregar el marcador: “%@” ya no está en la biblioteca."
+          }
+        }
+      }
+    },
+    "Could not remove the bookmark: “%@” is no longer in the library." : {
+      "comment" : "VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo eliminar el marcador: “%@” ya no está en la biblioteca."
+          }
+        }
+      }
+    },
+    "Current Timer" : {
+      "comment" : "Heading of the sleep timer sheet's section about the timer running now.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador actual"
+          }
+        }
+      }
+    },
+    "Custom minutes" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's field of a custom number of minutes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minutos personalizados"
+          }
+        }
+      }
+    },
+    "Custom:" : {
+      "comment" : "Shown before the sleep timer sheet's field of a custom number of minutes. Hidden from VoiceOver, which reads the field's label.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Personalizado:"
+          }
+        }
+      }
+    },
+    "Delete" : {
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
+    "Delete bookmark %@" : {
+      "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar marcador %@"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "comment" : "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "OK"
+          }
+        }
+      }
+    },
+    "Download cancelled, so playback stopped." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of a feed's next episode or article, which playback was waiting for.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descarga cancelada, así que la reproducción se detuvo."
+          }
+        }
+      }
+    },
+    "Downloading the next article: %@" : {
+      "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargando el siguiente artículo: %@"
+          }
+        }
+      }
+    },
+    "Downloading the next episode: %@" : {
+      "comment" : "A sentence of the announcement as a feed's episode ends: the next episode is being downloaded. %@ is that episode's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargando el siguiente episodio: %@"
+          }
+        }
+      }
+    },
+    "Edit Bookmark %@" : {
+      "comment" : "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar marcador %@"
+          }
+        }
+      }
+    },
+    "Edit Note" : {
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar nota"
+          }
+        }
+      }
+    },
+    "Edit note for bookmark %@" : {
+      "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar nota del marcador %@"
+          }
+        }
+      }
+    },
+    "End of book" : {
+      "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fin del libro"
+          }
+        }
+      }
+    },
+    "End of heading" : {
+      "comment" : "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fin del encabezado"
+          }
+        }
+      }
+    },
+    "End of the reading list" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": no book follows it below. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fin de la lista de lectura"
+          }
+        }
+      }
+    },
+    "Every book above it in the reading list is finished" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los libros de arriba en la lista de lectura están terminados"
+          }
+        }
+      }
+    },
+    "Every book after it in the folder is finished" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": every book after it in its library folder is finished, so none plays. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los libros siguientes de la carpeta están terminados"
+          }
+        }
+      }
+    },
+    "Every book before it in the folder is finished" : {
+      "comment" : "A sentence of the announcement as a book ends, in a folder or feed that plays the book above: every book before it is finished, so none plays. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los libros anteriores de la carpeta están terminados"
+          }
+        }
+      }
+    },
+    "Every book below it in the reading list is finished" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": the books below it are all finished, and the list passes over finished books. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los libros de abajo en la lista de lectura están terminados"
+          }
+        }
+      }
+    },
+    "Fading out" : {
+      "comment" : "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bajando el volumen"
+          }
+        }
+      }
+    },
+    "Finished" : {
+      "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminado"
+          }
+        }
+      }
+    },
+    "Finished: %@" : {
+      "comment" : "VoiceOver announcement as a book ends with no book to follow it. %@ is the book's title. Sentences saying why may follow it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminado: %@"
+          }
+        }
+      }
+    },
+    "Go To" : {
+      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ir"
+          }
+        }
+      }
+    },
+    "Go to bookmark %@" : {
+      "comment" : "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ir al marcador %@"
+          }
+        }
+      }
+    },
+    "Goes to this bookmark and closes the list." : {
+      "comment" : "VoiceOver hint of a bookmark's row in the Bookmarks list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Va a este marcador y cierra la lista."
+          }
+        }
+      }
+    },
+    "In reading list" : {
+      "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En la lista de lectura"
+          }
+        }
+      }
+    },
+    "Keep these books on this Mac" : {
+      "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Conservar estos libros en esta Mac"
+          }
+        }
+      }
+    },
+    "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download." : {
+      "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantiene descargados en esta Mac los libros de la lista; cada Mac elige por su cuenta. Desmarcarlo no elimina ninguna descarga."
+          }
+        }
+      }
+    },
+    "Keeps the order you set with Move Book Up, Move Book Down, or dragging." : {
+      "comment" : "VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mantiene el orden que fijas con Move Book Up, Move Book Down o arrastrando."
+          }
+        }
+      }
+    },
+    "Metadata updated" : {
+      "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metadatos actualizados"
+          }
+        }
+      }
+    },
+    "Minutes" : {
+      "comment" : "Placeholder of the sleep timer sheet's field of a custom number of minutes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minutos"
+          }
+        }
+      }
+    },
+    "New Timer" : {
+      "comment" : "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nuevo temporizador"
+          }
+        }
+      }
+    },
+    "Next book not started because of the sleep timer" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El siguiente libro no se inició debido al temporizador de apagado"
+          }
+        }
+      }
+    },
+    "No bookmarks yet." : {
+      "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aún no hay marcadores."
+          }
+        }
+      }
+    },
+    "No more books in folder" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay más libros en la carpeta"
+          }
+        }
+      }
+    },
+    "No next book in the reading list." : {
+      "comment" : "VoiceOver announcement when Next in Reading List finds no book below this one.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ningún libro siguiente en la lista de lectura."
+          }
+        }
+      }
+    },
+    "No next book in the reading list: every book below this one is finished." : {
+      "comment" : "VoiceOver announcement when Next in Reading List finds only finished books below this one, which the list passes over.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ningún libro siguiente en la lista de lectura: todos los libros de abajo están terminados."
+          }
+        }
+      }
+    },
+    "No previous book in the reading list." : {
+      "comment" : "VoiceOver announcement when Previous in Reading List finds no book above this one.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ningún libro anterior en la lista de lectura."
+          }
+        }
+      }
+    },
+    "No previous book in the reading list: every book above this one is finished." : {
+      "comment" : "VoiceOver announcement when Previous in Reading List finds only finished books above this one, which the list passes over.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ningún libro anterior en la lista de lectura: todos los libros de arriba están terminados."
+          }
+        }
+      }
+    },
+    "No previous sleep timer to restart." : {
+      "comment" : "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ningún temporizador de apagado anterior para activar de nuevo."
+          }
+        }
+      }
+    },
+    "None of the %lld selected books is in the reading list." : {
+      "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ninguno de los %lld libros seleccionados está en la lista de lectura."
+          }
+        }
+      }
+    },
+    "Not restarted because of the sleep timer" : {
+      "comment" : "A sentence of the announcement as a book set to loop ends: it did not start again, because the sleep timer stopped it. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se reinició debido al temporizador de apagado"
+          }
+        }
+      }
+    },
+    "Note" : {
+      "comment" : "Placeholder of the note field when editing a bookmark's note.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nota"
+          }
+        }
+      }
+    },
+    "Note (optional)" : {
+      "comment" : "Placeholder of the note field when adding a bookmark.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nota (opcional)"
+          }
+        }
+      }
+    },
+    "Off" : {
+      "comment" : "VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Desactivado"
+          }
+        }
+      }
+    },
+    "Open the next article in" : {
+      "comment" : "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abrir el siguiente artículo en"
+          }
+        }
+      }
+    },
+    "Open the next book in" : {
+      "comment" : "Label of the pop-up button in Settings, Playback, and in a folder's settings, choosing where the next book opens; its choices are This Window and A New Window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abrir el siguiente libro en"
+          }
+        }
+      }
+    },
+    "Open the next episode in" : {
+      "comment" : "Label of the pop-up button in a podcast feed's Feed Info, choosing where the feed's next episode opens.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abrir el siguiente episodio en"
+          }
+        }
+      }
+    },
+    "Open the next item in" : {
+      "comment" : "Label of the pop-up button in a feed's Feed Info, choosing where the feed's next item opens.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abrir el siguiente elemento en"
+          }
+        }
+      }
+    },
+    "Opening: %@" : {
+      "comment" : "VoiceOver announcement as Next in Reading List or Previous in Reading List opens a book without playing it. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abriendo: %@"
+          }
+        }
+      }
+    },
+    "Passes over finished books when a book from the list ends." : {
+      "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Omite los libros terminados cuando termina un libro de la lista."
+          }
+        }
+      }
+    },
+    "Pause playback after:" : {
+      "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausar la reproducción después de:"
+          }
+        }
+      }
+    },
+    "Play the book above" : {
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproducir el libro de arriba"
+          }
+        }
+      }
+    },
+    "Play the book below" : {
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproducir el libro de abajo"
+          }
+        }
+      }
+    },
+    "Plays the book and pauses before it starts again." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproduce el libro y hace una pausa antes de que vuelva a empezar."
+          }
+        }
+      }
+    },
+    "Plays the book and pauses before the next book." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to go on to the next book when it ends.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproduce el libro y hace una pausa antes del siguiente."
+          }
+        }
+      }
+    },
+    "Plays the book until the next heading." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of heading button: the book plays, and pauses where the next heading begins.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproduce el libro hasta el siguiente encabezado."
+          }
+        }
+      }
+    },
+    "Plays the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's minute presets and Set button: setting the timer also plays the book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproduce el libro."
+          }
+        }
+      }
+    },
+    "Plays the book; it stops at its end anyway." : {
+      "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book that stops at its end on its own, so the timer adds nothing there.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reproduce el libro; de todos modos se detiene al final."
+          }
+        }
+      }
+    },
+    "Reading List" : {
+      "comment" : "The start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lista de lectura"
+          }
+        }
+      }
+    },
+    "Reading List Order" : {
+      "comment" : "Name of the order the Reading List shows its books in, the one the listener arranges: the only item of its Sort menu.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Orden de la lista de lectura"
+          }
+        }
+      }
+    },
+    "Reading list, book %lld of %lld" : {
+      "comment" : "Where a book read from the reading list stands in it, in the reader's header and in Where Am I?. %1$lld is the book's place in the list; %2$lld how many books the list holds.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Reading list, book %1$lld of %2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lista de lectura, libro %1$lld de %2$lld"
+          }
+        }
+      }
+    },
+    "Remove" : {
+      "comment" : "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar"
+          }
+        }
+      }
+    },
+    "Remove %lld Books from Reading List" : {
+      "comment" : "Context menu item for the books selected in the Library: takes them off the reading list. Title case. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Book from Reading List"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Books from Reading List"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Quitar %lld de libros de la lista de lectura"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Quitar %lld libro de la lista de lectura"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Quitar %lld libros de la lista de lectura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Remove %lld books from the reading list" : {
+      "comment" : "VoiceOver label of the Library's edit-mode bar button that takes the selected books off the reading list. %lld is the number of books selected.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld book from the reading list"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld books from the reading list"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Quitar %lld de libros de la lista de lectura"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Quitar %lld libro de la lista de lectura"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Quitar %lld libros de la lista de lectura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Remove Bookmark %@?" : {
+      "comment" : "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Eliminar el marcador %@?"
+          }
+        }
+      }
+    },
+    "Remove books when finished" : {
+      "comment" : "Checkbox of the Reading List's options bar: take each book off the list once it is finished.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitar libros al terminarlos"
+          }
+        }
+      }
+    },
+    "Removed %lld books from the reading list." : {
+      "comment" : "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se quitaron %lld libros de la lista de lectura."
+          }
+        }
+      }
+    },
+    "Removed from reading list: %@" : {
+      "comment" : "VoiceOver announcement after one book was taken off the reading list. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quitado de la lista de lectura: %@"
+          }
+        }
+      }
+    },
+    "Reset Timer" : {
+      "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reiniciar temporizador"
+          }
+        }
+      }
+    },
+    "Restarting: %@" : {
+      "comment" : "VoiceOver announcement as a book set to loop starts again from its beginning. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reiniciando: %@"
+          }
+        }
+      }
+    },
+    "Restarts the timer at its full length and plays the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to, and the book plays.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reinicia el temporizador con su duración completa y reproduce el libro."
+          }
+        }
+      }
+    },
+    "Returned to previous position" : {
+      "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De vuelta a la posición anterior"
+          }
+        }
+      }
+    },
+    "Returns to the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's Close button: closing the sheet goes back to the book's reader.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve al libro."
+          }
+        }
+      }
+    },
+    "Save" : {
+      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Guardar"
+          }
+        }
+      }
+    },
+    "Set" : {
+      "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Establecer"
+          }
+        }
+      }
+    },
+    "Set timer for %lld minutes" : {
+      "comment" : "VoiceOver label of a sleep timer button that sets a timer of so many minutes. %lld is the number of minutes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Set timer for %lld minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Set timer for %lld minutes"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador de %lld de minutos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador de %lld minuto"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador de %lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Skip finished books" : {
+      "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Omitir libros terminados"
+          }
+        }
+      }
+    },
+    "Sleep Timer" : {
+      "comment" : "The name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado"
+          }
+        }
+      }
+    },
+    "Sleep timer cancelled, because the next book could not be opened." : {
+      "comment" : "VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado cancelado, porque no se pudo abrir el siguiente libro."
+          }
+        }
+      }
+    },
+    "Sleep timer cancelled, because you moved to another book while it faded out." : {
+      "comment" : "VoiceOver announcement after \"Starting: <title>\": moving to another book while the sleep timer was fading the sound out ended the timer.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado cancelado, porque pasaste a otro libro mientras bajaba el volumen."
+          }
+        }
+      }
+    },
+    "Sleep timer cancelled." : {
+      "comment" : "VoiceOver announcement after the Cancel Timer button stopped the sleep timer.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado cancelado."
+          }
+        }
+      }
+    },
+    "Sleep timer expired" : {
+      "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the sleep timer stopped playback there. Written without its full stop, which is added after it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El temporizador de apagado terminó"
+          }
+        }
+      }
+    },
+    "Sleep timer expired at the end of the heading. Playback paused." : {
+      "comment" : "VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El temporizador de apagado terminó al final del encabezado. Reproducción en pausa."
+          }
+        }
+      }
+    },
+    "Sleep timer expired. Playback paused." : {
+      "comment" : "VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El temporizador de apagado terminó. Reproducción en pausa."
+          }
+        }
+      }
+    },
+    "Sleep timer: %@" : {
+      "comment" : "VoiceOver label of the sleep timer's status in the reader and the sleep timer sheet. %@ is the timer's state, such as \"4:59 remaining\" or \"stops at the end of this heading\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado: %@"
+          }
+        }
+      }
+    },
+    "Sleep timer: %@." : {
+      "comment" : "VoiceOver announcement after a sleep timer that stops at a place was set. %@ says where it stops, such as \"stops at the end of this heading\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado: %@."
+          }
+        }
+      }
+    },
+    "Sleep timer: %lld minutes remaining" : {
+      "comment" : "VoiceOver announcement as the sleep timer's countdown passes a milestone. %lld is the whole minutes left (5 or 1).",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Sleep timer: %lld minute remaining"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Sleep timer: %lld minutes remaining"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador de apagado: quedan %lld de minutos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador de apagado: queda %lld minuto"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador de apagado: quedan %lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Sleep timer: %lld seconds remaining" : {
+      "comment" : "VoiceOver announcement as the sleep timer's countdown passes a milestone under a minute. %lld is the seconds left (30 or 10).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador de apagado: quedan %lld segundos"
+          }
+        }
+      }
+    },
+    "Sort books by %@" : {
+      "comment" : "VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordenar libros por %@"
+          }
+        }
+      }
+    },
+    "Sorted by %@" : {
+      "comment" : "VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordenado por %@"
+          }
+        }
+      }
+    },
+    "Start of the reading list" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inicio de la lista de lectura"
+          }
+        }
+      }
+    },
+    "Starting again: %@" : {
+      "comment" : "VoiceOver announcement as Play starts a finished book over from its beginning. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Empezando de nuevo: %@"
+          }
+        }
+      }
+    },
+    "Starting: %@" : {
+      "comment" : "VoiceOver announcement as the next book starts playing after one ends. %@ is the next book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Iniciando: %@"
+          }
+        }
+      }
+    },
+    "Still starting: %@" : {
+      "comment" : "VoiceOver announcement when Play is pressed while the next book is still opening. %@ is the next book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aún iniciando: %@"
+          }
+        }
+      }
+    },
+    "Stop" : {
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detener"
+          }
+        }
+      }
+    },
+    "Stop At" : {
+      "comment" : "Heading of the sleep timer sheet's section of timers that stop at a place in the book: End of heading and End of book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detener en"
+          }
+        }
+      }
+    },
+    "Stop at the end of the book" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detener al final del libro"
+          }
+        }
+      }
+    },
+    "Stop at the end of this heading" : {
+      "comment" : "VoiceOver label of the sleep timer sheet's End of heading button, which sets a timer that stops where the heading playing ends.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Detener al final de este encabezado"
+          }
+        }
+      }
+    },
+    "Takes %lld to %lld minutes." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Takes %1$lld to %2$lld minutes."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Admite de %1$lld a %2$lld minutos."
+          }
+        }
+      }
+    },
+    "Takes %lld to %lld minutes. Return sets the timer and plays the book." : {
+      "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the Mac: the fewest and most minutes it takes, and what the Return key does there. %1$lld is the fewest (1); %2$lld the most (480). Return is the name of the key.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Admite de %1$lld a %2$lld minutos. Retorno programa el temporizador y reproduce el libro."
+          }
+        }
+      }
+    },
+    "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay." : {
+      "comment" : "VoiceOver hint of the Reading List's Remove books when finished checkbox.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quita de la lista cada libro terminado cuando su ventana pasa a otro libro o se cierra. Los libros terminados antes de activarlo se quedan."
+          }
+        }
+      }
+    },
+    "Takes the selected books off the reading list. They stay in the library." : {
+      "comment" : "VoiceOver hint of the Library's edit-mode bar button Remove from Reading List.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quita los libros seleccionados de la lista de lectura. Siguen en la biblioteca."
+          }
+        }
+      }
+    },
+    "TextMouth is not downloading right now." : {
+      "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no está descargando en este momento."
+          }
+        }
+      }
+    },
+    "The %lld selected books are already in the reading list." : {
+      "comment" : "VoiceOver announcement when Add to Reading List added nothing: every book selected is on the list already. %lld is the number of books selected (two or more).",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los %lld libros seleccionados ya están en la lista de lectura."
+          }
+        }
+      }
+    },
+    "The book is in %@." : {
+      "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro está en %@."
+          }
+        }
+      }
+    },
+    "The books are in %@." : {
+      "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los libros están en %@."
+          }
+        }
+      }
+    },
+    "The next article could not be downloaded, so playback stopped. %@" : {
+      "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo descargar el siguiente artículo, así que la reproducción se detuvo. %@"
+          }
+        }
+      }
+    },
+    "The next episode could not be downloaded, so playback stopped. %@" : {
+      "comment" : "VoiceOver announcement when the download of a feed's next episode failed. %@ is the download's own sentence saying why.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo descargar el siguiente episodio, así que la reproducción se detuvo. %@"
+          }
+        }
+      }
+    },
+    "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." : {
+      "comment" : "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La lista de lectura está vacía. Para agregar un libro, elige Add to Reading List en su menú contextual, sus acciones de VoiceOver o el menú Library."
+          }
+        }
+      }
+    },
+    "The reading list is set to stop when a book ends" : {
+      "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": the list's When a book ends is Stop. Written without its full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La lista de lectura está configurada para detenerse al terminar un libro"
+          }
+        }
+      }
+    },
+    "This Window" : {
+      "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta ventana"
+          }
+        }
+      }
+    },
+    "This book was not opened from the reading list." : {
+      "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este libro no se abrió desde la lista de lectura."
+          }
+        }
+      }
+    },
+    "Timer reset." : {
+      "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador reiniciado."
+          }
+        }
+      }
+    },
+    "Timer reset: %@." : {
+      "comment" : "VoiceOver announcement after Reset Timer started the sleep timer again. %@ is the timer's state, such as \"15:00 remaining\" or \"stops at the end of the book\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador reiniciado: %@."
+          }
+        }
+      }
+    },
+    "Timer restarted: %@." : {
+      "comment" : "VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temporizador activado de nuevo: %@."
+          }
+        }
+      }
+    },
+    "Timer set for %lld minutes." : {
+      "comment" : "VoiceOver announcement after a sleep timer of so many minutes was set. %lld is the number of minutes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Timer set for %lld minute."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Timer set for %lld minutes."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador programado para %lld de minutos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador programado para %lld minuto."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Temporizador programado para %lld minutos."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Use the global setting (%@)" : {
+      "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usar el ajuste general (%@)"
+          }
+        }
+      }
+    },
+    "When a book ends" : {
+      "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Al terminar un libro"
+          }
+        }
+      }
+    },
+    "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
+      "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Con “%1$@”, Play en un libro terminado avisa que ya está terminado; con “%2$@”, Play lo vuelve a empezar desde el principio."
+          }
+        }
+      }
+    },
+    "fading out" : {
+      "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bajando el volumen"
+          }
+        }
+      }
+    },
+    "min" : {
+      "comment" : "Short for minutes, shown after the sleep timer sheet's custom minutes field. Hidden from VoiceOver.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "min"
+          }
+        }
+      }
+    },
+    "stops at the end of the book" : {
+      "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "se detiene al final del libro"
+          }
+        }
+      }
+    },
+    "stops at the end of this heading" : {
+      "comment" : "The state of a sleep timer set to End of heading, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "se detiene al final de este encabezado"
+          }
+        }
+      }
+    }
   },
   "version" : "1.0"
 }

@@ -34,12 +34,19 @@ struct ReadingList: Codable, Equatable, Sendable, KeepsUnknownKeysBesideSynthesi
 
         /// The option's name, as the options bar's picker shows and speaks
         /// it. Saved under its raw value, never under these words, so the
-        /// words can change without losing anyone's choice.
+        /// words can change without losing anyone's choice, and localized
+        /// (FR35).
         var title: String {
             switch self {
-            case .playBookBelow: return "Play the book below"
-            case .playBookAbove: return "Play the book above"
-            case .stop: return "Stop"
+            case .playBookBelow:
+                return String(localized: "Play the book below",
+                              comment: "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.")
+            case .playBookAbove:
+                return String(localized: "Play the book above",
+                              comment: "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.")
+            case .stop:
+                return String(localized: "Stop",
+                              comment: "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.")
             }
         }
 

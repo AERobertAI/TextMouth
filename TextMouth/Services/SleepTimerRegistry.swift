@@ -92,7 +92,7 @@ final class SleepTimerRegistry {
         // Listed first: each stop below lets its timer go.
         let others = timers.filter { $0 !== timer && $0.isHeld(forBook: bookID) }
         for other in others {
-            other.stop(reason: "another window's timer went on to the same book")
+            other.stop(reason: "another window's timer went on to the same book") // l10n: no (a stop's reason, written only to the debug log)
         }
     }
 
@@ -175,7 +175,7 @@ final class SleepTimerRegistry {
     @discardableResult
     func releaseHeld(
         forBook bookID: UUID,
-        reason: String = "the book could not be opened",
+        reason: String = "the book could not be opened", // l10n: no (a stop's reason, written only to the debug log)
         announcingAfter delay: TimeInterval = 0
     ) -> Bool {
         _ = consumeExpiredWhileHeld(forBook: bookID)
@@ -249,7 +249,7 @@ final class SleepTimerRegistry {
     /// until one of them starts. Production code must not call this.
     func _stopEveryTimerForTesting() {
         for timer in timers where timer.isActive || timer.isHolding {
-            timer.stop(reason: "test ended")
+            timer.stop(reason: "test ended") // l10n: no (a stop's reason, written only to the debug log)
         }
         retainedWhileHeld = [:]
         expiredWhileHeld = [:]

@@ -1162,7 +1162,7 @@ def build_parser():
                        help="the state to write (default machine_translated; translated once a person reviewed them)")
     glossary_option(apply)
     glossary_option(check)
-    driver = add("merge-driver", "git's merge driver for the catalog: BASE OURS THEIRS [PATH] (git's %O %A %B %P)", cmd_merge_driver)
+    driver = add("merge-driver", "git's merge driver for the catalog: BASE OURS THEIRS [PATH] (git's %%O %%A %%B %%P)", cmd_merge_driver)
     for name, what in (("base", "the common ancestor's file"), ("ours", "our file, which the result is written over"),
                        ("theirs", "the other branch's file")):
         driver.add_argument(name, help=what)

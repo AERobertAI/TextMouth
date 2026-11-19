@@ -12,6 +12,9 @@ struct AccessibleControl {
     let element: NSAccessibilityProtocol
     let role: NSAccessibility.Role
     let label: String
+    /// The control's accessibility title, which VoiceOver reads beside its label: a hidden title that repeats the
+    /// label reads twice ("Adjust minutes, Adjust minutes"), so a test can require it empty.
+    let title: String
     let valueDescription: String
     let hint: String
 }
@@ -274,6 +277,7 @@ extension XCTestCase {
                 element: node,
                 role: role,
                 label: node.accessibilityLabel() ?? "",
+                title: node.accessibilityTitle() ?? "",
                 valueDescription: node.accessibilityValueDescription() ?? "",
                 hint: node.accessibilityHelp() ?? ""
             ))

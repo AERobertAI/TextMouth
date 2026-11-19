@@ -357,6 +357,30 @@ class EveryCatalogTests(SyncCase):
         self.assertIn("Play", catalog.Catalog.load(self.catalog).strings)
 
 
+class HelpTests(unittest.TestCase):
+    """`--help` of the tool and of each command prints and exits 0 (a `%O` in a help text once crashed it)."""
+
+    def exits_with(self, argv):
+        """The exit status of parsing `argv`, and what it printed."""
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as raised:
+            l10n.build_parser().parse_args(argv)
+        return raised.exception.code, out.getvalue()
+
+    def test_the_tools_help_exits_0_and_names_the_merge_drivers_arguments(self):
+        status, text = self.exits_with(["--help"])
+        self.assertEqual(status, 0)
+        # The merge driver's placeholders are shown literally, as git writes them.
+        self.assertIn("%O %A %B %P", text)
+
+    def test_every_commands_help_exits_0(self):
+        # Every command the parser has, so a command added later is covered without a change here.
+        subparsers = next(action for action in l10n.build_parser()._actions if getattr(action, "choices", None))
+        for command in subparsers.choices:
+            with self.subTest(command=command):
+                self.assertEqual(self.exits_with([command, "--help"])[0], 0)
+
+
 class RefusalTests(SyncCase):
     """A sync that must not run: nothing is changed."""
 

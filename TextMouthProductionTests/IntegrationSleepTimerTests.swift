@@ -1502,24 +1502,24 @@ final class SleepTimerSheetTests: XCTestCase {
     func testStopAtButtonsSayWhatTheyDo() {
         XCTAssertEqual(SleepTimerView.stopAtHeading, "Stop At")
         XCTAssertEqual(SleepTimerView.endOfHeadingTitle, "End of heading")
-        XCTAssertEqual(SleepTimerView.endOfHeadingLabel, "Stop at the end of this heading and start playing")
+        XCTAssertEqual(SleepTimerView.endOfHeadingLabel, "Stop at the end of this heading")
         XCTAssertEqual(
             SleepTimerView.endOfHeadingHint,
-            "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends."
+            "Plays the book until the next heading."
         )
         XCTAssertEqual(SleepTimerView.endOfBookTitle, "End of book")
-        XCTAssertEqual(SleepTimerView.endOfBookLabel, "Stop at the end of the book and start playing")
+        XCTAssertEqual(SleepTimerView.endOfBookLabel, "Stop at the end of the book")
         XCTAssertEqual(
             SleepTimerView.endOfBookHint(for: .continueNext),
-            "Pauses playback when this book ends, before Continue to Next Book starts the next book."
+            "Plays the book and pauses before the next book."
         )
         XCTAssertEqual(
             SleepTimerView.endOfBookHint(for: .loop),
-            "Pauses playback when this book ends, before Loop to Start plays it again."
+            "Plays the book and pauses before it starts again."
         )
         XCTAssertEqual(
             SleepTimerView.endOfBookHint(for: .stop),
-            "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too."
+            "Plays the book; it stops at its end anyway."
         )
     }
 
@@ -1583,7 +1583,7 @@ final class SleepTimerSheetTests: XCTestCase {
                 labels.contains { $0.localizedCaseInsensitiveContains("chapter") },
                 "The sheet offers a chapter timer again: \(labels)"
             )
-            let lastPreset = try XCTUnwrap(labels.lastIndex(of: "Set timer for 60 minutes and start playing"))
+            let lastPreset = try XCTUnwrap(labels.lastIndex(of: "Set timer for 60 minutes"))
             let headingIndex = try XCTUnwrap(labels.firstIndex(of: SleepTimerView.endOfHeadingLabel))
             let bookIndex = try XCTUnwrap(labels.firstIndex(of: SleepTimerView.endOfBookLabel))
             XCTAssertLessThan(lastPreset, headingIndex, "Stop At does not follow the minute presets: \(labels)")

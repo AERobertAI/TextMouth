@@ -100,19 +100,52 @@ final class MenuVisibilityManager {
 
     // MARK: - Menu Title Sets
     //
-    // Each set contains the exact title strings of CommandMenus that should
-    // only be visible for that window type. These must match the strings
-    // passed to CommandMenu("...") in MenuCommands.swift.
+    // Each set contains the title strings of CommandMenus that should only be
+    // visible for that window type. A `CommandMenu("Bookmarks")` literal is a
+    // localization key, so the menu bar shows the key's translation (the
+    // Bookmarks menu reads "Marcadores" in Spanish). Each set therefore holds
+    // every key AND its text in the interface language, or the menu would
+    // stop hiding in any language whose word differs. The keys must match the
+    // strings passed to CommandMenu("...") in MenuCommands.swift.
+
+    /// The keys of the CommandMenus that appear only when a reader window is
+    /// focused: the one list the reader's title set is built from.
+    static let readerMenuKeys = ["Playback", "Navigate", "Bookmarks", "Book"] // l10n: no (the CommandMenu keys; the title set adds their localized text)
+
+    /// The keys of the CommandMenus that appear only when a library window is
+    /// focused.
+    static let libraryMenuKeys = ["Library"] // l10n: no (the CommandMenu key; the title set adds its localized text)
+
+    /// The titles a menu bar item may show for `keys`: each key as written
+    /// (English, which is what the menu shows when no translation exists),
+    /// its text as the app's own bundle resolves it (exactly what SwiftUI
+    /// puts in the menu bar, whatever `Locale.current` says), and its text in
+    /// `locale`. A computed value rather than a stored one, so a language
+    /// change is never cached away.
+    ///
+    /// - Parameters:
+    ///   - keys: CommandMenu keys, as written in MenuCommands.swift.
+    ///   - locale: The interface language to read each key in besides the
+    ///     bundle's; tests pass Spanish to prove the Spanish title is in the
+    ///     set.
+    static func titles(for keys: [String], locale: Locale = .current) -> Set<String> {
+        Set(keys.flatMap { key -> [String] in
+            let value = String.LocalizationValue(key)
+            return [key,
+                    String(localized: value),
+                    String(localized: LocalizedStringResource(value, locale: locale))]
+        })
+    }
 
     /// Menu titles that should only appear when a reader window is focused
-    static let readerMenuTitles: Set<String> = ["Playback", "Navigate", "Bookmarks", "Book"]
+    static var readerMenuTitles: Set<String> { titles(for: readerMenuKeys) }
 
     /// Menu titles that should only appear when a library window is focused
-    static let libraryMenuTitles: Set<String> = ["Library"]
+    static var libraryMenuTitles: Set<String> { titles(for: libraryMenuKeys) }
 
     /// All context-specific menu titles (union of all window-type sets).
     /// Standard menus (File, Edit, View, Window, Help) are never touched.
-    static let allContextMenuTitles: Set<String> = readerMenuTitles.union(libraryMenuTitles)
+    static var allContextMenuTitles: Set<String> { readerMenuTitles.union(libraryMenuTitles) }
 
     // MARK: - Observation
 
@@ -291,12 +324,16 @@ final class MenuVisibilityManager {
     static func applyVisibility(for windowType: ActiveWindowType?, to mainMenu: NSMenu?) {
         guard let mainMenu = mainMenu else { return }
 
+        // Built once per call: each set holds the keys and their localized text.
+        let readerTitles = readerMenuTitles
+        let libraryTitles = libraryMenuTitles
+
         for item in mainMenu.items {
             let title = item.title
 
-            if readerMenuTitles.contains(title) {
+            if readerTitles.contains(title) {
                 item.isHidden = (windowType != .reader)
-            } else if libraryMenuTitles.contains(title) {
+            } else if libraryTitles.contains(title) {
                 item.isHidden = (windowType != .library)
             }
             // When adding a new window type:

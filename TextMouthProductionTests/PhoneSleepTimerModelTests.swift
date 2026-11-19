@@ -46,10 +46,12 @@ final class PhoneSleepTimerModelTests: XCTestCase {
         XCTAssertEqual(PhoneSleepTimerModel.duration(of: .endOfHeading, customMinutes: 30), .endOfHeading)
         XCTAssertEqual(PhoneSleepTimerModel.duration(of: .endOfBook, customMinutes: 30), .endOfBook)
 
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .preset(minutes: 15), customMinutes: 30), "Set timer for 15 minutes and start playing")
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .custom, customMinutes: 1), "Set timer for 1 minute and start playing")
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfHeading, customMinutes: 30), "Stop at the end of this heading and start playing")
-        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfBook, customMinutes: 30), "Stop at the end of the book and start playing")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .preset(minutes: 15), customMinutes: 30), "Set timer for 15 minutes")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .custom, customMinutes: 1), "Set timer for 1 minute")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfHeading, customMinutes: 30), "Stop at the end of this heading")
+        XCTAssertEqual(PhoneSleepTimerModel.label(of: .endOfBook, customMinutes: 30), "Stop at the end of the book")
+        // What the minute buttons also do is their hint, the Mac's (FR35).
+        XCTAssertEqual(SleepTimerView.minutesTimerHint, "Plays the book.")
     }
 
     /// What's said once a timer is set is the Mac's sentence.
@@ -58,12 +60,14 @@ final class PhoneSleepTimerModelTests: XCTestCase {
         XCTAssertEqual(PhoneSleepTimerModel.setAnnouncement(.endOfHeading), "Sleep timer: stops at the end of this heading.")
     }
 
-    /// The custom field's hint names no Return key.
-    func testTheCustomHintIsThePhones() {
-        XCTAssertEqual(
-            PhoneSleepTimerModel.customMinutesHint,
-            "Type the minutes, or change them 5 at a time with Adjust minutes. Set sets the timer and starts playing."
-        )
+    /// The custom field's hint on the phone is the range alone: the phone has no Return key to name, so its hint is
+    /// not the Mac's, which also says what Return does (the review of FR35's cuts).
+    func testTheCustomHintIsThePhonesOwn() {
+        XCTAssertEqual(PhoneSleepTimerModel.customMinutesHint, "Takes 1 to 480 minutes.")
+        XCTAssertEqual(PhoneSleepTimerModel.customMinutesHint, SleepTimerView.customMinutesRangeHint)
+        XCTAssertEqual(SleepTimerView.customMinutesHint, "Takes 1 to 480 minutes. Return sets the timer and plays the book.")
+        XCTAssertNotEqual(PhoneSleepTimerModel.customMinutesHint, SleepTimerView.customMinutesHint)
+        XCTAssertEqual(PhoneSleepTimerModel.customMinutesRange, SleepTimerView.customMinutesRange)
     }
 
     /// The reader's value is "Off" without a timer, else the Mac's status.
@@ -75,7 +79,7 @@ final class PhoneSleepTimerModelTests: XCTestCase {
 
     /// The note under New Timer is the Mac's, by whether a timer runs.
     func testTheNewTimerNoteFollowsTheTimer() {
-        XCTAssertEqual(PhoneSleepTimerModel.newTimerNote(isActive: true), "Setting a new timer replaces the current one.")
+        XCTAssertEqual(PhoneSleepTimerModel.newTimerNote(isActive: true), "A new timer replaces the one running.")
         XCTAssertEqual(PhoneSleepTimerModel.newTimerNote(isActive: false), "Pause playback after:")
     }
 
@@ -87,34 +91,60 @@ final class PhoneSleepTimerModelTests: XCTestCase {
 }
 
 /// `PhoneSleepTimerVocabulary`: each word is the Mac's Sleep Timer sheet's,
-/// read from its own source.
+/// the static the Mac's sheet shows, with its English as it was.
 final class PhoneSleepTimerVocabularyTests: XCTestCase {
-    /// Every inline word is in `SleepTimerView` as the phone has it.
+    /// Every word the phone takes from the Mac's sheet is the Mac's own
+    /// static, which the Mac's sheet shows where the word once sat inline
+    /// (`shownAs`, read from its source), and its English has not changed.
+    /// The words were inline literals of `SleepTimerView`, which this test
+    /// found in its source; they became its localized statics (FR35), which
+    /// both sheets read, so the source check looks for each static instead.
     func testEveryWordIsTheMacsSleepTimerSheets() throws {
         let macView = try String(
             contentsOf: AppSourceFile.folder.appendingPathComponent("Views/Reader/SleepTimerView.swift"),
             encoding: .utf8
         )
-        let words = [
-            "Text(\"\(PhoneSleepTimerVocabulary.title)\")",
-            "Button(\"\(PhoneAppWording.close)\")",
-            ".accessibilityHint(\"\(PhoneSleepTimerVocabulary.closeHint)\")",
-            "Text(\"\(PhoneSleepTimerVocabulary.currentTimer)\")",
-            "Button(\"\(PhoneSleepTimerVocabulary.resetTimer)\")",
-            ".accessibilityHint(\"\(PhoneSleepTimerVocabulary.resetTimerHint)\")",
-            "Button(\"\(PhoneSleepTimerVocabulary.cancelTimer)\", role: .destructive)",
-            ".accessibilityHint(\"\(PhoneSleepTimerVocabulary.cancelTimerHint)\")",
-            "\"\(PhoneSleepTimerVocabulary.cancelled)\"",
-            "Text(\"\(PhoneSleepTimerVocabulary.newTimer)\")",
-            "\"\(PhoneSleepTimerVocabulary.replacesCurrent)\"",
-            "\"\(PhoneSleepTimerVocabulary.pausePlaybackAfter)\"",
-            "TextField(\"\(PhoneSleepTimerVocabulary.minutesField)\", value: $customMinutes, format: .number)",
-            ".accessibilityLabel(\"\(PhoneSleepTimerVocabulary.customMinutesLabel)\")",
-            "Button(\"\(PhoneSleepTimerVocabulary.set)\")",
+        let words: [(phone: String, mac: String, english: String, shownAs: String)] = [
+            (PhoneSleepTimerVocabulary.title, SleepTimerView.title, "Sleep Timer", "Text(Self.title)"),
+            (PhoneSleepTimerVocabulary.close, SleepTimerView.closeTitle, "Close", "Button(Self.closeTitle)"),
+            (PhoneSleepTimerVocabulary.closeHint, SleepTimerView.closeHint,
+             "Returns to the book.", ".accessibilityHint(Self.closeHint)"),
+            (PhoneSleepTimerVocabulary.currentTimer, SleepTimerView.currentTimerHeading,
+             "Current Timer", "Text(Self.currentTimerHeading)"),
+            (PhoneSleepTimerVocabulary.resetTimer, SleepTimerView.resetTimerTitle, "Reset Timer", "Button(Self.resetTimerTitle)"),
+            (PhoneSleepTimerVocabulary.resetTimerHint, SleepTimerView.resetTimerHint,
+             "Restarts the timer at its full length and plays the book.", ".accessibilityHint(Self.resetTimerHint)"),
+            (PhoneSleepTimerVocabulary.cancelTimer, SleepTimerView.cancelTimerTitle,
+             "Cancel Timer", "Button(Self.cancelTimerTitle, role: .destructive)"),
+            (PhoneSleepTimerVocabulary.cancelled, SleepTimerView.cancelledAnnouncement,
+             "Sleep timer cancelled.", "announceToVoiceOver(Self.cancelledAnnouncement)"),
+            (PhoneSleepTimerVocabulary.newTimer, SleepTimerView.newTimerHeading, "New Timer", "Text(Self.newTimerHeading)"),
+            (PhoneSleepTimerVocabulary.replacesCurrent, SleepTimerView.newTimerNote(isActive: true),
+             "A new timer replaces the one running.", "Text(Self.newTimerNote(isActive: sleepTimerService.isActive))"),
+            (PhoneSleepTimerVocabulary.pausePlaybackAfter, SleepTimerView.newTimerNote(isActive: false),
+             "Pause playback after:", "Text(Self.newTimerNote(isActive: sleepTimerService.isActive))"),
+            (PhoneSleepTimerVocabulary.minutesField, SleepTimerView.minutesFieldTitle,
+             "Minutes", "TextField(Self.minutesFieldTitle, value: $customMinutes, format: .number)"),
+            (PhoneSleepTimerVocabulary.customMinutesLabel, SleepTimerView.customMinutesLabel,
+             "Custom minutes", ".accessibilityLabel(Self.customMinutesLabel)"),
+            (PhoneSleepTimerVocabulary.set, SleepTimerView.setTitle, "Set", "Button(Self.setTitle)"),
         ]
 
         for word in words {
-            XCTAssertTrue(macView.contains(word), "The Mac's Sleep Timer sheet no longer says \(word)")
+            XCTAssertEqual(word.phone, word.mac, "The phone's word is not the Mac's \(word.shownAs)")
+            XCTAssertEqual(word.mac, word.english, "The Mac's \(word.shownAs) changed its English")
+            XCTAssertTrue(macView.contains(word.shownAs), "The Mac's Sleep Timer sheet no longer shows \(word.shownAs)")
         }
+    }
+
+    /// The iPhone's Sleep Timer sheet closes with the Mac's localized Close, not `PhoneAppWording.close`'s English
+    /// (finding 4 of the pilot's review). The source is read, since the language cannot change in the test host.
+    func testThePhonesSheetShowsTheMacsClose() throws {
+        let sheet = try String(
+            contentsOf: AppSourceFile.folder.appendingPathComponent("Platform/iOS/Views/Reader/PhoneSleepTimerSheet.swift"),
+            encoding: .utf8
+        )
+        XCTAssertTrue(sheet.contains("PhoneSheetButton(title: PhoneSleepTimerVocabulary.close,"))
+        XCTAssertFalse(sheet.contains("PhoneAppWording.close"))
     }
 }

@@ -88,15 +88,15 @@ struct SleepTimerView: View {
         let _ = ViewBodyCounter.record("SleepTimerView")
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Sleep Timer")
+                Text(Self.title)
                     .font(.headline)
                     .accessibilityAddTraits(.isHeader)
 
                 Spacer()
 
-                Button("Close") { closeSheet() }
+                Button(Self.closeTitle) { closeSheet() }
                     .keyboardShortcut(.cancelAction)
-                    .accessibilityHint("Close the sleep timer and return to the book")
+                    .accessibilityHint(Self.closeHint)
             }
 
             // Current timer section — only when a timer is running
@@ -115,7 +115,7 @@ struct SleepTimerView: View {
         }
         .padding()
         .frame(width: 320)
-        .navigationTitle("Sleep Timer")
+        .navigationTitle(Self.title)
         .onAppear {
             // Once the initial focus attempts have had time to complete,
             // remove the trigger so countdown updates cannot request focus
@@ -135,7 +135,7 @@ struct SleepTimerView: View {
     /// sheet uses to arm a timer.
     private var currentTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Current Timer")
+            Text(Self.currentTimerHeading)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .accessibilityAddTraits(.isHeader)
@@ -150,7 +150,7 @@ struct SleepTimerView: View {
             }
 
             HStack(spacing: 12) {
-                Button("Reset Timer") {
+                Button(Self.resetTimerTitle) {
                     shouldRequestInitialFocus = false
                     viewModel.restartSleepTimer(startPlaybackIfNeeded: true)
                     viewModel.announceToVoiceOver(Self.resetAnnouncement(status: sleepTimerService.spokenStatus))
@@ -158,14 +158,13 @@ struct SleepTimerView: View {
                         closeSheet()
                     }
                 }
-                .accessibilityHint("Restart the timer with its original duration")
+                .accessibilityHint(Self.resetTimerHint)
 
-                Button("Cancel Timer", role: .destructive) {
+                Button(Self.cancelTimerTitle, role: .destructive) {
                     shouldRequestInitialFocus = false
                     viewModel.cancelSleepTimer()
-                    viewModel.announceToVoiceOver("Sleep timer cancelled.")
+                    viewModel.announceToVoiceOver(Self.cancelledAnnouncement)
                 }
-                .accessibilityHint("Stop the timer and discard the remaining time")
             }
         }
     }
@@ -181,14 +180,12 @@ struct SleepTimerView: View {
     /// Stop At section below.
     private var newTimerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("New Timer")
+            Text(Self.newTimerHeading)
                 .font(.subheadline)
                 .fontWeight(.semibold)
                 .accessibilityAddTraits(.isHeader)
 
-            Text(sleepTimerService.isActive
-                 ? "Setting a new timer replaces the current one."
-                 : "Pause playback after:")
+            Text(Self.newTimerNote(isActive: sleepTimerService.isActive))
                 .font(.caption)
                 .foregroundColor(.secondary)
 
@@ -198,6 +195,7 @@ struct SleepTimerView: View {
                     setNewTimer(.minutes(minutes))
                 }
                 .accessibilityLabel(Self.setTimerLabel(minutes: minutes))
+                .accessibilityHint(Self.minutesTimerHint)
                 // The top Close control remains immediately available, but
                 // opening the sheet places VoiceOver on the first primary
                 // timer action instead of the dismiss action.
@@ -213,36 +211,43 @@ struct SleepTimerView: View {
             // Custom duration
             HStack(spacing: 8) {
                 // "Custom:" and "min" are for the eye: the field's label,
-                // "Custom timer minutes", says both, so VoiceOver skips
+                // "Custom minutes", says both, so VoiceOver skips
                 // them as stops of their own (TODO A10).
-                Text("Custom:")
+                Text(Self.customPrefix)
                     .accessibilityHidden(true)
-                TextField("Minutes", value: $customMinutes, format: .number)
+                TextField(Self.minutesFieldTitle, value: $customMinutes, format: .number)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 60)
                     .multilineTextAlignment(.center)
                     .onSubmit {
-                        customMinutes = max(1, min(customMinutes, 480))
+                        customMinutes = Self.clampedCustomMinutes(customMinutes)
                         setNewTimer(.minutes(customMinutes))
                     }
-                    .accessibilityLabel("Custom timer minutes")
+                    .accessibilityLabel(Self.customMinutesLabel)
                     .accessibilityValue(customMinutesSpoken)
                     .accessibilityHint(Self.customMinutesHint)
                 // Its value is the field's, unit and all: it was the bare
-                // number, "Adjust minutes, 30" (TODO A10).
-                Stepper("", value: $customMinutes, in: 1...480, step: Self.customMinutesStep)
-                    .labelsHidden()
-                    .accessibilityLabel(Self.adjustMinutesLabel)
-                    .accessibilityValue(customMinutesSpoken)
-                Text("min")
+                // number, "Adjust minutes, 30" (TODO A10). It has no title of
+                // its own: an empty title was a string of its own for
+                // translators, with nothing to translate (FR35), and a hidden
+                // title is read before the label on the Mac ("Adjust minutes,
+                // Adjust minutes", board #121), so the label stands alone.
+                Stepper(value: $customMinutes, in: Self.customMinutesRange, step: Self.customMinutesStep) {
+                    EmptyView()
+                }
+                .labelsHidden()
+                .accessibilityLabel(Self.adjustMinutesLabel)
+                .accessibilityValue(customMinutesSpoken)
+                Text(Self.minutesUnit)
                     .foregroundColor(.secondary)
                     .accessibilityHidden(true)
 
-                Button("Set") {
-                    customMinutes = max(1, min(customMinutes, 480))
+                Button(Self.setTitle) {
+                    customMinutes = Self.clampedCustomMinutes(customMinutes)
                     setNewTimer(.minutes(customMinutes))
                 }
                 .accessibilityLabel(Self.setTimerLabel(minutes: customMinutes))
+                .accessibilityHint(Self.minutesTimerHint)
             }
         }
     }
@@ -284,9 +289,10 @@ struct SleepTimerView: View {
     }
 
     /// The custom minutes as the field and its stepper both speak them,
-    /// unit and all: "1 minute", "30 minutes".
+    /// unit and all: "1 minute", "30 minutes", the name a timer of that many
+    /// minutes has.
     private var customMinutesSpoken: String {
-        CountWording.minutes(customMinutes)
+        SleepTimerDuration.minutes(customMinutes).displayName
     }
 
     /// Start (or restart) the timer and optionally dismiss the sheet.
@@ -308,66 +314,243 @@ struct SleepTimerView: View {
 
     // MARK: - Wording
 
+    // Every word of the sheet, localized (FR35): each is computed, so it is
+    // read from the String Catalog in the interface's language whenever it is
+    // asked for, and each carries a comment saying where it is seen or heard
+    // and what each placeholder holds. The iPhone's sheet says the same words
+    // through these (`PhoneSleepTimerVocabulary`).
+
+    /// The sheet's title, read as its heading.
+    nonisolated static var title: String {
+        String(localized: "Sleep Timer",
+               comment: "The name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.")
+    }
+
+    /// The button that closes the sheet.
+    nonisolated static var closeTitle: String {
+        String(localized: "Close",
+               comment: "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.")
+    }
+
+    /// What VoiceOver says the Close button does: the result, which its
+    /// label does not say (FR35's cut; it was "Close the sleep timer and
+    /// return to the book").
+    nonisolated static var closeHint: String {
+        String(localized: "Returns to the book.",
+               comment: "VoiceOver hint of the sleep timer sheet's Close button: closing the sheet goes back to the book's reader.")
+    }
+
+    /// The heading over the timer running.
+    nonisolated static var currentTimerHeading: String {
+        String(localized: "Current Timer",
+               comment: "Heading of the sleep timer sheet's section about the timer running now.")
+    }
+
+    /// The button that starts the running timer again from its whole length.
+    nonisolated static var resetTimerTitle: String {
+        String(localized: "Reset Timer",
+               comment: "Button of the sleep timer sheet that starts the running timer again from its whole length.")
+    }
+
+    /// What VoiceOver says Reset Timer does.
+    nonisolated static var resetTimerHint: String {
+        String(localized: "Restarts the timer at its full length and plays the book.",
+               comment: "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to, and the book plays.")
+    }
+
+    /// The button that stops the running timer.
+    nonisolated static var cancelTimerTitle: String {
+        String(localized: "Cancel Timer",
+               comment: "Button of the sleep timer sheet that stops the running timer.")
+    }
+
+    /// What VoiceOver says once Cancel Timer has stopped the timer.
+    nonisolated static var cancelledAnnouncement: String {
+        String(localized: "Sleep timer cancelled.",
+               comment: "VoiceOver announcement after the Cancel Timer button stopped the sleep timer.")
+    }
+
+    /// The heading over the timers to set.
+    nonisolated static var newTimerHeading: String {
+        String(localized: "New Timer",
+               comment: "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes.")
+    }
+
+    /// The note under New Timer: that a new timer replaces the one running,
+    /// while one runs (`isActive`), else what the presets do.
+    nonisolated static func newTimerNote(isActive: Bool) -> String {
+        isActive
+            ? String(localized: "A new timer replaces the one running.",
+                     comment: "Note under the sleep timer sheet's New Timer heading while a timer runs: setting one of the timers below stops it.")
+            : String(localized: "Pause playback after:",
+                     comment: "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes.")
+    }
+
+    /// The word before the custom minutes field, for the eye only: the
+    /// field's own label says it to VoiceOver.
+    nonisolated static var customPrefix: String {
+        String(localized: "Custom:",
+               comment: "Shown before the sleep timer sheet's field of a custom number of minutes. Hidden from VoiceOver, which reads the field's label.")
+    }
+
+    /// The custom minutes field's title, shown in the field while it is empty.
+    nonisolated static var minutesFieldTitle: String {
+        String(localized: "Minutes",
+               comment: "Placeholder of the sleep timer sheet's field of a custom number of minutes.")
+    }
+
+    /// What VoiceOver calls the custom minutes field.
+    nonisolated static var customMinutesLabel: String {
+        String(localized: "Custom minutes",
+               comment: "VoiceOver label of the sleep timer sheet's field of a custom number of minutes.")
+    }
+
+    /// The unit after the custom minutes field, for the eye only.
+    nonisolated static var minutesUnit: String {
+        String(localized: "min",
+               comment: "Short for minutes, shown after the sleep timer sheet's custom minutes field. Hidden from VoiceOver.")
+    }
+
+    /// The button that sets the custom timer.
+    nonisolated static var setTitle: String {
+        String(localized: "Set",
+               comment: "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes.")
+    }
+
     /// How many minutes the Adjust minutes stepper changes the custom timer
     /// by.
     nonisolated static let customMinutesStep = 5
-    /// The custom timer's stepper's label, which the field's hint names.
-    nonisolated static let adjustMinutesLabel = "Adjust minutes"
+
+    /// The fewest and most minutes the custom timer takes: the field, its
+    /// stepper, and its hint, on the Mac and the iPhone.
+    nonisolated static let customMinutesRange = 1...480
+
+    /// `minutes` held to `customMinutesRange`.
+    nonisolated static func clampedCustomMinutes(_ minutes: Int) -> Int {
+        min(max(minutes, customMinutesRange.lowerBound), customMinutesRange.upperBound)
+    }
+
+    /// The custom timer's stepper's label, on the Mac and the iPhone.
+    nonisolated static var adjustMinutesLabel: String {
+        String(localized: "Adjust minutes",
+               comment: "VoiceOver label of the stepper beside the sleep timer sheet's custom minutes field.")
+    }
 
     /// What VoiceOver calls a button that sets a timer for `minutes`, a
-    /// preset's or the custom timer's Set: "Set timer for 1 minute and start
-    /// playing", by the timer's own name (TODO A10; it said "1 minutes").
+    /// preset's or the custom timer's Set: "Set timer for 1 minute" (TODO
+    /// A10; it said "1 minutes"). One phrase with its own plural forms in the
+    /// catalog (FR35); what the button also does is its hint,
+    /// `minutesTimerHint` (FR35's cut; the label went on "and start
+    /// playing").
     nonisolated static func setTimerLabel(minutes: Int) -> String {
-        "Set timer for \(SleepTimerDuration.minutes(minutes).displayName) and start playing"
+        String(localized: "Set timer for \(minutes) minutes",
+               comment: "VoiceOver label of a sleep timer button that sets a timer of so many minutes. %lld is the number of minutes.")
     }
-    /// The custom minutes field's hint: what typing does, the stepper beside
-    /// it by name and step, and what Return does there (TODO A10; it said
-    /// "use the stepper arrows", which name no control VoiceOver lands on).
-    nonisolated static let customMinutesHint =
-        "Type the minutes, or change them \(customMinutesStep) at a time with \(adjustMinutesLabel). Return sets the timer and starts playing."
+
+    /// What VoiceOver says a button that sets a timer of minutes does
+    /// besides: it plays the book, if it is not playing already.
+    nonisolated static var minutesTimerHint: String {
+        String(localized: "Plays the book.",
+               comment: "VoiceOver hint of the sleep timer sheet's minute presets and Set button: setting the timer also plays the book.")
+    }
+
+    /// The Mac's custom minutes field's hint: the minutes it takes, which
+    /// nothing else says, and what the Return key does there, a side effect
+    /// that nothing else says either (the review of FR35's cuts: the first
+    /// cut dropped it with the stepper's name, which a hint does drop; a hint
+    /// names a key when the key is how the field is used). The step of 5 is
+    /// gone: the stepper says its new value each time it changes.
+    nonisolated static var customMinutesHint: String {
+        String(localized: "Takes \(customMinutesRange.lowerBound) to \(customMinutesRange.upperBound) minutes. Return sets the timer and plays the book.",
+               comment: "VoiceOver hint of the sleep timer sheet's custom minutes field on the Mac: the fewest and most minutes it takes, and what the Return key does there. %1$lld is the fewest (1); %2$lld the most (480). Return is the name of the key.")
+    }
+
+    /// The iPhone's custom minutes field's hint: the minutes it takes. The
+    /// phone has no Return key to name, so it says the range alone.
+    nonisolated static var customMinutesRangeHint: String {
+        String(localized: "Takes \(customMinutesRange.lowerBound) to \(customMinutesRange.upperBound) minutes.",
+               comment: "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).")
+    }
 
     /// The heading of the section of timers that stop at a place.
-    nonisolated static let stopAtHeading = "Stop At"
-    /// The End of heading button's title.
-    nonisolated static let endOfHeadingTitle = "End of heading"
-    /// What VoiceOver reads for the End of heading button.
-    nonisolated static let endOfHeadingLabel = "Stop at the end of this heading and start playing"
+    nonisolated static var stopAtHeading: String {
+        String(localized: "Stop At",
+               comment: "Heading of the sleep timer sheet's section of timers that stop at a place in the book: End of heading and End of book.")
+    }
+
+    /// The End of heading button's title: the timer's own name.
+    nonisolated static var endOfHeadingTitle: String {
+        SleepTimerDuration.endOfHeading.displayName
+    }
+
+    /// What VoiceOver reads for the End of heading button (FR35's cut: it
+    /// went on "and start playing", which its hint says).
+    nonisolated static var endOfHeadingLabel: String {
+        String(localized: "Stop at the end of this heading",
+               comment: "VoiceOver label of the sleep timer sheet's End of heading button, which sets a timer that stops where the heading playing ends.")
+    }
+
     /// What the End of heading button does, for VoiceOver and as its help:
-    /// where a heading ends, for any document.
-    nonisolated static let endOfHeadingHint =
-        "Pauses playback where the heading playing now ends: where the next heading begins, or the book ends."
-    /// The End of book button's title.
-    nonisolated static let endOfBookTitle = "End of book"
-    /// What VoiceOver reads for the End of book button.
-    nonisolated static let endOfBookLabel = "Stop at the end of the book and start playing"
+    /// it plays the book, as far as the next heading (FR35's cut; it said
+    /// "Pauses playback where the heading playing now ends: where the next
+    /// heading begins, or the book ends.").
+    nonisolated static var endOfHeadingHint: String {
+        String(localized: "Plays the book until the next heading.",
+               comment: "VoiceOver hint and help tag of the sleep timer sheet's End of heading button: the book plays, and pauses where the next heading begins.")
+    }
+
+    /// The End of book button's title: the timer's own name.
+    nonisolated static var endOfBookTitle: String {
+        SleepTimerDuration.endOfBook.displayName
+    }
+
+    /// What VoiceOver reads for the End of book button (FR35's cut: it went
+    /// on "and start playing", which its hint says).
+    nonisolated static var endOfBookLabel: String {
+        String(localized: "Stop at the end of the book",
+               comment: "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends.")
+    }
 
     /// What the End of book button does, for VoiceOver and as its help, for
-    /// a book whose end-of-book behavior is `behavior`: it pauses playback
-    /// before Continue to Next Book or Loop to Start would go on, and it says
-    /// so when the book stops at its end on its own anyway.
+    /// a book whose end-of-book behavior is `behavior`: it plays the book and
+    /// pauses before the next book or the book's own start would follow, and
+    /// says so when the book stops at its end on its own anyway (FR35's cut:
+    /// each said the When book ends choice's name and the pause in more
+    /// words).
     nonisolated static func endOfBookHint(for behavior: EndOfBookBehavior) -> String {
         switch behavior {
         case .continueNext:
-            return "Pauses playback when this book ends, before Continue to Next Book starts the next book."
+            return String(localized: "Plays the book and pauses before the next book.",
+                          comment: "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to go on to the next book when it ends.")
         case .loop:
-            return "Pauses playback when this book ends, before Loop to Start plays it again."
+            return String(localized: "Plays the book and pauses before it starts again.",
+                          comment: "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.")
         case .stop, .stopAndPlayStartsOver:
-            return "This book already stops playing at its end, since Continue to Next Book is off; the timer stops it there too."
+            return String(localized: "Plays the book; it stops at its end anyway.",
+                          comment: "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book that stops at its end on its own, so the timer adds nothing there.")
         }
     }
 
     /// What VoiceOver announces as a timer is set for `duration`: where a
     /// timer for a place stops playback ("Sleep timer: stops at the end of
-    /// this heading."), or the minutes a timer counts.
+    /// this heading."), or the minutes a timer counts ("Timer set for 15
+    /// minutes.", one sentence with its own plural forms).
     nonisolated static func announcement(forSetting duration: SleepTimerDuration) -> String {
-        guard let stop = duration.spokenStop else { return "Timer set for \(duration.displayName)." }
-        return "Sleep timer: \(stop)."
+        switch duration {
+        case .minutes(let minutes):
+            return String(localized: "Timer set for \(minutes) minutes.",
+                          comment: "VoiceOver announcement after a sleep timer of so many minutes was set. %lld is the number of minutes.")
+        case .endOfHeading, .endOfBook:
+            return String(localized: "Sleep timer: \(duration.spokenStop ?? duration.displayName).",
+                          comment: "VoiceOver announcement after a sleep timer that stops at a place was set. %@ says where it stops, such as \"stops at the end of this heading\".")
+        }
     }
 
     /// What VoiceOver announces as Reset Timer restarts the timer, whose
     /// state `status` gives as `SleepTimerService.spokenStatus` reads it.
     nonisolated static func resetAnnouncement(status: String) -> String {
-        "Timer reset: \(status)."
+        String(localized: "Timer reset: \(status).",
+               comment: "VoiceOver announcement after Reset Timer started the sleep timer again. %@ is the timer's state, such as \"15:00 remaining\" or \"stops at the end of the book\".")
     }
 
     /// Centralize every close path so buttons, Escape, auto-close, and the

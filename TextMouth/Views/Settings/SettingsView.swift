@@ -448,8 +448,10 @@ struct PlaybackSettingsView: View {
                     get: { settingsViewModel.nextBookWindow },
                     set: { settingsViewModel.nextBookWindow = $0 }
                 )) {
+                    // Each choice by its localized name; the raw value is
+                    // what config.json keeps (FR35).
                     ForEach(NextBookWindow.allCases, id: \.self) { choice in
-                        Text(choice.rawValue).tag(choice)
+                        Text(choice.title).tag(choice)
                     }
                 }
                 .accessibilityLabel(NextBookWindowWording.globalLabel)

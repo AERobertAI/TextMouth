@@ -85,41 +85,79 @@ final class PhoneBookmarksModelTests: XCTestCase {
     func testThePhonesWordsAreTheSpecs() {
         XCTAssertEqual(PhoneBookmarksWording.removeQuestion(number: 3), "Remove Bookmark 3?")
         XCTAssertEqual(PhoneReaderWording.remove, "Remove")
+        XCTAssertEqual(PhoneBookmarksWording.removeButton, "Remove")
+        // The reader's own question and the sheet's are one: the same title and button.
+        XCTAssertEqual(PhoneReaderWording.removeBookmarkTitle(madeThird), PhoneBookmarksWording.removeQuestion(number: 3))
+        XCTAssertEqual(PhoneReaderWording.remove, PhoneBookmarksWording.removeButton)
+        // A bookmark's number is an identifier: no digit grouping, whatever the region.
+        XCTAssertEqual(PhoneBookmarksWording.removeQuestion(number: 1234), "Remove Bookmark 1234?")
         XCTAssertEqual(PhoneBookmarksWording.jumpAnnouncement(to: madeThird), "Bookmark 3")
         XCTAssertEqual(PhoneBookmarksWording.emptyHelp, "Add Bookmark adds one at the current position.")
     }
 }
 
-/// `PhoneBookmarksVocabulary`: each word is the Mac's Bookmarks sheet's,
-/// read from its own source.
+/// `PhoneBookmarksVocabulary`: each word is the Mac's Bookmarks sheet's, the
+/// static the Mac's sheet shows, with its English as it was.
 final class PhoneBookmarksVocabularyTests: XCTestCase {
-    /// Every inline word is in `BookmarkPanelView` as the phone has it.
+    /// Every word the phone takes from the Mac's sheet is the Mac's own
+    /// static, which the Mac's sheet shows where the word once sat inline
+    /// (`shownAs`, read from its source), and its English has not changed.
+    /// The words were inline literals of `BookmarkPanelView`, which this test
+    /// found in its source; they became its localized statics (FR35), which
+    /// both sheets read, so the source check looks for each static instead.
     func testEveryWordIsTheMacsBookmarksSheets() throws {
         let macView = try String(
             contentsOf: AppSourceFile.folder.appendingPathComponent("Views/Reader/BookmarkPanelView.swift"),
             encoding: .utf8
         )
-        let words = [
-            "Text(\"\(PhoneBookmarksVocabulary.title)\")",
-            "Button(\"\(PhoneBookmarksVocabulary.done)\")",
-            "Label(\"\(PhoneBookmarksVocabulary.addBookmark)\", systemImage: \"plus\")",
-            "Text(\"\(PhoneBookmarksVocabulary.addBookmark)\")",
-            ".accessibilityLabel(\"\(PhoneBookmarksVocabulary.addBookmarkLabel)\")",
-            "Text(\"\(PhoneBookmarksVocabulary.empty)\")",
-            "\"\(PhoneBookmarksVocabulary.rowHint)\"",
-            "TextField(\"\(PhoneBookmarksVocabulary.addNoteField)\", text: $noteText)",
-            "TextField(\"\(PhoneBookmarksVocabulary.editNoteField)\", text: $noteText)",
-            ".accessibilityLabel(\"\(PhoneBookmarksVocabulary.noteLabel)\")",
-            ".accessibilityHint(\"\(PhoneBookmarksVocabulary.addNoteHint)\")",
-            "Button(\"\(PhoneAppWording.cancel)\")",
-            "Button(\"\(PhoneBookmarksVocabulary.add)\")",
-            "Button(\"\(PhoneAppWording.save)\")",
-            "Text(\"Edit Bookmark \\(bookmark.number)\")",
+        let words: [(phone: String, mac: String, english: String, shownAs: String)] = [
+            (PhoneBookmarksVocabulary.title, BookmarkPanelView.title, "Bookmarks", "Text(Self.title)"),
+            (PhoneBookmarksVocabulary.done, BookmarkPanelView.doneTitle, "Done", "Button(Self.doneTitle)"),
+            (PhoneBookmarksVocabulary.addBookmark, BookmarkPanelView.addBookmarkTitle,
+             "Add Bookmark", "Label(Self.addBookmarkTitle, systemImage: \"plus\")"),
+            (PhoneBookmarksVocabulary.addBookmark, BookmarkPanelView.addBookmarkTitle,
+             "Add Bookmark", "Text(Self.addBookmarkTitle)"),
+            (PhoneBookmarksVocabulary.addBookmarkHint, BookmarkPanelView.addBookmarkHint,
+             "Asks for an optional note, then marks the reading position.", ".accessibilityHint(Self.addBookmarkHint)"),
+            (PhoneBookmarksVocabulary.empty, BookmarkPanelView.emptyList, "No bookmarks yet.", "Text(Self.emptyList)"),
+            (PhoneBookmarksVocabulary.rowHint, BookmarkRow.hint,
+             "Goes to this bookmark and closes the list.", ".accessibilityHint(row.accessibilityHintText)"),
+            (PhoneBookmarksVocabulary.addNoteField, BookmarkPanelView.addNoteField,
+             "Note (optional)", "TextField(Self.addNoteField, text: $noteText)"),
+            (PhoneBookmarksVocabulary.editNoteField, BookmarkPanelView.editNoteField,
+             "Note", "TextField(Self.editNoteField, text: $noteText)"),
+            (PhoneBookmarksVocabulary.noteLabel, BookmarkPanelView.noteLabel,
+             "Bookmark note", ".accessibilityLabel(Self.noteLabel)"),
+            (PhoneBookmarksVocabulary.cancel, BookmarkPanelView.cancelTitle, "Cancel", "Button(Self.cancelTitle)"),
+            (PhoneBookmarksVocabulary.add, BookmarkPanelView.addTitle, "Add", "Button(Self.addTitle)"),
+            (PhoneBookmarksVocabulary.save, BookmarkPanelView.saveTitle, "Save", "Button(Self.saveTitle)"),
+            (PhoneBookmarksVocabulary.editTitle(number: 3), BookmarkPanelView.editTitle(number: 3),
+             "Edit Bookmark 3", "Text(Self.editTitle(number: bookmark.number))"),
         ]
 
         for word in words {
-            XCTAssertTrue(macView.contains(word), "The Mac's Bookmarks sheet no longer says \(word)")
+            XCTAssertEqual(word.phone, word.mac, "The phone's word is not the Mac's \(word.shownAs)")
+            XCTAssertEqual(word.mac, word.english, "The Mac's \(word.shownAs) changed its English")
+            XCTAssertTrue(macView.contains(word.shownAs), "The Mac's Bookmarks sheet no longer shows \(word.shownAs)")
         }
-        XCTAssertEqual(PhoneBookmarksVocabulary.editTitle(number: 3), "Edit Bookmark 3")
+    }
+
+    /// The iPhone's sheets say Cancel, Save, and Remove through the Mac's localized words, never through
+    /// `PhoneAppWording`'s English or `PhoneReaderWording`'s copies, which left the question half Spanish
+    /// (finding 4 of the pilot's review). The source is read, since the language cannot change in the test host.
+    func testThePhonesBookmarkSheetsShowTheMacsWords() throws {
+        func source(_ path: String) throws -> String {
+            try String(contentsOf: AppSourceFile.folder.appendingPathComponent(path), encoding: .utf8)
+        }
+        let sheet = try source("Platform/iOS/Views/Reader/PhoneBookmarksSheet.swift")
+        XCTAssertFalse(sheet.contains("PhoneAppWording"), "The Bookmarks sheet still says an English word of PhoneAppWording")
+        XCTAssertFalse(sheet.contains("PhoneReaderWording.remove"), "The Bookmarks sheet still says the reader's copy of Remove")
+        XCTAssertEqual(sheet.components(separatedBy: "PhoneBookmarksVocabulary.cancel").count - 1, 2, "Cancel in the question and the note sheet")
+        XCTAssertTrue(sheet.contains("doneTitle: PhoneBookmarksVocabulary.save"))
+        XCTAssertTrue(sheet.contains("Button(PhoneBookmarksWording.removeButton, role: .destructive)"))
+        // The reader's own question: its title forwards to the sheet's, and its buttons are the Mac's words.
+        let reader = try source("Platform/iOS/Views/Reader/PhoneReaderView.swift")
+        XCTAssertTrue(reader.contains("Button(PhoneBookmarksVocabulary.cancel, role: .cancel)"))
+        XCTAssertFalse(reader.contains("PhoneAppWording.cancel"))
     }
 }

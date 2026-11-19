@@ -77,14 +77,14 @@ final class ScreenOrderUITests: TextMouthUITestCase {
 
     // MARK: - The reader's sheets
 
-    /// Bookmarks, with no bookmark yet: the title, Done, "Add bookmark at
-    /// current position", then the Mac's empty note (the spec, under "The
+    /// Bookmarks, with no bookmark yet: the title, Done, Add Bookmark, then
+    /// the Mac's empty note (the spec, under "The
     /// Bookmarks sheet"). Nothing is added: Add Bookmark would open a sheet
     /// with a field.
     func testTheBookmarksSheetHasTheSpecsOrder() throws {
         let app = try launchIntoTheReader()
         let elements = try openReaderSheet("Bookmarks", titled: "Bookmarks", waitingFor: "Done", in: app)
-        assertOrder(["Bookmarks", "Done", "Add bookmark at current position", "No bookmarks yet.…"], in: elements)
+        assertOrder(["Bookmarks", "Done", "Add Bookmark", "No bookmarks yet.…"], in: elements)
         try audit(app, screen: "Bookmarks sheet", accepting: [.navigationTitle("Bookmarks"), .barItem("Done")])
     }
 
@@ -148,16 +148,16 @@ final class ScreenOrderUITests: TextMouthUITestCase {
         let elements = try openReaderSheet("Sleep Timer", titled: "Sleep Timer", waitingFor: "Close", in: app)
         assertOrder([
             "Sleep Timer", "Close", "New Timer",
-            "Set timer for 10 minutes and start playing",
-            "Set timer for 15 minutes and start playing",
-            "Set timer for 30 minutes and start playing",
-            "Set timer for 45 minutes and start playing",
-            "Set timer for 60 minutes and start playing",
-            "Custom timer minutes", "Adjust minutes",
+            "Set timer for 10 minutes",
+            "Set timer for 15 minutes",
+            "Set timer for 30 minutes",
+            "Set timer for 45 minutes",
+            "Set timer for 60 minutes",
+            "Custom minutes", "Adjust minutes",
             // The custom timer's Set button is labeled with its 30 minutes.
-            "Set timer for 30 minutes and start playing",
-            "Stop at the end of this heading and start playing",
-            "Stop at the end of the book and start playing",
+            "Set timer for 30 minutes",
+            "Stop at the end of this heading",
+            "Stop at the end of the book",
         ], in: elements)
         // No timer runs, so there is no Current Timer section.
         XCTAssertFalse(elements.contains { $0.label == "Current Timer" }, "Current Timer shows with no timer running")

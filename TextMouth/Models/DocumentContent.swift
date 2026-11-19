@@ -442,14 +442,33 @@ enum SleepTimerDuration: Hashable {
     /// behavior.
     case endOfBook
 
-    /// The timer's name, as its preset button, its announcements ("Timer
-    /// set for 1 minute."), and the reader's status show it: its minutes
-    /// counted (TODO A10; it said "1 minutes"), or the place it stops at.
+    /// The timer's name, as its preset button, the custom minutes' value,
+    /// and the reader's status show it: its minutes counted (TODO A10; it
+    /// said "1 minutes"), or the place it stops at. Localized (FR35): the
+    /// minutes are one string with its plural forms in the String Catalog.
     var displayName: String {
         switch self {
-        case .minutes(let m): return CountWording.minutes(m)
-        case .endOfHeading: return "End of heading"
-        case .endOfBook: return "End of book"
+        case .minutes(let m):
+            return String(localized: "\(m) minutes",
+                          comment: "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.")
+        case .endOfHeading:
+            return String(localized: "End of heading",
+                          comment: "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.")
+        case .endOfBook:
+            return String(localized: "End of book",
+                          comment: "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.")
+        }
+    }
+
+    /// The timer as the debug log names it: "10 min", "end-of-heading",
+    /// "end-of-book". Never localized, since the log stays English for bug
+    /// reports whatever the interface's language; `displayName` is the
+    /// interface's (FR35).
+    var logName: String {
+        switch self {
+        case .minutes(let m): return "\(m) min" // l10n: no (the debug log's name for the timer)
+        case .endOfHeading: return "end-of-heading" // l10n: no (the debug log's name for the timer)
+        case .endOfBook: return "end-of-book" // l10n: no (the debug log's name for the timer)
         }
     }
 
@@ -458,9 +477,14 @@ enum SleepTimerDuration: Hashable {
     /// timer counting minutes, which is read as the time it has left.
     var spokenStop: String? {
         switch self {
-        case .minutes: return nil
-        case .endOfHeading: return "stops at the end of this heading"
-        case .endOfBook: return "stops at the end of the book"
+        case .minutes:
+            return nil
+        case .endOfHeading:
+            return String(localized: "stops at the end of this heading",
+                          comment: "The state of a sleep timer set to End of heading, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.")
+        case .endOfBook:
+            return String(localized: "stops at the end of the book",
+                          comment: "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.")
         }
     }
 

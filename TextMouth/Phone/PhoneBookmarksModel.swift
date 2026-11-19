@@ -2,39 +2,44 @@ import Foundation
 
 // MARK: - The Mac's words
 
-/// The words of the Mac's Bookmarks sheet that sit inline in its view,
-/// `BookmarkPanelView`, held here for the phone's sheet, which is rebuilt
-/// for the phone rather than wrapped (the iPhone interface spec, "The
-/// Bookmarks sheet"). `PhoneBookmarksVocabularyTests` reads the Mac's source
-/// and requires each word to be there as it is.
+/// The words of the Mac's Bookmarks sheet, `BookmarkPanelView`, by the names
+/// the phone's sheet calls them, which is rebuilt for the phone rather than
+/// wrapped (the iPhone interface spec, "The Bookmarks sheet"). Each is the
+/// Mac's own localized static (FR35): these words once sat inline in the
+/// Mac's view and were copied here; now the Mac's sheet shows its statics,
+/// and the phone reads the same ones, so both say every word alike in every
+/// language. `PhoneBookmarksVocabularyTests` requires each to be the Mac's,
+/// and the Mac's sheet to show it.
 enum PhoneBookmarksVocabulary {
     /// The sheet's title, read as its heading: the name of the button that
     /// opens it.
-    static let title: String = PhoneReaderVocabulary.bookmarks
+    static var title: String { PhoneReaderVocabulary.bookmarks }
     /// The toolbar button that closes the sheet.
-    static let done = "Done"
+    static var done: String { BookmarkPanelView.doneTitle }
     /// The Add Bookmark button's visible word, and the Add sheet's title.
-    static let addBookmark = "Add Bookmark"
-    /// What VoiceOver calls the Add Bookmark button.
-    static let addBookmarkLabel = "Add bookmark at current position"
+    static var addBookmark: String { BookmarkPanelView.addBookmarkTitle }
+    /// What VoiceOver says the Add Bookmark button does.
+    static var addBookmarkHint: String { BookmarkPanelView.addBookmarkHint }
     /// What the sheet says for a book without bookmarks.
-    static let empty = "No bookmarks yet."
+    static var empty: String { BookmarkPanelView.emptyList }
     /// A bookmark row's hint: what choosing it does, never a gesture.
-    static let rowHint = "Goes to this bookmark and closes the list."
+    static var rowHint: String { BookmarkRow.hint }
     /// The Add sheet's field, as it shows.
-    static let addNoteField = "Note (optional)"
+    static var addNoteField: String { BookmarkPanelView.addNoteField }
     /// The Edit sheet's field, as it shows.
-    static let editNoteField = "Note"
+    static var editNoteField: String { BookmarkPanelView.editNoteField }
     /// What VoiceOver calls either sheet's field.
-    static let noteLabel = "Bookmark note"
-    /// The Add sheet's field's hint.
-    static let addNoteHint = "Optional note to describe this bookmark"
+    static var noteLabel: String { BookmarkPanelView.noteLabel }
     /// The Add sheet's button that adds the bookmark.
-    static let add = "Add"
+    static var add: String { BookmarkPanelView.addTitle }
+    /// The note sheets' button that leaves without a change.
+    static var cancel: String { BookmarkPanelView.cancelTitle }
+    /// The Edit sheet's button that keeps the note.
+    static var save: String { BookmarkPanelView.saveTitle }
 
     /// The Edit sheet's title, as in "Edit Bookmark 3".
     static func editTitle(number: Int) -> String {
-        "Edit Bookmark \(number)"
+        BookmarkPanelView.editTitle(number: number)
     }
 }
 
@@ -44,13 +49,28 @@ enum PhoneBookmarksVocabulary {
 /// words, in one place", and the Mac's words a phone needs said its way.
 enum PhoneBookmarksWording {
     /// The empty list's help: the Mac's, with no keys named, since the phone
-    /// has none (the spec, "Words that say Mac").
-    static let emptyHelp = BookmarkPanelView.emptyListHelp(keys: [])
+    /// has none (the spec, "Words that say Mac"). Computed, so it is never
+    /// kept in one language (FR35).
+    static var emptyHelp: String {
+        BookmarkPanelView.emptyListHelp(keys: [])
+    }
 
     /// The title of the question asked before a bookmark with a note is
     /// removed, as in "Remove Bookmark 3?". Its message is the note.
     static func removeQuestion(number: Int) -> String {
-        "Remove Bookmark \(number)?"
+        // The number is the bookmark's identifier, not a count: `String(number)` keeps it ungrouped ("1234"), where
+        // a localized Int would read "1,234" (FR35 review, finding 5).
+        String(localized: "Remove Bookmark \(String(number))?",
+               comment: "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.")
+    }
+
+    /// The question's button that removes the bookmark. Removing a bookmark
+    /// deletes it, so the Spanish says "Eliminar", as the Mac's "Delete
+    /// bookmark" does. The reader's own question shows it too
+    /// (`PhoneReaderWording.remove`).
+    static var removeButton: String {
+        String(localized: "Remove",
+               comment: "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.")
     }
 
     /// What VoiceOver says once the sheet has closed on a bookmark chosen in
@@ -58,7 +78,7 @@ enum PhoneBookmarksWording {
     /// not, since the book's own words can't name a bookmark (the spec,
     /// "What a move says").
     static func jumpAnnouncement(to bookmark: Bookmark) -> String {
-        "Bookmark \(bookmark.number)"
+        bookmark.name
     }
 }
 
@@ -78,7 +98,7 @@ struct PhoneBookmarksRow: Identifiable, Equatable {
     /// The bookmark's own ID, which never changes when the list refreshes.
     var id: UUID { bookmark.id }
     /// What the row shows first, the Mac's "Bookmark 3".
-    var shownTitle: String { "Bookmark \(bookmark.number)" }
+    var shownTitle: String { bookmark.name }
 }
 
 // MARK: - The place taken
@@ -211,7 +231,7 @@ extension ReaderViewModel {
         bookmarks = libraryViewModel.bookmarksForBook(book.id)
         let added = bookmarks.first { !existingIDs.contains($0.id) }
         if let added {
-            announceToVoiceOver("Bookmark \(added.number) added")
+            announceToVoiceOver(Self.bookmarkAddedAnnouncement(number: added.number))
         } else {
             // The Mac's sentence for a book the library no longer holds,
             // said once focus has settled, as the Mac says it.
