@@ -157,7 +157,7 @@ struct ThresholdSettingRule: Sendable {
 
     /// The supported values, for log lines.
     var supportedDescription: String {
-        "\(offValue) (off), or \(range.lowerBound)...\(range.upperBound)"
+        "\(offValue) (off), or \(range.lowerBound)...\(range.upperBound)" // l10n: no (debug log text)
     }
 
     /// Validates a threshold. Any value at or below `offValue` is the off
@@ -535,7 +535,7 @@ enum SettingsPolicy {
     /// written as the pickers name it, or None for no sound.
     static let soundEffectAssignments = KeyedSettingRule<SoundEvent, String, String>(
         key: "soundEffectAssignments",
-        supportedDescription: "playback events as Settings names them, each with a system sound's name or \"None\"",
+        supportedDescription: "playback events as Settings names them, each with a system sound's name or \"None\"", // l10n: no (debug log text)
         parse: { name in
             SoundEffectService.availableSounds().first { $0.caseInsensitiveCompare(name) == .orderedSame }
         },
@@ -555,10 +555,10 @@ enum SettingsPolicy {
     /// (`ShortcutEdits.adopting(_:)`).
     static let keyboardShortcuts = KeyedSettingRule<ShortcutAction, ShortcutListing, ShortcutListing>(
         key: "keyboardShortcuts",
-        supportedDescription: "actions as Settings names them, in any letter case, each with a list of shortcuts "
-            + "such as [\"shift+command+b\"], an object such as {\"keys\": [\"shift+command+t\"], "
-            + "\"worksIn\": \"Every window\"} naming where they work (every window, Library windows, "
-            + "or reader windows), or text beginning with \"default\"",
+        supportedDescription: "actions as Settings names them, in any letter case, each with a list of shortcuts " // l10n: no (debug log text)
+            + "such as [\"shift+command+b\"], an object such as {\"keys\": [\"shift+command+t\"], " // l10n: no (debug log text)
+            + "\"worksIn\": \"Every window\"} naming where they work (every window, Library windows, " // l10n: no (debug log text)
+            + "or reader windows), or text beginning with \"default\"", // l10n: no (debug log text)
         caseNamed: { ShortcutAction.named($0) },
         parse: { $0.validated },
         format: { $0 }
@@ -592,7 +592,7 @@ extension SettingsPolicy {
 
 extension SettingsPolicy {
     /// Names saved book data (`library.json` and `bookInfo.json`) in log lines.
-    static let bookStateSource = "saved book state"
+    static let bookStateSource = "saved book state" // l10n: no (debug log text)
 
     /// Validates a per-book speed saved in `localWPM`, or returns nil when the
     /// value cannot be a speed, so the book follows the global setting (normal
