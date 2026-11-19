@@ -374,8 +374,9 @@ class HelpTests(unittest.TestCase):
         self.assertIn("%O %A %B %P", text)
 
     def test_every_commands_help_exits_0(self):
-        commands = ["sync", "status", "size", "check", "plural", "todo", "apply", "merge-driver"]
-        for command in commands:
+        # Every command the parser has, so a command added later is covered without a change here.
+        subparsers = next(action for action in l10n.build_parser()._actions if getattr(action, "choices", None))
+        for command in subparsers.choices:
             with self.subTest(command=command):
                 self.assertEqual(self.exits_with([command, "--help"])[0], 0)
 
