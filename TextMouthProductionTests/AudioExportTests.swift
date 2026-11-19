@@ -158,8 +158,7 @@ final class AudioExportTests: XCTestCase {
             XCTAssertEqual(error as? AudioEditError, .mp3NeedsFFmpeg)
             XCTAssertEqual(
                 error.localizedDescription,
-                "MP3 can't be written: TextMouth's own encoder couldn't start, and ffmpeg isn't installed, "
-                    + "or is turned off in Storage settings."
+                "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings."
             )
         }
     }

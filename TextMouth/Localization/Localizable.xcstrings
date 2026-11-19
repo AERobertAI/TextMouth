@@ -8,7 +8,7 @@
       "comment" : "Explanation under the When book ends pop-up in the Playback settings. %@ is the title of the pop-up's choice that plays the next book, as the pop-up shows it."
     },
     "%@ %@" : {
-      "comment" : "Announcement of the microphone level every few seconds while recording. %1$@ is the level's label and %2$@ is the level in words, such as \"minus 12 decibels, good\".\nJoins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
+      "comment" : "A row button's name with the row's subject, so VoiceOver tells one row's button from the next, such as \"Delete Marker 3\". %1$@ is the button's name and %2$@ the row's subject.\nAnnouncement of the microphone level every few seconds while recording. %1$@ is the level's label and %2$@ is the level in words, such as \"minus 12 decibels, good\".\nJoins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -178,7 +178,33 @@
       }
     },
     "%@ deleted" : {
-      "comment" : "Announcement after a substitution rule is deleted. %@ is the rule's name."
+      "comment" : "Announcement after a substitution rule is deleted. %@ is the rule's name.\nSaid as a filter preset is deleted. %@ is the preset's name."
+    },
+    "%@ deleted." : {
+      "comment" : "Said as a marker is deleted in the audio editor. %@ is the marker's name such as \"Marker 3\" or \"Marker 3, Intro\"."
+    },
+    "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file." : {
+      "comment" : "Said when a save or an export writes a file format that has no place for chapter markers. %1$@ is the format's name, such as \"WAV\", and %2$lld the number of chapter markers left out.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ files can't hold chapter markers, so its chapter marker is left out of this file."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%@ for This Book" : {
       "comment" : "Heading at the top of the reader's sheet for a book's own settings. %@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"."
@@ -323,6 +349,9 @@
     "%@ is no longer in the library." : {
       "comment" : "Announcement when the book of a search match has left the library since the search. %@ is the book's title."
     },
+    "%@ is open in a reader. Close it, then choose Edit Audio again." : {
+      "comment" : "Said when a book's reader did not close, so the audio editor can't open. %@ is the book's title. \"Edit Audio\" is the name of the command."
+    },
     "%@ is set to be read as “%@”, a text encoding this version of TextMouth can't read." : {
       "comment" : "First sentence of why a book set to an unknown text encoding cannot be read. %1$@ names the book, as in “Ledger”, and %2$@ is the encoding's stored identifier.",
       "localizations" : {
@@ -379,6 +408,17 @@
         }
       }
     },
+    "%@ moved to position %lld of %lld" : {
+      "comment" : "Said as a filter preset moves in the list. %1$@ is the preset's name, %2$lld its new place and %3$lld how many presets the list holds.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ moved to position %2$lld of %3$lld"
+          }
+        }
+      }
+    },
     "%@ not recorded for %@: %@" : {
       "comment" : "Announced by VoiceOver when a key cannot become a keyboard shortcut. %1$@ is the key in words, %2$@ is the action's name, and %3$@ is the reason, which starts in lower case.",
       "localizations" : {
@@ -404,6 +444,17 @@
         }
       }
     },
+    "%@ of %@" : {
+      "comment" : "The audio editor's time display as VoiceOver speaks it. %1$@ is the cursor's time and %2$@ the audio's length, both in words such as \"12 minutes, 4.3 seconds\".\nThe audio editor's time display as shown and brailled. %1$@ is the cursor's time and %2$@ the audio's length, both as clock times such as \"12:04.3\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ of %2$@"
+          }
+        }
+      }
+    },
     "%@ or %@" : {
       "comment" : "Joins two keyboard shortcuts of one action with \"or\", as in \"Space or K\". %1$@ is the shortcuts so far and %2$@ the next one.",
       "localizations" : {
@@ -414,6 +465,9 @@
           }
         }
       }
+    },
+    "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet." : {
+      "comment" : "Said when Edit Audio… is chosen for a book whose sections are stretches of its audio tracks. %@ is the book's title."
     },
     "%@ remaining" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. remaining as a row speaks a time left: \"2 hours, 5 minutes remaining\". Placeholders in order: TimeFormatting.spoken(remaining).\nThe sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.\nTime left in the book as Where Am I? speaks it. %@ is the time in words, such as \"3 hours\".\nTime left in the book as the copied reading position shows it. %@ is a clock time such as 3:44:01.",
@@ -446,8 +500,11 @@
         }
       }
     },
+    "%@ reset to its default" : {
+      "comment" : "Said as a premade filter preset is put back as it came. %@ is the preset's name."
+    },
     "%@ seconds" : {
-      "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number."
+      "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number.\nA number of seconds with decimals inside a spoken duration, such as \"4.2 seconds\" in \"12 minutes, 4.2 seconds\". %@ is the already formatted number."
     },
     "%@ silent" : {
       "comment" : "Announcement of the microphone level when no sound reaches TextMouth. %@ is the level's label."
@@ -557,6 +614,17 @@
         }
       }
     },
+    "%@%@ dB" : {
+      "comment" : "A level change in decibels with its sign, such as \"+3 dB\" or \"-6 dB\". %1$@ is the sign, \"+\" or \"-\" or nothing, and %2$@ the number, already formatted.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@ dB"
+          }
+        }
+      }
+    },
     "%@, %@" : {
       "comment" : "A heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
       "localizations" : {
@@ -586,6 +654,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@, %2$@, %3$@, %4$lld of %5$lld"
+          }
+        }
+      }
+    },
+    "%@, %@, at %@" : {
+      "comment" : "A pause's row in the audio editor's list. %1$@ is the pause such as \"Pause 2\", %2$@ its length in words, and %3$@ its start in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, at %3$@"
           }
         }
       }
@@ -717,6 +796,17 @@
         }
       }
     },
+    "%@, at %@." : {
+      "comment" : "Said as the audio editor's cursor goes to a marker, and its row's label. %1$@ is the marker's name such as \"Marker 3\" or \"Marker 3, Intro\", and %2$@ its time in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, at %2$@."
+          }
+        }
+      }
+    },
     "%@, by %@" : {
       "comment" : "A book's title and author in a search result's heading. %1$@ is the book's title and %2$@ its author.",
       "localizations" : {
@@ -787,6 +877,12 @@
         }
       }
     },
+    "%@-bit floating-point" : {
+      "comment" : "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 16-bit floating-point samples\". %@ is the number of bits, an identifier written without digit grouping."
+    },
+    "%@-bit integer" : {
+      "comment" : "An audio file's sample form, an adjective of \"samples\" in a refusal such as \"uses 64-bit integer samples\". %@ is the number of bits, an identifier written without digit grouping."
+    },
     "%@." : {
       "comment" : "Ends a sentence with its full stop. %@ is the sentence without it. Chinese and Japanese use their own full stop here.\nLibrary view editor: ends a filter's description with a full stop. %@ is the whole description.\nLibrary view editor: the note shown in place of the sort choice while the view lists feeds alone. %@ is a sentence without its full stop, saying feeds are always listed by title; this adds the full stop.\nMakes a clause into a whole sentence by adding its full stop. %@ is the clause, already starting with a capital letter.\nVoiceOver announcement of Next in Folder or Previous in Folder when no item lies that way. %@ is a sentence without its full stop, such as \"No more books in folder\"; this adds the full stop."
     },
@@ -794,7 +890,7 @@
       "comment" : "Caption beside the headings sheet's level filter. %@ is the filter's label; the colon follows it as the language writes a label before a control."
     },
     "%@: %@" : {
-      "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.\nA name, a colon, and its value, such as a keyboard shortcut action's name and its keys, or a control's label and its value. %1$@ is the name and %2$@ is the value.\nThe name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.\nTitle of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.\nTitle of the reader's sheet for a book's own settings. %1$@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"; %2$@ is the book's title.",
+      "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.\nA label, a colon, and its value, as one line of the audio editor's sheets and the filter presets. %1$@ is the label and %2$@ the value.\nA name, a colon, and its value, such as a keyboard shortcut action's name and its keys, or a control's label and its value. %1$@ is the name and %2$@ is the value.\nThe name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.\nTitle of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.\nTitle of the reader's sheet for a book's own settings. %1$@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"; %2$@ is the book's title.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -822,6 +918,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@: %2$@ dB peak, %3$@ dB average, %4$@"
+          }
+        }
+      }
+    },
+    "%@: %@, changed from its default" : {
+      "comment" : "A filter preset's row as VoiceOver reads it, for a premade preset the user changed. %1$@ is the preset's name and %2$@ its chain of filters, in filter syntax.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@, changed from its default"
           }
         }
       }
@@ -879,7 +986,7 @@
       "comment" : "The microphone level line of the Record window when no sound reaches TextMouth. %@ is the level's label."
     },
     "%@; %@" : {
-      "comment" : "Joins two parts of a status line with a semicolon. %1$@ is the text so far and %2$@ the next part. English puts a semicolon and a space between them.\nLibrary view editor: adds one more clause to a filter's description. %1$@ is the description so far and %2$@ the clause added after a semicolon.",
+      "comment" : "Joins two parts of a status line with a semicolon. %1$@ is the text so far and %2$@ the next part. English puts a semicolon and a space between them.\nJoins two parts of the audio editor's status line. %1$@ is the parts so far and %2$@ the next part. A semicolon keeps parts apart from the commas inside a spoken time.\nLibrary view editor: adds one more clause to a filter's description. %1$@ is the description so far and %2$@ the clause added after a semicolon.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -1242,6 +1349,29 @@
         }
       }
     },
+    "%lld days" : {
+      "comment" : "A number of days, as the audio editor's original audio is kept for them. %lld is the number of days.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld decibels" : {
       "comment" : "A sound level in decibels, spoken, in the Record window. %lld is the number of decibels.",
       "localizations" : {
@@ -1373,6 +1503,75 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld duplicate groups found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld edits are undone. Redo brings them back until you make another edit." : {
+      "comment" : "Explains the audio editor's Revert to Original confirmation: how many edits it undoes. %lld is the number of edits.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edit is undone. Redo brings them back until you make another edit."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edits are undone. Redo brings them back until you make another edit."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld edits, all saved" : {
+      "comment" : "The edits as the audio editor's Audio Info says them. %lld is the number of edits.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edit, all saved"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edits, all saved"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld edits, not all saved" : {
+      "comment" : "The edits as the audio editor's Audio Info says them. %lld is the number of edits.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edit, not all saved"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld edits, not all saved"
                 }
               }
             }
@@ -1558,6 +1757,29 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld percent" : {
+      "comment" : "Said at each quarter of a long save or export in the audio editor. %lld is how much is done, from 0 to 100.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld percent"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld percent"
                 }
               }
             }
@@ -1792,6 +2014,9 @@
         }
       }
     },
+    "A Little Faster" : {
+      "comment" : "Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch."
+    },
     "A New Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays.",
       "localizations" : {
@@ -1805,6 +2030,15 @@
     },
     "A built-in view can be hidden, not deleted." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Delete…'s hint for a built-in view, when it is dimmed."
+    },
+    "A chapter marker needs a title." : {
+      "comment" : "Problem shown when the title of a chapter marker to insert in the audio editor is blank."
+    },
+    "A copy was kept in the book's package. Start over with no edits, or cancel." : {
+      "comment" : "Explains the question about an unreadable audio edit history: what Start Over and Cancel do."
+    },
+    "A filter preset needs a name." : {
+      "comment" : "Said when a filter preset is saved with a blank name."
     },
     "A library in the cloud can take a while: files that are only in the cloud are brought to this Mac to be read." : {
       "comment" : "Sentence of what the Compare Libraries sheet says while it works: a library kept in a cloud drive is slow because files that are only in the cloud are downloaded first."
@@ -1822,6 +2056,15 @@
           }
         }
       }
+    },
+    "A newer TextMouth edited this audio, so this version leaves its edits alone." : {
+      "comment" : "Said when the book's saved edit history was written by a later version of TextMouth than this one."
+    },
+    "A quote isn't closed in “%@”." : {
+      "comment" : "Problem found in a typed filter chain: a single quote is opened and never closed. %@ is the text of the part holding it."
+    },
+    "A stretch of the edits runs past the end of “%@”." : {
+      "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."
     },
     "A view holds at most %lld conditions." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint at the limit, when it is dimmed. Placeholders in order: LibraryViewFilter.conditionLimit.",
@@ -2006,6 +2249,9 @@
     "Add Marker" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Adds a marker at the current position."
     },
+    "Add Preset" : {
+      "comment" : "Button in the filter presets sheet that adds a new filter preset."
+    },
     "Add Rule" : {
       "comment" : "Title of the button in the Substitutions settings that opens the editor for a new substitution rule."
     },
@@ -2034,7 +2280,7 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name."
     },
     "Added %@" : {
-      "comment" : "Speak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\"."
+      "comment" : "Said as a filter preset is added. %@ is the preset's name.\nSpeak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\"."
     },
     "Added %@, %lld of %lld." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a new view is added, with its place. Placeholders in order: name, number, count.",
@@ -2109,6 +2355,17 @@
         }
       }
     },
+    "After a pause of %@, at %@." : {
+      "comment" : "Said as the audio editor's cursor lands where the sound after a pause begins. %1$@ is the pause's length in words and %2$@ the time the sound begins, in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "After a pause of %1$@, at %2$@."
+          }
+        }
+      }
+    },
     "Album" : {
       "comment" : "Name of the book information sheet's field for an audiobook's album."
     },
@@ -2127,6 +2384,15 @@
     "All levels" : {
       "comment" : "Choice of the headings sheet's level filter that shows every level."
     },
+    "Already at the end." : {
+      "comment" : "Said when a step forward in the audio editor can go no further."
+    },
+    "Already at the start." : {
+      "comment" : "Said when a step back in the audio editor can go no further."
+    },
+    "Also write the markers as Audacity labels" : {
+      "comment" : "Label of the checkbox in the audio editor's Export Audio sheet that writes the markers as a label file too. Audacity is the name of an audio editing program."
+    },
     "Also write to the library's copy of the EPUB file" : {
       "comment" : "Label of the metadata editor's switch that also writes the edited title, author, publisher and date into the library's own copy of the book's EPUB file."
     },
@@ -2141,6 +2407,12 @@
     },
     "An edit of its text is kept beside the new reading, as a copy in the book's package." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence)."
+    },
+    "An episode in its feed can't be edited." : {
+      "comment" : "Said when Edit Audio… reaches a podcast episode that lives in its feed's folder, which can't be edited."
+    },
+    "An option of the %@ filter has a value but no name." : {
+      "comment" : "Problem found in a typed filter chain: an equals sign with nothing before it, in one filter's options. %@ is the filter's name, such as volume."
     },
     "An unknown error occurred." : {
       "comment" : "Message of an alert about a problem, when nothing more is known about it."
@@ -2209,14 +2481,52 @@
     "Appends a new step to the gesture sequence" : {
       "comment" : "VoiceOver hint of the Add gesture step button in the Miscellaneous settings."
     },
+    "Apple Lossless (M4A)" : {
+      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding Apple Lossless audio. Apple Lossless is Apple's name for the codec."
+    },
+    "Applied %@ to %@." : {
+      "comment" : "Said as a filter has been applied to a selection in the audio editor. %1$@ is the filter preset's name and %2$@ the selection's length in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Applied %1$@ to %2$@."
+          }
+        }
+      }
+    },
+    "Applied %@ to all of the audio." : {
+      "comment" : "Said as a filter has been applied to the whole audio in the audio editor. %@ is the filter preset's name."
+    },
     "Applies only to a view that lists episodes or articles." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint while the view lists no episodes or articles, when it is dimmed (review of October 31, 2026, finding 6)."
+    },
+    "Applies the filter." : {
+      "comment" : "Hint of the audio editor's Apply button while a press applies the filter."
     },
     "Applies the rules to text before it is spoken" : {
       "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings."
     },
+    "Apply" : {
+      "comment" : "Button of the audio editor's Apply Filter sheet that applies the filter."
+    },
+    "Apply Filter" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\"; also the title of the audio editor's filter sheet."
+    },
+    "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above." : {
+      "comment" : "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings."
+    },
+    "Apply Filter plays a preview first, and applies when you choose Apply again." : {
+      "comment" : "Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button."
+    },
     "Apply Filter…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the choice of audio filters to apply to the selection."
+    },
+    "Apply to" : {
+      "comment" : "Label of the choice in the audio editor's Apply Filter sheet of what to filter: the selection or the whole file."
+    },
+    "Applying %@." : {
+      "comment" : "Said as a filter begins to be applied in the audio editor. %@ is the filter preset's name."
     },
     "Articles" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .articles."
@@ -2282,8 +2592,14 @@
     "At Sign" : {
       "comment" : "Name of the punctuation key \"@\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + At Sign\"."
     },
+    "Audio Editing" : {
+      "comment" : "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour."
+    },
     "Audio Editor" : {
       "comment" : "Heading of the group of the audio editor's keyboard shortcuts in Settings."
+    },
+    "Audio Info" : {
+      "comment" : "Title of the audio editor's Audio Info sheet."
     },
     "Audio Info…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Shows information about the audio, such as its format and length."
@@ -2296,6 +2612,9 @@
     },
     "Audio speed" : {
       "comment" : "Label of an audiobook's speed slider; VoiceOver reads it before the speed."
+    },
+    "Audiobook Loudness" : {
+      "comment" : "Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks."
     },
     "Author" : {
       "comment" : "Name of the book information sheet's field for a book's author; VoiceOver reads it as the field's label."
@@ -2637,7 +2956,7 @@
       "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name."
     },
     "Cancel" : {
-      "comment" : "Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
+      "comment" : "Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2667,6 +2986,12 @@
     "Case sensitive matching" : {
       "comment" : "VoiceOver label of the Case sensitive switch in the substitution rule editor."
     },
+    "Chain" : {
+      "comment" : "Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter."
+    },
+    "Change Volume by %@" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": changing the volume. %@ is the change with its sign, such as \"+3 dB\"."
+    },
     "Change this book's forward and backward navigation unit" : {
       "comment" : "Help text of the playback bar's menu that sets the one unit by which this book moves forward and backward."
     },
@@ -2678,6 +3003,9 @@
     },
     "Changes the view's name, what it lists, its conditions, its sort, and its limit." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
+    },
+    "Chapter %@" : {
+      "comment" : "A chapter as the audio editor's list, its row's buttons, and the default title of a new chapter marker name it. %@ is the chapter's number, an identifier written without digit grouping."
     },
     "Chapter %@ could not be played: %@ from the book's package." : {
       "comment" : "First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file chapter3.mp3 is missing\".",
@@ -2701,8 +3029,50 @@
         }
       }
     },
+    "Chapter %@: %@, at %@" : {
+      "comment" : "A chapter marker's row in the audio editor's list. %1$@ is the chapter's number, an identifier written without digit grouping, %2$@ its title, and %3$@ its time in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter %1$@: %2$@, at %3$@"
+          }
+        }
+      }
+    },
+    "Chapter %@: %@, at %@." : {
+      "comment" : "Said as the audio editor's cursor lands on a chapter marker. %1$@ is the chapter's number, an identifier written without digit grouping, %2$@ its title, and %3$@ its time in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter %1$@: %2$@, at %3$@."
+          }
+        }
+      }
+    },
+    "Chapter Markers" : {
+      "comment" : "Heading of the chapter markers in the audio editor's list."
+    },
     "Chapter Not Downloaded" : {
       "comment" : "Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud."
+    },
+    "Chapter marker renamed “%@”." : {
+      "comment" : "Said as a chapter marker is renamed in the audio editor. %@ is its new title."
+    },
+    "Chapter marker “%@” removed." : {
+      "comment" : "Said as a chapter marker is removed in the audio editor. %@ is its title."
+    },
+    "Chapter marker “%@” set at %@." : {
+      "comment" : "Said as a chapter marker is set in the audio editor. %1$@ is its title and %2$@ its time in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter marker “%1$@” set at %2$@."
+          }
+        }
+      }
     },
     "Check that the disk holding your library is connected, then choose Retry." : {
       "comment" : "Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button."
@@ -2851,8 +3221,14 @@
     "Clear Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selection."
     },
+    "Clearer Voice" : {
+      "comment" : "Title of a premade audio filter preset: cuts the rumble and lifts the voice's presence."
+    },
+    "Clears the selection." : {
+      "comment" : "Hint of the audio editor's Clear Selection button."
+    },
     "Close" : {
-      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the button that closes the Search Library window.",
+      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the button that closes the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2893,6 +3269,9 @@
           }
         }
       }
+    },
+    "Closing the reader of %@, since editing changes its audio." : {
+      "comment" : "Said as a book's reader window is closed before the audio editor opens on the book. %@ is the book's title."
     },
     "Colon" : {
       "comment" : "Name of the punctuation key \":\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Colon\"."
@@ -2981,8 +3360,17 @@
     "Control" : {
       "comment" : "Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as \"Control + Shift + R\"."
     },
+    "Convert it to 16-bit or 24-bit integer samples, then import it again." : {
+      "comment" : "Ends every refusal of an audio file whose samples TextMouth can't decode: what the listener can do about it."
+    },
+    "Copied %@." : {
+      "comment" : "Said as the audio editor's Copy copies the selection. %@ is its length in words."
+    },
     "Copies the count and every difference as text, one to a line." : {
       "comment" : "VoiceOver hint of the Copy Results button of the Compare Libraries sheet."
+    },
+    "Copies the selection for Paste." : {
+      "comment" : "Hint of the audio editor's Copy button. \"Paste\" is the name of a command."
     },
     "Copy" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Copies the selected audio.\nName of the Edit menu's Copy command, in a sentence saying why a keyboard shortcut cannot take its key."
@@ -2992,6 +3380,9 @@
     },
     "Copy Results" : {
       "comment" : "Button of the Compare Libraries sheet that copies the results to the clipboard."
+    },
+    "Copy at most 10 minutes at a time." : {
+      "comment" : "Said when the selection is too long for the audio editor's Copy."
     },
     "Could not add the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
@@ -3099,6 +3490,15 @@
     "Cut" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selected audio and keeps it for pasting.\nName of the Edit menu's Cut command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
+    "Cut %@" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": cutting a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\"."
+    },
+    "Cut %@." : {
+      "comment" : "Said as the audio editor's Cut cuts. %@ is the length cut, in words."
+    },
+    "Cuts the selection out, and keeps it for Paste." : {
+      "comment" : "Hint of the audio editor's Cut button. \"Paste\" is the name of a command."
+    },
     "Cycle Backward Navigation Unit" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the previous one. Also the title of the menu command of the same name."
     },
@@ -3110,6 +3510,9 @@
     },
     "Date Opened" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .openedWithin."
+    },
+    "Days to keep an original" : {
+      "comment" : "Label of the stepper that sets how many days an original audio is kept, in Storage settings (Audio Editing) and the audio editor's Audio Info."
     },
     "Decrease Speed" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed slower. Also the title of the menu command of the same name."
@@ -3159,7 +3562,7 @@
       "comment" : "Explanation under the default speed slider in the Voice settings."
     },
     "Delete" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".\nName of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that deletes.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nButton of a marker's row in the audio editor's list that deletes the marker.\nName of a filter preset's Delete button, also its VoiceOver action and context menu item.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".\nName of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that deletes.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -3250,6 +3653,9 @@
         }
       }
     },
+    "Deleted on %@" : {
+      "comment" : "The original audio's state in the audio editor's Audio Info sheet. %@ is the date it was deleted, in long form."
+    },
     "Deletes the recording without saving it." : {
       "comment" : "VoiceOver hint of the Discard Recording button of the Record window."
     },
@@ -3272,7 +3678,7 @@
       "comment" : "Title of the context menu item that turns a substitution rule off."
     },
     "Discard" : {
-      "comment" : "Title of the button that deletes a recording, in the Record window's list of recordings left behind and in the question asked when it closes.\nTitle of the question's button that deletes the recording, when the Record window is closed."
+      "comment" : "Button of the audio editor's close question that undoes the unsaved edits.\nTitle of the button that deletes a recording, in the Record window's list of recordings left behind and in the question asked when it closes.\nTitle of the question's button that deletes the recording, when the Record window is closed."
     },
     "Discard Recording" : {
       "comment" : "Title of the button in the Record window that deletes a recording that could not be saved."
@@ -3309,11 +3715,14 @@
     "Dollar Sign" : {
       "comment" : "Name of the punctuation key \"$\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Dollar Sign\"."
     },
+    "Don't keep" : {
+      "comment" : "Choice of the Original audio picker: keep no original audio."
+    },
     "Don't rewind if paused for less than this." : {
       "comment" : "Explanation under the minimum pause stepper in the Playback settings."
     },
     "Done" : {
-      "comment" : "Button that closes the Compare Libraries sheet.\nButton that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.\nTitle of the button that closes the Find Duplicate Books sheet.",
+      "comment" : "Button that closes a sheet, such as the filter presets sheet.\nButton that closes the Compare Libraries sheet.\nButton that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.\nTitle of the button that closes the Find Duplicate Books sheet.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -3370,6 +3779,9 @@
     "Download of the previous episode cancelled." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started."
     },
+    "Download the book, then try again." : {
+      "comment" : "Ends a message saying the book's audio is only in the cloud: what to do about it."
+    },
     "Downloading the next article: %@" : {
       "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title.\nVoiceOver announcement of Next in Folder when the next item is a feed's article that must be downloaded first. %@ is the article's title.",
       "localizations" : {
@@ -3401,6 +3813,9 @@
     "Downloads the book again" : {
       "comment" : "Hint of the Download button of the reader's view for a book that is only in the cloud."
     },
+    "Drops a marker at the cursor, even while the audio plays." : {
+      "comment" : "Hint of the audio editor's Add Marker button."
+    },
     "Duplicate" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that makes a custom copy of a view."
     },
@@ -3426,10 +3841,27 @@
       "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."
     },
     "Edit" : {
-      "comment" : "Name of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item."
+      "comment" : "Button of the track question that opens the audio editor on the track chosen, and the heading of the audio editor's editing buttons.\nName of a filter preset's Edit button, also its VoiceOver action and context menu item.\nName of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item."
     },
     "Edit %@" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a view being changed. Placeholders in order: name."
+    },
+    "Edit Audio: %@" : {
+      "comment" : "Title of the audio editor's window. %@ is the book's title."
+    },
+    "Edit Audio: %@, %@" : {
+      "comment" : "Title of the audio editor's window for a book of several tracks. %1$@ is the book's title and %2$@ the track's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Edit Audio: %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Edit Audio…" : {
+      "comment" : "Command that opens the audio editor on a book: the library row's context menu item and VoiceOver action, and the reader's Book menu item."
     },
     "Edit Bookmark %@" : {
       "comment" : "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -3441,6 +3873,9 @@
           }
         }
       }
+    },
+    "Edit Filter Preset" : {
+      "comment" : "Title of the editor opened by a filter preset's Edit button."
     },
     "Edit Manifest With" : {
       "comment" : "Title of the panel in which the user chooses an app to edit a manifest.json file with."
@@ -3512,6 +3947,12 @@
     "Edited" : {
       "comment" : "Said after the keys of a keyboard shortcut action the listener changed in Settings, to tell it from one that follows the defaults."
     },
+    "Edits" : {
+      "comment" : "Label of the number of edits made, in the audio editor's Audio Info sheet."
+    },
+    "Edits one track at a time, listed by chapter name." : {
+      "comment" : "Explains the question about which track of a book to edit."
+    },
     "Edit…" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that changes the view selected."
     },
@@ -3566,6 +4007,12 @@
           }
         }
       }
+    },
+    "End of the audio, at %@." : {
+      "comment" : "Said as the audio editor's Go to End lands at the end. %@ is the audio's length in words."
+    },
+    "End of the audio." : {
+      "comment" : "Said as the audio editor's playing reaches the end of the audio."
     },
     "End of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": no book follows it below. Written without its full stop.",
@@ -3624,6 +4071,9 @@
     },
     "Escape" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Escape\"."
+    },
+    "Even Out the Level" : {
+      "comment" : "Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume."
     },
     "Every book above it in the reading list is finished" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop.",
@@ -3693,8 +4143,57 @@
     "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires." : {
       "comment" : "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written."
     },
+    "Export Audio" : {
+      "comment" : "Title of the audio editor's Export Audio sheet."
+    },
+    "Exported “%@” and its labels, “%@”." : {
+      "comment" : "Said as the audio editor's export ends having written a label file beside the audio. %1$@ is the audio file's name and %2$@ the label file's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Exported “%1$@” and its labels, “%2$@”."
+          }
+        }
+      }
+    },
+    "Exported “%@”, but its labels couldn't be written." : {
+      "comment" : "Said as the audio editor's export ends having written the audio but not the label file. %@ is the audio file's name. A sentence giving the reason follows."
+    },
+    "Exported “%@”." : {
+      "comment" : "Said as the audio editor's export ends. %@ is the exported file's name."
+    },
+    "Exported “%@”. It has no markers, so no label file was written." : {
+      "comment" : "Said as the audio editor's export ends when labels were asked for but the audio has no marker. %@ is the exported file's name."
+    },
+    "Exporting" : {
+      "comment" : "Title of the sheet shown while the audio editor exports the audio."
+    },
+    "Exporting %@ of audio as %@ to “%@”." : {
+      "comment" : "Said as the audio editor begins to export, and shown in its sheet. %1$@ is the audio's length in words, %2$@ the file format's name, and %3$@ the exported file's name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Exporting %1$@ of audio as %2$@ to “%3$@”."
+          }
+        }
+      }
+    },
+    "Exports to a file outside the library, in a format you choose." : {
+      "comment" : "Hint of the audio editor's Export button."
+    },
+    "Exports to a file you choose; the book's own file is unchanged." : {
+      "comment" : "Hint of the audio editor's Export… button."
+    },
     "Export…" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file."
+      "comment" : "Button of the audio editor's Export Audio sheet that asks where to save the file.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file."
+    },
+    "Fade In" : {
+      "comment" : "Title of a premade audio filter preset: fades the audio in over one second."
+    },
+    "Fade Out (Select the Last Second)" : {
+      "comment" : "Title of a premade audio filter preset: fades out over one second, so it is used on a selection of the last second."
     },
     "Fade out duration" : {
       "comment" : "VoiceOver label of the sleep timer's fade out stepper in the Playback settings."
@@ -3726,7 +4225,7 @@
       "comment" : "Text of the Library window's View pop-up and Go to View. What VoiceOver says when that item is chosen."
     },
     "File" : {
-      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu."
+      "comment" : "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.\nLabel of the audio file's name in the audio editor's Audio Info sheet."
     },
     "File format: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's file format row. %@ is the format, such as MP3."
@@ -3736,6 +4235,21 @@
     },
     "Files not read" : {
       "comment" : "Label of the list of files the Compare Libraries comparison could not read."
+    },
+    "Filter" : {
+      "comment" : "Label of the pop-up in the audio editor's Apply Filter sheet that chooses a filter preset."
+    },
+    "Filter Presets" : {
+      "comment" : "Title of the sheet, opened from Storage settings, that lists the audio editor's filter presets."
+    },
+    "Filter Presets…" : {
+      "comment" : "Button in Storage settings (Audio Editing) that opens the list of the audio editor's filter presets."
+    },
+    "Filters can't be applied here." : {
+      "comment" : "Said when a filter or a volume change is asked for where nothing can render one."
+    },
+    "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons." : {
+      "comment" : "Hint of the chain field of a filter preset. ffmpeg is the name of a program."
     },
     "Find" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Find\".\nTitle of the Find submenu of the Edit menu, which holds the command that searches the whole library."
@@ -3818,7 +4332,7 @@
       "comment" : "VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press."
     },
     "Format" : {
-      "comment" : "Name of the book information sheet's row that shows an audiobook's file format.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format."
+      "comment" : "Label of the pop-up in the audio editor's Export Audio sheet that chooses the file format.\nName of the book information sheet's row that shows an audiobook's file format.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format."
     },
     "Forward 10 Seconds" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward ten seconds."
@@ -3875,6 +4389,9 @@
     "Found a recording from before TextMouth last quit, under %@. Save or discard it." : {
       "comment" : "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings."
     },
+    "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has." : {
+      "comment" : "Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name."
+    },
     "Genre" : {
       "comment" : "Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label."
     },
@@ -3884,11 +4401,17 @@
     "Gesture time window" : {
       "comment" : "VoiceOver label of the restart gesture's time window slider in the Miscellaneous settings."
     },
+    "Getting ready to record" : {
+      "comment" : "A part of the audio editor's status line while a punch-in gets ready to record."
+    },
     "Give the view a name." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no name."
     },
     "Gives the view back the name, conditions, sort, and limit TextMouth gave it." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint."
+    },
+    "Go" : {
+      "comment" : "Button of the audio editor's Go to Time sheet that moves the cursor to the time typed."
     },
     "Go Back" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Returns to the place the reader jumped from, like a browser's Back. Also the title of the menu command of the same name."
@@ -3897,7 +4420,7 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes forward again after Go Back. Also the title of the menu command of the same name."
     },
     "Go To" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nButton of a marker's or a pause's row in the audio editor's list that moves the cursor there.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -3921,6 +4444,9 @@
     },
     "Go to Start" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the start of the audio."
+    },
+    "Go to Time" : {
+      "comment" : "Title of the audio editor's Go to Time sheet."
     },
     "Go to Time…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a time to move to."
@@ -4120,6 +4646,9 @@
     "In a regular expression, a dollar sign and a group's number, as in $1 or $2, put back what that group matched." : {
       "comment" : "VoiceOver hint of the replacement field in the substitution rule editor. $1 and $2 are written as in regular expressions and stay as written."
     },
+    "In at %@." : {
+      "comment" : "Said as the audio editor's Mark In marks the selection's start. %@ is the time in words. A sentence about the selection it makes may follow."
+    },
     "In reading list" : {
       "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.",
       "localizations" : {
@@ -4167,7 +4696,16 @@
       "comment" : "Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings."
     },
     "Insert" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\"."
+      "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\"."
+    },
+    "Insert %@ of Audio" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting a new recording. %@ is its length in title-cased words, such as \"2.5 Seconds\"."
+    },
+    "Insert %@ of Silence" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting silence. %@ is its length in title-cased words, such as \"1 Second\"."
+    },
+    "Insert Chapter Marker" : {
+      "comment" : "Title of the audio editor's Insert Chapter Marker sheet."
     },
     "Insert Chapter Marker…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to name and insert a chapter marker."
@@ -4178,8 +4716,20 @@
     "Insert Line" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Line\"."
     },
+    "Insert Silence" : {
+      "comment" : "Title of the audio editor's Insert Silence sheet."
+    },
     "Insert Silence…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a length of silence to insert."
+    },
+    "Inserted %@ of new recording, which is selected." : {
+      "comment" : "Said as a punch-in recording is inserted at the cursor in the audio editor. %@ is its length in words."
+    },
+    "Inserted %@ of silence." : {
+      "comment" : "Said as silence is inserted in the audio editor. %@ is its length in words."
+    },
+    "Inserts a silence of a length you type at the cursor." : {
+      "comment" : "Hint of the audio editor's Insert Silence button."
     },
     "Inside the data directory" : {
       "comment" : "A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library."
@@ -4214,11 +4764,40 @@
     "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them." : {
       "comment" : "Second sentence of the Edit Manifest explanation: what the manifest lists and what the user can change in it."
     },
+    "It runs only through ffmpeg." : {
+      "comment" : "Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name."
+    },
+    "Its %lld chapter markers couldn't be written into the file, so it has none." : {
+      "comment" : "Said after a save or an export whose audio was written but whose chapter markers could not be. %lld is the number of chapter markers.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Its chapter marker couldn't be written into the file, so it has none."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Its %lld chapter markers couldn't be written into the file, so it has none."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Delete does, and what it keeps."
     },
     "Its earlier text was kept as %@, in the book's package." : {
       "comment" : "Sentence saying where a backup of a book's earlier text was kept. %@ is a file name such as content.md.edited-20261024T123012Z, which stays as written."
+    },
+    "Its file is now “%@”, since TextMouth can't write its old format." : {
+      "comment" : "Said as a save ends and the book's file got a new name because TextMouth can't write the old format. %@ is the file's new name."
     },
     "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Restore Default does, and what it keeps."
@@ -4269,11 +4848,17 @@
     "Jumped to page %@." : {
       "comment" : "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping."
     },
+    "Keep" : {
+      "comment" : "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed."
+    },
     "Keep Original" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: the original file stays where it was."
     },
     "Keep This Code" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of the button under that note that keeps the guessed code (a pop-up cannot be asked for the choice already selected), and what it does."
+    },
+    "Keep for a number of days" : {
+      "comment" : "Choice of the Original audio picker: keep the original audio for a number of days, set by a stepper beside it."
     },
     "Keep these books on this Mac" : {
       "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.",
@@ -4285,6 +4870,9 @@
           }
         }
       }
+    },
+    "Keeps only the selection." : {
+      "comment" : "Hint of the audio editor's Trim to Selection button."
     },
     "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download." : {
       "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.",
@@ -4308,11 +4896,20 @@
         }
       }
     },
+    "Kept" : {
+      "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is kept."
+    },
+    "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain." : {
+      "comment" : "Problem said of a filter graph with labels or semicolons, which only the ffmpeg program runs: TextMouth's own filters take a chain separated by commas."
+    },
     "Language" : {
       "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language."
     },
     "Language: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en."
+    },
+    "Last message" : {
+      "comment" : "Label of the audio editor's line that repeats the last announcement, so a braille display can read it again."
     },
     "Last opened %@" : {
       "comment" : "Speak Info: the part of a book's full summary that says when it was last opened. %@ is a date or time, such as \"yesterday\"."
@@ -4334,6 +4931,12 @@
     },
     "Left Parenthesis" : {
       "comment" : "Name of the punctuation key \"(\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Parenthesis\"."
+    },
+    "Length" : {
+      "comment" : "Label of the audio editor's field for the length of a silence, and of the audio's length in Audio Info."
+    },
+    "Length of silence to insert: seconds (2.5) or minutes and seconds (1:30)." : {
+      "comment" : "Explains the silence length field of the audio editor's Insert Silence sheet. The examples are typed times."
     },
     "Less Than" : {
       "comment" : "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\"."
@@ -4358,6 +4961,9 @@
     },
     "Library windows" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed."
+    },
+    "Listen and Move" : {
+      "comment" : "Heading of the audio editor's buttons for listening and moving the cursor."
     },
     "Listening" : {
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options."
@@ -4451,6 +5057,9 @@
         }
       }
     },
+    "Lists markers, chapter markers, and pauses, to go to, name, select, or delete." : {
+      "comment" : "Hint of the audio editor's Show Markers button."
+    },
     "Lists nothing now." : {
       "comment" : "Library view editor: what the sheet says of a draft view that lists nothing at the moment."
     },
@@ -4486,6 +5095,18 @@
     },
     "Loop to Start" : {
       "comment" : "A choice of the When a Book Ends picker: the book plays again from its beginning and is never finished."
+    },
+    "Louder" : {
+      "comment" : "Title of a premade audio filter preset: raises the volume by 6 decibels."
+    },
+    "M4A (AAC)" : {
+      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding AAC audio."
+    },
+    "M4B Audiobook (AAC)" : {
+      "comment" : "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4B audiobook files holding AAC audio."
+    },
+    "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings." : {
+      "comment" : "Said when MP3 is asked for and neither TextMouth's built-in encoder nor an installed ffmpeg program can write it. \"Storage settings\" is the name of a settings tab."
     },
     "Made %@, %lld of %lld." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after Duplicate: the copy and its place. Placeholders in order: name, number, count.",
@@ -4530,8 +5151,59 @@
     "Mark Out" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position."
     },
+    "Marker %@" : {
+      "comment" : "A marker as the audio editor's list, its row's buttons, and announcements name it. %@ is the marker's number, an identifier written without digit grouping."
+    },
+    "Marker %@ at %@." : {
+      "comment" : "Said as a marker is dropped in the audio editor. %1$@ is the marker's number, an identifier written without digit grouping, and %2$@ its time in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Marker %1$@ at %2$@."
+          }
+        }
+      }
+    },
+    "Marker %@ has no name now." : {
+      "comment" : "Said as a marker's name is taken away in the audio editor. %@ is the marker's number, an identifier written without digit grouping."
+    },
+    "Marker %@ named %@." : {
+      "comment" : "Said as a marker is named in the audio editor. %1$@ is the marker's number, an identifier written without digit grouping, and %2$@ the name the user gave it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Marker %1$@ named %2$@."
+          }
+        }
+      }
+    },
+    "Marker %@, %@" : {
+      "comment" : "A named marker as the audio editor's list and announcements name it. %1$@ is the marker's number, an identifier written without digit grouping, and %2$@ the name the user gave it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Marker %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "Markers" : {
+      "comment" : "Heading of the markers in the audio editor's list."
+    },
+    "Markers and Pauses" : {
+      "comment" : "Title of the audio editor's list of markers, chapter markers, and pauses."
+    },
     "Markers and Pauses…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses."
+    },
+    "Marks the selection's end at the cursor." : {
+      "comment" : "Hint of the audio editor's Mark Out button."
+    },
+    "Marks the selection's start at the cursor." : {
+      "comment" : "Hint of the audio editor's Mark In button."
     },
     "Match" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The match pop-up's label."
@@ -4580,6 +5252,9 @@
     "Microphone" : {
       "comment" : "Label of the pop-up in the Record window that chooses the microphone to record from."
     },
+    "Microphone for Punch In" : {
+      "comment" : "Label of the pop-up in the audio editor that chooses the microphone Punch In records from."
+    },
     "Minimize" : {
       "comment" : "Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
@@ -4626,6 +5301,9 @@
         }
       }
     },
+    "Minutes must be less than 60." : {
+      "comment" : "Problem said of a typed time whose minutes, after hours, reach 60."
+    },
     "Miscellaneous" : {
       "comment" : "Name of the Settings tab for the options that fit no other tab, such as Bluetooth monitoring."
     },
@@ -4661,6 +5339,9 @@
     "Most rows shown" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit field's spoken label."
     },
+    "Move %@" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": moving a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\"."
+    },
     "Move %@ Down" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's spoken label. Placeholders in order: name."
     },
@@ -4680,10 +5361,10 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name."
     },
     "Move Down" : {
-      "comment" : "Name of the command that moves a substitution rule down the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place down."
+      "comment" : "Name of a filter preset's Move Down button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule down the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place down."
     },
     "Move Up" : {
-      "comment" : "Name of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place up, as a VoiceOver action and a context menu item."
+      "comment" : "Name of a filter preset's Move Up button, also its VoiceOver action and context menu item.\nName of the command that moves a substitution rule up the list: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place up, as a VoiceOver action and a context menu item."
     },
     "Move to Folder" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder."
@@ -4696,6 +5377,17 @@
     },
     "Move to Trash" : {
       "comment" : "Title of the button that removes books and moves their files to the Trash, in title case."
+    },
+    "Moved %@ to %@." : {
+      "comment" : "Said as a Paste right after a Cut moves the audio. %1$@ is the length moved and %2$@ the time it moved to, both in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Moved %1$@ to %2$@."
+          }
+        }
+      }
     },
     "Moved %@ to the Trash." : {
       "comment" : "Report that books' files were moved to the Trash. %@ is what was moved, such as \"“Notes”\" or \"3 books\"."
@@ -4720,6 +5412,45 @@
     "Moved to the match." : {
       "comment" : "Announcement after the reader moved to a search match whose place is unknown."
     },
+    "Moves the cursor back a tenth of a second." : {
+      "comment" : "Hint of the audio editor's Skip Back Short button."
+    },
+    "Moves the cursor back one second." : {
+      "comment" : "Hint of the audio editor's Skip Back button."
+    },
+    "Moves the cursor back ten seconds." : {
+      "comment" : "Hint of the audio editor's Skip Back Long button."
+    },
+    "Moves the cursor forward a tenth of a second." : {
+      "comment" : "Hint of the audio editor's Skip Forward Short button."
+    },
+    "Moves the cursor forward one second." : {
+      "comment" : "Hint of the audio editor's Skip Forward button."
+    },
+    "Moves the cursor forward ten seconds." : {
+      "comment" : "Hint of the audio editor's Skip Forward Long button."
+    },
+    "Moves the cursor to a time you type." : {
+      "comment" : "Hint of the audio editor's Go to Time button."
+    },
+    "Moves the cursor to the end of the audio." : {
+      "comment" : "Hint of the audio editor's Go to End button."
+    },
+    "Moves the cursor to the end of the next pause." : {
+      "comment" : "Hint of the audio editor's Next Pause button."
+    },
+    "Moves the cursor to the end of the previous pause." : {
+      "comment" : "Hint of the audio editor's Previous Pause button."
+    },
+    "Moves the cursor to the next chapter marker." : {
+      "comment" : "Hint of the audio editor's Next Chapter button."
+    },
+    "Moves the cursor to the previous chapter marker." : {
+      "comment" : "Hint of the audio editor's Previous Chapter button."
+    },
+    "Moves the cursor to the start of the audio." : {
+      "comment" : "Hint of the audio editor's Go to Start button."
+    },
     "Moves the view one place down the list" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's hint."
     },
@@ -4727,7 +5458,7 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint."
     },
     "Name" : {
-      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The name field's label."
+      "comment" : "Label of the name field of a filter preset or an audio marker.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The name field's label."
     },
     "Name (optional)" : {
       "comment" : "Placeholder of the field that names a substitution rule in the rule editor."
@@ -4758,6 +5489,9 @@
     },
     "Neither is newer: each has changes the other lacks." : {
       "comment" : "Sentence of Use This Library's account: each copy has changes the other lacks."
+    },
+    "New Filter Preset" : {
+      "comment" : "Title of the editor opened by Add Preset in the filter presets sheet."
     },
     "New Folder" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Makes a new folder in the library. Also the title of the menu command of the same name."
@@ -4838,6 +5572,9 @@
     "No Library Window" : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The submenu's one item, dimmed, while no Library window is in front."
     },
+    "No audio files were found in %@." : {
+      "comment" : "Said when a book of several audio tracks has no audio file to edit. %@ is the book's title."
+    },
     "No book in the library has text to search." : {
       "comment" : "Status line of the Search Library window when no book in the library has text that can be searched."
     },
@@ -4855,6 +5592,15 @@
         }
       }
     },
+    "No chapter marker after the cursor." : {
+      "comment" : "Said when the audio editor's Next Chapter finds no chapter marker after the cursor."
+    },
+    "No chapter marker before the cursor." : {
+      "comment" : "Said when the audio editor's Previous Chapter finds no chapter marker before the cursor."
+    },
+    "No chapter markers or markers, so no label file would be written." : {
+      "comment" : "Hint of the Also write the markers as Audacity labels checkbox while the audio has no markers of either kind."
+    },
     "No conditions: the view lists every item of the kinds chosen." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What the editor says while the view has no condition."
     },
@@ -4870,17 +5616,38 @@
     "No duplicates found." : {
       "comment" : "What Find Duplicate Books shows when a scan finds nothing."
     },
+    "No edits" : {
+      "comment" : "The edits as the audio editor's Audio Info says them: there are none."
+    },
+    "No edits, not saved" : {
+      "comment" : "The edits as the audio editor's Audio Info says them: there are none, and the work is not saved."
+    },
+    "No filter presets. Add one, or reset to the defaults." : {
+      "comment" : "Shown in the filter presets sheet when the list is empty."
+    },
+    "No filter presets. Add some in Storage settings, under Audio Editing." : {
+      "comment" : "Shown in the audio editor's Apply Filter sheet when there are no filter presets. \"Storage settings\" and \"Audio Editing\" are the names of a settings tab and its group."
+    },
     "No headings found in this document." : {
       "comment" : "Message in the headings sheet when the book has no headings."
     },
     "No key was pressed twice." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time when no second press came in time."
     },
+    "No markers yet. Add Marker drops one at the cursor." : {
+      "comment" : "Shown in the audio editor's list when no marker has been dropped. \"Add Marker\" is the name of the command."
+    },
     "No matches" : {
       "comment" : "Status line of Search in Book when a search found nothing.\nStatus line of the Search Library window when a search found nothing."
     },
+    "No microphone" : {
+      "comment" : "Shown in the audio editor's microphone pop-up when no microphone is connected."
+    },
     "No microphone connected" : {
       "comment" : "What the Microphone pop-up in the Record window shows when no microphone is connected."
+    },
+    "No microphone is connected. Connect one to punch in." : {
+      "comment" : "Said by the audio editor's Punch In when no microphone is connected."
     },
     "No more books in folder" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop.",
@@ -4914,6 +5681,24 @@
           }
         }
       }
+    },
+    "No original audio is kept for this book, so saved edits can't be undone." : {
+      "comment" : "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book keeps no original audio."
+    },
+    "No original is kept, so it can't be reverted. Undo takes back edits since the last save." : {
+      "comment" : "Said by the audio editor's Revert to Original when the book keeps no original audio."
+    },
+    "No original is kept: edits change the audio in place, and saved edits can't be undone." : {
+      "comment" : "Explains Storage settings' Original audio choice Don't keep: no original is kept, so saved edits can't be undone."
+    },
+    "No pause after the cursor." : {
+      "comment" : "Said when the audio editor's Next Pause finds no pause after the cursor."
+    },
+    "No pause before the cursor." : {
+      "comment" : "Said when the audio editor's Previous Pause finds no pause before the cursor."
+    },
+    "No pauses were found." : {
+      "comment" : "Shown in the audio editor's list when the audio has no pauses."
     },
     "No previous book in the reading list." : {
       "comment" : "VoiceOver announcement when Previous in Reading List finds no book above this one.",
@@ -4954,6 +5739,9 @@
     "No shortcut" : {
       "comment" : "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\"."
     },
+    "No shortcut." : {
+      "comment" : "Ends a button's hint in the audio editor when its command has no keyboard shortcut."
+    },
     "No sound from %@. Check that the microphone is on and not muted." : {
       "comment" : "Said by the Record window when a recording has held nothing but silence for a few seconds. %@ is the name of the microphone."
     },
@@ -4985,6 +5773,12 @@
     },
     "Not in the Reading List" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
+    "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit." : {
+      "comment" : "Explains the question asked as the audio editor's window with unsaved edits closes: what Discard does."
+    },
+    "Not kept" : {
+      "comment" : "The original audio's state in the audio editor's Audio Info sheet: it is not kept."
     },
     "Not known until the book is downloaded" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file is only in the cloud, which is never downloaded to learn it."
@@ -5034,14 +5828,26 @@
     "Nothing could be compared with the copy in %@, because a file the comparison needs couldn't be read." : {
       "comment" : "First sentence of the results of Compare Libraries when the other copy's library index could not be read. %@ is the other copy's folder path."
     },
+    "Nothing has been cut or copied." : {
+      "comment" : "Said by the audio editor's Paste when nothing has been cut or copied."
+    },
     "Nothing is changed." : {
       "comment" : "Last sentence of what the Compare Libraries sheet says while it works: the comparison changes nothing in either copy."
     },
+    "Nothing is playing." : {
+      "comment" : "Said when the audio editor's Stop is pressed with nothing playing."
+    },
     "Nothing is selected." : {
-      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a press of Speak Info, or of Return (Open Selected Book), says when no row is selected."
+      "comment" : "Said when an audio editor command needs a selection and there is none.\nText of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a press of Speak Info, or of Return (Open Selected Book), says when no row is selected."
     },
     "Nothing matches this view now." : {
       "comment" : "Text of the Library window's View pop-up and Go to View. The row a view shows while it lists nothing at all: the Feeds view, a view the listener made, and any view without a Books section (LibraryView.showsEmptySentence)."
+    },
+    "Nothing to revert: no edit can be undone." : {
+      "comment" : "Said by the audio editor's Revert to Original when no edit can be undone."
+    },
+    "Nothing to save: the book's audio holds every edit." : {
+      "comment" : "Said by the audio editor's Save when there is nothing to save."
     },
     "Nothing was changed." : {
       "comment" : "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.\nLast sentence of a refusal to read a book again: the book and its text are as they were."
@@ -5049,11 +5855,14 @@
     "Nothing was recorded, so there is nothing to save." : {
       "comment" : "Error in the Record window when the recording was stopped before any audio was captured."
     },
+    "Now %@ long." : {
+      "comment" : "Ends the announcement of an edit in the audio editor: the audio's new length. %@ is the length in words."
+    },
     "Number Sign" : {
       "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\"."
     },
     "OK" : {
-      "comment" : "Button that dismisses an alert about a problem.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
+      "comment" : "Button that closes a notice.\nButton that dismisses an alert about a problem.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
     },
     "Of each feed's episodes and articles, lists only the one you opened last." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
@@ -5071,6 +5880,9 @@
     },
     "One Unit for Both Directions" : {
       "comment" : "A choice of the playback bar's navigation unit menus setting: one shared menu sets the unit of both skip buttons."
+    },
+    "Only an audiobook's audio can be edited." : {
+      "comment" : "Said when Edit Audio… is chosen for something that is not an audiobook kept in a package of its own."
     },
     "Only rewind if the pause was longer than the threshold" : {
       "comment" : "VoiceOver hint of the Smart mode checkbox in the Playback settings."
@@ -5175,11 +5987,49 @@
     "Opens the book at this match" : {
       "comment" : "VoiceOver hint of a search match's row in the Search Library window."
     },
+    "Opens the filter presets, to edit, add, reorder, delete, or reset." : {
+      "comment" : "Hint of the Filter Presets button in Storage settings."
+    },
     "Option" : {
       "comment" : "Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as \"Option + Command + G\"."
     },
     "Order" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The direction pop-up's label."
+    },
+    "Original audio" : {
+      "comment" : "Label of the picker in Storage settings (Audio Editing) that chooses what happens to the original audio of recordings and edited audiobooks.\nLabel of whether the original audio is kept, in the audio editor's Audio Info sheet."
+    },
+    "Original audio for this book" : {
+      "comment" : "Label of the pop-up in the audio editor's Audio Info sheet that sets what happens to this book's original audio."
+    },
+    "Originals are kept for %lld days after the book was saved or last edited, then deleted." : {
+      "comment" : "Explains Storage settings' Original audio choice Keep for a number of days. %lld is the number of days.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Originals are kept for %lld day after the book was saved or last edited, then deleted."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Originals are kept for %lld days after the book was saved or last edited, then deleted."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Originals are kept until the book is removed." : {
+      "comment" : "Explains Storage settings' Original audio choice Keep: originals are kept until their book is removed."
+    },
+    "Out at %@." : {
+      "comment" : "Said as the audio editor's Mark Out marks the selection's end. %@ is the time in words. A sentence about the selection it makes may follow."
     },
     "Page" : {
       "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book."
@@ -5233,6 +6083,26 @@
     "Paste and Match Style" : {
       "comment" : "Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
+    "Pasted %@ back where they were cut." : {
+      "comment" : "Said as a Paste right after a Cut, at the cut's own place, puts the audio back. %@ is its length in words."
+    },
+    "Pasted %@ over %@." : {
+      "comment" : "Said as the audio editor's Paste pastes over a selection. %1$@ is the length pasted and %2$@ the length of the selection it replaced, both in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Pasted %1$@ over %2$@."
+          }
+        }
+      }
+    },
+    "Pasted %@." : {
+      "comment" : "Said as the audio editor's Paste pastes at the cursor. %@ is the length pasted, in words."
+    },
+    "Pastes at the cursor, or over the selection. Right after a cut, it moves the audio." : {
+      "comment" : "Hint of the audio editor's Paste button."
+    },
     "Pattern" : {
       "comment" : "Placeholder of the field that holds a substitution rule's search pattern in the rule editor."
     },
@@ -5244,6 +6114,9 @@
     },
     "Pause" : {
       "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".\nTitle of the button in the Record window that pauses the recording."
+    },
+    "Pause %@" : {
+      "comment" : "A pause as the audio editor's list and its row's buttons name it. %@ is the pause's number, an identifier written without digit grouping."
     },
     "Pause level" : {
       "comment" : "Title of the punctuation pause level slider in the Playback settings."
@@ -5285,8 +6158,14 @@
         }
       }
     },
+    "Paused at %@." : {
+      "comment" : "Said as the audio editor's playing pauses. %@ is where, as a time in words such as \"12 minutes, 4 seconds\"."
+    },
     "Paused." : {
       "comment" : "Status line and announcement of the Record window once the recording is paused."
+    },
+    "Pauses" : {
+      "comment" : "Heading of the pauses in the audio editor's list."
     },
     "Pauses the recording; %@ continues the same recording." : {
       "comment" : "VoiceOver hint of the Pause button in the Record window. %@ is the title of the button that continues a paused recording."
@@ -5320,6 +6199,9 @@
     },
     "Play Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Plays only the selection."
+    },
+    "Play half a second after each move" : {
+      "comment" : "Label of the switch in Storage settings (Audio Editing) that makes the audio editor play half a second at the cursor after each move."
     },
     "Play the book above" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.",
@@ -5363,6 +6245,21 @@
     },
     "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth." : {
       "comment" : "Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name."
+    },
+    "Playing" : {
+      "comment" : "A part of the audio editor's status line while the audio plays."
+    },
+    "Playing from the start." : {
+      "comment" : "Said as Play starts again from the start of the audio, the cursor having been at the end."
+    },
+    "Plays a preview; choose Apply again to apply." : {
+      "comment" : "Hint of the audio editor's Apply button while a press would play a preview first."
+    },
+    "Plays from the cursor, or pauses." : {
+      "comment" : "Hint of the audio editor's Play or Pause button."
+    },
+    "Plays half a second at the cursor after each move." : {
+      "comment" : "Hint of the Play half a second after each move switch in Storage settings."
     },
     "Plays the book and pauses before it starts again." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
@@ -5419,8 +6316,14 @@
         }
       }
     },
+    "Plays the selection, and stops at its end." : {
+      "comment" : "Hint of the audio editor's Play Selection button."
+    },
     "Plus" : {
       "comment" : "Name of the punctuation key \"+\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Plus\"."
+    },
+    "Position" : {
+      "comment" : "Label of the audio editor's time display: where the cursor is."
     },
     "Position display mode" : {
       "comment" : "VoiceOver label of the picker in Search in Book that chooses how each result's position is shown."
@@ -5450,6 +6353,9 @@
         }
       }
     },
+    "Presets from another Mac just arrived and replaced these. Make the change again." : {
+      "comment" : "Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it."
+    },
     "Press a key twice." : {
       "comment" : "Announced by VoiceOver when a trial of the double press time starts: asks the listener to press one key twice."
     },
@@ -5459,11 +6365,23 @@
     "Press the new key, or Escape to cancel." : {
       "comment" : "VoiceOver hint of a keyboard shortcut's key button while it waits for the new key: Escape stops recording."
     },
+    "Preview" : {
+      "comment" : "Button of the audio editor's Apply Filter sheet that plays the filtered sound."
+    },
     "Preview Voice" : {
       "comment" : "Button of the voice sheet that speaks a sample in the chosen voice.\nTitle of the button in the Voice settings that speaks a sample sentence in the selected voice."
     },
+    "Preview filters before applying" : {
+      "comment" : "Label of the switch in Storage settings (Audio Editing) that makes the audio editor's Apply Filter play the filtered audio first."
+    },
     "Preview selected voice" : {
       "comment" : "VoiceOver label of the Preview Voice button in the Voice settings.\nWhat VoiceOver calls the voice sheet's button that speaks a sample in the chosen voice."
+    },
+    "Previewing %@ first. Choose Apply again to apply it." : {
+      "comment" : "Said as the audio editor's Apply plays a preview first, because the Preview filters before applying setting is on. %@ is the filter preset's name. \"Apply\" is the name of the button."
+    },
+    "Previewing %@." : {
+      "comment" : "Said as a filter preview begins in the audio editor. %@ is the filter preset's name."
     },
     "Previous" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Previous\"."
@@ -5504,6 +6422,12 @@
     "Print Screen" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print Screen\"."
     },
+    "Problem: %@" : {
+      "comment" : "How VoiceOver reads the problem shown under a field. %@ is the problem's sentence."
+    },
+    "Progress" : {
+      "comment" : "Label of the progress bar of a save or an export in the audio editor."
+    },
     "Publication Date" : {
       "comment" : "Name of the book information sheet's field for a book's publication date."
     },
@@ -5525,11 +6449,17 @@
     "Punctuation pauses: %@" : {
       "comment" : "The punctuation pause level shown above its slider in the Playback settings. %@ is the level's name, such as Subtle."
     },
+    "Puts back TextMouth's premade presets, removing the ones you added." : {
+      "comment" : "Hint of the Reset All to Defaults button in the filter presets sheet."
+    },
     "Quality" : {
       "comment" : "Label of the selected voice's quality in the Voice settings, such as Enhanced."
     },
     "Question Mark" : {
       "comment" : "Name of the punctuation key \"?\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Question Mark\"."
+    },
+    "Quieter" : {
+      "comment" : "Title of a premade audio filter preset: lowers the volume by 6 decibels."
     },
     "Quit Anyway" : {
       "comment" : "Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved."
@@ -5706,6 +6636,9 @@
     "Recording" : {
       "comment" : "The name a new recording's title starts with, followed by the date and time, such as \"Recording 2026-10-04 06:30\". It becomes the title of the audiobook the recording is saved as."
     },
+    "Recording discarded." : {
+      "comment" : "Said as a punch-in recording under way is discarded in the audio editor."
+    },
     "Recording from %@." : {
       "comment" : "Status line and announcement of the Record window when recording starts. %@ is the name of the microphone."
     },
@@ -5723,6 +6656,17 @@
     "Recording of %@, which holds no sound" : {
       "comment" : "Describes a recording left behind that holds no sound. %@ is when it was recorded, a date and time."
     },
+    "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it." : {
+      "comment" : "Said before the audio editor's Punch In records over a selection. %1$@ is the selection's length in words, %2$@ its start in words, and %3$@ the microphone's name. \"Punch In\", \"Stop\" and \"Clear Selection\" are the names of controls.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it."
+          }
+        }
+      }
+    },
     "Recording shortcut. Press a key with Command or Control." : {
       "comment" : "VoiceOver label of a menu command's key button while it waits for the new key: the shortcut of a menu command must be a key held with the Command or Control key."
     },
@@ -5732,14 +6676,54 @@
     "Recording stopped because the microphone reported a problem. What was recorded is kept." : {
       "comment" : "Error in the Record window when recording stopped by itself because capture failed."
     },
+    "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it." : {
+      "comment" : "Said before the audio editor's Punch In records at the cursor. %1$@ is the cursor's time in words and %2$@ the microphone's name. \"Punch In\", \"Stop\" and \"Clear Selection\" are the names of controls.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it."
+          }
+        }
+      }
+    },
+    "Recording, %@, level %@" : {
+      "comment" : "A part of the audio editor's status line while a punch-in records. %1$@ is the time recorded, in words, and %2$@ the input level.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recording, %1$@, level %2$@"
+          }
+        }
+      }
+    },
+    "Recording. Stop or discard it with Clear Selection, then close." : {
+      "comment" : "Said when the audio editor's window can't close because a punch-in records. \"Clear Selection\" is the name of a command."
+    },
+    "Recording. Stop the recording first." : {
+      "comment" : "Said when an audio editor command other than the punch-in's own is chosen while a punch-in records."
+    },
     "Records a new shortcut." : {
       "comment" : "VoiceOver hint of a keyboard shortcut's key button, and of the add shortcut button, in Settings: the next key pressed becomes the shortcut."
+    },
+    "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it." : {
+      "comment" : "Hint of the audio editor's Punch In button. \"Stop\" is the name of a button."
     },
     "Recovered recordings" : {
       "comment" : "Heading of the list in the Record window of recordings TextMouth kept from before it last quit."
     },
+    "Redid %@." : {
+      "comment" : "Said as the audio editor's Redo redoes an edit. %@ is the edit's name, such as \"Cut 2.5 Seconds\"."
+    },
     "Redo" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Redo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Does the last undone edit again.\nName of the Edit menu's Redo command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Redo %@" : {
+      "comment" : "Title of the audio editor's Redo button. %@ is the name of the edit it would redo, such as \"Cut 2.5 Seconds\"."
+    },
+    "Redoes the edit undone last." : {
+      "comment" : "Hint of the audio editor's Redo button."
     },
     "Regular Expression" : {
       "comment" : "Title and VoiceOver label of the checkbox in the Search Library window that makes the search text a regular expression."
@@ -5751,7 +6735,7 @@
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name."
     },
     "Remove" : {
-      "comment" : "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's visible title.",
+      "comment" : "Button of a chapter marker's row in the audio editor's list that removes the chapter marker.\nButton of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's visible title.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -5924,6 +6908,12 @@
         }
       }
     },
+    "Remove Chapter Marker" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": removing a chapter marker."
+    },
+    "Remove Rumble" : {
+      "comment" : "Title of a premade audio filter preset: cuts the lowest rumble from a recording."
+    },
     "Remove bookmark" : {
       "comment" : "What VoiceOver says for the playback bar's bookmark button while a bookmark is at the place being read; it removes that bookmark."
     },
@@ -6001,8 +6991,25 @@
     "Removes this book's own voice, speed, and pitch, so it uses the global defaults." : {
       "comment" : "Hint of the button that removes a text book's own voice, speed and pitch."
     },
+    "Rename" : {
+      "comment" : "Button of a marker's row in the audio editor's list that gives the marker a name."
+    },
+    "Replace %@" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as \"2.5 Seconds\"."
+    },
     "Replace with: %@" : {
       "comment" : "A part of a substitution rule's spoken summary. %@ is the replacement text."
+    },
+    "Replaced %@ with %@ of new recording, which is selected." : {
+      "comment" : "Said as a punch-in recording replaces the selection in the audio editor. %1$@ is the length replaced and %2$@ the length of the new recording, both in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Replaced %1$@ with %2$@ of new recording, which is selected."
+          }
+        }
+      }
     },
     "Replacement (empty to skip)" : {
       "comment" : "Placeholder of the field that holds a substitution rule's replacement text in the rule editor. Leaving it empty removes the matched text."
@@ -6011,10 +7018,13 @@
       "comment" : "VoiceOver label of the replacement field in the substitution rule editor."
     },
     "Reset" : {
-      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults."
+      "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults."
     },
     "Reset %@ to Default" : {
       "comment" : "VoiceOver label of the Reset to Default button in the row of a keyboard shortcut action. %@ is the action's name."
+    },
+    "Reset All to Defaults" : {
+      "comment" : "Button in the filter presets sheet that puts back TextMouth's premade presets."
     },
     "Reset Keyboard Shortcuts?" : {
       "comment" : "Title of the alert that asks the listener to confirm resetting every keyboard shortcut to its default."
@@ -6155,8 +7165,40 @@
         }
       }
     },
+    "Reverse" : {
+      "comment" : "Title of a premade audio filter preset: plays the audio backwards."
+    },
+    "Revert" : {
+      "comment" : "Button of the audio editor's Revert to Original confirmation that reverts."
+    },
     "Revert to Original…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Throws away all edits and goes back to the original audio."
+    },
+    "Revert to the original audio?" : {
+      "comment" : "Question of the confirmation shown before the audio editor's Revert to Original."
+    },
+    "Reverted to the original audio. Redo brings back the %lld edits." : {
+      "comment" : "Said as the audio editor's Revert to Original ends. %lld is the number of edits undone, which Redo brings back.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Reverted to the original audio. Redo brings back the %lld edit."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Reverted to the original audio. Redo brings back the %lld edits."
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "Rewind on Resume" : {
       "comment" : "Heading of the rewind group in the Playback settings."
@@ -6185,6 +7227,9 @@
     "Rules you added or changed will be lost." : {
       "comment" : "Last sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults."
     },
+    "Runs a filter preset over the selection or the whole file." : {
+      "comment" : "Hint of the audio editor's Apply Filter button."
+    },
     "Same Author" : {
       "comment" : "A match criterion of Find Duplicate Books: the books have the same author."
     },
@@ -6195,7 +7240,7 @@
       "comment" : "A match criterion of Find Duplicate Books: the books have the same title."
     },
     "Save" : {
-      "comment" : "Button of the book information sheet that saves the edits.\nButton that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Saves the edited audio.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that saves the view.\nTitle of the button that saves an edited substitution rule, in the rule editor.\nTitle of the question's default button when the Record window is closed with a recording that could not be saved: it tries to save it again.",
+      "comment" : "Button of the book information sheet that saves the edits.\nButton that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nButton that saves what a sheet or window edited, such as a filter preset or the audio editor's edits.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Saves the edited audio.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that saves the view.\nTitle of the button that saves an edited substitution rule, in the rule editor.\nTitle of the question's default button when the Record window is closed with a recording that could not be saved: it tries to save it again.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -6207,6 +7252,12 @@
     },
     "Save Again" : {
       "comment" : "Title of the button in the Record window that tries again to save a recording whose save failed."
+    },
+    "Save Name" : {
+      "comment" : "Button that keeps the new name typed for a marker."
+    },
+    "Save and Export" : {
+      "comment" : "Heading of the audio editor's buttons for saving and exporting."
     },
     "Save as Audiobook" : {
       "comment" : "Title of the button in the Record window that saves a recording left behind as an audiobook."
@@ -6226,6 +7277,9 @@
     "Save metadata to the library only" : {
       "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is off."
     },
+    "Save the edits to “%@”?" : {
+      "comment" : "Question asked as the audio editor's window with unsaved edits closes. %@ is the book's title."
+    },
     "Save the recording?" : {
       "comment" : "The question asked when the Record window is closed while it holds a recording that could not be saved yet."
     },
@@ -6234,6 +7288,9 @@
     },
     "Save to Global Settings" : {
       "comment" : "Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book."
+    },
+    "Saved %@" : {
+      "comment" : "Said as an edited filter preset is saved. %@ is the preset's name."
     },
     "Saved %@." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a changed view is saved. Placeholders in order: name."
@@ -6244,14 +7301,46 @@
     "Saved Recording as %@." : {
       "comment" : "Status line of the Record window once a recording is saved as an audiobook, ending with a full stop. %@ is the audiobook's title."
     },
+    "Saved as" : {
+      "comment" : "Label of the file format the book's audio is saved as, in the audio editor's Audio Info sheet."
+    },
+    "Saved. The book's audio is now %@ long." : {
+      "comment" : "Said as the audio editor's save ends. %@ is the book's new audio length in words."
+    },
+    "Saves the edits into the book's audio file, in the format the book keeps." : {
+      "comment" : "Hint of the audio editor's Save button."
+    },
     "Saves this recording as an audiobook in the %@ folder, titled by when it was recorded." : {
       "comment" : "VoiceOver hint of the button that saves a recording left behind. %@ is the label of the pop-up that chooses the folder."
+    },
+    "Saving" : {
+      "comment" : "Title of the sheet shown while the audio editor saves the edits into the book."
+    },
+    "Saving %@ of audio as %@, the format this book keeps." : {
+      "comment" : "Said as the audio editor begins to save, and shown in its sheet. %1$@ is the audio's length in words and %2$@ the name of the file format the book keeps, such as \"M4A (AAC)\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Saving %1$@ of audio as %2$@, the format this book keeps."
+          }
+        }
+      }
+    },
+    "Saving %@ of audio into the book." : {
+      "comment" : "Said as the audio editor begins to save, and shown in its sheet. %@ is the audio's length in words."
     },
     "Saving the recording…" : {
       "comment" : "Status line and announcement of the Record window while a recording is being saved as an audiobook."
     },
     "Say the page in Where Am I?" : {
       "comment" : "Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is."
+    },
+    "Says where the cursor is, in which chapter, and what is selected." : {
+      "comment" : "Hint of the audio editor's Where Am I button."
+    },
+    "Says where the selection starts and ends, and how long it is." : {
+      "comment" : "Hint of the audio editor's Speak Selection button."
     },
     "Scan for Duplicates" : {
       "comment" : "Title of the button in Find Duplicate Books that scans the library for duplicates."
@@ -6335,14 +7424,20 @@
     "Seconds between level announcements" : {
       "comment" : "Label of the stepper in the Record window that sets how many seconds pass between the spoken microphone levels."
     },
+    "Seconds must be less than 60." : {
+      "comment" : "Problem said of a typed time whose seconds, after minutes or hours, reach 60."
+    },
     "Select" : {
-      "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Select\"."
+      "comment" : "Button of a pause's row in the audio editor's list that selects the pause.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Select\"."
     },
     "Select All" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.\nName of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key."
     },
     "Select Chapter" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position."
+    },
+    "Select and Mark" : {
+      "comment" : "Heading of the audio editor's buttons for the selection and the markers."
     },
     "Select to Next Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause."
@@ -6355,6 +7450,55 @@
     },
     "Select voice for this book" : {
       "comment" : "What VoiceOver calls the voice sheet's menu of voices."
+    },
+    "Selected %@." : {
+      "comment" : "Said as a selection is made in the audio editor. %@ is its length in words."
+    },
+    "Selected all %@." : {
+      "comment" : "Said as the audio editor's Select All selects everything. %@ is the audio's length in words."
+    },
+    "Selected chapter %@: %@, %@." : {
+      "comment" : "Said as the audio editor's Select Chapter selects a chapter. %1$@ is the chapter's number, an identifier written without digit grouping, %2$@ its title, and %3$@ its length in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Selected chapter %1$@: %2$@, %3$@."
+          }
+        }
+      }
+    },
+    "Selected the %@ before chapter 1." : {
+      "comment" : "Said as the audio editor's Select Chapter selects the audio before the first chapter marker. %@ is its length in words."
+    },
+    "Selection" : {
+      "comment" : "Choice in the audio editor's Apply Filter sheet: filter the selected stretch of the audio."
+    },
+    "Selection cleared." : {
+      "comment" : "Said as the audio editor's selection is cleared."
+    },
+    "Selection from %@ to %@; %@ long." : {
+      "comment" : "Said by the audio editor's Speak Selection. %1$@ is the selection's start, %2$@ its end, and %3$@ its length, all in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Selection from %1$@ to %2$@; %3$@ long."
+          }
+        }
+      }
+    },
+    "Selects all of the audio." : {
+      "comment" : "Hint of the audio editor's Select All button."
+    },
+    "Selects from the cursor to the end of the next pause." : {
+      "comment" : "Hint of the audio editor's Select to Next Pause button."
+    },
+    "Selects from the end of the previous pause to the cursor." : {
+      "comment" : "Hint of the audio editor's Select to Previous Pause button."
+    },
+    "Selects the chapter the cursor is in." : {
+      "comment" : "Hint of the audio editor's Select Chapter button."
     },
     "Semicolon" : {
       "comment" : "Name of the punctuation key \";\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Semicolon\"."
@@ -6375,6 +7519,9 @@
           }
         }
       }
+    },
+    "Set Chapter Marker" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": setting a chapter marker."
     },
     "Set its shortcut with %@ in the %@ tab; the default is %@." : {
       "comment" : "Note under the restart gesture in the Miscellaneous settings. %1$@ is the name of the shortcut's action, %2$@ is the name of the Settings tab where shortcuts are set, and %3$@ is the default key in words, such as \"Shift + Command + R\".",
@@ -6434,6 +7581,9 @@
         }
       }
     },
+    "Sets a chapter marker at the cursor, with a title you type." : {
+      "comment" : "Hint of the audio editor's Insert Chapter Marker button."
+    },
     "Sets when the View pop-up offers this view" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint."
     },
@@ -6459,13 +7609,19 @@
       "comment" : "Title of the pop-up in the Playback settings that chooses what skipping forward moves by while Shift is held. Shift is the key's name."
     },
     "Shortcut: %@." : {
-      "comment" : "The last sentence of a Record window button's hint: the key that presses it. %@ is the key spoken in words, such as \"Command + R\"."
+      "comment" : "Ends a button's hint in the audio editor: the command's one keyboard shortcut. %@ is the key's name such as \"Shift + J\".\nThe last sentence of a Record window button's hint: the key that presses it. %@ is the key spoken in words, such as \"Command + R\"."
     },
     "Shortcuts" : {
       "comment" : "Name of the Settings tab for keyboard shortcuts."
     },
     "Shortcuts reset to defaults." : {
       "comment" : "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default."
+    },
+    "Shortcuts: %@." : {
+      "comment" : "Ends a button's hint in the audio editor: the command's keyboard shortcuts. %@ is their names as a list, such as \"J or Comma\"."
+    },
+    "Shorten Long Pauses" : {
+      "comment" : "Title of a premade audio filter preset: makes every pause longer than a second one second long."
     },
     "Show Always" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .always."
@@ -6603,6 +7759,9 @@
         }
       }
     },
+    "Shows length, file, and edits; sets what happens to the original audio." : {
+      "comment" : "Hint of the audio editor's Audio Info button."
+    },
     "Shows one folder at a time" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Folders' row hint: what it shows."
     },
@@ -6620,6 +7779,12 @@
     },
     "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page." : {
       "comment" : "Hint and caption of the Playback setting that shows the page on the reader screen. \"Page 12 of 300\" is an example of how the page is shown."
+    },
+    "Silence can last at most a day." : {
+      "comment" : "Problem shown when the silence to insert in the audio editor is longer than a day."
+    },
+    "Silence must be longer than zero." : {
+      "comment" : "Problem shown when the silence to insert in the audio editor has no length."
     },
     "Silent" : {
       "comment" : "The value of the microphone level in the Record window, spoken, when no sound reaches TextMouth."
@@ -6937,6 +8102,12 @@
         }
       }
     },
+    "Start Over" : {
+      "comment" : "Button that starts the audio editor over with an empty edit history, when the saved history can't be read."
+    },
+    "Start of the audio." : {
+      "comment" : "Said as the audio editor's Go to Start lands at the start."
+    },
     "Start of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop.",
       "localizations" : {
@@ -6979,6 +8150,9 @@
     "Stats" : {
       "comment" : "Name of the Settings tab for reading statistics."
     },
+    "Status" : {
+      "comment" : "Label of the audio editor's status line: the cursor's time, chapter, and selection."
+    },
     "Step %@" : {
       "comment" : "VoiceOver label of one step's pop-up of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping."
     },
@@ -7008,6 +8182,9 @@
         }
       }
     },
+    "Still finding the pauses. Try again in a moment." : {
+      "comment" : "Said when a pause command is used in the audio editor while the pauses are still being found."
+    },
     "Still starting: %@" : {
       "comment" : "VoiceOver announcement when Play is pressed while the next book is still opening. %@ is the next book's title.",
       "localizations" : {
@@ -7018,6 +8195,12 @@
           }
         }
       }
+    },
+    "Still working on the last change." : {
+      "comment" : "Said when an audio editor command would change the audio while another change, a save, or an export is under way."
+    },
+    "Still working. Close once the change is done." : {
+      "comment" : "Said when the audio editor's window can't close because a change, save, or export is under way."
     },
     "Stop" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nA choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.\nButton of the Compare Libraries sheet that stops the comparison.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".\nName of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.\nTitle of the button in the Record window that stops recording and saves it.\nTitle of the button that stops a running search in the Search Library window.",
@@ -7043,6 +8226,12 @@
     },
     "Stop Comparing" : {
       "comment" : "Button in Storage settings that stops the comparison made before Use This Library."
+    },
+    "Stop Preview" : {
+      "comment" : "Button of the audio editor's Apply Filter sheet that stops the preview."
+    },
+    "Stop Recording" : {
+      "comment" : "Title of the audio editor's Punch In button while it records."
     },
     "Stop Where Am I announcement" : {
       "comment" : "What VoiceOver calls the reader toolbar's Where Am I? button while an announcement speaks; pressing it stops the announcement."
@@ -7089,11 +8278,17 @@
         }
       }
     },
+    "Stopped. Back at %@." : {
+      "comment" : "Said as the audio editor's Stop goes back to where playing began. %@ is that time in words."
+    },
     "Stops comparing. Nothing in either copy has been changed." : {
       "comment" : "VoiceOver hint of the Stop button of the Compare Libraries sheet."
     },
     "Stops playback resuming when headphones disconnect" : {
       "comment" : "VoiceOver hint of the Enable Bluetooth monitoring switch in the Miscellaneous settings."
+    },
+    "Stops playing, and goes back to where playing began." : {
+      "comment" : "Hint of the audio editor's Stop button."
     },
     "Stops recording and saves it in your library as an audiobook." : {
       "comment" : "VoiceOver hint of the Stop button in the Record window."
@@ -7347,6 +8542,29 @@
     "TextMouth couldn't tell which copy is newer." : {
       "comment" : "Second sentence of Use This Library's account when the comparison could not be made and no reason is known."
     },
+    "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its %lld chapter markers once saved." : {
+      "comment" : "Said when a save writes the book's file in a format whose chapter markers TextMouth writes but never reads back as the book's chapters. %1$@ is the format's name, such as \"CAF\", and %2$lld the number of chapter markers.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its chapter marker once saved."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its %lld chapter markers once saved."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "TextMouth hasn't read the latest save yet." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet."
     },
@@ -7363,6 +8581,9 @@
           }
         }
       }
+    },
+    "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open." : {
+      "comment" : "Explains the question about the audio editor's unsaved edits asked as TextMouth quits: what Discard and Cancel do."
     },
     "TextMouth is reading the library's text again. Try again when that finishes." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book can't be read again while the library's text is being read again (the launch batch, Redo Text Extraction), in the words TextMouth uses while its storage work is held (StorageBusyError)."
@@ -7391,8 +8612,64 @@
     "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen."
     },
+    "TextMouth's own filters don't include “%@”. They are %@; with ffmpeg installed, every filter it has works." : {
+      "comment" : "Problem said of a filter TextMouth doesn't run itself. %1$@ is the filter's name as typed, and %2$@ the list of the filters TextMouth does run, such as \"a, b, and c\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth's own filters don't include “%1$@”. They are %2$@; with ffmpeg installed, every filter it has works."
+          }
+        }
+      }
+    },
+    "TextMouth's own filters run this chain." : {
+      "comment" : "Shown under a filter preset's chain field: every filter in it is one TextMouth runs itself."
+    },
+    "TextMouth's own loudnorm normalizes with one gain, so it takes only true" : {
+      "comment" : "What the loudnorm filter's linear option accepts, said at the end of a refusal such as \"The loudnorm filter's linear can't be “false”: <this>.\" Written without its full stop."
+    },
     "That match is no longer in the book's text. Search again to find it." : {
       "comment" : "Announcement when a search match is no longer in the book's text."
+    },
+    "That's after the end of the audio, at %@." : {
+      "comment" : "Said when a time typed into the audio editor's Go to Time lies past the end. %@ is the audio's length in words."
+    },
+    "The %@ filter has no option “%@” here. Its options are %@." : {
+      "comment" : "Problem said of an option a filter doesn't take. %1$@ is the filter's name, %2$@ the option as typed, and %3$@ the list of the options it takes.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ filter has no option “%2$@” here. Its options are %3$@."
+          }
+        }
+      }
+    },
+    "The %@ filter needs its %@: %@." : {
+      "comment" : "Problem said when a filter lacks an option it needs. %1$@ is the filter's name, %2$@ the option's name, and %3$@ what the option takes, a clause such as \"give a time such as 2.5\", written without its full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ filter needs its %2$@: %3$@."
+          }
+        }
+      }
+    },
+    "The %@ filter was given more values than it has options; give them as key=value." : {
+      "comment" : "Problem said when a filter is given more values than it has options. %@ is the filter's name. \"key=value\" is filter syntax and stays as it is."
+    },
+    "The %@ filter's %@ can't be “%@”: %@." : {
+      "comment" : "Problem said of a value a filter's option can't take. %1$@ is the filter's name, %2$@ the option's name, %3$@ the value as typed, and %4$@ what the option takes, a clause such as \"give a number from 0 to 1\", written without its full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ filter's %2$@ can't be “%3$@”: %4$@."
+          }
+        }
+      }
     },
     "The %@ in the list will be replaced by TextMouth's %@." : {
       "comment" : "First sentence of the message of the question asked before the Substitutions settings replace every rule with the defaults. %1$@ is the number of rules in the list with their noun, such as \"15 rules\", and %2$@ is the number of default rules with their noun, such as \"16 default rules\".",
@@ -7435,6 +8712,52 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The %1$@ page labelled %2$@"
+          }
+        }
+      }
+    },
+    "The %lld markers are deleted, and Redo doesn't bring them back." : {
+      "comment" : "Explains the audio editor's Revert to Original confirmation: how many markers it deletes. %lld is the number of markers.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The marker is deleted, and Redo doesn't bring it back."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The %lld markers are deleted, and Redo doesn't bring them back."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "The %lld markers are deleted." : {
+      "comment" : "Said as the audio editor's Revert to Original ends having deleted markers. %lld is the number of markers deleted.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The marker is deleted."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The %lld markers are deleted."
+                }
+              }
+            }
           }
         }
       }
@@ -7482,8 +8805,32 @@
     "The Library window's View pop-up offers these views, in this order. A new Library window opens at the first one it offers." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the list is, and where a new window opens."
     },
+    "The audio can't be edited" : {
+      "comment" : "Title of the alert saying the audio editor couldn't open."
+    },
+    "The audio couldn't be exported." : {
+      "comment" : "Said when the audio editor's export fails. A sentence giving the reason follows."
+    },
+    "The audio couldn't be read." : {
+      "comment" : "Said when an audio file that the edits need can't be read as audio."
+    },
     "The audio editor" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the audio editor's windows."
+    },
+    "The audio editor for %@ is already open." : {
+      "comment" : "Said when Edit Audio… is chosen for a book whose editor is already open; that window comes forward. %@ is the book's title."
+    },
+    "The audio file “%@” that the edits need is missing from the book." : {
+      "comment" : "Said when an audio file that the edits need is missing. %@ is its path inside the book's package."
+    },
+    "The audio is only in the cloud, not on this Mac yet." : {
+      "comment" : "Said when an audio file that the edits need is only in the cloud. A second sentence says to download the book and try again."
+    },
+    "The audio isn't ready to play yet." : {
+      "comment" : "Said when Play is pressed in the audio editor before the edited audio is ready, or after it couldn't be made ready."
+    },
+    "The audio of %@ couldn't be opened for editing." : {
+      "comment" : "Said when the audio editor couldn't open a book. %@ is the book's title. A sentence giving the reason follows."
     },
     "The audiobook's title in your library." : {
       "comment" : "VoiceOver hint and tooltip of the Title field in the Record window."
@@ -7501,6 +8848,15 @@
     },
     "The book is no longer in the library, so it was not read again." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book that left the library while its Book Information was open is not read again."
+    },
+    "The book is no longer in the library." : {
+      "comment" : "Said when an audio edit can't proceed: the book was removed from the library, or is not an audiobook kept in a package of its own."
+    },
+    "The book is open in a reader. Close it, then save again." : {
+      "comment" : "Said when saving the edited audio is refused because a reader has the book open and plays the file the save would replace."
+    },
+    "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book." : {
+      "comment" : "Said when the audio editor's Discard can't reach the audio as it was saved: the edits stay."
     },
     "The books are in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -7539,8 +8895,29 @@
     "The disk is almost full, so recording stopped. What was recorded is kept." : {
       "comment" : "Error in the Record window when the disk filled up while recording."
     },
+    "The disk is too full to keep this audio for pasting." : {
+      "comment" : "Said when the disk is too full to keep the audio cut or copied in the audio editor for Paste."
+    },
     "The download of “%@” will be deleted." : {
       "comment" : "First sentence of the confirmation that deletes one feed item's download. %@ is the episode's or article's title."
+    },
+    "The edit history couldn't be read. A copy was kept in the book's package." : {
+      "comment" : "Said when the book's saved edit history can't be read. A copy of the unreadable file was kept in the book's package."
+    },
+    "The edit history is only in the cloud, not on this Mac yet." : {
+      "comment" : "Said when the audio editor can't open a book: its edit history is only in the cloud. A second sentence says to try again once the book has downloaded."
+    },
+    "The edit history names a file outside the book, so it isn't used." : {
+      "comment" : "Said when an audio edit can't proceed: the book's saved edit history points at a file outside the book's own package."
+    },
+    "The edit history of %@ couldn't be read." : {
+      "comment" : "Question asked when a book's saved audio edit history can't be read. %@ is the book's title."
+    },
+    "The edited audio couldn't be written." : {
+      "comment" : "Said when the edited audio could not be written, whatever the technical reason, which goes to the debug log."
+    },
+    "The edits couldn't be saved." : {
+      "comment" : "Said when the audio editor's save fails. A sentence giving the reason follows."
     },
     "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another." : {
       "comment" : "Sentence of the second confirmation that deletes a folder: one feed stays. %@ is the feed's title in quotation marks. \"Feed Info\" names a sheet."
@@ -7551,6 +8928,12 @@
     "The files that couldn't be read are listed." : {
       "comment" : "Sentence of the results of Compare Libraries saying the unread files are listed below."
     },
+    "The filter chain is empty." : {
+      "comment" : "Problem said when a filter chain is typed as nothing at all, in the audio editor's Apply Filter and the filter presets."
+    },
+    "The filter presets are reset to the defaults." : {
+      "comment" : "Said as every filter preset is put back to TextMouth's premade ones."
+    },
     "The folder %@ holds a different library, so nothing was compared." : {
       "comment" : "What the Compare Libraries sheet says when the chosen folder holds a different library. %@ is the folder's path."
     },
@@ -7559,6 +8942,9 @@
     },
     "The library isn't available, so logs go to %@ until it is." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written."
+    },
+    "The library isn't available, so the filter presets can't be saved." : {
+      "comment" : "Said when the filter presets can't be saved because the library's data folder can't be used."
     },
     "The manifest of %@ can't be edited: %@" : {
       "comment" : "Message when a book's manifest could not be readied for editing. %1$@ is the book's title; %2$@ is the reason, a sentence from the system or TextMouth.",
@@ -7570,6 +8956,9 @@
           }
         }
       }
+    },
+    "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input." : {
+      "comment" : "Hint of the audio editor's microphone pop-up. \"Record window\" is TextMouth's window that records audio."
     },
     "The microphone TextMouth used last isn't connected, so recordings use %@." : {
       "comment" : "Said by the Record window when the microphone used last is not connected as the window opens. %@ is the name of the microphone recordings use instead."
@@ -7614,11 +9003,20 @@
     "The next episode could not be downloaded." : {
       "comment" : "First sentence of the VoiceOver announcement when Next in Folder could not download the next podcast episode. A sentence with the reason follows it."
     },
+    "The original audio was deleted on %@, so edits saved before then can't be undone." : {
+      "comment" : "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form."
+    },
     "The original file you imported is not changed." : {
       "comment" : "Last sentence of the warning shown under the metadata editor's switch while it is on: the file the user first imported stays as it was."
     },
     "The original file you imported is not touched." : {
       "comment" : "Last sentence of the hint of the metadata editor's switch that also writes the EPUB file: the file the user first imported stays as it was."
+    },
+    "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book." : {
+      "comment" : "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept."
+    },
+    "The pauses couldn't be found." : {
+      "comment" : "Said when the audio editor couldn't find the audio's pauses. A sentence giving the reason follows."
     },
     "The previous article could not be downloaded, so playback stopped." : {
       "comment" : "First sentence of the VoiceOver announcement when Previous in Folder could not download the previous feed article while a book was playing, so playback was paused. A sentence with the reason follows it."
@@ -7683,6 +9081,12 @@
     "The recording's audio couldn't be read." : {
       "comment" : "Error in the Record window when saving: the recorded take holds no audio that can be read."
     },
+    "The selection is all the audio; nothing to trim." : {
+      "comment" : "Said by the audio editor's Trim to Selection when the selection is all of the audio."
+    },
+    "The stretch of the take to use isn't inside the take." : {
+      "comment" : "Said when a punch-in's recording is asked to use a stretch that is not inside the recording."
+    },
     "The text changed since the search; moved to the nearest match." : {
       "comment" : "Announcement when the book's text changed since the search and the reader moved to the nearest match."
     },
@@ -7739,6 +9143,18 @@
         }
       }
     },
+    "There's an empty filter between two commas." : {
+      "comment" : "Problem found in a typed filter chain (the audio editor's Apply Filter and the filter presets): two commas in a row leave a filter with nothing in it."
+    },
+    "There's no audio after the cursor to preview." : {
+      "comment" : "Said when the audio editor has no audio after the cursor to preview a filter on."
+    },
+    "There's nothing to redo." : {
+      "comment" : "Said by the audio editor's Redo when nothing has been undone."
+    },
+    "There's nothing to undo." : {
+      "comment" : "Said when Undo is asked for and there is no edit to undo, and the hint of a dimmed Undo in the audio editor."
+    },
     "These books could not be deleted and remain in the library:" : {
       "comment" : "Heading over the books that could not be deleted permanently, several of them. One line for each book follows."
     },
@@ -7747,6 +9163,9 @@
     },
     "These books could not be removed from the library and remain in it:" : {
       "comment" : "Heading over the books that could not be removed from the library, several of them. One line for each book follows."
+    },
+    "These edits need the original audio, which is no longer kept." : {
+      "comment" : "Said when the edits wait to be rendered from an original audio that is gone. A second sentence says what helps."
     },
     "These items could not be deleted and remain in the library:" : {
       "comment" : "Heading over the items of a folder that could not be deleted permanently, several of them. One line for each follows."
@@ -7774,6 +9193,9 @@
         }
       }
     },
+    "This audio has no chapter markers." : {
+      "comment" : "Said by the audio editor's chapter commands when the audio has no chapter markers."
+    },
     "This book could not be deleted and remains in the library:" : {
       "comment" : "Heading over the one book that could not be deleted permanently. A line about it follows."
     },
@@ -7782,6 +9204,9 @@
     },
     "This book could not be removed from the library and remains in it:" : {
       "comment" : "Heading over the one book that could not be removed from the library. A line about it follows."
+    },
+    "This book follows the global setting now." : {
+      "comment" : "Said as a book's original audio policy is set to follow the global setting. A sentence saying what that setting does follows."
     },
     "This book has %lld pages, from %@ to %@." : {
       "comment" : "First sentence of the Go to Page field's hint. %1$lld is the number of pages in the book; %2$@ is the first page's label and %3$@ the last page's label, identifiers such as i or 300 written without digit grouping.",
@@ -7811,6 +9236,35 @@
     },
     "This book has only one page." : {
       "comment" : "Announcement when a page command is used in a book that has one page, so there is no other page to go to."
+    },
+    "This book keeps its original audio for %lld days after it was saved or last edited." : {
+      "comment" : "Said as a book's original audio policy is set to keep the original for a number of days. %lld is the number of days.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This book keeps its original audio for %lld day after it was saved or last edited."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This book keeps its original audio for %lld days after it was saved or last edited."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "This book keeps its original audio until the book is removed." : {
+      "comment" : "Said as a book's original audio policy is set to keep the original until the book is removed."
+    },
+    "This book keeps no original audio: saved edits change its audio in place, and can't be undone after." : {
+      "comment" : "Said as a book's original audio policy is set to keep no original."
     },
     "This book was not opened from the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list.",
@@ -7865,7 +9319,7 @@
       "comment" : "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\"."
     },
     "Time" : {
-      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book."
+      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book.\nLabel of a field in the audio editor that takes a time."
     },
     "Time In" : {
       "comment" : "Choice of the headings sheet's display picker: each heading shows the time into the book at which it begins."
@@ -7975,7 +9429,10 @@
       "comment" : "Heading of the group in Playback settings that holds the setting about naming the speed beside times."
     },
     "Title" : {
-      "comment" : "Label of the field in the Record window that names the recording, which becomes the audiobook's title.\nName of the book information sheet's field for the book's title.\nText of the Library window's View pop-up and Go to View. The one item of the Sort menu of a view listing only feeds, which are always listed by title."
+      "comment" : "Label of the audio editor's field for a chapter marker's title.\nLabel of the field in the Record window that names the recording, which becomes the audiobook's title.\nName of the book information sheet's field for the book's title.\nText of the Library window's View pop-up and Go to View. The one item of the Sort menu of a view listing only feeds, which are always listed by title."
+    },
+    "Title for a chapter marker at the cursor. One already there is renamed." : {
+      "comment" : "Explains the title field of the audio editor's Insert Chapter Marker sheet."
     },
     "Title or Author" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .titleOrAuthorContains."
@@ -7989,6 +9446,9 @@
     "Toggle Bookmark" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Adds a bookmark at the reading position, or removes the one there. Also the title of the menu command of the same name."
     },
+    "Too long to keep for pasting. To move it, paste right after cutting." : {
+      "comment" : "Said by the audio editor's Paste when the audio cut was too long to keep for pasting."
+    },
     "Total book time: %@" : {
       "comment" : "Part of the full Where Am I? summary: the book's whole length. %@ is the time in words, such as \"4 hours, 50 minutes\"."
     },
@@ -7997,6 +9457,9 @@
     },
     "Total: %@" : {
       "comment" : "The book's total time as the reader's status row shows it. %@ is a clock time such as 4:50:33."
+    },
+    "Track" : {
+      "comment" : "Label of the pop-up that chooses which audio track of a book to edit."
     },
     "Transcribe it again, then edit the new transcript." : {
       "comment" : "Sentence after the reason that an audiobook's transcript no longer fits its audio: what to do."
@@ -8013,14 +9476,29 @@
     "Tries to get the book again" : {
       "comment" : "Hint of the Try Again button of the reader's view for a book that could not be got from the cloud."
     },
+    "Trim End" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": trimming the end of the audio."
+    },
+    "Trim Silence at Both Ends" : {
+      "comment" : "Title of a premade audio filter preset: removes the silence at the start and at the end of the audio."
+    },
+    "Trim Start" : {
+      "comment" : "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": trimming the start of the audio."
+    },
     "Trim to Selection" : {
-      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Deletes all audio outside the selection."
+      "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Deletes all audio outside the selection.\nName of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": the audio editor's Trim to Selection, which trims the start and the end together."
+    },
+    "Trimmed to the selection: %@ kept." : {
+      "comment" : "Said as the audio editor's Trim to Selection trims. %@ is the length kept, in words."
     },
     "Try Again" : {
       "comment" : "Button of the reader's alert about a chapter that could not be downloaded; it tries the download again.\nButton of the reader's view for a book that could not be got from the cloud; it tries again."
     },
     "Try a Double Press" : {
       "comment" : "Button in the Shortcuts tab of Settings that lets the listener press a key twice to find out whether the double press time counts the two presses as a double press."
+    },
+    "Try again once the book has downloaded." : {
+      "comment" : "Ends a message saying a file of the book is only in the cloud and isn't on this Mac yet: what to do about it."
     },
     "Turn off “%@” to save the metadata to the library only." : {
       "comment" : "Second sentence of that message. %@ is the shown name of the editor's switch that also writes the file, quoted."
@@ -8050,6 +9528,9 @@
         }
       }
     },
+    "Type a chain of filters." : {
+      "comment" : "Shown under a filter preset's chain field while it is empty."
+    },
     "Type a page as the book numbers it, such as 12 or xii." : {
       "comment" : "Last sentence of the Go to Page field's hint: what the user may type. 12 and xii are examples of page labels, a number and a roman numeral."
     },
@@ -8058,6 +9539,9 @@
     },
     "Type a percent from 0 to 100, such as 47.5." : {
       "comment" : "Hint of the Go to Percent field: what the user may type. 47.5 is an example number; write it as the language writes numbers."
+    },
+    "Type a time, such as 12:04.3, 1:02:03, or 75.5." : {
+      "comment" : "Shown or spoken when a time field holds nothing, or something that is not a time (Go to Time, Insert Silence, the reader's Go to Time). The examples are clock times and seconds."
     },
     "Type a title, then save again." : {
       "comment" : "Second sentence of that message: what to do."
@@ -8095,8 +9579,26 @@
     "Underscore" : {
       "comment" : "Name of the punctuation key \"_\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Underscore\"."
     },
+    "Undid %@." : {
+      "comment" : "Said as the audio editor's Undo undoes an edit. %@ is the edit's name, such as \"Cut 2.5 Seconds\"."
+    },
     "Undo" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Undo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Undoes the last edit.\nName of the Edit menu's Undo command, in a sentence saying why a keyboard shortcut cannot take its key."
+    },
+    "Undo %@" : {
+      "comment" : "Title of the audio editor's Undo button. %@ is the name of the edit it would undo, such as \"Cut 2.5 Seconds\"."
+    },
+    "Undo or redo back to the audio as last saved." : {
+      "comment" : "Ends a message saying the edits need an original audio that is gone: only undoing or redoing back to the audio as last saved helps."
+    },
+    "Undoes every edit, back to the original; Redo brings them back." : {
+      "comment" : "Hint of the audio editor's Revert to Original button. \"Redo\" is the name of a command."
+    },
+    "Undoes the newest edit." : {
+      "comment" : "Hint of the audio editor's Undo button."
+    },
+    "Unknown Length" : {
+      "comment" : "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\"."
     },
     "Unopened" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book never opened.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .unopened."
@@ -8201,6 +9703,9 @@
     "Use Regex" : {
       "comment" : "Title of the switch in Search in Book that makes the search text a regular expression. Regex is short for regular expression."
     },
+    "Use ffmpeg for filters" : {
+      "comment" : "Label of the switch in Storage settings (Audio Editing) that lets the audio editor's filters run through an installed ffmpeg program. ffmpeg is the program's name."
+    },
     "Use regular expression" : {
       "comment" : "VoiceOver label of the Use Regex switch in Search in Book."
     },
@@ -8208,7 +9713,7 @@
       "comment" : "VoiceOver label of the Regular expression switch in the substitution rule editor."
     },
     "Use the global setting (%@)" : {
-      "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.",
+      "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.\nThe first choice of the Audio Info pop-up for a book's original audio: follow the global setting. %@ is that setting's name, such as \"Keep\".",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -8360,6 +9865,12 @@
     "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share." : {
       "comment" : "Second sentence of what a re-read does to the listener's place and bookmarks, without an example."
     },
+    "Which track of %@ do you want to edit?" : {
+      "comment" : "Question asked before editing a book of several audio tracks. %@ is the book's title."
+    },
+    "Whole File" : {
+      "comment" : "Choice in the audio editor's Apply Filter sheet: filter all of the audio."
+    },
     "Whole word only" : {
       "comment" : "A part of a substitution rule's spoken summary: the rule matches whole words only."
     },
@@ -8428,6 +9939,9 @@
     },
     "Works in %@" : {
       "comment" : "Says where a keyboard shortcut works, in a row of the Shortcuts tab or an announcement. %@ names the windows, such as \"every window\", \"Library windows\", or \"the audio editor\"."
+    },
+    "Writes chapter markers and markers beside the audio, in an Audacity label file of the same name." : {
+      "comment" : "Hint of the Also write the markers as Audacity labels checkbox. Audacity is the name of an audio editing program."
     },
     "Writes the title, author, publisher, and date into the library's copy of this book." : {
       "comment" : "First sentence of the hint of the metadata editor's switch that also writes the EPUB file."
@@ -8623,6 +10137,15 @@
     "feeds" : {
       "comment" : "Library view editor: the kind of row feeds, in lower case inside a filter's description such as \"Lists books and feeds\"."
     },
+    "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings." : {
+      "comment" : "Problem said when the ffmpeg program can't be started. \"Use ffmpeg\" is the name of a switch in the Storage settings."
+    },
+    "ffmpeg couldn't run the filters: %@" : {
+      "comment" : "Problem said when the ffmpeg program refused a filter chain or the audio. %@ is ffmpeg's own words, in English."
+    },
+    "ffmpeg isn't installed; TextMouth's own filters are used." : {
+      "comment" : "Shown in Storage settings (Audio Editing) when no ffmpeg program is installed. ffmpeg is the program's name."
+    },
     "fifth" : {
       "comment" : "Ordinal word 5th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
     },
@@ -8656,6 +10179,46 @@
     "from its byte order mark" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding a byte-order mark names."
     },
+    "give a frequency below half the audio's sample rate, %@ Hz" : {
+      "comment" : "What a frequency option of a filter accepts, said at the end of a refusal such as \"The highpass filter's frequency can't be “x”: <this>.\" Written without its full stop. %@ is half the audio's sample rate, in hertz, written without digit grouping."
+    },
+    "give a narrower width, since this one makes no usable filter at %@ Hz" : {
+      "comment" : "What a width option of a filter accepts, said at the end of a refusal such as \"The equalizer filter's width can't be “x”: <this>.\" Written without its full stop. %@ is the filter's frequency in hertz, already written."
+    },
+    "give a number from %@ to %@" : {
+      "comment" : "What a number option of a filter accepts, said at the end of a refusal such as \"The volume filter's volume can't be “x”: <this>.\" Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "give a number from %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "give a number, such as 0.5, or decibels, such as -6dB" : {
+      "comment" : "What a volume option of a filter accepts, said at the end of a refusal such as \"The volume filter's volume can't be “x”: <this>.\" Written without its full stop. The examples are filter syntax."
+    },
+    "give a time such as 2.5, 250ms, or 0:01:30" : {
+      "comment" : "What a time option of a filter accepts, said at the end of a refusal such as \"The afade filter's duration can't be “x”: <this>.\" Written without its full stop. The examples are filter syntax."
+    },
+    "give a whole number from %@ to %@" : {
+      "comment" : "What a whole-number option of a filter accepts, said at the end of a refusal such as \"The afade filter's duration can't be “x”: <this>.\" Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "give a whole number from %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "give one of %@" : {
+      "comment" : "What a choice option of a filter accepts, said at the end of a refusal such as \"The afade filter's type can't be “x”: <this>.\" Written without its full stop. %@ is the allowed values, filter syntax, as a list such as \"in, out\"."
+    },
+    "give true or false" : {
+      "comment" : "What an on-or-off option of a filter accepts, said at the end of a refusal such as \"The loudnorm filter's dual_mono can't be “x”: <this>.\" Written without its full stop."
+    },
     "good" : {
       "comment" : "A word describing the microphone's loudness in the Record window: a voice at a good level. Lower case, since it follows figures."
     },
@@ -8670,6 +10233,17 @@
     },
     "hidden" : {
       "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up does not offer the view."
+    },
+    "in chapter %@: %@" : {
+      "comment" : "A part of the audio editor's status line: the chapter the cursor is in. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ its title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "in chapter %1$@: %2$@"
+          }
+        }
+      }
     },
     "in the folder “%@”" : {
       "comment" : "Where a copy of the library files a book, inside a sentence of Compare Libraries. %@ is the folder's path."
@@ -8841,6 +10415,9 @@
     "no copy of the edited text could be kept, so TextMouth leaves content.md as it is." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because no backup could be made; begins in lower case. content.md is a file name and stays as written."
     },
+    "none" : {
+      "comment" : "Said in place of a list of filters or options when there are none, inside a filter message such as \"Its options are none.\""
+    },
     "not added today" : {
       "comment" : "Library view editor: a condition inside a filter's description: the item was not added today."
     },
@@ -8991,6 +10568,17 @@
     },
     "second" : {
       "comment" : "Ordinal word 2nd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "selection from %@ to %@, %@" : {
+      "comment" : "A part of the audio editor's status line: the selection. %1$@ is its start and %2$@ its end, as clock times such as \"11:58\", and %3$@ its length in words.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "selection from %1$@ to %2$@, %3$@"
+          }
+        }
+      }
     },
     "seventh" : {
       "comment" : "Ordinal word 7th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
@@ -9150,6 +10738,9 @@
     "too loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: peaks reach the top and are cut off. Lower case, since it follows figures."
     },
+    "unknown length" : {
+      "comment" : "A length of audio that is no length (not a finite number of seconds), said in a sentence, such as \"Cut unknown length.\""
+    },
     "unsubscribed" : {
       "comment" : "Library view editor: a condition inside a filter's description: the listener is not subscribed to the feed."
     },
@@ -9195,6 +10786,15 @@
         }
       }
     },
+    "“%@” is recording. Stop or discard it with Clear Selection, then quit." : {
+      "comment" : "Said in an audio editor when TextMouth can't quit because a punch-in records there. %@ is the book's title. \"Clear Selection\" is the name of a command."
+    },
+    "“%@” is still working. Quit once the change is done." : {
+      "comment" : "Said in an audio editor when TextMouth can't quit because its work is under way. %@ is the book's title."
+    },
+    "“%@” isn't a filter's name." : {
+      "comment" : "Problem found in a typed filter chain: the text before an equals sign is not a filter's name. %@ is that text."
+    },
     "“%@” keeps %@." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What VoiceOver hears when the listener keeps a guessed code by choosing it again: the book and the code, now the listener's own. Placeholders in order: bookTitle, codeName.",
       "localizations" : {
@@ -9202,6 +10802,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "“%1$@” keeps %2$@."
+          }
+        }
+      }
+    },
+    "“%@” uses %@ samples, which TextMouth can't play." : {
+      "comment" : "Refuses an audio file whose samples TextMouth can't decode, which is not damaged. %1$@ is the file's name and %2$@ its sample form, such as \"64-bit integer\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” uses %2$@ samples, which TextMouth can't play."
           }
         }
       }

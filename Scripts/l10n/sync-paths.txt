@@ -8,6 +8,11 @@ TextMouth/App/MenuCommands.swift
 TextMouth/App/QuitFinisher.swift
 TextMouth/App/TextMouthRuntime.swift
 TextMouth/App/UnsavedChangesTermination.swift
+TextMouth/Models/AudioBuiltInFilter.swift
+TextMouth/Models/AudioEditList.swift
+TextMouth/Models/AudioEditWording.swift
+TextMouth/Models/AudioFilterChain.swift
+TextMouth/Models/AudioSampleForm.swift
 TextMouth/Models/Book.swift
 TextMouth/Models/BookManifestEditWording.swift
 TextMouth/Models/BookPages.swift
@@ -38,6 +43,7 @@ TextMouth/Models/SettingsPolicy.swift
 TextMouth/Models/ShortcutEdits.swift
 TextMouth/Models/SleepTimerHandOverWording.swift
 TextMouth/Models/TextEncodingChoice.swift
+TextMouth/Models/TimeEntry.swift
 TextMouth/Phone/PhoneAppWording.swift
 TextMouth/Phone/PhoneBookmarksModel.swift
 TextMouth/Phone/PhoneSleepDeadline.swift
@@ -69,6 +75,20 @@ TextMouth/Services/SleepTimerRegistry.swift
 TextMouth/Services/SleepTimerService.swift
 TextMouth/ViewModels/LibraryViewModel+TextEncoding.swift
 TextMouth/ViewModels/ReaderViewModel+BookMoves.swift
+TextMouth/Services/AudioEditing/AudioEditBookRender.swift
+TextMouth/Services/AudioEditing/AudioEditComposition.swift
+TextMouth/Services/AudioEditing/AudioEditError.swift
+TextMouth/Services/AudioEditing/AudioEditHistoryStore.swift
+TextMouth/Services/AudioEditing/AudioEditRenderer.swift
+TextMouth/Services/AudioEditing/AudioEditorLevels.swift
+TextMouth/Services/AudioEditing/AudioExportFormat.swift
+TextMouth/Services/AudioEditing/AudioFilterPresets.swift
+TextMouth/Services/AudioEditing/AudioFilterRunner.swift
+TextMouth/Services/AudioEditing/FFmpeg.swift
+TextMouth/Services/MP3/MP3Encoder.swift
+TextMouth/Services/SleepTimerRegistry.swift
+TextMouth/Services/SleepTimerService.swift
+TextMouth/ViewModels/AudioEditSession.swift
 TextMouth/ViewModels/ReaderViewModel+Bookmarks.swift
 TextMouth/ViewModels/ReaderViewModel+LibraryUpdates.swift
 TextMouth/ViewModels/ReaderViewModel+Navigation.swift
@@ -79,6 +99,9 @@ TextMouth/Views/Reader/BookSearchView.swift
 TextMouth/ViewModels/ReaderViewModel+WhereAmI.swift
 TextMouth/ViewModels/ReaderViewModel.swift
 TextMouth/Views/Reader/BookReaderWindowView.swift
+TextMouth/Views/AudioEditor/AudioEditorFileSheets.swift
+TextMouth/Views/AudioEditor/AudioEditorFilterSheet.swift
+TextMouth/Views/AudioEditor/AudioEditorWording.swift
 TextMouth/Views/Reader/BookmarkPanelView.swift
 TextMouth/Views/Reader/HeadingNavigatorView.swift
 TextMouth/Views/Reader/MetadataEditorView.swift
@@ -96,3 +119,5 @@ TextMouth/Views/Settings/MiscellaneousSettingsView.swift
 TextMouth/Views/Settings/SettingsView.swift
 TextMouth/Views/Settings/SubstitutionsSettingsView.swift
 TextMouth/Views/Settings/KeyboardShortcutsSettingsView.swift
+TextMouth/Views/Settings/AudioEditingSettingsSection.swift
+TextMouth/Views/Settings/AudioFilterPresetsView.swift

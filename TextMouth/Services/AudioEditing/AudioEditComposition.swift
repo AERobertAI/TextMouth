@@ -136,7 +136,7 @@ struct AudioEditComposition {
     static func make(_ pieces: [AudioEditStretchSound.Piece], sampleRate: Double) throws -> AudioEditComposition {
         let composition = AVMutableComposition()
         guard let track = composition.addMutableTrack(withMediaType: .audio, preferredTrackID: kCMPersistentTrackID_Invalid) else {
-            throw AudioEditError.renderFailed("the composition took no audio track")
+            throw AudioEditError.renderFailed("the composition took no audio track") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         }
         var position: Int64 = 0
         for piece in pieces {
@@ -236,7 +236,8 @@ struct AudioEditStretchSound {
             // Rounding to frames can reach half a frame past a source's
             // measured end; anything more names sound that isn't there.
             guard CMTimeCompare(range.end, CMTimeAdd(source.end, time(1))) <= 0 else {
-                throw AudioEditError.invalidEdit("A stretch of the edits runs past the end of “\(name)”.")
+                throw AudioEditError.invalidEdit(String(localized: "A stretch of the edits runs past the end of “\(name)”.",
+                                                         comment: "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."))
             }
             return [Piece(asset: source.asset, track: source.track, range: range, length: segment.length, sourceEnd: source.end)]
         }
@@ -289,7 +290,7 @@ struct AudioEditStretchSound {
             return (sources.scratch.appendingPathComponent(name), name)
         case .silence:
             // Silence is taken from the silent file before this is asked.
-            throw AudioEditError.renderFailed("silence has no file of its own")
+            throw AudioEditError.renderFailed("silence has no file of its own") // l10n: no (a technical reason for the debug log (AudioEditError.renderFailed); the listener hears its fixed sentence)
         }
     }
 }

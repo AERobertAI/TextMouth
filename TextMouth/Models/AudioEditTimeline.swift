@@ -223,7 +223,7 @@ struct AudioEditTimeline: Equatable, Sendable {
             try move(range, to: to)
         case .insertSilence(let at, let duration):
             let place = try point(at)
-            guard duration.isFinite, duration > 0 else { throw invalid("Silence has to last longer than no time at all.") }
+            guard duration.isFinite, duration > 0 else { throw invalid("Silence must be longer than zero.") }
             guard duration <= Self.longestInsertion else { throw invalid("Silence can last at most a day.") }
             let frames = frame(at: duration)
             guard frames > 0 else { throw invalid("Silence has to last at least one sample.") }

@@ -243,7 +243,7 @@ struct FFmpeg: Equatable, Sendable {
                 return text
             }
             .filter { !$0.isEmpty }
-        guard !lines.isEmpty else { return "it ended with code \(status)." }
+        guard !lines.isEmpty else { return "it ended with code \(status)." } // l10n: no (a failure detail written beside ffmpeg's own English words in the message)
         let words = lines.prefix(2).joined(separator: " ")
         return words.hasSuffix(".") ? words : words + "."
     }

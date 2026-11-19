@@ -107,7 +107,7 @@ final class AudioEditorSettingsTests: XCTestCase {
         model.select(AudioTimeRange(start: 1, end: 2))
         model.perform(.editorApplyFilter)
 
-        XCTAssertEqual(AudioEditorWording.applyPreviewsFirstHint, "Plays the filtered audio first; choose Apply again to apply the filter.")
+        XCTAssertEqual(AudioEditorWording.applyPreviewsFirstHint, "Plays a preview; choose Apply again to apply.")
         XCTAssertEqual(AudioEditorWording.applyHint, "Applies the filter.")
         XCTAssertTrue(model.applyWouldPreview(louder, on: .selection))
         XCTAssertEqual(model.applyHint(for: louder, on: .selection), AudioEditorWording.applyPreviewsFirstHint)
