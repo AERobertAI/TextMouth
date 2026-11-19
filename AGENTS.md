@@ -86,10 +86,10 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.2 (tag `v0.5.2`) plus the merges bound for 0.5.3, and the user still runs 0.4.2.
-- 0.5.2 built FFmpeg 9.0.2 into a sandboxed helper on the Mac, so Homebrew's ffmpeg is no longer used (FMT50; the Release app is 21.0 MB), and added braille on the iPhone (DR34), `make ios-size`, and the runner's stale-cache retry (TL01, TL02).
-- Done since 0.5.2: FFmpeg inside the iPhone app (FMT54; the iPhone app is 16.1 MB) with the running clock that survives iOS suspending the app (B18), and the train watcher's retries (TL07, TL06).
-- Localization (FR34, `research/LOCALIZATION-RESEARCH-2026-11-18.md`): the catalog and its tools are on main; the Spanish pilot (FR35) converts three areas first; questions in `humanQuestions/2026-11-18.md`.
+- Main is version 0.5.3 (tag `v0.5.3`) plus the merges bound for 0.5.4, and the user still runs 0.4.2.
+- 0.5.3 put FFmpeg inside the iPhone app (FMT54; the iPhone app is 16.1 MB), with the running clock that survives iOS suspending the app (B18).
+- Localization (FR34, `docs/developer/localization.md`): the catalog, its tools, the pilot (FR35: the sleep timer, bookmarks, and Reading List, in Spanish), and the shared counts are on main.
+  The conversion waves come next (`build/orchestrator/nov18/wave-plan.md`, local); the user's questions are 14 to 16 of `humanQuestions/2026-11-18.md`.
 - Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
 - Open: `issuelib list`, the files in `Issues/`, among them Ogg and Apple's converter's formats on the iPhone (FMT55), FFmpeg's leftovers (FU-FFMPEG2, FU01, FU03, FU04, B19, Q13), and braille's abandonment sentence (B20).
   Also the iPhone's size in `make check` (TL05), and the train's census (TL08) and cache (TL09).
