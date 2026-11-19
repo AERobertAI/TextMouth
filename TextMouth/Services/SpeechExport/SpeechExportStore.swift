@@ -42,7 +42,7 @@ struct SpeechExportStore: Sendable {
     /// What the key is made from first. Raising its number makes every
     /// chapter an earlier TextMouth kept unusable, as a change to what the
     /// key covers, or to how chapters are written, needs.
-    private static let keyVersion = "TextMouth speech export 1"
+    private static let keyVersion = "TextMouth speech export 1" // l10n: no (a stored key's version, never shown)
 
     /// What decides whether kept chapters can be used again: the book; the
     /// voice, speed, and pitch; and the sections to speak, each given as its

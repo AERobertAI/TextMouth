@@ -116,18 +116,18 @@ enum SpeechExportEncoder {
         }
         let files = try chapters.map { try ChapterAudio(reading: folder.appendingPathComponent($0.name)) }
         guard let first = files.first else {
-            throw AudioEditError.renderFailed("no chapters")
+            throw AudioEditError.renderFailed("no chapters") // l10n: no (a fragment inside AudioEditError's English sentences until that area converts)
         }
         // One file's sound has one rate and one set of channels.
         guard files.allSatisfy({ $0.sampleRate == first.sampleRate && $0.channelCount == first.channelCount }) else {
-            throw AudioEditError.renderFailed("the chapters' audio differs")
+            throw AudioEditError.renderFailed("the chapters' audio differs") // l10n: no (a fragment inside AudioEditError's English sentences until that area converts)
         }
         // The renderer takes the settings it writes with from the audio the
         // edits start from: here the first chapter with sound, as a file of
         // no frames is no audio to the editor (`AudioEditBase.load`), and is
         // left out of the timeline.
         guard let base = zip(chapters, files).first(where: { $0.1.frames > 0 })?.0 else {
-            throw AudioEditError.renderFailed("the chapters hold no sound")
+            throw AudioEditError.renderFailed("the chapters hold no sound") // l10n: no (a fragment inside AudioEditError's English sentences until that area converts)
         }
         let timeline = AudioEditTimeline(
             sampleRate: first.sampleRate,

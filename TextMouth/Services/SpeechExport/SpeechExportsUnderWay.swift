@@ -76,8 +76,10 @@ final class SpeechExportsUnderWay {
             finishing: {
                 let count = self.stops.count
                 return count == 1
-                    ? "stopping a speech export with the chapters it finished kept"
-                    : "stopping \(count) speech exports with the chapters they finished kept"
+                    ? String(localized: "stopping a speech export with the chapters it finished kept",
+                             comment: "One item of the list in the message of a quit that waits for work to finish (\"TextMouth is finishing up before it quits: ...\"): one spoken audio export is being stopped.")
+                    : String(localized: "stopping \(count) speech exports with the chapters they finished kept",
+                             comment: "One item of the list in the message of a quit that waits for work to finish (\"TextMouth is finishing up before it quits: ...\"): several spoken audio exports are being stopped. %lld is the number of exports, more than one.")
             }
         )
     }

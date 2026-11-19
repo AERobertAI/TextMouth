@@ -145,7 +145,7 @@ enum SpeechExportJob {
 
     /// The name the power assertion is held under, as `pmset -g assertions`
     /// lists it.
-    static let powerAssertionReason = "TextMouth is exporting a book as spoken audio"
+    static let powerAssertionReason = "TextMouth is exporting a book as spoken audio" // l10n: no (the name of a power assertion, which pmset lists)
 
     /// Speaks `request`'s part of the book whose text cache holds `markdown`
     /// into one audio file at `destination`, telling its progress all along
