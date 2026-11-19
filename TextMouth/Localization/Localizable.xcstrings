@@ -34,6 +34,136 @@
         }
       }
     },
+    "%@ also holds %lld books a newer TextMouth added, which are kept." : {
+      "comment" : "Last sentence of the dialog that asks how to delete a folder, when the folder holds books that a newer TextMouth added. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ also holds %lld book a newer TextMouth added, which is kept."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ also holds %lld books a newer TextMouth added, which are kept."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ and any subfolders will be removed from the library." : {
+      "comment" : "First sentence of the second confirmation that deletes an empty folder. %@ is the folder's name in quotation marks."
+    },
+    "%@ by %@" : {
+      "comment" : "A book named in a row of Compare Libraries. %1$@ is its title and %2$@ its author.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ by %2$@"
+          }
+        }
+      }
+    },
+    "%@ can't be read as %@: it holds bytes that are not valid in that encoding." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a file chosen to be read in the encoding named encoding was not read: some of its bytes are not valid in it. subject names the file or the book, as the sentence begins: \"“Ledger” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding.\" The decoder's error (TextEncodingError.invalidForChosenEncoding) and Book Information's refusal both say it from here. Placeholders in order: subject, encoding.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ can't be read as %2$@: it holds bytes that are not valid in that encoding."
+          }
+        }
+      }
+    },
+    "%@ contains %lld books and may have subfolders." : {
+      "comment" : "First sentence of the dialog that asks how to delete a folder. %1$@ is the folder's name in quotation marks and %2$lld is how many books the folder and its subfolders hold, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ contains %lld book and may have subfolders."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ contains %lld books and may have subfolders."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ couldn't be read: %@" : {
+      "comment" : "Why a file could not be read, in Use This Library's account. %1$@ names the file and %2$@ is the reason in English, as the file's reader worded it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ couldn't be read: %2$@"
+          }
+        }
+      }
+    },
+    "%@ hadn't arrived from the cloud after %lld seconds" : {
+      "comment" : "Why a file could not be read, in Use This Library's account. %1$@ names the file and %2$lld is how many seconds TextMouth waited, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ hadn't arrived from the cloud after %lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ hadn't arrived from the cloud after %lld seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ has %@." : {
+      "comment" : "Second sentence of a position difference found by Compare Libraries. %1$@ is a copy of the library, capitalized, and %2$@ is the place it has saved, such as \"chapter 3, 41%\".\nSentence of Use This Library's account when neither copy is newer. %1$@ is a copy of the library, capitalized, and %2$@ lists what only it has, such as \"newer places in 3 books and 2 books the other lacks\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has %2$@."
+          }
+        }
+      }
+    },
+    "%@ has %@; %@ has %@." : {
+      "comment" : "Second sentence of a difference found by Compare Libraries. %1$@ is this copy of the library, capitalized, %2$@ is what it holds, %3$@ is the other copy, and %4$@ is what it holds.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has %2$@; %3$@ has %4$@."
+          }
+        }
+      }
+    },
+    "%@ has no place saved." : {
+      "comment" : "Second sentence of a position difference found by Compare Libraries. %@ is a copy of the library, capitalized, that has no place saved for the book."
+    },
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
       "localizations" : {
@@ -41,6 +171,39 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ ya está en la lista de lectura."
+          }
+        }
+      }
+    },
+    "%@ is filed %@ in %@ and %@ in %@." : {
+      "comment" : "A difference found by Compare Libraries. %1$@ is a book's title, %2$@ says where this copy files it (at the top of the library, or in a folder), %3$@ is this copy, %4$@ says where the other copy files it, %5$@ is the other copy.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@."
+          }
+        }
+      }
+    },
+    "%@ is set to be read as “%@”, a text encoding this version of TextMouth can't read." : {
+      "comment" : "First sentence of why a book set to an unknown text encoding cannot be read. %1$@ names the book, as in “Ledger”, and %2$@ is the encoding's stored identifier.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is set to be read as “%2$@”, a text encoding this version of TextMouth can't read."
+          }
+        }
+      }
+    },
+    "%@ is the newer. It has %@." : {
+      "comment" : "Sentence of Use This Library's account of which copy is newer. %1$@ is a copy of the library, capitalized, and %2$@ lists what only it has, such as \"newer places in 3 books and 2 books the other lacks\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is the newer. It has %2$@."
           }
         }
       }
@@ -56,8 +219,11 @@
         }
       }
     },
+    "%@ kept." : {
+      "comment" : "Sentence that says what is kept of one deleted download. %@ is the parts and the verb, such as \"Its place and bookmarks are\"."
+    },
     "%@ remaining" : {
-      "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.",
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. remaining as a row speaks a time left: \"2 hours, 5 minutes remaining\". Placeholders in order: TimeFormatting.spoken(remaining).\nThe sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -67,8 +233,200 @@
         }
       }
     },
+    "%@ remaining in total" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The time left in all of a folder's books, or nil when none is known. Example: \"14 hours, 3 minutes remaining in total\". Placeholders in order: TimeFormatting.spoken(remaining)."
+    },
     "%@ seconds" : {
       "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number."
+    },
+    "%@ wasn't asked for again, because the drive hasn't answered an earlier read" : {
+      "comment" : "Why a file could not be read, in Use This Library's account. %@ names the file."
+    },
+    "%@ wasn't read within %lld seconds" : {
+      "comment" : "Why a file could not be read, in Use This Library's account. %1$@ names the file and %2$lld is how many seconds TextMouth waited, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ wasn't read within %lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ wasn't read within %lld seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@ will be removed from the library." : {
+      "comment" : "First sentence of a removal confirmation. %@ is what is removed, such as \"“Notes”\" or \"3 books\". A sentence about the files follows."
+    },
+    "%@, %@" : {
+      "comment" : "Joins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
+    "%@, %@, %@, %lld of %lld" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A view's row as VoiceOver reads it and a braille display shows it, in one element: \"Reading List, built in, always, 5 of 6\". %1$@ is the view's name, %2$@ is the word built in or custom, %3$@ is its visibility in lower case (always, when applicable, hidden), %4$lld is its place in the list and %5$lld the number of views.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@, %3$@, %4$lld of %5$lld"
+          }
+        }
+      }
+    },
+    "%@, %lld of %lld" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a move: the view and its new place, \"Reading List, 4 of 6\", short enough to hear after each of many moves. Placeholders in order: name, number, count.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$lld of %3$lld"
+          }
+        }
+      }
+    },
+    "%@, %lld unopened" : {
+      "comment" : "Speak Info and Folder Settings: how many books a folder holds and how many of them were never opened. %1$@ is the count of books, such as \"12 books\", and %2$lld is how many are unopened, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, %lld unopened"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, %lld unopened"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@, any subfolders, and the %lld books inside will be removed from the library." : {
+      "comment" : "First sentence of the second confirmation that deletes a folder holding several books. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, any subfolders, and the %lld book inside will be removed from the library."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@, any subfolders, and the %lld books inside will be removed from the library."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%@, any subfolders, and the book inside will be removed from the library." : {
+      "comment" : "First sentence of the second confirmation that deletes a folder holding one book. %@ is the folder's name in quotation marks."
+    },
+    "%@, hidden" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .hidden. Placeholders in order: name."
+    },
+    "%@, nothing matches this view now." : {
+      "comment" : "VoiceOver announcement on going, by Go to View, to a filter view that lists nothing now. %@ is the view's name. It says the words of the empty row such a view shows (\"Nothing matches this view now.\"), in lower case after the name."
+    },
+    "%@, shown always" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .always. Placeholders in order: name."
+    },
+    "%@, shown when applicable" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .whenApplicable. Placeholders in order: name."
+    },
+    "%@." : {
+      "comment" : "Library view editor: ends a filter's description with a full stop. %@ is the whole description.\nLibrary view editor: the note shown in place of the sort choice while the view lists feeds alone. %@ is a sentence without its full stop, saying feeds are always listed by title; this adds the full stop.\nMakes a clause into a whole sentence by adding its full stop. %@ is the clause, already starting with a capital letter.\nVoiceOver announcement of Next in Folder or Previous in Folder when no item lies that way. %@ is a sentence without its full stop, such as \"No more books in folder\"; this adds the full stop."
+    },
+    "%@; %@" : {
+      "comment" : "Library view editor: adds one more clause to a filter's description. %1$@ is the description so far and %2$@ the clause added after a semicolon.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@; %2$@"
+          }
+        }
+      }
+    },
+    "%@?" : {
+      "comment" : "Makes a title into a question, such as the title of a removal confirmation: \"Move Book to Trash?\". %@ is the title without its question mark."
+    },
+    "%@…" : {
+      "comment" : "Adds an ellipsis to the title of a command, which says a question follows the command: \"Delete Download…\". %@ is the title without the ellipsis."
+    },
+    "%lld Books" : {
+      "comment" : "The object of a removal button's title, in title case, as in \"Move 3 Books to Trash\". %lld is how many books, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld Selected" : {
+      "comment" : "The object of a removal button's title, in title case, as in \"Move 3 Selected to Trash\". %lld is how many books are selected, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Selected"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld Selected"
+                }
+              }
+            }
+          }
+        }
+      }
     },
     "%lld articles" : {
       "comment" : "A count of news articles in a list, counted beside books. %lld is the number of articles.",
@@ -116,8 +474,31 @@
         }
       }
     },
+    "%lld bookmarks the other lacks" : {
+      "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many bookmarks only this copy has, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld bookmark the other lacks"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld bookmarks the other lacks"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld books" : {
-      "comment" : "A count of books standing alone, such as a library summary. %lld is the number of books.",
+      "comment" : "A count of books standing alone, such as a library summary. %lld is the number of books.\nWhat a removal sentence calls the books it removes when none is named: a count of books, as in \"Moved 3 books to the Trash.\" %lld is how many.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -132,6 +513,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books the other lacks" : {
+      "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many books only this copy has, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book the other lacks"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books the other lacks"
                 }
               }
             }
@@ -233,6 +637,75 @@
         }
       }
     },
+    "%lld differences between this library and the copy in %@." : {
+      "comment" : "First sentence of the results of Compare Libraries. %1$lld is how many differences there are, a count; %2$@ is the other copy's folder path.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld difference between this library and the copy in %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld differences between this library and the copy in %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld downloads" : {
+      "comment" : "What a sentence calls several feed items' downloaded files, inside a sentence, as in \"Deleted 3 downloads permanently.\" %lld is how many, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld download"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld downloads"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld downloads will be deleted." : {
+      "comment" : "First sentence of the confirmation that deletes several feed items' downloads. %lld is how many, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld download will be deleted."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld downloads will be deleted."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld episodes" : {
       "comment" : "A count of podcast episodes in a list, counted beside books. %lld is the number of episodes.",
       "localizations" : {
@@ -272,6 +745,29 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld feeds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld files couldn't be read, so the comparison may be missing differences." : {
+      "comment" : "Sentence of the results of Compare Libraries: some files could not be read. %lld is how many files, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld file couldn't be read, so the comparison may be missing differences."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld files couldn't be read, so the comparison may be missing differences."
                 }
               }
             }
@@ -372,6 +868,75 @@
         }
       }
     },
+    "%lld selected books" : {
+      "comment" : "What a removal button's VoiceOver label calls the books selected in a list, as in \"Move 3 selected books to the Trash\". %lld is how many are selected, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld selected book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld selected books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld subfolders" : {
+      "comment" : "Speak Info and Folder Settings: how many subfolders a folder has. %lld is the number of subfolders, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld subfolder"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld subfolders"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld views need a newer TextMouth. They are kept as they are, and not offered." : {
+      "comment" : "Caption in the Library tab of Settings about views a later TextMouth wrote that this one cannot read. %lld is how many such views there are, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld view needs a newer TextMouth. It is kept as it is, and not offered."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "A New Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays.",
       "localizations" : {
@@ -383,6 +948,15 @@
         }
       }
     },
+    "A built-in view can be hidden, not deleted." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Delete…'s hint for a built-in view, when it is dimmed."
+    },
+    "A library in the cloud can take a while: files that are only in the cloud are brought to this Mac to be read." : {
+      "comment" : "Sentence of what the Compare Libraries sheet says while it works: a library kept in a cloud drive is slow because files that are only in the cloud are downloaded first."
+    },
+    "A limit chooses among books, episodes, and articles, never feeds." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Show at Most's hint while the view lists feeds alone, when it is dimmed (finding 6)."
+    },
     "A new timer replaces the one running." : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs: setting one of the timers below stops it.",
       "localizations" : {
@@ -390,6 +964,55 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Un temporizador nuevo reemplaza al que está en curso."
+          }
+        }
+      }
+    },
+    "A view holds at most %lld conditions." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint at the limit, when it is dimmed. Placeholders in order: LibraryViewFilter.conditionLimit.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "A view holds at most %lld condition."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "A view holds at most %lld conditions."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "A view you made has no default to restore." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint for a view the listener made, when it is dimmed."
+    },
+    "A view's name can be at most %lld characters." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a name too long. Placeholders in order: LibraryViewDefinition.nameLimit.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "A view's name can be at most %lld character."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "A view's name can be at most %lld characters."
+                }
+              }
+            }
           }
         }
       }
@@ -510,6 +1133,23 @@
         }
       }
     },
+    "Add Condition" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that adds a condition."
+    },
+    "Added %@" : {
+      "comment" : "Speak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\"."
+    },
+    "Added %@, %lld of %lld." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a new view is added, with its place. Placeholders in order: name, number, count.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Added %1$@, %2$lld of %3$lld."
+          }
+        }
+      }
+    },
     "Added %lld books to the reading list." : {
       "comment" : "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added.",
       "localizations" : {
@@ -521,6 +1161,9 @@
         }
       }
     },
+    "Added Last" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .dateAdded."
+    },
     "Added to reading list: %@" : {
       "comment" : "VoiceOver announcement after one book was added to the reading list. %@ is the book's title.",
       "localizations" : {
@@ -531,6 +1174,9 @@
           }
         }
       }
+    },
+    "Address %@" : {
+      "comment" : "Speak Info: the part of a feed's full summary that gives its web address. %@ is the address."
     },
     "Adds the selected books to the end of the reading list." : {
       "comment" : "VoiceOver hint of the Library's edit-mode bar button Add to Reading List.",
@@ -554,8 +1200,58 @@
         }
       }
     },
+    "All Conditions" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the first case of the condition."
+    },
+    "Always" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .always."
+    },
+    "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, an episode, or an article, and Feeds while there is a feed. Hidden leaves it out. A window showing a view keeps it until you choose another." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the three visibilities do, and that a window keeps its view."
+    },
+    "An edit of its text is kept beside the new reading, as a copy in the book's package." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence)."
+    },
     "An unknown error occurred." : {
       "comment" : "Message of an alert about a problem, when nothing more is known about it."
+    },
+    "And %lld more files couldn't be read." : {
+      "comment" : "Last line of the list of unread files in Compare Libraries when the list is cut short. %lld is how many more files could not be read, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "And %lld more file couldn't be read."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "And %lld more files couldn't be read."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Another view is already named %@. Choose another name." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a name another view has. Placeholders in order: name."
+    },
+    "Another view is named %@. Rename it first, then restore this view." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What Restore Default says, changing nothing, when another view has the shipped name name (finding 5). Placeholders in order: name."
+    },
+    "Any Condition" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the other case of the condition."
+    },
+    "Applies only to a view that lists episodes or articles." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint while the view lists no episodes or articles, when it is dimmed (review of October 31, 2026, finding 6)."
+    },
+    "Articles" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .articles."
     },
     "Articles (%lld)" : {
       "comment" : "The header of a list's news articles, with their count: \"Articles (3)\". %lld is the number of articles.",
@@ -580,6 +1276,12 @@
         }
       }
     },
+    "Ascending" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the first case of the condition."
+    },
+    "Asks before deleting." : {
+      "comment" : "First sentence of the VoiceOver hint of a delete command that asks before it deletes."
+    },
     "Asks for an optional note, then marks the reading position." : {
       "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.",
       "localizations" : {
@@ -590,6 +1292,9 @@
           }
         }
       }
+    },
+    "Asks whether to %@ or keep them in the TextMouth library folder." : {
+      "comment" : "VoiceOver hint of the Remove button when it asks first. %@ is what deleting the files does, such as \"move the files to the Trash\" or \"delete the files permanently\"."
     },
     "Available only while this feed's articles go on to another article when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.",
@@ -635,6 +1340,20 @@
         }
       }
     },
+    "Book" : {
+      "comment" : "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\"."
+    },
+    "Book only in %@: %@." : {
+      "comment" : "A difference found by Compare Libraries. %1$@ is a copy of the library (this copy or the other copy), %2$@ is a book's title and, when known, its author.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Book only in %1$@: %2$@."
+          }
+        }
+      }
+    },
     "Bookmark %@" : {
       "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -653,6 +1372,28 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Marcador %@ agregado"
+          }
+        }
+      }
+    },
+    "Bookmark %@ in %@: differs." : {
+      "comment" : "First sentence of a bookmark difference found by Compare Libraries. %1$@ is the bookmark's number, an identifier written without digit grouping, and %2$@ is a book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$@ in %2$@: differs."
+          }
+        }
+      }
+    },
+    "Bookmark %@ in %@: only in %@, %@." : {
+      "comment" : "A difference found by Compare Libraries. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ is a book's title; %3$@ is the copy of the library that has it; %4$@ is the bookmark's place and note, such as \"chapter 3, with no note\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Bookmark %1$@ in %2$@: only in %3$@, %4$@."
           }
         }
       }
@@ -758,6 +1499,9 @@
         }
       }
     },
+    "Books" : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the books in the folder and every folder below it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .books."
+    },
     "Books (%lld)" : {
       "comment" : "The header of a list's books, with their count: \"Books (743)\". %lld is the number of books.",
       "localizations" : {
@@ -781,8 +1525,46 @@
         }
       }
     },
+    "Braille Code" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row that names a braille book's code, and of its pop-up, which reads the book again with another."
+    },
+    "Braille File Characters" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's pop-up that names the braille file characters a BRF or BRL book's file is read with, in title case, as the sheet's \"Braille Code\" and \"Text Encoding\" are; the Settings and Export pop-ups say \"Braille file characters\", in their own sentence case."
+    },
+    "Braille characters: %@" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for braille file characters described as description (Book.brailleFileCodeDescription), said right after the braille code's: \"Braille characters: North American Braille ASCII\". Placeholders in order: description."
+    },
+    "Braille code: %@" : {
+      "comment" : "Speak Info: the part of a braille book's full summary that names its braille code. %@ is the code's description, such as \"Unified English Braille, contracted (Grade 2)\"."
+    },
+    "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one." : {
+      "comment" : "Last sentence of the second confirmation that deletes a folder, when the folder holds books that a newer TextMouth added. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "By %@" : {
+      "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name."
+    },
     "Cancel" : {
-      "comment" : "Button that closes a sheet or answers a question without doing or changing anything.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.",
+      "comment" : "Button that closes a sheet or answers a question without doing or changing anything.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -802,6 +1584,39 @@
           }
         }
       }
+    },
+    "Changes the view's name, what it lists, its conditions, its sort, and its limit." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
+    },
+    "Checking the file" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding."
+    },
+    "Choose another braille code to read the book's file again with it." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value."
+    },
+    "Choose another encoding to read the book's file again in it." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value."
+    },
+    "Choose another in Book Information." : {
+      "comment" : "Last sentence of why a book set to an unknown text encoding cannot be read. \"Book Information\" is the name of the sheet with the encoding pop-up."
+    },
+    "Choose at least one kind of item for the view to list." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no kind listed."
+    },
+    "Choose how to remove %@ from the library." : {
+      "comment" : "First sentence of the confirmation that asks how to remove books. %@ is what is removed, such as \"“Notes”\" or \"3 books\"."
+    },
+    "Choose other characters to read the book's file again with them." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value."
+    },
+    "Choose the Copy to Compare" : {
+      "comment" : "Title of the folder panel in which the listener chooses the other copy of the library to compare."
+    },
+    "Choose the folder that holds another copy of this library. Nothing in it is changed." : {
+      "comment" : "Message of the folder panel in which the listener chooses the other copy of the library to compare."
+    },
+    "Chooses a folder holding another copy of this library and lists what differs. Nothing in either copy is changed." : {
+      "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings."
     },
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
@@ -869,6 +1684,9 @@
         }
       }
     },
+    "Chosen By" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The pop-up of which rows a limit keeps."
+    },
     "Close" : {
       "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.",
       "localizations" : {
@@ -879,6 +1697,72 @@
           }
         }
       }
+    },
+    "Compare" : {
+      "comment" : "Button of the folder panel that starts comparing the library with the chosen copy."
+    },
+    "Compare Libraries" : {
+      "comment" : "Title of the Compare Libraries sheet, and the name of the command in Storage settings that opens it. The sheet lists what differs between this library and another copy of it."
+    },
+    "Compare Libraries in Storage settings lists every difference." : {
+      "comment" : "Last sentence of Use This Library's account of which copy is newer: it points to the Compare Libraries command in Storage settings."
+    },
+    "Compare Libraries, results" : {
+      "comment" : "Spoken label of the Compare Libraries sheet when it opens: its title, then the word results."
+    },
+    "Compare Libraries…" : {
+      "comment" : "Button in Storage settings that opens the Compare Libraries sheet. The ellipsis shows that a choice follows."
+    },
+    "Comparing stopped. Nothing was changed." : {
+      "comment" : "What the Compare Libraries sheet says once the listener stopped the comparison."
+    },
+    "Comparing the library in use with the copy in the folder you chose, to say which is newer. This can take up to a minute. Choose Stop Comparing to skip it." : {
+      "comment" : "What Storage settings says while it compares the library in use with a chosen folder's copy before Use This Library. \"Stop Comparing\" is the name of the button that skips it."
+    },
+    "Comparing this library with the copy in %@." : {
+      "comment" : "First sentence of what the Compare Libraries sheet says while it works. %@ is the other copy's folder path."
+    },
+    "Condition %@" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The test pop-up's spoken label: \"Condition 2\". %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ days" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The days field's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ folder" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The folder pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ format" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The format pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ includes subfolders" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The subfolders checkbox's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ needs the text to look for." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a title or author condition looking for nothing. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ reading state" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The reading state pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ relation" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The relation pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Condition %@ text" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The text field's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Conditions" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The heading above the conditions."
+    },
+    "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What conditions test, under the kinds."
+    },
+    "Contains" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
+    },
+    "Copies the count and every difference as text, one to a line." : {
+      "comment" : "VoiceOver hint of the Copy Results button of the Compare Libraries sheet."
+    },
+    "Copy Results" : {
+      "comment" : "Button of the Compare Libraries sheet that copies the results to the clipboard."
     },
     "Could not add the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
@@ -935,8 +1819,14 @@
         }
       }
     },
+    "Date Added" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .addedWithin."
+    },
+    "Date Opened" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .openedWithin."
+    },
     "Delete" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that deletes.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -945,6 +1835,47 @@
           }
         }
       }
+    },
+    "Delete %@" : {
+      "comment" : "VoiceOver label of the command that deletes feed items' downloads. %@ is what is deleted, such as \"the download of “Ep. 368”\" or \"3 downloads\"."
+    },
+    "Delete %@ Permanently" : {
+      "comment" : "Title of a button that deletes the named books' files permanently, in title case. %@ is the object, such as \"3 Books\", \"3 Selected\", or \"Everything\"."
+    },
+    "Delete %@ permanently" : {
+      "comment" : "VoiceOver label of a removal button that deletes files permanently. %@ is what is deleted, such as \"“Notes”\", \"3 selected books\", or \"the original file\"."
+    },
+    "Delete %lld Downloads" : {
+      "comment" : "Title in title case of the command that deletes several feed items' downloads. %lld is how many, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Download"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Downloads"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Delete Download" : {
+      "comment" : "Title in title case of the command that deletes one feed item's download."
+    },
+    "Delete Downloads" : {
+      "comment" : "Title in title case of the button that deletes several feed items' downloads. The confirmation's title says how many."
+    },
+    "Delete Permanently" : {
+      "comment" : "Title of the button that removes books and deletes their files permanently, in title case."
     },
     "Delete bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -957,8 +1888,40 @@
         }
       }
     },
+    "Delete the view “%@”?" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question Delete… asks. Placeholders in order: name."
+    },
+    "Deleted %@ permanently." : {
+      "comment" : "Report that books' files were deleted permanently. %@ is what was deleted, such as \"“Notes”\" or \"3 books\"."
+    },
+    "Deleted %@." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once the view is deleted. Placeholders in order: name."
+    },
+    "Deleted %@. %@ selected, %lld of %lld." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once a view is deleted, naming the view selected now and its place (finding 13): \"Deleted Mine. Feeds selected, 6 of 6.\". Placeholders in order: name, selected, number, count.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Deleted %1$@. %2$@ selected, %3$lld of %4$lld."
+          }
+        }
+      }
+    },
+    "Deletes the view. What it lists stays in the library." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Delete…'s hint."
+    },
+    "Delete…" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that deletes a custom view, asking first."
+    },
+    "Descending" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the other case of the condition."
+    },
+    "Does Not Contain" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
     "Done" : {
-      "comment" : "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.",
+      "comment" : "Button that closes the Compare Libraries sheet.\nButton that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -979,8 +1942,32 @@
         }
       }
     },
+    "Download of the next article cancelled, so playback stopped." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the next feed article that Next in Folder started, while a book was playing, so playback was paused."
+    },
+    "Download of the next article cancelled." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the next feed article that Next in Folder started."
+    },
+    "Download of the next episode cancelled, so playback stopped." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the next podcast episode that Next in Folder started, while a book was playing, so playback was paused."
+    },
+    "Download of the next episode cancelled." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the next podcast episode that Next in Folder started."
+    },
+    "Download of the previous article cancelled, so playback stopped." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the previous feed article that Previous in Folder started, while a book was playing, so playback was paused."
+    },
+    "Download of the previous article cancelled." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the previous feed article that Previous in Folder started."
+    },
+    "Download of the previous episode cancelled, so playback stopped." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started, while a book was playing, so playback was paused."
+    },
+    "Download of the previous episode cancelled." : {
+      "comment" : "VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started."
+    },
     "Downloading the next article: %@" : {
-      "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title.",
+      "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title.\nVoiceOver announcement of Next in Folder when the next item is a feed's article that must be downloaded first. %@ is the article's title.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -991,7 +1978,7 @@
       }
     },
     "Downloading the next episode: %@" : {
-      "comment" : "A sentence of the announcement as a feed's episode ends: the next episode is being downloaded. %@ is that episode's title.",
+      "comment" : "A sentence of the announcement as a feed's episode ends: the next episode is being downloaded. %@ is that episode's title.\nVoiceOver announcement of Next in Folder when the next item is a podcast episode that must be downloaded first. %@ is the episode's title.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1000,6 +1987,18 @@
           }
         }
       }
+    },
+    "Downloading the previous article: %@" : {
+      "comment" : "VoiceOver announcement of Previous in Folder when the previous item is a feed's article that must be downloaded first. %@ is the article's title."
+    },
+    "Downloading the previous episode: %@" : {
+      "comment" : "VoiceOver announcement of Previous in Folder when the previous item is a podcast episode that must be downloaded first. %@ is the episode's title."
+    },
+    "Duplicate" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that makes a custom copy of a view."
+    },
+    "Edit %@" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a view being changed. Placeholders in order: name."
     },
     "Edit Bookmark %@" : {
       "comment" : "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -1023,6 +2022,9 @@
         }
       }
     },
+    "Edit Text stops for this book; choose Edit Text again to edit the new reading." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to Edit Text, said only for a book being edited: the session ends with the re-read, whose new text it never watched (BookTextEditWording.stoppedBookReadAgain(bookTitle:))."
+    },
     "Edit note for bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -1033,6 +2035,9 @@
           }
         }
       }
+    },
+    "Edit…" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that changes the view selected."
     },
     "End of book" : {
       "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.",
@@ -1066,6 +2071,9 @@
           }
         }
       }
+    },
+    "Episodes" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .episodes."
     },
     "Episodes (%lld)" : {
       "comment" : "The header of a list's podcast episodes, with their count: \"Episodes (5)\". %lld is the number of episodes.",
@@ -1137,6 +2145,12 @@
         }
       }
     },
+    "Everything" : {
+      "comment" : "The object of the button that deletes a folder with its contents, in title case, as in \"Move Everything to Trash\"."
+    },
+    "Everything in %@" : {
+      "comment" : "The object of the title of the second confirmation that deletes a folder with its contents, in title case, as in \"Move Everything in “Fiction” to Trash?\". %@ is the folder's name in quotation marks."
+    },
     "Fading out" : {
       "comment" : "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.",
       "localizations" : {
@@ -1148,8 +2162,23 @@
         }
       }
     },
+    "Feeds" : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the feeds inside the folder, shown only when it has any.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .feeds."
+    },
+    "Feeds are always listed by title" : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. The hint of that one item, which says why there is no other."
+    },
+    "Feeds are listed by title" : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. What VoiceOver says when that item is chosen."
+    },
+    "File size %@" : {
+      "comment" : "Speak Info: the part of a book's full summary that says how big its file is. %@ is a size such as \"2.4 MB\"."
+    },
+    "Files not read" : {
+      "comment" : "Label of the list of files the Compare Libraries comparison could not read."
+    },
     "Finished" : {
-      "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position.",
+      "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .finished.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1170,6 +2199,55 @@
         }
       }
     },
+    "First in the Sort" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .viewSort."
+    },
+    "Folder" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The kind a folder's summary names after the folder's name.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .folder."
+    },
+    "Folder Settings" : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open)."
+    },
+    "Folder “%@” in %@ is “%@” in %@." : {
+      "comment" : "A difference found by Compare Libraries: the same folder has two paths. %1$@ is its path in this copy, %2$@ is this copy, %3$@ is its path in the other copy, and %4$@ is the other copy.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Folder “%1$@” in %2$@ is “%3$@” in %4$@."
+          }
+        }
+      }
+    },
+    "Folder “%@” is only in %@." : {
+      "comment" : "A difference found by Compare Libraries. %1$@ is a library folder's path and %2$@ is the copy of the library that has it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Folder “%1$@” is only in %2$@."
+          }
+        }
+      }
+    },
+    "Folders and the Reading List have no conditions to copy." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint for Folders and the Reading List, when it is dimmed."
+    },
+    "Folders and the Reading List list what they always have. You can move them, and hide the Reading List." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint for Folders and the Reading List, when it is dimmed."
+    },
+    "Folders is always shown: every folder and feed opens there." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint for Folders, whose visibility is fixed."
+    },
+    "Format" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .format."
+    },
+    "Give the view a name." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no name."
+    },
+    "Gives the view back the name, conditions, sort, and limit TextMouth gave it." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint."
+    },
     "Go To" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.",
       "localizations" : {
@@ -1180,6 +2258,9 @@
           }
         }
       }
+    },
+    "Go to View" : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. The Library menu's submenu listing the views the key Library window offers, each item titled by its view's name."
     },
     "Go to bookmark %@" : {
       "comment" : "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -1203,6 +2284,33 @@
         }
       }
     },
+    "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a book whose code the import guessed: where the code came from, how to correct it, and how to keep it. Plain and short, so VoiceOver and a braille display read it as it is."
+    },
+    "Has New Episodes or Articles" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
+    },
+    "Has None New" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
+    "Hidden" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .hidden."
+    },
+    "Hide" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .hidden."
+    },
+    "If the file is not written in %@, TextMouth refuses it, and nothing changes." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice to or from Unicode braille patterns, which the re-read checks byte by byte before it changes anything (BrailleBookReader.requireReadable(_:as:)), so a wrong one is refused at its first line (review of October 30, finding 5): a file not written in the code named codeName, the one chosen, is refused, and nothing changes. \"If the file is not written in Unicode braille patterns, TextMouth refuses it, and nothing changes.\". Placeholders in order: codeName."
+    },
+    "In %@" : {
+      "comment" : "Speak Info: the part of a summary that says where a book or a feed's folder is. %@ is the folder's path, such as Fiction/Mystery."
+    },
+    "In %@, a feed" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where an episode or an article is, in the feed titled feedTitle: \"In The Digital Antiquarian, a feed\". Placeholders in order: feedTitle."
+    },
+    "In Progress" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .inProgress."
+    },
     "In reading list" : {
       "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.",
       "localizations" : {
@@ -1213,6 +2321,59 @@
           }
         }
       }
+    },
+    "In reading list, %lld of %lld" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where a book in the reading list stands in it, as its brief summary says it, counted as the Reading List shows the list (FR09): \"In reading list, 3 of 12\". Said in every view, the Reading List's own included, where its rows say no more than the list's order does. Placeholders in order: place.position, place.count.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "In reading list, %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "In the Reading List" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
+    },
+    "Including Subfolders" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The subfolders checkbox's visible title."
+    },
+    "Is" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
+    },
+    "Is Not" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
+    "It has the same books, places, bookmarks, reading list, and folders." : {
+      "comment" : "Sentence of Use This Library's account: the other copy matches the library in use exactly."
+    },
+    "It holds the folder of the feed %@." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the feed's title in quotation marks."
+    },
+    "It holds the folders of the feeds %@." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is a list of the feeds' titles in quotation marks."
+    },
+    "It is the folder of the feed %@: whichever you choose, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of one feed. %@ is the feed's title in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
+    },
+    "It is the folder of the feeds %@: whichever you choose, each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder, when it is the folder of several feeds. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
+    },
+    "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Delete does, and what it keeps."
+    },
+    "Its name, conditions, sort, and limit go back to TextMouth's own. Its place in the list and when it is offered stay as they are." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the question says Restore Default does, and what it keeps."
+    },
+    "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again." : {
+      "comment" : "Sentence about one deleted download: what the listener left in it is kept, and it can be downloaded again."
+    },
+    "Its text is replaced by the new reading." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What any re-read does to the book's text."
+    },
+    "Keep This Code" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of the button under that note that keeps the guessed code (a pop-up cannot be asked for the choice already selected), and what it does."
     },
     "Keep these books on this Mac" : {
       "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.",
@@ -1247,11 +2408,63 @@
         }
       }
     },
+    "Last opened %@" : {
+      "comment" : "Speak Info: the part of a book's full summary that says when it was last opened. %@ is a date or time, such as \"yesterday\"."
+    },
     "Library" : {
-      "comment" : "Title of the first screen, the list of the user's books and folders."
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The tab's name in the Settings window's toolbar.\nTitle of the first screen, the list of the user's books and folders."
+    },
+    "Listening" : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options."
+    },
+    "Lists" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The label of the checkboxes saying what the view lists."
+    },
+    "Lists %@" : {
+      "comment" : "Library view editor: the start of a filter's description, which says what a view lists. %@ is a list of the kinds it lists in lower case, such as \"books and feeds\". A description ends with a full stop added later."
+    },
+    "Lists %@." : {
+      "comment" : "Library view editor: what the sheet says of a draft view's contents. %@ is a list of counts, such as \"23 books and 2 feeds\"."
+    },
+    "Lists %@: %@" : {
+      "comment" : "Library view editor: the start of a filter's description, which says what a view lists and its conditions. %1$@ is a list of the kinds it lists in lower case, such as \"books and feeds\"; %2$@ is its conditions joined by \"and\" or \"or\". A description ends with a full stop added later.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Lists %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Lists nothing now." : {
+      "comment" : "Library view editor: what the sheet says of a draft view that lists nothing at the moment."
     },
     "Loading" : {
       "comment" : "Value of the Play button while the book is loading, spoken by VoiceOver."
+    },
+    "Location" : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's place: the folder that holds it."
+    },
+    "Made %@, %lld of %lld." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after Duplicate: the copy and its place. Placeholders in order: name, number, count.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Made %1$@, %2$lld of %3$lld."
+          }
+        }
+      }
+    },
+    "Makes a view of your own from the conditions you choose." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
+    },
+    "Makes a view of your own with this view's conditions and sort." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Duplicate's hint."
+    },
+    "Match" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The match pop-up's label."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
@@ -1275,6 +2488,51 @@
         }
       }
     },
+    "Most rows shown" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit field's spoken label."
+    },
+    "Move %@ Down" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's spoken label. Placeholders in order: name."
+    },
+    "Move %@ Up" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's spoken label, naming the view it moves. Placeholders in order: name."
+    },
+    "Move %@ to Trash" : {
+      "comment" : "Title of a button that moves the named books' files to the Trash, in title case. %@ is the object, such as \"3 Books\", \"3 Selected\", or \"Everything\"."
+    },
+    "Move %@ to the Trash" : {
+      "comment" : "VoiceOver label of a removal button that moves files to the Trash. %@ is what is moved, such as \"“Notes”\", \"3 selected books\", or \"the original file\"."
+    },
+    "Move Down" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place down."
+    },
+    "Move Up" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that moves a view one place up, as a VoiceOver action and a context menu item."
+    },
+    "Move to Trash" : {
+      "comment" : "Title of the button that removes books and moves their files to the Trash, in title case."
+    },
+    "Moved %@ to the Trash." : {
+      "comment" : "Report that books' files were moved to the Trash. %@ is what was moved, such as \"“Notes”\" or \"3 books\"."
+    },
+    "Moves the view one place down the list" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Down button's hint."
+    },
+    "Moves the view one place up the list" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Move Up button's hint."
+    },
+    "Name" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The name field's label."
+    },
+    "Neither has newer places or books the other lacks, but they differ in other ways." : {
+      "comment" : "Sentence of Use This Library's account: the copies differ, but neither has newer places or books the other lacks."
+    },
+    "Neither is newer: each has changes the other lacks." : {
+      "comment" : "Sentence of Use This Library's account: each copy has changes the other lacks."
+    },
+    "New Items" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .hasNewItems."
+    },
     "New Timer" : {
       "comment" : "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes.",
       "localizations" : {
@@ -1285,6 +2543,12 @@
           }
         }
       }
+    },
+    "New View" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a new view."
+    },
+    "New View…" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that makes a view."
     },
     "Next book not started because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop.",
@@ -1297,6 +2561,9 @@
         }
       }
     },
+    "No Library Window" : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. The submenu's one item, dimmed, while no Library window is in front."
+    },
     "No bookmarks yet." : {
       "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.",
       "localizations" : {
@@ -1307,6 +2574,12 @@
           }
         }
       }
+    },
+    "No conditions: the view lists every item of the kinds chosen." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What the editor says while the view has no condition."
+    },
+    "No differences between this library and the copy in %@." : {
+      "comment" : "First sentence of the results of Compare Libraries when the two copies do not differ. %@ is the other copy's folder path."
     },
     "No more books in folder" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop.",
@@ -1385,6 +2658,21 @@
         }
       }
     },
+    "Not Within the Last" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
+    "Not in a folder" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book in no folder."
+    },
+    "Not in the Reading List" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
+    "Not known until the book is downloaded" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file is only in the cloud, which is never downloaded to learn it."
+    },
+    "Not known, since the file can't be read" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file cannot be read."
+    },
     "Not restarted because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book set to loop ends: it did not start again, because the sleep timer stopped it. Written without its full stop.",
       "localizations" : {
@@ -1418,8 +2706,29 @@
         }
       }
     },
+    "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice between two seven-bit codes: nothing can tell whether it is right, since every printable ASCII byte is a cell in every seven-bit code, so a wrong one reads with no error (research of October 25, section 8.3)."
+    },
+    "Nothing could be compared with the copy in %@, because a file the comparison needs couldn't be read." : {
+      "comment" : "First sentence of the results of Compare Libraries when the other copy's library index could not be read. %@ is the other copy's folder path."
+    },
+    "Nothing is changed." : {
+      "comment" : "Last sentence of what the Compare Libraries sheet says while it works: the comparison changes nothing in either copy."
+    },
+    "Nothing is selected." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a press of Speak Info, or of Return (Open Selected Book), says when no row is selected."
+    },
+    "Nothing matches this view now." : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. The row a view shows while it lists nothing at all: the Feeds view, a view the listener made, and any view without a Books section (LibraryView.showsEmptySentence)."
+    },
+    "Nothing was changed." : {
+      "comment" : "Last sentence of a refusal to read a book again: the book and its text are as they were."
+    },
     "OK" : {
       "comment" : "Button that dismisses an alert about a problem."
+    },
+    "Of each feed's episodes and articles, lists only the one you opened last." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint."
     },
     "Off" : {
       "comment" : "VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
@@ -1431,6 +2740,12 @@
           }
         }
       }
+    },
+    "Only the Latest from Each Feed" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The checkbox that keeps one item per feed."
+    },
+    "Open in a reader window" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's full summary says of a book a reader window has open."
     },
     "Open the next article in" : {
       "comment" : "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.",
@@ -1476,6 +2791,9 @@
         }
       }
     },
+    "Opened Last" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .lastOpened."
+    },
     "Opening: %@" : {
       "comment" : "VoiceOver announcement as Next in Reading List or Previous in Reading List opens a book without playing it. %@ is the book's title.",
       "localizations" : {
@@ -1486,6 +2804,9 @@
           }
         }
       }
+    },
+    "Order" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The direction pop-up's label."
     },
     "Passes over finished books when a book from the list ends." : {
       "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox.",
@@ -1592,8 +2913,39 @@
         }
       }
     },
+    "Position in %@: differs, and both were saved at the same time." : {
+      "comment" : "First sentence of a position difference found by Compare Libraries when both copies saved their places at the same moment. %@ is a book's title."
+    },
+    "Position in %@: newer in %@, %@." : {
+      "comment" : "First sentence of a position difference found by Compare Libraries. %1$@ is a book's title, %2$@ is the copy that has the newer place, and %3$@ is that place, such as \"chapter 3, 41%\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Position in %1$@: newer in %2$@, %3$@."
+          }
+        }
+      }
+    },
+    "Read Again" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The alert's button that reads the book again; Cancel leaves it."
+    },
+    "Read “%@” again as %@?" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before the book titled bookTitle is read again as the reading named readingName: \"Read “Ledger” again as Shift JIS (Japanese)?\". Braille file characters are asked about in the same sentence (BrailleFileCodeWording.confirmTitle(bookTitle:code:)). Placeholders in order: bookTitle, readingName.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Read “%1$@” again as %2$@?"
+          }
+        }
+      }
+    },
+    "Read “%@” again automatically?" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before a book is read again as option says: \"Read “Ledger” again as Shift JIS (Japanese)?\", or \"Read “Ledger” again automatically?\". Placeholders in order: bookTitle."
+    },
     "Reading List" : {
-      "comment" : "The start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .inReadingList.\nThe start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1614,6 +2966,9 @@
         }
       }
     },
+    "Reading State" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .readingState."
+    },
     "Reading list, book %lld of %lld" : {
       "comment" : "Where a book read from the reading list stands in it, in the reader's header and in Where Am I?. %1$lld is the book's place in the list; %2$lld how many books the list holds.",
       "localizations" : {
@@ -1631,13 +2986,73 @@
         }
       }
     },
+    "Reading list: %@ is only on %@'s list, at place %@." : {
+      "comment" : "A difference found by Compare Libraries. %1$@ is a book's title, %2$@ is the copy of the library whose Reading List holds it, and %3$@ is its place in that list, an identifier written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Reading list: %1$@ is only on %2$@'s list, at place %3$@."
+          }
+        }
+      }
+    },
+    "Reading list: the order differs." : {
+      "comment" : "First sentence of a Reading List difference found by Compare Libraries: the two copies hold the same books in a different order."
+    },
+    "Reading list: “%@” is %@ in %@ and %@ in %@." : {
+      "comment" : "A difference found by Compare Libraries. %1$@ is the name of a Reading List option, %2$@ is its value (on or off) in this copy, %3$@ is this copy, %4$@ is its value in the other copy, and %5$@ is the other copy.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@."
+          }
+        }
+      }
+    },
+    "Reading the book again..." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information shows, beside a spinner, while the book is read again (SheetWorkIndicator)."
+    },
     "Remove" : {
-      "comment" : "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.",
+      "comment" : "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's visible title.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Eliminar"
+          }
+        }
+      }
+    },
+    "Remove %@ from Library Only" : {
+      "comment" : "Title of a button that removes the named books from the library and keeps their files, in title case. %@ is the object, such as \"3 Books\" or \"3 Selected\"."
+    },
+    "Remove %@ from the library" : {
+      "comment" : "VoiceOver label of the Remove button when it asks how to remove before it removes anything. %@ is what is removed, such as \"“Notes”\" or \"3 books\"."
+    },
+    "Remove %@ from the library and keep the files" : {
+      "comment" : "VoiceOver label of a removal button that keeps the files. %@ is what is removed, such as \"“Notes”\" or \"3 selected books\"."
+    },
+    "Remove %lld Books from Library..." : {
+      "comment" : "Title of the Remove command in a context menu when several books are chosen and it asks how to remove them first. %lld is how many books, a count. The three dots say a choice follows.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Book from Library..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Books from Library..."
+                }
+              }
+            }
           }
         }
       }
@@ -1682,6 +3097,29 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Quitar %lld libros de la lista de lectura"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Remove %lld Books?" : {
+      "comment" : "Title of the confirmation that asks how to remove several books. %lld is how many, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Book?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Remove %lld Books?"
                 }
               }
             }
@@ -1736,6 +3174,9 @@
         }
       }
     },
+    "Remove Book?" : {
+      "comment" : "Title of the confirmation that asks how to remove one book."
+    },
     "Remove Bookmark %@?" : {
       "comment" : "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -1757,6 +3198,21 @@
           }
         }
       }
+    },
+    "Remove condition %@" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's spoken label. %@ is the condition's number, an identifier written without digit grouping."
+    },
+    "Remove from Library Only" : {
+      "comment" : "Title of the button that removes books from the library and keeps their files, in title case."
+    },
+    "Remove from Library..." : {
+      "comment" : "Title of the Remove command when it asks how to remove before it removes anything. The three dots say a choice follows."
+    },
+    "Remove..." : {
+      "comment" : "Short title of the edit bar's Remove button when it asks how to remove before it removes anything. The three dots say a choice follows."
+    },
+    "Removed %@ from the library." : {
+      "comment" : "Report that books were removed from the library only. %@ is what was removed, such as \"“Notes”\" or \"3 books\". A sentence about their files follows."
     },
     "Removed %lld books from the reading list." : {
       "comment" : "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.",
@@ -1813,6 +3269,21 @@
         }
       }
     },
+    "Restore Default" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that restores."
+    },
+    "Restore Default…" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a built-in view back its own, asking first."
+    },
+    "Restore “%@” to its default?" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question Restore Default… asks. Placeholders in order: name."
+    },
+    "Restored %@." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once the view is restored, by its restored name. Placeholders in order: name."
+    },
+    "Results copied to the clipboard." : {
+      "comment" : "VoiceOver announcement once the Compare Libraries results are on the clipboard."
+    },
     "Returned to previous position" : {
       "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.",
       "localizations" : {
@@ -1836,7 +3307,7 @@
       }
     },
     "Save" : {
-      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.",
+      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that saves the view.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1845,6 +3316,9 @@
           }
         }
       }
+    },
+    "Saved %@." : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a changed view is saved. Placeholders in order: name."
     },
     "Set" : {
       "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes.",
@@ -1903,6 +3377,24 @@
           }
         }
       }
+    },
+    "Sets when the View pop-up offers this view" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's hint."
+    },
+    "Show Always" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .always."
+    },
+    "Show When Applicable" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that gives a view visibility: \"Show Always\", \"Show When Applicable\", or \"Hide\". This is the case .whenApplicable."
+    },
+    "Show at Most" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The limit checkbox."
+    },
+    "Shows one folder at a time" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Folders' row hint: what it shows."
+    },
+    "Shows the books in the order you arrange" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Reading List's row hint: what it shows."
     },
     "Skip finished books" : {
       "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.",
@@ -2072,6 +3564,9 @@
         }
       }
     },
+    "Sort By" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sort field pop-up's label."
+    },
     "Sort books by %@" : {
       "comment" : "VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.",
       "localizations" : {
@@ -2082,6 +3577,9 @@
           }
         }
       }
+    },
+    "Sort feeds by Title" : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. The Sort button's spoken label in a view listing only feeds."
     },
     "Sorted by %@" : {
       "comment" : "VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order.",
@@ -2127,6 +3625,29 @@
         }
       }
     },
+    "Still comparing: %lld seconds so far. Press Escape to stop." : {
+      "comment" : "VoiceOver announcement now and then during a long Compare Libraries comparison. %lld is how many seconds it has taken so far, a count. Escape is the key that stops it.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Still comparing: %lld second so far. Press Escape to stop."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Still comparing: %lld seconds so far. Press Escape to stop."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Still starting: %@" : {
       "comment" : "VoiceOver announcement when Play is pressed while the next book is still opening. %@ is the next book's title.",
       "localizations" : {
@@ -2139,7 +3660,7 @@
       }
     },
     "Stop" : {
-      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.",
+      "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nButton of the Compare Libraries sheet that stops the comparison.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2159,6 +3680,9 @@
           }
         }
       }
+    },
+    "Stop Comparing" : {
+      "comment" : "Button in Storage settings that stops the comparison made before Use This Library."
     },
     "Stop at the end of the book" : {
       "comment" : "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends.",
@@ -2181,6 +3705,21 @@
           }
         }
       }
+    },
+    "Stops comparing. Nothing in either copy has been changed." : {
+      "comment" : "VoiceOver hint of the Stop button of the Compare Libraries sheet."
+    },
+    "Stops saying the code was guessed. The book is not read again." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts."
+    },
+    "Subfolders" : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's own subfolders, shown only when it has any."
+    },
+    "Subscribed" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
+    },
+    "Subscription" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .subscribed."
     },
     "Takes %lld to %lld minutes." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
@@ -2238,8 +3777,60 @@
         }
       }
     },
+    "Text Encoding" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row, and pop-up, that names the encoding."
+    },
+    "Text encoding: %@" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for an encoding described as description (\"Windows-1251 (Cyrillic), guessed\"): \"Text encoding: Windows-1251 (Cyrillic), guessed\". Placeholders in order: description."
+    },
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
+    },
+    "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again: the text changed with Edit Text could not be kept beside the new reading, so nothing was replaced, as Replace Existing leaves both copies then (DuplicateReplacement.TextNotKept). Placeholders in order: bookTitle."
+    },
+    "TextMouth couldn't read %lld files, so this may be incomplete." : {
+      "comment" : "Sentence of Use This Library's account: some files could not be read. %lld is how many files, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth couldn't read %lld file, so this may be incomplete."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "TextMouth couldn't read %lld files, so this may be incomplete."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "TextMouth couldn't read “%@” again, so it left the book as it was." : {
+      "comment" : "Why a book was not read again with another encoding or braille code: the reading failed. %@ is the book's title."
+    },
+    "TextMouth couldn't read “%@” again, so it left the book as it was: %@" : {
+      "comment" : "Why a book was not read again with another encoding or braille code: the reading failed. %1$@ is the book's title and %2$@ is the reason in English, as the reader worded it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "TextMouth couldn't read “%1$@” again, so it left the book as it was: %2$@"
+          }
+        }
+      }
+    },
+    "TextMouth couldn't tell which copy is newer (%@)." : {
+      "comment" : "Second sentence of Use This Library's account when the comparison could not be made. %@ is the reason in English."
+    },
+    "TextMouth couldn't tell which copy is newer." : {
+      "comment" : "Second sentence of Use This Library's account when the comparison could not be made and no reason is known."
     },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
@@ -2248,6 +3839,44 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no está descargando en este momento."
+          }
+        }
+      }
+    },
+    "TextMouth is reading the library's text again. Try again when that finishes." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book can't be read again while the library's text is being read again (the launch batch, Redo Text Extraction), in the words TextMouth uses while its storage work is held (StorageBusyError)."
+    },
+    "TextMouth is reading “%@” again in another encoding. Try again when that finishes." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the book titled bookTitle waits while TextMouth reads it again in another encoding, in the same words as extractionRefusal: a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle."
+    },
+    "TextMouth is reading “%@” again with another braille code. Try again when that finishes." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with another braille code, as the other re-reads' sentences say it (TextEncodingWording.readingAgainRefusal(bookTitle:), BrailleFileCodeWording.readingAgainRefusal(bookTitle:)). Placeholders in order: bookTitle."
+    },
+    "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with other braille file characters, as the encoding's sentence says it for any other book (TextEncodingWording.readingAgainRefusal(bookTitle:)): a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle."
+    },
+    "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen."
+    },
+    "The %@ of %lld of them are kept." : {
+      "comment" : "Sentence that says what is kept of some of several deleted downloads. %1$@ is a list of parts, such as \"places and bookmarks\", and %2$lld is how many of the downloads keep them, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The %@ of %lld of them are kept."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The %@ of %lld of them are kept."
+                }
+              }
+            }
           }
         }
       }
@@ -2263,6 +3892,32 @@
         }
       }
     },
+    "The Library holds at most %lld views." : {
+      "comment" : "Hint of New View and Duplicate in the Library tab of Settings when the limit is reached, and the problem Save reports there. %lld is the most views the Library holds, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The Library holds at most %lld view."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "The Library holds at most %lld views."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "The Library window's View pop-up offers these views, in this order. A new Library window opens at the first one it offers." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the list is, and where a new window opens."
+    },
     "The book is in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
       "localizations" : {
@@ -2273,6 +3928,9 @@
           }
         }
       }
+    },
+    "The book is no longer in the library, so it was not read again." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book that left the library while its Book Information was open is not read again."
     },
     "The books are in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
@@ -2285,6 +3943,27 @@
         }
       }
     },
+    "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first: the braille is translated to print again with the code chosen, and nothing can tell whether it is the right one, since every braille text translates in every table, so a wrong one reads with no error."
+    },
+    "The download of “%@” will be deleted." : {
+      "comment" : "First sentence of the confirmation that deletes one feed item's download. %@ is the episode's or article's title."
+    },
+    "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another." : {
+      "comment" : "Sentence of the second confirmation that deletes a folder: one feed stays. %@ is the feed's title in quotation marks. \"Feed Info\" names a sheet."
+    },
+    "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another." : {
+      "comment" : "Sentence of the second confirmation that deletes a folder: several feeds stay. %@ is a list of the feeds' titles in quotation marks. \"Feed Info\" names a sheet."
+    },
+    "The files that couldn't be read are listed." : {
+      "comment" : "Sentence of the results of Compare Libraries saying the unread files are listed below."
+    },
+    "The folder %@ holds a different library, so nothing was compared." : {
+      "comment" : "What the Compare Libraries sheet says when the chosen folder holds a different library. %@ is the folder's path."
+    },
+    "The next article could not be downloaded, so playback stopped." : {
+      "comment" : "First sentence of the VoiceOver announcement when Next in Folder could not download the next feed article while a book was playing, so playback was paused. A sentence with the reason follows it."
+    },
     "The next article could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why.",
       "localizations" : {
@@ -2296,6 +3975,12 @@
         }
       }
     },
+    "The next article could not be downloaded." : {
+      "comment" : "First sentence of the VoiceOver announcement when Next in Folder could not download the next feed article. A sentence with the reason follows it."
+    },
+    "The next episode could not be downloaded, so playback stopped." : {
+      "comment" : "First sentence of the VoiceOver announcement when Next in Folder could not download the next podcast episode while a book was playing, so playback was paused. A sentence with the reason follows it."
+    },
     "The next episode could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next episode failed. %@ is the download's own sentence saying why.",
       "localizations" : {
@@ -2306,6 +3991,21 @@
           }
         }
       }
+    },
+    "The next episode could not be downloaded." : {
+      "comment" : "First sentence of the VoiceOver announcement when Next in Folder could not download the next podcast episode. A sentence with the reason follows it."
+    },
+    "The previous article could not be downloaded, so playback stopped." : {
+      "comment" : "First sentence of the VoiceOver announcement when Previous in Folder could not download the previous feed article while a book was playing, so playback was paused. A sentence with the reason follows it."
+    },
+    "The previous article could not be downloaded." : {
+      "comment" : "First sentence of the VoiceOver announcement when Previous in Folder could not download the previous feed article. A sentence with the reason follows it."
+    },
+    "The previous episode could not be downloaded, so playback stopped." : {
+      "comment" : "First sentence of the VoiceOver announcement when Previous in Folder could not download the previous podcast episode while a book was playing, so playback was paused. A sentence with the reason follows it."
+    },
+    "The previous episode could not be downloaded." : {
+      "comment" : "First sentence of the VoiceOver announcement when Previous in Folder could not download the previous podcast episode. A sentence with the reason follows it."
     },
     "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." : {
       "comment" : "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.",
@@ -2329,6 +4029,65 @@
         }
       }
     },
+    "The view is first in the list." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Move Up's hint while the view is first, when it is dimmed."
+    },
+    "The view is last in the list." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Move Down's hint while the view is last, when it is dimmed."
+    },
+    "The view this window showed was deleted. It now shows %@." : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. What a window announces when the view it showed was deleted, from Settings or by a change of config.json, and it shows name, the first view its pop-up offers, instead. Placeholders in order: name."
+    },
+    "Their %@ are kept." : {
+      "comment" : "Sentence that says what is kept of every one of several deleted downloads. %@ is a list of parts, such as \"places and bookmarks\"."
+    },
+    "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again." : {
+      "comment" : "Sentence about several deleted downloads: what the listener left in them is kept, and they can be downloaded again."
+    },
+    "There is no view %@. Go to View reaches %lld views." : {
+      "comment" : "VoiceOver announcement when a Go to View key has no view. %1$@ is the view's number as the listener pressed it, an identifier written without digit grouping. %2$lld is how many views Go to View reaches, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "There is no view %@. Go to View reaches %lld view."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "There is no view %@. Go to View reaches %lld views."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "These books could not be deleted and remain in the library:" : {
+      "comment" : "Heading over the books that could not be deleted permanently, several of them. One line for each book follows."
+    },
+    "These books could not be moved to the Trash and remain in the library:" : {
+      "comment" : "Heading over the books that could not be moved to the Trash, several of them. One line for each book follows."
+    },
+    "These books could not be removed from the library and remain in it:" : {
+      "comment" : "Heading over the books that could not be removed from the library, several of them. One line for each book follows."
+    },
+    "These items could not be deleted and remain in the library:" : {
+      "comment" : "Heading over the items of a folder that could not be deleted permanently, several of them. One line for each follows."
+    },
+    "These items could not be moved to the Trash and remain in the library:" : {
+      "comment" : "Heading over the items of a folder that could not be moved to the Trash, several of them. One line for each follows."
+    },
+    "These items could not be removed from the library and remain in it:" : {
+      "comment" : "Heading over the items of a folder that could not be removed from the library, several of them. One line for each follows."
+    },
+    "They are listed after the differences." : {
+      "comment" : "Sentence of the results of Compare Libraries that follows the count of unread files: the files are listed after the differences."
+    },
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.",
       "localizations" : {
@@ -2340,6 +4099,15 @@
         }
       }
     },
+    "This book could not be deleted and remains in the library:" : {
+      "comment" : "Heading over the one book that could not be deleted permanently. A line about it follows."
+    },
+    "This book could not be moved to the Trash and remains in the library:" : {
+      "comment" : "Heading over the one book that could not be moved to the Trash. A line about it follows."
+    },
+    "This book could not be removed from the library and remains in it:" : {
+      "comment" : "Heading over the one book that could not be removed from the library. A line about it follows."
+    },
     "This book was not opened from the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list.",
       "localizations" : {
@@ -2350,6 +4118,30 @@
           }
         }
       }
+    },
+    "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is."
+    },
+    "This folder holds another copy of the library TextMouth is using." : {
+      "comment" : "First sentence of Use This Library's account of the folder the listener chose."
+    },
+    "This folder is no longer in the library." : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. What the sheet says in place of the folder, when the folder was deleted in another window while the sheet was open."
+    },
+    "This item could not be deleted and remains in the library:" : {
+      "comment" : "Heading over the one item of a folder that could not be deleted permanently. A line about it follows."
+    },
+    "This item could not be moved to the Trash and remains in the library:" : {
+      "comment" : "Heading over the one item of a folder that could not be moved to the Trash. A line about it follows."
+    },
+    "This item could not be removed from the library and remains in it:" : {
+      "comment" : "Heading over the one item of a folder that could not be removed from the library. A line about it follows."
+    },
+    "This view is as TextMouth made it." : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint for a built-in view as TextMouth made it, or Folders or the Reading List, when it is dimmed."
+    },
+    "Time remaining" : {
+      "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the time left in all the folder's books, shown only when it is known."
     },
     "Timer reset." : {
       "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.",
@@ -2431,6 +4223,101 @@
         }
       }
     },
+    "Title" : {
+      "comment" : "Text of the Library window's View pop-up and Go to View. The one item of the Sort menu of a view listing only feeds, which are always listed by title."
+    },
+    "Title or Author" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .titleOrAuthorContains."
+    },
+    "UTF-16 (big-endian)" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf16BigEndian."
+    },
+    "UTF-16 (little-endian)" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf16LittleEndian."
+    },
+    "UTF-32 (big-endian)" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf32BigEndian."
+    },
+    "UTF-32 (little-endian)" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf32LittleEndian."
+    },
+    "UTF-8" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf8."
+    },
+    "Unopened" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book never opened.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .unopened."
+    },
+    "Unread: %@ couldn't be read (%@), %@" : {
+      "comment" : "A file Compare Libraries could not read. %1$@ names the file, %2$@ is the reason in English, as the file's reader worded it, and %3$@ is the clause that says what follows from it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Unread: %1$@ couldn't be read (%2$@), %3$@"
+          }
+        }
+      }
+    },
+    "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@" : {
+      "comment" : "A file Compare Libraries could not read. %1$@ names the file, %2$lld is how many seconds TextMouth waited for it, a count, and %3$@ is the clause that says what follows from it.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Unread: %@ hasn't arrived from the cloud after %lld second, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@" : {
+      "comment" : "A file Compare Libraries could not read. %1$@ names the file and %2$@ is the clause that says what follows from it.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@"
+          }
+        }
+      }
+    },
+    "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@" : {
+      "comment" : "A file Compare Libraries could not read. %1$@ names the file, %2$lld is how many seconds TextMouth waited in all, a count, and %3$@ is the clause that says what follows from it.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld second in all, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Unsubscribed" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
+    },
     "Use the global setting (%@)" : {
       "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.",
       "localizations" : {
@@ -2442,6 +4329,18 @@
         }
       }
     },
+    "Views" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The heading above the list.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver calls the list."
+    },
+    "Visibility" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's visible label."
+    },
+    "Visibility of %@" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The Visibility pop-up's spoken label, naming the view it sets. Placeholders in order: name."
+    },
+    "When Applicable" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .whenApplicable."
+    },
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.",
       "localizations" : {
@@ -2452,6 +4351,27 @@
           }
         }
       }
+    },
+    "When a book is deleted, %@." : {
+      "comment" : "First sentence of the explanation in Storage settings of what removing a book does. %@ says what happens to the book's files, such as \"its files go to the Trash, where you can recover them until the Trash is emptied\"."
+    },
+    "When off, its files are deleted permanently and cannot be recovered." : {
+      "comment" : "Second sentence of the hint of the setting that moves deleted files to the Trash: what happens with the setting off."
+    },
+    "When off, removing a book will %@ at once." : {
+      "comment" : "Second sentence of the hint of the setting that confirms before removing a book. %@ is what deleting does, such as \"move the files to the Trash\"."
+    },
+    "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied." : {
+      "comment" : "First sentence of the hint of the setting that moves deleted files to the Trash: what happens with the setting on."
+    },
+    "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder." : {
+      "comment" : "First sentence of the hint of the setting that confirms before removing a book. %@ is what deleting does, such as \"move the files to the Trash\"."
+    },
+    "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share." : {
+      "comment" : "Second sentence of what a re-read does to the listener's place and bookmarks. %@ is an example of when that happens, such as \"as when garbled letters become Cyrillic\", set between commas."
+    },
+    "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share." : {
+      "comment" : "Second sentence of what a re-read does to the listener's place and bookmarks, without an example."
     },
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
@@ -2470,8 +4390,173 @@
         }
       }
     },
+    "With %@, %@." : {
+      "comment" : "A sentence that explains one button of a removal question. %1$@ is the button's title, such as \"Move to Trash\", and %2$@ says what it does, such as \"its files go to the Trash, where you can recover them until the Trash is emptied\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "With %1$@, %2$@."
+          }
+        }
+      }
+    },
+    "With %@, each feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on a feed's row deletes a feed." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
+    },
+    "With %@, the feed stays, with its downloads, but no folder lists them until Feed Info gives the feed another folder; Delete Feed… on the feed's row deletes a feed." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. %@ is the title of the button that deletes everything, such as \"Move Everything to Trash\". \"Feed Info\" and \"Delete Feed…\" name a sheet and a command."
+    },
+    "With %@, the folder and everything in it leave the library, and %@." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder. %1$@ is the title of its button that deletes everything, such as \"Move Everything to Trash\", and %2$@ says what happens to the files, such as \"their files go to the Trash, where you can recover them until the Trash is emptied\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "With %1$@, the folder and everything in it leave the library, and %2$@."
+          }
+        }
+      }
+    },
+    "With Move Contents Out, the feed's folder moves with the rest." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder that holds one feed's folder. \"Move Contents Out\" is the name of one of its buttons."
+    },
+    "With Move Contents Out, their folders move with the rest." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder that holds several feeds' folders. \"Move Contents Out\" is the name of one of its buttons."
+    },
+    "With Move Contents Out, they stay in the library and only the folder is deleted." : {
+      "comment" : "Sentence of the dialog that asks how to delete a folder. \"Move Contents Out\" is the name of one of its buttons."
+    },
+    "Within the Last" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition."
+    },
     "Your library is empty. Add to Library adds a book." : {
       "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label."
+    },
+    "Your place and bookmarks move with their words." : {
+      "comment" : "First sentence of what a re-read does to the listener's place and bookmarks."
+    },
+    "a book that is not in the library" : {
+      "comment" : "What Compare Libraries calls a Reading List book that neither copy's library holds, in lower case, inside a sentence."
+    },
+    "a folder no longer in the library" : {
+      "comment" : "Library view editor: the name a folder condition gives a folder that is no longer in the library, inside a filter's description such as \"folder is a folder no longer in the library\"."
+    },
+    "added last" : {
+      "comment" : "Library view editor: how a view's limit chooses rows, in lower case inside a filter's description: the items added most recently."
+    },
+    "added today" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the item was added today."
+    },
+    "added within the last %lld days" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %lld is a number of days, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "added within the last %lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "added within the last %lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "always" : {
+      "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up always offers the view."
+    },
+    "articles" : {
+      "comment" : "Library view editor: the kind of row news articles, in lower case inside a filter's description such as \"Lists books and articles\"."
+    },
+    "as when garbled letters become Cyrillic" : {
+      "comment" : "An example inside the sentence about what a re-read does to the listener's place: the places move when none of the old words are left, as when letters read wrongly become Cyrillic."
+    },
+    "at most %lld, %@" : {
+      "comment" : "Library view editor: a clause at the end of a filter's description, said when the view shows only some rows. %1$lld is how many rows at most, a count; %2$@ is how they are chosen, in lower case, such as \"opened last\".",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "at most %lld, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "at most %lld, %@"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "at the top of the library" : {
+      "comment" : "Where a copy of the library files a book, inside a sentence of Compare Libraries: not in any folder."
+    },
+    "books" : {
+      "comment" : "Library view editor: the kind of row books, in lower case inside a filter's description such as \"Lists books and feeds\"."
+    },
+    "built in" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The row's word for a view TextMouth made."
+    },
+    "chapter %@" : {
+      "comment" : "A reading place inside a sentence of Compare Libraries. %@ is the chapter's number, an identifier written without digit grouping."
+    },
+    "chapter %@, %lld%%" : {
+      "comment" : "A reading place inside a sentence of Compare Libraries. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$lld is how far into the book it is, a percentage from 0 to 100.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "chapter %1$@, %2$lld%%"
+          }
+        }
+      }
+    },
+    "chapter %@, with no note" : {
+      "comment" : "A bookmark's place inside a sentence of Compare Libraries, when it has no note. %@ is the chapter's number, an identifier written without digit grouping."
+    },
+    "chapter %@, with the note “%@”" : {
+      "comment" : "A bookmark's place and note inside a sentence of Compare Libraries. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ is the note the listener wrote.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "chapter %1$@, with the note “%2$@”"
+          }
+        }
+      }
+    },
+    "chosen" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when the listener chose it."
+    },
+    "custom" : {
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The row's word for a view the listener made."
+    },
+    "days" : {
+      "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The caption after the days field."
+    },
+    "declared in the file" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of the encoding an HTML file declares."
+    },
+    "delete the files permanently" : {
+      "comment" : "What deleting a book's files does when they are deleted permanently, as a verb phrase in lower case inside a sentence: \"asks whether to delete the files permanently or keep them\"."
+    },
+    "episodes" : {
+      "comment" : "Library view editor: the kind of row podcast episodes, in lower case inside a filter's description such as \"Lists books and episodes\"."
     },
     "fading out" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
@@ -2484,6 +4569,60 @@
         }
       }
     },
+    "feeds" : {
+      "comment" : "Library view editor: the kind of row feeds, in lower case inside a filter's description such as \"Lists books and feeds\"."
+    },
+    "first in the sort" : {
+      "comment" : "Library view editor: how a view's limit chooses rows, in lower case inside a filter's description: the first rows of the view's own sort."
+    },
+    "folder is %@" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone."
+    },
+    "folder is %@, including subfolders" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone. The folders below it count too."
+    },
+    "folder is not %@" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone."
+    },
+    "folder is not %@, including subfolders" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a library folder's path, Library Root, or a note that it is gone. The folders below it count too."
+    },
+    "format is %@" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a book format's name, such as EPUB."
+    },
+    "format is not %@" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a book format's name, such as EPUB."
+    },
+    "from its byte order mark" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding a byte-order mark names."
+    },
+    "guessed" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when TextMouth guessed it, since the file did not say it."
+    },
+    "has new episodes or articles" : {
+      "comment" : "Library view editor: a condition inside a filter's description: a feed has new episodes or articles."
+    },
+    "has none new" : {
+      "comment" : "Library view editor: a condition inside a filter's description: a feed has no new episodes or articles."
+    },
+    "hidden" : {
+      "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up does not offer the view."
+    },
+    "in the folder “%@”" : {
+      "comment" : "Where a copy of the library files a book, inside a sentence of Compare Libraries. %@ is the folder's path."
+    },
+    "in the reading list" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the item is in the Reading List."
+    },
+    "its files are deleted permanently and cannot be recovered" : {
+      "comment" : "A clause about one book's files when it is deleted permanently, inside a sentence of a removal confirmation."
+    },
+    "its files go to the Trash, where you can recover them until the Trash is emptied" : {
+      "comment" : "A clause about one book's files when it is moved to the Trash, inside a sentence of a removal confirmation."
+    },
+    "its files stay in the TextMouth library folder" : {
+      "comment" : "A clause about one book's files when it is removed from the library only, inside a sentence of a removal confirmation."
+    },
     "min" : {
       "comment" : "Short for minutes, shown after the sleep timer sheet's custom minutes field. Hidden from VoiceOver.",
       "localizations" : {
@@ -2494,6 +4633,143 @@
           }
         }
       }
+    },
+    "move the files to the Trash" : {
+      "comment" : "What deleting a book's files does when they go to the Trash, as a verb phrase in lower case inside a sentence: \"asks whether to move the files to the Trash or keep them\"."
+    },
+    "newer places in %lld books" : {
+      "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many books have a newer place in this copy, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "newer places in %lld book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "newer places in %lld books"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "not added today" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the item was not added today."
+    },
+    "not added within the last %lld days" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %lld is a number of days, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "not added within the last %lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "not added within the last %lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "not in the reading list" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the item is not in the Reading List."
+    },
+    "not opened today" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the book was not opened today."
+    },
+    "not opened within the last %lld days" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %lld is a number of days, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "not opened within the last %lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "not opened within the last %lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "off" : {
+      "comment" : "The value of a Reading List option that is switched off, in lower case, inside a sentence of Compare Libraries: \"Reading list: “Skip finished books” is on in this copy and off in the other copy.\""
+    },
+    "on" : {
+      "comment" : "The value of a Reading List option that is switched on, in lower case, inside a sentence of Compare Libraries: \"Reading list: “Skip finished books” is on in this copy and off in the other copy.\""
+    },
+    "only the latest from each feed" : {
+      "comment" : "Library view editor: a clause at the end of a filter's description, said when the view lists only the newest item of each feed."
+    },
+    "opened last" : {
+      "comment" : "Library view editor: how a view's limit chooses rows, in lower case inside a filter's description: the books opened most recently."
+    },
+    "opened today" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the book was opened today."
+    },
+    "opened within the last %lld days" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %lld is a number of days, a count.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "opened within the last %lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "opened within the last %lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "reading state is %@" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished."
+    },
+    "reading state is not %@" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is a reading state's name: Unopened, In Progress, or Finished."
+    },
+    "recognized by its bytes" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding for a file recognized as UTF-16 or UTF-32 by the structure of its bytes, which has no byte-order mark."
+    },
+    "so TextMouth can't tell whether the two copies are one library, and compared nothing." : {
+      "comment" : "Last clause of a sentence about an unread file in Compare Libraries: the consequence for the identity marker, after a comma."
+    },
+    "so its place and bookmarks there were taken from the library index alone." : {
+      "comment" : "Last clause of a sentence about an unread file in Compare Libraries: the consequence for a book's record, after a comma."
+    },
+    "so nothing in %@ was compared." : {
+      "comment" : "Last clause of a sentence about an unread file in Compare Libraries: the consequence for the library index, after a comma. %@ is a copy of the library."
     },
     "stops at the end of the book" : {
       "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
@@ -2516,6 +4792,124 @@
           }
         }
       }
+    },
+    "subscribed" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the listener is subscribed to the feed."
+    },
+    "the copy in this folder" : {
+      "comment" : "What the Use This Library confirmation calls the copy in the folder the listener chose, inside a sentence, in lower case."
+    },
+    "the default" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows \"Windows-1252 (Western European)\" for a file whose bytes say nothing of their encoding and that no guess was made for."
+    },
+    "the download of “%@”" : {
+      "comment" : "What a sentence calls one feed item's downloaded files, inside a sentence, in lower case. %@ is the episode's or article's title."
+    },
+    "the identity marker of %@" : {
+      "comment" : "A phrase naming a file that could not be read, inside Use This Library's account of why it can't tell which copy is newer. %@ is a copy of the library."
+    },
+    "the identity marker of the library in %@" : {
+      "comment" : "A phrase naming a file Compare Libraries could not read, inside a sentence that starts \"Unread:\". %@ is a copy of the library."
+    },
+    "the library in use" : {
+      "comment" : "What the Use This Library confirmation calls the library TextMouth is using now, inside a sentence, in lower case."
+    },
+    "the library index in %@" : {
+      "comment" : "A phrase naming a file Compare Libraries could not read, inside a sentence that starts \"Unread:\". %@ is a copy of the library."
+    },
+    "the library index of %@" : {
+      "comment" : "A phrase naming a file that could not be read, inside Use This Library's account of why it can't tell which copy is newer. %@ is a copy of the library."
+    },
+    "the other copy" : {
+      "comment" : "What the Compare Libraries sheet calls the folder compared with the library in use, inside a sentence, in lower case: \"Book only in the other copy\"."
+    },
+    "the record of %@ in %@" : {
+      "comment" : "A phrase naming a file Compare Libraries could not read, inside a sentence that starts \"Unread:\". %1$@ is a book's title and %2$@ is a copy of the library.\nA phrase naming a file that could not be read, inside Use This Library's account of why it can't tell which copy is newer. %1$@ is a book's title and %2$@ is a copy of the library.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "the record of %1$@ in %2$@"
+          }
+        }
+      }
+    },
+    "their files are deleted permanently and cannot be recovered" : {
+      "comment" : "A clause about several books' files when they are deleted permanently, inside a sentence of a removal confirmation."
+    },
+    "their files go to the Trash, where you can recover them until the Trash is emptied" : {
+      "comment" : "A clause about several books' files when they are moved to the Trash, inside a sentence of a removal confirmation."
+    },
+    "their files stay in the TextMouth library folder" : {
+      "comment" : "A clause about several books' files when they are removed from the library only, inside a sentence of a removal confirmation."
+    },
+    "this copy" : {
+      "comment" : "What the Compare Libraries sheet calls the library in use inside a sentence, in lower case: \"Book only in this copy\"."
+    },
+    "title or author contains “%@”" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is the text the listener typed to look for."
+    },
+    "title or author does not contain “%@”" : {
+      "comment" : "Library view editor: a condition inside a filter's description. %@ is the text the listener typed to look for."
+    },
+    "unsubscribed" : {
+      "comment" : "Library view editor: a condition inside a filter's description: the listener is not subscribed to the feed."
+    },
+    "when applicable" : {
+      "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up offers the view only while it lists something."
+    },
+    "“%@”" : {
+      "comment" : "Puts a book's, folder's, or feed's title in quotation marks inside a sentence. %@ is the title."
+    },
+    "“%@” can't be read as %@: %@ Nothing was changed." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again with the braille file characters named codeName: its file is not braille in them, as reason, the reader's own sentence (BrailleFileError), says, and nothing changed. It has the shape of an encoding's refusal (TextEncodingWording.notValidRefusal(bookTitle:encoding:)): \"“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds the control character U+0007, which is not Eurobraille. Nothing was changed.\". Placeholders in order: bookTitle, codeName, reason.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” can't be read as %2$@: %3$@ Nothing was changed."
+          }
+        }
+      }
+    },
+    "“%@” is being exported. %@, then %@." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle can't be read again while it is being exported, with what to do, as a refusal for a book in use says it (FeedBookUse.exporting): \"“Ledger” is being exported. Wait until the export ends, then try again.\". Placeholders in order: bookTitle, FeedBookUse.exporting.remedy, FeedBookUse.tryAgain.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” is being exported. %2$@, then %3$@."
+          }
+        }
+      }
+    },
+    "“%@” is now read as %@." : {
+      "comment" : "VoiceOver announcement once a book was read again. %1$@ is the book's title and %2$@ describes how it is read now, such as \"Windows-1251 (Cyrillic), chosen\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” is now read as %2$@."
+          }
+        }
+      }
+    },
+    "“%@” keeps %@." : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What VoiceOver hears when the listener keeps a guessed code by choosing it again: the book and the code, now the listener's own. Placeholders in order: bookTitle, codeName.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "“%1$@” keeps %2$@."
+          }
+        }
+      }
+    },
+    "“%@” was read again." : {
+      "comment" : "VoiceOver announcement once a book was read again. %@ is the book's title."
+    },
+    "“%@”, which this version of TextMouth can't read" : {
+      "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value, and Speak Info's words, for a book whose stored code is id, which this TextMouth does not know, as a later TextMouth's may be: \"“ascii-braillo-no-047-01”, which this version of TextMouth can't read\". Placeholders in order: id."
     }
   },
   "version" : "1.0"

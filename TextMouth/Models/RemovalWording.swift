@@ -132,7 +132,7 @@ enum RemovalMode: Equatable, CaseIterable {
 
     /// The same action as VoiceOver speaks it, naming `object` in full:
     /// "Move 3 selected books to the Trash", "Delete “Notes” permanently".
-    func spokenAction(_ object: String) -> String {
+    func spokenLabel(_ object: String) -> String {
         switch self {
         case .keepFiles:
             return String(localized: "Remove \(object) from the library and keep the files",
@@ -146,43 +146,41 @@ enum RemovalMode: Equatable, CaseIterable {
         }
     }
 
+    /// The English of `spokenLabel(_:)`, for the sentences of
+    /// `OriginalFileDeletionWording`, which glue it into English sentences
+    /// of their own until that area converts (FR34).
+    func spokenAction(_ object: String) -> String {
+        switch self {
+        case .keepFiles: return "Remove \(object) from the library and keep the files" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
+        case .moveToTrash: return "Move \(object) to the Trash" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
+        case .deletePermanently: return "Delete \(object) permanently" // l10n: no (inside OriginalFileDeletionWording's English sentences until that area converts)
+        }
+    }
+
     /// What happens to the files of `owner`, a possessive such as "its" or
-    /// "a deleted book's", as a clause to build sentences from: "its files
-    /// go to the Trash, where you can recover them until the Trash is
-    /// emptied". The owner is a phrase another area writes into its own
-    /// sentences (an import's "The existing copy's"), so the clause joins
-    /// it to the files by a pattern a translator can reorder.
+    /// "The existing copy's", as a clause: "its files go to the Trash, where
+    /// you can recover them until the Trash is emptied". English only: it
+    /// is a piece of `ImportDecision`'s English sentences until that area
+    /// converts (FR34); this area's own sentences use `filesClause(plural:)`.
     func filesClause(of owner: String) -> String {
-        let outcome = outcomePhrase(plural: true)
-        return String(localized: "\(owner) files \(outcome)",
-                      comment: "A clause about what happens to some books' files when they are removed. %1$@ is whose files, a possessive such as \"its\" or \"The existing copy's\", and %2$@ says what happens to them, such as \"go to the Trash, where you can recover them until the Trash is emptied\".")
+        "\(owner) files \(outcomePhrase(plural: true))" // l10n: no (inside ImportDecision's English sentences until that area converts)
     }
 
     /// What happens to what this removal deletes, as the words after their
     /// subject, agreeing with one thing or several (`plural`): "go to the
     /// Trash, where you can recover them until the Trash is emptied", "is
     /// deleted permanently and cannot be recovered", "stay in the TextMouth
-    /// library folder". Delete Feed… says it of a feed's downloads (FR14).
+    /// library folder". English only: Delete Feed… says it of a feed's
+    /// downloads inside English sentences of `FeedCommands` until that area
+    /// converts (FR34).
     func outcomePhrase(plural: Bool) -> String {
-        switch (self, plural) {
-        case (.keepFiles, true):
-            return String(localized: "stay in the TextMouth library folder",
-                          comment: "What happens to several things when they are removed from the library only, said after their subject: \"They stay in the TextMouth library folder\".")
-        case (.keepFiles, false):
-            return String(localized: "stays in the TextMouth library folder",
-                          comment: "What happens to one thing when it is removed from the library only, said after its subject: \"It stays in the TextMouth library folder\".")
-        case (.moveToTrash, true):
-            return String(localized: "go to the Trash, where you can recover them until the Trash is emptied",
-                          comment: "What happens to several things when they are moved to the Trash, said after their subject: \"They go to the Trash, ...\".")
-        case (.moveToTrash, false):
-            return String(localized: "goes to the Trash, where you can recover it until the Trash is emptied",
-                          comment: "What happens to one thing when it is moved to the Trash, said after its subject: \"It goes to the Trash, ...\".")
-        case (.deletePermanently, true):
-            return String(localized: "are deleted permanently and cannot be recovered",
-                          comment: "What happens to several things when they are deleted permanently, said after their subject: \"They are deleted permanently and cannot be recovered\".")
-        case (.deletePermanently, false):
-            return String(localized: "is deleted permanently and cannot be recovered",
-                          comment: "What happens to one thing when it is deleted permanently, said after its subject: \"It is deleted permanently and cannot be recovered\".")
+        switch self {
+        case .keepFiles:
+            return "\(plural ? "stay" : "stays") in the TextMouth library folder" // l10n: no (inside FeedCommands' English sentences until that area converts)
+        case .moveToTrash:
+            return "\(plural ? "go" : "goes") to the Trash, where you can recover \(plural ? "them" : "it") until the Trash is emptied" // l10n: no (inside FeedCommands' English sentences until that area converts)
+        case .deletePermanently:
+            return "\(plural ? "are" : "is") deleted permanently and cannot be recovered" // l10n: no (inside FeedCommands' English sentences until that area converts)
         }
     }
 
@@ -288,6 +286,12 @@ enum RemovalMode: Equatable, CaseIterable {
     func failureMessage(_ failures: [String], noun: RemovalNoun = .book) -> String {
         ([failureHeading(count: failures.count, noun: noun)] + failures).joined(separator: "\n")
     }
+
+    /// The same for a caller that names the noun as text, as `FeedCommands`
+    /// still does: "item" means items of a folder, any other word books.
+    func failureMessage(_ failures: [String], noun: String) -> String {
+        failureMessage(failures, noun: noun == "item" ? .item : .book // l10n: no (compares a noun id, not interface text))
+    }
 }
 
 // MARK: - Removing Books
@@ -333,7 +337,7 @@ struct RemovalWording: Equatable {
 
     /// What VoiceOver says for `buttonTitle`: "Move “Notes” to the Trash".
     var accessibilityLabel: String {
-        mode.spokenAction(subject)
+        mode.spokenLabel(subject)
     }
 
     /// A button that removes the books selected in a list, such as the
@@ -345,7 +349,7 @@ struct RemovalWording: Equatable {
     /// What VoiceOver says for `selectionButtonTitle`: "Move 3 selected
     /// books to the Trash".
     var selectionAccessibilityLabel: String {
-        mode.spokenAction(String(localized: "\(count) selected books",
+        mode.spokenLabel(String(localized: "\(count) selected books",
                                  comment: "What a removal button's VoiceOver label calls the books selected in a list, as in \"Move 3 selected books to the Trash\". %lld is how many are selected, a count."))
     }
 
