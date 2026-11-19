@@ -523,7 +523,7 @@ extension ReaderViewModel {
         // while audio is still playing causes a brief pop of
         // full-volume audio (same fix pattern as pause()).
         if isAudioBook {
-            stopAudioWaitingToPlay(because: "playback stopped")
+            stopAudioWaitingToPlay(because: "playback stopped") // l10n: no (debug-log reason)
             audioPlaybackService.stop()
         } else {
             stopWaitingForChapterSpeech()
@@ -1055,7 +1055,7 @@ extension ReaderViewModel {
     /// Now Playing, as a pause does. The caller tells the listener why.
     private func stopPlaybackForSleepTimer(waitingAt chapterIndex: Int, characterOffset: Int) {
         if isAudioBook {
-            stopAudioWaitingToPlay(because: "the sleep timer stopped playback")
+            stopAudioWaitingToPlay(because: "the sleep timer stopped playback") // l10n: no (debug-log reason)
             audioPlaybackService.stop()
             isCurrentlyPlaying = false
             isCurrentlyPaused = false
@@ -1635,11 +1635,11 @@ extension ReaderViewModel {
         let current = renderRequest(for: speech).signature
         let reason: String
         if lookAhead.chapterIndex != speech.chapterIndex {
-            reason = "it was for chapter \(lookAhead.chapterIndex)"
+            reason = "it was for chapter \(lookAhead.chapterIndex)" // l10n: no (debug-log reason)
         } else if !lookAhead.engine.hasRenderedAudio {
-            reason = "it was still rendering"
+            reason = "it was still rendering" // l10n: no (debug-log reason)
         } else if lookAhead.engine.renderedSignature != current {
-            reason = "it was rendered from other inputs (\(lookAhead.engine.renderedSignature?.description ?? "unsigned"), now \(current))"
+            reason = "it was rendered from other inputs (\(lookAhead.engine.renderedSignature?.description ?? "unsigned"), now \(current))" // l10n: no (debug-log reason)
         } else {
             // Used up by the chapter that plays it: forget it without
             // abandoning anything.
@@ -2428,7 +2428,7 @@ extension ReaderViewModel {
         // nor does one waiting out the pause before it, so that nothing
         // ever starts twice.
         isChapterHeldByWhereAmI = false
-        stopWaitingOutChapterPause(because: "a chapter starts now")
+        stopWaitingOutChapterPause(because: "a chapter starts now") // l10n: no (debug-log reason)
         guard isAudioBook, let content = content,
               content.chapters.indices.contains(currentChapterIndex) else { return }
         // The book's package is moving (ST08), so its files are read only
@@ -2640,7 +2640,7 @@ extension ReaderViewModel {
     /// The one way the reader waits out a pause between chapters: a pause
     /// from another source (`ChapterPauses`) waits here too.
     private func startCursorChapter(afterPause seconds: TimeInterval) {
-        stopWaitingOutChapterPause(because: "another pause began")
+        stopWaitingOutChapterPause(because: "another pause began") // l10n: no (debug-log reason)
         let start = DispatchWorkItem { [weak self] in
             self?.startChapterAfterPause()
         }
@@ -2739,9 +2739,10 @@ extension ReaderViewModel {
     /// while it claimed to play, and playback was stopped (B07): no file or
     /// chapter is at fault, but the system's audio, which a fresh player may
     /// get past and a fresh launch of TextMouth will.
-    nonisolated static let audioStoppedRespondingMessage =
-        "Playback stopped: the audio stopped responding. Press Play to try again; "
-        + "if it stops again, quit and reopen TextMouth."
+    nonisolated static var audioStoppedRespondingMessage: String {
+        String(localized: "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+               comment: "Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name.")
+    }
 
     /// What the listener is told when the memory guard stopped playback,
     /// TextMouth's memory having grown to `footprint` bytes while it played
@@ -2750,11 +2751,11 @@ extension ReaderViewModel {
     nonisolated static func memoryRunawayMessage(footprint: UInt64) -> String {
         #if os(iOS)
         // The spec's "Words that say Mac": the phone's audio is the system's.
-        "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
-            + "while the audio played, a fault in the system's audio."
+        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in the system's audio.",
+               comment: "Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes).")
         #else
-        "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB "
-            + "while the audio played, a fault in macOS's audio."
+        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in macOS's audio.",
+               comment: "Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes); macOS is the name of the Mac's system.")
         #endif
     }
 
@@ -2809,7 +2810,10 @@ extension ReaderViewModel {
         chapterNumber: Int,
         bookHasPackage: Bool
     ) -> String {
-        var problem = failure.problem
+        let problem = failure.problem
+        // The chapter's number names it, so it is written without digit grouping.
+        let number = String(chapterNumber)
+        let head: String
         let remedy: String
         switch failure.reason {
         case .stoppedResponding:
@@ -2818,18 +2822,33 @@ extension ReaderViewModel {
         case .memoryRunaway(let footprint):
             return memoryRunawayMessage(footprint: footprint)
         case .fileMissing:
-            if bookHasPackage {
-                problem += " from the book's package"
-            }
-            remedy = "Re-import the book to restore it."
+            head = bookHasPackage
+                ? String(localized: "Chapter \(number) could not be played: \(problem) from the book's package.",
+                         comment: "First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file chapter3.mp3 is missing\".")
+                : chapterCouldNotBePlayed(number: number, problem: problem)
+            remedy = String(localized: "Re-import the book to restore it.",
+                            comment: "Second sentence of the message when a chapter's audio file is missing: what to do.")
         case .fileUnreadable:
-            remedy = "Re-import the book to replace it."
+            head = chapterCouldNotBePlayed(number: number, problem: problem)
+            remedy = String(localized: "Re-import the book to replace it.",
+                            comment: "Second sentence of the message when a chapter's audio file is unreadable: what to do.")
         case .failedDuringPlayback:
-            remedy = "Choose Retry to try again, or re-import the book if it keeps failing."
+            head = chapterCouldNotBePlayed(number: number, problem: problem)
+            remedy = String(localized: "Choose Retry to try again, or re-import the book if it keeps failing.",
+                            comment: "Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button.")
         case .stalled:
-            remedy = "Check that the disk holding your library is connected, then choose Retry."
+            head = chapterCouldNotBePlayed(number: number, problem: problem)
+            remedy = String(localized: "Check that the disk holding your library is connected, then choose Retry.",
+                            comment: "Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button.")
         }
-        return "Chapter \(chapterNumber) could not be played: \(problem). \(remedy)"
+        return SentenceWording.joined([head, remedy])
+    }
+
+    /// The first sentence of a chapter's playback failure that says nothing
+    /// of the book's package: "Chapter 3 could not be played: <what went wrong>."
+    private nonisolated static func chapterCouldNotBePlayed(number: String, problem: String) -> String {
+        String(localized: "Chapter \(number) could not be played: \(problem).",
+               comment: "First sentence of the message when a chapter's audio could not be played. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file is damaged\".")
     }
 
     /// The error alert's Retry: close the alert and play the failed chapter
@@ -3025,7 +3044,7 @@ extension ReaderViewModel {
     ) {
         goOnPastThisBook(
             to: successionInFolder(following: rule),
-            in: "its folder",
+            in: "its folder", // l10n: no (debug-log reason)
             // The window choice is read as the book is asked for, not
             // before: the listener may change it meanwhile.
             startingWith: { self.continueToNextBook($0, under: self.folderMoveWindowChoice) },
@@ -3129,11 +3148,11 @@ extension ReaderViewModel {
     func finishAtTheEnd(replayingAFinishedEnd: Bool) {
         let outcome: String
         if replayingAFinishedEnd {
-            outcome = "a rewind replayed its end; not counted again"
+            outcome = "a rewind replayed its end; not counted again" // l10n: no (debug-log reason)
         } else if readingStatsService.markBookFinished(bookID: book.id, title: book.title) {
-            outcome = "counted in Books Finished"
+            outcome = "counted in Books Finished" // l10n: no (debug-log reason)
         } else {
-            outcome = "counted in Books Finished already"
+            outcome = "counted in Books Finished already" // l10n: no (debug-log reason)
         }
         DiagnosticLog.event(.playback, "BOOK_FINISHED: book \(book.id.uuidString.prefix(8)) rests at its end; \(outcome)")
         restAtEnd()
@@ -3482,7 +3501,7 @@ extension ReaderViewModel {
     func startSleepTimer(duration: SleepTimerDuration, startPlaybackIfNeeded: Bool = false) {
         // The listener has set this window's timer: one coming here from
         // another window would replace it as this book loads.
-        stopSleepTimerComingHere(because: "replaced by a timer started where it was going")
+        stopSleepTimerComingHere(because: "replaced by a timer started where it was going") // l10n: no (debug-log reason)
         sleepTimerNextHeading = duration == .endOfHeading ? headingAfterPlaybackStart : nil
         // Capture one value for both timer scheduling and direct-speech fade
         // planning. A settings edit while the timer runs must not make the
@@ -3605,7 +3624,7 @@ extension ReaderViewModel {
     /// window set; another window's own timer is left as it is.
     func cancelSleepTimer() {
         sleepTimerService.stop()
-        stopSleepTimerComingHere(because: "cancelled where it was going")
+        stopSleepTimerComingHere(because: "cancelled where it was going") // l10n: no (debug-log reason)
         // Playback no longer has to stop at this chapter's end for a timer,
         // so the next chapter's file may follow on again (TODO PERF09), and
         // audio fading toward that end returns to full volume (TODO P01).
@@ -3737,7 +3756,7 @@ extension ReaderViewModel {
             // move of the book's package, so that nothing starts the book
             // when it ends (a sleep timer that ran out would otherwise have
             // the book play on).
-            stopAudioWaitingToPlay(because: "playback paused")
+            stopAudioWaitingToPlay(because: "playback paused") // l10n: no (debug-log reason)
             audioPlaybackService.pause()
             // Only advertise the "playing-but-paused" state when there
             // was something to pause. Otherwise (book stopped or never

@@ -337,7 +337,47 @@ extension ReaderViewModel {
     /// left out of a place they share; one alone is said as before.
     nonisolated static func headingAnnouncement(arrivingAt heading: Heading, in headings: [Heading]) -> String {
         let words = headingsSharingPlace(with: heading, in: headings).compactMap(\.text.nonBlank)
-        return "Heading: " + (words.isEmpty ? heading.text : words.joined(separator: ", "))
+        let shown = words.isEmpty ? heading.text : words.joined(separator: ", ")
+        return String(localized: "Heading: \(shown)",
+                      comment: "Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas.")
+    }
+
+    /// What VoiceOver hears after a move to the next sentence.
+    nonisolated static var nextSentenceAnnouncement: String {
+        String(localized: "Next sentence",
+               comment: "Announcement after the reader moved to the next sentence.")
+    }
+
+    /// What VoiceOver hears after a move to the previous sentence.
+    nonisolated static var previousSentenceAnnouncement: String {
+        String(localized: "Previous sentence",
+               comment: "Announcement after the reader moved to the previous sentence.")
+    }
+
+    /// What VoiceOver hears after a move to the next paragraph.
+    nonisolated static var nextParagraphAnnouncement: String {
+        String(localized: "Next paragraph",
+               comment: "Announcement after the reader moved to the next paragraph.")
+    }
+
+    /// What VoiceOver hears after a move to the previous paragraph.
+    nonisolated static var previousParagraphAnnouncement: String {
+        String(localized: "Previous paragraph",
+               comment: "Announcement after the reader moved to the previous paragraph.")
+    }
+
+    /// What VoiceOver hears after a move into the next section, when no
+    /// heading names it.
+    nonisolated static var nextSectionAnnouncement: String {
+        String(localized: "Next section",
+               comment: "Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it.")
+    }
+
+    /// What VoiceOver hears after a move into the previous section, when no
+    /// heading names it.
+    nonisolated static var previousSectionAnnouncement: String {
+        String(localized: "Previous section",
+               comment: "Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it.")
     }
 
     /// The headings of `headings` that begin where `heading` begins, itself
@@ -362,7 +402,7 @@ extension ReaderViewModel {
         let text = content.chapters[currentChapterIndex].text
         if let newOffset = Self.nextSentenceStart(in: text, after: currentCharacterOffset) {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
-            announceToVoiceOver("Next sentence")
+            announceToVoiceOver(Self.nextSentenceAnnouncement)
             return
         }
 
@@ -393,7 +433,7 @@ extension ReaderViewModel {
 
         if sentenceStart < offset {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: sentenceStart)
-            announceToVoiceOver("Previous sentence")
+            announceToVoiceOver(Self.previousSentenceAnnouncement)
             return
         }
 
@@ -424,7 +464,7 @@ extension ReaderViewModel {
         let text = content.chapters[currentChapterIndex].text
         if let newOffset = Self.nextParagraphStart(in: text, after: currentCharacterOffset) {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: newOffset)
-            announceToVoiceOver("Next paragraph")
+            announceToVoiceOver(Self.nextParagraphAnnouncement)
             return
         }
 
@@ -454,7 +494,7 @@ extension ReaderViewModel {
 
         if paragraphStart < offset {
             navigateTo(chapterIndex: currentChapterIndex, characterOffset: paragraphStart)
-            announceToVoiceOver("Previous paragraph")
+            announceToVoiceOver(Self.previousParagraphAnnouncement)
             return
         }
 
@@ -499,7 +539,7 @@ extension ReaderViewModel {
         forward: Bool
     ) -> String {
         HeadingPosition(in: headings, chapterIndex: chapterIndex, characterOffset: characterOffset).headingText
-            ?? (forward ? "Next section" : "Previous section")
+            ?? (forward ? nextSectionAnnouncement : previousSectionAnnouncement)
     }
 
     /// Find the next sentence start using the reader's persisted UTF-16 offsets.

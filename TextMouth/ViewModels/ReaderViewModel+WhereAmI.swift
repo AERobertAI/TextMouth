@@ -103,7 +103,8 @@ extension ReaderViewModel {
     private func speakWhereAmISummary(_ detail: SummaryDetail) {
         whereAmIDetail = detail
         guard let content else {
-            speakWhereAmI("No book is loaded.")
+            speakWhereAmI(String(localized: "No book is loaded.",
+                                 comment: "What Where Am I? says when no book is open."))
             return
         }
         speakWhereAmI(detail == .full ? buildFullWhereAmI(content: content) : buildBriefWhereAmI())
@@ -163,7 +164,7 @@ extension ReaderViewModel {
             ? [EndOfBookWording.finishedProgress]
             : [
                 String(format: "%.0f percent", percentComplete),
-                "\(TimeFormatting.spoken(timeRemaining)) remaining\(ReaderTimeWording.spokenSpeed(speed))",
+                ReaderTimeWording.remainingSpoken(TimeFormatting.spoken(timeRemaining), speed: speed),
             ]
         let parts = whereAmILocationParts(
             bookTitle: bookTitle,
@@ -234,17 +235,21 @@ extension ReaderViewModel {
             headingPosition: headingPosition,
             pageLabel: pageLabel
         )
-        let namedSpeed = ReaderTimeWording.spokenSpeed(speed)
         if isFinished {
             parts.append(EndOfBookWording.finishedProgress)
         } else {
             parts.append(String(format: "%.0f percent through the book", percentComplete))
-            parts.append("\(TimeFormatting.spoken(timeRemaining)) remaining\(namedSpeed)")
+            parts.append(ReaderTimeWording.remainingSpoken(TimeFormatting.spoken(timeRemaining), speed: speed))
             if let timeRemainingInHeading {
-                parts.append("\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading")
+                parts.append(String(localized: "\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading",
+                                    comment: "Part of the full Where Am I? summary: the time left in the heading being read. %@ is the time in words, such as \"12 minutes\"."))
             }
         }
-        parts.append("Total book time: \(TimeFormatting.spoken(totalTime))\(namedSpeed)")
+        parts.append(ReaderTimeWording.spoken(
+            String(localized: "Total book time: \(TimeFormatting.spoken(totalTime))",
+                   comment: "Part of the full Where Am I? summary: the book's whole length. %@ is the time in words, such as \"4 hours, 50 minutes\"."),
+            speed: speed
+        ))
         if let readingListPlace {
             parts.append(ReadingListReaderWording.place(readingListPlace))
         }
@@ -794,7 +799,8 @@ extension ReaderViewModel {
         // iOS's pasteboard replaces its contents when a string is set.
         UIPasteboard.general.string = readingPositionText
         #endif
-        announceToVoiceOver("Reading position copied to clipboard")
+        announceToVoiceOver(String(localized: "Reading position copied to clipboard",
+                                   comment: "Announcement after Copy Reading Position put the reading position on the clipboard."))
     }
 
     /// The reading position as Copy Reading Position copies it
@@ -857,7 +863,11 @@ extension ReaderViewModel {
             : [
                 String(format: "%.1f%% through", percentComplete),
                 place ?? "",
-                "\(formattedTimeRemaining) remaining\(ReaderTimeWording.shownSpeed(speed))",
+                ReaderTimeWording.shown(
+                    String(localized: "\(formattedTimeRemaining) remaining",
+                           comment: "Time left in the book as the copied reading position shows it. %@ is a clock time such as 3:44:01."),
+                    speed: speed
+                ),
             ]
         return readingPositionSummary(parts: [
             bookTitle,

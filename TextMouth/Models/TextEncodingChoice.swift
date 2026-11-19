@@ -21,7 +21,10 @@ enum TextEncodingOption: Hashable, Sendable {
 /// read.
 enum TextEncodingChoices {
     /// The name of the option that reads the file again as an import does.
-    static let automaticName = "Automatic"
+    static var automaticName: String {
+        String(localized: "Automatic",
+               comment: "Name of the Text Encoding pop-up's first option, which reads the file again the way an import does, by guessing its encoding.")
+    }
 
     /// Every option, in order: Automatic first, then UTF-8, then each name
     /// of the catalog once, in the catalog's order and named exactly as the

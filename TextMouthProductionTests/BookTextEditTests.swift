@@ -372,24 +372,24 @@ final class BookTextEditTests: XCTestCase {
         XCTAssertEqual(
             BookTextEditWording.refused(chapter, bookTitle: "Harbour Pilots"),
             "Text not updated: chapter 2 of the edited text of Harbour Pilots nests quotes, lists, or emphasis more than 128 levels deep, "
-                + "which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change; "
-                + "until then, the book keeps the text it had."
+                + "which TextMouth can't read safely. Flatten it and save again, or undo the change; "
+                + "the book keeps its old text until then."
         )
         XCTAssertEqual(
             BookTextEditWording.refused(whole, bookTitle: "Harbour Pilots"),
             "Text not updated: the edited text of Harbour Pilots nests quotes, lists, or emphasis more than 128 levels deep, "
-                + "which TextMouth can't read safely. Flatten it in your editor and save again, or undo the change; "
-                + "until then, the book keeps the text it had."
+                + "which TextMouth can't read safely. Flatten it and save again, or undo the change; "
+                + "the book keeps its old text until then."
         )
         XCTAssertEqual(
             BookTextEditWording.heldReason(chapter),
             "its chapter 2 nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely. "
-                + "Flatten it in your editor and save again, or undo the change, and the book opens."
+                + "Flatten it and save again, or undo the change, and the book opens."
         )
         XCTAssertEqual(
             BookTextEditWording.heldReason(whole, forAudiobook: true),
             "it nests quotes, lists, or emphasis more than 128 levels deep, which TextMouth can't read safely. "
-                + "Flatten it in your editor and save again, or undo the change, and the text shows."
+                + "Flatten it and save again, or undo the change, and the text shows."
         )
         XCTAssertTrue(chapter.keepsEarlierText, "the book keeps its text, and no rebuild writes over the edit")
     }

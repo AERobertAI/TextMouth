@@ -474,7 +474,7 @@ extension LibraryViewModel {
             // back.
             PackageFileBeforeInstall.putBack(
                 [(textBefore, textWritten), (indexBefore, FileStamp(of: indexBefore.url))],
-                of: book, after: "the re-read", logTag: choice.logTag
+                of: book, after: "the re-read", logTag: choice.logTag // l10n: no (debug-log text)
             )
             throw error
         }
@@ -651,7 +651,7 @@ extension LibraryViewModel {
     /// write was kept, by the copy's name, as "; its earlier text was kept as
     /// content.md.edited-20261024T120000Z", or nothing when none was.
     private nonisolated static func keptCopyClause(_ keptCopy: URL?) -> String {
-        keptCopy.map { "; its earlier text was kept as \($0.lastPathComponent)" } ?? ""
+        keptCopy.map { "; its earlier text was kept as \($0.lastPathComponent)" } ?? "" // l10n: no (debug-log text)
     }
 }
 
@@ -744,10 +744,10 @@ final class TextRereads {
             longestWait: longestWait,
             kind: "text re-reads",
             finishing: {
+                // One whole phrase for each count, as a plural string.
                 let count = self.bookIDs.count
-                return count == 1
-                    ? "reading a book's text again in another encoding"
-                    : "reading the text of \(count) books again in another encoding"
+                return String(localized: "reading the text of \(count) books again in another encoding",
+                              comment: "What the Mac is still doing when the user quits, said after \"Quit is waiting for\" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.")
             }
         )
     }

@@ -635,7 +635,7 @@ enum BookContentAnalysisService {
                 try leadingBytes(of: TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory), count: limit + 1)
             }
         } catch where DatalessFiles.isDownloadRefusal(error) {
-            reportUnusedPodcastChapters(of: book, "the file is only in the cloud")
+            reportUnusedPodcastChapters(of: book, "the file is only in the cloud") // l10n: no (debug-log reason)
             return nil
         } catch where BookCloudStorageService.isMissingItem(error) {
             return nil
@@ -643,11 +643,11 @@ enum BookContentAnalysisService {
             // Named by its domain and code: its own words can name the
             // package's folder by its absolute path.
             let failure = error as NSError
-            reportUnusedPodcastChapters(of: book, "the file could not be read: error \(failure.code) in \(failure.domain)")
+            reportUnusedPodcastChapters(of: book, "the file could not be read: error \(failure.code) in \(failure.domain)") // l10n: no (debug-log reason)
             return nil
         }
         guard bytes.count <= limit else {
-            reportUnusedPodcastChapters(of: book, "the file is larger than the \(limit / 1_048_576) MB TextMouth reads")
+            reportUnusedPodcastChapters(of: book, "the file is larger than the \(limit / 1_048_576) MB TextMouth reads") // l10n: no (debug-log reason)
             return nil
         }
         do {
@@ -655,7 +655,7 @@ enum BookContentAnalysisService {
         } catch {
             // `PodcastChapters.read` throws only its own errors, each worded
             // for the log without quoting the file.
-            let reason = (error as? PodcastChaptersError)?.description ?? "not a chapters file"
+            let reason = (error as? PodcastChaptersError)?.description ?? "not a chapters file" // l10n: no (debug-log reason)
             reportUnusedPodcastChapters(of: book, reason)
             return nil
         }
@@ -679,9 +679,9 @@ enum BookContentAnalysisService {
         case .podcastChapters:
             return
         case .file:
-            reportUnusedPodcastChapters(of: book, "the audio has chapters of its own")
+            reportUnusedPodcastChapters(of: book, "the audio has chapters of its own") // l10n: no (debug-log reason)
         case .wholeFile:
-            reportUnusedPodcastChapters(of: book, "its last chapter begins past the end of the audio")
+            reportUnusedPodcastChapters(of: book, "its last chapter begins past the end of the audio") // l10n: no (debug-log reason)
         }
     }
 

@@ -133,14 +133,14 @@ final class ReaderWorkingCopies: @unchecked Sendable {
             do {
                 try fileManager.createDirectory(at: folder, withIntermediateDirectories: true)
             } catch {
-                return .skipped("the Working Copies folder could not be made (\(Self.describe(error)))")
+                return .skipped("the Working Copies folder could not be made (\(Self.describe(error)))") // l10n: no (debug-log reason)
             }
             if !hasSwept {
                 hasSwept = true
                 sweepLeftovers()
             }
             guard Self.isOnSameVolume(package.url, as: folder) else {
-                return .skipped("the book is on another volume")
+                return .skipped("the book is on another volume") // l10n: no (debug-log reason)
             }
 
             let copyFolder = folder.appendingPathComponent(
@@ -156,7 +156,7 @@ final class ReaderWorkingCopies: @unchecked Sendable {
                 try LocalBookFiles.requireOnThisMac(root, isDataless: isDataless)
             } catch {
                 try? fileManager.removeItem(at: copyFolder)
-                return .skipped("cloning failed (\(Self.describe(error)))")
+                return .skipped("cloning failed (\(Self.describe(error)))") // l10n: no (debug-log reason)
             }
             return .made(ReaderWorkingCopy(folder: copyFolder, root: root, source: package.url))
         }

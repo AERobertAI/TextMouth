@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "\"%@\" is not a number." : {
+      "comment" : "Message when the text typed in Go to Percent is no number. %@ is what the user typed, shown in quotation marks."
+    },
     "\"%@\" plays the next book in the same folder by sort order." : {
       "comment" : "Explanation under the When book ends pop-up in the Playback settings. %@ is the title of the pop-up's choice that plays the next book, as the pop-up shows it."
     },
@@ -22,6 +25,28 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "%@ (current heading) - level %lld" : {
+      "comment" : "What VoiceOver says for the heading being read, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (current heading) - level %2$lld"
+          }
+        }
+      }
+    },
+    "%@ - level %lld" : {
+      "comment" : "What VoiceOver says for a heading in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ - level %2$lld"
           }
         }
       }
@@ -48,6 +73,17 @@
         }
       }
     },
+    "%@ at %@" : {
+      "comment" : "An amount of time followed by the speed it counts at. %1$@ is the amount with its words, such as \"3:44:01 left\" or \"Total time: 4 hours\"; %2$@ is the speed, such as \"2.0x\", \"2.0 times speed\" or \"500 words a minute\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ at %2$@"
+          }
+        }
+      }
+    },
     "%@ by %@" : {
       "comment" : "The shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.",
       "localizations" : {
@@ -59,8 +95,22 @@
         }
       }
     },
+    "%@ can't open while its edited text can't be used: %@" : {
+      "comment" : "First part of the message a reader shows in place of a book whose edited text can't be used. %1$@ is the book's title; %2$@ is the reason, a clause that begins in lower case and ends with its full stop.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ can't open while its edited text can't be used: %2$@"
+          }
+        }
+      }
+    },
     "%@ deleted" : {
       "comment" : "Announcement after a substitution rule is deleted. %@ is the rule's name."
+    },
+    "%@ for This Book" : {
+      "comment" : "Heading at the top of the reader's sheet for a book's own settings. %@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"."
     },
     "%@ has no transcript text to search now, because %@" : {
       "comment" : "Said instead of opening Search in Book when the book's audio changed after its transcript was made. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.",
@@ -93,6 +143,17 @@
     "%@ has no transcript to search. Transcribe it first, with Transcribe Audio." : {
       "comment" : "Said instead of opening Search in Book for an audiobook that has no transcript yet. %@ is the book's title. Transcribe Audio is the name of a command in the Book menu."
     },
+    "%@ has no words, so the cursor is %@." : {
+      "comment" : "Announcement after Go to Page when the page typed has no words of its own. %1$@ names the page, such as \"Page 7\" or \"The first page labelled 3\"; %2$@ says where the cursor is, such as \"on page 8\" or \"before page 1\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ has no words, so the cursor is %2$@."
+          }
+        }
+      }
+    },
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
       "localizations" : {
@@ -104,8 +165,25 @@
         }
       }
     },
+    "%@ is an audiobook without a transcript, so it has no text to edit." : {
+      "comment" : "First sentence of the message when Edit Text is chosen for an audiobook with no transcript. %@ is the book's title."
+    },
+    "%@ is in a skipped section, so the cursor is %@." : {
+      "comment" : "Announcement after Go to Page when every word of the page typed is in a skipped section. %1$@ names the page, such as \"Page 40\" or \"The first page labelled 3\"; %2$@ says where the cursor is, such as \"on page 52\" or \"before page 1\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is in a skipped section, so the cursor is %2$@."
+          }
+        }
+      }
+    },
     "%@ is no longer in the library." : {
       "comment" : "Announcement when the book of a search match has left the library since the search. %@ is the book's title."
+    },
+    "%@ isn't an audiobook of tracks, so it has no manifest to edit." : {
+      "comment" : "Message when the user asks to edit the manifest of a book that is not an audiobook of tracks. %@ is the book's title."
     },
     "%@ isn't available, so TextMouth can't record from it. Choose another microphone." : {
       "comment" : "Error in the Record window when the chosen microphone is not available. %@ is the microphone's name."
@@ -120,6 +198,9 @@
           }
         }
       }
+    },
+    "%@ left" : {
+      "comment" : "Time left in the book as the reader's status row shows it. %@ is a clock time such as 3:44:01."
     },
     "%@ moved to position %@ of %@" : {
       "comment" : "Announcement after a substitution rule moves in the list. %1$@ is the rule's name, %2$@ is its new place counting from one, and %3$@ is how many rules the list holds.",
@@ -136,7 +217,7 @@
       "comment" : "Announcement of the microphone level while nothing is recording. %@ is the level's label."
     },
     "%@ remaining" : {
-      "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.",
+      "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.\nTime left in the book as Where Am I? speaks it. %@ is the time in words, such as \"3 hours\".\nTime left in the book as the copied reading position shows it. %@ is a clock time such as 3:44:01.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -146,11 +227,20 @@
         }
       }
     },
+    "%@ remaining at current speed" : {
+      "comment" : "Time left in the book as the reader's status row speaks it when no speed is named: it counts at the speed now set. %@ is the time in words, such as \"3 hours, 44 minutes, 1 second\"."
+    },
+    "%@ remaining in this heading" : {
+      "comment" : "Part of the full Where Am I? summary: the time left in the heading being read. %@ is the time in words, such as \"12 minutes\"."
+    },
     "%@ seconds" : {
       "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number."
     },
     "%@ silent" : {
       "comment" : "Announcement of the microphone level when no sound reaches TextMouth. %@ is the level's label."
+    },
+    "%@ through the book" : {
+      "comment" : "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%."
     },
     "%@ was connected, so recordings use it." : {
       "comment" : "Said by the Record window when a microphone connects and recordings now use it. %@ is the microphone's name."
@@ -183,6 +273,9 @@
     "%@ was disconnected. Connect a microphone to record." : {
       "comment" : "Said by the Record window when the chosen microphone is unplugged and no other is connected. %@ is the microphone's name."
     },
+    "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was." : {
+      "comment" : "Message when adding a book back to the library stopped because no backup of the text it held could be made. %@ is the book's title."
+    },
     "%@ were connected; choose one in the %@ pop-up to record from it." : {
       "comment" : "Said by the Record window when several microphones connect and are added to the Microphone pop-up. %1$@ is their names as a list and %2$@ is the pop-up's label.",
       "localizations" : {
@@ -195,7 +288,7 @@
       }
     },
     "%@, %@" : {
-      "comment" : "Joins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
+      "comment" : "A heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -206,7 +299,7 @@
       }
     },
     "%@, %@ quality" : {
-      "comment" : "VoiceOver label of a voice in the voice pop-up. %1$@ is the voice's name and %2$@ is its quality, such as Enhanced.",
+      "comment" : "VoiceOver label of a voice in the voice pop-up. %1$@ is the voice's name and %2$@ is its quality, such as Enhanced.\nWhat VoiceOver says for a voice in the voice sheet's menu. %1$@ is the voice's name; %2$@ is its quality, such as Enhanced.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -305,6 +398,9 @@
         }
       }
     },
+    "%@, edited by hand" : {
+      "comment" : "What VoiceOver says for a field of the book information sheet that the user edited by hand. %@ is the field's name, such as \"Book title\"."
+    },
     "%@, in %@" : {
       "comment" : "VoiceOver label of a search match whose place in the book is unknown. %1$@ is the match in its surrounding text, and %2$@ is the book's title.",
       "localizations" : {
@@ -327,13 +423,27 @@
         }
       }
     },
+    "%@:" : {
+      "comment" : "Caption beside the headings sheet's level filter. %@ is the filter's label; the colon follows it as the language writes a label before a control."
+    },
     "%@: %@" : {
-      "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.",
+      "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.\nTitle of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.\nTitle of the reader's sheet for a book's own settings. %1$@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"; %2$@ is the book's title.",
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@ by %@" : {
+      "comment" : "Title of a reader window. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title; %3$@ is the book's author.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@ by %3$@"
           }
         }
       }
@@ -408,6 +518,29 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@; %2$@"
+          }
+        }
+      }
+    },
+    "%lld WPM" : {
+      "comment" : "The reader toolbar's caption for a text book's speed. WPM is the abbreviation of words per minute; %lld is the number of words.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld WPM"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld WPM"
+                }
+              }
+            }
           }
         }
       }
@@ -614,6 +747,29 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld libros no estaban en ella."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld chapters" : {
+      "comment" : "A count of chapters inside a sentence about an edited transcript, such as \"3 chapters\". %lld is the number.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld chapter"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld chapters"
                 }
               }
             }
@@ -921,8 +1077,31 @@
         }
       }
     },
+    "%lld words a minute" : {
+      "comment" : "A text book's reading speed. %lld is the number of words read in a minute, such as 500.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld word a minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld words a minute"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld words per minute" : {
-      "comment" : "VoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.",
+      "comment" : "VoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.\nWhat VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.",
       "localizations" : {
         "en" : {
           "variations" : {
@@ -944,8 +1123,31 @@
         }
       }
     },
+    "%lld words per minute, book-specific speed" : {
+      "comment" : "What VoiceOver says for the reader toolbar's speed caption when this book has a speed of its own. %lld is the number of words read in a minute.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld word per minute, book-specific speed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld words per minute, book-specific speed"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "(%@)" : {
-      "comment" : "A voice's quality, in parentheses, beside its name in the voice pop-up. %@ is the quality, such as Enhanced."
+      "comment" : "A voice's quality shown in parentheses beside its name in the voice sheet. %@ is the quality, such as Enhanced.\nA voice's quality, in parentheses, beside its name in the voice pop-up. %@ is the quality, such as Enhanced."
     },
     "(none)" : {
       "comment" : "The restart gesture's summary when it has no steps, which the editor does not normally allow."
@@ -1120,6 +1322,9 @@
     "Add a new substitution rule" : {
       "comment" : "VoiceOver label of the Add Rule button in the Substitutions settings."
     },
+    "Add bookmark" : {
+      "comment" : "What VoiceOver says for the playback bar's bookmark button while no bookmark is at the place being read; it adds one."
+    },
     "Add gesture step" : {
       "comment" : "VoiceOver label of the button that adds a step to the restart gesture in the Miscellaneous settings."
     },
@@ -1157,6 +1362,9 @@
     "Adds speed buttons and the current speed" : {
       "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings."
     },
+    "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page." : {
+      "comment" : "Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. \"Page 12 of 300\" is an example of how the page is said."
+    },
     "Adds the selected books to the end of the reading list." : {
       "comment" : "VoiceOver hint of the Library's edit-mode bar button Add to Reading List.",
       "localizations" : {
@@ -1167,6 +1375,9 @@
           }
         }
       }
+    },
+    "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations." : {
+      "comment" : "Hint and caption of the Playback setting that names the speed beside times. 2.0x and 500 are examples; Where Am I?, Copy Reading Position and the Headings sheet are names of commands and a sheet in the app."
     },
     "Adjust minutes" : {
       "comment" : "VoiceOver label of the stepper beside the sleep timer sheet's custom minutes field.",
@@ -1179,11 +1390,23 @@
         }
       }
     },
+    "Album" : {
+      "comment" : "Name of the book information sheet's field for an audiobook's album."
+    },
+    "Album name" : {
+      "comment" : "What VoiceOver says for the book information sheet's field for an audiobook's album."
+    },
     "All" : {
-      "comment" : "A choice of the Language pop-up in the Voice settings: voices of every language are offered."
+      "comment" : "A choice of the Language pop-up in the Voice settings: voices of every language are offered.\nChoice of the voice sheet's language menu that lists the voices of every language."
     },
     "All books by the same author" : {
       "comment" : "Hint of the Same Author criterion of Find Duplicate Books."
+    },
+    "All levels" : {
+      "comment" : "Choice of the headings sheet's level filter that shows every level."
+    },
+    "Also write to the library's copy of the EPUB file" : {
+      "comment" : "Label of the metadata editor's switch that also writes the edited title, author, publisher and date into the library's own copy of the book's EPUB file."
     },
     "An unknown error occurred." : {
       "comment" : "Message of an alert about a problem, when nothing more is known about it."
@@ -1243,6 +1466,12 @@
         }
       }
     },
+    "Artist" : {
+      "comment" : "Name of the book information sheet's field for an audiobook's artist."
+    },
+    "Artist or narrator" : {
+      "comment" : "What VoiceOver says for the book information sheet's field for an audiobook's artist, who may be its narrator."
+    },
     "Ask Each Time" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import."
     },
@@ -1260,8 +1489,23 @@
         }
       }
     },
+    "Audio Settings" : {
+      "comment" : "Name of the reader's sheet and toolbar button for an audiobook's own settings (its speed), and what VoiceOver calls that button."
+    },
+    "Audio Speed" : {
+      "comment" : "Heading of the group in an audiobook's own settings sheet that holds its speed."
+    },
+    "Audio speed" : {
+      "comment" : "Label of an audiobook's speed slider; VoiceOver reads it before the speed."
+    },
+    "Author" : {
+      "comment" : "Name of the book information sheet's field for a book's author; VoiceOver reads it as the field's label."
+    },
     "Auto-play after navigation" : {
       "comment" : "Title and VoiceOver label of the checkbox in the Playback settings that starts playing after a jump to a heading, bookmark, or search result."
+    },
+    "Automatic" : {
+      "comment" : "Name of the Text Encoding pop-up's first option, which reads the file again the way an import does, by guessing its encoding."
     },
     "Automatically start playing when you navigate to a heading, bookmark, or search result." : {
       "comment" : "Explanation under the Auto-play after navigation checkbox in the Playback settings."
@@ -1311,10 +1555,16 @@
       }
     },
     "Back to Book" : {
-      "comment" : "Title of the button that closes the Search in Book sheet and returns to the book."
+      "comment" : "Button of the headings sheet that closes it and returns to the book.\nTitle of the button that closes the Search in Book sheet and returns to the book."
+    },
+    "Backward navigation unit" : {
+      "comment" : "Label of the menu that sets the unit by which this book moves backward."
     },
     "Backward navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "Before page %@" : {
+      "comment" : "Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier."
     },
     "Blocks the spurious play command macOS sends when Bluetooth headphones are removed." : {
       "comment" : "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system."
@@ -1324,6 +1574,21 @@
     },
     "Bluetooth disconnect delay" : {
       "comment" : "VoiceOver label of the Bluetooth disconnect delay slider in the Miscellaneous settings."
+    },
+    "Book" : {
+      "comment" : "The word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\"."
+    },
+    "Book Info" : {
+      "comment" : "Title of the reader toolbar's button that opens the book's information sheet."
+    },
+    "Book Information" : {
+      "comment" : "Heading of the sheet in which the user edits a book's information (title, author and so on)."
+    },
+    "Book content" : {
+      "comment" : "What VoiceOver calls the scrolling area that holds the book's text in the reader."
+    },
+    "Book title" : {
+      "comment" : "What VoiceOver says for the book information sheet's field for the book's title."
     },
     "Bookmark" : {
       "comment" : "A unit a skip or navigation picker moves by: one bookmark."
@@ -1441,7 +1706,7 @@
       }
     },
     "Bookmarks" : {
-      "comment" : "The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.",
+      "comment" : "The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.\nTitle of the reader toolbar's button that opens the bookmarks sheet.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1481,7 +1746,7 @@
       "comment" : "Hint of the Same Title criterion of Find Duplicate Books."
     },
     "Cancel" : {
-      "comment" : "Button that closes a sheet or answers a question without doing or changing anything.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
+      "comment" : "Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1508,14 +1773,72 @@
     "Case sensitive matching" : {
       "comment" : "VoiceOver label of the Case sensitive switch in the substitution rule editor."
     },
+    "Change this book's forward and backward navigation unit" : {
+      "comment" : "Help text of the playback bar's menu that sets the one unit by which this book moves forward and backward."
+    },
+    "Change this book's forward and backward navigation units" : {
+      "comment" : "Help text of the playback bar's menu that holds separate forward and backward navigation units."
+    },
+    "Change voice for this book" : {
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens a text book's own voice settings."
+    },
+    "Chapter %@ could not be played: %@ from the book's package." : {
+      "comment" : "First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file chapter3.mp3 is missing\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter %1$@ could not be played: %2$@ from the book's package."
+          }
+        }
+      }
+    },
+    "Chapter %@ could not be played: %@." : {
+      "comment" : "First sentence of the message when a chapter's audio could not be played. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file is damaged\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Chapter %1$@ could not be played: %2$@."
+          }
+        }
+      }
+    },
+    "Chapter Not Downloaded" : {
+      "comment" : "Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud."
+    },
+    "Check that the disk holding your library is connected, then choose Retry." : {
+      "comment" : "Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button."
+    },
     "Check the criteria above, then %@." : {
       "comment" : "What Find Duplicate Books shows before its first scan. %@ is the title of the scan button."
+    },
+    "Choose Edit Text again to edit the new copy's text." : {
+      "comment" : "Second sentence of that announcement: what to do to edit the new copy. Edit Text is a menu command."
+    },
+    "Choose Edit Text again to edit the new text." : {
+      "comment" : "Second sentence of that announcement: what to do to edit the new text. Edit Text is a menu command."
+    },
+    "Choose Redo Text Extraction to read the book's file again." : {
+      "comment" : "Second sentence of that message. Redo Text Extraction is the name of a menu command."
+    },
+    "Choose Retry to try again, or re-import the book if it keeps failing." : {
+      "comment" : "Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button."
     },
     "Choose a voice for reading. Change takes effect immediately." : {
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
     },
     "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers" : {
       "comment" : "VoiceOver hint of the Navigation unit controls pop-up in the Playback settings."
+    },
+    "Choose separate forward and backward navigation units for this book" : {
+      "comment" : "Hint of the playback bar's menu that holds separate forward and backward navigation units."
+    },
+    "Choose the app to edit the manifest of %@ with." : {
+      "comment" : "Message of the panel in which the user chooses an app to edit a book's manifest.json with. %@ is the book's title."
+    },
+    "Choose the app to edit the text of %@ with." : {
+      "comment" : "Message of the panel in which the user chooses an app to edit a book's text with. %@ is the book's title."
     },
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
@@ -1587,7 +1910,7 @@
       "comment" : "Hint and tooltip of the Leading Articles pop-up in the Library settings. The, A, and An are the English articles the setting skips."
     },
     "Close" : {
-      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nTitle of the button that closes the Search Library window.",
+      "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nTitle of the button that closes the Search Library window.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1606,8 +1929,14 @@
     "Close sleep timer sheet after setting a timer" : {
       "comment" : "VoiceOver label of the Close sheet after setting timer checkbox in the Playback settings."
     },
+    "Close the headings screen and return to the book" : {
+      "comment" : "Hint of the headings sheet's Back to Book button."
+    },
     "Closes Search Library; results stay for next time" : {
       "comment" : "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name."
+    },
+    "Closes this book's window" : {
+      "comment" : "Hint of the Close button of the reader's view for a book that is not ready to read."
     },
     "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording." : {
       "comment" : "Explanation under the question asked when the Record window is closed while recording. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that stops and saves, the one that deletes the recording, and the one that keeps recording.",
@@ -1625,6 +1954,9 @@
     },
     "Connect a microphone to record." : {
       "comment" : "Status line of the Record window while no microphone is connected."
+    },
+    "Continue" : {
+      "comment" : "Button of the Edit Text explanation alert that goes on to open the text in the editor. Return presses it."
     },
     "Continue to Next Book" : {
       "comment" : "A choice of the When a Book Ends picker: the next book in the folder plays."
@@ -1654,6 +1986,48 @@
         }
       }
     },
+    "Could not save metadata to the library's copy of “%@”, because that file is missing from the library." : {
+      "comment" : "First sentence of the message when the library's copy of an EPUB file is missing, so the metadata could not be written into it. %@ is the EPUB file's name."
+    },
+    "Could not save metadata to the library's copy of “%@”: %@" : {
+      "comment" : "First part of the message when writing the metadata into the library's copy of an EPUB file failed. %1$@ is the EPUB file's name; %2$@ is the reason from the system, written as a sentence.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not save metadata to the library's copy of “%1$@”: %2$@"
+          }
+        }
+      }
+    },
+    "Could not save metadata: “%@” is no longer in the library." : {
+      "comment" : "First sentence of the message when the book being edited left the library. %@ is the book's title."
+    },
+    "Could not save: the book's title is empty." : {
+      "comment" : "First sentence of the message when Save is pressed after the book's title was emptied."
+    },
+    "Couldn't open the manifest of %@: %@" : {
+      "comment" : "Message when the app that edits a manifest.json could not be opened. %1$@ is the book's title; %2$@ is the reason from the system.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't open the manifest of %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Couldn't open the text of %@: %@" : {
+      "comment" : "Message when the app that edits a book's text could not be opened. %1$@ is the book's title; %2$@ is the reason from the system.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't open the text of %1$@: %2$@"
+          }
+        }
+      }
+    },
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now.",
       "localizations" : {
@@ -1667,6 +2041,9 @@
     },
     "Current pattern: %@" : {
       "comment" : "A summary of the restart gesture's steps under its editor in the Miscellaneous settings, shown and read by VoiceOver. %@ is the steps in order, such as \"Previous track, then Play\"."
+    },
+    "Currently reading" : {
+      "comment" : "What VoiceOver says for the speaker mark on the heading being read."
     },
     "Custom minutes" : {
       "comment" : "VoiceOver label of the sleep timer sheet's field of a custom number of minutes.",
@@ -1801,7 +2178,7 @@
       "comment" : "The Bluetooth disconnect delay shown above its slider in the Miscellaneous settings. %@ is the delay in seconds, such as \"3 seconds\"."
     },
     "Display" : {
-      "comment" : "Title of the picker in Search in Book that chooses how each result's position in the book is shown, as a percentage or as a time."
+      "comment" : "Name of the headings sheet's picker that chooses what each heading shows after its name.\nTitle of the picker in Search in Book that chooses how each result's position in the book is shown, as a percentage or as a time."
     },
     "Don't rewind if paused for less than this." : {
       "comment" : "Explanation under the minimum pause stepper in the Playback settings."
@@ -1816,6 +2193,9 @@
           }
         }
       }
+    },
+    "Download" : {
+      "comment" : "Button of the reader's view for a book that is only in the cloud; it downloads the book."
     },
     "Download cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of a feed's next episode or article, which playback was waiting for.",
@@ -1850,8 +2230,29 @@
         }
       }
     },
+    "Downloads the book again" : {
+      "comment" : "Hint of the Download button of the reader's view for a book that is only in the cloud."
+    },
+    "Duration" : {
+      "comment" : "Choice of the headings sheet's display picker: each heading shows how long it lasts.\nName of the book information sheet's row that shows an audiobook's length."
+    },
+    "Duration: %@" : {
+      "comment" : "What VoiceOver says for the book information sheet's duration row. %@ is the length, such as 9:41:07."
+    },
+    "EPUB Version" : {
+      "comment" : "Name of the book information sheet's row that shows which version of the EPUB format the file uses."
+    },
     "EPUB books with the same ISBN identifier" : {
       "comment" : "Hint of the Same ISBN criterion of Find Duplicate Books. EPUB is a book format and ISBN is the book's international number; both stay as written."
+    },
+    "EPUB version: %@" : {
+      "comment" : "What VoiceOver says for the book information sheet's EPUB version row. %@ is the version, such as 3.0."
+    },
+    "Each <!-- page: … --> marks where a page begins." : {
+      "comment" : "Third sentence of the Edit Text explanation. \"<!-- page: … -->\" is the literal text of a page marker in the file; it stays exactly as written."
+    },
+    "Each line beginning with <!-- chapter: starts a chapter; keep those lines." : {
+      "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written."
     },
     "Edit" : {
       "comment" : "Name of the command that opens a substitution rule's editor: a row button's label and tooltip, a VoiceOver action, and a context menu item."
@@ -1867,6 +2268,15 @@
         }
       }
     },
+    "Edit Manifest With" : {
+      "comment" : "Title of the panel in which the user chooses an app to edit a manifest.json file with."
+    },
+    "Edit Manifest With…" : {
+      "comment" : "Menu command that lets the user choose an app to edit an audiobook's manifest.json file with. The ellipsis shows that a chooser follows."
+    },
+    "Edit Manifest in Default Editor" : {
+      "comment" : "Menu command that opens an audiobook's manifest.json file in the Mac's default app for JSON files."
+    },
     "Edit Note" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note.",
       "localizations" : {
@@ -1881,6 +2291,24 @@
     "Edit Substitution Rule" : {
       "comment" : "Heading and navigation title of the editor of an existing substitution rule."
     },
+    "Edit Text With" : {
+      "comment" : "Title of the panel in which the user chooses an app to edit a book's text with."
+    },
+    "Edit Text With…" : {
+      "comment" : "Menu command that lets the user choose an app to edit a book's text with. The ellipsis shows that a chooser follows."
+    },
+    "Edit Text has stopped for %@, since a new copy replaced it." : {
+      "comment" : "First sentence of the announcement when an Edit Text session ends because Replace Existing put a new copy in the book's place. %@ is the book's title. Edit Text is a menu command."
+    },
+    "Edit Text has stopped for %@, since its file was read again." : {
+      "comment" : "First sentence of the announcement when an Edit Text session ends because the book's file was read again in another encoding. %@ is the book's title. Edit Text is a menu command."
+    },
+    "Edit Text in Default Editor" : {
+      "comment" : "Menu command that opens a book's text, as a Markdown file, in the Mac's default app for Markdown files."
+    },
+    "Edit With" : {
+      "comment" : "Button of the panel in which the user chooses an app to edit a book's text with."
+    },
     "Edit note for bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
@@ -1891,6 +2319,15 @@
           }
         }
       }
+    },
+    "Edit the Manifest of %@?" : {
+      "comment" : "Title of the alert shown the first time Edit Manifest is used. %@ is the book's title."
+    },
+    "Edit the Text of %@?" : {
+      "comment" : "Title of the alert shown the first time Edit Text is used. %@ is the book's title."
+    },
+    "Editable" : {
+      "comment" : "Heading of the group of fields of the book information sheet that the user can change."
     },
     "Elapsed" : {
       "comment" : "Label of the time recorded so far in the Record window."
@@ -1911,7 +2348,7 @@
       "comment" : "Title and VoiceOver label of the switch in the Substitutions settings that turns text substitution rules on."
     },
     "End of Book" : {
-      "comment" : "Heading of the end of book group in the Playback settings."
+      "comment" : "Heading of the end of book group in the Playback settings.\nHeading of the group in a book's own settings sheet that holds what happens when the book ends."
     },
     "End of book" : {
       "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.",
@@ -1926,6 +2363,9 @@
     },
     "End of book behavior" : {
       "comment" : "VoiceOver label of the When book ends pop-up in the Playback settings."
+    },
+    "End of book behavior for this book" : {
+      "comment" : "What VoiceOver calls the book's own settings menu that chooses what happens when this book ends."
     },
     "End of heading" : {
       "comment" : "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.",
@@ -1948,6 +2388,9 @@
           }
         }
       }
+    },
+    "Enter a percent." : {
+      "comment" : "Message when Go to Percent is chosen with nothing typed in its field."
     },
     "Enter a search term above." : {
       "comment" : "Status line of Search in Book before anything is typed."
@@ -1976,7 +2419,10 @@
       }
     },
     "Error" : {
-      "comment" : "Title of an alert about a problem, when the problem has no more specific title."
+      "comment" : "Title of an alert about a problem, when the problem has no more specific title.\nTitle of the reader's alert about a problem that is not an audio failure."
+    },
+    "Error: %@" : {
+      "comment" : "What VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence."
     },
     "Every book above it in the reading list is finished" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop.",
@@ -2045,6 +2491,12 @@
         }
       }
     },
+    "Failed to load book" : {
+      "comment" : "Heading of the view shown in place of a book that could not be loaded; the reason follows it."
+    },
+    "File format: %@" : {
+      "comment" : "What VoiceOver says for the book information sheet's file format row. %@ is the format, such as MP3."
+    },
     "Find Duplicate Books" : {
       "comment" : "Heading of the Find Duplicate Books sheet."
     },
@@ -2076,8 +2528,25 @@
     "Folder names stay as you typed them." : {
       "comment" : "Last sentence of the note under the Leading Articles pop-up: folder names are never changed by the setting."
     },
+    "Format" : {
+      "comment" : "Name of the book information sheet's row that shows an audiobook's file format."
+    },
+    "Forward navigation unit" : {
+      "comment" : "Label of the menu that sets the unit by which this book moves forward."
+    },
     "Forward navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the forward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "Forward navigation unit: %@; backward navigation unit: %@" : {
+      "comment" : "What VoiceOver says for the value of the menu that holds separate navigation units. %1$@ is the forward unit and %2$@ the backward unit, each such as \"15 seconds\" or \"Sentence\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Forward navigation unit: %1$@; backward navigation unit: %2$@"
+          }
+        }
+      }
     },
     "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each." : {
       "comment" : "Announcement of the Record window when it finds several recordings left behind. %1$lld is how many and %2$@ is the heading of the list of recovered recordings.",
@@ -2105,6 +2574,9 @@
     "Found a recording from before TextMouth last quit, under %@. Save or discard it." : {
       "comment" : "Announcement of the Record window when it finds one recording left behind. %@ is the heading of the list of recovered recordings."
     },
+    "Genre" : {
+      "comment" : "Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label."
+    },
     "Gesture pattern" : {
       "comment" : "Heading of the list of steps that make up the restart gesture, in the Miscellaneous settings."
     },
@@ -2112,7 +2584,7 @@
       "comment" : "VoiceOver label of the restart gesture's time window slider in the Miscellaneous settings."
     },
     "Go To" : {
-      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.",
+      "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -2121,6 +2593,9 @@
           }
         }
       }
+    },
+    "Go back to where you were before browsing headings or bookmarks" : {
+      "comment" : "Hint of the reader toolbar's Return button."
     },
     "Go to bookmark %@" : {
       "comment" : "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.",
@@ -2144,14 +2619,64 @@
         }
       }
     },
+    "Goes to this heading and closes the list." : {
+      "comment" : "Hint of a heading's row in the headings list: what choosing it does."
+    },
     "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly." : {
       "comment" : "Explanation under the sleep timer's fade out stepper in the Playback settings."
     },
     "Heading" : {
       "comment" : "A unit of text a picker moves or rewinds by: one heading. Used by the rewind, skip, and navigation unit pickers."
     },
+    "Heading Levels" : {
+      "comment" : "Name of the VoiceOver rotor that moves among the headings of the headings list."
+    },
+    "Heading info display mode" : {
+      "comment" : "What VoiceOver calls the headings sheet's picker that chooses what each heading shows after its name."
+    },
+    "Heading: %@" : {
+      "comment" : "Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas."
+    },
+    "Headings" : {
+      "comment" : "Heading of the headings sheet, which lists a book's headings.\nTitle of the reader toolbar's button that opens the headings sheet."
+    },
+    "Headings, %lld headings" : {
+      "comment" : "What VoiceOver calls the list of headings, with how many it shows. %lld is the number of headings the level filter shows.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Headings, %lld heading"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Headings, %lld headings"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Headings: %@" : {
+      "comment" : "Navigation title of the headings sheet. %@ is the book's title."
+    },
     "Heavy" : {
       "comment" : "The name of punctuation pause level 3: periods, commas, and paragraph breaks pause."
+    },
+    "Hides jump to page controls" : {
+      "comment" : "Hint of the status row's page button while the jump to page panel is open."
+    },
+    "Hides jump to percent controls" : {
+      "comment" : "Hint of the reader's percent button while the jump to percent panel is open."
+    },
+    "Hides jump to time controls" : {
+      "comment" : "Hint of the reader's time button while the jump to time panel is open."
     },
     "Hold Shift while skipping to use a secondary skip amount." : {
       "comment" : "Explanation under the Shift+Skip pop-ups in the Playback settings. Shift is the key's name."
@@ -2159,11 +2684,20 @@
     "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones." : {
       "comment" : "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings."
     },
+    "ISBN" : {
+      "comment" : "Name of the book information sheet's row that shows a book's ISBN, its international book number."
+    },
     "ISBN: %@" : {
-      "comment" : "The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written."
+      "comment" : "The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written.\nWhat VoiceOver says for the book information sheet's ISBN row. %@ is the book's ISBN."
     },
     "Identical File (MD5)" : {
       "comment" : "A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them."
+    },
+    "Identifier" : {
+      "comment" : "Name of the book information sheet's row that shows a book's identifier, a code that names it."
+    },
+    "Identifier: %@" : {
+      "comment" : "What VoiceOver says for the book information sheet's identifier row. %@ is the book's identifier code."
     },
     "Ignored When Typing" : {
       "comment" : "A choice of the Leading Articles pop-up: a title's leading article does not count when typing a title's first letters, but the list keeps its order."
@@ -2188,6 +2722,15 @@
     "In this Mac's Logs folder" : {
       "comment" : "A choice of the Log location pop-up in the Storage settings, and its name inside the pop-up's hint: the diagnostic logs are written in a folder on this Mac that never syncs. The folder's path follows in parentheses where the choice is listed."
     },
+    "Include Section" : {
+      "comment" : "Name of a heading row's command that stops skipping the section, as a VoiceOver action and a context menu item."
+    },
+    "Include the speed with time left and total time" : {
+      "comment" : "Label of the Playback setting's checkbox that names the speed beside the time left and the total time."
+    },
+    "Info: %@" : {
+      "comment" : "Navigation title of the book information sheet. %@ is the book's title."
+    },
     "Inside the data directory" : {
       "comment" : "A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library."
     },
@@ -2196,6 +2739,52 @@
     },
     "Invalid regular expression: %@" : {
       "comment" : "Status line when the search text is not a valid regular expression. %@ is the reason the system gives, which may be in English."
+    },
+    "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them." : {
+      "comment" : "Second sentence of the Edit Manifest explanation: what the manifest lists and what the user can change in it."
+    },
+    "Its earlier text was kept as %@, in the book's package." : {
+      "comment" : "Sentence saying where a backup of a book's earlier text was kept. %@ is a file name such as content.md.edited-20261024T123012Z, which stays as written."
+    },
+    "Its only page is %@." : {
+      "comment" : "Second sentence of that message for a book of one page. %@ is that page's label, an identifier written without digit grouping."
+    },
+    "Its pages run from %@ to %@." : {
+      "comment" : "Second sentence of that message. %1$@ is the first page's label and %2$@ the last page's label, identifiers such as i or 300 written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Its pages run from %1$@ to %2$@."
+          }
+        }
+      }
+    },
+    "Jump" : {
+      "comment" : "Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed."
+    },
+    "Jumped to %@ in the recording." : {
+      "comment" : "Announcement after Go to Time jumped in an audiobook. %@ is the time spoken in words, such as \"2 hours, 13 minutes, 5 seconds\"."
+    },
+    "Jumped to %@ percent." : {
+      "comment" : "Announcement after Go to Percent jumped. %@ is the percent reached with one decimal place, such as 47.5."
+    },
+    "Jumped to %@." : {
+      "comment" : "Announcement after Go to Time jumped in a text book. %@ is the time spoken in words, such as \"2 hours, 13 minutes, 5 seconds\"."
+    },
+    "Jumped to page %@, the %@ page labelled %@." : {
+      "comment" : "Announcement after Go to Page jumped to one of several pages that carry the same label. %1$@ is the page's label, an identifier; %2$@ is which of them it is, as an ordinal word such as \"second\" or \"11th\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Jumped to page %1$@, the %2$@ page labelled %3$@."
+          }
+        }
+      }
+    },
+    "Jumped to page %@." : {
+      "comment" : "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping."
     },
     "Keep Original" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: the original file stays where it was."
@@ -2234,13 +2823,22 @@
       }
     },
     "Language" : {
-      "comment" : "Title of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it."
+      "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language."
+    },
+    "Language: %@" : {
+      "comment" : "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en."
     },
     "Leading articles" : {
       "comment" : "Label of the pop-up in the Library settings that chooses whether a title's leading article (The, A, An) counts when sorting and typing."
     },
     "Level" : {
       "comment" : "Label of the microphone's loudness while recording, in the Record window."
+    },
+    "Level 1" : {
+      "comment" : "Choice of the headings sheet's level filter that shows only the biggest headings, level 1."
+    },
+    "Levels 1 to %lld" : {
+      "comment" : "Choice of the headings sheet's level filter that shows levels from 1 to a deeper one. %lld is the deepest level shown."
     },
     "Library" : {
       "comment" : "The top of the library, as the Save in pop-up of the Record window names it.\nTitle of the first screen, the list of the user's books and folders."
@@ -2326,8 +2924,14 @@
     "Loading" : {
       "comment" : "Value of the Play button while the book is loading, spoken by VoiceOver."
     },
+    "Loading %@" : {
+      "comment" : "What VoiceOver says for the spinner in the reader while a book loads. %@ is the book's title."
+    },
     "Loading ISBNs..." : {
       "comment" : "Title of the scan button in Find Duplicate Books while the books' ISBNs are being read first. ISBN stays as written."
+    },
+    "Loading book..." : {
+      "comment" : "Words beside the spinner in the reader while a book loads."
     },
     "Log location" : {
       "comment" : "Label of the pop-up in the Storage settings that chooses where TextMouth writes its diagnostic logs."
@@ -2338,8 +2942,25 @@
     "Logs are written to %@." : {
       "comment" : "The line under the Log location pop-up in the Storage settings. %@ is the folder's full path, which stays as written."
     },
+    "Looks for the book again" : {
+      "comment" : "Hint of the Try Again button of the reader's view for a book that the cloud has not yet synced."
+    },
     "Loop to Start" : {
       "comment" : "A choice of the When a Book Ends picker: the book plays again from its beginning and is never finished."
+    },
+    "Manifest not updated: %@ Fix it in your editor and save again; until then, %@ keeps its headings." : {
+      "comment" : "Announcement after an edited manifest.json was refused. %1$@ is the reason, a whole sentence in English that names what is wrong inside the file and may stay in English; %2$@ is the book's title.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Manifest not updated: %1$@ Fix it in your editor and save again; until then, %2$@ keeps its headings."
+          }
+        }
+      }
+    },
+    "Manifest updated" : {
+      "comment" : "Announcement after the user saved an edited manifest.json and TextMouth took it as the book's arrangement of tracks."
     },
     "Match Case" : {
       "comment" : "Title and VoiceOver label of the checkbox in Search in Book and Search Library that makes a match need the search text's capital and small letters."
@@ -2353,11 +2974,20 @@
     "Matches" : {
       "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the matches listed."
     },
+    "Maximum is %@." : {
+      "comment" : "Second sentence of that refusal. %@ is the longest time allowed, spoken in words, such as \"1 hour\"."
+    },
     "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio." : {
       "comment" : "Explanation under the restart gesture's pattern heading in the Miscellaneous settings."
     },
     "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept." : {
       "comment" : "Explanation under the playback controls group's choices in the Playback settings."
+    },
+    "Metadata saved to the library only; the EPUB file is unchanged." : {
+      "comment" : "Announcement after the metadata was saved to the library only, as the user chose; the book's EPUB file was not rewritten."
+    },
+    "Metadata saved to the library's copy of “%@”." : {
+      "comment" : "Announcement after the metadata was saved to the library and to the library's copy of the book's EPUB file. %@ is the EPUB file's name."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
@@ -2471,6 +3101,9 @@
     "Navigation" : {
       "comment" : "Heading of the navigation group in the Playback settings."
     },
+    "Navigation unit" : {
+      "comment" : "Label of the playback bar's menu that sets the unit by which this book moves forward and backward."
+    },
     "Navigation unit controls" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses which navigation unit menus the playback bar shows."
     },
@@ -2479,6 +3112,9 @@
     },
     "Navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's shared menu that picks the unit both skip buttons move by. %@ is the unit now chosen, such as \"Sentence\"."
+    },
+    "Navigation units" : {
+      "comment" : "Label of the playback bar's menu that holds separate forward and backward navigation units."
     },
     "New Recording" : {
       "comment" : "Title of the Record window, which VoiceOver reads as the window's name, and the name of its group of buttons in the Shortcuts settings."
@@ -2508,8 +3144,20 @@
         }
       }
     },
+    "Next paragraph" : {
+      "comment" : "Announcement after the reader moved to the next paragraph."
+    },
+    "Next section" : {
+      "comment" : "Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it."
+    },
+    "Next sentence" : {
+      "comment" : "Announcement after the reader moved to the next sentence."
+    },
     "No book in the library has text to search." : {
       "comment" : "Status line of the Search Library window when no book in the library has text that can be searched."
+    },
+    "No book is loaded." : {
+      "comment" : "What Where Am I? says when no book is open."
     },
     "No bookmarks yet." : {
       "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.",
@@ -2522,11 +3170,17 @@
         }
       }
     },
+    "No copy of your edited text could be kept, so TextMouth leaves content.md as it is." : {
+      "comment" : "Sentence saying that no backup of the user's edited text could be made. content.md is the file name of the book's text and stays as written."
+    },
     "No duplicates found with the selected criteria" : {
       "comment" : "Spoken and read when a scan of Find Duplicate Books ends having found nothing."
     },
     "No duplicates found." : {
       "comment" : "What Find Duplicate Books shows when a scan finds nothing."
+    },
+    "No headings found in this document." : {
+      "comment" : "Message in the headings sheet when the book has no headings."
     },
     "No matches" : {
       "comment" : "Status line of Search in Book when a search found nothing.\nStatus line of the Search Library window when a search found nothing."
@@ -2662,11 +3316,14 @@
         }
       }
     },
+    "Nothing was changed." : {
+      "comment" : "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere."
+    },
     "Nothing was recorded, so there is nothing to save." : {
       "comment" : "Error in the Record window when the recording was stopped before any audio was captured."
     },
     "OK" : {
-      "comment" : "Button that dismisses an alert about a problem.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
+      "comment" : "Button that dismisses an alert about a problem.\nButton that dismisses the reader's error alert.\nTitle of the button that dismisses the alert telling the result of importing or exporting pronunciation rules."
     },
     "Off" : {
       "comment" : "The word for a setting that is turned off, as a slider's or stepper's value says it, such as the sleep timer's fade out.\nVoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
@@ -2690,6 +3347,9 @@
     },
     "Open in Reader" : {
       "comment" : "Title of the button in the Record window that opens the saved recording in a reader window."
+    },
+    "Open the book once, then try again." : {
+      "comment" : "Second sentence of that message: opening the book makes its text ready."
     },
     "Open the next article in" : {
       "comment" : "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.",
@@ -2752,6 +3412,15 @@
     "Opens %@, the folder the logs are written to now, in Finder." : {
       "comment" : "VoiceOver hint and tooltip of the Show Logs in Finder button. %@ is the folder's full path, which stays as written."
     },
+    "Opens jump to page controls" : {
+      "comment" : "Hint of the status row's page button while no jump panel is open."
+    },
+    "Opens jump to percent controls" : {
+      "comment" : "Hint of the reader's percent button while no jump panel is open."
+    },
+    "Opens jump to time controls" : {
+      "comment" : "Hint of the reader's time button while no jump panel is open."
+    },
     "Opens the Microphone privacy settings in System Settings." : {
       "comment" : "VoiceOver hint of the Open Privacy Settings button of the Record window. Privacy & Security and Microphone are the names of places in macOS's System Settings, as macOS words them in the language."
     },
@@ -2759,7 +3428,24 @@
       "comment" : "VoiceOver hint of a search match's row in the Search Library window."
     },
     "Page" : {
-      "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages."
+      "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book."
+    },
+    "Page %@" : {
+      "comment" : "Announcement on reaching a page of a book that has pages, and the start of a sentence naming a page. %@ is the page's label as the book names it, such as 13 or xii, an identifier written without digit grouping."
+    },
+    "Page %@ of %@" : {
+      "comment" : "Where the reader is in a book that has pages. %1$@ is the page's label (a number or a roman numeral, an identifier written without digit grouping); %2$@ is the number of pages, written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Page %1$@ of %2$@"
+          }
+        }
+      }
+    },
+    "Pages" : {
+      "comment" : "Heading of the group in Playback settings that holds the settings about pages."
     },
     "Paragraph" : {
       "comment" : "A unit of text a picker moves or rewinds by: one paragraph. Used by the rewind, skip, and navigation unit pickers."
@@ -2788,7 +3474,7 @@
       "comment" : "A part of a substitution rule's spoken summary. %@ is the rule's pattern."
     },
     "Pause" : {
-      "comment" : "Label of the button that pauses the book while it is playing.\nTitle of the button in the Record window that pauses the recording."
+      "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nTitle of the button in the Record window that pauses the recording."
     },
     "Pause level" : {
       "comment" : "Title of the punctuation pause level slider in the Playback settings."
@@ -2833,14 +3519,23 @@
     "Pauses the recording; %@ continues the same recording." : {
       "comment" : "VoiceOver hint of the Pause button in the Record window. %@ is the title of the button that continues a paused recording."
     },
+    "Percent must be between 0 and 100." : {
+      "comment" : "Message when the number typed in Go to Percent is below 0 or above 100."
+    },
+    "Percent through the book" : {
+      "comment" : "Label of the Go to Percent field, where the user types how far through the book to jump."
+    },
     "Percentage" : {
-      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book."
+      "comment" : "A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book.\nChoice of the headings sheet's display picker: each heading shows how far through the book it begins, as a percent."
     },
     "Pitch" : {
-      "comment" : "Title of the default pitch slider in the Voice settings."
+      "comment" : "Heading of the voice sheet's pitch group, and the label of its pitch slider.\nTitle of the default pitch slider in the Voice settings."
+    },
+    "Pitch: %@" : {
+      "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x."
     },
     "Play" : {
-      "comment" : "Label of the button that starts playing the book."
+      "comment" : "Label of the button that starts playing the book.\nLabel of the reader's play and pause button while the book is not playing; it plays."
     },
     "Play the book above" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.",
@@ -2869,6 +3564,21 @@
     },
     "Playback Controls" : {
       "comment" : "Heading of the playback controls group in the Playback settings."
+    },
+    "Playback Problem" : {
+      "comment" : "Title of the reader's alert shown when the audio could not be played."
+    },
+    "Playback controls" : {
+      "comment" : "What VoiceOver calls the group of playback buttons at the bottom of the reader."
+    },
+    "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio." : {
+      "comment" : "Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes); macOS is the name of the Mac's system."
+    },
+    "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio." : {
+      "comment" : "Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes)."
+    },
+    "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth." : {
+      "comment" : "Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name."
     },
     "Plays the book and pauses before it starts again." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
@@ -2940,13 +3650,31 @@
       }
     },
     "Preview Voice" : {
-      "comment" : "Title of the button in the Voice settings that speaks a sample sentence in the selected voice."
+      "comment" : "Button of the voice sheet that speaks a sample in the chosen voice.\nTitle of the button in the Voice settings that speaks a sample sentence in the selected voice."
     },
     "Preview selected voice" : {
-      "comment" : "VoiceOver label of the Preview Voice button in the Voice settings."
+      "comment" : "VoiceOver label of the Preview Voice button in the Voice settings.\nWhat VoiceOver calls the voice sheet's button that speaks a sample in the chosen voice."
     },
     "Previous Groups" : {
       "comment" : "Title of the button in Find Duplicate Books that shows the page of groups before the current one."
+    },
+    "Previous paragraph" : {
+      "comment" : "Announcement after the reader moved to the previous paragraph."
+    },
+    "Previous section" : {
+      "comment" : "Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it."
+    },
+    "Previous sentence" : {
+      "comment" : "Announcement after the reader moved to the previous sentence."
+    },
+    "Publication Date" : {
+      "comment" : "Name of the book information sheet's field for a book's publication date."
+    },
+    "Publication date" : {
+      "comment" : "What VoiceOver says for the book information sheet's field for a book's publication date."
+    },
+    "Publisher" : {
+      "comment" : "Name of the book information sheet's field for a book's publisher; VoiceOver reads it as the field's label."
     },
     "Punctuation Pauses" : {
       "comment" : "Heading of the punctuation pause group in the Playback settings."
@@ -2959,6 +3687,15 @@
     },
     "Quality" : {
       "comment" : "Label of the selected voice's quality in the Voice settings, such as Enhanced."
+    },
+    "Re-import the book to replace it." : {
+      "comment" : "Second sentence of the message when a chapter's audio file is unreadable: what to do."
+    },
+    "Re-import the book to restore it." : {
+      "comment" : "Second sentence of the message when a chapter's audio file is missing: what to do."
+    },
+    "Read Only" : {
+      "comment" : "Heading of the group of fields of the book information sheet that the user cannot change."
     },
     "Reading List" : {
       "comment" : "The start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
@@ -2998,6 +3735,9 @@
           }
         }
       }
+    },
+    "Reading position copied to clipboard" : {
+      "comment" : "Announcement after Copy Reading Position put the reading position on the clipboard."
     },
     "Reading the audio took longer than %@ seconds; TextMouth stopped waiting." : {
       "comment" : "Error shown when reading an audio file took too long and TextMouth gave up waiting. %@ is the limit in seconds with a fraction, already formatted, such as 0.2."
@@ -3202,6 +3942,9 @@
         }
       }
     },
+    "Remove bookmark" : {
+      "comment" : "What VoiceOver says for the playback bar's bookmark button while a bookmark is at the place being read; it removes that bookmark."
+    },
     "Remove books when finished" : {
       "comment" : "Checkbox of the Reading List's options bar: take each book off the list once it is finished.",
       "localizations" : {
@@ -3215,6 +3958,9 @@
     },
     "Remove step %@" : {
       "comment" : "VoiceOver label of the button that removes one step of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping."
+    },
+    "Remove them: an audiobook of tracks is arranged with tracks." : {
+      "comment" : "Second sentence of the reason an edited manifest.json was refused for having segments: the user should remove the segments."
     },
     "Removed %lld books from the reading list." : {
       "comment" : "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.",
@@ -3237,6 +3983,9 @@
           }
         }
       }
+    },
+    "Removes this book's own voice, speed, and pitch, so it uses the global defaults." : {
+      "comment" : "Hint of the button that removes a text book's own voice, speed and pitch."
     },
     "Replace with: %@" : {
       "comment" : "A part of a substitution rule's spoken summary. %@ is the replacement text."
@@ -3267,8 +4016,26 @@
     "Reset all rules to factory defaults" : {
       "comment" : "VoiceOver label of the Reset to Defaults button in the Substitutions settings."
     },
+    "Reset this book's voice, speed, and pitch to the global defaults" : {
+      "comment" : "What VoiceOver calls the button that removes a text book's own voice, speed and pitch."
+    },
     "Reset to Defaults" : {
       "comment" : "Title of the button in the Substitutions settings that replaces every rule with TextMouth's default rules, after asking."
+    },
+    "Reset to Global Settings" : {
+      "comment" : "Button of a text book's own settings sheet that removes its own voice, speed and pitch."
+    },
+    "Reset to Normal Speed" : {
+      "comment" : "Button of an audiobook's own settings sheet that sets its speed back to normal."
+    },
+    "Reset to global end-of-book setting" : {
+      "comment" : "What VoiceOver calls the button that removes the book's own end of book choice."
+    },
+    "Reset to normal audio speed" : {
+      "comment" : "What VoiceOver calls the button that sets an audiobook's speed back to normal."
+    },
+    "Resets this book to %@" : {
+      "comment" : "Hint of the button that sets an audiobook's speed back to normal. %@ names the normal speed, such as \"1.0 times speed\"."
     },
     "Restart Sleep Timer Gesture" : {
       "comment" : "Heading of the experimental restart gesture group in the Miscellaneous settings."
@@ -3309,6 +4076,15 @@
     },
     "Resuming." : {
       "comment" : "Announcement of the Record window before a paused recording continues."
+    },
+    "Retry" : {
+      "comment" : "Button of the reader's error alert that tries to play the audio again."
+    },
+    "Return" : {
+      "comment" : "Title of the reader toolbar's button that goes back to the reading position left before browsing."
+    },
+    "Return to previous reading position" : {
+      "comment" : "What VoiceOver calls the reader toolbar's Return button."
     },
     "Returned to previous position" : {
       "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.",
@@ -3357,7 +4133,7 @@
       "comment" : "A match criterion of Find Duplicate Books: the books have the same title."
     },
     "Save" : {
-      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nTitle of the button that saves an edited substitution rule, in the rule editor.\nTitle of the question's default button when the Record window is closed with a recording that could not be saved: it tries to save it again.",
+      "comment" : "Button of the book information sheet that saves the edits.\nButton that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nTitle of the button that saves an edited substitution rule, in the rule editor.\nTitle of the question's default button when the Record window is closed with a recording that could not be saved: it tries to save it again.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -3379,8 +4155,23 @@
     "Save in" : {
       "comment" : "Label of the pop-up in the Record window that chooses the library folder the recording is saved in."
     },
+    "Save metadata changes" : {
+      "comment" : "What VoiceOver says for the Save button of an audiobook's book information sheet."
+    },
+    "Save metadata to the library and to the library's copy of the EPUB file" : {
+      "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is on."
+    },
+    "Save metadata to the library only" : {
+      "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is off."
+    },
     "Save the recording?" : {
       "comment" : "The question asked when the Record window is closed while it holds a recording that could not be saved yet."
+    },
+    "Save this book's voice, speed, and pitch as the global defaults" : {
+      "comment" : "What VoiceOver calls the buttons that save a text book's voice, speed and pitch as the settings for every book."
+    },
+    "Save to Global Settings" : {
+      "comment" : "Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book."
     },
     "Saved Recording as %@" : {
       "comment" : "Announcement of the Record window once a recording is saved as an audiobook. %@ is the audiobook's title."
@@ -3394,8 +4185,14 @@
     "Saving the recording…" : {
       "comment" : "Status line and announcement of the Record window while a recording is being saved as an audiobook."
     },
+    "Say the page in Where Am I?" : {
+      "comment" : "Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is."
+    },
     "Scan for Duplicates" : {
       "comment" : "Title of the button in Find Duplicate Books that scans the library for duplicates."
+    },
+    "Search" : {
+      "comment" : "Title of the reader toolbar's button that opens the search in the book."
     },
     "Search Library" : {
       "comment" : "Title of the Search Library window, which VoiceOver names it by, and the name of its command in the Edit menu's Find submenu."
@@ -3405,6 +4202,9 @@
     },
     "Search in Book" : {
       "comment" : "Heading and navigation title of the Search in Book sheet, and the name of its command."
+    },
+    "Search in book" : {
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the search in the book."
     },
     "Search pattern" : {
       "comment" : "VoiceOver label of the field that holds a substitution rule's search pattern in the rule editor."
@@ -3466,6 +4266,9 @@
     },
     "Select voice" : {
       "comment" : "VoiceOver label of the voice pop-up in the Voice settings."
+    },
+    "Select voice for this book" : {
+      "comment" : "What VoiceOver calls the voice sheet's menu of voices."
     },
     "Sentence" : {
       "comment" : "A unit of text a picker moves or rewinds by: one sentence. Used by the rewind, skip, and navigation unit pickers."
@@ -3595,6 +4398,15 @@
     "Show bookmark button in playback controls" : {
       "comment" : "VoiceOver label of the Show bookmark button checkbox in the Playback settings."
     },
+    "Show bookmarks" : {
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the bookmarks sheet."
+    },
+    "Show heading navigator" : {
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the headings sheet."
+    },
+    "Show levels" : {
+      "comment" : "Label of the headings sheet's level filter, which limits the headings shown to those up to a level."
+    },
     "Show speed controls" : {
       "comment" : "Title of the checkbox in the Playback settings that adds speed buttons to the playback controls."
     },
@@ -3623,6 +4435,9 @@
           }
         }
       }
+    },
+    "Show the page on the reader screen" : {
+      "comment" : "Label of the Playback setting's checkbox that shows the page being read on the reader screen."
     },
     "Showing group %@ of %@" : {
       "comment" : "The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.",
@@ -3669,11 +4484,17 @@
         }
       }
     },
+    "Shows only the headings up to the level chosen." : {
+      "comment" : "Hint of the headings sheet's level filter: what choosing a level does."
+    },
     "Shows the groups after these." : {
       "comment" : "VoiceOver hint of the Next Groups button of Find Duplicate Books."
     },
     "Shows the groups before these." : {
       "comment" : "VoiceOver hint of the Previous Groups button of Find Duplicate Books."
+    },
+    "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page." : {
+      "comment" : "Hint and caption of the Playback setting that shows the page on the reader screen. \"Page 12 of 300\" is an example of how the page is shown."
     },
     "Silent" : {
       "comment" : "The value of the microphone level in the Record window, spoken, when no sound reaches TextMouth."
@@ -3687,8 +4508,14 @@
     "Skip Forward" : {
       "comment" : "Title of the pop-up in the Playback settings that chooses what the skip forward button moves by."
     },
+    "Skip Section" : {
+      "comment" : "Name of a heading row's command that makes speech skip the section, as a VoiceOver action and a context menu item."
+    },
     "Skip backward unit" : {
       "comment" : "VoiceOver label of the Skip Backward pop-up in the Playback settings."
+    },
+    "Skip backward: %@" : {
+      "comment" : "What VoiceOver says for the playback bar's skip backward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\"."
     },
     "Skip finished books" : {
       "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.",
@@ -3704,11 +4531,39 @@
     "Skip forward unit" : {
       "comment" : "VoiceOver label of the Skip Forward pop-up in the Playback settings."
     },
+    "Skip forward: %@" : {
+      "comment" : "What VoiceOver says for the playback bar's skip forward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\"."
+    },
+    "Skipped" : {
+      "comment" : "What VoiceOver says for the mark on a heading the user skipped."
+    },
+    "Skipped, %@ (current heading) - level %lld" : {
+      "comment" : "What VoiceOver says for the heading being read when the user skipped it, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Skipped, %1$@ (current heading) - level %2$lld"
+          }
+        }
+      }
+    },
+    "Skipped, %@ - level %lld" : {
+      "comment" : "What VoiceOver says for a heading the user skipped, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Skipped, %1$@ - level %2$lld"
+          }
+        }
+      }
+    },
     "Skips matches next to letters, digits, or underscores" : {
       "comment" : "VoiceOver hint of the Match whole word only switch in the substitution rule editor."
     },
     "Sleep Timer" : {
-      "comment" : "Heading of the sleep timer group in the Playback settings.\nThe name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.",
+      "comment" : "Heading of the sleep timer group in the Playback settings.\nThe name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.\nTitle of the reader toolbar's button that opens the sleep timer sheet.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -3717,6 +4572,9 @@
           }
         }
       }
+    },
+    "Sleep timer" : {
+      "comment" : "What VoiceOver calls the reader toolbar's button that opens the sleep timer sheet."
     },
     "Sleep timer cancelled, because the next book could not be opened." : {
       "comment" : "VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped.",
@@ -3895,6 +4753,35 @@
     "Sounds" : {
       "comment" : "Name of the Settings tab for the sounds played for playback events."
     },
+    "Speed" : {
+      "comment" : "Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider."
+    },
+    "Speed: %@" : {
+      "comment" : "Caption above an audiobook's speed slider in its own settings sheet. %@ is the speed, such as 1.25x."
+    },
+    "Speed: %lld WPM" : {
+      "comment" : "Caption above the voice sheet's speed slider for a text book. WPM is the abbreviation of words per minute; %lld is the number of words.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Speed: %lld WPM"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Speed: %lld WPM"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Start of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop.",
       "localizations" : {
@@ -3976,6 +4863,9 @@
         }
       }
     },
+    "Stop Where Am I announcement" : {
+      "comment" : "What VoiceOver calls the reader toolbar's Where Am I? button while an announcement speaks; pressing it stops the announcement."
+    },
     "Stop and Save" : {
       "comment" : "Title of the question's default button when the Record window is closed while recording: it stops the recording and saves it."
     },
@@ -4027,6 +4917,9 @@
     "Stops the search, keeping the matches found so far" : {
       "comment" : "VoiceOver hint of the Stop button of the Search Library window."
     },
+    "Stops waiting for the download" : {
+      "comment" : "Hint of the Cancel button of the reader's view while a book downloads."
+    },
     "Storage" : {
       "comment" : "Name of the Settings tab for where the library is stored, importing books, and the logs."
     },
@@ -4035,6 +4928,15 @@
     },
     "Subtle" : {
       "comment" : "The name of punctuation pause level 1: only periods pause."
+    },
+    "Switches to jump to page controls" : {
+      "comment" : "Hint of the status row's page button while the jump to percent or time panel is open."
+    },
+    "Switches to jump to percent controls" : {
+      "comment" : "Hint of the reader's percent button while the jump to time or page panel is open."
+    },
+    "Switches to jump to time controls" : {
+      "comment" : "Hint of the reader's time button while the jump to percent or page panel is open."
     },
     "Takes %lld to %lld minutes." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
@@ -4110,8 +5012,71 @@
     "Text" : {
       "comment" : "Name of the Settings tab for text substitution rules and repeated symbols."
     },
+    "Text not updated: %@" : {
+      "comment" : "Announcement when an edited text could not be taken for a reason the system or another part of the app gives. %@ is the reason."
+    },
+    "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it." : {
+      "comment" : "Announcement when an Edit Text session ends because the book left the library. %@ is the book's title. Edit Text is a menu command."
+    },
+    "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then." : {
+      "comment" : "Announcement when an edited text was refused because one chapter nests lists or quotes too deeply. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title; %3$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then."
+          }
+        }
+      }
+    },
+    "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then." : {
+      "comment" : "Announcement when an edited text was refused because it nests lists or quotes too deeply. %1$@ is the book's title; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then."
+          }
+        }
+      }
+    },
+    "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then." : {
+      "comment" : "Announcement when an edited text was refused because no chapter has any text left. %@ is the book's title."
+    },
+    "Text not updated: the edited text of %@ isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then." : {
+      "comment" : "Announcement when an edited text was refused because it is not UTF-8 text. %@ is the book's title. UTF-8 is a text encoding."
+    },
+    "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then." : {
+      "comment" : "Announcement when an edited transcript was refused because the user added words to a chapter with no speech. %@ is the book's title."
+    },
+    "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then." : {
+      "comment" : "Announcement when an edited transcript was refused because the user changed a chapter's heading. %@ is the book's title."
+    },
+    "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then." : {
+      "comment" : "Announcement when an edited transcript was refused because its number of chapters no longer matches the audiobook's. %1$@ is the book's title; %2$@ and %3$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then."
+          }
+        }
+      }
+    },
+    "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens." : {
+      "comment" : "Announcement when an edited text was not taken because the book's own file changed too. %@ is the book's title."
+    },
+    "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens." : {
+      "comment" : "Announcement when an edited text was not taken because the book's transcript changed too. %@ is the book's title."
+    },
     "Text to find in every book" : {
       "comment" : "Placeholder of the empty search field in the Search Library window."
+    },
+    "Text updated" : {
+      "comment" : "Announcement after the user saved an edited text and TextMouth took it as the book's text. Written without its full stop."
+    },
+    "Text updated." : {
+      "comment" : "Announcement after the user saved an edited text of a feed episode's transcript, followed by a note about where the transcript stays."
     },
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
@@ -4121,6 +5086,9 @@
     },
     "TextMouth couldn't start recording from %@." : {
       "comment" : "Error in the Record window when recording from the chosen microphone failed to start. %@ is the microphone's name."
+    },
+    "TextMouth hasn't read the latest save yet." : {
+      "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet."
     },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
@@ -4136,6 +5104,15 @@
     "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone." : {
       "comment" : "Error in the Record window when macOS has denied TextMouth the microphone. Names the places in System Settings, as macOS words them, where the user can allow it."
     },
+    "TextMouth kept the text you changed in %@." : {
+      "comment" : "First sentence of the message when an automatic rebuild left a book's edited text alone. %@ is the book's title."
+    },
+    "TextMouth opens the book's manifest.json in your text editor." : {
+      "comment" : "First sentence of the Edit Manifest explanation. manifest.json is a file name and stays as written."
+    },
+    "TextMouth opens the book's text in your text editor, as a Markdown file." : {
+      "comment" : "First sentence of the Edit Text explanation. Markdown is the name of a text format."
+    },
     "That match is no longer in the book's text. Search again to find it." : {
       "comment" : "Announcement when a search match is no longer in the book's text."
     },
@@ -4146,6 +5123,17 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The %1$@ in the list will be replaced by TextMouth's %2$@."
+          }
+        }
+      }
+    },
+    "The %@ page labelled %@" : {
+      "comment" : "The start of a sentence naming one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as \"first\" or \"11th\"; %2$@ is the label, an identifier written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The %1$@ page labelled %2$@"
           }
         }
       }
@@ -4192,6 +5180,9 @@
         }
       }
     },
+    "The cursor is %@." : {
+      "comment" : "Announcement after Go to Page when the cursor is not on the page typed and there is no known reason. %@ says where the cursor is, such as \"on page 52\" or \"before page 1\"."
+    },
     "The data directory has no Logs folder, so logs go to %@ until it has one." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written."
     },
@@ -4217,6 +5208,17 @@
     },
     "The library isn't available, so logs go to %@ until it is." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written."
+    },
+    "The manifest of %@ can't be edited: %@" : {
+      "comment" : "Message when a book's manifest could not be readied for editing. %1$@ is the book's title; %2$@ is the reason, a sentence from the system or TextMouth.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The manifest of %1$@ can't be edited: %2$@"
+          }
+        }
+      }
     },
     "The microphone TextMouth used last isn't connected, so recordings use %@." : {
       "comment" : "Said by the Record window when the microphone used last is not connected as the window opens. %@ is the name of the microphone recordings use instead."
@@ -4248,6 +5250,12 @@
           }
         }
       }
+    },
+    "The original file you imported is not changed." : {
+      "comment" : "Last sentence of the warning shown under the metadata editor's switch while it is on: the file the user first imported stays as it was."
+    },
+    "The original file you imported is not touched." : {
+      "comment" : "Last sentence of the hint of the metadata editor's switch that also writes the EPUB file: the file the user first imported stays as it was."
     },
     "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." : {
       "comment" : "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.",
@@ -4288,6 +5296,9 @@
         }
       }
     },
+    "The recording lasts %@." : {
+      "comment" : "Second sentence of that refusal. %@ is the recording's length spoken in words, such as \"9 hours, 41 minutes, 7 seconds\"."
+    },
     "The recording was discarded." : {
       "comment" : "Status line of the Record window after a recording was discarded."
     },
@@ -4296,6 +5307,21 @@
     },
     "The text changed since the search; moved to the nearest match." : {
       "comment" : "Announcement when the book's text changed since the search and the reader moved to the nearest match."
+    },
+    "The text content.md held before was kept as %@, in the book's package." : {
+      "comment" : "Second sentence of that message. content.md is the file name of the book's text and stays as written; %@ is the backup's file name such as content.md.edited-20261004T123012Z, which stays as written."
+    },
+    "The text of %@ can't be read, so it can't be edited." : {
+      "comment" : "Message when Edit Text finds the book's text file unreadable. %@ is the book's title."
+    },
+    "The text of %@ isn't ready to edit yet." : {
+      "comment" : "First sentence of the message when Edit Text finds the book's text file missing. %@ is the book's title."
+    },
+    "The text of %@ was read again from its own file." : {
+      "comment" : "First sentence of the message after a book's text was read again from its own file. %@ is the book's title."
+    },
+    "There is no page %@ in this book." : {
+      "comment" : "First sentence of the message when Go to Page is given a page the book does not have. %@ is what the user typed."
     },
     "This Mac doesn't allow TextMouth to use the microphone: a device management profile or Screen Time restricts it." : {
       "comment" : "Error in the Record window when something other than the user, a device management profile or Screen Time, keeps TextMouth from using the microphone."
@@ -4311,6 +5337,35 @@
         }
       }
     },
+    "This book has %lld pages, from %@ to %@." : {
+      "comment" : "First sentence of the Go to Page field's hint. %1$lld is the number of pages in the book; %2$@ is the first page's label and %3$@ the last page's label, identifiers such as i or 300 written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This book has %lld page, from %@ to %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This book has %lld pages, from %@ to %@."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "This book has no pages." : {
+      "comment" : "Announcement when a page command is used in a book that has no pages."
+    },
+    "This book has only one page." : {
+      "comment" : "Announcement when a page command is used in a book that has one page, so there is no other page to go to."
+    },
     "This book was not opened from the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list.",
       "localizations" : {
@@ -4321,6 +5376,12 @@
           }
         }
       }
+    },
+    "This book's only page is %@." : {
+      "comment" : "First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping."
+    },
+    "This explanation appears only once." : {
+      "comment" : "Last sentence of the Edit Manifest explanation: it is shown only the first time.\nLast sentence of the Edit Text explanation: it is shown only the first time."
     },
     "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open." : {
       "comment" : "Explanation under the question asked when the Record window is closed with a recording that could not be saved. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that saves, the one that deletes the recording, and the one that keeps the window open.",
@@ -4335,6 +5396,21 @@
     },
     "Time" : {
       "comment" : "A segment of the display picker in Search in Book: each result's position is shown as an estimated time into the book."
+    },
+    "Time In" : {
+      "comment" : "Choice of the headings sheet's display picker: each heading shows the time into the book at which it begins."
+    },
+    "Time at %@" : {
+      "comment" : "Label of the Go to Time field for a text book. %@ is the reading speed the times count at, such as \"500 words a minute\"."
+    },
+    "Time exceeds book length." : {
+      "comment" : "First sentence of the refusal when the time typed in Go to Time is after the end of a text book."
+    },
+    "Time exceeds the recording's length." : {
+      "comment" : "First sentence of the refusal when the time typed in Go to Time is after the end of an audiobook."
+    },
+    "Time in the recording" : {
+      "comment" : "Label of the Go to Time field for an audiobook: the time is counted in the recording itself."
     },
     "Time window" : {
       "comment" : "Title of the slider in the Miscellaneous settings that sets how long the restart gesture's sequence may take."
@@ -4422,8 +5498,11 @@
         }
       }
     },
+    "Times" : {
+      "comment" : "Heading of the group in Playback settings that holds the setting about naming the speed beside times."
+    },
     "Title" : {
-      "comment" : "Label of the field in the Record window that names the recording, which becomes the audiobook's title."
+      "comment" : "Label of the field in the Record window that names the recording, which becomes the audiobook's title.\nName of the book information sheet's field for the book's title."
     },
     "Titles" : {
       "comment" : "Heading of the Library settings section that holds the Leading Articles pop-up, which decides how book titles are sorted and typed."
@@ -4431,11 +5510,50 @@
     "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's." : {
       "comment" : "Describes the Leading Articles choice Part of the Title, under the pop-up. The Hobbit is the example title; the T's are the books sorted under the letter T."
     },
+    "Total book time: %@" : {
+      "comment" : "Part of the full Where Am I? summary: the book's whole length. %@ is the time in words, such as \"4 hours, 50 minutes\"."
+    },
+    "Total time: %@" : {
+      "comment" : "The book's total time as the reader's status row speaks it. %@ is the time in words, such as \"4 hours, 50 minutes, 33 seconds\"."
+    },
+    "Total: %@" : {
+      "comment" : "The book's total time as the reader's status row shows it. %@ is a clock time such as 4:50:33."
+    },
+    "Transcribe it again, then edit the new transcript." : {
+      "comment" : "Sentence after the reason that an audiobook's transcript no longer fits its audio: what to do."
+    },
     "Transcribe it again, then search the new transcript." : {
       "comment" : "Advice after the reason a book's transcript cannot be searched because its audio changed: make the transcript again."
     },
+    "Transcribe it first, with Transcribe Audio." : {
+      "comment" : "Second sentence of that message. Transcribe Audio is the name of a menu command."
+    },
     "Tries again to save the recording as an audiobook." : {
       "comment" : "VoiceOver hint of the Save Again button of the Record window."
+    },
+    "Tries to get the book again" : {
+      "comment" : "Hint of the Try Again button of the reader's view for a book that could not be got from the cloud."
+    },
+    "Try Again" : {
+      "comment" : "Button of the reader's alert about a chapter that could not be downloaded; it tries the download again.\nButton of the reader's view for a book that could not be got from the cloud; it tries again."
+    },
+    "Turn off “%@” to save the metadata to the library only." : {
+      "comment" : "Second sentence of that message. %@ is the shown name of the editor's switch that also writes the file, quoted."
+    },
+    "Type a page as the book numbers it, such as 12 or xii." : {
+      "comment" : "Last sentence of the Go to Page field's hint: what the user may type. 12 and xii are examples of page labels, a number and a roman numeral."
+    },
+    "Type a page number." : {
+      "comment" : "Message when Go to Page is chosen with nothing typed in its field."
+    },
+    "Type a percent from 0 to 100, such as 47.5." : {
+      "comment" : "Hint of the Go to Percent field: what the user may type. 47.5 is an example number; write it as the language writes numbers."
+    },
+    "Type a title, then save again." : {
+      "comment" : "Second sentence of that message: what to do."
+    },
+    "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions." : {
+      "comment" : "Third sentence of the Edit Manifest explanation. TextEdit is the Mac's text editor; Smart Quotes, Edit and Substitutions are its menu names, so use the words macOS shows for them."
     },
     "Type text to find in every book of the library." : {
       "comment" : "Status line of the Search Library window before anything is typed."
@@ -4452,6 +5570,9 @@
     "Untitled rule" : {
       "comment" : "The name a substitution rule is given in lists and announcements when it has neither a name nor a pattern."
     },
+    "Updates the default voice, speed, and pitch for every book without settings of its own." : {
+      "comment" : "Hint and tooltip of the buttons that save a text book's voice, speed and pitch as the settings for every book."
+    },
     "Use %@ and %@, or drag, to reorder. Rules apply top to bottom." : {
       "comment" : "Help in the footer of the Substitutions settings on reordering rules. %1$@ and %2$@ are the titles of the Move Up and Move Down commands, which stay as those commands show them.",
       "localizations" : {
@@ -4462,6 +5583,9 @@
           }
         }
       }
+    },
+    "Use Global Default" : {
+      "comment" : "Button of the book's own settings sheet that removes its own end of book choice, so the setting for every book applies."
     },
     "Use Regex" : {
       "comment" : "Title of the switch in Search in Book that makes the search text a regular expression. Regex is short for regular expression."
@@ -4483,14 +5607,26 @@
         }
       }
     },
+    "Using global voice, speed, and pitch settings" : {
+      "comment" : "Announcement after a text book's own voice, speed and pitch were removed, so it uses the settings for every book."
+    },
     "Voice" : {
-      "comment" : "Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.\nTitle of the pop-up in the Voice settings that chooses the voice."
+      "comment" : "Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.\nTitle of the pop-up in the Voice settings that chooses the voice.\nTitle of the reader toolbar's button that opens a text book's own voice settings.\nTitle of the voice sheet's menu of voices, and the heading of its group."
+    },
+    "Voice & Speed" : {
+      "comment" : "Name of the reader's sheet for a text book's own voice, speed and pitch."
     },
     "Voice language" : {
       "comment" : "VoiceOver label of the Language pop-up in the Voice settings."
     },
+    "Voice language filter" : {
+      "comment" : "What VoiceOver calls the voice sheet's menu that limits the voices listed to one language."
+    },
     "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded." : {
       "comment" : "VoiceOver hint and tooltip of the switch in the Record window that announces the microphone level."
+    },
+    "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash." : {
+      "comment" : "First sentence of the warning shown under the metadata editor's switch while it is on. MD5 is the name of a checksum and stays as written."
     },
     "What happens when a book finishes playing" : {
       "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
@@ -4545,6 +5681,21 @@
     "When resuming playback, rewind to the start of this unit" : {
       "comment" : "VoiceOver hint of the Rewind to pop-up in the Playback settings."
     },
+    "When this book ends" : {
+      "comment" : "Title of the book's own settings menu that chooses what happens when this book ends."
+    },
+    "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track." : {
+      "comment" : "Fourth sentence of the Edit Manifest explanation: what happens when the user saves the manifest."
+    },
+    "When you save, the book updates and keeps your place as near as it can." : {
+      "comment" : "Fourth sentence of the Edit Text explanation: what happens when the user saves the edited text."
+    },
+    "Where Am I?" : {
+      "comment" : "Title of the reader toolbar's button that says where the reader is in the book."
+    },
+    "Where Am I? Announces current position in the book" : {
+      "comment" : "What VoiceOver calls the reader toolbar's Where Am I? button while nothing is announced."
+    },
     "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay." : {
       "comment" : "VoiceOver hint and tooltip of the Log location pop-up in the Storage settings. %1$@ and %2$@ are the names of its two choices, as the pop-up lists them, and %3$@ is the folder's path on this Mac, which stays as written.",
       "localizations" : {
@@ -4577,10 +5728,53 @@
       }
     },
     "Words per minute" : {
-      "comment" : "Title of the default speed slider in the Voice settings."
+      "comment" : "Label of the voice sheet's speed slider, shown beside it.\nTitle of the default speed slider in the Voice settings."
+    },
+    "Writes the title, author, publisher, and date into the library's copy of this book." : {
+      "comment" : "First sentence of the hint of the metadata editor's switch that also writes the EPUB file."
+    },
+    "Year" : {
+      "comment" : "Name of the book information sheet's field for an audiobook's year; VoiceOver reads it as the field's label."
+    },
+    "Your edited text was also kept as %@, in the book's package." : {
+      "comment" : "Sentence saying where a backup of the user's edited text was kept. %@ is a file name such as content.md.edited-20261004T123012Z, which stays as written."
     },
     "Your library is empty. Add to Library adds a book." : {
       "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label."
+    },
+    "at %@ of %@ at %@" : {
+      "comment" : "Part of the text Copy Reading Position copies, for a text book. %1$@ is the time reached and %2$@ the book's length, both written as clock times such as 2:10:24; %3$@ is the reading speed they count at, such as \"500 words a minute\".",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "at %1$@ of %2$@ at %3$@"
+          }
+        }
+      }
+    },
+    "at %@ of %@ in the recording" : {
+      "comment" : "Part of the text Copy Reading Position copies, for an audiobook. %1$@ is the time reached and %2$@ the recording's length, both written as clock times such as 2:13:05.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "at %1$@ of %2$@ in the recording"
+          }
+        }
+      }
+    },
+    "before page %@" : {
+      "comment" : "Where the cursor is, said after \"the cursor is\": before the book's first page. %@ is the first page's label, an identifier written without digit grouping."
+    },
+    "content.md is only in the cloud, so TextMouth leaves it as it is." : {
+      "comment" : "Reason after a colon: a rebuild left the book's text file alone because it is only in the cloud. content.md is a file name and stays as written."
+    },
+    "edited by hand" : {
+      "comment" : "Words that follow a field's name in what VoiceOver says, when the user typed that field's value themselves. Begins in lower case, as it follows a comma."
+    },
+    "eighth" : {
+      "comment" : "Ordinal word 8th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
     },
     "fading out" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
@@ -4593,11 +5787,83 @@
         }
       }
     },
+    "fifth" : {
+      "comment" : "Ordinal word 5th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "first" : {
+      "comment" : "Ordinal word 1st, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "fourth" : {
+      "comment" : "Ordinal word 4th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
     "good" : {
       "comment" : "A word describing the microphone's loudness in the Record window: a voice at a good level. Lower case, since it follows figures."
     },
+    "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens." : {
+      "comment" : "Reason after a colon, for a book whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app."
+    },
+    "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows." : {
+      "comment" : "Reason after a colon, for an audiobook whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app."
+    },
+    "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows." : {
+      "comment" : "Reason after a colon: the user added words to a chapter of a transcript that has no speech; begins in lower case."
+    },
+    "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows." : {
+      "comment" : "Reason after a colon: the user changed a chapter's heading in an edited transcript; begins in lower case."
+    },
+    "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows." : {
+      "comment" : "Reason after a colon: the edited transcript's number of chapters no longer matches the audiobook's; begins in lower case. %1$@ and %2$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows."
+          }
+        }
+      }
+    },
+    "it has no chapter with any text. Undo the change and save again, and the book opens." : {
+      "comment" : "Reason after a colon, for a book whose edited text has no chapter with any text; begins in lower case."
+    },
+    "it has no chapter with any text. Undo the change and save again, and the text shows." : {
+      "comment" : "Reason after a colon, for an audiobook whose edited text has no chapter with any text; begins in lower case."
+    },
+    "it isn't UTF-8 text. Save it as UTF-8, and the book opens." : {
+      "comment" : "Reason after a colon, for a book whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding."
+    },
+    "it isn't UTF-8 text. Save it as UTF-8, and the text shows." : {
+      "comment" : "Reason after a colon, for an audiobook whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding."
+    },
+    "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens." : {
+      "comment" : "Reason after a colon, for a book whose edited text nests one chapter too deeply; begins in lower case. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens."
+          }
+        }
+      }
+    },
+    "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows." : {
+      "comment" : "Reason after a colon, for an audiobook whose edited text nests one chapter too deeply; begins in lower case. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows."
+          }
+        }
+      }
+    },
     "loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: close to the most a recording can hold. Lower case, since it follows figures."
+    },
+    "manifest.json could not be read." : {
+      "comment" : "Reason an edited manifest.json could not be read back. manifest.json is a file name and stays as written."
+    },
+    "manifest.json has segments, which TextMouth writes only for a DAISY book it converts." : {
+      "comment" : "First sentence of a reason an edited manifest.json was refused. manifest.json is a file name and stays as written; DAISY is a book format."
     },
     "min" : {
       "comment" : "Short for minutes, shown after the sleep timer sheet's custom minutes field. Hidden from VoiceOver.",
@@ -4656,11 +5922,60 @@
         }
       }
     },
+    "ninth" : {
+      "comment" : "Ordinal word 9th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "no copy of the edited text could be kept, so TextMouth leaves content.md as it is." : {
+      "comment" : "Reason after a colon: a rebuild left the book's text alone because no backup could be made; begins in lower case. content.md is a file name and stays as written."
+    },
+    "on page %@" : {
+      "comment" : "Where the cursor is, said after \"the cursor is\": on a page. %@ is the page's label, an identifier written without digit grouping."
+    },
+    "on the %@ page labelled %@" : {
+      "comment" : "Where the cursor is, said after \"the cursor is\": on one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as \"second\" or \"11th\"; %2$@ is the label, an identifier written without digit grouping.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "on the %1$@ page labelled %2$@"
+          }
+        }
+      }
+    },
     "quiet" : {
       "comment" : "A word describing the microphone's loudness in the Record window: too quiet to be heard well. Lower case, since it follows figures."
     },
+    "reading the text of %lld books again in another encoding" : {
+      "comment" : "What the Mac is still doing when the user quits, said after \"Quit is waiting for\" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "reading a book's text again in another encoding"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "reading the text of %lld books again in another encoding"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "regex" : {
       "comment" : "A small tag in a substitution rule's row: the rule's pattern is a regular expression. Short for regular expression, in lower case."
+    },
+    "second" : {
+      "comment" : "Ordinal word 2nd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "seventh" : {
+      "comment" : "Ordinal word 7th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
     },
     "showing up to %lld in each book" : {
       "comment" : "Note on a finished search's status: the list shows at most this many matches of each book. %lld is the number of matches shown for each book. Starts in lower case because it follows a semicolon.",
@@ -4688,6 +6003,9 @@
     "silent" : {
       "comment" : "A word describing the microphone's loudness in the Record window: no sound reaches TextMouth. Lower case, since it follows figures."
     },
+    "sixth" : {
+      "comment" : "Ordinal word 6th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
     "stops at the end of the book" : {
       "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
       "localizations" : {
@@ -4709,6 +6027,30 @@
           }
         }
       }
+    },
+    "tenth" : {
+      "comment" : "Ordinal word 10th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
+    },
+    "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it." : {
+      "comment" : "Reason after a colon: an audiobook's audio changed after it was transcribed, so its transcript no longer fits; begins in lower case."
+    },
+    "the audiobook's transcript can't be read now, so the edit can't be taken into it." : {
+      "comment" : "Reason after a colon: an audiobook's transcript can't be read, so an edit can't be taken into it; begins in lower case."
+    },
+    "the book's own file changed too. Open the book again to read its text from that file." : {
+      "comment" : "Reason after a colon: the book's own file changed after the text was edited; begins in lower case."
+    },
+    "the book's record can't be changed now. TextMouth tries again when you next save or return." : {
+      "comment" : "Reason after a colon: an edit could not be saved to the library now; begins in lower case."
+    },
+    "the book's transcript changed too. Open the book again to read its text from that transcript." : {
+      "comment" : "Reason after a colon: the book's transcript changed after the text was edited; begins in lower case."
+    },
+    "the edited transcript can't be laid over the audiobook's audio." : {
+      "comment" : "Reason after a colon: an edited transcript could not be matched to the audiobook's audio; begins in lower case."
+    },
+    "third" : {
+      "comment" : "Ordinal word 3rd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
     },
     "too loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: peaks reach the top and are cut off. Lower case, since it follows figures."

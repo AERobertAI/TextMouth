@@ -10,29 +10,42 @@ final class PhoneReaderVocabularyTests: XCTestCase {
         let macView = try Self.source("Views/Reader/PlaybackControlsView.swift")
 
         XCTAssertEqual(PhoneReaderVocabulary.skipBackward(by: .sentence), "Skip backward: Sentence")
-        XCTAssertTrue(macView.contains(".accessibilityLabel(\"Skip backward: \\(viewModel.playbackSkipBackwardUnit.rawValue)\")"))
+        XCTAssertEqual(PhoneReaderVocabulary.skipBackward(by: .sentence), PlaybackControlsWording.skipBackward(unit: "Sentence"))
+        XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.skipBackward(unit: viewModel.playbackSkipBackwardUnit.rawValue))"))
         XCTAssertEqual(PhoneReaderVocabulary.skipForward(by: .page), "Skip forward: Page")
-        XCTAssertTrue(macView.contains(".accessibilityLabel(\"Skip forward: \\(viewModel.playbackSkipForwardUnit.rawValue)\")"))
-        XCTAssertTrue(macView.contains(".accessibilityLabel(\"\(PhoneReaderVocabulary.navigationUnit)\")"))
+        XCTAssertEqual(PhoneReaderVocabulary.skipForward(by: .page), PlaybackControlsWording.skipForward(unit: "Page"))
+        XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.skipForward(unit: viewModel.playbackSkipForwardUnit.rawValue))"))
+        XCTAssertEqual(PhoneReaderVocabulary.navigationUnit, PlaybackControlsWording.unitLabel)
+        XCTAssertTrue(macView.contains(".accessibilityLabel(PlaybackControlsWording.unitLabel)"))
+        XCTAssertEqual(PhoneReaderVocabulary.removeBookmark, PlaybackControlsWording.removeBookmark)
+        XCTAssertEqual(PhoneReaderVocabulary.addBookmark, PlaybackControlsWording.addBookmark)
         XCTAssertTrue(macView.contains(
-            "viewModel.hasNearbyBookmark ? \"\(PhoneReaderVocabulary.removeBookmark)\" : \"\(PhoneReaderVocabulary.addBookmark)\""
+            "viewModel.hasNearbyBookmark ? PlaybackControlsWording.removeBookmark : PlaybackControlsWording.addBookmark"
         ))
         XCTAssertEqual(PhoneReaderVocabulary.wordsPerMinute(200), "200 words per minute")
-        XCTAssertTrue(macView.contains("\"\\(Int(viewModel.currentWPM)) words per minute\""))
+        XCTAssertEqual(PhoneReaderVocabulary.wordsPerMinute(200), PlaybackControlsWording.wordsPerMinute(200))
+        XCTAssertTrue(macView.contains("PlaybackControlsWording.wordsPerMinute(Int(viewModel.currentWPM))"))
     }
 
     /// The toolbar's and the loading screen's words are ReaderView's.
     func testTheReadersToolbarAndLoadingWordsAreTheMacs() throws {
         let macView = try Self.source("Views/Reader/ReaderView.swift")
 
-        XCTAssertTrue(macView.contains("spokenLabel: \"\(PhoneReaderVocabulary.returnToPreviousPosition)\""))
-        XCTAssertTrue(macView.contains("toolbarButton(\"\(PhoneReaderVocabulary.headings)\""))
-        XCTAssertTrue(macView.contains("toolbarButton(\"\(PhoneReaderVocabulary.bookmarks)\""))
-        XCTAssertTrue(macView.contains("toolbarButton(\"\(PhoneReaderVocabulary.sleepTimer)\""))
-        XCTAssertTrue(macView.contains("\"\(PhoneLibraryVocabulary.bookInfo)\","))
-        XCTAssertTrue(macView.contains("ProgressView(\"\(PhoneReaderVocabulary.loadingBook)\")"))
+        XCTAssertEqual(PhoneReaderVocabulary.returnToPreviousPosition, ReaderViewWording.returnSpoken)
+        XCTAssertTrue(macView.contains("spokenLabel: ReaderViewWording.returnSpoken"))
+        XCTAssertEqual(PhoneReaderVocabulary.headings, ReaderViewWording.headingsTitle)
+        XCTAssertTrue(macView.contains("toolbarButton(ReaderViewWording.headingsTitle"))
+        XCTAssertEqual(PhoneReaderVocabulary.bookmarks, ReaderViewWording.bookmarksTitle)
+        XCTAssertTrue(macView.contains("toolbarButton(ReaderViewWording.bookmarksTitle"))
+        XCTAssertEqual(PhoneReaderVocabulary.sleepTimer, ReaderViewWording.sleepTimerTitle)
+        XCTAssertTrue(macView.contains("toolbarButton(ReaderViewWording.sleepTimerTitle"))
+        XCTAssertEqual(PhoneLibraryVocabulary.bookInfo, ReaderViewWording.bookInfoTitle)
+        XCTAssertTrue(macView.contains("ReaderViewWording.bookInfoTitle,"))
+        XCTAssertEqual(PhoneReaderVocabulary.loadingBook, ReaderViewWording.loadingBook)
+        XCTAssertTrue(macView.contains("ProgressView(ReaderViewWording.loadingBook)"))
         XCTAssertEqual(PhoneReaderVocabulary.loading("Emma"), "Loading Emma")
-        XCTAssertTrue(macView.contains(".accessibilityLabel(\"Loading \\(viewModel.book.title)\")"))
+        XCTAssertEqual(PhoneReaderVocabulary.loading("Emma"), ReaderViewWording.loading(title: "Emma"))
+        XCTAssertTrue(macView.contains(".accessibilityLabel(ReaderViewWording.loading(title: viewModel.book.title))"))
     }
 
     /// Where Am I?'s parts are the shared summaries' own phrases.
@@ -43,11 +56,11 @@ final class PhoneReaderVocabularyTests: XCTestCase {
         XCTAssertTrue(shared.contains("String(format: \"%.0f percent\", percentComplete)"))
         XCTAssertEqual(PhoneReaderVocabulary.remaining(10_800, speed: nil), "3 hours remaining")
         XCTAssertTrue(shared.contains(
-            "\"\\(TimeFormatting.spoken(timeRemaining)) remaining\\(ReaderTimeWording.spokenSpeed(speed))\""
+            "ReaderTimeWording.remainingSpoken(TimeFormatting.spoken(timeRemaining), speed: speed)"
         ))
         XCTAssertEqual(PhoneReaderVocabulary.remainingInHeading(720), "12 minutes remaining in this heading")
         XCTAssertTrue(shared.contains(
-            "\"\\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading\""
+            "String(localized: \"\\(TimeFormatting.spoken(timeRemainingInHeading)) remaining in this heading\""
         ))
     }
 
