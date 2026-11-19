@@ -7072,7 +7072,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pueden agregar libros mientras se traslada la biblioteca."
+            "value" : "No se pueden agregar libros mientras se mueve la biblioteca."
           }
         }
       }
@@ -7097,7 +7097,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pueden abrir libros mientras se traslada la biblioteca."
+            "value" : "No se pueden abrir libros mientras se mueve la biblioteca."
           }
         }
       }
@@ -7238,7 +7238,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cancelar traslado"
+            "value" : "Cancelar movimiento"
           }
         }
       }
@@ -7647,7 +7647,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Capítulo %1$@, de %2$@"
+            "value" : "Capítulo %1$@, desde %2$@"
           }
         }
       }
@@ -8026,7 +8026,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige una ubicación vacía y vuelve a intentarlo."
+            "value" : "Elige una ubicación vacía e intenta de nuevo."
           }
         }
       }
@@ -8506,7 +8506,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conéctate a internet y vuelve a intentarlo."
+            "value" : "Conéctate a internet e intenta de nuevo."
           }
         }
       }
@@ -10710,7 +10710,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de un plazo corto vuelve a armar el último temporizador de apagado, útil cuando uno acaba de expirar."
+            "value" : "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta vuelve a armar el último temporizador de apagado, útil cuando uno acaba de expirar."
           }
         }
       }
@@ -11577,7 +11577,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plazo del gesto"
+            "value" : "Ventana de tiempo del gesto"
           }
         }
       }
@@ -13056,7 +13056,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aún no se pudo preparar su texto para la lectura; TextMouth lo intentará de nuevo más tarde."
+            "value" : "Aún no se pudo preparar su texto para la lectura; TextMouth intentará de nuevo más tarde."
           }
         }
       }
@@ -13968,7 +13968,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comprueba que se pueda escribir en su carpeta y vuelve a intentarlo."
+            "value" : "Comprueba que se pueda escribir en su carpeta e intenta de nuevo."
           }
         }
       }
@@ -19612,7 +19612,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unidad de retroceso con Mayúsculas"
+            "value" : "Unidad para retroceder con Mayúsculas"
           }
         }
       }
@@ -19623,7 +19623,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unidad de avance con Mayúsculas"
+            "value" : "Unidad para avanzar con Mayúsculas"
           }
         }
       }
@@ -20061,7 +20061,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unidad de retroceso"
+            "value" : "Unidad para retroceder"
           }
         }
       }
@@ -20098,7 +20098,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unidad de avance"
+            "value" : "Unidad para avanzar"
           }
         }
       }
@@ -21279,16 +21279,48 @@
       }
     },
     "Test input text" : {
-      "comment" : "VoiceOver label of the test input field in the substitution rule editor."
+      "comment" : "VoiceOver label of the test input field in the substitution rule editor.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto de entrada de prueba"
+          }
+        }
+      }
     },
     "Test result: %@" : {
-      "comment" : "VoiceOver label of the text a substitution rule made of the test input. %@ is the result."
+      "comment" : "VoiceOver label of the text a substitution rule made of the test input. %@ is the result.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Resultado de la prueba: %@"
+          }
+        }
+      }
     },
     "Test this rule against the input" : {
-      "comment" : "VoiceOver label of the Test button in the substitution rule editor."
+      "comment" : "VoiceOver label of the Test button in the substitution rule editor.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Probar esta regla con el texto de entrada"
+          }
+        }
+      }
     },
     "Text" : {
-      "comment" : "Name of the Settings tab for text substitution rules and repeated symbols."
+      "comment" : "Name of the Settings tab for text substitution rules and repeated symbols.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Texto"
+          }
+        }
+      }
     },
     "Text Encoding" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row, and pop-up, that names the encoding."
@@ -21318,6 +21350,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Text extraction progress: %1$lld of %2$lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Progreso de la extracción de texto: %1$lld de %2$lld"
           }
         }
       }
@@ -21417,10 +21455,26 @@
       "comment" : "Why a book of one page of a picture was refused at import: text recognition could not read its only page. %@ names the page and why, such as \"page 1 (its picture could not be decoded)\"."
     },
     "Text substitution rules could not be saved: %@" : {
-      "comment" : "Failure notice: the text substitution rules could not be saved. %@ is the reason, a sentence from the system."
+      "comment" : "Failure notice: the text substitution rules could not be saved. %@ is the reason, a sentence from the system.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudieron guardar las reglas de sustitución de texto: %@"
+          }
+        }
+      }
     },
     "Text substitution rules saved." : {
-      "comment" : "Announcement after a retry saved the text substitution rules that had failed to save."
+      "comment" : "Announcement after a retry saved the text substitution rules that had failed to save.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reglas de sustitución de texto guardadas."
+          }
+        }
+      }
     },
     "Text to find in every book" : {
       "comment" : "Placeholder of the empty search field in the Search Library window."
@@ -21432,7 +21486,15 @@
       "comment" : "Announcement after the user saved an edited text of a feed episode's transcript, followed by a note about where the transcript stays."
     },
     "TextMouth Is Open on Another Mac" : {
-      "comment" : "Title of the warning shown when another Mac has this library open too."
+      "comment" : "Title of the warning shown when another Mac has this library open too.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth está abierto en otra Mac"
+          }
+        }
+      }
     },
     "TextMouth Quit to Protect Your Mac" : {
       "comment" : "Title of the alert at launch telling that TextMouth quit at its last run because its memory grew too large while a book played."
@@ -21476,6 +21538,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "TextMouth can't read the folder %1$@: %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no puede leer la carpeta %1$@: %2$@."
           }
         }
       }
@@ -21579,7 +21647,15 @@
       }
     },
     "TextMouth could not check whether to move it to the Trash." : {
-      "comment" : "Why a book's original was kept: TextMouth could not read the choice about the Trash. \"It\" is the original file."
+      "comment" : "Why a book's original was kept: TextMouth could not read the choice about the Trash. \"It\" is the original file.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo comprobar si debía moverlo a la Papelera."
+          }
+        }
+      }
     },
     "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again." : {
       "comment" : "What the duplicate question says when Keep Both could not take the waiting mark off the new copy. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button."
@@ -21588,10 +21664,26 @@
       "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence."
     },
     "TextMouth could not move %@ to the current library format." : {
-      "comment" : "First sentence of the alert about books that could not move into the current library format. %@ is a count of books, such as \"3 books\"."
+      "comment" : "First sentence of the alert about books that could not move into the current library format. %@ is a count of books, such as \"3 books\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo pasar %@ al formato actual de la biblioteca."
+          }
+        }
+      }
     },
     "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books." : {
-      "comment" : "First sentence of the library index recovery sheet: what the unreadable file holds."
+      "comment" : "First sentence of the library index recovery sheet: what the unreadable file holds.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo leer el índice de su biblioteca, el archivo que guarda tus carpetas, los ajustes de orden y el orden de tus libros."
+          }
+        }
+      }
     },
     "TextMouth could not read the cue sheet “%@”, so its headings were not used." : {
       "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it could not be read. %@ is the cue sheet's name."
@@ -21600,22 +21692,70 @@
       "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because it could not be read. %@ is the label file's name."
     },
     "TextMouth could not read the reading list in the previous index." : {
-      "comment" : "Part of the outcome of saving a rebuilt library index: the reading list could not be kept from the old index."
+      "comment" : "Part of the outcome of saving a rebuilt library index: the reading list could not be kept from the old index.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo leer la lista de lectura del índice anterior."
+          }
+        }
+      }
     },
     "TextMouth could not read the reading list in the unreadable index." : {
-      "comment" : "Part of the library index recovery sheet: the reading list could not be read from the unreadable index."
+      "comment" : "Part of the library index recovery sheet: the reading list could not be read from the unreadable index.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo leer la lista de lectura del índice ilegible."
+          }
+        }
+      }
     },
     "TextMouth could not read the reading list or the sort settings in the previous index." : {
-      "comment" : "Part of the outcome of saving a rebuilt library index: neither the reading list nor the sort settings could be kept from the old index."
+      "comment" : "Part of the outcome of saving a rebuilt library index: neither the reading list nor the sort settings could be kept from the old index.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo leer la lista de lectura ni los ajustes de orden del índice anterior."
+          }
+        }
+      }
     },
     "TextMouth could not read the reading list or the sort settings in the unreadable index." : {
-      "comment" : "Part of the library index recovery sheet: neither the reading list nor the sort settings could be read from the unreadable index."
+      "comment" : "Part of the library index recovery sheet: neither the reading list nor the sort settings could be read from the unreadable index.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo leer la lista de lectura ni los ajustes de orden del índice ilegible."
+          }
+        }
+      }
     },
     "TextMouth could not read the sort settings in the previous index." : {
-      "comment" : "Part of the outcome of saving a rebuilt library index: the sort settings could not be kept from the old index."
+      "comment" : "Part of the outcome of saving a rebuilt library index: the sort settings could not be kept from the old index.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo leer los ajustes de orden del índice anterior."
+          }
+        }
+      }
     },
     "TextMouth could not read the sort settings in the unreadable index." : {
-      "comment" : "Part of the library index recovery sheet: the sort settings could not be read from the unreadable index."
+      "comment" : "Part of the library index recovery sheet: the sort settings could not be read from the unreadable index.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo leer los ajustes de orden del índice ilegible."
+          }
+        }
+      }
     },
     "TextMouth could not read “%@”." : {
       "comment" : "Message of the alert when a pronunciation lexicon file could not be read at all. %@ is the file's name."
@@ -21624,10 +21764,26 @@
       "comment" : "First sentence of the error shown when Remove from Library Only cannot mark the book's package, so the book stays in the library. %@ is the package's folder name. The sentence that says why follows it."
     },
     "TextMouth could not save a copy of %@, so it left that file unchanged." : {
-      "comment" : "First sentence of why Rebuild Library Index replaced nothing. %@ is the file's path."
+      "comment" : "First sentence of why Rebuild Library Index replaced nothing. %@ is the file's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo guardar una copia de %@, así que dejó ese archivo sin cambios."
+          }
+        }
+      }
     },
     "TextMouth could not save a copy of the unreadable file." : {
-      "comment" : "First sentence of the library index recovery sheet when no copy of the unreadable file was saved."
+      "comment" : "First sentence of the library index recovery sheet when no copy of the unreadable file was saved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo guardar una copia del archivo ilegible."
+          }
+        }
+      }
     },
     "TextMouth could not save “%@”." : {
       "comment" : "Message of the alert when a pronunciation lexicon file could not be saved. %@ is the file's name."
@@ -21636,7 +21792,15 @@
       "comment" : "Why a braille translation failed, when no more is known."
     },
     "TextMouth couldn't get the library's files from %@." : {
-      "comment" : "First sentence of why the library can't be used: fetching its files from the cloud failed. %@ is the cloud service's name, or \"the cloud\" when it is unknown."
+      "comment" : "First sentence of why the library can't be used: fetching its files from the cloud failed. %@ is the cloud service's name, or \"the cloud\" when it is unknown.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo obtener los archivos de la biblioteca desde %@."
+          }
+        }
+      }
     },
     "TextMouth couldn't keep the earlier text beside the new download, so the article stays as it was." : {
       "comment" : "Why a feed article's new download failed: its earlier text could not be kept beside it."
@@ -21651,7 +21815,15 @@
       "comment" : "Why Subscribe could not make the feed's folder, when no better reason is known."
     },
     "TextMouth couldn't open %@ in Finder." : {
-      "comment" : "Shown under the Show Logs in Finder button when Finder could not open the folder. %@ is the folder's full path, which stays as written."
+      "comment" : "Shown under the Show Logs in Finder button when Finder could not open the folder. %@ is the folder's full path, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no pudo abrir %@ en Finder."
+          }
+        }
+      }
     },
     "TextMouth couldn't read %lld files, so this may be incomplete." : {
       "comment" : "Sentence of Use This Library's account: some files could not be read. %lld is how many files, a count.",
@@ -21712,7 +21884,15 @@
       "comment" : "Second sentence of Use This Library's account when the comparison could not be made and no reason is known."
     },
     "TextMouth does not have permission to read the file." : {
-      "comment" : "Why the library index could not be loaded: macOS refused TextMouth permission to read it."
+      "comment" : "Why the library index could not be loaded: macOS refused TextMouth permission to read it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no tiene permiso para leer el archivo."
+          }
+        }
+      }
     },
     "TextMouth does not open RAR archives. Unpack them, then import what they hold." : {
       "comment" : "Advice after the refusal of a RAR archive that is no comic."
@@ -21773,7 +21953,15 @@
       "comment" : "Why a spoken audio export was refused: another one is running."
     },
     "TextMouth first saves a copy of the old file, and does not rebuild if it cannot." : {
-      "comment" : "Last sentence of what Rebuild Library Index does when no copy has been saved yet: it saves one first."
+      "comment" : "Last sentence of what Rebuild Library Index does when no copy has been saved yet: it saves one first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth primero guarda una copia del archivo anterior, y no reconstruye si no puede."
+          }
+        }
+      }
     },
     "TextMouth found no braille tables in its bundle." : {
       "comment" : "Shown in the Braille tab of Settings in place of the pop-ups when the app holds no braille tables."
@@ -21785,7 +21973,15 @@
       "comment" : "Line of the Clean Up Transcript sheet when the rules that come with the app are empty. Edit Rules… is the name of a button of the sheet."
     },
     "TextMouth hasn't merged it or removed it." : {
-      "comment" : "Last sentence of the report of a conflicting copy: nothing was done with it. \"It\" is the copy."
+      "comment" : "Last sentence of the report of a conflicting copy: nothing was done with it. \"It\" is the copy.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no la ha combinado ni la ha quitado."
+          }
+        }
+      }
     },
     "TextMouth hasn't read the latest save yet." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet."
@@ -21794,7 +21990,15 @@
       "comment" : "Why a book's headings could not be exported, after the file's name in a failure sentence such as \"Couldn't export Headings: ...\"."
     },
     "TextMouth is already moving its data directory." : {
-      "comment" : "First sentence of why an operation was refused: the library is already being moved."
+      "comment" : "First sentence of why an operation was refused: the library is already being moved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ya está moviendo su directorio de datos."
+          }
+        }
+      }
     },
     "TextMouth is already transcribing %@. Try again when that finishes." : {
       "comment" : "Error shown when a transcription is started while another runs. %@ is the title of the audiobook being transcribed."
@@ -21819,20 +22023,68 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld de minutos)."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld minuto)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth también está abierto en «%1$@» (activo hace %2$lld minutos)."
+                }
+              }
+            }
+          }
         }
       }
     },
     "TextMouth is also open on “%@” (active less than a minute ago)." : {
-      "comment" : "First sentence of the warning that another Mac has this library open. %@ is that Mac's name."
+      "comment" : "First sentence of the warning that another Mac has this library open. %@ is that Mac's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth también está abierto en «%@» (activo hace menos de un minuto)."
+          }
+        }
+      }
     },
     "TextMouth is finishing up before it quits: %@. It quits when that is done." : {
       "comment" : "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style."
     },
     "TextMouth is getting them now, and the library opens when they arrive." : {
-      "comment" : "Second sentence of why the library can't be used yet: the files are being fetched from the cloud, and the library opens by itself when they arrive. \"Them\" means the library's files named in the sentence before."
+      "comment" : "Second sentence of why the library can't be used yet: the files are being fetched from the cloud, and the library opens by itself when they arrive. \"Them\" means the library's files named in the sentence before.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los está obteniendo ahora, y la biblioteca se abre cuando lleguen."
+          }
+        }
+      }
     },
     "TextMouth is moving books between folders." : {
-      "comment" : "First sentence of why an operation was refused: books are being moved between folders."
+      "comment" : "First sentence of why an operation was refused: books are being moved between folders.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth está moviendo libros entre carpetas."
+          }
+        }
+      }
     },
     "TextMouth is moving books between folders. Wait until that finishes, then choose %@ again." : {
       "comment" : "Why Replace Existing waits: TextMouth is moving books between folders. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again."
@@ -21849,10 +22101,26 @@
       }
     },
     "TextMouth is opening again on another library, so they stay unsaved in this one." : {
-      "comment" : "Why a failed save stays unsaved: TextMouth is switching to another library. \"They\" is the changes that could not be saved."
+      "comment" : "Why a failed save stays unsaved: TextMouth is switching to another library. \"They\" is the changes that could not be saved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth se está abriendo de nuevo con otra biblioteca, así que siguen sin guardarse en esta."
+          }
+        }
+      }
     },
     "TextMouth is opening again on another library, so they stay where they are in this one." : {
-      "comment" : "Why a failed move of files stays undone: TextMouth is switching to another library. \"They\" is the files."
+      "comment" : "Why a failed move of files stays undone: TextMouth is switching to another library. \"They\" is the files.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth se está abriendo de nuevo con otra biblioteca, así que siguen donde están en esta."
+          }
+        }
+      }
     },
     "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open." : {
       "comment" : "Explains the question about the audio editor's unsaved edits asked as TextMouth quits: what Discard and Cancel do."
@@ -21870,7 +22138,15 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with other braille file characters, as the encoding's sentence says it for any other book (TextEncodingWording.readingAgainRefusal(bookTitle:)): a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle."
     },
     "TextMouth is rebuilding its data directory." : {
-      "comment" : "First sentence of why an operation was refused: the library is being rebuilt."
+      "comment" : "First sentence of why an operation was refused: the library is being rebuilt.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth está reconstruyendo su directorio de datos."
+          }
+        }
+      }
     },
     "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again." : {
       "comment" : "Why Replace Existing waits: TextMouth is rebuilding its data directory, the folder that holds the library. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again."
@@ -21885,13 +22161,37 @@
       "comment" : "The reason that ends \"Changes to the feed “Planet Money” could not be saved:\" in the quit prompt and banner. Them are the feed's changes."
     },
     "TextMouth is still using %@." : {
-      "comment" : "Second sentence of why a move of the data directory did not finish: TextMouth kept using the current data directory. %@ is the current data directory's path."
+      "comment" : "Second sentence of why a move of the data directory did not finish: TextMouth kept using the current data directory. %@ is the current data directory's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth sigue usando %@."
+          }
+        }
+      }
     },
     "TextMouth is switching to another library and opening again on it." : {
-      "comment" : "Why an operation was refused: TextMouth is switching to another library."
+      "comment" : "Why an operation was refused: TextMouth is switching to another library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth está cambiando a otra biblioteca y se abrirá de nuevo con ella."
+          }
+        }
+      }
     },
     "TextMouth isn't allowed to make changes in %@." : {
-      "comment" : "First sentence of why the chosen location can't be used: macOS does not let TextMouth write there. %@ is the folder's path."
+      "comment" : "First sentence of why the chosen location can't be used: macOS does not let TextMouth write there. %@ is the folder's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth no tiene permiso para hacer cambios en %@."
+          }
+        }
+      }
     },
     "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth." : {
       "comment" : "What the notifications setting's help says while macOS does not allow TextMouth to post notifications. System Settings and Notifications are macOS's own names, in the language of macOS."
@@ -21906,7 +22206,15 @@
       "comment" : "First sentence of the message when an automatic rebuild left a book's edited text alone. %@ is the book's title."
     },
     "TextMouth left it there and is still using %@." : {
-      "comment" : "Second sentence of why a move of the data directory did not finish, when one item appeared: TextMouth left the item and kept using the current data directory. %@ is the current data directory's path.\nSecond sentence of why a move of the data directory did not finish: TextMouth left what was put there and kept using the current data directory. %@ is the current data directory's path."
+      "comment" : "Second sentence of why a move of the data directory did not finish, when one item appeared: TextMouth left the item and kept using the current data directory. %@ is the current data directory's path.\nSecond sentence of why a move of the data directory did not finish: TextMouth left what was put there and kept using the current data directory. %@ is the current data directory's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth lo dejó allí y sigue usando %@."
+          }
+        }
+      }
     },
     "TextMouth left out %@, which hold no sound it can read." : {
       "comment" : "Notice that a book left out several files that hold no sound TextMouth can read. %@ is the files' count and names, such as \"2 files, “a.spx” and “b.spx”\"."
@@ -21921,19 +22229,51 @@
       "comment" : "Notice that a book left out one file that only TextMouth's own converter reads, because the converter is missing from the app. %@ is the file's name in curly quotes. Advice to install the app again follows."
     },
     "TextMouth left them there and is still using %@." : {
-      "comment" : "Second sentence of why a move of the data directory did not finish, when several items appeared: TextMouth left the items and kept using the current data directory. %@ is the current data directory's path."
+      "comment" : "Second sentence of why a move of the data directory did not finish, when several items appeared: TextMouth left the items and kept using the current data directory. %@ is the current data directory's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los dejó allí y sigue usando %@."
+          }
+        }
+      }
     },
     "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it." : {
       "comment" : "The line under the folder picker of the Add Feed sheet. %@ is the library folder chosen, or the name of the library's top level."
     },
     "TextMouth makes a new library index from the books in this folder." : {
-      "comment" : "First sentence of the question asked before opening the library without its index file."
+      "comment" : "First sentence of the question asked before opening the library without its index file.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth crea un índice nuevo de la biblioteca con los libros de esta carpeta."
+          }
+        }
+      }
     },
     "TextMouth moved %@ to the current library format, but with a problem:" : {
-      "comment" : "Lead-in of the alert about one book that moved into the current library format with a problem. %@ is a count of books, such as \"1 book\". The book's line follows."
+      "comment" : "Lead-in of the alert about one book that moved into the current library format with a problem. %@ is a count of books, such as \"1 book\". The book's line follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pasó %@ al formato actual de la biblioteca, pero con un problema:"
+          }
+        }
+      }
     },
     "TextMouth moved %@ to the current library format, but with problems:" : {
-      "comment" : "Lead-in of the alert about several books that moved into the current library format with problems. %@ is a count of books, such as \"3 books\". The books' lines follow."
+      "comment" : "Lead-in of the alert about several books that moved into the current library format with problems. %@ is a count of books, such as \"3 books\". The books' lines follow.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pasó %@ al formato actual de la biblioteca, pero con problemas:"
+          }
+        }
+      }
     },
     "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back." : {
       "comment" : "Alert after the launch moved the new copies of four or more duplicate books to the Trash, because their questions were never answered. %lld is the number of books. \"Put Back\" is Finder's command in the Trash.",
@@ -21965,16 +22305,48 @@
       "comment" : "Alert after the launch moved the new copy of one duplicate book to the Trash, because its question was never answered. %@ is the book's title. \"Put Back\" is Finder's command in the Trash."
     },
     "TextMouth moves them back once it has finished moving books between folders." : {
-      "comment" : "Why a failed move of files waits: it runs when books have been moved between folders. \"Them\" is the files."
+      "comment" : "Why a failed move of files waits: it runs when books have been moved between folders. \"Them\" is the files.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los devuelve cuando termine de mover libros entre carpetas."
+          }
+        }
+      }
     },
     "TextMouth moves them back once it has finished rebuilding its data directory." : {
-      "comment" : "Why a failed move of files waits: it runs when the data directory has been rebuilt. \"Them\" is the files."
+      "comment" : "Why a failed move of files waits: it runs when the data directory has been rebuilt. \"Them\" is the files.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los devuelve cuando termine de reconstruir su directorio de datos."
+          }
+        }
+      }
     },
     "TextMouth moves them back once the move of its data directory ends." : {
-      "comment" : "Why a failed move of files waits: it runs when the move of the data directory ends. \"Them\" is the files."
+      "comment" : "Why a failed move of files waits: it runs when the move of the data directory ends. \"Them\" is the files.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los devuelve cuando termine el traslado de su directorio de datos."
+          }
+        }
+      }
     },
     "TextMouth needs the drive “%@” connected to open the library." : {
-      "comment" : "What using a library on another drive means. %@ is the drive's name."
+      "comment" : "What using a library on another drive means. %@ is the drive's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth necesita que la unidad «%@» esté conectada para abrir la biblioteca."
+          }
+        }
+      }
     },
     "TextMouth opens the book's manifest.json in your text editor." : {
       "comment" : "First sentence of the Edit Manifest explanation. manifest.json is a file name and stays as written."
@@ -22025,13 +22397,37 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen."
     },
     "TextMouth saves them once it has finished moving books between folders." : {
-      "comment" : "Why a failed save waits: it runs when books have been moved between folders. \"Them\" is the changes that could not be saved."
+      "comment" : "Why a failed save waits: it runs when books have been moved between folders. \"Them\" is the changes that could not be saved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los guarda cuando termine de mover libros entre carpetas."
+          }
+        }
+      }
     },
     "TextMouth saves them once it has finished rebuilding its data directory." : {
-      "comment" : "Why a failed save waits: it runs when the data directory has been rebuilt. \"Them\" is the changes that could not be saved."
+      "comment" : "Why a failed save waits: it runs when the data directory has been rebuilt. \"Them\" is the changes that could not be saved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los guarda cuando termine de reconstruir su directorio de datos."
+          }
+        }
+      }
     },
     "TextMouth saves them once the move of its data directory ends." : {
-      "comment" : "Why a failed save waits: it runs when the move of the data directory ends. \"Them\" is the changes that could not be saved."
+      "comment" : "Why a failed save waits: it runs when the move of the data directory ends. \"Them\" is the changes that could not be saved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth los guarda cuando termine el traslado de su directorio de datos."
+          }
+        }
+      }
     },
     "TextMouth skipped %lld entries of “%@”: %@." : {
       "comment" : "Notice after a playlist imported with entries left out. %1$lld is the number of entries skipped, %2$@ the playlist's name, and %3$@ the list of the entries, each with its reason in parentheses.",
@@ -22086,7 +22482,15 @@
       "comment" : "The first sentence of the confirmation before Unsubscribe, for a feed of episodes and articles."
     },
     "TextMouth waited for it." : {
-      "comment" : "Second sentence of why the library can't open: TextMouth waited for the missing file to arrive. \"It\" is the file named in the sentence before."
+      "comment" : "Second sentence of why the library can't open: TextMouth waited for the missing file to arrive. \"It\" is the file named in the sentence before.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth lo esperó."
+          }
+        }
+      }
     },
     "TextMouth will open the library in %@ instead of the one in %@, which isn't available." : {
       "comment" : "First sentence of the question asked before using another library while the one in use is not available. %1$@ is the chosen folder's path; %2$@ is the path of the library in use.",
@@ -22095,6 +22499,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "TextMouth will open the library in %1$@ instead of the one in %2$@, which isn't available."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth abrirá la biblioteca de %1$@ en lugar de la de %2$@, que no está disponible."
           }
         }
       }
@@ -22107,14 +22517,36 @@
             "state" : "new",
             "value" : "TextMouth will open the library in %1$@ the next time it opens, but it couldn't open again by itself: %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth abrirá la biblioteca de %1$@ la próxima vez que se abra, pero no pudo abrirse de nuevo por sí mismo: %2$@"
+          }
         }
       }
     },
     "TextMouth will quit and open again to load it." : {
-      "comment" : "Last sentence of the question asked before using another library: TextMouth opens again."
+      "comment" : "Last sentence of the question asked before using another library: TextMouth opens again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth saldrá y se abrirá de nuevo para cargarla."
+          }
+        }
+      }
     },
     "TextMouth will quit and open again to start it." : {
-      "comment" : "Last sentence of the question asked before starting a new library: TextMouth opens again."
+      "comment" : "Last sentence of the question asked before starting a new library: TextMouth opens again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth saldrá y se abrirá de nuevo para iniciarla."
+          }
+        }
+      }
     },
     "TextMouth will start a new, empty library in the default location, %@, instead of the library in %@, which isn't available." : {
       "comment" : "First sentence of the question asked before starting a new library. %1$@ is the default location's path; %2$@ is the path of the library in use, which is not available.",
@@ -22123,6 +22555,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "TextMouth will start a new, empty library in the default location, %1$@, instead of the library in %2$@, which isn't available."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth iniciará una biblioteca nueva y vacía en la ubicación predeterminada, %1$@, en lugar de la biblioteca de %2$@, que no está disponible."
           }
         }
       }
@@ -22135,14 +22573,36 @@
             "state" : "new",
             "value" : "TextMouth will stop using the library in %1$@ (%2$@) and open the library in %3$@ instead."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth dejará de usar la biblioteca de %1$@ (%2$@) y abrirá la biblioteca de %3$@."
+          }
         }
       }
     },
     "TextMouth writes %@ with a new identity for the library, and opens it." : {
-      "comment" : "First sentence of the question asked before giving the library a new identity file. %@ is the identity file's name, which stays as written."
+      "comment" : "First sentence of the question asked before giving the library a new identity file. %@ is the identity file's name, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth escribe %@ con una identidad nueva para la biblioteca y la abre."
+          }
+        }
+      }
     },
     "TextMouth writes %@ with the identity this Mac knows for the library, and opens it." : {
-      "comment" : "First sentence of the question asked before restoring the library's identity file. %@ is the identity file's name, which stays as written."
+      "comment" : "First sentence of the question asked before restoring the library's identity file. %@ is the identity file's name, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth escribe %@ con la identidad que esta Mac conoce de la biblioteca y la abre."
+          }
+        }
+      }
     },
     "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file." : {
       "comment" : "Why a file was not imported: TextMouth's converter could not confine itself before reading it, so it did not read the file. %@ is the file's name. Advice to install the app again follows."
@@ -22209,7 +22669,15 @@
       "comment" : "Alert explaining why a chosen item was not attached as a transcript: it is not an ordinary file, such as a folder or a pipe."
     },
     "That keeps the book's copy in the cloud." : {
-      "comment" : "Last sentence of why Remove Download was refused: what the service's own command does."
+      "comment" : "Last sentence of why Remove Download was refused: what the service's own command does.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eso mantiene la copia del libro en la nube."
+          }
+        }
+      }
     },
     "That match is no longer in the book's text. Search again to find it." : {
       "comment" : "Announcement when a search match is no longer in the book's text."
@@ -22323,6 +22791,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The %1$@ in the list will be replaced by TextMouth's %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se reemplazará el contenido de la lista (%1$@) por %2$@ de TextMouth."
           }
         }
       }
@@ -22523,6 +22997,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Los %lld de libros seleccionados ya se mantienen en esta Mac."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El libro seleccionado ya se mantiene en esta Mac."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Los %lld libros seleccionados ya se mantienen en esta Mac."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -22542,6 +23040,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "The %lld selected books are kept on this Mac for the reading list."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Los %lld de libros seleccionados se mantienen en esta Mac por la lista de lectura."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "El libro seleccionado se mantiene en esta Mac por la lista de lectura."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Los %lld libros seleccionados se mantienen en esta Mac por la lista de lectura."
                 }
               }
             }
@@ -22586,10 +23108,26 @@
       "comment" : "Why an EPUB book could not be imported: its package document (an OPF file) could not be read."
     },
     "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written." : {
-      "comment" : "Describes the Leading Articles choice Ignored When Typing, under the pop-up. The Hobbit is the example title, typed under the letter H."
+      "comment" : "Describes the Leading Articles choice Ignored When Typing, under the pop-up. The Hobbit is the example title, typed under the letter H.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "The Hobbit cuenta como H al escribir. La lista conserva su orden y muestra cada título tal como está escrito."
+          }
+        }
+      }
     },
     "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's." : {
-      "comment" : "Describes the Leading Articles choice Ignored When Typing and Sorting, under the pop-up. The Hobbit is the example title; the article moves to the end and the book sorts and types under H."
+      "comment" : "Describes the Leading Articles choice Ignored When Typing and Sorting, under the pop-up. The Hobbit is the example title; the article moves to the end and the book sorts and types under H.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "The Hobbit se ordena entre las H y aparece como Hobbit, The. Al escribir H, lo encuentras entre las H."
+          }
+        }
+      }
     },
     "The Library holds at most %lld views." : {
       "comment" : "Hint of New View and Duplicate in the Library tab of Settings when the limit is reached, and the problem Save reports there. %lld is the most views the Library holds, a count.",
@@ -22680,6 +23218,12 @@
             "state" : "new",
             "value" : "The archive expands to %1$@, but the disk holding the TextMouth library has only %2$@ free, and TextMouth keeps %3$@ of it free."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo comprimido se expande a %1$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %2$@ libres, y TextMouth mantiene %3$@ libres."
+          }
         }
       }
     },
@@ -22690,6 +23234,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo comprimido se expande a %1$@, más de los %2$@ que TextMouth extrae de archivos comprimidos con audio u otros archivos comprimidos."
           }
         }
       }
@@ -22702,6 +23252,12 @@
             "state" : "new",
             "value" : "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo comprimido se expande a %1$@, más de los %2$@ que TextMouth extrae de archivos comprimidos sin audio."
+          }
         }
       }
     },
@@ -22713,6 +23269,12 @@
             "state" : "new",
             "value" : "The archive holds %1$@ files and folders, more than the %2$@ TextMouth extracts in one import."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo comprimido contiene %1$@ archivos y carpetas, más de los %2$@ que TextMouth extrae en una importación."
+          }
         }
       }
     },
@@ -22723,7 +23285,15 @@
       "comment" : "Why an archive was refused at import: it holds a symbolic link to a file outside it."
     },
     "The archive holds more than the %@ it declares, so extraction stopped." : {
-      "comment" : "First sentence of why an import's archive stopped extracting: it holds more than it declares. %@ is the size it declares, such as \"2 GB\"."
+      "comment" : "First sentence of why an import's archive stopped extracting: it holds more than it declares. %@ is the size it declares, such as \"2 GB\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo comprimido contiene más de los %@ que declara, así que la extracción se detuvo."
+          }
+        }
+      }
     },
     "The archive is damaged, incomplete, or not a ZIP archive." : {
       "comment" : "Why an archive was refused at import: it could not be read as a ZIP archive."
@@ -22735,6 +23305,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The archive “%1$@” inside it expands to %2$@, but the disk holding the TextMouth library has only %3$@ free, and TextMouth keeps %4$@ of it free."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo comprimido «%1$@» de su interior se expande a %2$@, pero el disco que contiene la biblioteca de TextMouth solo tiene %3$@ libres, y TextMouth mantiene %4$@ libres."
           }
         }
       }
@@ -22860,6 +23436,12 @@
             "state" : "new",
             "value" : "The book %1$@ is stored at %2$@, outside the data directory, so the move cannot carry it."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro %1$@ está guardado en %2$@, fuera del directorio de datos, así que el traslado no puede llevarlo."
+          }
         }
       }
     },
@@ -22890,10 +23472,26 @@
       }
     },
     "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, so its download can't be removed." : {
-      "comment" : "First sentence of why Remove Download was refused: the listener keeps the book and the reading list keeps it too."
+      "comment" : "First sentence of why Remove Download was refused: the listener keeps the book and the reading list keeps it too.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro se mantiene en esta Mac y está en la lista de lectura, que esta Mac mantiene descargada, así que no se puede quitar su descarga."
+          }
+        }
+      }
     },
     "The book is kept on this Mac, so its download can't be removed." : {
-      "comment" : "First sentence of why Remove Download was refused: the listener chose Keep on This Mac for the book."
+      "comment" : "First sentence of why Remove Download was refused: the listener chose Keep on This Mac for the book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro se mantiene en esta Mac, así que no se puede quitar su descarga."
+          }
+        }
+      }
     },
     "The book is no longer in the library, so it was not read again." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book that left the library while its Book Information was open is not read again."
@@ -22902,13 +23500,29 @@
       "comment" : "Said when an audio edit can't proceed: the book was removed from the library, or is not an audiobook kept in a package of its own."
     },
     "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed." : {
-      "comment" : "First sentence of why Remove Download was refused: the reading list keeps the book downloaded."
+      "comment" : "First sentence of why Remove Download was refused: the reading list keeps the book downloaded.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro está en la lista de lectura, que esta Mac mantiene descargada, así que no se puede quitar su descarga."
+          }
+        }
+      }
     },
     "The book is open in a reader. Close it, then save again." : {
       "comment" : "Said when saving the edited audio is refused because a reader has the book open and plays the file the save would replace."
     },
     "The book is open, so its download can't be removed. Close it first." : {
-      "comment" : "Why Remove Download was refused: the book is open in a reader."
+      "comment" : "Why Remove Download was refused: the book is open in a reader.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El libro está abierto, así que no se puede quitar su descarga. Ciérralo primero."
+          }
+        }
+      }
     },
     "The book left the library during transcription, so its transcript wasn't saved." : {
       "comment" : "Error shown when the book was removed from the library during a transcription."
@@ -22938,7 +23552,15 @@
       "comment" : "The hint of the Original file checkbox in the Export dialog."
     },
     "The book's files aren't on this Mac yet. %@ may still be syncing them." : {
-      "comment" : "Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."
+      "comment" : "Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los archivos del libro aún no están en esta Mac. Puede que %@ todavía los esté sincronizando."
+          }
+        }
+      }
     },
     "The book's headings changed after the dialog opened. Reopen it and choose the range again." : {
       "comment" : "Why a spoken audio export was refused: the book's headings changed after the Export dialog opened."
@@ -23015,16 +23637,40 @@
       "comment" : "First sentence of the announcement when Paste from Clipboard finds no text on the clipboard."
     },
     "The cloud service" : {
-      "comment" : "How a sentence names the cloud service when it is unknown, at the start of the sentence, so it has a capital letter."
+      "comment" : "How a sentence names the cloud service when it is unknown, at the start of the sentence, so it has a capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El servicio en la nube"
+          }
+        }
+      }
     },
     "The copy just imported is incomplete." : {
       "comment" : "First sentence of the last paragraph of the question asked about a duplicate book whose new copy is missing chapters. What it lacks follows."
     },
     "The copy made in the library did not match the original, so the copy was discarded." : {
-      "comment" : "Why a book could not move into the current library format: the copy differed from the original."
+      "comment" : "Why a book could not move into the current library format: the copy differed from the original.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La copia hecha en la biblioteca no coincidía con el original, así que se descartó."
+          }
+        }
+      }
     },
     "The copy was already complete when Cancel was pressed, so the move went ahead." : {
-      "comment" : "Sentence added to the done message of a move of the library when Cancel was pressed after the copy was complete."
+      "comment" : "Sentence added to the done message of a move of the library when Cancel was pressed after the copy was complete.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La copia ya estaba completa cuando se pulsó Cancelar, así que el traslado siguió adelante."
+          }
+        }
+      }
     },
     "The correction file %@ is damaged or belongs to another recording, so %@ could not be converted." : {
       "comment" : "Why a hybrid WavPack file could not be converted at import: the correction file beside it (the same name ending in .wvc) is damaged or belongs to another recording. %1$@ is the correction file's name and %2$@ the WavPack file's name.",
@@ -23044,19 +23690,51 @@
       "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name."
     },
     "The current data directory does not exist." : {
-      "comment" : "Why a move of the data directory was refused: the folder it would move from is missing."
+      "comment" : "Why a move of the data directory was refused: the folder it would move from is missing.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio de datos actual no existe."
+          }
+        }
+      }
     },
     "The current directory will be retained as recovery data." : {
-      "comment" : "Last sentence of the question asked before moving the library: the old folder is kept."
+      "comment" : "Last sentence of the question asked before moving the library: the old folder is kept.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio actual se conservará como datos de recuperación."
+          }
+        }
+      }
     },
     "The cursor is %@." : {
       "comment" : "Announcement after Go to Page when the cursor is not on the page typed and there is no known reason. %@ says where the cursor is, such as \"on page 52\" or \"before page 1\"."
     },
     "The data directory has no Logs folder, so logs go to %@ until it has one." : {
-      "comment" : "The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written."
+      "comment" : "The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio de datos no tiene carpeta Logs, así que los registros van a %@ hasta que la tenga."
+          }
+        }
+      }
     },
     "The data directory is missing, so logs go to %@ until it is back." : {
-      "comment" : "The line under the Log location pop-up in the Storage settings while the data directory is missing. %@ is the folder's full path, which stays as written."
+      "comment" : "The line under the Log location pop-up in the Storage settings while the data directory is missing. %@ is the folder's full path, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falta el directorio de datos, así que los registros van a %@ hasta que vuelva."
+          }
+        }
+      }
     },
     "The data directory's Logs folder can't be written (%@), so logs go to %@ until it can." : {
       "comment" : "The line under the Log location pop-up in the Storage settings while the data directory's Logs folder cannot be written. %1$@ is the reason the system gives, which may be in English, and %2$@ is the folder's full path, which stays as written.",
@@ -23065,6 +23743,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The data directory's Logs folder can't be written (%1$@), so logs go to %2$@ until it can."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se puede escribir en la carpeta Logs del directorio de datos (%1$@), así que los registros van a %2$@ hasta que se pueda."
           }
         }
       }
@@ -23093,7 +23777,15 @@
       }
     },
     "The download of %@ wasn't removed" : {
-      "comment" : "Announcement that Remove Download did not remove one book's files. %@ is the book's title."
+      "comment" : "Announcement that Remove Download did not remove one book's files. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se quitó la descarga de %@"
+          }
+        }
+      }
     },
     "The download of “%@” will be deleted." : {
       "comment" : "First sentence of the confirmation that deletes one feed item's download. %@ is the episode's or article's title."
@@ -23109,11 +23801,25 @@
             "state" : "new",
             "value" : "The downloads of %1$@ weren't removed: %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se quitaron las descargas de %1$@: %2$@"
+          }
         }
       }
     },
     "The drive “%@” isn't connected." : {
-      "comment" : "Why the library can't be used: the drive that holds it is not connected. %@ is the drive's name."
+      "comment" : "Why the library can't be used: the drive that holds it is not connected. %@ is the drive's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La unidad «%@» no está conectada."
+          }
+        }
+      }
     },
     "The edit history couldn't be read. A copy was kept in the book's package." : {
       "comment" : "Said when the book's saved edit history can't be read. A copy of the unreadable file was kept in the book's package."
@@ -23239,10 +23945,26 @@
       "comment" : "A sentence telling TextMouth stopped an audio file to protect the Mac. %@ is the file's name, such as 03.mp3."
     },
     "The file could not be read. %@" : {
-      "comment" : "Why the library index could not be loaded: a read error. %@ is the system's own description of the error."
+      "comment" : "Why the library index could not be loaded: a read error. %@ is the system's own description of the error.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer el archivo. %@"
+          }
+        }
+      }
     },
     "The file disappeared while TextMouth was reading it." : {
-      "comment" : "Why the library index could not be loaded: the file vanished during the read."
+      "comment" : "Why the library index could not be loaded: the file vanished during the read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo desapareció mientras TextMouth lo leía."
+          }
+        }
+      }
     },
     "The file is a %@ transcript of version %@, which TextMouth doesn't read." : {
       "comment" : "Error shown when a chosen transcript file is of a version of its format that this app does not read. %1$@ is the format's name, such as Podcasting 2.0 JSON; %2$@ is the version the file gives, written as the file writes it.",
@@ -23262,7 +23984,15 @@
       "comment" : "Error shown when a chosen transcript file's content is not in the format its name says. %@ is the format's name, such as WebVTT, SubRip, or Podcasting 2.0 JSON."
     },
     "The file itself has not been changed." : {
-      "comment" : "Last sentence of the library index recovery sheet when no copy of the unreadable file was saved."
+      "comment" : "Last sentence of the library index recovery sheet when no copy of the unreadable file was saved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo en sí no se ha modificado."
+          }
+        }
+      }
     },
     "The file “%@”" : {
       "comment" : "Begins a sentence about a file that could not be read in the text encoding chosen for it, such as \"The file “Ledger.txt” can't be read as Shift JIS (Japanese): …\". %@ is the file's name."
@@ -23360,7 +24090,15 @@
       "comment" : "Said as every filter preset is put back to TextMouth's premade ones."
     },
     "The folder %@ can't be found." : {
-      "comment" : "Why the library can't be used: its folder is missing. %@ is the folder's path. For a folder in a cloud service, a sentence about the likely cause follows."
+      "comment" : "Why the library can't be used: its folder is missing. %@ is the folder's path. For a folder in a cloud service, a sentence about the likely cause follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se encuentra la carpeta %@."
+          }
+        }
+      }
     },
     "The folder %@ holds %lld other items: %@." : {
       "comment" : "First sentence of why the chosen folder can't be used: it holds other items. %1$@ is the folder's path; %2$lld is how many items; %3$@ is their names as a short list.",
@@ -23382,6 +24120,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "La carpeta %1$@ contiene %2$lld de elementos más: %3$@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "La carpeta %1$@ contiene %2$lld elemento más: %3$@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "La carpeta %1$@ contiene %2$lld elementos más: %3$@."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -23396,11 +24158,25 @@
             "state" : "new",
             "value" : "The folder %1$@ is in %2$@ and isn't on this Mac yet."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta %1$@ está en %2$@ y aún no está en esta Mac."
+          }
         }
       }
     },
     "The folder %@ is in the Trash." : {
-      "comment" : "First sentence of why the chosen folder can't be used: it is in the Trash. %@ is the folder's path."
+      "comment" : "First sentence of why the chosen folder can't be used: it is in the Trash. %@ is the folder's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta %@ está en la Papelera."
+          }
+        }
+      }
     },
     "The folder already has that name and location." : {
       "comment" : "Error shown when a folder edit would leave the folder exactly as it is."
@@ -23447,13 +24223,37 @@
       "comment" : "Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are."
     },
     "The folder is there, but TextMouth can't read its library identity file: %@" : {
-      "comment" : "Why the library can't be used: the file that names the library can't be read. %@ is the reason, a phrase or sentence from the system or TextMouth."
+      "comment" : "Why the library can't be used: the file that names the library can't be read. %@ is the reason, a phrase or sentence from the system or TextMouth.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta está ahí, pero TextMouth no puede leer el archivo de identidad de su biblioteca: %@"
+          }
+        }
+      }
     },
     "The folder is there, but it holds a different TextMouth library." : {
-      "comment" : "Why the library can't be used: the folder holds another library than the one this Mac uses."
+      "comment" : "Why the library can't be used: the folder holds another library than the one this Mac uses.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta está ahí, pero contiene otra biblioteca de TextMouth."
+          }
+        }
+      }
     },
     "The folder is there, but the library isn't in it." : {
-      "comment" : "Why the library can't be used: the folder exists but holds no library."
+      "comment" : "Why the library can't be used: the folder exists but holds no library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La carpeta está ahí, pero la biblioteca no está en ella."
+          }
+        }
+      }
     },
     "The folder of %@ is no longer in the library." : {
       "comment" : "What VoiceOver says when a feed's row is opened and its library folder was removed. %@ is the feed's title."
@@ -23486,6 +24286,12 @@
             "state" : "new",
             "value" : "The index is not changed until you choose %1$@ or %2$@, which stay available from %3$@ at the top of the library."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice no cambia hasta que elijas %1$@ o %2$@, que siguen disponibles en %3$@, en la parte superior de la biblioteca."
+          }
         }
       }
     },
@@ -23509,11 +24315,25 @@
             "state" : "new",
             "value" : "The library already had different content under its package name, %1$@, so it was stored in a new package, %2$@, and its original file was kept at %3$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca ya tenía contenido distinto con el nombre de paquete %1$@, así que se guardó en un paquete nuevo, %2$@, y su archivo original se conservó en %3$@."
+          }
         }
       }
     },
     "The library at %@ isn't available." : {
-      "comment" : "Error text when the library's folder can't be used. It follows what failed, as in \"Listening statistics could not be saved: The library at /Volumes/Backup/TextMouth isn't available.\" %@ is the folder's path."
+      "comment" : "Error text when the library's folder can't be used. It follows what failed, as in \"Listening statistics could not be saved: The library at /Volumes/Backup/TextMouth isn't available.\" %@ is the folder's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca de %@ no está disponible."
+          }
+        }
+      }
     },
     "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back." : {
       "comment" : "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title."
@@ -23522,52 +24342,156 @@
       "comment" : "Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows \"Could not move to the library: \"."
     },
     "The library can't move while a book is open. Close %@ first." : {
-      "comment" : "Why a move of the library was refused: a book is open in a reader. %@ is the book's title, in quotation marks."
+      "comment" : "Why a move of the library was refused: a book is open in a reader. %@ is the book's title, in quotation marks.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca no se puede mover mientras hay un libro abierto. Cierra primero %@."
+          }
+        }
+      }
     },
     "The library can't move while a book is open. Close it first." : {
-      "comment" : "Why a move of the library was refused: a book is open in a reader. \"It\" is that book."
+      "comment" : "Why a move of the library was refused: a book is open in a reader. \"It\" is that book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca no se puede mover mientras hay un libro abierto. Ciérralo primero."
+          }
+        }
+      }
     },
     "The library can't move while books are open." : {
-      "comment" : "First sentence of why a move of the library was refused: several books are open in readers."
+      "comment" : "First sentence of why a move of the library was refused: several books are open in readers.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca no se puede mover mientras hay libros abiertos."
+          }
+        }
+      }
     },
     "The library folder the recording is saved in." : {
       "comment" : "VoiceOver hint of the Save in pop-up of the Record window."
     },
     "The library index can't be read. Choose Try Again or Rebuild Library Index in the Library window first." : {
-      "comment" : "Why a command that acts on the library index was refused: the index can't be read yet. Try Again and Rebuild Library Index are button names in the Library window."
+      "comment" : "Why a command that acts on the library index was refused: the index can't be read yet. Try Again and Rebuild Library Index are button names in the Library window.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se puede leer el índice de la biblioteca. Primero elige Reintentar o Reconstruir índice de la biblioteca en la ventana de la biblioteca."
+          }
+        }
+      }
     },
     "The library index could not be read, so library changes are not being saved." : {
-      "comment" : "First sentence of the Storage settings explanation while the library index can't be read."
+      "comment" : "First sentence of the Storage settings explanation while the library index can't be read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer el índice de la biblioteca, así que los cambios de la biblioteca no se están guardando."
+          }
+        }
+      }
     },
     "The library index could not be read." : {
-      "comment" : "First sentence of the banner shown at the top of the library while the library index is unreadable."
+      "comment" : "First sentence of the banner shown at the top of the library while the library index is unreadable.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer el índice de la biblioteca."
+          }
+        }
+      }
     },
     "The library index is already readable." : {
-      "comment" : "Outcome of a library index recovery command when no recovery was in progress."
+      "comment" : "Outcome of a library index recovery command when no recovery was in progress.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice de la biblioteca ya se puede leer."
+          }
+        }
+      }
     },
     "The library index still could not be read." : {
-      "comment" : "First sentence of the outcome of Try Again on the library index recovery sheet when the index is still unreadable. The reason follows."
+      "comment" : "First sentence of the outcome of Try Again on the library index recovery sheet when the index is still unreadable. The reason follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice de la biblioteca sigue sin poder leerse."
+          }
+        }
+      }
     },
     "The library index was not rebuilt." : {
-      "comment" : "First sentence of the outcome of Rebuild Library Index when it replaced nothing. The reason follows."
+      "comment" : "First sentence of the outcome of Rebuild Library Index when it replaced nothing. The reason follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se reconstruyó el índice de la biblioteca."
+          }
+        }
+      }
     },
     "The library index was read successfully. Your library has %@, and changes are being saved again." : {
-      "comment" : "Outcome of Try Again on the library index recovery sheet: the index could be read. %@ is a count of books, such as \"743 books\"."
+      "comment" : "Outcome of Try Again on the library index recovery sheet: the index could be read. %@ is a count of books, such as \"743 books\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice de la biblioteca se leyó correctamente. Tu biblioteca tiene %@, y los cambios se están guardando de nuevo."
+          }
+        }
+      }
     },
     "The library index was rebuilt with %@." : {
-      "comment" : "Outcome of Rebuild Library Index. %@ is a count of books, such as \"743 books\"."
+      "comment" : "Outcome of Rebuild Library Index. %@ is a count of books, such as \"743 books\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice de la biblioteca se reconstruyó con %@."
+          }
+        }
+      }
     },
     "The library is available." : {
       "comment" : "VoiceOver announcement when the library, which had been missing, is found again."
     },
     "The library is still at %@." : {
-      "comment" : "Last sentence of the message after the move of the library was cancelled. %@ is the library's path, with where it leads when it is a link."
+      "comment" : "Last sentence of the message after the move of the library was cancelled. %@ is the library's path, with where it leads when it is a link.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca sigue en %@."
+          }
+        }
+      }
     },
     "The library is still not available. %@" : {
       "comment" : "VoiceOver announcement when Try Again on the Library Not Available screen finds the library still missing. %@ is the sentence that says why it is not available."
     },
     "The library isn't available, so logs go to %@ until it is." : {
-      "comment" : "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written."
+      "comment" : "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca no está disponible, así que los registros van a %@ hasta que lo esté."
+          }
+        }
+      }
     },
     "The library isn't available, so the filter presets can't be saved." : {
       "comment" : "Said when the filter presets can't be saved because the library's data folder can't be used."
@@ -23576,10 +24500,26 @@
       "comment" : "Error shown when Edit Rules is pressed while the library's data folder cannot be used."
     },
     "The library isn't in a cloud folder, so its books are always on this Mac." : {
-      "comment" : "Why Keep on This Mac or Stop Keeping on This Mac changed nothing: the library is not in a cloud folder."
+      "comment" : "Why Keep on This Mac or Stop Keeping on This Mac changed nothing: the library is not in a cloud folder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca no está en una carpeta de la nube, así que sus libros siempre están en esta Mac."
+          }
+        }
+      }
     },
     "The library now shows a temporary list rebuilt from the books on disk." : {
-      "comment" : "Second sentence of the library index recovery sheet."
+      "comment" : "Second sentence of the library index recovery sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La biblioteca ahora muestra una lista temporal reconstruida a partir de los libros del disco."
+          }
+        }
+      }
     },
     "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@." : {
       "comment" : "First sentence of why the library can't open: its index file did not arrive from the cloud service. %1$@ is the index's file name, which stays as written; %2$@ is the cloud service's name, or \"the cloud\" when it is unknown.",
@@ -23588,6 +24528,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo de identidad de la biblioteca está en esta Mac, pero su índice, %1$@, no ha llegado desde %2$@."
           }
         }
       }
@@ -23599,6 +24545,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice de la biblioteca está en esta Mac, pero su archivo de identidad, %1$@, no ha llegado desde %2$@."
           }
         }
       }
@@ -23627,16 +24579,48 @@
       "comment" : "VoiceOver hint and tooltip of the Microphone pop-up in the Record window. TextMouth is the app's name."
     },
     "The migrated copy is missing the content for %@." : {
-      "comment" : "Why a move of the data directory failed: the copy lacks a book's content. %@ is the book's title."
+      "comment" : "Why a move of the data directory failed: the copy lacks a book's content. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A la copia migrada le falta el contenido de %@."
+          }
+        }
+      }
     },
     "The migrated library index could not be validated." : {
-      "comment" : "Why a move of the data directory failed: the copied library index did not pass its check."
+      "comment" : "Why a move of the data directory failed: the copied library index did not pass its check.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo validar el índice migrado de la biblioteca."
+          }
+        }
+      }
     },
     "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses." : {
-      "comment" : "Explanation under the restart gesture's time window slider in the Miscellaneous settings."
+      "comment" : "Explanation under the restart gesture's time window slider in the Miscellaneous settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El tiempo máximo que puede durar toda la secuencia. Ventanas más cortas significan menos coincidencias accidentales pero pulsaciones más rápidas."
+          }
+        }
+      }
     },
     "The move was cancelled, so nothing changed." : {
-      "comment" : "Why a move of the data directory ended: the listener cancelled it."
+      "comment" : "Why a move of the data directory ended: the listener cancelled it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se canceló el traslado, así que no cambió nada."
+          }
+        }
+      }
     },
     "The new copy replaced “%@”, but the old copy's files could not be deleted and stay in its folder: %@" : {
       "comment" : "Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.",
@@ -23668,11 +24652,25 @@
             "state" : "new",
             "value" : "The new location, %1$@, contains the current data directory, %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, contiene el directorio de datos actual, %2$@."
+          }
         }
       }
     },
     "The new location, %@, is a file, not a folder." : {
-      "comment" : "First sentence of why a move of the data directory was refused. %@ is the new location's path, with where it leads when it is a link."
+      "comment" : "First sentence of why a move of the data directory was refused. %@ is the new location's path, with where it leads when it is a link.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %@, es un archivo, no una carpeta."
+          }
+        }
+      }
     },
     "The new location, %@, is a link to %@, which cannot be found." : {
       "comment" : "First sentence of why a move of the data directory was refused. %1$@ is the new location's path; %2$@ is the path the link leads to.",
@@ -23681,6 +24679,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The new location, %1$@, is a link to %2$@, which cannot be found."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, es un enlace a %2$@, que no se encuentra."
           }
         }
       }
@@ -23693,6 +24697,12 @@
             "state" : "new",
             "value" : "The new location, %1$@, is inside the current data directory, %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, está dentro del directorio de datos actual, %2$@."
+          }
         }
       }
     },
@@ -23704,11 +24714,25 @@
             "state" : "new",
             "value" : "The new location, %1$@, is the current data directory, where %2$@ leads."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, es el directorio de datos actual, al que lleva %2$@."
+          }
         }
       }
     },
     "The new location, %@, is the current data directory." : {
-      "comment" : "First sentence of why a move of the data directory was refused: the new location is the current data directory. %@ is the new location's path."
+      "comment" : "First sentence of why a move of the data directory was refused: the new location is the current data directory. %@ is the new location's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %@, es el directorio de datos actual."
+          }
+        }
+      }
     },
     "The new location, %@, leads to %@, which contains the current data directory, %@." : {
       "comment" : "First sentence of why a move of the data directory was refused. %1$@ is the new location's link; %2$@ is the folder it leads to; %3$@ is the current data directory, with the link that leads to it when there is one.",
@@ -23717,6 +24741,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The new location, %1$@, leads to %2$@, which contains the current data directory, %3$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, lleva a %2$@, que contiene el directorio de datos actual, %3$@."
           }
         }
       }
@@ -23729,6 +24759,12 @@
             "state" : "new",
             "value" : "The new location, %1$@, leads to %2$@, which is inside the current data directory, %3$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, lleva a %2$@, que está dentro del directorio de datos actual, %3$@."
+          }
         }
       }
     },
@@ -23740,6 +24776,12 @@
             "state" : "new",
             "value" : "The new location, %1$@, leads to %2$@, which is the current data directory, where %3$@ leads."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, lleva a %2$@, que es el directorio de datos actual, al que lleva %3$@."
+          }
         }
       }
     },
@@ -23750,6 +24792,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "The new location, %1$@, leads to %2$@, which is the current data directory."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La ubicación nueva, %1$@, lleva a %2$@, que es el directorio de datos actual."
           }
         }
       }
@@ -23792,13 +24840,29 @@
       "comment" : "Starts the warning after an import of a book of one chapter that could not be read. Has no full stop."
     },
     "The original at %@ is a folder or link, so a copy of it cannot be checked." : {
-      "comment" : "Why a book could not move into the current library format. %@ is the path of the original."
+      "comment" : "Why a book could not move into the current library format. %@ is the path of the original.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El original de %@ es una carpeta o un enlace, así que no se puede comprobar una copia suya."
+          }
+        }
+      }
     },
     "The original audio was deleted on %@, so edits saved before then can't be undone." : {
       "comment" : "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form."
     },
     "The original file at %@ could not be read to check a copy of it." : {
-      "comment" : "First sentence of why a book could not move into the current library format. %@ is the path of the original."
+      "comment" : "First sentence of why a book could not move into the current library format. %@ is the path of the original.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo leer el archivo original de %@ para comprobar una copia suya."
+          }
+        }
+      }
     },
     "The original file could not be deleted: %@" : {
       "comment" : "Alert about the original file of an imported book that could not be deleted, its name not known. %@ is the reason, a sentence of the system's."
@@ -23807,7 +24871,15 @@
       "comment" : "Alert about the original file of an imported book that could not be moved to the Trash, its name not known. %@ is the reason, a sentence of the system's."
     },
     "The original file is missing from %@." : {
-      "comment" : "Why a book could not move into the current library format. %@ is the path where the original file should be."
+      "comment" : "Why a book could not move into the current library format. %@ is the path where the original file should be.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falta el archivo original en %@."
+          }
+        }
+      }
     },
     "The original file was kept." : {
       "comment" : "Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch."
@@ -23844,7 +24916,15 @@
       "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files are deleted permanently."
     },
     "The original file will remain untouched after import." : {
-      "comment" : "Caption in Storage settings when the original file is kept after an import."
+      "comment" : "Caption in Storage settings when the original file is kept after an import.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El archivo original permanecerá intacto después de la importación."
+          }
+        }
+      }
     },
     "The original file you imported is not changed." : {
       "comment" : "Last sentence of the warning shown under the metadata editor's switch while it is on: the file the user first imported stays as it was."
@@ -24017,7 +25097,15 @@
       "comment" : "First sentence of the VoiceOver announcement when Previous in Folder could not download the previous podcast episode. A sentence with the reason follows it."
     },
     "The previous index is kept at %@." : {
-      "comment" : "Part of the outcome of saving a rebuilt library index: where the old index's copy is kept. %@ is the copy's path."
+      "comment" : "Part of the outcome of saving a rebuilt library index: where the old index's copy is kept. %@ is the copy's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice anterior se conserva en %@."
+          }
+        }
+      }
     },
     "The publisher has removed this feed." : {
       "comment" : "Why a feed could not be fetched: the server says the publisher removed it for good (error 410)."
@@ -24070,17 +25158,65 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "La lista de lectura aún mantiene %lld de ellos descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "La lista de lectura aún mantiene %lld de ellos descargados"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "La lista de lectura aún mantiene %lld de ellos descargados"
+                }
+              }
+            }
+          }
         }
       }
     },
     "The reading list still keeps it downloaded" : {
-      "comment" : "Second part of the Stop Keeping on This Mac announcement for one book that the reading list keeps downloaded."
+      "comment" : "Second part of the Stop Keeping on This Mac announcement for one book that the reading list keeps downloaded.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La lista de lectura aún lo mantiene descargado"
+          }
+        }
+      }
     },
     "The reading list still keeps them downloaded" : {
-      "comment" : "Second part of the Stop Keeping on This Mac announcement when the reading list keeps every one of the books downloaded."
+      "comment" : "Second part of the Stop Keeping on This Mac announcement when the reading list keeps every one of the books downloaded.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La lista de lectura aún los mantiene descargados"
+          }
+        }
+      }
     },
     "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it." : {
-      "comment" : "Second sentence of the question asked before opening the library without its index file: what the new index will not hold. \"It\" is the new index."
+      "comment" : "Second sentence of the question asked before opening the library without its index file: what the new index will not hold. \"It\" is the new index.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No incluirá la lista de lectura, los ajustes de orden y de escucha de las carpetas, ni los libros cuyos archivos aún no estén en esta carpeta."
+          }
+        }
+      }
     },
     "The recording as it was made, before any edits." : {
       "comment" : "The hint of the Original recording checkbox in the Export dialog."
@@ -24130,7 +25266,15 @@
       "comment" : "A line of the speech refusal report: the refused text goes on past the passage shown. %@ is the character offset where it ends, written without digit grouping."
     },
     "The saved copy at %@ keeps the old data." : {
-      "comment" : "Last sentence of what Rebuild Library Index does: where the old data stays. %@ is the saved copy's path."
+      "comment" : "Last sentence of what Rebuild Library Index does: where the old data stays. %@ is the saved copy's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "La copia guardada en %@ conserva los datos anteriores."
+          }
+        }
+      }
     },
     "The search couldn't be sent, because the directory's address isn't a web address." : {
       "comment" : "Why a podcast search failed: the directory's address is not an http or https address."
@@ -24139,7 +25283,15 @@
       "comment" : "Why a podcast search ended: it was stopped."
     },
     "The selected data directory is not empty." : {
-      "comment" : "First sentence of why a move of the data directory was refused: the new location already holds something."
+      "comment" : "First sentence of why a move of the data directory was refused: the new location already holds something.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El directorio de datos seleccionado no está vacío."
+          }
+        }
+      }
     },
     "The selection is all the audio; nothing to trim." : {
       "comment" : "Said by the audio editor's Trim to Selection when the selection is all of the audio."
@@ -24272,7 +25424,15 @@
       "comment" : "Note under a podcast episode's transcript editor and cleanup sheet. Move to Library is the name of a command in the feed's episode menu."
     },
     "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with %@." : {
-      "comment" : "Outcome of the library index recovery when the unreadable index had gone and the rebuilt library was saved as the new index. %@ is a count of books, such as \"743 books\"."
+      "comment" : "Outcome of the library index recovery when the unreadable index had gone and the rebuilt library was saved as the new index. %@ is a count of books, such as \"743 books\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El índice ilegible de la biblioteca ya no está, así que TextMouth guardó como índice nuevo la biblioteca reconstruida a partir de tus libros, con %@."
+          }
+        }
+      }
     },
     "The view is first in the list." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Move Up's hint while the view is first, when it is dimmed."
@@ -24299,13 +25459,29 @@
       "comment" : "Sentence that says what is kept of every one of several deleted downloads. %@ is a list of parts, such as \"places and bookmarks\"."
     },
     "Their original files were not changed." : {
-      "comment" : "Second sentence of the alert about several books that could not move into the current library format."
+      "comment" : "Second sentence of the alert about several books that could not move into the current library format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sus archivos originales no se modificaron."
+          }
+        }
+      }
     },
     "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again." : {
       "comment" : "Sentence about several deleted downloads: what the listener left in them is kept, and they can be downloaded again."
     },
     "Then take it off the reading list, or clear %@ in the Reading List's options." : {
-      "comment" : "Last sentence of why Remove Download was refused for a book the listener keeps and the reading list keeps too: what to do after choosing Stop Keeping on This Mac. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it."
+      "comment" : "Last sentence of why Remove Download was refused for a book the listener keeps and the reading list keeps too: what to do after choosing Stop Keeping on This Mac. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Luego quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
+          }
+        }
+      }
     },
     "There are no feeds to refresh." : {
       "comment" : "What VoiceOver says when Refresh All Feeds finds no feed in the library."
@@ -24317,7 +25493,15 @@
       "comment" : "What Export OPML says when every feed in the library is unsubscribed, which an export leaves out."
     },
     "There is a file at %@, not a folder." : {
-      "comment" : "First sentence of why the chosen location can't be used: a file is there. %@ is the path.\nWhy the library can't be used: a file sits where the library's folder should be. %@ is the path."
+      "comment" : "First sentence of why the chosen location can't be used: a file is there. %@ is the path.\nWhy the library can't be used: a file sits where the library's folder should be. %@ is the path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hay un archivo en %@, no una carpeta."
+          }
+        }
+      }
     },
     "There is no page %@ in this book." : {
       "comment" : "First sentence of the message when Go to Page is given a page the book does not have. %@ is what the user typed."
@@ -24379,6 +25563,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No hay suficiente espacio libre para %lld de libros más"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No hay suficiente espacio libre para %lld libro más"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No hay suficiente espacio libre para %lld libros más"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -24389,6 +25597,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "There isn't enough free space for the library there: it needs %1$@, and %2$@ is free."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay suficiente espacio libre para la biblioteca allí: necesita %1$@, y hay %2$@ libres."
           }
         }
       }
@@ -24413,6 +25627,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No hay suficiente espacio libre para descargar %lld de libros de la lista de lectura"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No hay suficiente espacio libre para descargar %lld libro de la lista de lectura"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "No hay suficiente espacio libre para descargar %lld libros de la lista de lectura"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -24432,7 +25670,15 @@
       "comment" : "Why a feed could not be fetched: the address answers that nothing is there (error 404)."
     },
     "There's no library in %@ to use, and none to move there while the library isn't available." : {
-      "comment" : "First sentence of why the chosen folder can't be used: it holds no library and there is none to move. %@ is the folder's path."
+      "comment" : "First sentence of why the chosen folder can't be used: it holds no library and there is none to move. %@ is the folder's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No hay ninguna biblioteca en %@ que usar, ni ninguna que trasladar allí mientras la biblioteca no está disponible."
+          }
+        }
+      }
     },
     "There's nothing to redo." : {
       "comment" : "Said by the audio editor's Redo when nothing has been undone."
@@ -24471,7 +25717,15 @@
       "comment" : "Sentence of the results of Compare Libraries that follows the count of unread files: the files are listed after the differences."
     },
     "They stay in %@" : {
-      "comment" : "Announcement after Remove Download removed several books' files from this Mac: the books are still in the cloud. %@ is the cloud service's name, or \"the cloud\" when it is unknown."
+      "comment" : "Announcement after Remove Download removed several books' files from this Mac: the books are still in the cloud. %@ is the cloud service's name, or \"the cloud\" when it is unknown.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Siguen en %@"
+          }
+        }
+      }
     },
     "This EPUB book has no text to read." : {
       "comment" : "Why an EPUB book could not be imported: every chapter in it is blank."
@@ -24507,13 +25761,29 @@
       "comment" : "Error in the Record window when something other than the user, a device management profile or Screen Time, keeps TextMouth from using the microphone."
     },
     "This Mac doesn't know the library's identity, so it can't restore it." : {
-      "comment" : "A sentence of why the library can't open: this Mac has no record of the library's identity, so the identity file can't be restored from it."
+      "comment" : "A sentence of why the library can't open: this Mac has no record of the library's identity, so the identity file can't be restored from it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta Mac no conoce la identidad de la biblioteca, así que no puede restaurarla."
+          }
+        }
+      }
     },
     "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again." : {
       "comment" : "Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server."
     },
     "This Mac is offline, so the book can't be downloaded from %@." : {
-      "comment" : "First sentence of why a book can't be downloaded: the Mac is offline. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."
+      "comment" : "First sentence of why a book can't be downloaded: the Mac is offline. %@ is the cloud service's name, or \"the cloud service\" when it is unknown.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta Mac no tiene conexión, así que el libro no se puede descargar desde %@."
+          }
+        }
+      }
     },
     "This Mac is offline, so the directory can't be searched. Connect to the internet and try again." : {
       "comment" : "Why a podcast search failed: this Mac has no internet."
@@ -24789,10 +26059,26 @@
       "comment" : "Heading of the report's lines about the device it ran on, on the iPhone."
     },
     "This is a temporary library, and library changes are not being saved." : {
-      "comment" : "Last sentence of the banner shown at the top of the library while the library index is unreadable."
+      "comment" : "Last sentence of the banner shown at the top of the library while the library index is unreadable.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta es una biblioteca temporal, y los cambios de la biblioteca no se están guardando."
+          }
+        }
+      }
     },
     "This is the library TextMouth is using: %@." : {
-      "comment" : "Status line when the listener chose the folder that already holds the library in use. %@ is the folder's path."
+      "comment" : "Status line when the listener chose the folder that already holds the library in use. %@ is the folder's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esta es la biblioteca que usa TextMouth: %@."
+          }
+        }
+      }
     },
     "This item could not be deleted and remains in the library:" : {
       "comment" : "Heading over the one item of a folder that could not be deleted permanently. A line about it follows."
@@ -24810,6 +26096,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "This moves all data from %1$@ back to the default location, %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esto mueve todos los datos de %1$@ de vuelta a la ubicación predeterminada, %2$@."
           }
         }
       }
@@ -24887,7 +26179,15 @@
       }
     },
     "This re-extracts the cached text of every book, which may take a while for a large library." : {
-      "comment" : "First sentence of the Redo Text Extraction question."
+      "comment" : "First sentence of the Redo Text Extraction question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esto vuelve a extraer el texto en caché de cada libro, lo que puede tardar un poco en una biblioteca grande."
+          }
+        }
+      }
     },
     "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open." : {
       "comment" : "Explanation under the question asked when the Record window is closed with a recording that could not be saved. %1$@, %2$@, and %3$@ are the titles of the question's three buttons: the one that saves, the one that deletes the recording, and the one that keeps the window open.",
@@ -24901,7 +26201,15 @@
       }
     },
     "This recreates the directory structure and migrates books using old storage." : {
-      "comment" : "First sentence of the Rebuild Directory confirmation."
+      "comment" : "First sentence of the Rebuild Directory confirmation.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esto vuelve a crear la estructura de directorios y migra los libros que usan el almacenamiento antiguo."
+          }
+        }
+      }
     },
     "This view is as TextMouth made it." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint for a built-in view as TextMouth made it, or Folders or the Reading List, when it is dimmed."
@@ -24940,10 +26248,26 @@
       "comment" : "Line of the Transcribe Audio sheet before the audiobook's length is known, so no time estimate can be made."
     },
     "Time window" : {
-      "comment" : "Title of the slider in the Miscellaneous settings that sets how long the restart gesture's sequence may take."
+      "comment" : "Title of the slider in the Miscellaneous settings that sets how long the restart gesture's sequence may take.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ventana de tiempo"
+          }
+        }
+      }
     },
     "Time window: %@" : {
-      "comment" : "The restart gesture's time window shown above its slider in the Miscellaneous settings. %@ is the window in seconds, such as \"2 seconds\"."
+      "comment" : "The restart gesture's time window shown above its slider in the Miscellaneous settings. %@ is the window in seconds, such as \"2 seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ventana de tiempo: %@"
+          }
+        }
+      }
     },
     "Timer reset." : {
       "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.",
@@ -25041,16 +26365,40 @@
       "comment" : "Caption beside the title field of the New Book from Text sheet. VoiceOver skips it; the field has its own label."
     },
     "Titles" : {
-      "comment" : "Heading of the Library settings section that holds the Leading Articles pop-up, which decides how book titles are sorted and typed."
+      "comment" : "Heading of the Library settings section that holds the Leading Articles pop-up, which decides how book titles are sorted and typed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Títulos"
+          }
+        }
+      }
     },
     "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's." : {
-      "comment" : "Describes the Leading Articles choice Part of the Title, under the pop-up. The Hobbit is the example title; the T's are the books sorted under the letter T."
+      "comment" : "Describes the Leading Articles choice Part of the Title, under the pop-up. The Hobbit is the example title; the T's are the books sorted under the letter T.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los títulos se ordenan, y se encuentran al escribir, tal como están escritos: The Hobbit está entre las T."
+          }
+        }
+      }
     },
     "To" : {
       "comment" : "The label of the pop-up in the Export dialog's spoken audio options that chooses where the spoken audio ends."
     },
     "To %@" : {
-      "comment" : "Line of the move sheet that says where the library is going. %@ is the new location's path."
+      "comment" : "Line of the move sheet that says where the library is going. %@ is the new location's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A %@"
+          }
+        }
+      }
     },
     "To download it again, choose %@ on its row." : {
       "comment" : "After Cancel stops one feed download that only the listener's Download brings back. %@ is the name of the Download command."
@@ -25085,7 +26433,15 @@
       "comment" : "After Cancel stops several feed downloads that only the listener's Download brings back. %@ is the name of the Download command."
     },
     "To free the space anyway, choose Show in Finder, then %@." : {
-      "comment" : "Second sentence of why Remove Download was refused: how to free the space by hand. Show in Finder is a command's name. %@ is a clause that tells what to do in the cloud service's own app, such as \"choose Remove Download\"."
+      "comment" : "Second sentence of why Remove Download was refused: how to free the space by hand. Show in Finder is a command's name. %@ is a clause that tells what to do in the cloud service's own app, such as \"choose Remove Download\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para liberar el espacio de todos modos, elige Mostrar en Finder y luego %@."
+          }
+        }
+      }
     },
     "To keep an article, choose %@ on its row first." : {
       "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of articles. %@ is the name of the Move to Library command."
@@ -25097,13 +26453,37 @@
       "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of episodes and articles. %@ is the name of the Move to Library command."
     },
     "To let it go, take it off the reading list, or clear %@ in the Reading List's options." : {
-      "comment" : "Last sentence of why Stop Keeping on This Mac cannot let a book go: the reading list keeps it. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it."
+      "comment" : "Last sentence of why Stop Keeping on This Mac cannot let a book go: the reading list keeps it. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para soltarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
+          }
+        }
+      }
     },
     "To let them go, take them off the reading list, or clear %@ in the Reading List's options." : {
-      "comment" : "Last sentence of why Stop Keeping on This Mac cannot let several books go: the reading list keeps them. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it."
+      "comment" : "Last sentence of why Stop Keeping on This Mac cannot let several books go: the reading list keeps them. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para soltarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
+          }
+        }
+      }
     },
     "To the default location, %@" : {
-      "comment" : "Line of the move sheet that says where the library is going: the default location. %@ is its path."
+      "comment" : "Line of the move sheet that says where the library is going: the default location. %@ is its path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "A la ubicación predeterminada, %@"
+          }
+        }
+      }
     },
     "To use another folder, open Settings, Storage, and choose %@ or %@." : {
       "comment" : "Sentence on the Library Not Available screen that points to the way to another library. Settings and Storage are the names of the settings window and its tab; %1$@ and %2$@ are the names of two buttons in Storage settings, as they show them.",
@@ -25112,6 +26492,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "To use another folder, open Settings, Storage, and choose %1$@ or %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Para usar otra carpeta, abre Ajustes, Almacenamiento y elige %1$@ o %2$@."
           }
         }
       }
@@ -25133,6 +26519,12 @@
             "state" : "new",
             "value" : "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Junto con los archivos comprimidos de su interior, el archivo comprimido se expande a %1$@, más de los %2$@ que TextMouth extrae de archivos comprimidos con audio u otros archivos comprimidos."
+          }
         }
       }
     },
@@ -25144,6 +26536,12 @@
             "state" : "new",
             "value" : "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Junto con los archivos comprimidos de su interior, el archivo comprimido se expande a %1$@, más de los %2$@ que TextMouth extrae de archivos comprimidos sin audio."
+          }
         }
       }
     },
@@ -25154,6 +26552,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Together with the archives inside it, the archive holds %1$@ files and folders, more than the %2$@ TextMouth extracts in one import."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Junto con los archivos comprimidos de su interior, el archivo comprimido contiene %1$@ archivos y carpetas, más de los %2$@ que TextMouth extrae en una importación."
           }
         }
       }
@@ -25326,7 +26730,15 @@
       "comment" : "First sentence of the alert shown when Transcribe Audio is chosen with several books selected."
     },
     "Tries again to save every change that could not be saved" : {
-      "comment" : "VoiceOver hint of the Retry Saving button in Storage settings."
+      "comment" : "VoiceOver hint of the Retry Saving button in Storage settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve a intentar guardar todos los cambios que no se pudieron guardar"
+          }
+        }
+      }
     },
     "Tries again to save the recording as an audiobook." : {
       "comment" : "VoiceOver hint of the Save Again button of the Record window."
@@ -25359,19 +26771,51 @@
       "comment" : "Button in the Shortcuts tab of Settings that lets the listener press a key twice to find out whether the double press time counts the two presses as a double press."
     },
     "Try again in a moment." : {
-      "comment" : "Last sentence of why a cloud operation was refused for now: wait and try again."
+      "comment" : "Last sentence of why a cloud operation was refused for now: wait and try again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Intenta de nuevo en un momento."
+          }
+        }
+      }
     },
     "Try again once that move is done." : {
-      "comment" : "Last sentence of why an operation was refused while the library is being moved."
+      "comment" : "Last sentence of why an operation was refused while the library is being moved.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Intenta de nuevo cuando termine ese traslado."
+          }
+        }
+      }
     },
     "Try again once the book has downloaded." : {
       "comment" : "Ends a message saying a file of the book is only in the cloud and isn't on this Mac yet: what to do about it."
     },
     "Try again when that finishes." : {
-      "comment" : "Last sentence of why an operation was refused while something else finishes."
+      "comment" : "Last sentence of why an operation was refused while something else finishes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Intenta de nuevo cuando eso termine."
+          }
+        }
+      }
     },
     "Try again." : {
-      "comment" : "Last sentence of why a move of the data directory did not finish: what to do."
+      "comment" : "Last sentence of why a move of the data directory did not finish: what to do.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Intenta de nuevo."
+          }
+        }
+      }
     },
     "Turn off writing to the file, or download the book first." : {
       "comment" : "Second sentence of the message when Save in Book Information is refused because the book's EPUB file is only in the cloud: what to do."
@@ -25575,7 +27019,15 @@
       }
     },
     "Unreadable file" : {
-      "comment" : "Label of the path of the unreadable library index file, on the library index recovery sheet."
+      "comment" : "Label of the path of the unreadable library index file, on the library index recovery sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Archivo ilegible"
+          }
+        }
+      }
     },
     "Unsubscribe" : {
       "comment" : "Title of the command that stops checking a feed when it acts at once, and of the confirmation's button. Title case."
@@ -25632,13 +27084,29 @@
       "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows."
     },
     "Until then, changing the location and rebuilding the directory are unavailable." : {
-      "comment" : "Last sentence of the Storage settings explanation while the library index can't be read."
+      "comment" : "Last sentence of the Storage settings explanation while the library index can't be read.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hasta entonces, no se puede cambiar la ubicación ni reconstruir el directorio."
+          }
+        }
+      }
     },
     "Untitled" : {
       "comment" : "The name given to an exported file or folder, or to an entry of an exported EPUB, when the book's title or the heading has no words."
     },
     "Untitled rule" : {
-      "comment" : "The name a substitution rule is given in lists and announcements when it has neither a name nor a pattern."
+      "comment" : "The name a substitution rule is given in lists and announcements when it has neither a name nor a pattern.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regla sin título"
+          }
+        }
+      }
     },
     "Up Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Up Arrow\"."
@@ -25650,7 +27118,15 @@
       "comment" : "Hint and tooltip of the buttons that save a text book's voice, speed and pitch as the settings for every book."
     },
     "Updating text cache" : {
-      "comment" : "Title of the progress shown while TextMouth brings every book's text cache up to date."
+      "comment" : "Title of the progress shown while TextMouth brings every book's text cache up to date.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Actualizando la caché de texto"
+          }
+        }
+      }
     },
     "Use %@ and %@, or drag, to reorder. Rules apply top to bottom." : {
       "comment" : "Help in the footer of the Substitutions settings on reordering rules. %1$@ and %2$@ are the titles of the Move Up and Move Down commands, which stay as those commands show them.",
@@ -25660,11 +27136,25 @@
             "state" : "new",
             "value" : "Use %1$@ and %2$@, or drag, to reorder. Rules apply top to bottom."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usa %1$@ y %2$@, o arrastra, para reordenar. Las reglas se aplican de arriba abajo."
+          }
         }
       }
     },
     "Use Default Location..." : {
-      "comment" : "Button in Storage settings, shown while the library isn't available, that opens the library in the default location or starts a new one there. The three dots show that a question follows."
+      "comment" : "Button in Storage settings, shown while the library isn't available, that opens the library in the default location or starts a new one there. The three dots show that a question follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usar ubicación predeterminada…"
+          }
+        }
+      }
     },
     "Use Global Default" : {
       "comment" : "Button of the book's own settings sheet that removes its own end of book choice, so the setting for every book applies."
@@ -25673,25 +27163,65 @@
       "comment" : "Title of the switch in Search in Book that makes the search text a regular expression. Regex is short for regular expression."
     },
     "Use This Library" : {
-      "comment" : "Button of the question that confirms using the library the chosen folder holds."
+      "comment" : "Button of the question that confirms using the library the chosen folder holds.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usar esta biblioteca"
+          }
+        }
+      }
     },
     "Use This Library?" : {
-      "comment" : "Title of the question asked before using the library the chosen folder holds."
+      "comment" : "Title of the question asked before using the library the chosen folder holds.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Usar esta biblioteca?"
+          }
+        }
+      }
     },
     "Use ffmpeg for filters" : {
       "comment" : "Label of the switch in Storage settings (Audio Editing) that lets the audio editor's filters run through an installed ffmpeg program. ffmpeg is the program's name."
     },
     "Use it after parser updates." : {
-      "comment" : "Last sentence of the caption under the Redo Text Extraction button in Storage settings. \"It\" is Redo Text Extraction."
+      "comment" : "Last sentence of the caption under the Redo Text Extraction button in Storage settings. \"It\" is Redo Text Extraction.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Úsalo después de actualizar el analizador."
+          }
+        }
+      }
     },
     "Use regular expression" : {
       "comment" : "VoiceOver label of the Use Regex switch in Search in Book."
     },
     "Use regular expression matching" : {
-      "comment" : "VoiceOver label of the Regular expression switch in the substitution rule editor."
+      "comment" : "VoiceOver label of the Regular expression switch in the substitution rule editor.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usar coincidencia con expresiones regulares"
+          }
+        }
+      }
     },
     "Use the default location" : {
-      "comment" : "VoiceOver label of the Use Default Location button in Storage settings."
+      "comment" : "VoiceOver label of the Use Default Location button in Storage settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usar la ubicación predeterminada"
+          }
+        }
+      }
     },
     "Use the global setting (%@)" : {
       "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.\nA choice of the pop-up button that sets what happens when an item ends, in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as Continue to Next Book.\nThe first choice of the Audio Info pop-up for a book's original audio: follow the global setting. %@ is that setting's name, such as \"Keep\".\nTitle of the checkbox that makes a feed follow the global setting. %@ is the global setting's value, such as \"Every item listed, newest 5 downloaded\".",
@@ -25705,7 +27235,15 @@
       }
     },
     "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it." : {
-      "comment" : "Last sentence of what Try Again does on the library index recovery sheet: when to use it."
+      "comment" : "Last sentence of what Try Again does on the library index recovery sheet: when to use it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Úsalo después de restaurar el archivo desde una copia de seguridad, corregir sus permisos o actualizar TextMouth a la versión que lo guardó."
+          }
+        }
+      }
     },
     "User" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + User\"."
@@ -25714,7 +27252,15 @@
       "comment" : "Announcement after a text book's own voice, speed and pitch were removed, so it uses the settings for every book."
     },
     "Using one library on two Macs at the same time can lose reading positions and changes." : {
-      "comment" : "Last sentence of the warning that another Mac has this library open: the risk."
+      "comment" : "Last sentence of the warning that another Mac has this library open: the risk.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usar una biblioteca en dos Mac al mismo tiempo puede hacer perder posiciones de lectura y cambios."
+          }
+        }
+      }
     },
     "Version" : {
       "comment" : "Label of the iPhone Settings row that names the app's version."
@@ -25747,7 +27293,15 @@
       "comment" : "Announcement after a voice was chosen for the open book. %@ is the voice's name."
     },
     "Voice language" : {
-      "comment" : "VoiceOver label of the Language pop-up in the Voice settings."
+      "comment" : "VoiceOver label of the Language pop-up in the Voice settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Idioma de la voz"
+          }
+        }
+      }
     },
     "Voice language filter" : {
       "comment" : "What VoiceOver calls the voice sheet's menu that limits the voices listed to one language."
@@ -25791,28 +27345,92 @@
       "comment" : "What to do before trying again, when a book's download is being transcribed and cannot be deleted or replaced. Written without a full stop."
     },
     "Waiting for Sync" : {
-      "comment" : "Note in the library list: the book's files have not arrived on this Mac from the sync service yet."
+      "comment" : "Note in the library list: the book's files have not arrived on this Mac from the sync service yet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando la sincronización"
+          }
+        }
+      }
     },
     "Waiting for audio editing to finish..." : {
-      "comment" : "Progress text while a move of the library waits for audio editing to finish first."
+      "comment" : "Progress text while a move of the library waits for audio editing to finish first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que termine la edición de audio…"
+          }
+        }
+      }
     },
     "Waiting for book analysis to finish..." : {
-      "comment" : "Progress text while a move of the library waits for the analysis of books to finish first."
+      "comment" : "Progress text while a move of the library waits for the analysis of books to finish first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que termine el análisis de libros…"
+          }
+        }
+      }
     },
     "Waiting for book metadata to be read..." : {
-      "comment" : "Progress text while a move of the library waits for the reading of books' metadata to finish first."
+      "comment" : "Progress text while a move of the library waits for the reading of books' metadata to finish first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que se lean los metadatos de los libros…"
+          }
+        }
+      }
     },
     "Waiting for feed downloads to be deleted..." : {
-      "comment" : "Progress text while a move of the library waits for the deletion of feed downloads to finish first."
+      "comment" : "Progress text while a move of the library waits for the deletion of feed downloads to finish first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que se eliminen las descargas de canales…"
+          }
+        }
+      }
     },
     "Waiting for feed records to be saved..." : {
-      "comment" : "Progress text while a move of the library waits for the feeds' records to be saved first."
+      "comment" : "Progress text while a move of the library waits for the feeds' records to be saved first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que se guarden los registros de canales…"
+          }
+        }
+      }
     },
     "Waiting for text extraction to finish..." : {
-      "comment" : "Progress text while a move of the library waits for text extraction to finish first."
+      "comment" : "Progress text while a move of the library waits for text extraction to finish first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que termine la extracción de texto…"
+          }
+        }
+      }
     },
     "Waiting for the current import to finish..." : {
-      "comment" : "Progress text while a move of the library waits for an import to finish first."
+      "comment" : "Progress text while a move of the library waits for an import to finish first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Esperando a que termine la importación actual…"
+          }
+        }
+      }
     },
     "Waiting for the data directory move to finish..." : {
       "comment" : "Line of the import overlay while a move of the data directory holds an import back. Ends with an ellipsis written as three full stops."
@@ -25839,22 +27457,70 @@
       "comment" : "Hint of the two iPhone Settings rows that choose a navigation unit, one for text books and one for audiobooks."
     },
     "What happens when a book finishes playing" : {
-      "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings."
+      "comment" : "VoiceOver hint of the When book ends pop-up in the Playback settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Qué pasa cuando termina de reproducirse un libro"
+          }
+        }
+      }
     },
     "What happens when you hold Shift and skip backward" : {
-      "comment" : "VoiceOver hint of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name."
+      "comment" : "VoiceOver hint of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Qué pasa cuando mantienes pulsada Mayúsculas y retrocedes"
+          }
+        }
+      }
     },
     "What happens when you hold Shift and skip forward" : {
-      "comment" : "VoiceOver hint of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name."
+      "comment" : "VoiceOver hint of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Qué pasa cuando mantienes pulsada Mayúsculas y avanzas"
+          }
+        }
+      }
     },
     "What happens when you skip backward" : {
-      "comment" : "VoiceOver hint of the Skip Backward pop-up in the Playback settings."
+      "comment" : "VoiceOver hint of the Skip Backward pop-up in the Playback settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Qué pasa cuando retrocedes"
+          }
+        }
+      }
     },
     "What happens when you skip forward" : {
-      "comment" : "VoiceOver hint of the Skip Forward pop-up in the Playback settings."
+      "comment" : "VoiceOver hint of the Skip Forward pop-up in the Playback settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Qué pasa cuando avanzas"
+          }
+        }
+      }
     },
     "What to do with the original file after importing a book" : {
-      "comment" : "VoiceOver hint of the After Importing a Book pop-up in Storage settings."
+      "comment" : "VoiceOver hint of the After Importing a Book pop-up in Storage settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Qué hacer con el archivo original después de importar un libro"
+          }
+        }
+      }
     },
     "What to export" : {
       "comment" : "The name of the group of checkboxes in the Export dialog."
@@ -26004,10 +27670,26 @@
       "comment" : "Label of the pop-up button in a feed's Feed Info choosing what happens when one of its items ends."
     },
     "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The." : {
-      "comment" : "First sentence of the note under the Leading Articles pop-up, shown where articles are ignored. Names the languages whose articles TextMouth skips; Le, Die, and The are example articles and stay as written."
+      "comment" : "First sentence of the note under the Leading Articles pop-up, shown where articles are ignored. Names the languages whose articles TextMouth skips; Le, Die, and The are example articles and stay as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cuando se ignoran los artículos, un libro cuyos metadatos indican francés, alemán, español, italiano, portugués, neerlandés, catalán, sueco, danés o noruego omite los artículos de ese idioma, como Le y Die, además de The."
+          }
+        }
+      }
     },
     "When book ends" : {
-      "comment" : "Title of the pop-up in the Playback settings that chooses what happens when a book ends."
+      "comment" : "Title of the pop-up in the Playback settings that chooses what happens when a book ends.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Al terminar el libro"
+          }
+        }
+      }
     },
     "When checked, matches must use the same upper and lower case" : {
       "comment" : "VoiceOver hint of the Match Case checkbox."
@@ -26019,13 +27701,29 @@
       "comment" : "VoiceOver hint of the checkbox that makes a feed follow the global setting. %@ is the name of the Feeds tab of Settings."
     },
     "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result" : {
-      "comment" : "VoiceOver hint of the Auto-play after navigation checkbox in the Playback settings."
+      "comment" : "VoiceOver hint of the Auto-play after navigation checkbox in the Playback settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si está activado, la reproducción empieza automáticamente después de saltar a un encabezado, un marcador o un resultado de búsqueda"
+          }
+        }
+      }
     },
     "When enabled, search text is treated as a regular expression" : {
       "comment" : "VoiceOver hint of the Use Regex switch in Search in Book."
     },
     "When enabled, use \\b in the pattern for word boundaries" : {
-      "comment" : "VoiceOver hint of the Regular expression switch in the substitution rule editor. \\b is regular expression syntax and stays as written."
+      "comment" : "VoiceOver hint of the Regular expression switch in the substitution rule editor. \\b is regular expression syntax and stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si está activado, usa \\b en el patrón para los límites de palabra"
+          }
+        }
+      }
     },
     "When off, its files are deleted permanently and cannot be recovered." : {
       "comment" : "Second sentence of the hint of the setting that moves deleted files to the Trash: what happens with the setting off."
@@ -26034,7 +27732,15 @@
       "comment" : "Second sentence of the hint of the setting that confirms before removing a book. %@ is what deleting does, such as \"move the files to the Trash\"."
     },
     "When off, the sheet stays open showing the remaining time and a reset button" : {
-      "comment" : "VoiceOver hint of the Close sheet after setting timer checkbox in the Playback settings."
+      "comment" : "VoiceOver hint of the Close sheet after setting timer checkbox in the Playback settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si está desactivado, la hoja sigue abierta y muestra el tiempo restante y un botón de reinicio"
+          }
+        }
+      }
     },
     "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead." : {
       "comment" : "The hint of the guess switch in the Braille tab of Settings. Unified English Braille and English Braille, American Edition are the names of braille codes."
@@ -26046,7 +27752,15 @@
       "comment" : "First sentence of the hint of the setting that confirms before removing a book. %@ is what deleting does, such as \"move the files to the Trash\"."
     },
     "When resuming playback, rewind to the start of this unit" : {
-      "comment" : "VoiceOver hint of the Rewind to pop-up in the Playback settings."
+      "comment" : "VoiceOver hint of the Rewind to pop-up in the Playback settings.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Al reanudar la reproducción, retrocede hasta el inicio de esta unidad"
+          }
+        }
+      }
     },
     "When this book ends" : {
       "comment" : "Title of the book's own settings menu that chooses what happens when this book ends."
@@ -26083,6 +27797,12 @@
             "state" : "new",
             "value" : "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dónde escribe TextMouth sus registros de diagnóstico. %1$@ los guarda con tus libros, así que se mueven y se sincronizan con la biblioteca. %2$@ los guarda en %3$@, que nunca se sincroniza. Un cambio se aplica desde la línea siguiente; los registros existentes permanecen."
+          }
         }
       }
     },
@@ -26115,6 +27835,12 @@
             "state" : "new",
             "value" : "While TextMouth was copying its data, %1$@ was changed to lead to %2$@ instead of %3$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mientras TextMouth copiaba sus datos, %1$@ se cambió para llevar a %2$@ en lugar de %3$@."
+          }
         }
       }
     },
@@ -26138,11 +27864,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mientras TextMouth copiaba sus datos, aparecieron %1$lld de elementos en %2$@: %3$@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mientras TextMouth copiaba sus datos, apareció %1$lld elemento en %2$@: %3$@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Mientras TextMouth copiaba sus datos, aparecieron %1$lld elementos en %2$@: %3$@."
+                }
+              }
+            }
+          }
         }
       }
     },
     "While TextMouth was copying its data, something else was put at %@." : {
-      "comment" : "First sentence of why a move of the data directory did not finish: something else was put at the new location while the data was copied. %@ is the new location's path."
+      "comment" : "First sentence of why a move of the data directory did not finish: something else was put at the new location while the data was copied. %@ is the new location's path.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mientras TextMouth copiaba sus datos, se puso algo más en %@."
+          }
+        }
+      }
     },
     "While playing, moves Book content on with the speech, even as you read it." : {
       "comment" : "First sentence of the hint of Follow in Braille in iPhone Settings. \"Book content\" is the name of the element that holds the book's text, as VoiceOver reads it."
@@ -26151,7 +27909,15 @@
       "comment" : "Choice in the audio editor's Apply Filter sheet: filter all of the audio."
     },
     "Whole word only" : {
-      "comment" : "A part of a substitution rule's spoken summary: the rule matches whole words only."
+      "comment" : "A part of a substitution rule's spoken summary: the rule matches whole words only.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Solo palabras completas"
+          }
+        }
+      }
     },
     "Windows Media" : {
       "comment" : "The name of the Windows Media container format, as people say it. Inside sentences about importing a file of that format."
@@ -26283,10 +28049,26 @@
       "comment" : "Name of the book information sheet's field for an audiobook's year; VoiceOver reads it as the field's label."
     },
     "You can make a new folder here." : {
-      "comment" : "Last sentence of the message of the folder chooser that Change Location opens: the chooser has a button that makes a folder."
+      "comment" : "Last sentence of the message of the folder chooser that Change Location opens: the chooser has a button that makes a folder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aquí puedes crear una carpeta nueva."
+          }
+        }
+      }
     },
     "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below." : {
-      "comment" : "Last sentence of the library index recovery sheet: what still works, and what does not until an option is chosen."
+      "comment" : "Last sentence of the library index recovery sheet: what still works, and what does not until an option is chosen.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Puedes abrir y leer libros, y las posiciones de lectura se siguen guardando con cada libro, pero los cambios de la propia biblioteca no se guardan hasta que elijas una de las opciones de abajo."
+          }
+        }
+      }
     },
     "You can recover it from the Trash until the Trash is emptied." : {
       "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Move to Trash button: the file can be recovered from the Trash."
@@ -26319,7 +28101,15 @@
       "comment" : "Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays."
     },
     "Your books and reading positions are kept." : {
-      "comment" : "Last sentence of the Rebuild Directory confirmation."
+      "comment" : "Last sentence of the Rebuild Directory confirmation.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tus libros y posiciones de lectura se conservan."
+          }
+        }
+      }
     },
     "Your copy of the rules is empty. Edit Rules… opens it to add some." : {
       "comment" : "Line of the Clean Up Transcript sheet when the user's own rules file holds no rule. Edit Rules… is the name of a button of the sheet."
@@ -26344,6 +28134,12 @@
             "state" : "new",
             "value" : "Your library (%1$@) will upload to %2$@ in the background."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tu biblioteca (%1$@) se subirá a %2$@ en segundo plano."
+          }
         }
       }
     },
@@ -26351,7 +28147,15 @@
       "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label."
     },
     "Your library will upload to %@ in the background." : {
-      "comment" : "First sentence of what moving the library into a cloud folder means, when its size is not known. %@ is the cloud service's name."
+      "comment" : "First sentence of what moving the library into a cloud folder means, when its size is not known. %@ is the cloud service's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tu biblioteca se subirá a %@ en segundo plano."
+          }
+        }
+      }
     },
     "Your place and bookmarks move with their words." : {
       "comment" : "First sentence of what a re-read does to the listener's place and bookmarks."
@@ -26363,13 +28167,37 @@
       "comment" : "What Compare Libraries calls a Reading List book that neither copy's library holds, in lower case, inside a sentence."
     },
     "a book's record, %@" : {
-      "comment" : "A phrase naming a book's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written."
+      "comment" : "A phrase naming a book's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "un registro de libro, %@"
+          }
+        }
+      }
     },
     "a feed's index of its episodes, %@" : {
-      "comment" : "A phrase naming a feed's index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written."
+      "comment" : "A phrase naming a feed's index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "un índice de episodios de un canal, %@"
+          }
+        }
+      }
     },
     "a feed's record, %@" : {
-      "comment" : "A phrase naming a feed's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written."
+      "comment" : "A phrase naming a feed's record file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "un registro de canal, %@"
+          }
+        }
+      }
     },
     "a folder no longer in the library" : {
       "comment" : "Library view editor: the name a folder condition gives a folder that is no longer in the library, inside a filter's description such as \"folder is a folder no longer in the library\"."
@@ -26454,7 +28282,15 @@
       "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up always offers the view."
     },
     "another Mac" : {
-      "comment" : "What the warning that TextMouth is open on another Mac calls that Mac when its name can't be read yet. It sits where the Mac's name would go, inside curly quotes, so it has no capital letter."
+      "comment" : "What the warning that TextMouth is open on another Mac calls that Mac when its name can't be read yet. It sits where the Mac's name would go, inside curly quotes, so it has no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "otra Mac"
+          }
+        }
+      }
     },
     "articles" : {
       "comment" : "Library view editor: the kind of row news articles, in lower case inside a filter's description such as \"Lists books and articles\"."
@@ -26535,7 +28371,15 @@
       "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.\nWho publishes a podcast, in the line under its title in the search results. %@ is the publisher's name."
     },
     "changes to books" : {
-      "comment" : "What the saving failure of books' records is about, as a noun phrase inside a sentence, with no capital letter."
+      "comment" : "What the saving failure of books' records is about, as a noun phrase inside a sentence, with no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "cambios en los libros"
+          }
+        }
+      }
     },
     "chapter %@" : {
       "comment" : "A reading place inside a sentence of Compare Libraries. %@ is the chapter's number, an identifier written without digit grouping."
@@ -26558,6 +28402,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "chapter %1$@, saved %2$@, and %3$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "capítulo %1$@, guardado %2$@, y %3$@"
           }
         }
       }
@@ -26586,10 +28436,26 @@
       "comment" : "The next step after a refusal to delete a feed whose download is in use: \"Close it, then choose Delete Feed… again.\" %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow \"then\"."
     },
     "choose Make online-only" : {
-      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Dropbox. Make online-only is Dropbox's own command name."
+      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Dropbox. Make online-only is Dropbox's own command name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "elige Hacer solo en línea"
+          }
+        }
+      }
     },
     "choose Remove Download" : {
-      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in the Finder for iCloud Drive. Remove Download is the Finder's own command name."
+      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in the Finder for iCloud Drive. Remove Download is the Finder's own command name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "elige Eliminar descarga"
+          }
+        }
+      }
     },
     "chosen" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when the listener chose it."
@@ -26663,7 +28529,15 @@
       }
     },
     "feed subscriptions" : {
-      "comment" : "What the saving failure of the feed subscriptions is about, as a noun phrase inside a sentence, with no capital letter."
+      "comment" : "What the saving failure of the feed subscriptions is about, as a noun phrase inside a sentence, with no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "suscripciones a canales"
+          }
+        }
+      }
     },
     "feeds" : {
       "comment" : "Library view editor: the kind of row feeds, in lower case inside a filter's description such as \"Lists books and feeds\"."
@@ -26780,10 +28654,26 @@
       "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up does not offer the view."
     },
     "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again." : {
-      "comment" : "What to check when the library's files could not come from iCloud Drive. Try Again is the name of a button on the same screen."
+      "comment" : "What to check when the library's files could not come from iCloud Drive. Try Again is the name of a button on the same screen.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Puede que iCloud Drive esté desactivado o con la sesión cerrada, o que esta Mac no tenga conexión. Compruébalo y luego elige Reintentar."
+          }
+        }
+      }
     },
     "iCloud Drive may be turned off or signed out." : {
-      "comment" : "The likely cause of a missing iCloud Drive folder: iCloud Drive's own folder is missing too."
+      "comment" : "The likely cause of a missing iCloud Drive folder: iCloud Drive's own folder is missing too.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Puede que iCloud Drive esté desactivado o con la sesión cerrada."
+          }
+        }
+      }
     },
     "in chapter %@: %@" : {
       "comment" : "A part of the audio editor's status line: the chapter the cursor is in. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ its title.",
@@ -27073,10 +28963,26 @@
       "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence, for a transcription that takes under 45 seconds."
     },
     "library changes" : {
-      "comment" : "What the library's saving failure is about, as a noun phrase inside a sentence, with no capital letter, such as \"Dismiss the notice about library changes\"."
+      "comment" : "What the library's saving failure is about, as a noun phrase inside a sentence, with no capital letter, such as \"Dismiss the notice about library changes\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "cambios de la biblioteca"
+          }
+        }
+      }
     },
     "listening statistics" : {
-      "comment" : "What the saving failure of the listening statistics is about, as a noun phrase inside a sentence, with no capital letter."
+      "comment" : "What the saving failure of the listening statistics is about, as a noun phrase inside a sentence, with no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "estadísticas de escucha"
+          }
+        }
+      }
     },
     "loud" : {
       "comment" : "A word describing the microphone's loudness in the Record window: close to the most a recording can hold. Lower case, since it follows figures."
@@ -27215,7 +29121,15 @@
       "comment" : "Names an empty set of a PDF's pages, in a sentence about which pages were read."
     },
     "no place saved, and %@" : {
-      "comment" : "A record's place and bookmarks inside a sentence about a conflicting copy of a book's record: no reading place was saved. %@ is a count of bookmarks, such as \"2 bookmarks\"."
+      "comment" : "A record's place and bookmarks inside a sentence about a conflicting copy of a book's record: no reading place was saved. %@ is a count of bookmarks, such as \"2 bookmarks\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sin posición guardada, y %@"
+          }
+        }
+      }
     },
     "none" : {
       "comment" : "Said in place of a list of filters or options when there are none, inside a filter message such as \"Its options are none.\""
@@ -27340,7 +29254,15 @@
       }
     },
     "original files" : {
-      "comment" : "What the failure to remove the original files of imported books is about, as a noun phrase inside a sentence, with no capital letter."
+      "comment" : "What the failure to remove the original files of imported books is about, as a noun phrase inside a sentence, with no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "archivos originales"
+          }
+        }
+      }
     },
     "own settings" : {
       "comment" : "The settings of their own that a deleted download or several kept, a noun inside a list such as \"the place and own settings kept for 1 removed download\". Lower case."
@@ -27352,7 +29274,15 @@
       "comment" : "Names several pages of a PDF, in a sentence about which pages were read. %@ is a list of page numbers and ranges, such as \"3 and 7\" or \"1 to 4, 7, and 9\"."
     },
     "permission denied" : {
-      "comment" : "A reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the folder.\nA reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the library's folder."
+      "comment" : "A reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the folder.\nA reason in a few words, with no full stop, that a folder can't be read: the Mac refused TextMouth access. It follows a colon in a sentence about the library's folder.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "permiso denegado"
+          }
+        }
+      }
     },
     "place" : {
       "comment" : "The place in the book that a deleted download kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case."
@@ -27411,7 +29341,15 @@
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding for a file recognized as UTF-16 or UTF-32 by the structure of its bytes, which has no byte-order mark."
     },
     "regex" : {
-      "comment" : "A small tag in a substitution rule's row: the rule's pattern is a regular expression. Short for regular expression, in lower case."
+      "comment" : "A small tag in a substitution rule's row: the rule's pattern is a regular expression. Short for regular expression, in lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "regex"
+          }
+        }
+      }
     },
     "returning it to the library" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, returning it to the library\") and, capitalized by the app, starts a failure (\"Returning it to the library failed: ...\"). Starts with a lowercase letter and has no full stop."
@@ -27437,7 +29375,15 @@
       }
     },
     "settings" : {
-      "comment" : "What the saving failure of the settings is about, as a noun phrase inside a sentence, with no capital letter."
+      "comment" : "What the saving failure of the settings is about, as a noun phrase inside a sentence, with no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ajustes"
+          }
+        }
+      }
     },
     "seventh" : {
       "comment" : "Ordinal word 7th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\"."
@@ -27541,7 +29487,15 @@
       "comment" : "The reason, said after \"not recorded\", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon."
     },
     "text substitution rules" : {
-      "comment" : "What the saving failure of the text substitution rules is about, as a noun phrase inside a sentence, with no capital letter."
+      "comment" : "What the saving failure of the text substitution rules is about, as a noun phrase inside a sentence, with no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "reglas de sustitución de texto"
+          }
+        }
+      }
     },
     "the %@ kept for %lld removed downloads" : {
       "comment" : "What a feed kept for downloads the listener removed, inside a sentence about what Unsubscribe or Delete Feed does. %@ is a list of what was kept, such as \"places and bookmarks\"; %lld is how many removed downloads. Lower case.",
@@ -27591,10 +29545,26 @@
       "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence. %@ is a clause saying why the program was stopped, such as \"it ran longer than 10 seconds\". The braille helper is a program TextMouth runs."
     },
     "the cloud" : {
-      "comment" : "How a sentence names the cloud service when it is unknown. It follows \"in\" or \"from\" in the sentence, so it has no capital letter."
+      "comment" : "How a sentence names the cloud service when it is unknown. It follows \"in\" or \"from\" in the sentence, so it has no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "la nube"
+          }
+        }
+      }
     },
     "the cloud service" : {
-      "comment" : "How a sentence names the cloud service when it is unknown, in the middle of the sentence, so it has no capital letter.\nHow a sentence names the cloud service when it is unknown. It follows \"Check that\", so it has no capital letter."
+      "comment" : "How a sentence names the cloud service when it is unknown, in the middle of the sentence, so it has no capital letter.\nHow a sentence names the cloud service when it is unknown. It follows \"Check that\", so it has no capital letter.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "el servicio en la nube"
+          }
+        }
+      }
     },
     "the copy in this folder" : {
       "comment" : "What the Use This Library confirmation calls the copy in the folder the listener chose, inside a sentence, in lower case."
@@ -27648,7 +29618,15 @@
       "comment" : "A phrase naming a file that could not be read, inside Use This Library's account of why it can't tell which copy is newer. %@ is a copy of the library."
     },
     "the library index, %@" : {
-      "comment" : "A phrase naming the library index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written."
+      "comment" : "A phrase naming the library index file inside a sentence about a conflicting copy. %@ is the file's name, which stays as written.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "un índice de la biblioteca, %@"
+          }
+        }
+      }
     },
     "the other copy" : {
       "comment" : "What the Compare Libraries sheet calls the folder compared with the library in use, inside a sentence, in lower case: \"Book only in the other copy\"."
@@ -27728,10 +29706,26 @@
       "comment" : "How an error names a section of an audiobook whose heading has no title, in a sentence such as \"The untitled heading 3 starts …\". %@ is the heading's place among the book's headings, from 1, an identifier written without digit grouping. A masculine noun phrase in English, without its article, starting with a lowercase letter."
     },
     "use Google Drive's Offline Access menu" : {
-      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Google Drive. Offline Access is Google Drive's own menu name."
+      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Google Drive. Offline Access is Google Drive's own menu name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "usa el menú Acceso sin conexión de Google Drive"
+          }
+        }
+      }
     },
     "use the drive's own command to keep the book only online" : {
-      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do when the cloud drive is not known."
+      "comment" : "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do when the cloud drive is not known.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "usa el comando propio de la unidad para mantener el libro solo en línea"
+          }
+        }
+      }
     },
     "version %@" : {
       "comment" : "A detail of the build line of the speech refusal report. %@ is the app's version, such as 0.5.3."
@@ -27763,13 +29757,29 @@
       "comment" : "A Library view's visibility in lower case, inside a row's spoken label: the View pop-up offers the view only while it lists something."
     },
     "word" : {
-      "comment" : "A small tag in a substitution rule's row: the rule matches whole words only. In lower case."
+      "comment" : "A small tag in a substitution rule's row: the rule matches whole words only. In lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "palabra"
+          }
+        }
+      }
     },
     "yesterday at %@" : {
       "comment" : "A moment on the day before the check. %@ is the time of day, such as 9:00 AM. Lower case."
     },
     "you stopped the comparison" : {
-      "comment" : "A reason, in a clause with no capital letter and no full stop, that Use This Library could not tell which copy of the library is newer: the listener cancelled the comparison."
+      "comment" : "A reason, in a clause with no capital letter and no full stop, that Use This Library could not tell which copy of the library is newer: the listener cancelled the comparison.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "detuviste la comparación"
+          }
+        }
+      }
     },
     "“%@”" : {
       "comment" : "Puts a book's, folder's, or feed's title in quotation marks inside a sentence. %@ is the title."
@@ -27839,6 +29849,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "“%1$@” could not be moved back after a failed move, so its files are at %2$@ instead of %3$@: %4$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo devolver «%1$@» a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@"
           }
         }
       }
