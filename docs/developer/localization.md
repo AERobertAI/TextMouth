@@ -22,7 +22,7 @@ A key is the English text, and keys are app-wide: one translation serves every p
 A word with two meanings gets a key of its own only when a translator says so.
 
 ## The size budget
-<!-- id: localization-size-budget; keys: 150 KB, budgetBytes, budgetFails, l10n-size, English bytes, es.lproj size; src: Scripts/l10n/config.json, Scripts/l10n/l10n.py -->
+<!-- id: localization-size-budget; keys: 150 KB, budgetBytes, budgetFails, l10n-size, English bytes, es.lproj size; status: incomplete; issues: FR34; src: Scripts/l10n/config.json, Scripts/l10n/l10n.py -->
 
 The English text in the catalog has a budget of 150,000 bytes (`budgetBytes` in `Scripts/l10n/config.json`), and `make l10n-size` reports it, with each language's shipped size in each format.
 The budget only reports for now (`budgetFails` is false); it will fail once the cutting is done.
@@ -31,7 +31,7 @@ The catalog now holds 188 strings and 6,035 bytes of English.
 Converting a sentence whole grows the English by about a fifth before any cut, because glued sentences become whole ones and each count gets its plural forms.
 
 ## The commands
-<!-- id: localization-commands; keys: make l10n-sync, l10n-status, l10n-check, lint-l10n, plural, prune, reach, scan.py show; src: Makefile, Scripts/l10n/l10n.py, Scripts/l10n/scan.py, Scripts/l10n/reach.py -->
+<!-- id: localization-commands; keys: make l10n-sync, l10n-status, l10n-check, lint-l10n, plural, prune, reach, scan.py show; status: incomplete; issues: TL14; src: Makefile, Scripts/l10n/l10n.py, Scripts/l10n/scan.py, Scripts/l10n/reach.py -->
 
 - `make l10n-sync` (`REF=commit`, or `WORKTREE=1` for uncommitted work) extracts the strings of both apps and merges them into the catalog.
 - `make l10n-status` counts each language's strings by state (`LANG_CODE=es` for one), `make l10n-size` is the size report, and `make l10n-check` checks the catalog: comments, placeholders, plural forms, empty values, stale strings, and malformed parts.
@@ -39,6 +39,7 @@ Converting a sentence whole grows the English by about a fifth before any cut, b
 - `make lint-l10n` is the scanner's ratchet (below).
 - `l10n.py plural KEY --lang en --one "..." --other "..."` writes a string's plural forms.
   Give every count sentence English `one` and `other`, even one that never says one, since `apply` refuses plural forms for a key whose English has none.
+  That is a limit to lift later (TL14), as is `plural`'s refusal of a plural that agrees with a second number.
 - `l10n.py prune` deletes the stale strings a cut leaves, which `check` otherwise reports until someone does; `prune --all` and `--dry-run` are in [Translating TextMouth](translation.md#syncing-pruning-and-the-test-classes).
 - `l10n.py reach` lists the test classes the branch's localization could break, for `build-train.py request --classes`, and the iPhone unit classes on a line of their own.
 - `scan.py report [--by area|file]` totals the unlocalized text by area or file.
