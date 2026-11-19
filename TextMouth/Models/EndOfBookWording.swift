@@ -215,10 +215,9 @@ enum EndOfBookWording {
     /// what Play does on a finished book with each choice that stops there
     /// (TODO P07), shown and read alike. The two choices are named as the
     /// picker shows them, so the caption and the picker agree in every
-    /// language; the picker shows each choice's raw value until that setting
-    /// gains a localized title, and then this takes the title too.
+    /// language: both show each choice's localized `title`.
     static var playOnAFinishedBookCaption: String {
-        String(localized: "With \"\(EndOfBookBehavior.stop.rawValue)\", Play on a finished book says it is finished; with \"\(EndOfBookBehavior.stopAndPlayStartsOver.rawValue)\", Play starts it again from the beginning.",
+        String(localized: "With \"\(EndOfBookBehavior.stop.title)\", Play on a finished book says it is finished; with \"\(EndOfBookBehavior.stopAndPlayStartsOver.title)\", Play starts it again from the beginning.",
                comment: "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.")
     }
 }

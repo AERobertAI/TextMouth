@@ -990,7 +990,7 @@ struct BookVoicePickerView: View {
                         set: { viewModel.setLocalEndOfBookBehavior($0) }
                     )) {
                         ForEach(EndOfBookBehavior.allCases, id: \.self) { behavior in
-                            Text(behavior.rawValue).tag(behavior)
+                            Text(behavior.title).tag(behavior)
                         }
                     }
                     .accessibilityLabel("End of book behavior for this book")

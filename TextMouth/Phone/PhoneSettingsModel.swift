@@ -382,22 +382,21 @@ enum PhoneSettingsModel {
     }
 
     /// The Navigation unit for text books row's choices.
-    static var textNavigationUnitChoices: [PhoneChoice<SkipUnit>] { choices(of: textNavigationUnits) }
+    static var textNavigationUnitChoices: [PhoneChoice<SkipUnit>] { choices(of: textNavigationUnits, titled: \.title) }
 
     /// The Navigation unit for audiobooks row's choices.
-    static var audioNavigationUnitChoices: [PhoneChoice<SkipUnit>] { choices(of: audioNavigationUnits) }
+    static var audioNavigationUnitChoices: [PhoneChoice<SkipUnit>] { choices(of: audioNavigationUnits, titled: \.title) }
 
     /// The Rewind to row's choices, in the Mac's order.
-    static var rewindChoices: [PhoneChoice<RewindUnit>] { choices(of: RewindUnit.allCases) }
+    static var rewindChoices: [PhoneChoice<RewindUnit>] { choices(of: RewindUnit.allCases, titled: \.title) }
 
     /// The When book ends row's choices, in the Mac's order.
-    static var endOfBookChoices: [PhoneChoice<EndOfBookBehavior>] { choices(of: EndOfBookBehavior.allCases) }
+    static var endOfBookChoices: [PhoneChoice<EndOfBookBehavior>] { choices(of: EndOfBookBehavior.allCases, titled: \.title) }
 
-    /// A choice for each of `cases`, named by its raw value, as the Mac's
-    /// pickers name them.
-    private static func choices<Choice>(of cases: [Choice]) -> [PhoneChoice<Choice>]
-    where Choice: Hashable & RawRepresentable, Choice.RawValue == String {
-        cases.map { PhoneChoice(id: $0, label: $0.rawValue) }
+    /// A choice for each of `cases`, named by its localized title, as the
+    /// Mac's pickers name them (a raw value is what is stored, never shown).
+    private static func choices<Choice: Hashable>(of cases: [Choice], titled title: (Choice) -> String) -> [PhoneChoice<Choice>] {
+        cases.map { PhoneChoice(id: $0, label: title($0)) }
     }
 
     // MARK: What Applies Now

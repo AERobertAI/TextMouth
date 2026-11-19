@@ -135,11 +135,11 @@ struct PhoneSettingsView: View {
             sliderRow(.defaultSpeed, value: noted($settings.wordsPerMinute))
             sliderRow(.defaultPitch, value: noted($settings.pitchMultiplier))
         case .navigation:
-            choiceRow(.textNavigationUnit, value: textNavigationUnit.rawValue)
-            choiceRow(.audioNavigationUnit, value: audioNavigationUnit.rawValue)
+            choiceRow(.textNavigationUnit, value: textNavigationUnit.title)
+            choiceRow(.audioNavigationUnit, value: audioNavigationUnit.title)
             switchRow(.autoPlayAfterNavigation, isOn: noted($settings.autoPlayOnNavigate))
         case .rewindOnResume:
-            choiceRow(.rewindTo, value: settings.rewindOnResumeUnit.rawValue)
+            choiceRow(.rewindTo, value: settings.rewindOnResumeUnit.title)
             switchRow(
                 .smartMode,
                 isOn: noted($settings.rewindSmartMode),
@@ -156,7 +156,7 @@ struct PhoneSettingsView: View {
         case .punctuationPauses:
             stepperRow(.punctuationPauseLevel, value: noted($settings.punctuationPauseLevel))
         case .endOfBook:
-            choiceRow(.endOfBook, value: settings.endOfBookBehavior.rawValue)
+            choiceRow(.endOfBook, value: settings.endOfBookBehavior.title)
             // Left where VoiceOver and braille can read it, as on the Mac: the
             // row has a hint of its own, so this isn't said as one.
             Text(EndOfBookWording.playOnAFinishedBookCaption)
