@@ -41,7 +41,7 @@ final class PhoneImportQuestionTests: XCTestCase {
 
         XCTAssertEqual(question.decisionID, decision.id)
         XCTAssertEqual(question.title, "Duplicate Book Found")
-        XCTAssertTrue(question.message.hasPrefix("“Dune.epub” matches “Dune”, which is already in your library."), question.message)
+        XCTAssertTrue(question.message.hasPrefix("“Dune.epub” matches “Dune”, already in your library."), question.message)
         XCTAssertEqual(question.choices.map(\.words.title), ["Keep Both", "Replace Existing", "Cancel"])
         XCTAssertEqual(question.choices.map(\.words.hint), [
             ImportDecisionChoiceWording.keepBoth.hint,

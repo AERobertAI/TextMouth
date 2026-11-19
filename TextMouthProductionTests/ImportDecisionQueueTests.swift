@@ -197,7 +197,7 @@ final class ImportDecisionQueueTests: XCTestCase {
         XCTAssertEqual(duplicateWording.title, "Duplicate Book Found, 2 of 3")
         XCTAssertEqual(
             duplicateWording.message,
-            "“Atlas of Tides.txt” matches “Earlier Atlas”, which is already in your library. "
+            "“Atlas of Tides.txt” matches “Earlier Atlas”, already in your library. "
                 + "Replace the existing copy, or keep both as separate books?"
                 + "\n\n" + Self.textKeptWords + " " + Self.trashWords
                 + "\n\nThe copy just imported is incomplete. 1 of 3 chapters could not be read."
@@ -241,7 +241,7 @@ final class ImportDecisionQueueTests: XCTestCase {
         let wording = ImportDecisionWording(for: Self.duplicateQuestion(), position: 1, total: 1, movesToTrash: false)
         XCTAssertEqual(
             wording.message,
-            "“Atlas of Tides” matches “Earlier Atlas”, which is already in your library. "
+            "“Atlas of Tides” matches “Earlier Atlas”, already in your library. "
                 + "Replace the existing copy, or keep both as separate books?"
                 + "\n\n" + Self.textKeptWords + " " + Self.deletedWords
         )
@@ -262,7 +262,7 @@ final class ImportDecisionQueueTests: XCTestCase {
 
         XCTAssertEqual(
             ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: true).message,
-            "“Tide” matches “Earlier Tide”, which is already in your library. "
+            "“Tide” matches “Earlier Tide”, already in your library. "
                 + "Replace the existing copy, or keep both as separate books?"
                 + "\n\n" + Self.audioKeptWords + " " + Self.trashWords
         )
@@ -285,7 +285,7 @@ final class ImportDecisionQueueTests: XCTestCase {
             let question = ImportDecision(kind: .duplicate(duplicate), request: ImportRequest())
             return ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: true).message
         }
-        let choice = "“Tide” matches “Earlier Tide”, which is already in your library. "
+        let choice = "“Tide” matches “Earlier Tide”, already in your library. "
             + "Replace the existing copy, or keep both as separate books?\n\n"
         let keepsExisting = "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, "
             + "and place on the reading list, and its transcript when the audio is the same, rather than "
@@ -351,14 +351,14 @@ final class ImportDecisionQueueTests: XCTestCase {
         )
         XCTAssertEqual(
             ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: false).message,
-            "“Atlas of Tides” matches “Earlier Atlas”, which is already in your library. "
+            "“Atlas of Tides” matches “Earlier Atlas”, already in your library. "
                 + "Replace the existing copy, or keep both as separate books?"
                 + "\n\n" + Self.textKeptWords + " " + Self.deletedWords
                 + "\n\nThe copy just imported is incomplete. 2 of 9 chapters could not be read."
         )
         XCTAssertEqual(
             ImportDecisionWording(for: question, position: 1, total: 1, movesToTrash: true).message,
-            "“Atlas of Tides” matches “Earlier Atlas”, which is already in your library. "
+            "“Atlas of Tides” matches “Earlier Atlas”, already in your library. "
                 + "Replace the existing copy, or keep both as separate books?"
                 + "\n\n" + Self.textKeptWords + " " + Self.trashWords
                 + "\n\nThe copy just imported is incomplete. 2 of 9 chapters could not be read."
