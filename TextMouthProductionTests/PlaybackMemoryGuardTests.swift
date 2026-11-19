@@ -382,7 +382,7 @@ final class PlaybackMemoryGuardTests: XCTestCase {
             .replacingOccurrences(of: "\u{202F}", with: " ")
         XCTAssertEqual(
             announcement,
-            "TextMouth quit on October 14, 2026 at 9:03 PM to protect your Mac: its memory grew to 6.1 GB "
+            "TextMouth quit on October 14, 2026 at 9:03 PM: its memory grew to 6.1 GB "
                 + "while Tide Tables played, because of a fault in macOS's audio. Your place was saved."
         )
         let untitled = MemoryQuitMarker(date: Self.quitDate, footprint: 6 * Self.gigabyte, bookTitle: nil)
@@ -400,7 +400,7 @@ final class PlaybackMemoryGuardTests: XCTestCase {
             .replacingOccurrences(of: "\u{202F}", with: " ")
         XCTAssertEqual(
             announcement,
-            "TextMouth quit on October 14, 2026 at 9:03 PM to protect your Mac: its memory grew to 6.1 GB "
+            "TextMouth quit on October 14, 2026 at 9:03 PM: its memory grew to 6.1 GB "
                 + "while nothing was playing. Your place was saved."
         )
 

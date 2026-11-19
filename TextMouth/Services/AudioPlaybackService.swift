@@ -447,19 +447,29 @@ enum AudioSpeed {
     /// Spoken equivalent of `visibleLabel(for:)` for VoiceOver and braille,
     /// e.g. "1.25 times speed". A bare "1.25x" is read ambiguously.
     static func spokenLabel(for speed: Double) -> String {
-        "\(formattedNumber(normalized(speed))) times speed"
+        let number = formattedNumber(normalized(speed))
+        return String(localized: "\(number) times speed",
+                      comment: "What VoiceOver and braille say for the playback speed of an audiobook, such as \"1.25 times speed\". %@ is the speed's number, such as 1.25.")
     }
 
     /// Accessibility label for a button that moves the speed by `step`,
     /// e.g. "Increase audio speed by 0.1 times".
     static func stepButtonLabel(increasing: Bool, by step: Double) -> String {
-        "\(increasing ? "Increase" : "Decrease") audio speed by \(formattedNumber(step)) times"
+        let number = formattedNumber(step)
+        if increasing {
+            return String(localized: "Increase audio speed by \(number) times",
+                          comment: "Accessibility label of the button that raises the audio speed. %@ is the size of one step, such as 0.1.")
+        }
+        return String(localized: "Decrease audio speed by \(number) times",
+                      comment: "Accessibility label of the button that lowers the audio speed. %@ is the size of one step, such as 0.1.")
     }
 
     /// Accessibility hint for an adjustable control that moves in steps of
     /// `step`, e.g. "Changes the speed in steps of 0.05 times".
     static func stepHint(_ step: Double) -> String {
-        "Changes the speed in steps of \(formattedNumber(step)) times"
+        let number = formattedNumber(step)
+        return String(localized: "Changes the speed in steps of \(number) times",
+                      comment: "Accessibility hint of the audio speed control that adjusts in steps. %@ is the size of one step, such as 0.05.")
     }
 }
 
@@ -512,11 +522,70 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
 
     /// What happened to the file, as a clause that can end a longer
     /// sentence: "the file 03.mp3 is missing".
-    var problem: String { "the file \(fileName) \(predicate)" }
+    var problem: String {
+        let name = fileName
+        switch reason {
+        case .fileMissing:
+            return String(localized: "the file \(name) is missing",
+                          comment: "A clause that ends a longer sentence about an audio file that cannot play: the file is not there. %@ is the file's name, such as 03.mp3.")
+        case .fileUnreadable:
+            return String(localized: "the file \(name) is damaged, unreadable, or not an audio file",
+                          comment: "A clause that ends a longer sentence about an audio file that cannot play: it cannot be read as audio. %@ is the file's name, such as 03.mp3.")
+        case .failedDuringPlayback:
+            return String(localized: "the file \(name) failed partway through",
+                          comment: "A clause that ends a longer sentence about an audio file that cannot play: it failed while playing. %@ is the file's name, such as 03.mp3.")
+        case .stalled:
+            return String(localized: "the file \(name) could not be read quickly enough",
+                          comment: "A clause that ends a longer sentence about an audio file that cannot play: the disk was too slow. %@ is the file's name, such as 03.mp3.")
+        case .stoppedResponding:
+            return String(localized: "the file \(name) stopped responding",
+                          comment: "A clause that ends a longer sentence about an audio file that cannot play: playback stopped responding. %@ is the file's name, such as 03.mp3.")
+        case .memoryRunaway:
+            return String(localized: "the file \(name) was stopped because TextMouth's memory grew too large",
+                          comment: "A clause that ends a longer sentence about an audio file that cannot play: TextMouth stopped it to protect the Mac. %@ is the file's name, such as 03.mp3.")
+        }
+    }
+
+    /// The problem as a sentence in English whatever the interface language,
+    /// for the debug log, which stays English: "The file 03.mp3 is missing."
+    var logMessage: String {
+        let what: String
+        switch reason {
+        case .fileMissing: what = "is missing" // l10n: no (debug log)
+        case .fileUnreadable: what = "is damaged, unreadable, or not an audio file" // l10n: no (debug log)
+        case .failedDuringPlayback: what = "failed partway through" // l10n: no (debug log)
+        case .stalled: what = "could not be read quickly enough" // l10n: no (debug log)
+        case .stoppedResponding: what = "stopped responding" // l10n: no (debug log)
+        case .memoryRunaway: what = "was stopped because TextMouth's memory grew too large" // l10n: no (debug log)
+        }
+        return "The file \(fileName) \(what)." // l10n: no (debug log)
+    }
 
     /// The problem as a sentence of its own, to show or speak:
     /// "The file 03.mp3 is missing."
-    var message: String { "The file \(fileName) \(predicate)." }
+    var message: String {
+        let name = fileName
+        switch reason {
+        case .fileMissing:
+            return String(localized: "The file \(name) is missing.",
+                          comment: "A sentence telling an audio file is not there. %@ is the file's name, such as 03.mp3.")
+        case .fileUnreadable:
+            return String(localized: "The file \(name) is damaged, unreadable, or not an audio file.",
+                          comment: "A sentence telling an audio file cannot be read as audio. %@ is the file's name, such as 03.mp3.")
+        case .failedDuringPlayback:
+            return String(localized: "The file \(name) failed partway through.",
+                          comment: "A sentence telling an audio file failed while playing. %@ is the file's name, such as 03.mp3.")
+        case .stalled:
+            return String(localized: "The file \(name) could not be read quickly enough.",
+                          comment: "A sentence telling an audio file could not be read fast enough to play. %@ is the file's name, such as 03.mp3.")
+        case .stoppedResponding:
+            return String(localized: "The file \(name) stopped responding.",
+                          comment: "A sentence telling playback of an audio file stopped responding. %@ is the file's name, such as 03.mp3.")
+        case .memoryRunaway:
+            return String(localized: "The file \(name) was stopped because TextMouth's memory grew too large.",
+                          comment: "A sentence telling TextMouth stopped an audio file to protect the Mac. %@ is the file's name, such as 03.mp3.")
+        }
+    }
 
     /// The reason for an error AVFoundation raised while opening or playing
     /// a file.
@@ -535,24 +604,6 @@ struct AudioPlaybackFailure: Error, Equatable, Sendable {
         itemBecameReady: Bool
     ) -> Reason {
         fileProblem ?? (itemBecameReady ? .failedDuringPlayback : .fileUnreadable)
-    }
-
-    /// What happened, following "the file 03.mp3".
-    private var predicate: String {
-        switch reason {
-        case .fileMissing:
-            return "is missing"
-        case .fileUnreadable:
-            return "is damaged, unreadable, or not an audio file"
-        case .failedDuringPlayback:
-            return "failed partway through"
-        case .stalled:
-            return "could not be read quickly enough"
-        case .stoppedResponding:
-            return "stopped responding"
-        case .memoryRunaway:
-            return "was stopped because TextMouth's memory grew too large"
-        }
     }
 }
 
@@ -1664,7 +1715,7 @@ final class AudioPlaybackService: NSObject, ObservableObject, @unchecked Sendabl
                                                               filteredByIdentifier: .commonIdentifierTitle)
                 // A title that fails to load counts as missing, as the
                 // synchronous stringValue this replaces returned nil.
-                let title = (try? await titleItems.first?.load(.stringValue)) ?? "Chapter"
+                let title = (try? await titleItems.first?.load(.stringValue)) ?? "Chapter" // l10n: no (stored: it becomes the chapter's title in the book's files)
                 let start = CMTimeGetSeconds(group.timeRange.start)
                 let dur = CMTimeGetSeconds(group.timeRange.duration)
                 chapters.append((title: title, startTime: start.isFinite ? start : 0, duration: dur.isFinite ? dur : 0))

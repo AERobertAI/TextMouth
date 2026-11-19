@@ -174,8 +174,8 @@ class StandardVoiceOverFocusTriggerView: NSView {
 
     /// Defines which accessibility nodes are safe generic fallback targets.
     nonisolated static func acceptsFallback(role: String, label: String?, isScrollerPart: Bool) -> Bool {
-        if role == "AXRow" || role == "AXCell" || role == "AXTextField" { return true }
-        return role == "AXButton" && !isScrollerPart && label?.isEmpty == false
+        if role == "AXRow" || role == "AXCell" || role == "AXTextField" { return true } // l10n: no (accessibility role names the system defines)
+        return role == "AXButton" && !isScrollerPart && label?.isEmpty == false // l10n: no (accessibility role names the system defines)
     }
 
     /// How many times a trigger has posted focus in each window
@@ -687,8 +687,8 @@ final class VoiceOverFocusTriggerView: NSView {
                 return obj.perform(AccessibilityGetter.role)?.takeUnretainedValue() as? String
             }()
             if let role = role {
-                if role == "AXRow" || role == "AXCell" { return root }
-                if role == "AXButton" { return root }
+                if role == "AXRow" || role == "AXCell" { return root } // l10n: no (accessibility role names the system defines)
+                if role == "AXButton" { return root } // l10n: no (accessibility role names the system defines)
                 if role == "AXTextField" { return root }
             }
         }

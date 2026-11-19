@@ -247,7 +247,7 @@ enum NextBookWindowWording {
     /// the items `noun` names. Word for word the sentence the predownload
     /// switch beside it says (`ListeningOptionsWording.predownloadHint`), so
     /// the two read alike and share one translation; not cut alone (FR35).
-    private static func unavailableHint(_ noun: ListeningOptionsWording.Noun) -> String {
+    static func unavailableHint(_ noun: ListeningOptionsWording.Noun) -> String {
         switch noun {
         case .episode:
             return String(localized: "Available only while this feed's episodes go on to another episode when one ends",

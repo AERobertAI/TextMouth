@@ -62,14 +62,14 @@ struct ReadingStatsView: View {
             Section {
                 tiles(ReadingStatsTile.listeningTime, showing: figures)
             } header: {
-                Text("Listening Time")
+                Text(ReadingStatsViewWording.listeningTimeHeader)
                     .accessibilityAddTraits(.isHeader)
             }
 
             Section {
                 tiles(ReadingStatsTile.progress, showing: figures)
             } header: {
-                Text("Progress")
+                Text(ReadingStatsViewWording.progressHeader)
                     .accessibilityAddTraits(.isHeader)
             }
 
@@ -86,10 +86,10 @@ struct ReadingStatsView: View {
                                 .foregroundColor(.secondary)
                         }
                         .accessibilityElement(children: .combine)
-                        .accessibilityLabel("\(entry.title), finished \(entry.dateFinished, style: .date)")
+                        .accessibilityLabel(ReadingStatsViewWording.finishedRowLabel(title: entry.title, date: entry.dateFinished))
                     }
                 } header: {
-                    Text("Recently Finished")
+                    Text(ReadingStatsViewWording.recentlyFinishedHeader)
                         .accessibilityAddTraits(.isHeader)
                 }
             }
@@ -153,5 +153,35 @@ struct ReadingStatsTileRow: View {
         }
         .accessibilityLabel(wording.accessibilityLabel)
         .accessibilityIdentifier(tile.accessibilityIdentifier)
+    }
+}
+
+/// The words of the Stats pane's headings and its Recently Finished rows
+/// (the tiles' own words are `ReadingStatsTile`'s).
+enum ReadingStatsViewWording {
+    /// The heading of the tiles of listening time.
+    static var listeningTimeHeader: String {
+        String(localized: "Listening Time",
+               comment: "Heading of the section of Settings, Stats that shows the listening time of today, this week, and all time.")
+    }
+
+    /// The heading of the tiles of progress.
+    static var progressHeader: String {
+        String(localized: "Progress",
+               comment: "Heading of the section of Settings, Stats that shows the listening streak and the number of books finished.")
+    }
+
+    /// The heading of the list of the books finished most recently.
+    static var recentlyFinishedHeader: String {
+        String(localized: "Recently Finished",
+               comment: "Heading of the section of Settings, Stats that lists the books finished most recently, each with the date.")
+    }
+
+    /// What VoiceOver reads for a row of Recently Finished: "Moby Dick,
+    /// finished November 18, 2026".
+    static func finishedRowLabel(title: String, date: Date) -> String {
+        let when = date.formatted(date: .long, time: .omitted)
+        return String(localized: "\(title), finished \(when)",
+                      comment: "VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.")
     }
 }

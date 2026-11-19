@@ -36,6 +36,28 @@ final class AudioPlaybackFailureTests: XCTestCase {
         }
     }
 
+    /// Each reason words the failure as a clause that ends a longer sentence
+    /// and as a sentence of its own, and the debug log, which stays English
+    /// whatever the interface language, reads the same sentence as
+    /// `logMessage` (FR34).
+    func testEveryReasonIsWordedAsAClauseASentenceAndALogMessage() {
+        let url = URL(fileURLWithPath: "/Users/reader/Book/03.mp3")
+        let words: [(AudioPlaybackFailure.Reason, String)] = [
+            (.fileMissing, "is missing"),
+            (.fileUnreadable, "is damaged, unreadable, or not an audio file"),
+            (.failedDuringPlayback, "failed partway through"),
+            (.stalled, "could not be read quickly enough"),
+            (.stoppedResponding, "stopped responding"),
+            (.memoryRunaway(footprint: 1), "was stopped because TextMouth's memory grew too large"),
+        ]
+        for (reason, predicate) in words {
+            let failure = AudioPlaybackFailure(reason: reason, url: url)
+            XCTAssertEqual(failure.problem, "the file 03.mp3 \(predicate)", "\(reason)")
+            XCTAssertEqual(failure.message, "The file 03.mp3 \(predicate).", "\(reason)")
+            XCTAssertEqual(failure.logMessage, failure.message, "\(reason)")
+        }
+    }
+
     /// A folder is not a track, whatever its name says.
     func testFolderWithAnAudioNameIsReportedUnreadable() throws {
         try withFixtureDirectory { directory in

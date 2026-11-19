@@ -55,13 +55,27 @@ final class MediaGestureDetector: Sendable {
         /// Display name for settings UI / VoiceOver descriptions.
         var displayName: String {
             switch self {
-            case .play: return "Play"
-            case .pause: return "Pause"
-            case .togglePlayPause: return "Play/Pause toggle"
-            case .previousTrack: return "Previous track"
-            case .nextTrack: return "Next track"
-            case .skipForward: return "Skip forward"
-            case .skipBackward: return "Skip backward"
+            case .play:
+                return String(localized: "Play",
+                              comment: "Name of the Play media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.")
+            case .pause:
+                return String(localized: "Pause",
+                              comment: "Name of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.")
+            case .togglePlayPause:
+                return String(localized: "Play/Pause toggle",
+                              comment: "Name of the media event of the combined Play and Pause key, a choice for one step of the media-key pattern in Settings.")
+            case .previousTrack:
+                return String(localized: "Previous track",
+                              comment: "Name of the Previous Track media event, a choice for one step of the media-key pattern in Settings.")
+            case .nextTrack:
+                return String(localized: "Next track",
+                              comment: "Name of the Next Track media event, a choice for one step of the media-key pattern in Settings.")
+            case .skipForward:
+                return String(localized: "Skip forward",
+                              comment: "Name of the Skip Forward media event, a choice for one step of the media-key pattern in Settings.")
+            case .skipBackward:
+                return String(localized: "Skip backward",
+                              comment: "Name of the Skip Backward media event, a choice for one step of the media-key pattern in Settings.")
             }
         }
     }

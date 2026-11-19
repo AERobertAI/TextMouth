@@ -61,7 +61,7 @@ extension SpeechRenderSignature: CustomStringConvertible {
     /// hash, then the voice.
     var description: String {
         let hash = String(UInt(bitPattern: textHash), radix: 16)
-        return "\(textUTF16Length) UTF-16 units #\(hash), voice \(voiceIdentifier ?? "default")"
+        return "\(textUTF16Length) UTF-16 units #\(hash), voice \(voiceIdentifier ?? "default")" // l10n: no (debug and transition log text, which stays English)
     }
 }
 
@@ -398,7 +398,7 @@ extension RenderedSpeechAudio {
             guard let format,
                   pieceFormat.sampleRate == format.sampleRate,
                   pieceFormat.channelCount == format.channelCount else {
-                failure = "a piece in \(pieceFormat) among audio in \(format.map { "\($0)" } ?? "no standard format")"
+                failure = "a piece in \(pieceFormat) among audio in \(format.map { "\($0)" } ?? "no standard format")" // l10n: no (debug and transition log text, which stays English)
                 return
             }
             let channelCount = Int(format.channelCount)
@@ -427,7 +427,7 @@ extension RenderedSpeechAudio {
                     }
                 }
             } else {
-                failure = "a piece of samples neither 32-bit floats nor 16-bit integers: \(pieceFormat)"
+                failure = "a piece of samples neither 32-bit floats nor 16-bit integers: \(pieceFormat)" // l10n: no (debug and transition log text, which stays English)
             }
         }
 
@@ -1004,7 +1004,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         #if os(iOS)
         // A play connects the nodes again in its own format, so a failure here
         // costs nothing but its log line.
-        _ = connectNodes(format: defaultFormat, for: "the engine's setup")
+        _ = connectNodes(format: defaultFormat, for: "the engine's setup") // l10n: no (debug and transition log text, which stays English)
         #else
         engine.connect(playerNode, to: timePitch, format: defaultFormat)
         engine.connect(timePitch, to: engine.mainMixerNode, format: defaultFormat)
@@ -1347,7 +1347,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         _ = engine
         feeder.stopNode()
         #if os(iOS)
-        guard connectNodes(format: audio.format, for: "a play") else {
+        guard connectNodes(format: audio.format, for: "a play") else { // l10n: no (debug and transition log text, which stays English)
             // Nothing plays, and the caller, which checks `isPlaying`, goes on
             // another way.
             isPlaying = false
@@ -1361,7 +1361,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         engine.connect(timePitch, to: engine.mainMixerNode, format: audio.format)
         #endif
 
-        guard startEngineIfStopped(for: "a play") else { return }
+        guard startEngineIfStopped(for: "a play") else { return } // l10n: no (debug and transition log text, which stays English)
 
         // Re-apply the tracked volume after engine start. The
         // stop→reconnect→start cycle during chapter transitions can
@@ -1569,7 +1569,7 @@ final class AudioEngineService: ObservableObject, @unchecked Sendable {
         // A player node cannot resume while its containing engine is stopped.
         // This state can arise after the Mac sleeps for several hours even
         // though our scheduled slices and logical pause state remain intact.
-        guard startEngineIfStopped(for: "a resume") else { return false }
+        guard startEngineIfStopped(for: "a resume") else { return false } // l10n: no (debug and transition log text, which stays English)
 
         // Engine restarts can reset mixer state, so preserve the user's
         // current volume just as the normal play path does.

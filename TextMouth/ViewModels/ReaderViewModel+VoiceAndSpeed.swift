@@ -24,8 +24,7 @@ extension ReaderViewModel {
         if isAudioBook {
             return AudioSpeed.stepButtonLabel(increasing: forward, by: AudioSpeed.coarseStep)
         }
-        let direction = forward ? "Increase" : "Decrease"
-        return "\(direction) speed by \(Int(Self.speechSpeedStep)) words per minute"
+        return VoiceAndSpeedWording.speedStepLabel(forward: forward, wordsPerMinute: Int(Self.speechSpeedStep))
     }
 
     /// Adjust TTS speed by a delta (e.g. +25 or -25 WPM).
@@ -39,7 +38,7 @@ extension ReaderViewModel {
         speechService.setSpeedRealtime(newWPM)
         book.localWPM = speechService.wordsPerMinute
         saveLocalVoiceSettings()
-        announceToVoiceOver("\(Int(speechService.wordsPerMinute)) words per minute")
+        announceToVoiceOver(VoiceAndSpeedWording.speedAnnouncement(wordsPerMinute: Int(speechService.wordsPerMinute)))
     }
 
     /// Set pitch for this book (multiplier 0.5-2.0)
@@ -48,7 +47,7 @@ extension ReaderViewModel {
         book.localPitch = speechService.pitchMultiplier
         saveLocalVoiceSettings()
         let formatted = String(format: "%.1f", speechService.pitchMultiplier)
-        announceToVoiceOver("Pitch \(formatted)")
+        announceToVoiceOver(VoiceAndSpeedWording.pitchAnnouncement(formatted))
     }
 
     /// Set voice for this book only. The next chapter, if already rendered
@@ -60,7 +59,7 @@ extension ReaderViewModel {
         saveLocalVoiceSettings()
         refreshLookAhead()
         warmUpVoice()
-        announceToVoiceOver("Voice changed to \(voice.name)")
+        announceToVoiceOver(VoiceAndSpeedWording.voiceChanged(to: voice.name))
     }
 
     /// Have the render queue load the voice speech uses now into the system
@@ -143,7 +142,7 @@ extension ReaderViewModel {
         if let localVoiceID = localSettings.voiceID {
             settingsViewModel.selectedVoiceID = localVoiceID
         }
-        announceToVoiceOver("Settings applied as global defaults")
+        announceToVoiceOver(VoiceAndSpeedWording.appliedAsGlobalDefaults)
     }
 
     /// Reset this book to use global voice, speed, and pitch settings
@@ -158,7 +157,7 @@ extension ReaderViewModel {
         if isAudioBook {
             audioSpeed = AudioSpeed.normal
             audioPlaybackService.setSpeed(audioSpeed)
-            announceToVoiceOver("Audio speed reset to \(AudioSpeed.spokenLabel(for: audioSpeed))")
+            announceToVoiceOver(VoiceAndSpeedWording.audioSpeedReset(to: AudioSpeed.spokenLabel(for: audioSpeed)))
             return
         }
         // Apply global settings: the book keeps none of its own now.
@@ -228,11 +227,11 @@ extension ReaderViewModel {
         var skipped = book.skippedHeadings ?? []
         if skipped.contains(where: { $0.id == heading.id }) {
             skipped.removeAll { $0.id == heading.id }
-            announceToVoiceOver("Section included: \(heading.text)")
+            announceToVoiceOver(VoiceAndSpeedWording.sectionIncluded(heading.text))
         } else {
             let start = TextPlace(chapter: heading.chapterIndex, offset: heading.characterOffset)
             skipped.append(SkippedHeading(heading, anchor: capturedAnchor(at: start)))
-            announceToVoiceOver("Section skipped: \(heading.text)")
+            announceToVoiceOver(VoiceAndSpeedWording.sectionSkipped(heading.text))
         }
         book.setSkippedHeadings(skipped)
         libraryViewModel.updateSkippedHeadings(bookID: book.id, headings: skipped)
@@ -314,5 +313,66 @@ enum SkippedSectionFilter {
             result += text[startIdx...]
         }
         return (result, OffsetMap(points: points))
+    }
+}
+
+// MARK: - The Words
+
+/// What VoiceOver hears, and the speed buttons are named, as the voice, the
+/// speed, the pitch, and the skipped sections change.
+enum VoiceAndSpeedWording {
+    /// The label of a text book's speed button: "Increase speed by 25 words
+    /// per minute".
+    static func speedStepLabel(forward: Bool, wordsPerMinute: Int) -> String {
+        if forward {
+            return String(localized: "Increase speed by \(wordsPerMinute) words per minute",
+                          comment: "VoiceOver label of the playback bar's button that raises a text book's speed. %lld is the size of one step in words per minute.")
+        }
+        return String(localized: "Decrease speed by \(wordsPerMinute) words per minute",
+                      comment: "VoiceOver label of the playback bar's button that lowers a text book's speed. %lld is the size of one step in words per minute.")
+    }
+
+    /// Said after a text book's speed changes: "200 words per minute".
+    static func speedAnnouncement(wordsPerMinute: Int) -> String {
+        String(localized: "\(wordsPerMinute) words per minute",
+               comment: "Announcement of a text book's new speed after it changed. %lld is the speed in words per minute.")
+    }
+
+    /// Said after the pitch changes: "Pitch 1.2". `pitch` is the multiplier
+    /// with one decimal.
+    static func pitchAnnouncement(_ pitch: String) -> String {
+        String(localized: "Pitch \(pitch)",
+               comment: "Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2.")
+    }
+
+    /// Said after a voice is chosen for the book alone.
+    static func voiceChanged(to name: String) -> String {
+        String(localized: "Voice changed to \(name)",
+               comment: "Announcement after a voice was chosen for the open book. %@ is the voice's name.")
+    }
+
+    /// Said after the book's own voice, speed, and pitch are applied to the global settings.
+    static var appliedAsGlobalDefaults: String {
+        String(localized: "Settings applied as global defaults",
+               comment: "Announcement after the open book's own voice, speed, and pitch were applied as the global settings.")
+    }
+
+    /// Said after an audiobook's speed goes back to the normal one: "Audio
+    /// speed reset to 1.0 times speed".
+    static func audioSpeedReset(to speed: String) -> String {
+        String(localized: "Audio speed reset to \(speed)",
+               comment: "Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as \"1.0 times speed\".")
+    }
+
+    /// Said after a skipped section is included again.
+    static func sectionIncluded(_ heading: String) -> String {
+        String(localized: "Section included: \(heading)",
+               comment: "Announcement after a heading's section that was skipped is read again. %@ is the heading's text.")
+    }
+
+    /// Said after a section is set to be skipped.
+    static func sectionSkipped(_ heading: String) -> String {
+        String(localized: "Section skipped: \(heading)",
+               comment: "Announcement after a heading's section is set to be skipped. %@ is the heading's text.")
     }
 }

@@ -883,7 +883,7 @@ final class TextSubstitutionService: ObservableObject {
             because: reason,
             logging: "SUBSTITUTIONS_FILE",
             in: .storage,
-            standIn: "the standard rules stand in"
+            standIn: "the standard rules stand in" // l10n: no (written to the debug log)
         )
         rules = Self.defaultRules
     }
@@ -949,30 +949,30 @@ final class TextSubstitutionService: ObservableObject {
 
     static let defaultRules: [SubstitutionRule] = [
         // Common abbreviations
-        SubstitutionRule(name: "Mr.", pattern: "\\bMr\\.", replacement: "Mister", isRegex: true),
-        SubstitutionRule(name: "Mrs.", pattern: "\\bMrs\\.", replacement: "Missus", isRegex: true),
-        SubstitutionRule(name: "Dr.", pattern: "\\bDr\\.", replacement: "Doctor", isRegex: true),
-        SubstitutionRule(name: "Prof.", pattern: "\\bProf\\.", replacement: "Professor", isRegex: true),
-        SubstitutionRule(name: "St.", pattern: "\\bSt\\.", replacement: "Saint", isRegex: true),
+        SubstitutionRule(name: "Mr.", pattern: "\\bMr\\.", replacement: "Mister", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Mrs.", pattern: "\\bMrs\\.", replacement: "Missus", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Dr.", pattern: "\\bDr\\.", replacement: "Doctor", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Prof.", pattern: "\\bProf\\.", replacement: "Professor", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "St.", pattern: "\\bSt\\.", replacement: "Saint", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
         SubstitutionRule(name: "vs.", pattern: "\\bvs\\.", replacement: "versus", isRegex: true),
         SubstitutionRule(name: "etc.", pattern: "\\betc\\.", replacement: "etcetera", isRegex: true),
-        SubstitutionRule(name: "e.g.", pattern: "\\be\\.g\\.", replacement: "for example", isRegex: true),
-        SubstitutionRule(name: "i.e.", pattern: "\\bi\\.e\\.", replacement: "that is", isRegex: true),
+        SubstitutionRule(name: "e.g.", pattern: "\\be\\.g\\.", replacement: "for example", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "i.e.", pattern: "\\bi\\.e\\.", replacement: "that is", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Skip URLs
-        SubstitutionRule(name: "Skip URLs", pattern: "https?://\\S+", replacement: "link", isRegex: true),
+        SubstitutionRule(name: "Skip URLs", pattern: "https?://\\S+", replacement: "link", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Skip email addresses
-        SubstitutionRule(name: "Skip emails", pattern: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b", replacement: "email address", isRegex: true),
+        SubstitutionRule(name: "Skip emails", pattern: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b", replacement: "email address", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Footnote markers
-        SubstitutionRule(name: "Skip footnote brackets", pattern: "\\[\\d+\\]", replacement: "", isRegex: true),
-        SubstitutionRule(name: "Skip footnote parens", pattern: "\\(see note \\d+\\)", replacement: "", isRegex: true, caseSensitive: false),
+        SubstitutionRule(name: "Skip footnote brackets", pattern: "\\[\\d+\\]", replacement: "", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Skip footnote parens", pattern: "\\(see note \\d+\\)", replacement: "", isRegex: true, caseSensitive: false), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Normalize dashes to pauses
-        SubstitutionRule(name: "Em dash to pause", pattern: "—", replacement: " — ", isRegex: false),
+        SubstitutionRule(name: "Em dash to pause", pattern: "—", replacement: " — ", isRegex: false), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Collapse repeated whitespace
-        SubstitutionRule(name: "Collapse whitespace", pattern: "[ \\t]{3,}", replacement: "  ", isRegex: true),
+        SubstitutionRule(name: "Collapse whitespace", pattern: "[ \\t]{3,}", replacement: "  ", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
     ]
 }
