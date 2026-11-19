@@ -986,15 +986,15 @@ enum LibraryInfoWording {
         "\(TimeFormatting.spoken(remaining)) remaining"
     }
 
-    /// `parts` as spoken sentences, one space apart, each ended with a
-    /// period unless it ends with one already, or with another mark that
-    /// ends a sentence, as a title can and a feed's failure message does.
-    /// Empty parts are left out, so a missing fact never becomes an audible
-    /// pause.
+    /// `parts` as spoken sentences, joined as `SentenceWording` joins them
+    /// (one space apart in English), each ended with a period unless it
+    /// ends with one already, or with another mark that ends a sentence, as
+    /// a title can and a feed's failure message does. Empty parts are left
+    /// out, so a missing fact never becomes an audible pause.
     static func sentences(_ parts: [String]) -> String {
-        parts.filter { !$0.isEmpty }.map { part in
+        SentenceWording.joined(parts.filter { !$0.isEmpty }.map { part in
             guard let last = part.last, ".!?…".contains(last) else { return part + "." }
             return part
-        }.joined(separator: " ")
+        })
     }
 }

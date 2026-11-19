@@ -23,3 +23,6 @@ TextMouth/ViewModels/ReaderViewModel+Playback.swift
 TextMouth/ViewModels/ReaderViewModel+ReadingList.swift
 TextMouth/Views/Reader/BookmarkPanelView.swift
 TextMouth/Views/Reader/SleepTimerView.swift
+TextMouth/Models/CountWording.swift
+TextMouth/Models/SentenceWording.swift
+TextMouth/Phone/PhoneAppWording.swift

@@ -1,6 +1,17 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "%@ %@" : {
+      "comment" : "Joins two whole sentences into one text. %1$@ is the first sentence and %2$@ the second. English puts a space between them; Japanese and Chinese join sentences with no space at all, so change only the separator.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
     "%@ adds a bookmark at the current position." : {
       "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B.",
       "localizations" : {
@@ -52,6 +63,78 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "quedan %@"
+          }
+        }
+      }
+    },
+    "%@ seconds" : {
+      "comment" : "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number."
+    },
+    "%lld articles" : {
+      "comment" : "A count of news articles in a list, counted beside books. %lld is the number of articles.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld article"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld articles"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld bookmarks" : {
+      "comment" : "A count of bookmarks standing alone, as Speak Info and a feed item's row say it. %lld is the number of bookmarks.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld bookmark"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld bookmarks"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld books" : {
+      "comment" : "A count of books standing alone, such as a library summary. %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld book"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld books"
+                }
+              }
+            }
           }
         }
       }
@@ -150,6 +233,75 @@
         }
       }
     },
+    "%lld episodes" : {
+      "comment" : "A count of podcast episodes in a list, counted beside books. %lld is the number of episodes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld episode"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld episodes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld feeds" : {
+      "comment" : "A count of podcast and news feeds standing alone, such as a library summary. %lld is the number of feeds.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld feed"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld feeds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld hours" : {
+      "comment" : "A count of hours inside a duration, such as \"2 hours, 3 minutes\". %lld is the number of hours.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hour"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hours"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "%lld minutes" : {
       "comment" : "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.",
       "localizations" : {
@@ -190,6 +342,29 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld minutos"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld seconds" : {
+      "comment" : "A count of whole seconds inside a duration or a setting's length. %lld is the number of seconds.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld seconds"
                 }
               }
             }
@@ -379,6 +554,32 @@
         }
       }
     },
+    "An unknown error occurred." : {
+      "comment" : "Message of an alert about a problem, when nothing more is known about it."
+    },
+    "Articles (%lld)" : {
+      "comment" : "The header of a list's news articles, with their count: \"Articles (3)\". %lld is the number of articles.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Articles (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Articles (%lld)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Asks for an optional note, then marks the reading position." : {
       "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.",
       "localizations" : {
@@ -557,8 +758,31 @@
         }
       }
     },
+    "Books (%lld)" : {
+      "comment" : "The header of a list's books, with their count: \"Books (743)\". %lld is the number of books.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Books (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Books (%lld)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "Cancel" : {
-      "comment" : "Button that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.",
+      "comment" : "Button that closes a sheet or answers a question without doing or changing anything.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -646,7 +870,7 @@
       }
     },
     "Close" : {
-      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.",
+      "comment" : "Button that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -843,6 +1067,32 @@
         }
       }
     },
+    "Episodes (%lld)" : {
+      "comment" : "The header of a list's podcast episodes, with their count: \"Episodes (5)\". %lld is the number of episodes.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Episodes (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Episodes (%lld)"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Error" : {
+      "comment" : "Title of an alert about a problem, when the problem has no more specific title."
+    },
     "Every book above it in the reading list is finished" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop.",
       "localizations" : {
@@ -996,6 +1246,12 @@
           }
         }
       }
+    },
+    "Library" : {
+      "comment" : "Title of the first screen, the list of the user's books and folders."
+    },
+    "Loading" : {
+      "comment" : "Value of the Play button while the book is loading, spoken by VoiceOver."
     },
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
@@ -1162,6 +1418,9 @@
         }
       }
     },
+    "OK" : {
+      "comment" : "Button that dismisses an alert about a problem."
+    },
     "Off" : {
       "comment" : "VoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
       "localizations" : {
@@ -1239,6 +1498,9 @@
         }
       }
     },
+    "Pause" : {
+      "comment" : "Label of the button that pauses the book while it is playing."
+    },
     "Pause playback after:" : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes.",
       "localizations" : {
@@ -1249,6 +1511,9 @@
           }
         }
       }
+    },
+    "Play" : {
+      "comment" : "Label of the button that starts playing the book."
     },
     "Play the book above" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.",
@@ -1571,7 +1836,7 @@
       }
     },
     "Save" : {
-      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.",
+      "comment" : "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -1973,6 +2238,9 @@
         }
       }
     },
+    "TextMouth closed while opening %@, so it wasn't reopened." : {
+      "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again."
+    },
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
       "localizations" : {
@@ -2201,6 +2469,9 @@
           }
         }
       }
+    },
+    "Your library is empty. Add to Library adds a book." : {
+      "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label."
     },
     "fading out" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
