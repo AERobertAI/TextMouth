@@ -35,16 +35,16 @@ enum PhoneSettingsSection: CaseIterable, Identifiable {
     /// The section's heading, the Mac's name for the group where it has one.
     var title: String {
         switch self {
-        case .voice: return Words.voice.rawValue
-        case .navigation: return Words.navigation.rawValue
-        case .rewindOnResume: return Words.rewindOnResume.rawValue
-        case .punctuationPauses: return Words.punctuationPauses.rawValue
-        case .endOfBook: return Words.endOfBook.rawValue
-        case .sleepTimer: return Words.sleepTimer.rawValue
+        case .voice: return Words.voice.title
+        case .navigation: return Words.navigation.title
+        case .rewindOnResume: return Words.rewindOnResume.title
+        case .punctuationPauses: return Words.punctuationPauses.title
+        case .endOfBook: return Words.endOfBook.title
+        case .sleepTimer: return Words.sleepTimer.title
         case .times: return ReaderTimeWording.settingSection
         case .pages: return ReaderPageWording.settingSection
         case .reading: return PhoneSettingsWording.readingSection
-        case .removalBehavior: return Words.removalBehavior.rawValue
+        case .removalBehavior: return Words.removalBehavior.title
         case .statistics: return PhoneSettingsWording.statisticsSection
         case .about: return PhoneSettingsWording.aboutSection
         }
@@ -72,12 +72,12 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     /// The words on the row, and the title of the sheet of choices it opens.
     var title: String {
         switch self {
-        case .language: return Words.language.rawValue
-        case .voice: return Words.voice.rawValue
+        case .language: return Words.language.title
+        case .voice: return Words.voice.title
         case .textNavigationUnit: return PhoneSettingsWording.textNavigationUnit
         case .audioNavigationUnit: return PhoneSettingsWording.audioNavigationUnit
-        case .rewindTo: return Words.rewindTo.rawValue
-        case .endOfBook: return Words.whenBookEnds.rawValue
+        case .rewindTo: return Words.rewindTo.title
+        case .endOfBook: return Words.whenBookEnds.title
         case .readingStatistics: return PhoneSettingsWording.readingStatistics
         case .shareLogs: return PhoneSettingsWording.shareLogs
         }
@@ -87,10 +87,10 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     /// own, as "Select voice" for the row showing "Voice".
     var label: String {
         switch self {
-        case .language: return Words.voiceLanguage.rawValue
-        case .voice: return Words.selectVoice.rawValue
-        case .rewindTo: return Words.rewindOnResumeUnit.rawValue
-        case .endOfBook: return Words.endOfBookBehavior.rawValue
+        case .language: return Words.voiceLanguage.title
+        case .voice: return Words.selectVoice.title
+        case .rewindTo: return Words.rewindOnResumeUnit.title
+        case .endOfBook: return Words.endOfBookBehavior.title
         case .textNavigationUnit, .audioNavigationUnit, .readingStatistics, .shareLogs: return title
         }
     }
@@ -98,10 +98,10 @@ enum PhoneSettingsRow: Hashable, Identifiable {
     /// What the row does, when the spec gives a hint for it.
     var hint: String? {
         switch self {
-        case .voice: return Words.selectVoiceHint.rawValue
+        case .voice: return Words.selectVoiceHint.title
         case .textNavigationUnit, .audioNavigationUnit: return PhoneSettingsWording.navigationUnitHint
-        case .rewindTo: return Words.rewindToHint.rawValue
-        case .endOfBook: return Words.endOfBookHint.rawValue
+        case .rewindTo: return Words.rewindToHint.title
+        case .endOfBook: return Words.endOfBookHint.title
         case .shareLogs: return PhoneSettingsWording.shareLogsHint
         case .language, .readingStatistics: return nil
         }
@@ -161,55 +161,65 @@ struct PhoneSettingsAdjustment: Sendable {
     }
 
     /// "Default speed": 50 to 650 words per minute, in steps of 25.
-    static let defaultSpeed = PhoneSettingsAdjustment(
-        label: Words.defaultSpeed.rawValue,
-        hint: Words.defaultSpeedCaption.rawValue,
-        range: SettingsPolicy.wordsPerMinute.range,
-        step: 25,
-        words: { PhoneVoiceVocabulary.speedValue(wordsPerMinute: $0) }
-    )
+    static var defaultSpeed: PhoneSettingsAdjustment {
+        PhoneSettingsAdjustment(
+            label: Words.defaultSpeed.title,
+            hint: Words.defaultSpeedCaption.title,
+            range: SettingsPolicy.wordsPerMinute.range,
+            step: 25,
+            words: { PhoneVoiceVocabulary.speedValue(wordsPerMinute: $0) }
+        )
+    }
 
     /// "Default pitch": 0.5 to 2.0, in steps of a tenth, named as the Mac's
     /// reader and settings name it: "Normal (1.0x)", "1.5x".
-    static let defaultPitch = PhoneSettingsAdjustment(
-        label: Words.defaultPitch.rawValue,
-        hint: Words.defaultPitchCaption.rawValue,
-        range: SettingsPolicy.pitchMultiplier.range,
-        step: 0.1,
-        words: { SpeechService.pitchLabel($0) }
-    )
+    static var defaultPitch: PhoneSettingsAdjustment {
+        PhoneSettingsAdjustment(
+            label: Words.defaultPitch.title,
+            hint: Words.defaultPitchCaption.title,
+            range: SettingsPolicy.pitchMultiplier.range,
+            step: 0.1,
+            words: { SpeechService.pitchLabel($0) }
+        )
+    }
 
     /// "Minimum pause threshold": 5 to 600 seconds, in steps of 5.
-    static let minimumPause = PhoneSettingsAdjustment(
-        label: Words.minimumPauseThreshold.rawValue,
-        hint: Words.minimumPauseCaption.rawValue,
-        range: SettingsPolicy.rewindSmartThreshold.range,
-        step: 5,
-        words: { CountWording.seconds(Int($0)) }
-    )
+    static var minimumPause: PhoneSettingsAdjustment {
+        PhoneSettingsAdjustment(
+            label: Words.minimumPauseThreshold.title,
+            hint: Words.minimumPauseCaption.title,
+            range: SettingsPolicy.rewindSmartThreshold.range,
+            step: 5,
+            words: { CountWording.seconds(Int($0)) }
+        )
+    }
 
     /// "Punctuation pause level": "Off", "Subtle", "Moderate", or "Heavy".
-    static let punctuationPauseLevel = PhoneSettingsAdjustment(
-        label: Words.punctuationPauseLevel.rawValue,
-        hint: Words.punctuationPauseCaption.rawValue,
-        range: SettingsPolicy.punctuationPauseLevel.range,
-        step: 1,
-        words: { level in
-            let names: [PhoneSettingsVocabulary] = [.off, .subtle, .moderate, .heavy]
-            // The setting's own accessor keeps the level in range; the bounds
-            // here mean a level from anywhere names something rather than traps.
-            return names[min(max(Int(level), 0), names.count - 1)].rawValue
-        }
-    )
+    static var punctuationPauseLevel: PhoneSettingsAdjustment {
+        PhoneSettingsAdjustment(
+            label: Words.punctuationPauseLevel.title,
+            hint: Words.punctuationPauseCaption.title,
+            range: SettingsPolicy.punctuationPauseLevel.range,
+            step: 1,
+            words: { level in
+                let names: [PhoneSettingsVocabulary] = [.off, .subtle, .moderate, .heavy]
+                // The setting's own accessor keeps the level in range; the bounds
+                // here mean a level from anywhere names something rather than traps.
+                return names[min(max(Int(level), 0), names.count - 1)].title
+            }
+        )
+    }
 
     /// "Fade out duration": "Off", or 1 to 10 seconds, as the Mac counts them.
-    static let fadeOutDuration = PhoneSettingsAdjustment(
-        label: Words.fadeOutDuration.rawValue,
-        hint: Words.fadeOutCaption.rawValue,
-        range: SettingsPolicy.sleepFadeOutDuration.range,
-        step: 1,
-        words: { PlaybackSettingsView.fadeOutText($0) }
-    )
+    static var fadeOutDuration: PhoneSettingsAdjustment {
+        PhoneSettingsAdjustment(
+            label: Words.fadeOutDuration.title,
+            hint: Words.fadeOutCaption.title,
+            range: SettingsPolicy.sleepFadeOutDuration.range,
+            step: 1,
+            words: { PlaybackSettingsView.fadeOutText($0) }
+        )
+    }
 }
 
 // MARK: - Switches
@@ -236,57 +246,71 @@ struct PhoneSettingsSwitch: Sendable {
     }
 
     /// Under Rewind on Resume.
-    static let smartMode = PhoneSettingsSwitch(
-        title: Words.smartMode.rawValue,
-        label: Words.smartRewindMode.rawValue,
-        hint: Words.smartModeHint.rawValue
-    )
+    static var smartMode: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: Words.smartMode.title,
+            label: Words.smartRewindMode.title,
+            hint: Words.smartModeHint.title
+        )
+    }
 
     /// Under Navigation.
-    static let autoPlayAfterNavigation = PhoneSettingsSwitch(
-        title: Words.autoPlayAfterNavigation.rawValue,
-        hint: Words.autoPlayHint.rawValue,
-        showsHintAsCaption: true
-    )
+    static var autoPlayAfterNavigation: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: Words.autoPlayAfterNavigation.title,
+            hint: Words.autoPlayHint.title,
+            showsHintAsCaption: true
+        )
+    }
 
     /// Under Sleep Timer.
-    static let closeSleepTimerSheet = PhoneSettingsSwitch(
-        title: Words.closeSleepTimerSheet.rawValue,
-        hint: Words.closeSleepTimerSheetHint.rawValue
-    )
+    static var closeSleepTimerSheet: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: Words.closeSleepTimerSheet.title,
+            hint: Words.closeSleepTimerSheetHint.title
+        )
+    }
 
     /// Under Times.
-    static let includeSpeedWithTimes = PhoneSettingsSwitch(
-        title: ReaderTimeWording.settingTitle,
-        hint: ReaderTimeWording.settingHint,
-        showsHintAsCaption: true
-    )
+    static var includeSpeedWithTimes: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: ReaderTimeWording.settingTitle,
+            hint: ReaderTimeWording.settingHint,
+            showsHintAsCaption: true
+        )
+    }
 
     /// Under Pages.
-    static let showPageInReader = PhoneSettingsSwitch(
-        title: ReaderPageWording.showInReaderTitle,
-        hint: ReaderPageWording.showInReaderHint,
-        showsHintAsCaption: true
-    )
+    static var showPageInReader: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: ReaderPageWording.showInReaderTitle,
+            hint: ReaderPageWording.showInReaderHint,
+            showsHintAsCaption: true
+        )
+    }
 
     /// Under Pages.
-    static let sayPageInWhereAmI = PhoneSettingsSwitch(
-        title: ReaderPageWording.sayInWhereAmITitle,
-        hint: ReaderPageWording.sayInWhereAmIHint,
-        showsHintAsCaption: true
-    )
+    static var sayPageInWhereAmI: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: ReaderPageWording.sayInWhereAmITitle,
+            hint: ReaderPageWording.sayInWhereAmIHint,
+            showsHintAsCaption: true
+        )
+    }
 
     /// Under Reading: the phone's own, from the spec's outside reviews.
-    static let followInBraille = PhoneSettingsSwitch(
-        title: PhoneSettingsWording.followInBraille,
-        hint: PhoneSettingsWording.followInBrailleHint,
-        showsHintAsCaption: true
-    )
+    static var followInBraille: PhoneSettingsSwitch {
+        PhoneSettingsSwitch(
+            title: PhoneSettingsWording.followInBraille,
+            hint: PhoneSettingsWording.followInBrailleHint,
+            showsHintAsCaption: true
+        )
+    }
 
     /// Under Removal Behavior. The Mac's hint for it isn't used: it offers
     /// keeping the files in the library folder, which a phone's removal
     /// doesn't (the spec, under "Removing a book"), and the spec gives none.
-    static let confirmBeforeRemoving = PhoneSettingsSwitch(title: Words.confirmBeforeRemoving.rawValue)
+    static var confirmBeforeRemoving: PhoneSettingsSwitch { PhoneSettingsSwitch(title: Words.confirmBeforeRemoving.title) }
 }
 
 // MARK: - Voices
@@ -337,7 +361,7 @@ enum PhoneSettingsModel {
     /// for the empty code, otherwise the name in `locale`, or the code itself
     /// when the system has no name for it.
     static func languageName(_ code: String, locale: Locale = .current) -> String {
-        code.isEmpty ? Words.allLanguages.rawValue : locale.localizedString(forLanguageCode: code) ?? code
+        code.isEmpty ? Words.allLanguages.title : locale.localizedString(forLanguageCode: code) ?? code
     }
 
     /// The Language row's choices: "All", whose code is empty, then the
@@ -420,7 +444,7 @@ enum PhoneSettingsModel {
     /// voice chosen, at the default speed and pitch. Making one plays nothing.
     @MainActor
     static func previewUtterance(voiceID: String, wordsPerMinute: Double, pitch: Double) -> AVSpeechUtterance {
-        let utterance = AVSpeechUtterance(string: Words.previewSentence.rawValue)
+        let utterance = AVSpeechUtterance(string: Words.previewSentence)
         utterance.voice = AVSpeechSynthesisVoice(identifier: voiceID)
         utterance.rate = SpeechService.rateForWPM(wordsPerMinute)
         utterance.pitchMultiplier = Float(SpeechService.clampedPitch(pitch))
