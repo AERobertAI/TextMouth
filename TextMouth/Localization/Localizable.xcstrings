@@ -37,6 +37,12 @@
             "state" : "new",
             "value" : "%1$@ %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@."
+          }
         }
       }
     },
@@ -48,6 +54,12 @@
             "state" : "new",
             "value" : "%1$@ %2$lld of %3$lld"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$lld de %3$lld"
+          }
         }
       }
     },
@@ -57,6 +69,12 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
+            "value" : "%1$@ (%2$@)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
             "value" : "%1$@ (%2$@)"
           }
         }
@@ -177,6 +195,12 @@
             "state" : "new",
             "value" : "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ya están en tu biblioteca, sin suscripción. Elige %2$@ en la fila de un canal, o en su %3$@, para volver a revisarlos."
+          }
         }
       }
     },
@@ -201,6 +225,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ at %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@"
           }
         }
       }
@@ -286,6 +316,12 @@
             "state" : "new",
             "value" : "%1$@ couldn't be reached: %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo conectar con %1$@: %2$@"
+          }
         }
       }
     },
@@ -330,6 +366,12 @@
             "state" : "new",
             "value" : "%1$@ couldn't send the feed (error %2$@). Try again later."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ no pudo enviar el canal (error %2$@). Inténtalo de nuevo más tarde."
+          }
         }
       }
     },
@@ -340,6 +382,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ couldn't send the file (error %2$@). Try again later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ no pudo enviar el archivo (error %2$@). Inténtalo de nuevo más tarde."
           }
         }
       }
@@ -381,6 +429,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ no respondió durante %lld de segundos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ no respondió durante %lld segundo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ no respondió durante %lld segundos."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -403,6 +475,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ failed: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falló el paso «%1$@»: %2$@"
           }
         }
       }
@@ -438,6 +516,12 @@
             "state" : "new",
             "value" : "%1$@ for %2$@ is now in effect: %3$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ para %2$@ ya se aplica: %3$@."
+          }
         }
       }
     },
@@ -448,6 +532,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ for %2$@ now follows the global setting: %3$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ para %2$@ ahora sigue el ajuste global: %3$@."
           }
         }
       }
@@ -736,6 +826,12 @@
             "state" : "new",
             "value" : "%1$@ is in your library, unsubscribed. Choose %2$@ on its row, or in its %3$@, to check it again."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ está en tu biblioteca, sin suscripción. Elige %2$@ en su fila, o en su %3$@, para volver a revisarlo."
+          }
         }
       }
     },
@@ -755,6 +851,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ is now in effect: %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ya se aplica: %2$@."
           }
         }
       }
@@ -797,6 +899,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ is unsubscribed, so TextMouth doesn't check it. Choose %2$@ to check it again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ no tiene suscripción, así que TextMouth no lo revisa. Elige %2$@ para volver a revisarlo."
           }
         }
       }
@@ -850,6 +958,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ incluye %lld de canales. Cada uno recibe su propia carpeta, con su nombre."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ incluye %lld canal. Cada uno recibe su propia carpeta, con su nombre."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ incluye %lld canales. Cada uno recibe su propia carpeta, con su nombre."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -879,7 +1011,15 @@
       }
     },
     "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder." : {
-      "comment" : "What VoiceOver says when Move to Library is chosen and no selected book is a feed's download. %@ is the name of the Move to Library command, with its ellipsis."
+      "comment" : "What VoiceOver says when Move to Library is chosen and no selected book is a feed's download. %@ is the name of the Move to Library command, with its ellipsis.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ mueve un episodio o artículo descargado en su canal. Selecciona uno en la carpeta de su canal."
+          }
+        }
+      }
     },
     "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have." : {
       "comment" : "First sentence of the refusal of a braille book that needs a braille table only a Mac has. %1$@ is the file's quoted name, or \"This file\". %2$@ is the table's file name, as in \"fr-bfu-g2.ctb\".",
@@ -966,7 +1106,15 @@
       }
     },
     "%@ on this book" : {
-      "comment" : "Line of the import overlay: how long the book under way has taken. %@ is the time in words, such as \"1 minute, 5 seconds\"."
+      "comment" : "Line of the import overlay: how long the book under way has taken. %@ is the time in words, such as \"1 minute, 5 seconds\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ en este libro"
+          }
+        }
+      }
     },
     "%@ or %@" : {
       "comment" : "Joins two keyboard shortcuts of one action with \"or\", as in \"Space or K\". %1$@ is the shortcuts so far and %2$@ the next one.",
@@ -1040,7 +1188,15 @@
       "comment" : "Announcement of the microphone level when no sound reaches TextMouth. %@ is the level's label."
     },
     "%@ so far" : {
-      "comment" : "How far a feed download's file has come, when its size is not known. %@ is the bytes received so far with their unit, such as 12 MB."
+      "comment" : "How far a feed download's file has come, when its size is not known. %@ is the bytes received so far with their unit, such as 12 MB.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ hasta ahora"
+          }
+        }
+      }
     },
     "%@ sound" : {
       "comment" : "VoiceOver label of the pop-up button that chooses the sound for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause."
@@ -1053,6 +1209,12 @@
             "state" : "new",
             "value" : "%1$@ stay in their feeds: %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ siguen en sus canales: %2$@"
+          }
         }
       }
     },
@@ -1063,6 +1225,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@ stays in its feed: %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ sigue en su canal: %2$@"
           }
         }
       }
@@ -1088,10 +1256,26 @@
       }
     },
     "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch." : {
-      "comment" : "Message of the alert about one book's Ogg audio that waits for disk space. %@ is what the book needs, such as \"“Harbor Dramas” needs 4.2 GB free\"."
+      "comment" : "Message of the alert about one book's Ogg audio that waits for disk space. %@ is what the book needs, such as \"“Harbor Dramas” needs 4.2 GB free\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ para convertir su audio Ogg a AAC. Libera espacio y TextMouth lo convertirá la próxima vez que se abra."
+          }
+        }
+      }
     },
     "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch." : {
-      "comment" : "Message of the alert about several books' Ogg audio that waits for disk space. %@ is what each book needs, listed as a sentence lists them, such as \"“A” needs 1 GB free and “B” needs 2 GB free\"."
+      "comment" : "Message of the alert about several books' Ogg audio that waits for disk space. %@ is what each book needs, listed as a sentence lists them, such as \"“A” needs 1 GB free and “B” needs 2 GB free\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ para convertir su audio Ogg a AAC. Libera espacio y TextMouth lo convertirá la próxima vez que se abra."
+          }
+        }
+      }
     },
     "%@ total remaining at current speed" : {
       "comment" : "Part of the time bar's spoken label: the time left for the listed books at the reading speed now set. %@ is a spoken time, such as 3 hours 20 minutes."
@@ -1111,16 +1295,40 @@
       "comment" : "A keyboard shortcut that is its key pressed twice quickly, as spoken or shown. %@ is the shortcut, such as \"W\" or \"Command + I\"."
     },
     "%@ use plain http, so others can read or change what they send; TextMouth still loads it." : {
-      "comment" : "What the Import OPML sheet says of several new feeds whose addresses use plain http, which is not encrypted. %@ is a list of their titles."
+      "comment" : "What the Import OPML sheet says of several new feeds whose addresses use plain http, which is not encrypted. %@ is a list of their titles.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ usan http simple, así que otras personas pueden leer o cambiar lo que envían; TextMouth los carga de todos modos."
+          }
+        }
+      }
     },
     "%@ uses it in the menus" : {
       "comment" : "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon."
     },
     "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it." : {
-      "comment" : "What the Import OPML sheet says of one new feed whose address uses plain http, which is not encrypted. %@ is the feed's title."
+      "comment" : "What the Import OPML sheet says of one new feed whose address uses plain http, which is not encrypted. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ usa http simple, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos."
+          }
+        }
+      }
     },
     "%@ waits for a network without data limits to refresh by itself." : {
-      "comment" : "Why a feed's automatic refresh did not run now: the network has data limits. %@ is the feed's title or server."
+      "comment" : "Why a feed's automatic refresh did not run now: the network has data limits. %@ is the feed's title or server.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ espera una red sin límites de datos para actualizarse por sí solo."
+          }
+        }
+      }
     },
     "%@ was connected, so recordings use it." : {
       "comment" : "Said by the Record window when a microphone connects and recordings now use it. %@ is the microphone's name."
@@ -1443,6 +1651,12 @@
             "state" : "new",
             "value" : "%1$@, by %2$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, de %2$@"
+          }
         }
       }
     },
@@ -1526,6 +1740,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$@, then %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ y luego %2$@."
           }
         }
       }
@@ -1673,6 +1893,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld de artículos nuevos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld artículo nuevo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld artículos nuevos."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1696,6 +1940,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld de episodios nuevos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld episodio nuevo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld episodios nuevos."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1715,6 +1983,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%@: %lld new items."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld de elementos nuevos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld elemento nuevo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@: %lld elementos nuevos."
                 }
               }
             }
@@ -1775,13 +2067,37 @@
       }
     },
     "%@: no new articles." : {
-      "comment" : "What VoiceOver says once Check Feed found no new articles. %@ is the feed's title."
+      "comment" : "What VoiceOver says once Check Feed found no new articles. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: no hay artículos nuevos."
+          }
+        }
+      }
     },
     "%@: no new episodes." : {
-      "comment" : "What VoiceOver says once Check Feed found no new episodes. %@ is the feed's title."
+      "comment" : "What VoiceOver says once Check Feed found no new episodes. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: no hay episodios nuevos."
+          }
+        }
+      }
     },
     "%@: no new items." : {
-      "comment" : "What VoiceOver says once Check Feed found no new items, in a feed of episodes and articles. %@ is the feed's title."
+      "comment" : "What VoiceOver says once Check Feed found no new items, in a feed of episodes and articles. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: no hay elementos nuevos."
+          }
+        }
+      }
     },
     "%@: not recording" : {
       "comment" : "The microphone level line of the Record window while nothing is recording. %@ is the level's label."
@@ -1874,6 +2190,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld .%@ files"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de archivos .%@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivo .%@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivos .%@"
                 }
               }
             }
@@ -2131,6 +2471,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de libros no tienen todos sus capítulos:"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro no tiene todos sus capítulos:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libros no tienen todos sus capítulos:"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2292,6 +2656,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de libros tienen páginas que no se pudieron leer:"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro tiene páginas que no se pudieron leer:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libros tienen páginas que no se pudieron leer:"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2311,6 +2699,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books imported"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de libros importados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro importado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libros importados"
                 }
               }
             }
@@ -2456,6 +2868,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de libros procesados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libro procesado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld libros procesados"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2545,6 +2981,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld books were imported from “%@”."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importaron %lld de libros desde “%@”."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importó %lld libro desde “%@”."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importaron %lld libros desde “%@”."
                 }
               }
             }
@@ -2652,6 +3112,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld by %2$lld pixels"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld por %2$lld píxeles"
           }
         }
       }
@@ -2883,6 +3349,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld descargado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld descargados"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -2902,6 +3392,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld downloading"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld descargando"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld descargando"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld descargando"
                 }
               }
             }
@@ -3136,6 +3650,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld fallaron"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld falló"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld fallaron"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3178,6 +3716,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld feeds you unsubscribed from were left out."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se omitieron %lld de canales de los que cancelaste la suscripción."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se omitió %lld canal del que cancelaste la suscripción."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se omitieron %lld canales de los que cancelaste la suscripción."
                 }
               }
             }
@@ -3251,6 +3813,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de archivos fallaron:"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivo falló:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivos fallaron:"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3274,6 +3860,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de archivos sin extensión"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivo sin extensión"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivos sin extensión"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3293,6 +3903,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld files, %@"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de archivos, %@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivo, %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld archivos, %@"
                 }
               }
             }
@@ -3505,6 +4139,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld más"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld más"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld más"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3524,6 +4182,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld more imports waiting"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de importaciones más en espera"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld importación más en espera"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld importaciones más en espera"
                 }
               }
             }
@@ -3551,6 +4233,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld nuevos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld nuevo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld nuevos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3570,6 +4276,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld new articles"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de artículos nuevos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld artículo nuevo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld artículos nuevos"
                 }
               }
             }
@@ -3597,6 +4327,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de artículos nuevos, el más reciente: “%@”"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld artículo nuevo, el más reciente: “%@”"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld artículos nuevos, el más reciente: “%@”"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3616,6 +4370,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld new articles."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de artículos nuevos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld artículo nuevo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld artículos nuevos."
                 }
               }
             }
@@ -3643,6 +4421,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de episodios nuevos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld episodio nuevo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld episodios nuevos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3662,6 +4464,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld new episodes, the newest “%@”"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de episodios nuevos, el más reciente: “%@”"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld episodio nuevo, el más reciente: “%@”"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld episodios nuevos, el más reciente: “%@”"
                 }
               }
             }
@@ -3689,6 +4515,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de episodios nuevos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld episodio nuevo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld episodios nuevos."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3708,6 +4558,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld new items"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de elementos nuevos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld elemento nuevo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld elementos nuevos"
                 }
               }
             }
@@ -3735,6 +4609,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de elementos nuevos, el más reciente: “%@”"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld elemento nuevo, el más reciente: “%@”"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld elementos nuevos, el más reciente: “%@”"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3758,6 +4656,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de elementos nuevos."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld elemento nuevo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld elementos nuevos."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3768,6 +4690,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld of %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld de %2$@"
           }
         }
       }
@@ -3788,6 +4716,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld of %@ listed"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de %@ en la lista"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de %@ en la lista"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de %@ en la lista"
                 }
               }
             }
@@ -3835,6 +4787,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "%1$lld of %2$lld done"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld de %2$lld completadas"
           }
         }
       }
@@ -3893,6 +4851,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de otros archivos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld otro archivo"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld otros archivos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -3935,6 +4917,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld pages"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de páginas"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld página"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld páginas"
                 }
               }
             }
@@ -4030,6 +5036,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld podcasts found for “%@”."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se encontraron %lld de podcasts para “%@”."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se encontró %lld podcast para “%@”."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se encontraron %lld podcasts para “%@”."
                 }
               }
             }
@@ -4218,6 +5248,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld omitidos por estar duplicados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld omitido por estar duplicado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld omitidos por estar duplicados"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4356,6 +5410,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de pistas"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld pista"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld pistas"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4379,6 +5457,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld sin reproducir"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld sin reproducir"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld sin reproducir"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4398,6 +5500,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld unread"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld sin leer"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld sin leer"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld sin leer"
                 }
               }
             }
@@ -4448,6 +5574,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando espacio en esta Mac"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando espacio en esta Mac"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando espacio en esta Mac"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4471,6 +5621,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando a que esta Mac esté en una red sin límites de datos"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando a que esta Mac esté en una red sin límites de datos"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld esperando a que esta Mac esté en una red sin límites de datos"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4490,6 +5664,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "%lld were subscribed already."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ya tenían suscripción."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ya tenía suscripción."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ya tenían suscripción."
                 }
               }
             }
@@ -4609,6 +5807,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld%% de %@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld%% de %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld%% de %@"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4673,13 +5895,37 @@
       "comment" : "Part of the download progress value when one file is all that is left and no percentage is known."
     },
     "; %@ stay" : {
-      "comment" : "A clause that ends the announcement of Unsubscribe: the feed's downloads stay. %@ is the downloads, such as \"its 5 downloaded episodes\". Starts with a semicolon."
+      "comment" : "A clause that ends the announcement of Unsubscribe: the feed's downloads stay. %@ is the downloads, such as \"its 5 downloaded episodes\". Starts with a semicolon.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "; %@ se quedan"
+          }
+        }
+      }
     },
     "; %@ stays" : {
-      "comment" : "A clause that ends the announcement of Unsubscribe: the one download the feed kept stays. %@ is the download, such as \"its downloaded episode\". Starts with a semicolon."
+      "comment" : "A clause that ends the announcement of Unsubscribe: the one download the feed kept stays. %@ is the download, such as \"its downloaded episode\". Starts with a semicolon.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "; %@ se queda"
+          }
+        }
+      }
     },
     "A .%@ file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu." : {
-      "comment" : "Advice after the refusal of a transcript file chosen as a book. %@ is the file's extension without its dot. \"Attach Transcript…\" is a command of the Book menu: keep its name the same as that command's and the menu's."
+      "comment" : "Advice after the refusal of a transcript file chosen as a book. %@ is the file's extension without its dot. \"Attach Transcript…\" is a command of the Book menu: keep its name the same as that command's and the menu's.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un archivo .%@ es una transcripción, no un libro. Para usarlo, importa su audio, abre el libro y elige Adjuntar transcripción… en el menú Libro."
+          }
+        }
+      }
     },
     "A Little Faster" : {
       "comment" : "Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch."
@@ -4714,7 +5960,15 @@
       "comment" : "Error shown when books or folders cannot be moved because the destination folder's path is not a valid place in the library."
     },
     "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed." : {
-      "comment" : "The line under the address field of the Add Feed sheet. .rss and .xml are file extensions."
+      "comment" : "The line under the address field of the Add Feed sheet. .rss and .xml are file extensions.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Una dirección de canal, como un enlace que termina en .rss o .xml, o una página web que indica su canal."
+          }
+        }
+      }
     },
     "A feed can have its own %@ choice and its own days before deleting played downloads, in its %@." : {
       "comment" : "The note under the Feeds tab's settings. The first %@ is the name of the List and download choice; the second is the name of the Feed Info sheet.",
@@ -4723,6 +5977,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "A feed can have its own %1$@ choice and its own days before deleting played downloads, in its %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un canal puede tener su propia opción de %1$@ y sus propios días antes de eliminar las descargas reproducidas, en su %2$@."
           }
         }
       }
@@ -4751,7 +6011,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Show at Most's hint while the view lists feeds alone, when it is dimmed (finding 6)."
     },
     "A managed package named %@ already exists." : {
-      "comment" : "Why a TextMouth package could not be imported: the library already holds a package of that name. %@ is the package's name."
+      "comment" : "Why a TextMouth package could not be imported: the library already holds a package of that name. %@ is the package's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ya existe un paquete administrado llamado %@."
+          }
+        }
+      }
     },
     "A move shifts one book at a time, and several are selected. Select one book, then try again." : {
       "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected."
@@ -4783,7 +6051,15 @@
       "comment" : "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."
     },
     "A symbolic link cannot be deleted as a managed book package." : {
-      "comment" : "Why a book's files were not deleted: its package is a symbolic link, and deleting it could delete another book. Follows \"Import failed: \"."
+      "comment" : "Why a book's files were not deleted: its package is a symbolic link, and deleting it could delete another book. Follows \"Import failed: \".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un enlace simbólico no se puede eliminar como paquete de libro administrado."
+          }
+        }
+      }
     },
     "A transcript is being attached to %@. Transcribe it once that finishes." : {
       "comment" : "Alert shown when Transcribe Audio is chosen for an audiobook that a transcript is being attached to. %@ is the audiobook's title."
@@ -4841,7 +6117,15 @@
       "comment" : "The hint of the Convert to picker in the Export dialog while HTML is chosen."
     },
     "AVI video" : {
-      "comment" : "The name of the AVI video format, as people say it. Inside sentences about importing a file of that format."
+      "comment" : "The name of the AVI video format, as people say it. Inside sentences about importing a file of that format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "video AVI"
+          }
+        }
+      }
     },
     "Aa" : {
       "comment" : "A small tag in a substitution rule's row: the rule is case sensitive. A capital and a small letter of the language's alphabet."
@@ -4850,7 +6134,15 @@
       "comment" : "Heading of the iPhone Settings section that holds the app's version and its logs."
     },
     "About %@ left" : {
-      "comment" : "Line of the import overlay and the feed downloads: the estimated time left. %@ is the time in words, such as \"4 minutes\"."
+      "comment" : "Line of the import overlay and the feed downloads: the estimated time left. %@ is the time in words, such as \"4 minutes\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Quedan unos %@"
+          }
+        }
+      }
     },
     "Action: skip" : {
       "comment" : "A part of a substitution rule's spoken summary: the rule removes the text it matches."
@@ -4981,7 +6273,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that adds a condition."
     },
     "Add Feed" : {
-      "comment" : "Heading of the sheet where the listener subscribes to a feed. Title case."
+      "comment" : "Heading of the sheet where the listener subscribes to a feed. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agregar canal"
+          }
+        }
+      }
     },
     "Add Feed…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Subscribes to a podcast or news feed. Also the title of the menu command of the same name."
@@ -5026,7 +6326,15 @@
       "comment" : "Last sentence of what VoiceOver says at launch when TextMouth had closed during the import of several files."
     },
     "Add to Library" : {
-      "comment" : "Button of the New Book from Text sheet that adds the new book to the library.\nHeading and navigation title of the sheet that lists the ways to add to the library. Title case.\nTitle of the Library toolbar button that opens the sheet of ways to add to the library. Title case.\nVoiceOver label of the Library toolbar button that opens the sheet of ways to add to the library. Title case."
+      "comment" : "Button of the New Book from Text sheet that adds the new book to the library.\nHeading and navigation title of the sheet that lists the ways to add to the library. Title case.\nTitle of the Library toolbar button that opens the sheet of ways to add to the library. Title case.\nVoiceOver label of the Library toolbar button that opens the sheet of ways to add to the library. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agregar a la biblioteca"
+          }
+        }
+      }
     },
     "Add to Reading List" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name."
@@ -5097,7 +6405,15 @@
       }
     },
     "Address" : {
-      "comment" : "Label of the feed's address in Feed Info. Title case."
+      "comment" : "Label of the feed's address in Feed Info. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dirección"
+          }
+        }
+      }
     },
     "Address %@" : {
       "comment" : "Speak Info: the part of a feed's full summary that gives its web address. %@ is the address."
@@ -5115,7 +6431,15 @@
       "comment" : "VoiceOver hint of the Import Rules button in Settings, Text, Substitutions: what is added and what is left out."
     },
     "Adds the new copy to the library as a separate book." : {
-      "comment" : "VoiceOver hint of the Keep Both button of the duplicate-book question."
+      "comment" : "VoiceOver hint of the Keep Both button of the duplicate-book question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Agrega la copia nueva a la biblioteca como un libro aparte."
+          }
+        }
+      }
     },
     "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page." : {
       "comment" : "Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. \"Page 12 of 300\" is an example of how the page is said."
@@ -5160,10 +6484,26 @@
       }
     },
     "After an automatic refresh, a notification names each feed with new episodes and articles" : {
-      "comment" : "VoiceOver hint of the switch that posts notifications for new items."
+      "comment" : "VoiceOver hint of the switch that posts notifications for new items.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Después de una actualización automática, una notificación nombra cada canal con episodios y artículos nuevos"
+          }
+        }
+      }
     },
     "After an automatic refresh, an alert names the feeds with new episodes and articles" : {
-      "comment" : "VoiceOver hint of the switch that shows an alert after a refresh TextMouth made by itself."
+      "comment" : "VoiceOver hint of the switch that shows an alert after a refresh TextMouth made by itself.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Después de una actualización automática, una alerta nombra los canales con episodios y artículos nuevos"
+          }
+        }
+      }
     },
     "Afterwards, Play tries the passage again" : {
       "comment" : "VoiceOver hint of the Close button of the speech refusal report."
@@ -5213,7 +6553,15 @@
       "comment" : "Hint of the Same Author criterion of Find Duplicate Books."
     },
     "All feed downloads" : {
-      "comment" : "What VoiceOver calls the feed downloads section's bar, which counts every download of the run."
+      "comment" : "What VoiceOver calls the feed downloads section's bar, which counts every download of the run.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todas las descargas de canales"
+          }
+        }
+      }
     },
     "All levels" : {
       "comment" : "Choice of the headings sheet's level filter that shows every level."
@@ -5228,7 +6576,15 @@
       "comment" : "Said when a step back in the audio editor can go no further."
     },
     "Already in Library" : {
-      "comment" : "Title of the library's alert as a ZIP batch that found books but added none, because the library already held every one. Title case."
+      "comment" : "Title of the library's alert as a ZIP batch that found books but added none, because the library already held every one. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ya en la biblioteca"
+          }
+        }
+      }
     },
     "Also write the markers as Audacity labels" : {
       "comment" : "Label of the checkbox in the audio editor's Export Audio sheet that writes the markers as a label file too. Audacity is the name of an audio editing program."
@@ -5246,7 +6602,15 @@
       "comment" : "Name of the punctuation key \"&\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Ampersand\"."
     },
     "An article's details come from its feed; %@ makes it a book you can edit." : {
-      "comment" : "The line under the heading of an article's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command."
+      "comment" : "The line under the heading of an article's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los detalles de un artículo provienen de su canal; %@ lo convierte en un libro que puedes editar."
+          }
+        }
+      }
     },
     "An audio section refers to a missing file or an invalid time range." : {
       "comment" : "Why an audio book could not be imported: one of its sections names a file that is not there, or a start and end time that do not make a range."
@@ -5261,7 +6625,15 @@
       "comment" : "Said when Edit Audio… reaches a podcast episode that lives in its feed's folder, which can't be edited."
     },
     "An episode's details come from its feed; %@ makes it a book you can edit." : {
-      "comment" : "The line under the heading of an episode's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command."
+      "comment" : "The line under the heading of an episode's read-only Book Information sheet: why nothing can be changed, and the way out. %@ is the name of the Move to Library command.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los detalles de un episodio provienen de su canal; %@ lo convierte en un libro que puedes editar."
+          }
+        }
+      }
     },
     "An option of the %@ filter has a value but no name." : {
       "comment" : "Problem found in a typed filter chain: an equals sign with nothing before it, in one filter's options. %@ is the filter's name, such as volume."
@@ -5422,7 +6794,15 @@
       "comment" : "Said as a filter begins to be applied in the audio editor. %@ is the filter preset's name."
     },
     "Articles" : {
-      "comment" : "Label of the count of a feed's articles in Feed Info. Title case.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .articles."
+      "comment" : "Label of the count of a feed's articles in Feed Info. Title case.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .articles.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Artículos"
+          }
+        }
+      }
     },
     "Articles (%lld of %@ listed)" : {
       "comment" : "The heading of a feed's articles when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as \"381\" or \"more than 2000\". Title case.",
@@ -5440,6 +6820,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Articles (%lld of %@ listed)"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Artículos (%lld de %@ en la lista)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Artículos (%lld de %@ en la lista)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Artículos (%lld de %@ en la lista)"
                 }
               }
             }
@@ -5463,6 +6867,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Articles (%lld)"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Artículos (%lld)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Artículos (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Artículos (%lld)"
                 }
               }
             }
@@ -5492,7 +6920,15 @@
       "comment" : "First sentence of the VoiceOver hint of a delete command that asks before it deletes."
     },
     "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed" : {
-      "comment" : "VoiceOver hint of the Delete Feed button in Feed Info."
+      "comment" : "VoiceOver hint of the Delete Feed button in Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pregunta antes de eliminar este canal, sus descargas y lo que conservó de las descargas que quitaste"
+          }
+        }
+      }
     },
     "Asks first, then gives the library a new identity and opens it." : {
       "comment" : "VoiceOver hint of the button that gives the library a new identity file."
@@ -5504,7 +6940,15 @@
       "comment" : "VoiceOver hint of the Reset to Defaults button in the Substitutions settings."
     },
     "Asks first, then stops checking; the feed and its downloads stay" : {
-      "comment" : "VoiceOver hint of the Unsubscribe button in Feed Info when it asks a question first."
+      "comment" : "VoiceOver hint of the Unsubscribe button in Feed Info when it asks a question first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pregunta antes de dejar de revisar; el canal y sus descargas se quedan"
+          }
+        }
+      }
     },
     "Asks first, then writes the identity this Mac knows for the library and opens it." : {
       "comment" : "VoiceOver hint of the button that restores the library's identity file."
@@ -5664,7 +7108,15 @@
       "comment" : "Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as \"1.0 times speed\"."
     },
     "Audio that TextMouth converts at import keeps only the converted file." : {
-      "comment" : "Caption under the Keep Originals switch while it is off."
+      "comment" : "Caption under the Keep Originals switch while it is off.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "El audio que TextMouth convierte al importar conserva solo el archivo convertido."
+          }
+        }
+      }
     },
     "Audio: %@." : {
       "comment" : "Line of the Transcribe Audio sheet giving the audiobook's length. %@ is the length in words, such as \"6 hours, 12 minutes, 4 seconds\"."
@@ -5735,13 +7187,29 @@
       }
     },
     "Back" : {
-      "comment" : "Title of the button that returns to the address field in the Add Feed sheet."
+      "comment" : "Title of the button that returns to the address field in the Add Feed sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Atrás"
+          }
+        }
+      }
     },
     "Back 10 Seconds" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back ten seconds."
     },
     "Back Cover" : {
-      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the back cover, made at import. Title case."
+      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the back cover, made at import. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Contraportada"
+          }
+        }
+      }
     },
     "Back One Second" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back one second."
@@ -5762,7 +7230,15 @@
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as \"Sentence\"."
     },
     "Before heading 1 of %lld" : {
-      "comment" : "Where the reader is when it precedes the first heading of a book. %lld is the number of headings in the book."
+      "comment" : "Where the reader is when it precedes the first heading of a book. %lld is the number of headings in the book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Antes del encabezado 1 de %lld"
+          }
+        }
+      }
     },
     "Before page %@" : {
       "comment" : "Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier."
@@ -5810,17 +7286,39 @@
             "state" : "new",
             "value" : "Book %1$lld of %2$lld: “%3$@”, %4$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libro %1$lld de %2$lld: “%3$@”, %4$@"
+          }
         }
       }
     },
     "Book Imported" : {
-      "comment" : "Title of the library's alert as an import that added its book ends with something to tell, such as chapters left out. The book is in the library, so it is no error. Title case."
+      "comment" : "Title of the library's alert as an import that added its book ends with something to tell, such as chapters left out. The book is in the library, so it is no error. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libro importado"
+          }
+        }
+      }
     },
     "Book Info" : {
       "comment" : "Menu item of a book's row that opens the sheet with the book's information.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name.\nTitle of the reader toolbar's button that opens the book's information sheet."
     },
     "Book Information" : {
-      "comment" : "Heading of a book's information sheet, as every Book Information sheet has it. Title case.\nHeading of the sheet in which the user edits a book's information (title, author and so on).\nHeading of the sheet that shows and edits a book's title and author, and lists its other details."
+      "comment" : "Heading of a book's information sheet, as every Book Information sheet has it. Title case.\nHeading of the sheet in which the user edits a book's information (title, author and so on).\nHeading of the sheet that shows and edits a book's title and author, and lists its other details.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Información del libro"
+          }
+        }
+      }
     },
     "Book Reader" : {
       "comment" : "Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group."
@@ -6027,6 +7525,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Libros (%lld)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Libros (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Libros (%lld)"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -6037,7 +7559,15 @@
       "comment" : "Title of the Stats pane's tile showing how many books were finished this year."
     },
     "Books Imported" : {
-      "comment" : "Title of the library's alert as a ZIP batch that added several books ends with something to tell about some of them, such as chapters left out. Title case."
+      "comment" : "Title of the library's alert as a ZIP batch that added several books ends with something to tell about some of them, such as chapters left out. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libros importados"
+          }
+        }
+      }
     },
     "Books can be moved only in a folder sorted by %@, and this folder is not." : {
       "comment" : "First sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort."
@@ -6149,16 +7679,40 @@
       }
     },
     "Cancel Download" : {
-      "comment" : "Button of the Transcribe Audio sheet that stops a speech model's download.\nTitle of the command that stops a feed item's download. Title case."
+      "comment" : "Button of the Transcribe Audio sheet that stops a speech model's download.\nTitle of the command that stops a feed item's download. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelar descarga"
+          }
+        }
+      }
     },
     "Cancel Export" : {
       "comment" : "The button of the alert an export shows when a chapter nests too deeply: it stops the whole export."
     },
     "Cancel Feed Downloads" : {
-      "comment" : "What VoiceOver calls the Cancel button of the feed downloads section; the import overlay has a Cancel too, so the name says what it cancels. Title case."
+      "comment" : "What VoiceOver calls the Cancel button of the feed downloads section; the import overlay has a Cancel too, so the name says what it cancels. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelar descargas de canales"
+          }
+        }
+      }
     },
     "Cancel Import" : {
-      "comment" : "VoiceOver label of the import overlay's Cancel button. Title case."
+      "comment" : "VoiceOver label of the import overlay's Cancel button. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelar importación"
+          }
+        }
+      }
     },
     "Cancel Move" : {
       "comment" : "VoiceOver label of the button that cancels the move of the library."
@@ -6181,7 +7735,15 @@
       "comment" : "VoiceOver value of the move's progress bar while the move is being cancelled."
     },
     "Cancelling after this book..." : {
-      "comment" : "Line of the import overlay once Cancel is pressed while a book is under way: the import stops after that book. Ends with an ellipsis written as three full stops."
+      "comment" : "Line of the import overlay once Cancel is pressed while a book is under way: the import stops after that book. Ends with an ellipsis written as three full stops.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelando después de este libro..."
+          }
+        }
+      }
     },
     "Cancelling the move." : {
       "comment" : "Announcement when the listener cancels the move of the library."
@@ -6190,7 +7752,15 @@
       "comment" : "Status line of the move sheet while the move is being cancelled."
     },
     "Cancelling..." : {
-      "comment" : "Line of a progress display once Cancel is pressed: the work stops at its next step. Ends with an ellipsis written as three full stops."
+      "comment" : "Line of a progress display once Cancel is pressed: the work stops at its next step. Ends with an ellipsis written as three full stops.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cancelando..."
+          }
+        }
+      }
     },
     "Captions in %@ (.%@), which nearly every player reads: one file, timed from the start of the audio." : {
       "comment" : "The hint of the Transcript's Convert to picker in the Export dialog while SubRip is chosen. %1$@ is the format's name, SubRip, and %2$@ its file extension, srt.",
@@ -6474,7 +8044,15 @@
       }
     },
     "Check Feed" : {
-      "comment" : "Title of the command that checks a feed for new items now, in a feed's menu and among its VoiceOver actions. Title case."
+      "comment" : "Title of the command that checks a feed for new items now, in a feed's menu and among its VoiceOver actions. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisar canal"
+          }
+        }
+      }
     },
     "Check that %@ is running and that this Mac is online, then choose Try Again." : {
       "comment" : "What to check when the library's files could not come from a cloud service. %@ is the service's name, or \"the cloud service\" when it is unknown. Try Again is the name of a button on the same screen."
@@ -6489,22 +8067,62 @@
       "comment" : "Second sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells: what to do. UTF-8 is the name of a text encoding. %@ is the name of the Reload from Editor button."
     },
     "Checked %@" : {
-      "comment" : "How a feed's last check reads. %@ is when, such as \"today at 3:05 PM\". Spoken after a comma with its first letter in lower case."
+      "comment" : "How a feed's last check reads. %@ is when, such as \"today at 3:05 PM\". Spoken after a comma with its first letter in lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisado %@"
+          }
+        }
+      }
     },
     "Checking %@..." : {
       "comment" : "Storage settings status line while a chosen folder is looked at. %@ is the folder's path."
     },
     "Checking %@…" : {
-      "comment" : "What VoiceOver says as Check Feed starts. %@ is the feed's title."
+      "comment" : "What VoiceOver says as Check Feed starts. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisando %@…"
+          }
+        }
+      }
     },
     "Checking now" : {
-      "comment" : "How a feed's last check reads while it is being checked. Spoken after a comma with its first letter in lower case."
+      "comment" : "How a feed's last check reads while it is being checked. Spoken after a comma with its first letter in lower case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisando ahora"
+          }
+        }
+      }
     },
     "Checking the address…" : {
-      "comment" : "What the Add Feed sheet shows and VoiceOver says while it reads the address typed."
+      "comment" : "What the Add Feed sheet shows and VoiceOver says while it reads the address typed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisando la dirección…"
+          }
+        }
+      }
     },
     "Checking the feed won't bring it back." : {
-      "comment" : "The last sentence of the confirmation before a feed's episode or article is deleted: a refresh of the feed does not list it again."
+      "comment" : "The last sentence of the confirmation before a feed's episode or article is deleted: a refresh of the feed does not list it again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisar el canal no lo traerá de vuelta."
+          }
+        }
+      }
     },
     "Checking the file" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding."
@@ -6513,16 +8131,40 @@
       "comment" : "Line of the Transcribe Audio sheet while it checks whether the language's speech model is on this Mac."
     },
     "Checks every subscribed feed and says what came" : {
-      "comment" : "VoiceOver hint of the Refresh All Feeds Now button."
+      "comment" : "VoiceOver hint of the Refresh All Feeds Now button.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisa todos los canales con suscripción y dice qué llegó"
+          }
+        }
+      }
     },
     "Checks every subscribed feed once the library has opened" : {
-      "comment" : "VoiceOver hint of the switch that refreshes every feed at launch."
+      "comment" : "VoiceOver hint of the switch that refreshes every feed at launch.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Revisa todos los canales con suscripción cuando se abre la biblioteca"
+          }
+        }
+      }
     },
     "Checks the library's location again, and opens the library when it is there." : {
       "comment" : "VoiceOver hint of Try Again on the Library Not Available screen."
     },
     "Checks this feed again from now on, and at once" : {
-      "comment" : "VoiceOver hint of the Resubscribe button in Feed Info."
+      "comment" : "VoiceOver hint of the Resubscribe button in Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve a revisar este canal a partir de ahora, y de inmediato"
+          }
+        }
+      }
     },
     "Choose" : {
       "comment" : "The confirm button of the folder chooser that the Export dialog opens."
@@ -6584,7 +8226,15 @@
       "comment" : "First sentence of the error shown when a folder is moved into itself. %@ is the folder's location, in straight double quotes."
     },
     "Choose a folder" : {
-      "comment" : "What Feed Info's folder picker shows while the feed's folder was removed from the library."
+      "comment" : "What Feed Info's folder picker shows while the feed's folder was removed from the library.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige una carpeta"
+          }
+        }
+      }
     },
     "Choose a folder outside it." : {
       "comment" : "Last sentence of why the chosen folder can't be used because it is in the Trash. \"It\" is the Trash."
@@ -6614,7 +8264,15 @@
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings."
     },
     "Choose an OPML file of subscriptions, as another feed reader exports them." : {
-      "comment" : "The message of the Open panel that chooses an OPML file of subscriptions."
+      "comment" : "The message of the Open panel that chooses an OPML file of subscriptions.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige un archivo OPML de suscripciones, tal como lo exportan otros lectores de canales."
+          }
+        }
+      }
     },
     "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it." : {
       "comment" : "First sentence of the message of the folder chooser that Change Location opens."
@@ -6650,7 +8308,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no kind listed."
     },
     "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook." : {
-      "comment" : "Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book."
+      "comment" : "Message of the panel that chooses folders to import. ncc.html and .opf are file names inside a DAISY book.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elige cada carpeta que quieras importar: la carpeta de un libro DAISY, con su archivo ncc.html o .opf, o una carpeta de pistas de audio, que se convierte en un solo audiolibro."
+          }
+        }
+      }
     },
     "Choose how to remove %@ from the library." : {
       "comment" : "First sentence of the confirmation that asks how to remove books. %@ is what is removed, such as \"“Notes”\" or \"3 books\"."
@@ -6785,7 +8451,15 @@
       "comment" : "Hint and tooltip of the Leading Articles pop-up in the Library settings. The, A, and An are the English articles the setting skips."
     },
     "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too." : {
-      "comment" : "The line under the folder picker in Feed Info."
+      "comment" : "The line under the folder picker in Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Al elegir otra carpeta, se muestran allí los episodios y artículos del canal, también los ya descargados."
+          }
+        }
+      }
     },
     "Choosing makes the shortcut yours; Reset to Default restores where it works by default." : {
       "comment" : "VoiceOver hint of the Works in pop-up button of a keyboard shortcut action: choosing a choice makes the action the listener's own, and Reset to Default restores where it works by default."
@@ -6854,7 +8528,15 @@
       "comment" : "Name of the File menu's Close All command, which closes every window, in a sentence saying why a keyboard shortcut cannot take its key."
     },
     "Close it" : {
-      "comment" : "What to do before trying again, when a book's download is open in a reader and cannot be deleted or replaced. Followed by \", then try again\". Written without a full stop."
+      "comment" : "What to do before trying again, when a book's download is open in a reader and cannot be deleted or replaced. Followed by \", then try again\". Written without a full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ciérralo"
+          }
+        }
+      }
     },
     "Close search and return to the book" : {
       "comment" : "VoiceOver hint of the Back to Book button of Search in Book."
@@ -7030,13 +8712,37 @@
       "comment" : "Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as \"Control + Shift + R\"."
     },
     "Convert Compiled HTML Help files to HTML files or PDF files, then import those." : {
-      "comment" : "Advice after the refusal of a Compiled HTML Help file."
+      "comment" : "Advice after the refusal of a Compiled HTML Help file.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Convierte los archivos de Ayuda HTML compilada en archivos HTML o PDF y luego impórtalos."
+          }
+        }
+      }
     },
     "Convert DjVu documents to PDF files, then import those." : {
-      "comment" : "Advice after the refusal of a DjVu scan."
+      "comment" : "Advice after the refusal of a DjVu scan.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Convierte los documentos DjVu en archivos PDF y luego impórtalos."
+          }
+        }
+      }
     },
     "Convert XPS documents to PDF files, then import those." : {
-      "comment" : "Advice after the refusal of an XPS document."
+      "comment" : "Advice after the refusal of an XPS document.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Convierte los documentos XPS en archivos PDF y luego impórtalos."
+          }
+        }
+      }
     },
     "Convert headings to" : {
       "comment" : "The name of the picker beside the Headings checkbox in the Export dialog that chooses the format of the headings list."
@@ -7058,6 +8764,12 @@
             "state" : "new",
             "value" : "Converting %1$@ failed (the converter ended with code %2$@)."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falló la conversión de %1$@ (el conversor terminó con el código %2$@)."
+          }
         }
       }
     },
@@ -7069,11 +8781,25 @@
             "state" : "new",
             "value" : "Converting %1$@ was stopped because %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se detuvo la conversión de %1$@ porque %2$@."
+          }
         }
       }
     },
     "Converting Audio" : {
-      "comment" : "Title of the overlay shown while the library's Ogg audio is converted to AAC. Title case."
+      "comment" : "Title of the overlay shown while the library's Ogg audio is converted to AAC. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Convirtiendo audio"
+          }
+        }
+      }
     },
     "Converting audio: %@ of “%@”" : {
       "comment" : "Line of the overlay shown while a book's Ogg audio is converted to AAC. %1$@ is how many of how many tracks are done, such as \"12 of 176 tracks\", and %2$@ the book's title.",
@@ -7082,6 +8808,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Converting audio: %1$@ of “%2$@”"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Convirtiendo audio: %1$@ de “%2$@”"
           }
         }
       }
@@ -7146,10 +8878,26 @@
       "comment" : "Start of the error message when the new copy of a duplicate book could not be discarded. The reason follows it after a colon."
     },
     "Could not download “%@”." : {
-      "comment" : "Announced as a long run of one feed download ends in failure. %@ is the episode's or article's title. Its row says why."
+      "comment" : "Announced as a long run of one feed download ends in failure. %@ is the episode's or article's title. Its row says why.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo descargar “%@”."
+          }
+        }
+      }
     },
     "Could not import “%@”." : {
-      "comment" : "VoiceOver announcement as an import that ran long fails. %@ is the file's name. The library's alert says why."
+      "comment" : "VoiceOver announcement as an import that ran long fails. %@ is the file's name. The library's alert says why.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo importar “%@”."
+          }
+        }
+      }
     },
     "Could not move \"%@\"" : {
       "comment" : "Start of the error message when a folder was refused a move. %@ is the folder's name. The reason follows it after a colon."
@@ -7161,7 +8909,15 @@
       "comment" : "Start of the error message when moving a folder failed on disk, and everything was put back. The reason follows it after a colon."
     },
     "Could not move to the library" : {
-      "comment" : "Starts every failure of Move to Library, followed by a colon and the reason. Has no full stop."
+      "comment" : "Starts every failure of Move to Library, followed by a colon and the reason. Has no full stop.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo mover a la biblioteca"
+          }
+        }
+      }
     },
     "Could not open the text in an editor, because its file could not be written." : {
       "comment" : "First sentence of the announcement when Open in Editor could not write the text to a file for the editor."
@@ -7222,13 +8978,37 @@
       "comment" : "First sentence of the message when Save is pressed after the book's title was emptied."
     },
     "Couldn't Delete" : {
-      "comment" : "Title of the alert that says why a download or a feed item could not be deleted. Title case."
+      "comment" : "Title of the alert that says why a download or a feed item could not be deleted. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo eliminar"
+          }
+        }
+      }
     },
     "Couldn't Export Subscriptions" : {
-      "comment" : "Title of the alert that says why the subscriptions could not be exported. Title case."
+      "comment" : "Title of the alert that says why the subscriptions could not be exported. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudieron exportar las suscripciones"
+          }
+        }
+      }
     },
     "Couldn't Import Subscriptions" : {
-      "comment" : "Title of the alert that says why an OPML file could not be read. Title case."
+      "comment" : "Title of the alert that says why an OPML file could not be read. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudieron importar las suscripciones"
+          }
+        }
+      }
     },
     "Couldn't clean up the transcript of %@: %@" : {
       "comment" : "Alert, and what VoiceOver hears, when a cleanup failed. %1$@ is the audiobook's title; %2$@ is the reason, a sentence.",
@@ -7303,10 +9083,26 @@
       }
     },
     "Couldn't refresh %@." : {
-      "comment" : "The end of what VoiceOver says after Refresh All Feeds when some feeds could not be refreshed. %@ is a list of their titles."
+      "comment" : "The end of what VoiceOver says after Refresh All Feeds when some feeds could not be refreshed. %@ is a list of their titles.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo actualizar %@."
+          }
+        }
+      }
     },
     "Couldn't subscribe to %@." : {
-      "comment" : "What the Import OPML sheet says of the feeds that could not be subscribed to. %@ is a list of them, each with its reason."
+      "comment" : "What the Import OPML sheet says of the feeds that could not be subscribed to. %@ is a list of them, each with its reason.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo suscribir a %@."
+          }
+        }
+      }
     },
     "Couldn't undo the cleanup of the transcript of %@: %@" : {
       "comment" : "Alert, and what VoiceOver hears, when undoing a cleanup failed. %1$@ is the audiobook's title; %2$@ is the reason, a sentence.",
@@ -7323,13 +9119,37 @@
       "comment" : "Button that makes the new folder."
     },
     "Create Folder" : {
-      "comment" : "Title and VoiceOver label of the button that puts the books of a ZIP archive in a new folder. Title case."
+      "comment" : "Title and VoiceOver label of the button that puts the books of a ZIP archive in a new folder. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Crear carpeta"
+          }
+        }
+      }
     },
     "Create Folder for Imported Books?" : {
-      "comment" : "Title of the question asked when a ZIP archive added several books: whether to put them in a new folder. Title case."
+      "comment" : "Title of the question asked when a ZIP archive added several books: whether to put them in a new folder. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Crear una carpeta para los libros importados?"
+          }
+        }
+      }
     },
     "Create a new folder to hold them?" : {
-      "comment" : "Second sentence of the question asked when a ZIP archive added several books: whether to put them in a new folder. \"Them\" is the books."
+      "comment" : "Second sentence of the question asked when a ZIP archive added several books: whether to put them in a new folder. \"Them\" is the books.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Crear una carpeta nueva para guardarlos?"
+          }
+        }
+      }
     },
     "Create new folder" : {
       "comment" : "Spoken label of the toolbar button that opens the sheet that makes a new folder."
@@ -7422,7 +9242,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .openedWithin."
     },
     "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes" : {
-      "comment" : "VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days."
+      "comment" : "VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Días que pasan después de que termina un episodio antes de eliminar su descarga, de 0 (de inmediato) a 365; uno abierto en un lector espera hasta que se cierre"
+          }
+        }
+      }
     },
     "Days to keep an original" : {
       "comment" : "Label of the stepper that sets how many days an original audio is kept, in Storage settings (Audio Editing) and the audio editor's Audio Info."
@@ -7550,10 +9378,26 @@
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: the original file is deleted once the book is imported."
     },
     "Delete Article" : {
-      "comment" : "Title of the button that confirms deleting a feed's article. Title case."
+      "comment" : "Title of the button that confirms deleting a feed's article. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar artículo"
+          }
+        }
+      }
     },
     "Delete Article…" : {
-      "comment" : "Title of the command that deletes a feed's article, after a confirmation. The ellipsis says a question follows. Title case."
+      "comment" : "Title of the command that deletes a feed's article, after a confirmation. The ellipsis says a question follows. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar artículo…"
+          }
+        }
+      }
     },
     "Delete Character" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Character\"."
@@ -7565,16 +9409,48 @@
       "comment" : "Title in title case of the button that deletes several feed items' downloads. The confirmation's title says how many."
     },
     "Delete Episode" : {
-      "comment" : "Title of the button that confirms deleting a feed's episode. Title case."
+      "comment" : "Title of the button that confirms deleting a feed's episode. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar episodio"
+          }
+        }
+      }
     },
     "Delete Episode…" : {
-      "comment" : "Title of the command that deletes a feed's episode, after a confirmation. The ellipsis says a question follows. Title case."
+      "comment" : "Title of the command that deletes a feed's episode, after a confirmation. The ellipsis says a question follows. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar episodio…"
+          }
+        }
+      }
     },
     "Delete Feed" : {
-      "comment" : "Title of the button that confirms deleting a feed. Title case."
+      "comment" : "Title of the button that confirms deleting a feed. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar canal"
+          }
+        }
+      }
     },
     "Delete Feed…" : {
-      "comment" : "Title of the command that deletes a feed with its downloads, after a confirmation, in a feed's menu, among its VoiceOver actions, and in Feed Info. The ellipsis says a question follows. Title case."
+      "comment" : "Title of the command that deletes a feed with its downloads, after a confirmation, in a feed's menu, among its VoiceOver actions, and in Feed Info. The ellipsis says a question follows. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar canal…"
+          }
+        }
+      }
     },
     "Delete Folder..." : {
       "comment" : "Item of a folder's menu that deletes the folder. The three dots mean a question follows."
@@ -7586,7 +9462,15 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Line\"."
     },
     "Delete Original File Permanently?" : {
-      "comment" : "Title of the confirmation that asks whether to delete the original file of a book just imported permanently. Title case."
+      "comment" : "Title of the confirmation that asks whether to delete the original file of a book just imported permanently. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Eliminar el archivo original de forma permanente?"
+          }
+        }
+      }
     },
     "Delete Permanently" : {
       "comment" : "Title of the button that removes books and deletes their files permanently, in title case."
@@ -7609,31 +9493,79 @@
       }
     },
     "Delete downloads after playing" : {
-      "comment" : "Label of the number field and stepper that say how many days after an episode plays its download is deleted."
+      "comment" : "Label of the number field and stepper that say how many days after an episode plays its download is deleted.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eliminar descargas tras reproducirlas"
+          }
+        }
+      }
     },
     "Delete the Transcript of %@?" : {
       "comment" : "Title of the question asked before an audiobook's transcript is deleted. %@ is the audiobook's title."
     },
     "Delete the feed “%@”?" : {
-      "comment" : "Title of the confirmation before Delete Feed. %@ is the feed's title."
+      "comment" : "Title of the confirmation before Delete Feed. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Eliminar el canal “%@”?"
+          }
+        }
+      }
     },
     "Delete the original file permanently?" : {
-      "comment" : "Question of the confirmation about the original file of a book just imported, when the file's name is not known."
+      "comment" : "Question of the confirmation about the original file of a book just imported, when the file's name is not known.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Eliminar el archivo original de forma permanente?"
+          }
+        }
+      }
     },
     "Delete the original file “%@” permanently?" : {
-      "comment" : "Question of the confirmation about the original file of a book just imported. %@ is the file's name."
+      "comment" : "Question of the confirmation about the original file of a book just imported. %@ is the file's name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Eliminar el archivo original “%@” de forma permanente?"
+          }
+        }
+      }
     },
     "Delete the view “%@”?" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question Delete… asks. Placeholders in order: name."
     },
     "Delete “%@”?" : {
-      "comment" : "Title of the confirmation before a feed's episode or article is deleted. %@ is its title."
+      "comment" : "Title of the confirmation before a feed's episode or article is deleted. %@ is its title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "¿Eliminar “%@”?"
+          }
+        }
+      }
     },
     "Deleted %@ permanently." : {
       "comment" : "Report that books' files were deleted permanently. %@ is what was deleted, such as \"“Notes”\" or \"3 books\"."
     },
     "Deleted %@." : {
-      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once the view is deleted. Placeholders in order: name.\nWhat VoiceOver says once Delete Feed deleted a feed. %@ is a list of what went: the feed, its downloads, and what it kept for removed downloads."
+      "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once the view is deleted. Placeholders in order: name.\nWhat VoiceOver says once Delete Feed deleted a feed. %@ is a list of what went: the feed, its downloads, and what it kept for removed downloads.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se eliminó %@."
+          }
+        }
+      }
     },
     "Deleted %@. %@ selected, %lld of %lld." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once a view is deleted, naming the view selected now and its place (finding 13): \"Deleted Mine. Feeds selected, 6 of 6.\". Placeholders in order: name, selected, number, count.",
@@ -7650,16 +9582,40 @@
       "comment" : "The original audio's state in the audio editor's Audio Info sheet. %@ is the date it was deleted, in long form."
     },
     "Deleted the download of “%@”." : {
-      "comment" : "What VoiceOver says once Delete Download deleted a download. %@ is the title. A sentence about what is kept follows."
+      "comment" : "What VoiceOver says once Delete Download deleted a download. %@ is the title. A sentence about what is kept follows.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se eliminó la descarga de “%@”."
+          }
+        }
+      }
     },
     "Deleted the transcript of %@." : {
       "comment" : "What VoiceOver hears once an audiobook's transcript is deleted. %@ is the audiobook's title."
     },
     "Deleted “%@” from its feed; its book stays in your library." : {
-      "comment" : "What VoiceOver says once an item that was moved into the library is deleted from its feed. %@ is its title."
+      "comment" : "What VoiceOver says once an item that was moved into the library is deleted from its feed. %@ is its title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se eliminó “%@” de su canal; su libro sigue en tu biblioteca."
+          }
+        }
+      }
     },
     "Deleted “%@”." : {
-      "comment" : "What VoiceOver says once a feed's episode or article is deleted. %@ is its title."
+      "comment" : "What VoiceOver says once a feed's episode or article is deleted. %@ is its title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se eliminó “%@”."
+          }
+        }
+      }
     },
     "Deletes the recording without saving it." : {
       "comment" : "VoiceOver hint of the Discard Recording button of the Record window."
@@ -7677,10 +9633,26 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the other case of the condition."
     },
     "Description" : {
-      "comment" : "Heading of the feed's or the item's description, in Feed Info and Show Description."
+      "comment" : "Heading of the feed's or the item's description, in Feed Info and Show Description.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descripción"
+          }
+        }
+      }
     },
     "Description of %@" : {
-      "comment" : "VoiceOver label of the text area that shows a description. %@ is the feed's or the item's title."
+      "comment" : "VoiceOver label of the text area that shows a description. %@ is the feed's or the item's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descripción de %@"
+          }
+        }
+      }
     },
     "Deselect All" : {
       "comment" : "Button of the edit bar that deselects every book."
@@ -7742,7 +9714,15 @@
       "comment" : "Said by the Record window after a recording left behind that held no sound was discarded. %@ is when it was recorded, a date and time."
     },
     "Discards the new copy. The library stays as it was." : {
-      "comment" : "VoiceOver hint of the Cancel button of the duplicate-book question."
+      "comment" : "VoiceOver hint of the Cancel button of the duplicate-book question.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descarta la copia nueva. La biblioteca queda como estaba."
+          }
+        }
+      }
     },
     "Disconnect delay" : {
       "comment" : "Title of the slider in the Miscellaneous settings that sets how long media commands are suppressed after a Bluetooth device disconnects."
@@ -7824,7 +9804,15 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Down Arrow\"."
     },
     "Download" : {
-      "comment" : "Button of the reader's view for a book that is only in the cloud; it downloads the book.\nTitle of the command that downloads a feed item, or tries a failed download again. Title case."
+      "comment" : "Button of the reader's view for a book that is only in the cloud; it downloads the book.\nTitle of the command that downloads a feed item, or tries a failed download again. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargar"
+          }
+        }
+      }
     },
     "Download %lld Books" : {
       "comment" : "Library menu command that downloads the selected books. %lld is the number of books selected.",
@@ -7857,11 +9845,25 @@
             "state" : "new",
             "value" : "Download %1$lld of %2$lld: “%3$@” from %4$@"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descarga %1$lld de %2$lld: “%3$@” de %4$@"
+          }
         }
       }
     },
     "Download Failed" : {
-      "comment" : "Note in the library list: the book's last download failed.\nThe note on a feed's episode or article row whose last download failed. A reason may follow it. Title case."
+      "comment" : "Note in the library list: the book's last download failed.\nThe note on a feed's episode or article row whose last download failed. A reason may follow it. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descarga fallida"
+          }
+        }
+      }
     },
     "Download Not Removed" : {
       "comment" : "Title of the alert that says Remove Download did not remove one book's files."
@@ -7940,7 +9942,15 @@
       "comment" : "What to do about several books only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now."
     },
     "Downloaded" : {
-      "comment" : "Note in the library list: every file of the book is on this Mac.\nThe note on a feed's episode or article row whose file is on this Mac. Title case."
+      "comment" : "Note in the library list: every file of the book is on this Mac.\nThe note on a feed's episode or article row whose file is on this Mac. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargado"
+          }
+        }
+      }
     },
     "Downloaded %@" : {
       "comment" : "Announcement that Download Now brought several books to this Mac. %@ is a count of books, such as \"3 books\"."
@@ -7952,7 +9962,15 @@
       "comment" : "Spoken when the book's download is done and the book loads."
     },
     "Downloading" : {
-      "comment" : "The note on a feed's episode or article row while its file downloads. Title case."
+      "comment" : "The note on a feed's episode or article row while its file downloads. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargando"
+          }
+        }
+      }
     },
     "Downloading %@" : {
       "comment" : "Announcement when Download Now starts. %@ is the book's title, or a count of books such as \"3 books\".\nAnnouncement when the reading list's books start downloading after a command of the listener's. %@ is a count of books, such as \"3 books\".\nHeading of the view that shows a book downloading from the cloud before it opens. %@ is the book's title."
@@ -8084,10 +10102,26 @@
       "comment" : "Line of the iPhone's import progress card while a file that is only in iCloud comes down. %@ is the file's name, as in \"Downloading “Dune”\"."
     },
     "Downloading “%@”." : {
-      "comment" : "What VoiceOver says as Download starts. %@ is the episode's or article's title."
+      "comment" : "What VoiceOver says as Download starts. %@ is the episode's or article's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargando “%@”."
+          }
+        }
+      }
     },
     "Downloading “%@”. It opens once it has downloaded." : {
-      "comment" : "What VoiceOver says when a feed item that is not downloaded is opened: it downloads, then opens. %@ is the item's title."
+      "comment" : "What VoiceOver says when a feed item that is not downloaded is opened: it downloads, then opens. %@ is the item's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargando “%@”. Se abrirá cuando termine la descarga."
+          }
+        }
+      }
     },
     "Downloading, %lld percent" : {
       "comment" : "What VoiceOver says of a book that is downloading, in the library list. %lld is the percent done, from 0 to 100."
@@ -8096,13 +10130,37 @@
       "comment" : "Title of the alert that says Remove Download did not remove several books' files."
     },
     "Downloads go to" : {
-      "comment" : "Caption of the folder picker in Feed Info: the library folder the feed's downloads are listed in."
+      "comment" : "Caption of the folder picker in Feed Info: the library folder the feed's downloads are listed in.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Las descargas van a"
+          }
+        }
+      }
     },
     "Downloads it again, then opens it where you left off" : {
-      "comment" : "VoiceOver hint of a feed item's row whose place was kept after its file was deleted: its default action downloads it again and opens it at the place kept."
+      "comment" : "VoiceOver hint of a feed item's row whose place was kept after its file was deleted: its default action downloads it again and opens it at the place kept.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lo descarga de nuevo y lo abre donde lo dejaste"
+          }
+        }
+      }
     },
     "Downloads it, then opens it" : {
-      "comment" : "VoiceOver hint of the row of a feed item that is not downloaded: its default action downloads it, then opens it."
+      "comment" : "VoiceOver hint of the row of a feed item that is not downloaded: its default action downloads it, then opens it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lo descarga y luego lo abre"
+          }
+        }
+      }
     },
     "Downloads the book again" : {
       "comment" : "Hint of the Download button of the reader's view for a book that is only in the cloud."
@@ -8117,10 +10175,26 @@
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that makes a custom copy of a view."
     },
     "Duplicate Book Found" : {
-      "comment" : "Title of the question asked when a book just imported matches one already in the library. Title case."
+      "comment" : "Title of the question asked when a book just imported matches one already in the library. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libro duplicado encontrado"
+          }
+        }
+      }
     },
     "Duplicate Copies Moved to the Trash" : {
-      "comment" : "Title of the alert that tells of new copies of duplicate books that the launch moved to the Trash. Title case."
+      "comment" : "Title of the alert that tells of new copies of duplicate books that the launch moved to the Trash. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Copias duplicadas movidas a la Papelera"
+          }
+        }
+      }
     },
     "Duration" : {
       "comment" : "Choice of the headings sheet's display picker: each heading shows how long it lasts.\nName of the book information sheet's row that shows an audiobook's length."
@@ -8249,7 +10323,15 @@
       "comment" : "Button of the panel in which the user chooses an app to edit a book's text with."
     },
     "Edit book metadata" : {
-      "comment" : "VoiceOver label of the reader's Book Info button for a book the listener can edit."
+      "comment" : "VoiceOver label of the reader's Book Info button for a book the listener can edit.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Editar metadatos del libro"
+          }
+        }
+      }
     },
     "Edit mode, %lld of %lld book selected" : {
       "comment" : "Spoken label of the edit bar when one book is listed. %1$lld is how many are selected, 0 or 1. %2$lld is how many are listed, 1.",
@@ -8303,7 +10385,15 @@
       "comment" : "Label of the number of edits made, in the audio editor's Audio Info sheet."
     },
     "Edits of its audio or of its manifest are not kept." : {
-      "comment" : "Last sentence of what Replace Existing keeps of a duplicate audiobook: the library copy's edits of its audio or of its manifest are lost."
+      "comment" : "Last sentence of what Replace Existing keeps of a duplicate audiobook: the library copy's edits of its audio or of its manifest are lost.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Las ediciones de su audio o de su manifiesto no se conservan."
+          }
+        }
+      }
     },
     "Edits one track at a time, listed by chapter name." : {
       "comment" : "Explains the question about which track of a book to edit."
@@ -8423,7 +10513,15 @@
       "comment" : "Hint of the toolbar's edit mode button while edit mode is off."
     },
     "Episodes" : {
-      "comment" : "Label of the count of a feed's episodes in Feed Info. Title case.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .episodes."
+      "comment" : "Label of the count of a feed's episodes in Feed Info. Title case.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .episodes.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Episodios"
+          }
+        }
+      }
     },
     "Episodes (%lld of %@ listed)" : {
       "comment" : "The heading of a feed's episodes when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as \"381\" or \"more than 2000\". Title case.",
@@ -8441,6 +10539,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Episodes (%lld of %@ listed)"
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Episodios (%lld de %@ en la lista)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Episodios (%lld de %@ en la lista)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Episodios (%lld de %@ en la lista)"
                 }
               }
             }
@@ -8468,11 +10590,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Episodios (%lld)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Episodios (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Episodios (%lld)"
+                }
+              }
+            }
+          }
         }
       }
     },
     "Episodes and Articles" : {
-      "comment" : "Heading of the second group of the Feeds tab of Settings: what is listed and downloaded. Title case."
+      "comment" : "Heading of the second group of the Feeds tab of Settings: what is listed and downloaded. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Episodios y artículos"
+          }
+        }
+      }
     },
     "Equals" : {
       "comment" : "Name of the punctuation key \"=\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Equals\"."
@@ -8490,7 +10644,15 @@
       "comment" : "Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume."
     },
     "Every article listed, downloads by hand" : {
-      "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the listener downloads by hand."
+      "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the listener downloads by hand.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los artículos en la lista, descargas manuales"
+          }
+        }
+      }
     },
     "Every article listed, newest %lld downloaded" : {
       "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the newest ones downloaded. %lld is how many of the newest.",
@@ -8512,11 +10674,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los artículos en la lista, los %lld más recientes descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los artículos en la lista, el más reciente descargado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los artículos en la lista, los %lld más recientes descargados"
+                }
+              }
+            }
+          }
         }
       }
     },
     "Every article of %@ is already read." : {
-      "comment" : "What VoiceOver says when Mark All Read finds no unread article. %@ is the feed's title."
+      "comment" : "What VoiceOver says when Mark All Read finds no unread article. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los artículos de %@ ya están leídos."
+          }
+        }
+      }
     },
     "Every book above it in the reading list is finished" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop.",
@@ -8566,7 +10760,15 @@
       "comment" : "Says that an import read every chapter of a book, with nothing left out."
     },
     "Every episode listed, downloads by hand" : {
-      "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the listener downloads by hand."
+      "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the listener downloads by hand.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los episodios en la lista, descargas manuales"
+          }
+        }
+      }
     },
     "Every episode listed, newest %lld downloaded" : {
       "comment" : "A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the newest ones downloaded. %lld is how many of the newest.",
@@ -8588,11 +10790,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los episodios en la lista, los %lld más recientes descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los episodios en la lista, el más reciente descargado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los episodios en la lista, los %lld más recientes descargados"
+                }
+              }
+            }
+          }
         }
       }
     },
     "Every episode of %@ is already played." : {
-      "comment" : "What VoiceOver says when Mark All Played finds no unplayed episode. %@ is the feed's title."
+      "comment" : "What VoiceOver says when Mark All Played finds no unplayed episode. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los episodios de %@ ya están reproducidos."
+          }
+        }
+      }
     },
     "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again." : {
       "comment" : "What VoiceOver says when Refresh All Feeds finds only unsubscribed feeds. The first %@ is the name of the Resubscribe command; the second is the name of the Feed Info sheet.",
@@ -8602,11 +10836,25 @@
             "state" : "new",
             "value" : "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los canales tienen la suscripción cancelada, así que no se revisó ninguno. Elige %1$@ en la fila de un canal, o en su %2$@, para volver a revisarlo."
+          }
         }
       }
     },
     "Every item listed, downloads by hand" : {
-      "comment" : "A choice of the List and download pop-up menu, in Settings or for a feed of both kinds: every item is listed and the listener downloads by hand."
+      "comment" : "A choice of the List and download pop-up menu, in Settings or for a feed of both kinds: every item is listed and the listener downloads by hand.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los elementos en la lista, descargas manuales"
+          }
+        }
+      }
     },
     "Every item listed, newest %lld downloaded" : {
       "comment" : "A choice of the List and download pop-up menu, in Settings or for a feed of both kinds: every item is listed and the newest ones downloaded. %lld is how many of the newest.",
@@ -8628,11 +10876,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los elementos en la lista, los %lld más recientes descargados"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los elementos en la lista, el más reciente descargado"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Todos los elementos en la lista, los %lld más recientes descargados"
+                }
+              }
+            }
+          }
         }
       }
     },
     "Every item of %@ is already played." : {
-      "comment" : "What VoiceOver says when Mark All Played finds no unplayed item, in a feed of episodes and articles. %@ is the feed's title."
+      "comment" : "What VoiceOver says when Mark All Played finds no unplayed item, in a feed of episodes and articles. %@ is the feed's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Todos los elementos de %@ ya están reproducidos."
+          }
+        }
+      }
     },
     "Every page was read." : {
       "comment" : "Says that an import read every page of a PDF or of a book of pictures, with nothing left out."
@@ -8752,16 +11032,48 @@
       "comment" : "Title of the alert when substitution rules could not be saved as a pronunciation lexicon."
     },
     "Export Keynote presentations from Keynote as PDF files, then import those." : {
-      "comment" : "Advice after the refusal of a Keynote presentation, which TextMouth reads in no slide format."
+      "comment" : "Advice after the refusal of a Keynote presentation, which TextMouth reads in no slide format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exporta las presentaciones de Keynote desde Keynote como archivos PDF y luego impórtalos."
+          }
+        }
+      }
     },
     "Export Numbers spreadsheets from Numbers as PDF files, then import those." : {
-      "comment" : "Advice after the refusal of a Numbers spreadsheet."
+      "comment" : "Advice after the refusal of a Numbers spreadsheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exporta las hojas de cálculo de Numbers desde Numbers como archivos PDF y luego impórtalas."
+          }
+        }
+      }
     },
     "Export OPML…" : {
-      "comment" : "Title of the Library menu's command that exports the subscriptions as an OPML file. The ellipsis says a panel follows. OPML is a file format; keep it."
+      "comment" : "Title of the Library menu's command that exports the subscriptions as an OPML file. The ellipsis says a panel follows. OPML is a file format; keep it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exportar OPML…"
+          }
+        }
+      }
     },
     "Export Pages documents from Pages as Word documents or EPUB books, then import those." : {
-      "comment" : "Advice after the refusal of a Pages document: how to get the book out of Pages."
+      "comment" : "Advice after the refusal of a Pages document: how to get the book out of Pages.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Exporta los documentos de Pages desde Pages como documentos de Word o libros EPUB y luego impórtalos."
+          }
+        }
+      }
     },
     "Export Rules…" : {
       "comment" : "Title of the button in Settings, Text, Substitutions that saves the rules as a pronunciation lexicon file."
@@ -8844,6 +11156,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se exportaron %lld de suscripciones a %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se exportó %lld suscripción a %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se exportaron %lld suscripciones a %@."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -8914,7 +11250,15 @@
       "comment" : "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it."
     },
     "Extracting archive..." : {
-      "comment" : "Line of the import overlay as a ZIP import starts, before its archive is opened. Ends with an ellipsis written as three full stops, which says the work goes on."
+      "comment" : "Line of the import overlay as a ZIP import starts, before its archive is opened. Ends with an ellipsis written as three full stops, which says the work goes on.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Extrayendo archivo comprimido..."
+          }
+        }
+      }
     },
     "Extracting “%@”: %@..." : {
       "comment" : "Line of the import overlay while an archive is extracted. %1$@ is the archive's name and %2$@ how far the extraction has got, such as \"120 of 300 items, 1.2 GB of 3.4 GB\". Ends with an ellipsis written as three full stops.",
@@ -8923,6 +11267,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Extracting “%1$@”: %2$@..."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Extrayendo “%1$@”: %2$@..."
           }
         }
       }
@@ -8951,7 +11301,15 @@
       }
     },
     "Failed to compute file hash." : {
-      "comment" : "Why an import failed: the file's checksum could not be computed."
+      "comment" : "Why an import failed: the file's checksum could not be computed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se pudo calcular el hash del archivo."
+          }
+        }
+      }
     },
     "Failed to load book" : {
       "comment" : "Heading of the view shown in place of a book that could not be loaded; the reason follows it."
@@ -8972,22 +11330,62 @@
       "comment" : "Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English."
     },
     "Feed" : {
-      "comment" : "The note after a feed's title in the Library's feed rows and in the Folders list, saying the row is a feed. Title case."
+      "comment" : "The note after a feed's title in the Library's feed rows and in the Folders list, saying the row is a feed. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Canal"
+          }
+        }
+      }
     },
     "Feed Downloads" : {
-      "comment" : "Title of the Library window's section that shows the feed downloads under way, which VoiceOver reads first. Title case."
+      "comment" : "Title of the Library window's section that shows the feed downloads under way, which VoiceOver reads first. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargas de canales"
+          }
+        }
+      }
     },
     "Feed Info" : {
-      "comment" : "The name of the Feed Info command or sheet, without its ellipsis, as a sentence names it. Title case."
+      "comment" : "The name of the Feed Info command or sheet, without its ellipsis, as a sentence names it. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Información del canal"
+          }
+        }
+      }
     },
     "Feed Info…" : {
-      "comment" : "Title of the command that shows a feed's information and its own settings, in a feed's menu and among its VoiceOver actions. The ellipsis says a sheet follows. Title case."
+      "comment" : "Title of the command that shows a feed's information and its own settings, in a feed's menu and among its VoiceOver actions. The ellipsis says a sheet follows. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Información del canal…"
+          }
+        }
+      }
     },
     "Feed Settings" : {
       "comment" : "Title of the Library toolbar button, in the folder of a feed, that opens the feed's settings."
     },
     "Feed downloads finished: %@." : {
-      "comment" : "Announced as a long run of feed downloads ends. %@ is the counts, such as \"8 downloaded, 1 failed\", or \"none downloaded\"."
+      "comment" : "Announced as a long run of feed downloads ends. %@ is the counts, such as \"8 downloaded, 1 failed\", or \"none downloaded\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargas de canales terminadas: %@."
+          }
+        }
+      }
     },
     "Feed downloads: %@, %@." : {
       "comment" : "Announced as a long run of feed downloads passes a quarter of its downloads. The first %@ is the count, such as \"3 of 12 done\"; the second is the time left, begun in lower case, such as \"about 4 minutes left\".",
@@ -8997,11 +11395,25 @@
             "state" : "new",
             "value" : "Feed downloads: %1$@, %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargas de canales: %1$@, %2$@."
+          }
         }
       }
     },
     "Feed downloads: %@." : {
-      "comment" : "Announced as a long run of feed downloads passes a quarter of its downloads. %@ is the count, such as \"3 of 12 done\"."
+      "comment" : "Announced as a long run of feed downloads passes a quarter of its downloads. %@ is the count, such as \"3 of 12 done\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Descargas de canales: %@."
+          }
+        }
+      }
     },
     "Feed downloads: %lld under way, %@." : {
       "comment" : "Announced once as a long run of feed downloads that TextMouth started itself is under way. %lld is how many downloads are not yet done; %@ is the time left, begun in lower case, such as \"about 4 minutes left\".",
@@ -9019,6 +11431,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Feed downloads: %lld under way, %@."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargas de canales: %lld en curso, %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargas de canales: %lld en curso, %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargas de canales: %lld en curso, %@."
                 }
               }
             }
@@ -9046,11 +11482,43 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargas de canales: %lld en curso."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargas de canales: %lld en curso."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Descargas de canales: %lld en curso."
+                }
+              }
+            }
+          }
         }
       }
     },
     "Feed or web page address" : {
-      "comment" : "Caption and VoiceOver label of the field where the listener types a feed's address."
+      "comment" : "Caption and VoiceOver label of the field where the listener types a feed's address.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dirección del canal o de la página web"
+          }
+        }
+      }
     },
     "Feed settings for %@" : {
       "comment" : "Spoken label of the Library toolbar button, in the folder of a feed, that opens the feed's settings. %@ is the feed's title."
@@ -9068,7 +11536,15 @@
       "comment" : "Text of the Library window's View pop-up and Go to View. What VoiceOver says when that item is chosen."
     },
     "Feeds on this page" : {
-      "comment" : "Caption of the choice of feeds a web page names, in the Add Feed sheet."
+      "comment" : "Caption of the choice of feeds a web page names, in the Add Feed sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Canales de esta página"
+          }
+        }
+      }
     },
     "Feeds refresh only at launch, if that is on, and when you choose %@ or %@" : {
       "comment" : "VoiceOver hint of the checkbox that turns the refresh interval off. The first %@ is the name of the Check Feed command; the second is the name of the Refresh All Feeds command.",
@@ -9077,6 +11553,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Los canales solo se actualizan al abrir TextMouth, si eso está activado, y cuando eliges %1$@ o %2$@"
           }
         }
       }
@@ -9155,10 +11637,26 @@
       }
     },
     "Finished downloading “%@”." : {
-      "comment" : "Announced as a long run of one feed download ends. %@ is the episode's or article's title."
+      "comment" : "Announced as a long run of one feed download ends. %@ is the episode's or article's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminó la descarga de “%@”."
+          }
+        }
+      }
     },
     "Finished importing “%@”." : {
-      "comment" : "VoiceOver announcement as the import of one book that ran long ends. %@ is the book's file name."
+      "comment" : "VoiceOver announcement as the import of one book that ran long ends. %@ is the book's file name.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminó la importación de “%@”."
+          }
+        }
+      }
     },
     "Finished importing “%@”: %@." : {
       "comment" : "VoiceOver announcement as a ZIP batch that ran long ends. %1$@ is the archive's name and %2$@ the counts, such as \"97 books imported, 2 skipped as duplicates, 1 failed\".",
@@ -9167,6 +11665,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Finished importing “%1$@”: %2$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminó la importación de “%1$@”: %2$@."
           }
         }
       }
@@ -9192,7 +11696,15 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .viewSort."
     },
     "Flash video" : {
-      "comment" : "The name of the Flash video format, as people say it. Inside sentences about importing a file of that format."
+      "comment" : "The name of the Flash video format, as people say it. Inside sentences about importing a file of that format.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "video Flash"
+          }
+        }
+      }
     },
     "Folder" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The kind a folder's summary names after the folder's name.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .folder."
@@ -9223,10 +11735,26 @@
       "comment" : "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open).\nTitle of the Library toolbar button, in a plain folder, that opens the folder's settings."
     },
     "Folder missing" : {
-      "comment" : "The note on a feed's row when its library folder was removed."
+      "comment" : "The note on a feed's row when its library folder was removed.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falta la carpeta"
+          }
+        }
+      }
     },
     "Folder name" : {
-      "comment" : "Label of the field where the name of the new folder for a ZIP archive's books is typed.\nName of the text field that holds a folder's name, in the New Folder and Rename Folder sheets."
+      "comment" : "Label of the field where the name of the new folder for a ZIP archive's books is typed.\nName of the text field that holds a folder's name, in the New Folder and Rename Folder sheets.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nombre de la carpeta"
+          }
+        }
+      }
     },
     "Folder names stay as you typed them." : {
       "comment" : "Last sentence of the note under the Leading Articles pop-up: folder names are never changed by the setting."
@@ -9241,13 +11769,37 @@
       "comment" : "Spoken label of the Library toolbar button, in a plain folder, that opens the folder's settings. %@ is the folder's name."
     },
     "Folder the feed's downloads go to" : {
-      "comment" : "VoiceOver label of the folder picker in Feed Info."
+      "comment" : "VoiceOver label of the folder picker in Feed Info.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Carpeta a la que van las descargas del canal"
+          }
+        }
+      }
     },
     "Folder to hold the feed's own folder" : {
-      "comment" : "VoiceOver label of the folder picker of the Add Feed sheet."
+      "comment" : "VoiceOver label of the folder picker of the Add Feed sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Carpeta que contendrá la carpeta del canal"
+          }
+        }
+      }
     },
     "Folder to hold the imported feeds' folders" : {
-      "comment" : "VoiceOver label of the folder picker of the Import OPML sheet."
+      "comment" : "VoiceOver label of the folder picker of the Import OPML sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Carpeta que contendrá las carpetas de los canales importados"
+          }
+        }
+      }
     },
     "Folder “%@” in %@ is “%@” in %@." : {
       "comment" : "A difference found by Compare Libraries: the same folder has two paths. %1$@ is its path in this copy, %2$@ is this copy, %3$@ is its path in the other copy, and %4$@ is the other copy.",
@@ -9363,7 +11915,15 @@
       "comment" : "Line under the download view's heading: where the book comes from. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."
     },
     "Front Cover" : {
-      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the front cover, made at import. Title case."
+      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the front cover, made at import. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Portada"
+          }
+        }
+      }
     },
     "GB 18030 (Simplified Chinese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses."
@@ -9565,6 +12125,12 @@
             "state" : "new",
             "value" : "Heading %1$lld of %2$lld"
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Encabezado %1$lld de %2$lld"
+          }
         }
       }
     },
@@ -9643,7 +12209,15 @@
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Home\"."
     },
     "Hours between refreshes while TextMouth runs, from 1 to 168" : {
-      "comment" : "VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours."
+      "comment" : "VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Horas entre actualizaciones mientras TextMouth está abierto, de 1 a 168"
+          }
+        }
+      }
     },
     "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII." : {
       "comment" : "The hint of the braille file characters pop-up in the Braille tab of Settings. BRF and BRL are braille file formats, and North American Braille ASCII is the name of a braille character code."
@@ -9664,7 +12238,15 @@
       "comment" : "The hint of the Lines per page stepper in the Export dialog's braille options."
     },
     "How many of the newest" : {
-      "comment" : "Label of the number field and stepper that say how many of a feed's newest items are listed or downloaded."
+      "comment" : "Label of the number field and stepper that say how many of a feed's newest items are listed or downloaded.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cuántos de los más recientes"
+          }
+        }
+      }
     },
     "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts." : {
       "comment" : "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press."
@@ -9755,7 +12337,15 @@
       "comment" : "A choice of the Leading Articles pop-up: a title's leading article does not count when typing or when sorting."
     },
     "Import" : {
-      "comment" : "Title of the button of the Import Folder panel that imports the chosen folders.\nTitle of the button that starts an import, such as an OPML file of subscriptions."
+      "comment" : "Title of the button of the Import Folder panel that imports the chosen folders.\nTitle of the button that starts an import, such as an OPML file of subscriptions.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importar"
+          }
+        }
+      }
     },
     "Import Behavior" : {
       "comment" : "Heading of the section of Storage settings about what an import does."
@@ -9764,31 +12354,79 @@
       "comment" : "Title of the alert when a pronunciation lexicon file could not be imported."
     },
     "Import Folder" : {
-      "comment" : "Title of the panel that chooses folders to import. Title case."
+      "comment" : "Title of the panel that chooses folders to import. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importar carpeta"
+          }
+        }
+      }
     },
     "Import Folder…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Imports a DAISY book, or a folder of audio tracks, as a book. Also the title of the menu command of the same name."
     },
     "Import OPML…" : {
-      "comment" : "Title of the Library menu's command that imports an OPML file of subscriptions. The ellipsis says a panel follows. OPML is a file format; keep it."
+      "comment" : "Title of the Library menu's command that imports an OPML file of subscriptions. The ellipsis says a panel follows. OPML is a file format; keep it.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importar OPML…"
+          }
+        }
+      }
     },
     "Import Rules…" : {
       "comment" : "Title of the button in Settings, Text, Substitutions that adds rules from a pronunciation lexicon file."
     },
     "Import Subscriptions" : {
-      "comment" : "Heading of the sheet that imports an OPML file of subscriptions. Title case."
+      "comment" : "Heading of the sheet that imports an OPML file of subscriptions. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importar suscripciones"
+          }
+        }
+      }
     },
     "Import cancelled after %@." : {
-      "comment" : "Sentence of the alert about a ZIP batch the reader cancelled partway. %@ is how many of how many books were done, such as \"3 of 10 books\"."
+      "comment" : "Sentence of the alert about a ZIP batch the reader cancelled partway. %@ is how many of how many books were done, such as \"3 of 10 books\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importación cancelada después de %@."
+          }
+        }
+      }
     },
     "Import cancelled while extracting the archive, before any book was imported." : {
-      "comment" : "Sentence of the alert about a ZIP batch the reader cancelled while its archive was still being extracted."
+      "comment" : "Sentence of the alert about a ZIP batch the reader cancelled while its archive was still being extracted.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importación cancelada durante la extracción del archivo comprimido, antes de importar ningún libro."
+          }
+        }
+      }
     },
     "Import each book's .opf file on its own." : {
       "comment" : "Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is."
     },
     "Import failed: %@" : {
-      "comment" : "Why an import failed. %@ is the reason, a sentence."
+      "comment" : "Why an import failed. %@ is the reason, a sentence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Falló la importación: %@"
+          }
+        }
+      }
     },
     "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again." : {
       "comment" : "Last sentence of why a move of the data directory was refused: what to do. Replace Existing is the name of a button in the duplicate question. \"It\" is the book."
@@ -9819,6 +12457,30 @@
               }
             }
           }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importaron %lld de libros, pero %@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importó %lld libro, pero %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importaron %lld libros, pero %@"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -9838,6 +12500,30 @@
                 "stringUnit" : {
                   "state" : "translated",
                   "value" : "Imported %lld books."
+                }
+              }
+            }
+          }
+        },
+        "es" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importaron %lld de libros."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importó %lld libro."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Se importaron %lld libros."
                 }
               }
             }
@@ -9898,7 +12584,15 @@
       }
     },
     "Importing Books" : {
-      "comment" : "Title of the overlay that shows the imports under way. VoiceOver reads it first."
+      "comment" : "Title of the overlay that shows the imports under way. VoiceOver reads it first.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importando libros"
+          }
+        }
+      }
     },
     "Importing “%@”: %@, %@." : {
       "comment" : "VoiceOver announcement as a ZIP batch that has run long passes a quarter of its books. %1$@ is the archive's name, %2$@ how far it has got, such as \"25 of 100 books processed\", and %3$@ the time left, such as \"about 4 minutes left\", starting with a lowercase letter.",
@@ -9907,6 +12601,12 @@
           "stringUnit" : {
             "state" : "new",
             "value" : "Importing “%1$@”: %2$@, %3$@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importando “%1$@”: %2$@, %3$@."
           }
         }
       }
@@ -9919,11 +12619,25 @@
             "state" : "new",
             "value" : "Importing “%1$@”: %2$@."
           }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importando “%1$@”: %2$@."
+          }
         }
       }
     },
     "Imports a folder holding a DAISY book or audio tracks as one book." : {
-      "comment" : "One-line summary and VoiceOver hint of the Import Folder choice of the Add to Library sheet."
+      "comment" : "One-line summary and VoiceOver hint of the Import Folder choice of the Add to Library sheet.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importa como un solo libro una carpeta con un libro DAISY o pistas de audio."
+          }
+        }
+      }
     },
     "In %@" : {
       "comment" : "Speak Info: the part of a summary that says where a book or a feed's folder is. %@ is the folder's path, such as Fiction/Mystery."
@@ -9935,7 +12649,15 @@
       "comment" : "Note in the library list: some of the book's files are only in the cloud."
     },
     "In Library" : {
-      "comment" : "The note on a feed's episode or article row that was moved into the library as a book of its own. Title case."
+      "comment" : "The note on a feed's episode or article row that was moved into the library as a book of its own. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En la biblioteca"
+          }
+        }
+      }
     },
     "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows." : {
       "comment" : "Note in the Shortcuts tab of Settings. In a Library window, a letter key pressed with no other key jumps to the first book or folder starting with that letter, so a shortcut made of a letter alone, such as W, cannot work in a Library window."
@@ -10027,13 +12749,29 @@
       }
     },
     "Info: %@" : {
-      "comment" : "Navigation title of the book information sheet. %@ is the book's title.\nThe window title of the read-only Book Information sheet of a feed's episode or article. %@ is the book's title.\nWindow title of the sheet that shows a book's information. %@ is the book's title."
+      "comment" : "Navigation title of the book information sheet. %@ is the book's title.\nThe window title of the read-only Book Information sheet of a feed's episode or article. %@ is the book's title.\nWindow title of the sheet that shows a book's information. %@ is the book's title.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Información: %@"
+          }
+        }
+      }
     },
     "Information" : {
       "comment" : "Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings."
     },
     "Inner Cover" : {
-      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls an inner cover, made at import. Title case."
+      "comment" : "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls an inner cover, made at import. Title case.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Cubierta interior"
+          }
+        }
+      }
     },
     "Insert" : {
       "comment" : "Button of the audio editor's Insert Silence and Insert Chapter Marker sheets that makes the insertion.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\"."
@@ -10075,13 +12813,37 @@
       "comment" : "A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library."
     },
     "Install TextMouth again, then import the book again." : {
-      "comment" : "Advice ending the notice about a book's files that TextMouth's own converter could not read because the converter is missing from the app."
+      "comment" : "Advice ending the notice about a book's files that TextMouth's own converter could not read because the converter is missing from the app.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve a instalar TextMouth y luego importa el libro otra vez."
+          }
+        }
+      }
     },
     "Install TextMouth again, then import the file again." : {
-      "comment" : "Advice ending the sentences about a file that TextMouth's own converter could not read because the converter is missing from the app."
+      "comment" : "Advice ending the sentences about a file that TextMouth's own converter could not read because the converter is missing from the app.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vuelve a instalar TextMouth y luego importa el archivo otra vez."
+          }
+        }
+      }
     },
     "Invalid TextMouth package: %@" : {
-      "comment" : "Why a TextMouth package (.tmb) was refused at import. %@ is the reason, a phrase in English."
+      "comment" : "Why a TextMouth package (.tmb) was refused at import. %@ is the reason, a phrase in English.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Paquete de TextMouth no válido: %@"
+          }
+        }
+      }
     },
     "Invalid regex: %@" : {
       "comment" : "Shown in the substitution rule editor when the pattern is not a valid regular expression. %@ is the reason the system gives, which may be in English. Regex is short for regular expression."
@@ -10096,25 +12858,65 @@
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition."
     },
     "It" : {
-      "comment" : "The subject of a refusal when the book is named elsewhere, as in a list of books \"Title: It is open in a reader. Close it, then try again.\" Capitalized, as it starts a sentence."
+      "comment" : "The subject of a refusal when the book is named elsewhere, as in a list of books \"Title: It is open in a reader. Close it, then try again.\" Capitalized, as it starts a sentence.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Este elemento"
+          }
+        }
+      }
     },
     "It also deletes %@." : {
-      "comment" : "The last sentence of the confirmation before Unsubscribe: what else it deletes. %@ is what the feed kept for removed downloads, such as \"the places and bookmarks kept for 3 removed downloads\"."
+      "comment" : "The last sentence of the confirmation before Unsubscribe: what else it deletes. %@ is what the feed kept for removed downloads, such as \"the places and bookmarks kept for 3 removed downloads\".",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "También elimina %@."
+          }
+        }
+      }
     },
     "It appears again if the problem returns after it clears." : {
       "comment" : "Last sentence of the VoiceOver hint of the failure banner's Dismiss button."
     },
     "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks." : {
-      "comment" : "Why a feed episode's book cannot be removed from the library: it belongs to its feed. %@ is the name of the Delete Download command, which the sentence recommends."
+      "comment" : "Why a feed episode's book cannot be removed from the library: it belongs to its feed. %@ is the name of the Delete Download command, which the sentence recommends.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pertenece a su canal mientras está descargado. %@ quita su archivo y conserva su lugar y sus marcadores."
+          }
+        }
+      }
     },
     "It can be downloaded again." : {
-      "comment" : "What VoiceOver says after Delete Download deleted a download that kept nothing of the listener's: the item can be downloaded again."
+      "comment" : "What VoiceOver says after Delete Download deleted a download that kept nothing of the listener's: the item can be downloaded again.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Se puede descargar de nuevo."
+          }
+        }
+      }
     },
     "It can be read again now. Choose Try Again to use it." : {
       "comment" : "Why Rebuild Library Index replaced nothing: the library index can be read again. It follows the sentence \"The library index was not rebuilt.\", so \"It\" is the index. Try Again is a button name."
     },
     "It cannot be recovered." : {
-      "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Delete Permanently button: the file is gone for good."
+      "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Delete Permanently button: the file is gone for good.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "No se puede recuperar."
+          }
+        }
+      }
     },
     "It could not be copied into the library." : {
       "comment" : "First sentence of why a book could not move into the current library format. \"It\" is the book's original file."
@@ -10123,7 +12925,15 @@
       "comment" : "Part of the report of a conflicting copy: the copy's file could not be read. \"It\" is the copy."
     },
     "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied." : {
-      "comment" : "A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, one thing. %@ is what is deleted."
+      "comment" : "A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, one thing. %@ is what is deleted.",
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Elimina %@: se mueve a la Papelera, donde puedes recuperarlo hasta que la vacíes."
+          }
+        }
+      }
     },
     "It deletes %@: it is deleted permanently and cannot be recovered." : {
       "comment" : "A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, one thing. %@ is what is deleted."
