@@ -28,11 +28,25 @@ enum CloudProvider: Equatable, Sendable {
     /// The service's name as TextMouth shows and speaks it.
     var displayName: String {
         switch self {
-        case .iCloudDrive: return "iCloud Drive"
-        case .googleDrive: return "Google Drive"
-        case .dropbox: return "Dropbox"
+        case .iCloudDrive: return "iCloud Drive" // l10n: no (a product name)
+        case .googleDrive: return "Google Drive" // l10n: no (a product name)
+        case .dropbox: return "Dropbox" // l10n: no (a product name)
         case .other(let name): return name
         }
+    }
+
+    /// `provider`'s name inside a sentence, or "the cloud service" when the
+    /// service is unknown.
+    static func nameInSentence(_ provider: CloudProvider?) -> String {
+        provider?.displayName ?? String(localized: "the cloud service",
+                                        comment: "How a sentence names the cloud service when it is unknown, in the middle of the sentence, so it has no capital letter.")
+    }
+
+    /// `provider`'s name where a sentence begins, or "The cloud service" when
+    /// the service is unknown, capitalized as a braille display shows it.
+    static func nameStartingSentence(_ provider: CloudProvider?) -> String {
+        provider?.displayName ?? String(localized: "The cloud service",
+                                        comment: "How a sentence names the cloud service when it is unknown, at the start of the sentence, so it has a capital letter.")
     }
 }
 
@@ -303,18 +317,30 @@ enum BookCloudState: Equatable, Sendable {
     var visibleNote: String? {
         switch self {
         case .local: return nil
-        case .downloaded: return "Downloaded"
-        case .inCloud: return "In Cloud"
-        case .downloading(let progress): return "Downloading \(progress.percent)%"
-        case .downloadFailed: return "Download Failed"
-        case .waitingForSync: return "Waiting for Sync"
+        case .downloaded:
+            return String(localized: "Downloaded",
+                          comment: "Note in the library list: every file of the book is on this Mac.")
+        case .inCloud:
+            return String(localized: "In Cloud",
+                          comment: "Note in the library list: some of the book's files are only in the cloud.")
+        case .downloading(let progress):
+            return String(localized: "Downloading \(progress.percent)%",
+                          comment: "Note in the library list while a book downloads. %lld is the percent done, from 0 to 100; the percent sign follows it.")
+        case .downloadFailed:
+            return String(localized: "Download Failed",
+                          comment: "Note in the library list: the book's last download failed.")
+        case .waitingForSync:
+            return String(localized: "Waiting for Sync",
+                          comment: "Note in the library list: the book's files have not arrived on this Mac from the sync service yet.")
         }
     }
 
     /// The same note as VoiceOver speaks it, or nil for none.
     var spokenNote: String? {
         switch self {
-        case .downloading(let progress): return "Downloading, \(progress.percent) percent"
+        case .downloading(let progress):
+            return String(localized: "Downloading, \(progress.percent) percent",
+                          comment: "What VoiceOver says of a book that is downloading, in the library list. %lld is the percent done, from 0 to 100.")
         default: return visibleNote
         }
     }
@@ -353,24 +379,43 @@ enum BookCloudError: Error, Equatable, Sendable {
     /// The book's package is not on this Mac.
     case packageMissing
 
+    /// The sentence that sends the listener to Stop Keeping on This Mac.
+    private static var stopKeepingFirst: String {
+        String(localized: "Choose \(LibraryCloudWording.stopKeepingName) first.",
+               comment: "Sentence of why Remove Download was refused: the listener must first choose a command. %@ is the command's name, Stop Keeping on This Mac, as the Library menu shows it.")
+    }
+
     /// A sentence the interface shows and VoiceOver speaks, naming `provider`
     /// (or "the cloud service" when it is unknown, capitalized where it
     /// begins a sentence, as a braille display shows).
     func explanation(in provider: CloudProvider?) -> String {
-        let service = provider?.displayName ?? "the cloud service"
-        let serviceStartingSentence = provider?.displayName ?? "The cloud service"
+        let service = CloudProvider.nameInSentence(provider)
+        let serviceStartingSentence = CloudProvider.nameStartingSentence(provider)
         switch self {
         case .offline:
-            return "This Mac is offline, so the book can't be downloaded from \(service). "
-                + "Connect to the internet and try again."
+            return SentenceWording.joined([
+                String(localized: "This Mac is offline, so the book can't be downloaded from \(service).",
+                       comment: "First sentence of why a book can't be downloaded: the Mac is offline. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."),
+                String(localized: "Connect to the internet and try again.",
+                       comment: "Second sentence of why a book can't be downloaded: what to do about being offline."),
+            ])
         case .stalled(let seconds):
-            return "\(serviceStartingSentence) hasn't downloaded anything for \(seconds) seconds. "
-                + "It may be paused, signed out, or not running."
+            return SentenceWording.joined([
+                String(localized: "\(serviceStartingSentence) hasn't downloaded anything for \(seconds) seconds.",
+                       comment: "First sentence of why a book download stopped: the cloud service made no progress. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$lld is the number of seconds."),
+                String(localized: "It may be paused, signed out, or not running.",
+                       comment: "Second sentence of why a book download stopped: the likely causes. \"It\" is the cloud service."),
+            ])
         case .provider(let message):
-            return "\(serviceStartingSentence) couldn't download the book: \(message)"
+            return String(localized: "\(serviceStartingSentence) couldn't download the book: \(message)",
+                          comment: "Why a book download failed. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$@ is the service's own message.")
         case .notUploaded:
-            return "Some changes to this book haven't been uploaded to \(service) yet, "
-                + "so its download can't be removed. Try again in a moment."
+            return SentenceWording.joined([
+                String(localized: "Some changes to this book haven't been uploaded to \(service) yet, so its download can't be removed.",
+                       comment: "First sentence of why Remove Download was refused: some changes are not uploaded. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."),
+                String(localized: "Try again in a moment.",
+                       comment: "Last sentence of why a cloud operation was refused for now: wait and try again."),
+            ])
         case .cloudCopyNotProven(let doubt):
             return BookCloudWording.removalRefusal(
                 doubt,
@@ -379,21 +424,33 @@ enum BookCloudError: Error, Equatable, Sendable {
                 provider: provider
             )
         case .bookIsOpen:
-            return "The book is open, so its download can't be removed. Close it first."
+            return String(localized: "The book is open, so its download can't be removed. Close it first.",
+                          comment: "Why Remove Download was refused: the book is open in a reader.")
         case .keptOnThisMac:
-            return "The book is kept on this Mac, so its download can't be removed. "
-                + "Choose Stop Keeping on This Mac first."
+            return SentenceWording.joined([
+                String(localized: "The book is kept on this Mac, so its download can't be removed.",
+                       comment: "First sentence of why Remove Download was refused: the listener chose Keep on This Mac for the book."),
+                Self.stopKeepingFirst,
+            ])
         case .keptForReadingList:
-            return "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed. "
-                + "\(ReadingListWording.letGoOfBooksAdvice(plural: false, capitalized: true)) first."
+            return SentenceWording.joined([
+                String(localized: "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+                       comment: "First sentence of why Remove Download was refused: the reading list keeps the book downloaded."),
+                LibraryCloudWording.letGoOfOneBookFirst,
+            ])
         case .keptOnThisMacAndForReadingList:
-            return "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, "
-                + "so its download can't be removed. Choose Stop Keeping on This Mac first. "
-                + "Then \(ReadingListWording.letGoOfBooksAdvice(plural: false, capitalized: false))."
+            return SentenceWording.joined([
+                String(localized: "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+                       comment: "First sentence of why Remove Download was refused: the listener keeps the book and the reading list keeps it too."),
+                Self.stopKeepingFirst,
+                LibraryCloudWording.thenLetGoOfOneBook,
+            ])
         case .removalFailed(let message):
-            return "\(serviceStartingSentence) couldn't remove the book's download: \(message)"
+            return String(localized: "\(serviceStartingSentence) couldn't remove the book's download: \(message)",
+                          comment: "Why Remove Download failed. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$@ is the service's own message.")
         case .packageMissing:
-            return "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them."
+            return String(localized: "The book's files aren't on this Mac yet. \(serviceStartingSentence) may still be syncing them.",
+                          comment: "Why a book can't be used yet: its files have not arrived. %@ is the cloud service's name, or \"The cloud service\" when it is unknown.")
         }
     }
 }
@@ -413,24 +470,44 @@ enum BookCloudWording {
     ) -> String {
         switch doubt {
         case .uploadNotReported:
-            return "\(serviceStartingSentence) hasn't said that every file of this book is uploaded, "
-                + "so its download can't be removed: the only copy might be on this Mac. Try again in a moment."
+            return SentenceWording.joined([
+                String(localized: "\(serviceStartingSentence) hasn't said that every file of this book is uploaded, so its download can't be removed: the only copy might be on this Mac.",
+                       comment: "First sentence of why Remove Download was refused: the cloud service gave no upload state. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."),
+                String(localized: "Try again in a moment.",
+                       comment: "Last sentence of why a cloud operation was refused for now: wait and try again."),
+            ])
         case .uploadFailed(let message):
             // The drive's own words end a sentence, whether or not they end in a period.
             let reason = message.hasSuffix(".") || message.hasSuffix("!") || message.hasSuffix("?") ? message : message + "."
-            return "\(serviceStartingSentence) couldn't upload this book: \(reason) "
-                + "Its download can't be removed until it has uploaded."
+            return SentenceWording.joined([
+                String(localized: "\(serviceStartingSentence) couldn't upload this book: \(reason)",
+                       comment: "First sentence of why Remove Download was refused: the upload failed. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$@ is the service's own message, which ends with a full stop."),
+                String(localized: "Its download can't be removed until it has uploaded.",
+                       comment: "Last sentence of why Remove Download was refused after a failed upload."),
+            ])
         case .inConflict:
-            return "\(serviceStartingSentence) holds two versions of a file of this book, "
-                + "so its download can't be removed. Settle the conflict in \(service) first."
+            return SentenceWording.joined([
+                String(localized: "\(serviceStartingSentence) holds two versions of a file of this book, so its download can't be removed.",
+                       comment: "First sentence of why Remove Download was refused: the cloud service holds conflicting versions. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."),
+                String(localized: "Settle the conflict in \(service) first.",
+                       comment: "Last sentence of why Remove Download was refused over a conflict. %@ is the cloud service's name, or \"the cloud service\" when it is unknown."),
+            ])
         case .notCurrent:
-            return "\(serviceStartingSentence) hasn't said that the copy of this book on this Mac is the latest, "
-                + "so its download can't be removed. Try again in a moment."
+            return SentenceWording.joined([
+                String(localized: "\(serviceStartingSentence) hasn't said that the copy of this book on this Mac is the latest, so its download can't be removed.",
+                       comment: "First sentence of why Remove Download was refused: the cloud service has not said the copy here is current. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."),
+                String(localized: "Try again in a moment.",
+                       comment: "Last sentence of why a cloud operation was refused for now: wait and try again."),
+            ])
         case .currentNotReported:
-            return "\(serviceStartingSentence) doesn't say whether the copy of this book on this Mac is the latest, "
-                + "so its download can't be removed, and waiting won't change that. "
-                + "To free the space anyway, choose Show in Finder, then \(onlineOnlyCommand(of: provider)). "
-                + "That keeps the book's copy in the cloud."
+            return SentenceWording.joined([
+                String(localized: "\(serviceStartingSentence) doesn't say whether the copy of this book on this Mac is the latest, so its download can't be removed, and waiting won't change that.",
+                       comment: "First sentence of why Remove Download was refused: the cloud service never says whether the copy here is current. %@ is the cloud service's name, or \"The cloud service\" when it is unknown."),
+                String(localized: "To free the space anyway, choose Show in Finder, then \(onlineOnlyCommand(of: provider)).",
+                       comment: "Second sentence of why Remove Download was refused: how to free the space by hand. Show in Finder is a command's name. %@ is a clause that tells what to do in the cloud service's own app, such as \"choose Remove Download\"."),
+                String(localized: "That keeps the book's copy in the cloud.",
+                       comment: "Last sentence of why Remove Download was refused: what the service's own command does."),
+            ])
         }
     }
 
@@ -439,10 +516,18 @@ enum BookCloudWording {
     /// is not known is told in general words. It never deletes anything.
     static func onlineOnlyCommand(of provider: CloudProvider?) -> String {
         switch provider {
-        case .googleDrive: return "use Google Drive's Offline Access menu"
-        case .dropbox: return "choose Make online-only"
-        case .iCloudDrive: return "choose Remove Download"
-        case .other, nil: return "use the drive's own command to keep the book only online"
+        case .googleDrive:
+            return String(localized: "use Google Drive's Offline Access menu",
+                          comment: "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Google Drive. Offline Access is Google Drive's own menu name.")
+        case .dropbox:
+            return String(localized: "choose Make online-only",
+                          comment: "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in Dropbox. Make online-only is Dropbox's own command name.")
+        case .iCloudDrive:
+            return String(localized: "choose Remove Download",
+                          comment: "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do in the Finder for iCloud Drive. Remove Download is the Finder's own command name.")
+        case .other, nil:
+            return String(localized: "use the drive's own command to keep the book only online",
+                          comment: "A clause that follows \"then\" in a sentence that tells how to free a book's space: what to do when the cloud drive is not known.")
         }
     }
 

@@ -110,25 +110,6 @@ enum ReadingListWording {
                comment: "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.")
     }
 
-    /// What lets a book go that this Mac keeps for the reading list: take it
-    /// off the list, or clear the options bar's keep choice, which keeps all
-    /// the list's books. "Take it off the reading list, or clear Keep these
-    /// books on this Mac in the Reading List's options" begins a sentence;
-    /// "take it off ..." follows one. Each of the four is whole (FR35): the
-    /// cloud's sentences put it inside their own until that area's
-    /// sentences are made whole too.
-    /// - Parameters:
-    ///   - plural: Whether it is about several books ("them").
-    ///   - capitalized: Whether the sentence begins with this advice.
-    static func letGoOfBooksAdvice(plural: Bool, capitalized: Bool) -> String {
-        // English until the cloud's sentences (LibraryCloudWording, CloudStorageContract) convert: a translated
-        // fragment inside an English sentence read "...can't be removed. Quitalo de la lista de lectura ... first."
-        // `keepBooksLabel` stays the checkbox's shown name, whatever the language.
-        let advice = "\(plural ? "take them" : "take it") off the reading list, or clear \(keepBooksLabel) in the Reading List's options" // l10n: no (inside LibraryCloudWording's and CloudStorageContract's English sentences until that area converts)
-        // The sentence-initial form capitalizes its first letter.
-        return capitalized ? advice.prefix(1).uppercased() + advice.dropFirst() : advice
-    }
-
     // MARK: - The Empty List
 
     /// What the Reading List shows, as a row VoiceOver reads, while the
