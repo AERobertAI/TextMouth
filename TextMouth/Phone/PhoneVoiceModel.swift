@@ -12,27 +12,27 @@ import Foundation
 /// requires each word to be there as it is.
 enum PhoneVoiceVocabulary {
     /// The Language row's label.
-    static let languageFilterLabel = "Voice language filter"
+    static var languageFilterLabel: String { ReaderViewWording.languageFilterLabel }
     /// The language choice that lists every voice.
-    static let allLanguages = "All"
+    static var allLanguages: String { ReaderViewWording.allLanguages }
     /// The Voice row's label.
-    static let voiceLabel = "Select voice for this book"
+    static var voiceLabel: String { ReaderViewWording.selectVoiceLabel }
     /// Preview Voice's visible word.
-    static let previewTitle = "Preview Voice"
+    static var previewTitle: String { ReaderViewWording.previewTitle }
     /// What VoiceOver calls Preview Voice.
-    static let previewLabel = "Preview selected voice"
+    static var previewLabel: String { ReaderViewWording.previewLabel }
     /// What Preview Voice says, in the voice, speed, and pitch chosen.
-    static let previewSentence = "Hello! This is how I'll read for you."
+    static let previewSentence = "Hello! This is how I'll read for you." // l10n: no (spoken by the previewed voice, not read in the interface language)
     /// The speed slider's label.
-    static let speedLabel = "Speed"
+    static var speedLabel: String { ReaderViewWording.speedTitle }
     /// The pitch slider's label.
-    static let pitchLabel = "Pitch"
+    static var pitchLabel: String { ReaderViewWording.pitchTitle }
     /// The When this book ends row's visible words.
-    static let endOfBookTitle = "When this book ends"
+    static var endOfBookTitle: String { ReaderViewWording.endOfBookTitle }
     /// What VoiceOver calls the When this book ends row.
-    static let endOfBookLabel = "End of book behavior for this book"
+    static var endOfBookLabel: String { ReaderViewWording.endOfBookLabel }
     /// The end-of-book choice that follows the global setting.
-    static let useGlobalDefault = "Use Global Default"
+    static var useGlobalDefault: String { ReaderViewWording.useGlobalDefaultTitle }
 
     /// A voice's choice as VoiceOver reads it, as in "Samantha, Enhanced
     /// quality".
@@ -52,7 +52,10 @@ enum PhoneVoiceVocabulary {
 enum PhoneVoiceWording {
     /// What the voice list says once the voices have loaded and none is
     /// installed. **Unverified:** the path's wording on an iPhone.
-    static let noVoices = "No voices are installed. Add voices in Settings, Accessibility, Read & Speak."
+    static var noVoices: String {
+        String(localized: "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+               comment: "What the iPhone's voice list says once the voices have loaded and none is installed. \"Settings, Accessibility, Read & Speak\" is the path in iOS's own Settings app, so keep those names as iOS shows them in the language.")
+    }
 }
 
 // MARK: - A voice

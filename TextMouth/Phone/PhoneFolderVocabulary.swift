@@ -24,41 +24,41 @@ enum PhoneFolderVocabulary {
     // MARK: New Folder (the Mac's `NewFolderSheet`)
 
     /// New Folder's title: the sheet's, and the Library's menu item's.
-    static let newFolderTitle = "New Folder"
+    static var newFolderTitle: String { LibrarySheetWording.newFolderTitle }
     /// The new folder's name field: its placeholder and its spoken label.
-    static let folderName = "Folder name"
+    static var folderName: String { LibrarySheetWording.folderNameField }
     /// The row choosing the folder the new one goes in: its caption and its
     /// spoken label.
-    static let parentFolder = "Parent folder"
+    static var parentFolder: String { LibrarySheetWording.parentFolder }
     /// The button that makes the folder.
-    static let create = "Create"
+    static var create: String { LibrarySheetWording.create }
 
     // MARK: Rename Folder (the Mac's `RenameFolderSheet`)
 
     /// The Rename Folder sheet's title.
-    static let renameFolderTitle = "Rename Folder"
+    static var renameFolderTitle: String { LibrarySheetWording.renameFolderTitle }
     /// The rename field's spoken label. Its placeholder is `folderName`.
-    static let newFolderName = "New folder name"
+    static var newFolderName: String { LibrarySheetWording.newFolderNameLabel }
     /// What the sheet says while the folder is renamed.
-    static let renamingFolder = "Renaming the folder..."
+    static var renamingFolder: String { LibrarySheetWording.renamingTheFolder }
     /// The button that renames the folder.
-    static let rename = "Rename"
+    static var rename: String { LibrarySheetWording.rename }
 
     // MARK: Move Folder (the Mac's `MoveFolderToParentSheet`)
 
     /// The Move Folder sheet's title, naming the folder: "Move "Fiction"".
     static func moveFolderTitle(folderName: String) -> String {
-        "Move \"\(folderName)\""
+        LibrarySheetWording.moveTitle(folderName: folderName)
     }
 
     /// The row choosing the folder's new parent: its caption.
-    static let newParentFolder = "New parent folder"
+    static var newParentFolder: String { LibrarySheetWording.newParentFolder }
     /// That row's spoken label.
-    static let destinationParentFolder = "Destination parent folder"
+    static var destinationParentFolder: String { LibrarySheetWording.destinationParentFolder }
     /// What the sheet says while the folder moves.
-    static let movingFolder = "Moving the folder..."
+    static var movingFolder: String { LibrarySheetWording.movingTheFolder }
     /// The button that moves, in Move Folder and in Move to Folder.
-    static let move = "Move"
+    static var move: String { LibrarySheetWording.move }
 
     // MARK: Move to Folder (the Mac's `MoveFolderSheet`)
 
@@ -66,19 +66,19 @@ enum PhoneFolderVocabulary {
     /// "Move 3 Books" for several, as the Mac's sheet heads itself.
     static func moveBooksTitle(titles: [String]) -> String {
         if titles.count == 1, let title = titles.first {
-            return "Move \"\(title)\""
+            return LibrarySheetWording.moveTitle(bookTitle: title)
         }
-        return "Move \(titles.count) Books"
+        return LibrarySheetWording.moveTitle(count: titles.count)
     }
 
     /// The row choosing where the books go: its caption.
-    static let destination = "Destination"
+    static var destination: String { LibrarySheetWording.destinationCaption }
     /// That row's spoken label.
-    static let destinationFolder = "Destination folder"
+    static var destinationFolder: String { LibrarySheetWording.destinationFolderLabel }
 
     /// What the sheet says while the books move: "Moving 3 books...".
     static func movingBooks(count: Int) -> String {
-        "Moving \(CountWording.books(count))..."
+        LibrarySheetWording.movingBooks(count: count)
     }
 
     // MARK: Move to Folder's New Folder... (the Mac's `LibraryFolderPicker`)
@@ -86,37 +86,37 @@ enum PhoneFolderVocabulary {
     /// The button that makes a folder to move the books into. Its sheet is
     /// titled `newFolderTitle`, its name field is labelled `newFolderName`,
     /// and its Cancel is the Mac's `LibraryFolderPicker.cancelNewFolderTitle`.
-    static let newFolderButton = "New Folder..."
+    static var newFolderButton: String { LibrarySheetWording.newFolderButton }
     /// The spoken label of the row choosing the new folder's parent, whose
     /// caption is `parentFolder`.
-    static let parentFolderForNewFolder = "Parent folder for new folder"
+    static var parentFolderForNewFolder: String { LibrarySheetWording.parentFolderForNewFolder }
 
     // MARK: Delete Folder (the Mac's question in `LibraryView`)
 
     /// The Delete Folder question's title.
-    static let deleteFolderTitle = "Delete Folder?"
+    static var deleteFolderTitle: String { LibraryListWording.deleteFolderQuestion }
     /// The choice that keeps the folder's contents, moving them out first.
-    static let moveContentsOut = "Move Contents Out"
+    static var moveContentsOut: String { LibraryListWording.moveContentsOut }
 
     // MARK: Move Contents (the Mac's `DeleteFolderMoveContentsSheet`)
 
     /// The Move Contents screen's title, naming the folder: "Move Contents of
     /// "Fiction"".
     static func moveContentsTitle(folderName: String) -> String {
-        "Move Contents of \"\(folderName)\""
+        LibrarySheetWording.moveContentsTitle(folderName)
     }
 
     /// What the Move Contents screen is for, naming the folder.
     static func moveContentsExplanation(folderName: String) -> String {
-        "Choose where to move the books and subfolders before deleting \"\(folderName)\"."
+        LibrarySheetWording.moveContentsExplanation(folderName)
     }
 
     /// The row choosing where the contents go: its caption.
-    static let moveContentsTo = "Move contents to"
+    static var moveContentsTo: String { LibrarySheetWording.moveContentsTo }
     /// That row's spoken label.
-    static let destinationForContents = "Destination for folder contents"
+    static var destinationForContents: String { LibrarySheetWording.destinationForContents }
     /// What the screen says while the contents move.
-    static let movingContents = "Moving the folder's contents..."
+    static var movingContents: String { LibrarySheetWording.movingTheFoldersContents }
     /// The button that moves the contents, then deletes the folder.
-    static let moveContentsAndDelete = "Move Contents & Delete Folder"
+    static var moveContentsAndDelete: String { LibrarySheetWording.moveContentsAndDelete }
 }

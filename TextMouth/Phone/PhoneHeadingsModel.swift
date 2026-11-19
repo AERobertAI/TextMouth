@@ -12,19 +12,23 @@ import Foundation
 enum PhoneHeadingsVocabulary {
     /// The sheet's title, read as its heading: the name of the button that
     /// opens it.
-    static let title: String = PhoneReaderVocabulary.headings
+    static var title: String { PhoneReaderVocabulary.headings }
     /// The toolbar button that closes the sheet.
-    static let backToBook = "Back to Book"
+    static var backToBook: String { HeadingNavigatorView.backToBookTitle }
     /// What Back to Book does.
-    static let backToBookHint = "Close the headings screen and return to the book"
+    static var backToBookHint: String { HeadingNavigatorView.backToBookHint }
     /// The display's visible word, the title of its list of choices.
-    static let displayTitle = "Display"
+    static var displayTitle: String { HeadingNavigatorView.displayPickerTitle }
     /// The display row's label: which time or percent each row ends with.
-    static let displayLabel = "Heading info display mode"
+    static var displayLabel: String { HeadingNavigatorView.displayPickerLabel }
     /// What the sheet says for a book without headings.
-    static let empty = "No headings found in this document."
+    static var empty: String { HeadingNavigatorView.noHeadingsMessage }
     /// A heading row's hint: what choosing it does, never a gesture.
-    static let rowHint = "Goes to this heading and closes the list."
+    static var rowHint: String {
+        // The Mac's row says the same words from its own view, so the key is shared.
+        String(localized: "Goes to this heading and closes the list.",
+               comment: "Hint of a heading's row in the headings list: what choosing it does.")
+    }
 }
 
 // MARK: - A row

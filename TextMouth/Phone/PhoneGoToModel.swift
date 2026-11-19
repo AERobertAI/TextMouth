@@ -9,12 +9,12 @@ import Foundation
 /// Mac's source and requires each word to be there as it is.
 enum PhoneGoToVocabulary {
     /// Each field's button, as it shows.
-    static let jump = "Jump"
+    static var jump: String { JumpInputValidator.jumpTitle }
 
     /// What a refusal under a field reads, as in "Error: There is no page
     /// 400 in this book. Its pages run from i to 300."
     static func refusal(_ problem: String) -> String {
-        "Error: \(problem)"
+        JumpInputValidator.errorSpoken(problem)
     }
 }
 
@@ -34,9 +34,15 @@ enum PhoneGoToField: Hashable, CaseIterable, Sendable {
     /// percent", "Jump to time".
     var jumpLabel: String {
         switch self {
-        case .page: return "Jump to page"
-        case .percent: return "Jump to percent"
-        case .time: return "Jump to time"
+        case .page:
+            return String(localized: "Jump to page",
+                          comment: "VoiceOver label of the Jump button under the Page field of the iPhone's Go To sheet.")
+        case .percent:
+            return String(localized: "Jump to percent",
+                          comment: "VoiceOver label of the Jump button under the Percent field of the iPhone's Go To sheet.")
+        case .time:
+            return String(localized: "Jump to time",
+                          comment: "VoiceOver label of the Jump button under the Time field of the iPhone's Go To sheet.")
         }
     }
 }
@@ -55,7 +61,7 @@ enum PhoneGoToField: Hashable, CaseIterable, Sendable {
 @MainActor
 struct PhoneGoToModel {
     /// The sheet's title, read as its heading: the spec's "Go To".
-    static let title: String = PhoneReaderWording.goTo
+    static var title: String { PhoneReaderWording.goTo }
 
     /// Whether the book is an audiobook, whose time is its recording's.
     let isAudioBook: Bool
