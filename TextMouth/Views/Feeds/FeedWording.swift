@@ -228,16 +228,10 @@ enum FeedWording {
     /// listed (FR11), so the words point at what changes the number; the
     /// user chose it over "kept" (question 10), since every record is kept
     /// now.
-    static var listedNote: String {
-        String(localized: "listed",
-               comment: "The word that ends a feed's size when the library lists fewer of its entries than the feed has: \"10 of 381 episodes listed\". It is the word of the \"List and download\" choice. Lower case.")
-    }
+
     /// The words before the size of a feed longer than TextMouth reads
     /// (`FeedEntryTotal.listsMore`): "10 of more than 2000 episodes listed".
-    static var moreThanNote: String {
-        String(localized: "more than",
-               comment: "The words before the size of a feed longer than TextMouth reads, as in \"10 of more than 2000 episodes listed\". Lower case.")
-    }
+
 
     /// A feed's size as the library lists it, which every count of a feed
     /// starts with (`countsPhrase(_:)`): when the feed lists more entries

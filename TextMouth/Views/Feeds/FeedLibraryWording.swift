@@ -131,6 +131,13 @@ extension FeedWording {
         /// Whether the last check failed.
         let failed: Bool
 
+        /// A check with the words shown and spoken given.
+        init(visible: String, spoken: String, failed: Bool) {
+            self.visible = visible
+            self.spoken = spoken
+            self.failed = failed
+        }
+
         /// The check whose words shown are `visible`, spoken the same with
         /// the first letter in lower case, to follow a comma.
         init(_ visible: String, failed: Bool = false) {

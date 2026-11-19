@@ -154,9 +154,11 @@ final class FeedUIDeleteFeedTests: XCTestCase {
             "the places, own settings, and transcripts kept for 3 removed downloads"
         )
         XCTAssertEqual(FeedWording.keptPhrase(count: 2, parts: []), "what was kept for 2 removed downloads")
-        XCTAssertEqual(FeedWording.downloadsPhrase(1, .episode), "downloaded episode")
-        XCTAssertEqual(FeedWording.downloadsPhrase(2, .item), "2 downloaded items")
-        XCTAssertEqual(FeedWording.KeptParts([.place, .bookmarks]).sentenceSubject, "Its place and bookmarks are", "Delete Download's words changed")
+        XCTAssertEqual(FeedWording.downloadsPhrase(1, .episode), "its downloaded episode")
+        XCTAssertEqual(FeedWording.downloadsPhrase(2, .item), "its 2 downloaded items")
+        XCTAssertEqual(FeedWording.KeptParts([.place, .bookmarks]).keptSentence, "Its place and bookmarks are kept.", "Delete Download's words changed")
+        XCTAssertEqual(FeedWording.KeptParts([.transcript]).keptSentence, "Its transcript is kept.")
+        XCTAssertNil(FeedWording.KeptParts([]).keptSentence)
     }
 
     // MARK: - Feed Info's Buttons

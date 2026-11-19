@@ -359,7 +359,7 @@ final class FeedItemUIPolicyControlsTests: XCTestCase {
             XCTAssertTrue(model.usesGlobalItemPolicy, "\(record.feed.title) has a choice of its own")
             XCTAssertEqual(world.center.counts(of: record.feed.id).noun, noun, record.feed.title)
             XCTAssertEqual(FeedWording.itemPolicyTitle(model.itemPolicy, noun: noun), title)
-            XCTAssertEqual(FeedWording.newestCountValue(model.itemPolicy.newestCount, noun: noun), "5 \(noun.plural)")
+            XCTAssertEqual(FeedWording.newestCountValue(model.itemPolicy.newestCount, noun: noun), "5 \(noun == .article ? "articles" : noun == .item ? "items" : "episodes")")
         }
         XCTAssertEqual(world.center.counts(of: users.finishIt.feed.id).listed, 381)
         XCTAssertEqual(
