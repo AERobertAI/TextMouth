@@ -90,7 +90,7 @@ The agent:
 - 0.5.3 put FFmpeg inside the iPhone app (FMT54; the iPhone app is 16.1 MB), with the running clock that survives iOS suspending the app (B18).
 - Localization (FR34, `docs/developer/localization.md`): the catalog, its tools, the pilot (FR35: the sleep timer, bookmarks, and Reading List, in Spanish), and the shared counts are on main.
   Every file is converted and its English cut, keeping every fact; the user reads the cut lists (`build/orchestrator/nov18/*/cuts.md`, local).
-  Spanish for the whole app is on its way, not on main; the user's questions are 14 to 17 of `humanQuestions/2026-11-18.md`.
+  Spanish covers the whole app (machine-translated, for a native speaker's review); the user's questions are 14 to 17 of `humanQuestions/2026-11-18.md`.
 - Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
 - Open: `issuelib list`, the files in `Issues/`, among them Ogg and Apple's converter's formats on the iPhone (FMT55), FFmpeg's leftovers (FU-FFMPEG2, FU01, FU03, FU04, B19, Q13), and braille's abandonment sentence (B20).
   Also the iPhone's size in `make check` (TL05), and the train's census (TL08) and cache (TL09).

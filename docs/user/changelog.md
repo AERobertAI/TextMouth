@@ -19,13 +19,13 @@ Every version of TextMouth, newest first, and what changed for you in each.
 - TextMouth could crash when a book's window opened as TextMouth started, as it does when you open a ZIP from Finder.
 - It no longer does.
 
-### TextMouth begins speaking Spanish
-- On a Mac or iPhone set to Spanish, the sleep timer, the bookmarks, and the Reading List now appear and speak in Spanish.
-- The rest of TextMouth stays in English for now, and the other parts follow.
+### TextMouth speaks Spanish
+- On a Mac or iPhone set to Spanish, all of TextMouth now appears and speaks in Spanish.
+- The Spanish is a machine translation, which a native speaker will review.
 
 ### The whole interface can be translated
 - Every word in TextMouth's windows can now be translated, on the Mac and the iPhone, not only the sleep timer, the bookmarks, and the Reading List.
-- Only English is complete so far.
+- English and Spanish are complete so far.
 
 ### Shorter VoiceOver hints
 - The VoiceOver hints of the sleep timer, the bookmarks, and the Reading List are shorter: each says what the control does once, without repeating its label or naming the key.

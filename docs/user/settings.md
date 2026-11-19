@@ -24,7 +24,7 @@ Four tabs have pages of their own, and this page holds the rest:
 
 TextMouth's own words, its menus, buttons, hints, and messages, follow the language the Mac or iPhone is set to for TextMouth.
 On the Mac, choose it in System Settings; on the iPhone, in Settings, TextMouth, Language.
-English is the language so far, and Spanish is on its way; a language TextMouth does not have yet shows English.
+English and Spanish are the languages so far; the Spanish is a machine translation, which a native speaker will review. A language TextMouth does not have yet shows English.
 This is separate from the voice, which speaks a book in the voice's own language, from the transcription language (see [Transcribing an audiobook](transcribing.md)), and from the braille language (see the Braille tab).
 
 ## Open the next book in
