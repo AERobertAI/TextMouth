@@ -46,7 +46,7 @@ That one more try belongs to the place: once speech has gone on from it, a refus
 <!-- id: reader-speech-stopped-sheet; keys: Speech Stopped, Details, report, Copy Details, Show Logs in Finder, refusal report, speech log; src: TextMouth/Views/Reader/SpeechRefusalReportSheet.swift, TextMouth/Models/SpeechRefusalReport.swift, TextMouth/ViewModels/ReaderViewModel+SpeechRefusal.swift -->
 
 Refused there again, with no prepared audio to go on from, speech stops with the cursor at that passage.
-And the book's window shows a sheet headed "Speech Stopped", with one sentence under the heading, which VoiceOver reads with it: "The Mac's speech engine refused to speak the text here, twice, so speech stopped.
+And the book's window shows a sheet headed "Speech Stopped", with one sentence under the heading, which VoiceOver reads with it: "The speech engine refused to speak the text here, twice, so speech stopped.
 Play tries again from the same place."
 Below them, a read-only text area labelled Details, which VoiceOver reads line by line and a braille display pans, holds a report for finding the cause:
 
@@ -100,7 +100,7 @@ A voice that starts a passage and then goes silent without finishing it is start
 <!-- id: reader-time-limits-reading-audio; keys: Loading, import stuck, timeout, AsyncBridge, Reading the audio took longer; src: TextMouth/Services/AsyncBridge.swift -->
 
 Reading an audiobook's audio to open it or to import it has a time limit of 5 minutes, and reading an audio file's tags one of 30 seconds, so that a read which never returns cannot leave a window on Loading or an import stuck for good.
-After 5 minutes the book or the import fails as any read does, with "Reading the audio took longer than 5 minutes, so TextMouth stopped waiting for it."; after 30 seconds the book opens without its tags.
+After 5 minutes the book or the import fails as any read does, with "Reading the audio took longer than 5 minutes; TextMouth stopped waiting."; after 30 seconds the book opens without its tags.
 
 ## Audio that stops responding
 <!-- id: reader-audio-that-stops-responding; keys: stalled audio, Playback stopped, audio engine, frozen playback, ten seconds; src: TextMouth/Services/AudioPlaybackService.swift, TextMouth/ViewModels/ReaderViewModel+Playback.swift -->
@@ -125,9 +125,9 @@ The limit is 6 GB on every Mac, however much memory the Mac has.
 
 The next launch tells you of such a quit in an alert titled "TextMouth Quit to Protect Your Mac", with an OK button.
 The alert gives the date and time in your region's format and how large the memory had grown.
-If a book was playing, or had been stopped for the growth, it names the book: "TextMouth quit on DATE AND TIME to protect your Mac: its memory grew to 6.1 GB while Ferry Timetables played, because of a fault in macOS's audio.
+If a book was playing, or had been stopped for the growth, it names the book: "TextMouth quit on DATE AND TIME: its memory grew to 6.1 GB while Ferry Timetables played, because of a fault in macOS's audio.
 Your place was saved."
-If nothing was playing, it says so: "TextMouth quit on DATE AND TIME to protect your Mac: its memory grew to 6.1 GB while nothing was playing.
+If nothing was playing, it says so: "TextMouth quit on DATE AND TIME: its memory grew to 6.1 GB while nothing was playing.
 Your place was saved."
 
 ## Sound effects

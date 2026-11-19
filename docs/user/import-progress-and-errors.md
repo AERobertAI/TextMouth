@@ -18,7 +18,7 @@ How books are added is in [Adding books](adding-books.md).
 - A single file, or a ZIP holding one book, shows its name and its step the same way, as do a TextMouth package opened from the Finder, from "checking the package" on, and a book made with New from Text, by the title you typed.
 - A package's line says "copying it into the library" while it copies.
 - A picture or comic book archive of several pages counts them as it reads their text, as in "reading its text: 3 of 12 pages", and Cancel stops it before the next page.
-- A picture or archive with no text is refused with "No text was found in this picture." or "No text was found in this comic book archive.", and one of several pages says "No text was found on any of the 3 pages of this picture."
+- A picture or archive with no text is refused with "No text was found in this picture." or "No text was found in the one picture of this comic book archive.", and one of several pages says "No text was found on any of the 3 pages of this picture."
 - When some pages can't be read, the alert says so, as in "Text recognition could not read 1 of 12 pages: page 3 (its picture could not be decoded)."
 - A picture that is too large is refused as in "This picture is 12,000 by 12,000 pixels, larger than the 100 megapixels TextMouth reads in one picture."
 - A picture that is not one is refused with "This file could not be read as a picture.
@@ -58,7 +58,7 @@ How books are added is in [Adding books](adding-books.md).
   A folder named like a refused kind, such as an old Pages package, gets it too.
   - Pages: "Export Pages documents from Pages as Word documents or EPUB books, then import those."
   - Keynote and Numbers: "Export Keynote presentations from Keynote as PDF files, then import those." and "Export Numbers spreadsheets from Numbers as PDF files, then import those."
-  - WordPerfect (.wpd, .wp): "Save WordPerfect documents as Word documents or HTML files in a program that reads them, such as LibreOffice, then import those."
+  - WordPerfect (.wpd, .wp): "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those."
   - Compiled HTML Help (.chm): "Convert Compiled HTML Help files to HTML files or PDF files, then import those."
   - DjVu (.djvu, .djv): "Convert DjVu documents to PDF files, then import those."
   - XPS (.xps, .oxps): "Convert XPS documents to PDF files, then import those."
@@ -118,7 +118,7 @@ How books are added is in [Adding books](adding-books.md).
 - The form is named only after the file has failed to decode, so a Mac that reads it imports it.
 - A file that is damaged, or whose header names no believable depth, still hears the damage sentence.
 - An 8-bit or a 128-bit floating-point CAF file does not open as audio at all, and says "The audio file X could not be read for converting."
-- The iPhone gives a WAVE or AIFF file this sentence, and a CAF file there still says "Converting this kind of file is not available on iPhone yet."
+- The iPhone gives a WAVE or AIFF file this sentence, and a CAF file there still says "Converting this kind of file isn't available on iPhone yet."
 
 ### Documents TextMouth's own readers can't read
 <!-- id: documents-textmouth-own-readers-cant; keys: rtf, rtfd, Word 97-2003, OpenDocument, Word 2003 XML, textutil, damaged, unreadable; src: TextMouth/Services/TextutilConverter.swift, TextMouth/Parsers/TextutilSourceCheck.swift -->
@@ -231,11 +231,11 @@ How books are added is in [Adding books](adding-books.md).
   - Markup nested too deeply, more than 128 levels (a Markdown file's block quotes and lists count too, since 0.4.7: a .md or .txt file of five thousand ">" marks is refused with this sentence and nothing is added to the library).
     "This file's markup nests more than 128 levels deep, which TextMouth can't read safely.
     Get another copy of the file, or save it in another format, then import it again."
-  - Too much markup in one document, more than 1,000,000 units of memory, a unit being about 800 bytes of the tree TextMouth builds: "One document in this file holds too much markup for TextMouth to read without running out of memory.
+  - Too much markup in one document, more than 1,000,000 units of memory, a unit being about 800 bytes of the tree TextMouth builds: "One document in this file has too much markup for TextMouth to read in memory.
     Divide the document into smaller files, then import them."
   - Too many attributes on one tag, more than 1,000: "One tag in this file has more than 1,000 attributes, which TextMouth can't read safely.
     Get another copy of the file, or save it in another format, then import it again."
-  - Markup built so that reading it would take far too long: "This file's markup is built in a way that would take TextMouth far too long to read.
+  - Markup built so that reading it would take far too long: "This file's markup would take TextMouth far too long to read.
     Get another copy of the file, or save it in another format, then import it again."
 - The deepest real book nests 12 levels, and the deepest web page tried 36.
   The biggest real document, a whole dictionary as one 32 MB HTML file, uses under half the memory limit.
@@ -272,7 +272,7 @@ How books are added is in [Adding books](adding-books.md).
 <!-- id: xml-files-no-known-kind; keys: .xml, DTBook, Word 2003 XML, PEF, Checking its format; src: TextMouth/Services/FileImportService.swift, TextMouth/Parsers/XMLDocumentSniffer.swift -->
 
 - An .xml file that is not a DTBook, Word 2003 XML, or a PEF braille file is refused before anything is copied, at the step "Checking its format", as in "Could not import “catalog.xml”.
-  Checking its format failed: This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the kinds of XML file TextMouth reads."
+  Checking its format failed: This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads."
 
 ### Kindle books that can't be read
 <!-- id: kindle-books-that-cant-be; keys: MOBI, AZW, AZW3, KF8, DRM, copy-protected, damaged; src: TextMouth/Parsers/MOBIError.swift, TextMouth/Parsers/MOBIParser.swift -->
@@ -299,7 +299,7 @@ How books are added is in [Adding books](adding-books.md).
 - A KFX Kindle book that can't be read is refused with a sentence that says why.
 - A copy-protected book, a damaged one, and a file named as a Kindle book that is not one get the sentences above.
 - The others are:
-  - For a book with no flowing text to read, such as a fixed-layout book, a print replica, a comic, a magazine, a children's book, a textbook, a notebook, or a book of only pictures: "This Kindle book has no flowing text to read, such as a comic or a print replica, so TextMouth can't read it."
+  - For a book with no flowing text to read, such as a fixed-layout book, a print replica, a comic, a magazine, a children's book, a textbook, a notebook, or a book of only pictures: "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it."
   - For a Kindle Create package (.kpf), the file an author makes before a book is published: "This file is a Kindle Create package, which TextMouth can't read yet."
   - For a file that holds only a part of a Kindle book, such as the metadata file that sits beside it: "This file holds only part of a Kindle book.
     Open the book's main .kfx file."
@@ -346,7 +346,7 @@ How books are added is in [Adding books](adding-books.md).
 <!-- id: playlists-that-cant-be-imported; keys: M3U refused, streaming playlist, HLS, web addresses, 4 MiB; src: TextMouth/Models/PlaylistImportWording.swift, TextMouth/Parsers/M3UPlaylist.swift -->
 
 - A playlist that can't be imported is refused at the step "Reading the file", as in "Could not import “radio.m3u8”.
-  Reading the file failed: It is a streaming playlist for audio on the web, which TextMouth does not import."
+  Reading the file failed: It is a streaming playlist for web audio, which TextMouth does not import."
 - The other reasons are:
   - "It lists only web addresses, and TextMouth imports only files on this Mac."
   - "It names no audio file in its own folder that TextMouth can import.", followed, when entries were skipped, by "It skipped 3 entries: " and the entries, named as the notice in [Adding books](adding-books.md) names them.
