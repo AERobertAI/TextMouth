@@ -30567,7 +30567,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Descendre %@"
+            "value" : "Déplacer %@ vers le bas"
           }
         }
       }
@@ -30584,7 +30584,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Monter %@"
+            "value" : "Déplacer %@ vers le haut"
           }
         }
       }
@@ -30601,7 +30601,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Placer %@ dans la corbeille"
+            "value" : "Déplacer %@ vers la corbeille"
           }
         }
       }
@@ -30618,7 +30618,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Placer %@ dans la corbeille"
+            "value" : "Déplacer %@ vers la corbeille"
           }
         }
       }
@@ -31028,7 +31028,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sortir le contenu"
+            "value" : "Déplacer le contenu hors du dossier"
           }
         }
       }
@@ -31079,7 +31079,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Descendre"
+            "value" : "Déplacer vers le bas"
           }
         }
       }
@@ -31163,7 +31163,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Monter"
+            "value" : "Déplacer vers le haut"
           }
         }
       }
@@ -31269,7 +31269,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Placer dans la corbeille"
+            "value" : "Déplacer vers la corbeille"
           }
         }
       }
@@ -31371,7 +31371,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Placé dans la corbeille : %@."
+            "value" : "Déplacé vers la corbeille : %@."
           }
         }
       }
