@@ -38545,7 +38545,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Oberste Ebene"
+            "value" : "Oberste Ebene der Bibliothek"
           }
         },
         "es" : {
@@ -47770,7 +47770,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "In einem Lesefenster geöffnet"
+            "value" : "In einer Leseansicht geöffnet"
           }
         },
         "es" : {
