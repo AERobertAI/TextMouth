@@ -4757,7 +4757,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Обнаружена конфликтующая копия (%2$@), отложенная службой %1$@: «%3$@», в папке %4$@."
+            "value" : "%1$@: обнаружена конфликтующая копия (%2$@), отложена в сторону: «%3$@», в папке %4$@."
           }
         }
       }
@@ -22605,7 +22605,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Книге, которая есть только в %@, для открытия нужно подключение к интернету."
+            "value" : "Чтобы открыть книгу, которая есть только в облаке (%@), нужно подключение к интернету."
           }
         }
       }
@@ -55769,7 +55769,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Если %1$@ позже поступит из %2$@, %3$@ может сохранить две копии."
+            "value" : "Если %1$@ позже поступит через %2$@, %3$@ может сохранить две копии."
           }
         }
       }
@@ -55839,7 +55839,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Если файл позже поступит из %@, он будет указывать на ту же библиотеку."
+            "value" : "Если файл позже поступит через %@, он будет указывать на ту же библиотеку."
           }
         }
       }
@@ -55909,7 +55909,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Если собственный файл %1$@ библиотеки позже поступит из %2$@, %3$@ может сохранить две копии, и этот Mac и другой не смогут договориться, какая это библиотека."
+            "value" : "Если собственный файл %1$@ библиотеки позже поступит через %2$@, %3$@ может сохранить две копии, и этот Mac и другой не смогут договориться, какая это библиотека."
           }
         }
       }
@@ -59484,7 +59484,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Возможно, её переместили или переименовали, либо она ещё не поступила на этот Mac при синхронизации с %@."
+            "value" : "Возможно, её переместили или переименовали, либо она ещё не поступила на этот Mac (синхронизация: %@)."
           }
         }
       }
@@ -59696,7 +59696,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Остаётся в %@"
+            "value" : "Остаётся в облаке (%@)"
           }
         }
       }
@@ -95753,7 +95753,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Сначала разрешите конфликт в %@."
+            "value" : "Сначала разрешите конфликт (%@)."
           }
         }
       }
@@ -98863,7 +98863,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Некоторые файлы библиотеки находятся в %@ и ещё не на этом Mac."
+            "value" : "Некоторые файлы библиотеки находятся в облаке (%@) и ещё не на этом Mac."
           }
         }
       }
@@ -102866,6 +102866,12 @@
             "state" : "machine_translated",
             "value" : "Texto de entrada do teste"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Текст для проверки"
+          }
         }
       }
     },
@@ -102894,6 +102900,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Resultado do teste: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Результат проверки: %@"
           }
         }
       }
@@ -102924,6 +102936,12 @@
             "state" : "machine_translated",
             "value" : "Testar esta regra com a entrada"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Проверить это правило на введённом тексте"
+          }
         }
       }
     },
@@ -102952,6 +102970,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Texto"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Текст"
           }
         }
       }
@@ -103142,6 +103166,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Progresso da extração de texto: %1$lld de %2$lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ход извлечения текста: %1$lld из %2$lld"
           }
         }
       }
@@ -103692,6 +103722,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível salvar as regras de substituição de texto: %@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Не удалось сохранить правила замены текста: %@"
+          }
         }
       }
     },
@@ -103720,6 +103756,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Regras de substituição de texto salvas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Правила замены текста сохранены."
           }
         }
       }
@@ -103836,6 +103878,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth está aberto em outro Mac"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth открыт на другом Mac"
           }
         }
       }
@@ -104126,6 +104174,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não consegue ler a pasta %1$@: %2$@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не может прочитать папку %1$@: %2$@."
           }
         }
       }
@@ -104544,6 +104598,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu verificar se deveria movê-lo para a Lixeira."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось проверить, нужно ли переместить его в Корзину."
+          }
         }
       }
     },
@@ -104619,6 +104679,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu mover %@ para o formato atual da biblioteca."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось перенести в текущий формат библиотеки: %@."
+          }
         }
       }
     },
@@ -104647,6 +104713,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu ler o índice da biblioteca, o arquivo que registra suas pastas, seus ajustes de ordenação e a ordem dos seus livros."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось прочитать индекс библиотеки — файл, в котором записаны ваши папки, настройки сортировки и порядок книг."
           }
         }
       }
@@ -104735,6 +104807,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu ler a lista de leitura no índice anterior."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось прочитать список для чтения в прежнем индексе."
+          }
         }
       }
     },
@@ -104763,6 +104841,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu ler a lista de leitura no índice ilegível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось прочитать список для чтения в нечитаемом индексе."
           }
         }
       }
@@ -104793,6 +104877,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu ler a lista de leitura nem os ajustes de ordenação no índice anterior."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось прочитать список для чтения и настройки сортировки в прежнем индексе."
+          }
         }
       }
     },
@@ -104821,6 +104911,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu ler a lista de leitura nem os ajustes de ordenação no índice ilegível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось прочитать список для чтения и настройки сортировки в нечитаемом индексе."
           }
         }
       }
@@ -104851,6 +104947,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu ler os ajustes de ordenação no índice anterior."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось прочитать настройки сортировки в прежнем индексе."
+          }
         }
       }
     },
@@ -104879,6 +104981,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu ler os ajustes de ordenação no índice ilegível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось прочитать настройки сортировки в нечитаемом индексе."
           }
         }
       }
@@ -104955,6 +105063,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu salvar uma cópia de %@, então deixou esse arquivo sem alterações."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось сохранить копию файла %@, поэтому он оставлен без изменений."
+          }
         }
       }
     },
@@ -104983,6 +105097,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu salvar uma cópia do arquivo ilegível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось сохранить копию нечитаемого файла."
           }
         }
       }
@@ -105046,6 +105166,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu obter os arquivos da biblioteca de %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось получить файлы библиотеки (%@)."
           }
         }
       }
@@ -105191,6 +105317,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu abrir %@ no Finder."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не удалось открыть %@ в Finder."
           }
         }
       }
@@ -105607,6 +105739,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não tem permissão para ler o arquivo."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "У TextMouth нет разрешения на чтение этого файла."
+          }
         }
       }
     },
@@ -105978,6 +106116,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth primeiro salva uma cópia do arquivo antigo e não reconstrói se não conseguir."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth сначала сохраняет копию старого файла и не перестраивает индекс, если сделать это не удаётся."
+          }
         }
       }
     },
@@ -106070,6 +106214,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não a mesclou nem a removeu."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не объединял её и не удалял."
+          }
         }
       }
     },
@@ -106144,6 +106294,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth já está movendo a própria pasta de dados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth уже перемещает свой каталог данных."
           }
         }
       }
@@ -106293,6 +106449,36 @@
               }
             }
           }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth также открыт на «%@» (активен %lld минуты назад)."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth также открыт на «%@» (активен %lld минут назад)."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth также открыт на «%@» (активен %lld минуту назад)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth также открыт на «%@» (активен %lld минуты назад)."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -106321,6 +106507,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth também está aberto em “%@” (ativo há menos de um minuto)."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth также открыт на «%@» (активен менее минуты назад)."
           }
         }
       }
@@ -106380,6 +106572,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth está obtendo esses arquivos agora, e a biblioteca abre quando eles chegarem."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth получает их сейчас, и библиотека откроется, когда они поступят."
+          }
         }
       }
     },
@@ -106408,6 +106606,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth está movendo livros entre pastas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth перемещает книги между папками."
           }
         }
       }
@@ -106484,6 +106688,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth está abrindo de novo em outra biblioteca, então elas continuam sem salvar nesta."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth снова открывается с другой библиотекой, поэтому в этой они остаются несохранёнными."
+          }
         }
       }
     },
@@ -106512,6 +106722,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth está abrindo de novo em outra biblioteca, então eles continuam onde estão nesta."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth снова открывается с другой библиотекой, поэтому в этой они остаются на месте."
           }
         }
       }
@@ -106687,6 +106903,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth está reconstruindo o diretório de dados."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth перестраивает свой каталог данных."
+          }
         }
       }
     },
@@ -106832,6 +107054,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth ainda está usando %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth по-прежнему использует %@."
+          }
         }
       }
     },
@@ -106861,6 +107089,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth está trocando para outra biblioteca e abrindo de novo nela."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth переключается на другую библиотеку и снова открывается с ней."
+          }
         }
       }
     },
@@ -106889,6 +107123,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não tem permissão para fazer alterações em %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth не разрешено вносить изменения в %@."
           }
         }
       }
@@ -107035,6 +107275,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth o deixou lá e ainda está usando %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth оставил его там и по-прежнему использует %@."
+          }
         }
       }
     },
@@ -107180,6 +107426,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth os deixou lá e ainda está usando %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth оставил их там и по-прежнему использует %@."
+          }
         }
       }
     },
@@ -107238,6 +107490,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth cria um novo índice da biblioteca com os livros desta pasta."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth создаёт новый индекс библиотеки из книг в этой папке."
+          }
         }
       }
     },
@@ -107267,6 +107525,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth moveu %@ para o formato atual da biblioteca, mas com um problema:"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth перенёс в текущий формат библиотеки (%@), но с проблемой:"
+          }
         }
       }
     },
@@ -107295,6 +107559,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth moveu %@ para o formato atual da biblioteca, mas com problemas:"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth перенёс в текущий формат библиотеки (%@), но с проблемами:"
           }
         }
       }
@@ -107502,6 +107772,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth os move de volta quando terminar de mover livros entre pastas."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth вернёт их назад, когда закончит перемещать книги между папками."
+          }
         }
       }
     },
@@ -107530,6 +107806,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth os move de volta quando terminar de reconstruir o diretório de dados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth вернёт их назад, когда закончит перестраивать каталог данных."
           }
         }
       }
@@ -107560,6 +107842,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth os move de volta quando a movimentação da pasta de dados terminar."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth вернёт их назад, когда закончится перемещение его каталога данных."
+          }
         }
       }
     },
@@ -107588,6 +107876,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth precisa que o disco “%@” esteja conectado para abrir a biblioteca."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Чтобы открыть библиотеку, TextMouth нужен подключённый диск «%@»."
           }
         }
       }
@@ -107808,6 +108102,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth as salva quando terminar de mover livros entre pastas."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth сохранит их, когда закончит перемещать книги между папками."
+          }
         }
       }
     },
@@ -107837,6 +108137,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth as salva quando terminar de reconstruir o diretório de dados."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth сохранит их, когда закончит перестраивать каталог данных."
+          }
         }
       }
     },
@@ -107865,6 +108171,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth as salva quando a movimentação da pasta de dados terminar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth сохранит их, когда закончится перемещение его каталога данных."
           }
         }
       }
@@ -108187,6 +108499,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth esperou por ele."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ждал его."
+          }
         }
       }
     },
@@ -108221,6 +108539,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth vai abrir a biblioteca em %1$@ em vez da que está em %2$@, que não está disponível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth откроет библиотеку в %1$@ вместо недоступной библиотеки в %2$@."
           }
         }
       }
@@ -108257,6 +108581,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth vai abrir a biblioteca em %1$@ na próxima vez que abrir, mas não conseguiu abrir de novo sozinho: %2$@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "При следующем запуске TextMouth откроет библиотеку в %1$@, но сам заново открыться не смог: %2$@"
+          }
         }
       }
     },
@@ -108286,6 +108616,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth vai encerrar e abrir de novo para carregá-la."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth завершит работу и откроется снова, чтобы загрузить её."
+          }
         }
       }
     },
@@ -108314,6 +108650,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth vai encerrar e abrir de novo para iniciá-la."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth завершит работу и откроется снова, чтобы запустить её."
           }
         }
       }
@@ -108350,6 +108692,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth vai iniciar uma biblioteca nova e vazia na localização padrão, %1$@, em vez da biblioteca em %2$@, que não está disponível."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth создаст новую пустую библиотеку в расположении по умолчанию, %1$@, вместо недоступной библиотеки в %2$@."
+          }
         }
       }
     },
@@ -108385,6 +108733,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth vai deixar de usar a biblioteca em %1$@ (%2$@) e abrir a biblioteca em %3$@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth перестанет использовать библиотеку в %1$@ (%2$@) и откроет вместо неё библиотеку в %3$@."
+          }
         }
       }
     },
@@ -108414,6 +108768,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth grava %@ com uma nova identidade para a biblioteca e a abre."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth запишет %@ с новым идентификатором библиотеки и откроет её."
+          }
         }
       }
     },
@@ -108442,6 +108802,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth grava %@ com a identidade que este Mac conhece para a biblioteca e a abre."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth запишет %@ с идентификатором, который этот Mac знает для библиотеки, и откроет её."
           }
         }
       }
@@ -108935,6 +109301,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Isso mantém a cópia do livro na nuvem."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Копия книги в облаке при этом сохраняется."
           }
         }
       }
@@ -109493,6 +109865,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "As %1$@ da lista serão substituídas pelas %2$@ do TextMouth."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Правила в списке (%1$@) будут заменены правилами TextMouth по умолчанию (%2$@)."
           }
         }
       }
@@ -110423,6 +110801,36 @@
               }
             }
           }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранные книги (%lld) уже хранятся на этом Mac."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранные книги (%lld) уже хранятся на этом Mac."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранная книга (%lld) уже хранится на этом Mac."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранные книги (%lld) уже хранятся на этом Mac."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -110538,6 +110946,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Os %lld livros selecionados são mantidos neste Mac para a lista de leitura."
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранная книга (%lld) хранится на этом Mac для списка для чтения."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения."
                 }
               }
             }
@@ -110883,6 +111321,12 @@
             "state" : "machine_translated",
             "value" : "The Hobbit conta como H ao digitar. A lista mantém a ordem e mostra cada título como está escrito."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "The Hobbit при вводе считается буквой H. Список сохраняет порядок и показывает каждое название так, как оно написано."
+          }
         }
       }
     },
@@ -110911,6 +111355,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "The Hobbit é ordenado entre os H e aparece como Hobbit, The. Digitar H o encontra entre os H."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "The Hobbit сортируется среди H и показывается как Hobbit, The. Ввод H находит его среди H."
           }
         }
       }
@@ -111360,6 +111810,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo compactado se expande para %1$@, mas o disco que contém a biblioteca do TextMouth tem só %2$@ livres, e o TextMouth mantém %3$@ livres."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Архив распаковывается до %1$@, но на диске с библиотекой TextMouth свободно только %2$@, а TextMouth оставляет свободными %3$@."
+          }
         }
       }
     },
@@ -111394,6 +111850,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo compactado se expande para %1$@, mais do que os %2$@ que o TextMouth extrai de arquivos compactados com áudio ou com outros arquivos compactados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Архив распаковывается до %1$@, что больше %2$@ — предела, до которого TextMouth распаковывает архивы с аудио или другими архивами."
           }
         }
       }
@@ -111430,6 +111892,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo compactado se expande para %1$@, mais do que os %2$@ que o TextMouth extrai de arquivos compactados sem áudio."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Архив распаковывается до %1$@, что больше %2$@ — предела, до которого TextMouth распаковывает архивы без аудио."
+          }
         }
       }
     },
@@ -111464,6 +111932,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo compactado contém %1$@ arquivos e pastas, mais do que os %2$@ que o TextMouth extrai em uma importação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В архиве %1$@ файлов и папок, что больше %2$@ — предела для одного импорта в TextMouth."
           }
         }
       }
@@ -111552,6 +112026,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo compactado contém mais do que os %@ que ele declara, então a extração parou."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В архиве больше данных, чем заявлено (%@), поэтому извлечение остановлено."
+          }
         }
       }
     },
@@ -111615,6 +112095,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo compactado “%1$@” dentro dele se expande para %2$@, mas o disco que contém a biblioteca do TextMouth tem só %3$@ livres, e o TextMouth mantém %4$@ livres."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вложенный архив «%1$@» распаковывается до %2$@, но на диске с библиотекой TextMouth свободно только %3$@, а TextMouth оставляет свободными %4$@."
           }
         }
       }
@@ -112426,6 +112912,12 @@
             "state" : "machine_translated",
             "value" : "O livro %1$@ está guardado em %2$@, fora da pasta de dados, então a movimentação não pode levá-lo."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга «%1$@» хранится здесь: %2$@, вне каталога данных, поэтому перемещение не может её захватить."
+          }
         }
       }
     },
@@ -112605,6 +113097,12 @@
             "state" : "machine_translated",
             "value" : "O livro é mantido neste Mac e está na lista de leitura, que este Mac mantém baixada; por isso, o download dele não pode ser removido."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга хранится на этом Mac и находится в списке для чтения, который этот Mac держит загруженным, поэтому её загрузку нельзя убрать."
+          }
         }
       }
     },
@@ -112633,6 +113131,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O livro é mantido neste Mac; por isso, o download dele não pode ser removido."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга хранится на этом Mac, поэтому её загрузку нельзя убрать."
           }
         }
       }
@@ -112721,6 +113225,12 @@
             "state" : "machine_translated",
             "value" : "O livro está na lista de leitura, que este Mac mantém baixada; por isso, o download dele não pode ser removido."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга находится в списке для чтения, который этот Mac держит загруженным, поэтому её загрузку нельзя убрать."
+          }
         }
       }
     },
@@ -112778,6 +113288,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O livro está aberto; por isso, o download dele não pode ser removido. Feche-o primeiro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Книга открыта, поэтому её загрузку нельзя убрать. Сначала закройте её."
           }
         }
       }
@@ -113032,6 +113548,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Os arquivos do livro ainda não estão neste Mac. %@ ainda pode estar sincronizando."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Файлов книги ещё нет на этом Mac. Возможно, %@ всё ещё синхронизирует их."
           }
         }
       }
@@ -113532,6 +114054,12 @@
             "state" : "machine_translated",
             "value" : "O serviço de nuvem"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Облачный сервис"
+          }
         }
       }
     },
@@ -113590,6 +114118,12 @@
             "state" : "machine_translated",
             "value" : "A cópia feita na biblioteca não correspondeu ao original, então foi descartada."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Копия, сделанная в библиотеке, не совпала с оригиналом, поэтому она отброшена."
+          }
         }
       }
     },
@@ -113618,6 +114152,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A cópia já estava completa quando Cancelar foi pressionado, então a movimentação prosseguiu."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Копирование уже завершилось, когда была нажата отмена, поэтому перемещение выполнено."
           }
         }
       }
@@ -113741,6 +114281,12 @@
             "state" : "machine_translated",
             "value" : "A pasta de dados atual não existe."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Текущий каталог данных не существует."
+          }
         }
       }
     },
@@ -113769,6 +114315,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A pasta atual será mantida como dados de recuperação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Текущий каталог будет сохранён как данные для восстановления."
           }
         }
       }
@@ -113828,6 +114380,12 @@
             "state" : "machine_translated",
             "value" : "A pasta de dados não tem uma pasta Logs, então os registros vão para %@ até que ela exista."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В каталоге данных нет папки Logs, поэтому журналы пишутся в %@, пока её нет."
+          }
         }
       }
     },
@@ -113856,6 +114414,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A pasta de dados está ausente, então os registros vão para %@ até que ela volte."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Каталог данных отсутствует, поэтому журналы пишутся в %@, пока он не вернётся."
           }
         }
       }
@@ -113891,6 +114455,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não é possível gravar na pasta Logs da pasta de dados (%1$@), então os registros vão para %2$@ até que seja possível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В папку Logs каталога данных нельзя записывать (%1$@), поэтому журналы пишутся в %2$@, пока это не станет возможным."
           }
         }
       }
@@ -114048,6 +114618,12 @@
             "state" : "machine_translated",
             "value" : "O download de %@ não foi removido"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Загрузка не убрана: %@"
+          }
         }
       }
     },
@@ -114141,6 +114717,12 @@
             "state" : "machine_translated",
             "value" : "Os downloads de %1$@ não foram removidos: %2$@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Загрузки не убраны (%1$@): %2$@"
+          }
         }
       }
     },
@@ -114169,6 +114751,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O disco “%@” não está conectado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Диск «%@» не подключён."
           }
         }
       }
@@ -115058,6 +115646,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível ler o arquivo. %@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Не удалось прочитать файл. %@"
+          }
         }
       }
     },
@@ -115086,6 +115680,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo desapareceu enquanto o TextMouth o lia."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Файл исчез, пока TextMouth его читал."
           }
         }
       }
@@ -115208,6 +115808,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo em si não foi alterado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Сам файл не изменён."
           }
         }
       }
@@ -115657,6 +116263,12 @@
             "state" : "machine_translated",
             "value" : "A pasta %@ não foi encontrada."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка %@ не найдена."
+          }
         }
       }
     },
@@ -115776,6 +116388,36 @@
               }
             }
           }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "В папке %@ есть ещё %lld других элемента: %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "В папке %@ есть ещё %lld других элементов: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "В папке %@ есть ещё %lld другой элемент: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "В папке %@ есть ещё %lld других элемента: %@."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -115840,6 +116482,12 @@
             "state" : "machine_translated",
             "value" : "A pasta %1$@ está em %2$@ e ainda não está neste Mac."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка %1$@ находится в облаке (%2$@) и ещё не на этом Mac."
+          }
         }
       }
     },
@@ -115868,6 +116516,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A pasta %@ está na Lixeira."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка %@ находится в Корзине."
           }
         }
       }
@@ -116220,6 +116874,12 @@
             "state" : "machine_translated",
             "value" : "A pasta está lá, mas o TextMouth não consegue ler o arquivo de identidade da biblioteca: %@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка на месте, но TextMouth не может прочитать файл идентификатора её библиотеки: %@"
+          }
         }
       }
     },
@@ -116249,6 +116909,12 @@
             "state" : "machine_translated",
             "value" : "A pasta está lá, mas contém outra biblioteca do TextMouth."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка на месте, но в ней другая библиотека TextMouth."
+          }
         }
       }
     },
@@ -116277,6 +116943,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A pasta está lá, mas a biblioteca não está nela."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Папка на месте, но библиотеки в ней нет."
           }
         }
       }
@@ -116452,6 +117124,12 @@
             "state" : "machine_translated",
             "value" : "O índice não é alterado até você escolher %1$@ ou %2$@, que continuam disponíveis em %3$@, na parte superior da biblioteca."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс не изменится, пока вы не выберете «%1$@» или «%2$@»; они остаются доступными в «%3$@» вверху библиотеки."
+          }
         }
       }
     },
@@ -116579,6 +117257,12 @@
             "state" : "machine_translated",
             "value" : "A biblioteca já tinha conteúdo diferente com o nome de pacote %1$@, então ele foi guardado em um novo pacote, %2$@, e o arquivo original foi mantido em %3$@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В библиотеке под именем пакета %1$@ уже было другое содержимое, поэтому книга сохранена в новом пакете %2$@, а её исходный файл оставлен в %3$@."
+          }
         }
       }
     },
@@ -116607,6 +117291,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A biblioteca em %@ não está disponível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Библиотека в %@ недоступна."
           }
         }
       }
@@ -116695,6 +117385,12 @@
             "state" : "machine_translated",
             "value" : "A biblioteca não pode ser movida enquanto um livro está aberto. Feche %@ primeiro."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Библиотеку нельзя переместить, пока открыта книга. Сначала закройте %@."
+          }
         }
       }
     },
@@ -116724,6 +117420,12 @@
             "state" : "machine_translated",
             "value" : "A biblioteca não pode ser movida enquanto um livro está aberto. Feche-o primeiro."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Библиотеку нельзя переместить, пока открыта книга. Сначала закройте её."
+          }
         }
       }
     },
@@ -116752,6 +117454,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A biblioteca não pode ser movida enquanto há livros abertos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Библиотеку нельзя переместить, пока открыты книги."
           }
         }
       }
@@ -116811,6 +117519,12 @@
             "state" : "machine_translated",
             "value" : "O índice da biblioteca não pode ser lido. Escolha Tentar novamente ou Reconstruir índice da biblioteca na janela da Biblioteca primeiro."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки нельзя прочитать. Сначала выберите «Повторить» или «Перестроить индекс библиотеки» в окне библиотеки."
+          }
         }
       }
     },
@@ -116839,6 +117553,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O índice da biblioteca não pôde ser lido, então as alterações da biblioteca não estão sendo salvas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки не удалось прочитать, поэтому изменения библиотеки не сохраняются."
           }
         }
       }
@@ -116869,6 +117589,12 @@
             "state" : "machine_translated",
             "value" : "O índice da biblioteca não pôde ser lido."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки не удалось прочитать."
+          }
         }
       }
     },
@@ -116897,6 +117623,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O índice da biblioteca já pode ser lido."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки уже читается."
           }
         }
       }
@@ -116927,6 +117659,12 @@
             "state" : "machine_translated",
             "value" : "O índice da biblioteca ainda não pôde ser lido."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки по-прежнему не удалось прочитать."
+          }
         }
       }
     },
@@ -116955,6 +117693,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O índice da biblioteca não foi reconstruído."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки не перестроен."
           }
         }
       }
@@ -116985,6 +117729,12 @@
             "state" : "machine_translated",
             "value" : "O índice da biblioteca foi lido com sucesso. Sua biblioteca tem %@, e as alterações voltaram a ser salvas."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки успешно прочитан. В вашей библиотеке: %@, изменения снова сохраняются."
+          }
         }
       }
     },
@@ -117013,6 +117763,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O índice da biblioteca foi reconstruído com %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки перестроен: %@."
           }
         }
       }
@@ -117072,6 +117828,12 @@
             "state" : "machine_translated",
             "value" : "A biblioteca ainda está em %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Библиотека по-прежнему находится здесь: %@."
+          }
         }
       }
     },
@@ -117129,6 +117891,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A biblioteca não está disponível, então os registros vão para %@ até que ela esteja."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Библиотека недоступна, поэтому журналы пишутся в %@, пока она не появится."
           }
         }
       }
@@ -117217,6 +117985,12 @@
             "state" : "machine_translated",
             "value" : "A biblioteca não está em uma pasta na nuvem, então os livros dela ficam sempre neste Mac."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Библиотека не в облачной папке, поэтому её книги всегда на этом Mac."
+          }
         }
       }
     },
@@ -117245,6 +118019,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A biblioteca agora mostra uma lista temporária reconstruída a partir dos livros no disco."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Теперь в библиотеке показан временный список, перестроенный из книг на диске."
           }
         }
       }
@@ -117281,6 +118061,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo de identidade da biblioteca está neste Mac, mas o índice dela, %1$@, não chegou de %2$@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Файл идентификатора библиотеки есть на этом Mac, но её индекс, %1$@, не поступил через %2$@."
+          }
         }
       }
     },
@@ -117315,6 +118101,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O índice da biblioteca está neste Mac, mas o arquivo de identidade dela, %1$@, não chegou de %2$@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Индекс библиотеки есть на этом Mac, но её файл идентификатора, %1$@, не поступил через %2$@."
           }
         }
       }
@@ -117496,6 +118288,12 @@
             "state" : "machine_translated",
             "value" : "A cópia migrada não tem o conteúdo de %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В перенесённой копии нет содержимого для «%@»."
+          }
         }
       }
     },
@@ -117524,6 +118322,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O índice migrado da biblioteca não pôde ser validado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Перенесённый индекс библиотеки не удалось проверить."
           }
         }
       }
@@ -117554,6 +118358,12 @@
             "state" : "machine_translated",
             "value" : "O tempo máximo que a sequência inteira pode levar. Janelas menores significam menos correspondências acidentais, mas pressionamentos mais rápidos."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Наибольшее время, которое может занять вся последовательность. Меньшее окно даёт меньше случайных совпадений, но требует более быстрых нажатий."
+          }
         }
       }
     },
@@ -117582,6 +118392,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A movimentação foi cancelada, então nada mudou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Перемещение отменено, поэтому ничего не изменилось."
           }
         }
       }
@@ -117688,6 +118504,12 @@
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, contém a pasta de dados atual, %2$@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, содержит текущий каталог данных, %2$@."
+          }
         }
       }
     },
@@ -117716,6 +118538,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A nova localização, %@, é um arquivo, não uma pasta."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %@, — это файл, а не папка."
           }
         }
       }
@@ -117752,6 +118580,12 @@
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, é um link para %2$@, que não foi encontrado."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, — ссылка на %2$@, которое не найдено."
+          }
         }
       }
     },
@@ -117786,6 +118620,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, está dentro da pasta de dados atual, %2$@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, находится внутри текущего каталога данных, %2$@."
           }
         }
       }
@@ -117822,6 +118662,12 @@
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, é a pasta de dados atual, para onde %2$@ leva."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, — это текущий каталог данных, на который указывает %2$@."
+          }
         }
       }
     },
@@ -117850,6 +118696,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A nova localização, %@, é a pasta de dados atual."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %@, — это текущий каталог данных."
           }
         }
       }
@@ -117886,6 +118738,12 @@
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, leva a %2$@, que contém a pasta de dados atual, %3$@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, ведёт в %2$@, содержащий текущий каталог данных, %3$@."
+          }
         }
       }
     },
@@ -117920,6 +118778,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, leva a %2$@, que está dentro da pasta de dados atual, %3$@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, ведёт в %2$@, который находится внутри текущего каталога данных, %3$@."
           }
         }
       }
@@ -117956,6 +118820,12 @@
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, leva a %2$@, que é a pasta de dados atual, para onde %3$@ leva."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, ведёт в %2$@, являющийся текущим каталогом данных, на который указывает %3$@."
+          }
         }
       }
     },
@@ -117990,6 +118860,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A nova localização, %1$@, leva a %2$@, que é a pasta de dados atual."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Новое расположение, %1$@, ведёт в %2$@, являющийся текущим каталогом данных."
           }
         }
       }
@@ -118199,6 +119075,12 @@
             "state" : "machine_translated",
             "value" : "O original em %@ é uma pasta ou um link, então não é possível verificar uma cópia dele."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Оригинал в %@ — папка или ссылка, поэтому его копию нельзя проверить."
+          }
         }
       }
     },
@@ -118256,6 +119138,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo original em %@ não pôde ser lido para verificar uma cópia dele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Не удалось прочитать исходный файл в %@, чтобы проверить его копию."
           }
         }
       }
@@ -118343,6 +119231,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo original não está em %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Исходный файл отсутствует в %@."
           }
         }
       }
@@ -118558,6 +119452,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo original permanecerá intocado após a importação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Исходный файл после импорта останется нетронутым."
           }
         }
       }
@@ -119644,6 +120544,12 @@
             "state" : "machine_translated",
             "value" : "O índice anterior é mantido em %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Прежний индекс сохранён здесь: %@."
+          }
         }
       }
     },
@@ -119872,6 +120778,36 @@
               }
             }
           }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Список для чтения всё ещё держит загруженными: %lld"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Список для чтения всё ещё держит загруженными: %lld"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Список для чтения всё ещё держит загруженными: %lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Список для чтения всё ещё держит загруженными: %lld"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -119900,6 +120836,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A lista de leitura ainda o mantém baixado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Список для чтения всё ещё держит её загруженной"
           }
         }
       }
@@ -119930,6 +120872,12 @@
             "state" : "machine_translated",
             "value" : "A lista de leitura ainda os mantém baixados"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Список для чтения всё ещё держит их загруженными"
+          }
         }
       }
     },
@@ -119958,6 +120906,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A lista de leitura, as ordenações e opções de escuta das pastas e qualquer livro cujos arquivos ainda não estejam nesta pasta não estarão nele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В него не попадут список для чтения, сортировка и параметры прослушивания папок, а также книги, файлов которых ещё нет в этой папке."
           }
         }
       }
@@ -120311,6 +121265,12 @@
             "state" : "machine_translated",
             "value" : "A cópia salva em %@ mantém os dados antigos."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Сохранённая копия в %@ хранит старые данные."
+          }
         }
       }
     },
@@ -120397,6 +121357,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A pasta de dados selecionada não está vazia."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Выбранный каталог данных не пуст."
           }
         }
       }
@@ -121445,6 +122411,12 @@
             "state" : "machine_translated",
             "value" : "O índice ilegível da biblioteca não está mais lá, então o TextMouth salvou a biblioteca reconstruída a partir dos seus livros como o novo índice, com %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Нечитаемого индекса библиотеки больше нет, поэтому TextMouth сохранил библиотеку, перестроенную из ваших книг, как новый индекс: %@."
+          }
         }
       }
     },
@@ -121658,6 +122630,12 @@
             "state" : "machine_translated",
             "value" : "Os arquivos originais deles não foram alterados."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Их исходные файлы не изменены."
+          }
         }
       }
     },
@@ -121715,6 +122693,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Depois, tire-o da lista de leitura ou desmarque %@ nas opções da Lista de leitura."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Затем уберите её из списка для чтения или снимите отметку «%@» в параметрах списка для чтения."
           }
         }
       }
@@ -121831,6 +122815,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Há um arquivo em %@, não uma pasta."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В %@ находится файл, а не папка."
           }
         }
       }
@@ -122151,6 +123141,36 @@
               }
             }
           }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места ещё для %lld книг"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места ещё для %lld книг"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места ещё для %lld книги"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места ещё для %lld книги"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -122185,6 +123205,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não há espaço livre suficiente para a biblioteca ali: ela precisa de %1$@, e há %2$@ livres."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Для библиотеки там недостаточно свободного места: нужно %1$@, свободно %2$@."
           }
         }
       }
@@ -122301,6 +123327,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Não há espaço livre suficiente para baixar %lld livros da lista de leitura"
+                }
+              }
+            }
+          }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места для загрузки %lld книг из списка для чтения"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места для загрузки %lld книг из списка для чтения"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места для загрузки %lld книги из списка для чтения"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Недостаточно свободного места для загрузки %lld книги из списка для чтения"
                 }
               }
             }
@@ -122478,6 +123534,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não há biblioteca em %@ para usar, nem uma para mover para lá enquanto a biblioteca não está disponível."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "В %@ нет библиотеки, которую можно использовать, и нет той, которую можно туда переместить, пока библиотека недоступна."
           }
         }
       }
@@ -122856,6 +123918,12 @@
             "state" : "machine_translated",
             "value" : "Permanecem em %@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Остаются в облаке (%@)"
+          }
         }
       }
     },
@@ -123192,6 +124260,12 @@
             "state" : "machine_translated",
             "value" : "Este Mac não conhece a identidade da biblioteca, então não pode restaurá-la."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Этот Mac не знает идентификатор библиотеки, поэтому не может его восстановить."
+          }
         }
       }
     },
@@ -123249,6 +124323,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Este Mac está offline, então o livro não pode ser baixado de %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Этот Mac не в сети, поэтому книгу нельзя загрузить (%@)."
           }
         }
       }
@@ -125258,6 +126338,12 @@
             "state" : "machine_translated",
             "value" : "Esta é uma biblioteca temporária, e as alterações da biblioteca não estão sendo salvas."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Это временная библиотека, изменения библиотеки не сохраняются."
+          }
         }
       }
     },
@@ -125286,6 +126372,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Esta é a biblioteca que o TextMouth está usando: %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Это библиотека, которую использует TextMouth: %@."
           }
         }
       }
@@ -125408,6 +126500,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Isso move todos os dados de %1$@ de volta para a localização padrão, %2$@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Все данные из %1$@ будут перемещены обратно в расположение по умолчанию, %2$@."
           }
         }
       }
@@ -125776,6 +126874,12 @@
             "state" : "machine_translated",
             "value" : "Isso extrai de novo o texto em cache de todos os livros, o que pode demorar em uma biblioteca grande."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Заново извлечёт кэшированный текст каждой книги; для большой библиотеки это может занять время."
+          }
         }
       }
     },
@@ -125839,6 +126943,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Isso recria a estrutura do diretório e migra os livros que usam o armazenamento antigo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Заново создаст структуру каталога и перенесёт книги, использующие старое хранилище."
           }
         }
       }
@@ -126217,6 +127327,12 @@
             "state" : "machine_translated",
             "value" : "Janela de tempo"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Временное окно"
+          }
         }
       }
     },
@@ -126245,6 +127361,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Janela de tempo: %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Временное окно: %@"
           }
         }
       }
@@ -126542,6 +127664,12 @@
             "state" : "machine_translated",
             "value" : "Títulos"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Названия"
+          }
         }
       }
     },
@@ -126570,6 +127698,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Os títulos são ordenados e encontrados ao digitar como estão escritos: The Hobbit fica entre os T."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Названия сортируются и находятся при вводе так, как написаны: The Hobbit среди T."
           }
         }
       }
@@ -126616,6 +127750,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Para %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Куда: %@"
           }
         }
       }
@@ -126852,6 +127992,12 @@
             "state" : "machine_translated",
             "value" : "Para liberar o espaço mesmo assim, escolha Mostrar no Finder e depois %@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Чтобы всё равно освободить место, выберите «Показать в Finder», затем %@."
+          }
         }
       }
     },
@@ -126968,6 +128114,12 @@
             "state" : "machine_translated",
             "value" : "Para soltá-lo, tire-o da lista de leitura ou desmarque %@ nas opções da Lista de leitura."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Чтобы она не хранилась на этом Mac, уберите её из списка для чтения или снимите отметку «%@» в параметрах списка для чтения."
+          }
         }
       }
     },
@@ -126997,6 +128149,12 @@
             "state" : "machine_translated",
             "value" : "Para soltá-los, tire-os da lista de leitura ou desmarque %@ nas opções da Lista de leitura."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Чтобы они не хранились на этом Mac, уберите их из списка для чтения или снимите отметку «%@» в параметрах списка для чтения."
+          }
         }
       }
     },
@@ -127025,6 +128183,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Para a localização padrão, %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Куда: расположение по умолчанию, %@"
           }
         }
       }
@@ -127060,6 +128224,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Para usar outra pasta, abra Ajustes, Armazenamento e escolha %1$@ ou %2$@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Чтобы использовать другую папку, откройте «Настройки», «Хранилище» и выберите «%1$@» или «%2$@»."
           }
         }
       }
@@ -127171,6 +128341,12 @@
             "state" : "machine_translated",
             "value" : "Junto com os arquivos compactados dentro dele, o arquivo compactado se expande para %1$@, mais do que os %2$@ que o TextMouth extrai de arquivos compactados com áudio ou com outros arquivos compactados."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вместе с вложенными архивами архив распаковывается до %1$@, что больше %2$@ — предела, до которого TextMouth распаковывает архивы с аудио или другими архивами."
+          }
         }
       }
     },
@@ -127206,6 +128382,12 @@
             "state" : "machine_translated",
             "value" : "Junto com os arquivos compactados dentro dele, o arquivo compactado se expande para %1$@, mais do que os %2$@ que o TextMouth extrai de arquivos compactados sem áudio."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вместе с вложенными архивами архив распаковывается до %1$@, что больше %2$@ — предела, до которого TextMouth распаковывает архивы без аудио."
+          }
         }
       }
     },
@@ -127240,6 +128422,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Junto com os arquivos compactados dentro dele, o arquivo compactado contém %1$@ arquivos e pastas, mais do que os %2$@ que o TextMouth extrai em uma importação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вместе с вложенными архивами в архиве %1$@ файлов и папок, что больше %2$@ — предела для одного импорта в TextMouth."
           }
         }
       }
@@ -128543,6 +129731,12 @@
             "state" : "machine_translated",
             "value" : "Tenta salvar novamente todas as alterações que não puderam ser salvas"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Повторяет сохранение всех изменений, которые не удалось сохранить"
+          }
         }
       }
     },
@@ -128862,6 +130056,12 @@
             "state" : "machine_translated",
             "value" : "Tente novamente daqui a pouco."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Повторите через минуту."
+          }
         }
       }
     },
@@ -128890,6 +130090,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tente novamente quando essa movimentação terminar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Повторите, когда это перемещение закончится."
           }
         }
       }
@@ -128949,6 +130155,12 @@
             "state" : "machine_translated",
             "value" : "Tente novamente quando isso terminar."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Повторите, когда это завершится."
+          }
         }
       }
     },
@@ -128977,6 +130189,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Повторите попытку."
           }
         }
       }
@@ -130434,6 +131652,12 @@
             "state" : "machine_translated",
             "value" : "Arquivo ilegível"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Нечитаемый файл"
+          }
         }
       }
     },
@@ -130771,6 +131995,12 @@
             "state" : "machine_translated",
             "value" : "Até lá, alterar a localização e reconstruir o diretório ficam indisponíveis."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "До тех пор изменение расположения и перестройка каталога недоступны."
+          }
         }
       }
     },
@@ -130816,6 +132046,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Regra sem nome"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Правило без названия"
           }
         }
       }
@@ -130933,6 +132169,12 @@
             "state" : "machine_translated",
             "value" : "Atualizando o cache de texto"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Обновление кэша текста"
+          }
         }
       }
     },
@@ -130968,6 +132210,12 @@
             "state" : "machine_translated",
             "value" : "Use %1$@ e %2$@, ou arraste, para reordenar. As regras se aplicam de cima para baixo."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Используйте «%1$@» и «%2$@» или перетаскивание, чтобы изменить порядок. Правила применяются сверху вниз."
+          }
         }
       }
     },
@@ -130996,6 +132244,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Usar localização padrão..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Использовать расположение по умолчанию..."
           }
         }
       }
@@ -131084,6 +132338,12 @@
             "state" : "machine_translated",
             "value" : "Usar esta biblioteca"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Использовать эту библиотеку"
+          }
         }
       }
     },
@@ -131112,6 +132372,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Usar esta biblioteca?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Использовать эту библиотеку?"
           }
         }
       }
@@ -131171,6 +132437,12 @@
             "state" : "machine_translated",
             "value" : "Use depois de atualizações do analisador."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Используйте после обновлений разбора."
+          }
         }
       }
     },
@@ -131229,6 +132501,12 @@
             "state" : "machine_translated",
             "value" : "Usar correspondência por expressão regular"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Использовать регулярные выражения"
+          }
         }
       }
     },
@@ -131257,6 +132535,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Usar a localização padrão"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Использовать расположение по умолчанию"
           }
         }
       }
@@ -131303,6 +132587,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Use isto depois de restaurar o arquivo de um backup, corrigir as permissões dele ou atualizar o TextMouth para a versão que o salvou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Используйте после восстановления файла из резервной копии, исправления его прав доступа или обновления TextMouth до версии, которая его сохранила."
           }
         }
       }
@@ -131390,6 +132680,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Usar uma biblioteca em dois Macs ao mesmo tempo pode perder posições de leitura e alterações."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Одновременное использование одной библиотеки на двух Mac может привести к потере позиций чтения и изменений."
           }
         }
       }
@@ -131661,6 +132957,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Idioma da voz"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Язык голоса"
           }
         }
       }
@@ -131956,6 +133258,12 @@
             "state" : "machine_translated",
             "value" : "Aguardando sincronização"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание синхронизации"
+          }
         }
       }
     },
@@ -131984,6 +133292,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aguardando o fim da edição de áudio..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание завершения редактирования аудио..."
           }
         }
       }
@@ -132014,6 +133328,12 @@
             "state" : "machine_translated",
             "value" : "Aguardando o fim da análise dos livros..."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание завершения анализа книг..."
+          }
         }
       }
     },
@@ -132042,6 +133362,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aguardando a leitura dos metadados dos livros..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание чтения метаданных книг..."
           }
         }
       }
@@ -132072,6 +133398,12 @@
             "state" : "machine_translated",
             "value" : "Aguardando a exclusão dos downloads dos feeds..."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание удаления загрузок лент..."
+          }
         }
       }
     },
@@ -132100,6 +133432,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aguardando o salvamento dos registros dos feeds..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание сохранения записей лент..."
           }
         }
       }
@@ -132130,6 +133468,12 @@
             "state" : "machine_translated",
             "value" : "Aguardando o fim da extração de texto..."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание завершения извлечения текста..."
+          }
         }
       }
     },
@@ -132158,6 +133502,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aguardando o fim da importação atual..."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ожидание завершения текущего импорта..."
           }
         }
       }
@@ -132408,6 +133758,12 @@
             "state" : "machine_translated",
             "value" : "O que acontece quando um livro termina de ser reproduzido"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Что происходит, когда книга заканчивается"
+          }
         }
       }
     },
@@ -132436,6 +133792,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O que acontece quando você segura a tecla Shift e retrocede"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Что происходит, когда вы удерживаете Shift и перематываете назад"
           }
         }
       }
@@ -132466,6 +133828,12 @@
             "state" : "machine_translated",
             "value" : "O que acontece quando você segura a tecla Shift e avança"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Что происходит, когда вы удерживаете Shift и перематываете вперёд"
+          }
         }
       }
     },
@@ -132494,6 +133862,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O que acontece quando você retrocede"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Что происходит при перемотке назад"
           }
         }
       }
@@ -132524,6 +133898,12 @@
             "state" : "machine_translated",
             "value" : "O que acontece quando você avança"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Что происходит при перемотке вперёд"
+          }
         }
       }
     },
@@ -132552,6 +133932,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O que fazer com o arquivo original depois de importar um livro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Что сделать с исходным файлом после импорта книги"
           }
         }
       }
@@ -133157,6 +134543,12 @@
             "state" : "machine_translated",
             "value" : "Quando os artigos são ignorados, um livro cujos metadados indicam francês, alemão, espanhol, italiano, português, holandês, catalão, sueco, dinamarquês ou norueguês ignora os artigos desse idioma, como Le e Die, e The."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Если артикли игнорируются, в книге, метаданные которой указывают французский, немецкий, испанский, итальянский, португальский, нидерландский, каталанский, шведский, датский или норвежский язык, пропускаются артикли этого языка, такие как Le и Die, и The."
+          }
         }
       }
     },
@@ -133185,6 +134577,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ao terminar o livro"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Когда книга заканчивается"
           }
         }
       }
@@ -133302,6 +134700,12 @@
             "state" : "machine_translated",
             "value" : "Quando ativado, a reprodução começa automaticamente depois de ir para um cabeçalho, um marcador ou um resultado de busca"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Если включено, воспроизведение начинается автоматически после перехода к заголовку, закладке или результату поиска"
+          }
         }
       }
     },
@@ -133359,6 +134763,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Quando ativado, use \\b no padrão para limites de palavra"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Если включено, используйте \\b в шаблоне для границ слов"
           }
         }
       }
@@ -133446,6 +134856,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Quando desativado, a folha continua aberta mostrando o tempo restante e um botão para reiniciar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Если выключено, лист остаётся открытым и показывает оставшееся время и кнопку сброса"
           }
         }
       }
@@ -133550,6 +134966,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ao retomar a reprodução, retrocede até o início desta unidade"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "При возобновлении воспроизведения перематывает к началу этой единицы"
           }
         }
       }
@@ -133811,6 +135233,12 @@
             "state" : "machine_translated",
             "value" : "Onde o TextMouth grava seus registros de diagnóstico. %1$@ os mantém com seus livros, então eles se movem e sincronizam com a biblioteca. %2$@ os mantém em %3$@, que nunca sincroniza. Uma mudança vale a partir da próxima linha; os registros existentes ficam."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Куда TextMouth записывает диагностические журналы. «%1$@» хранит их вместе с вашими книгами, поэтому они перемещаются и синхронизируются с библиотекой. «%2$@» хранит их в %3$@, где синхронизации нет. Изменение действует со следующей строки; существующие журналы остаются."
+          }
         }
       }
     },
@@ -134001,6 +135429,12 @@
             "state" : "machine_translated",
             "value" : "Enquanto o TextMouth copiava os dados, %1$@ foi alterado para levar a %2$@ em vez de %3$@."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Пока TextMouth копировал данные, %1$@ был изменён: теперь он ведёт в %2$@ вместо %3$@."
+          }
         }
       }
     },
@@ -134120,6 +135554,36 @@
               }
             }
           }
+        },
+        "ru" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Пока TextMouth копировал данные, появилось %lld элемента в %@: %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Пока TextMouth копировал данные, появилось %lld элементов в %@: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Пока TextMouth копировал данные, появился %lld элемент в %@: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Пока TextMouth копировал данные, появилось %lld элемента в %@: %@."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -134148,6 +135612,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Enquanto o TextMouth copiava os dados, outra coisa foi colocada em %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Пока TextMouth копировал данные, в %@ было помещено что-то ещё."
           }
         }
       }
@@ -134223,6 +135693,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Somente palavra inteira"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Только целые слова"
           }
         }
       }
@@ -135180,6 +136656,12 @@
             "state" : "machine_translated",
             "value" : "Você pode criar uma nova pasta aqui."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Здесь можно создать новую папку."
+          }
         }
       }
     },
@@ -135208,6 +136690,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Você pode abrir e ler livros, e as posições de leitura ainda são salvas com cada livro, mas as alterações da própria biblioteca não são salvas até você escolher uma das opções abaixo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Вы можете открывать и читать книги, позиции чтения по-прежнему сохраняются вместе с каждой книгой, но изменения самой библиотеки не сохраняются, пока вы не выберете один из вариантов ниже."
           }
         }
       }
@@ -135516,6 +137004,12 @@
             "state" : "machine_translated",
             "value" : "Seus livros e posições de leitura são mantidos."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ваши книги и позиции чтения сохранятся."
+          }
         }
       }
     },
@@ -135696,6 +137190,12 @@
             "state" : "machine_translated",
             "value" : "Sua biblioteca (%1$@) será enviada para %2$@ em segundo plano."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ваша библиотека (%1$@) будет выгружена в %2$@ в фоновом режиме."
+          }
         }
       }
     },
@@ -135741,6 +137241,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sua biblioteca será enviada para %@ em segundo plano."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ваша библиотека будет выгружена в %@ в фоновом режиме."
           }
         }
       }
@@ -135858,6 +137364,12 @@
             "state" : "machine_translated",
             "value" : "o registro de um livro, %@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "запись книги, %@"
+          }
         }
       }
     },
@@ -135887,6 +137399,12 @@
             "state" : "machine_translated",
             "value" : "o índice dos episódios de um feed, %@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "индекс выпусков ленты, %@"
+          }
         }
       }
     },
@@ -135915,6 +137433,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "o registro de um feed, %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "запись ленты, %@"
           }
         }
       }
@@ -136519,6 +138043,12 @@
             "state" : "machine_translated",
             "value" : "outro Mac"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "другой Mac"
+          }
         }
       }
     },
@@ -137032,6 +138562,12 @@
             "state" : "machine_translated",
             "value" : "alterações nos livros"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "изменения книг"
+          }
         }
       }
     },
@@ -137130,6 +138666,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "capítulo %1$@, salvo em %2$@, e %3$@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "глава %1$@, сохранено %2$@; %3$@"
           }
         }
       }
@@ -137311,6 +138853,12 @@
             "state" : "machine_translated",
             "value" : "escolha Tornar somente online"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "выберите «Make online-only»"
+          }
         }
       }
     },
@@ -137339,6 +138887,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "escolha Remover download"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "выберите «Удалить загрузку»"
           }
         }
       }
@@ -137929,6 +139483,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "assinaturas de feeds"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "подписки на ленты"
           }
         }
       }
@@ -138847,6 +140407,12 @@
             "state" : "machine_translated",
             "value" : "O iCloud Drive pode estar desativado ou sem login, ou este Mac pode estar offline. Verifique isso e escolha Tentar novamente."
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Возможно, iCloud Drive отключён или не выполнен вход, либо этот Mac не в сети. Проверьте это и выберите «Повторить»."
+          }
         }
       }
     },
@@ -138875,6 +140441,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O iCloud Drive pode estar desativado ou sem login."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Возможно, iCloud Drive отключён или не выполнен вход."
           }
         }
       }
@@ -140642,6 +142214,12 @@
             "state" : "machine_translated",
             "value" : "alterações da biblioteca"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "изменения библиотеки"
+          }
         }
       }
     },
@@ -140670,6 +142248,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "estatísticas de escuta"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "статистика прослушивания"
           }
         }
       }
@@ -141500,6 +143084,12 @@
             "state" : "machine_translated",
             "value" : "nenhuma posição salva, e %@"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "место не сохранено; %@"
+          }
         }
       }
     },
@@ -142327,6 +143917,12 @@
             "state" : "machine_translated",
             "value" : "arquivos originais"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "исходные файлы"
+          }
         }
       }
     },
@@ -142442,6 +144038,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "permissão negada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "доступ запрещён"
           }
         }
       }
@@ -142910,6 +144512,12 @@
             "state" : "machine_translated",
             "value" : "regex"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "рег. выраж."
+          }
         }
       }
     },
@@ -143089,6 +144697,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ajustes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "настройки"
           }
         }
       }
@@ -143638,6 +145252,12 @@
             "state" : "machine_translated",
             "value" : "regras de substituição de texto"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "правила замены текста"
+          }
         }
       }
     },
@@ -143994,6 +145614,12 @@
             "state" : "machine_translated",
             "value" : "a nuvem"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "облако"
+          }
         }
       }
     },
@@ -144022,6 +145648,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "o serviço de nuvem"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "облачный сервис"
           }
         }
       }
@@ -144472,6 +146104,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "o índice da biblioteca, %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "индекс библиотеки, %@"
           }
         }
       }
@@ -145163,6 +146801,12 @@
             "state" : "machine_translated",
             "value" : "use o menu Acesso offline do Google Drive"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "используйте меню Offline Access в Google Drive"
+          }
         }
       }
     },
@@ -145191,6 +146835,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "use o comando do próprio drive para manter o livro apenas online"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "используйте команду самого диска, чтобы оставить книгу только онлайн"
           }
         }
       }
@@ -145386,6 +147036,12 @@
             "state" : "machine_translated",
             "value" : "palavra"
           }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "слово"
+          }
         }
       }
     },
@@ -145443,6 +147099,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "você interrompeu a comparação"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "вы остановили сравнение"
           }
         }
       }
@@ -145711,6 +147373,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%1$@” não pôde ser movido de volta após uma movimentação com falha, então os arquivos dele estão em %2$@ em vez de %3$@: %4$@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%1$@» не удалось вернуть после неудачного перемещения, поэтому его файлы находятся в %2$@, а не в %3$@: %4$@"
           }
         }
       }
