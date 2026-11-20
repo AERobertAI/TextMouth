@@ -3503,7 +3503,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ gilt in %2$@."
+            "value" : "%1$@ gilt für %2$@."
           }
         },
         "en" : {
@@ -59814,7 +59814,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download-Fortschritt vorlesen"
+            "value" : "Fortschritt beim Herunterladen vorlesen"
           }
         },
         "es" : {
@@ -64322,6 +64322,12 @@
     "TextMouth is finishing up before it quits: %@. It quits when that is done." : {
       "comment" : "Panel text and announcement while TextMouth finishes work before quitting. %@ is the list of what is under way, such as \"saving the library and keeping downloads\", already joined in the language's own list style.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth erledigt noch Aufgaben, bevor es sich beendet: %@. Danach beendet es sich."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64683,6 +64689,12 @@
     "TextMouth kept the text you changed in %@." : {
       "comment" : "First sentence of the message when an automatic rebuild left a book's edited text alone. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth hat den Text, den du in %@ geändert hast, unverändert gelassen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64977,6 +64989,12 @@
     "TextMouth opens the book's manifest.json in your text editor." : {
       "comment" : "First sentence of the Edit Manifest explanation. manifest.json is a file name and stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth öffnet die Datei manifest.json des Buchs in deinem Texteditor."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64994,6 +65012,12 @@
     "TextMouth opens the book's text in your text editor, as a Markdown file." : {
       "comment" : "First sentence of the Edit Text explanation. Markdown is the name of a text format.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth öffnet den Text des Buchs als Markdown-Datei in deinem Texteditor."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -65911,6 +65935,12 @@
     "The %@ ends %@ into “%@”, which is only %@ long." : {
       "comment" : "First sentence of why an audiobook could not be imported: a section ends after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it ends and %4$@ how long the file is, both spoken times; %3$@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die %1$@ endet bei %2$@ in der Datei „%3$@“, die nur %4$@ lang ist."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -66282,6 +66312,12 @@
     "The %@ page labelled %@" : {
       "comment" : "The start of a sentence naming one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as \"first\" or \"11th\"; %2$@ is the label, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die %1$@ Seite mit der Bezeichnung %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -66305,6 +66341,12 @@
     "The %@ starts %@ into “%@”, before the earlier %@, which starts %@ in." : {
       "comment" : "First sentence of why an audiobook could not be imported: a section starts before another section that comes earlier in the book and is in the same audio file. %1$@ and %4$@ are sections, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (masculine noun phrases in English, without their article); %2$@ and %5$@ are how far into the file each starts, spoken times; %3$@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die %1$@ beginnt bei %2$@ in der Datei „%3$@“, vor der früheren %4$@, die bei %5$@ beginnt."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -66328,6 +66370,12 @@
     "The %@ starts %@ into “%@”, which is only %@ long." : {
       "comment" : "First sentence of why an audiobook could not be imported: a section starts after the end of its audio file. %1$@ is the section, such as \"heading “Tide Tables”\" or \"untitled heading 3\" (a masculine noun phrase in English, without its article); %2$@ is how far into the file it starts and %4$@ how long the file is, both spoken times; %3$@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die %1$@ beginnt bei %2$@ in der Datei „%3$@“, die nur %4$@ lang ist."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -66652,6 +66700,12 @@
     "The DAISY file could not be opened as a ZIP archive." : {
       "comment" : "Why a DAISY book could not be imported: it could not be opened as a ZIP archive.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die DAISY-Datei konnte nicht als ZIP-Archiv geöffnet werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66669,6 +66723,12 @@
     "The DOCX file could not be opened as a ZIP archive." : {
       "comment" : "Why a Word document (.docx) could not be imported: it could not be opened as a ZIP archive.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die DOCX-Datei konnte nicht als ZIP-Archiv geöffnet werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66686,6 +66746,12 @@
     "The DOCX file is missing required entry: %@" : {
       "comment" : "Why a Word document (.docx) could not be imported: a part it needs is not in it. %@ is the part's path inside the document.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "In der DOCX-Datei fehlt ein erforderlicher Eintrag: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66703,6 +66769,12 @@
     "The EPUB file could not be opened as a ZIP archive." : {
       "comment" : "Why an EPUB book could not be imported: it could not be opened as a ZIP archive.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die EPUB-Datei konnte nicht als ZIP-Archiv geöffnet werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66771,6 +66843,12 @@
     "The EPUB file was not found at: %@" : {
       "comment" : "Why an EPUB book could not be imported: there is no file at its path. %@ is the path.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die EPUB-Datei wurde nicht gefunden unter: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66788,6 +66866,12 @@
     "The EPUB has no reading order (spine)." : {
       "comment" : "Why an EPUB book could not be imported: its package document lists no reading order, which EPUB calls the spine.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das EPUB hat keine Lesereihenfolge (Spine)."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66805,6 +66889,12 @@
     "The EPUB is missing META-INF/container.xml." : {
       "comment" : "Why an EPUB book could not be imported: it lacks the file that names its package document. META-INF/container.xml is a file's path and stays as it is.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Im EPUB fehlt META-INF/container.xml."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66822,6 +66912,12 @@
     "The EPUB is missing its package document (OPF file)." : {
       "comment" : "Why an EPUB book could not be imported: the package document (an OPF file) that its container names is not in it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Im EPUB fehlt das Paketdokument (OPF-Datei)."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66839,6 +66935,12 @@
     "The EPUB package document could not be parsed." : {
       "comment" : "Why an EPUB book could not be imported: its package document (an OPF file) could not be read.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Paketdokument des EPUB konnte nicht analysiert werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67049,6 +67151,12 @@
     "The PDF file could not be opened." : {
       "comment" : "Why a PDF could not be imported: PDFKit could not open it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die PDF-Datei konnte nicht geöffnet werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67424,6 +67532,12 @@
     "The audio editor" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the audio editor's windows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audio-Editor"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67469,6 +67583,12 @@
     "The audio file %@ ends before its audio does, so it could not be converted." : {
       "comment" : "Why an audio file could not be converted at import: the file stops before the audio its header promises. %@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Audiodatei %@ endet vor ihrem Audio, daher konnte sie nicht konvertiert werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67533,6 +67653,12 @@
     "The audio file %@ is damaged, so it could not be converted." : {
       "comment" : "Why an audio file could not be converted at import: a checksum failed or a field holds a value no encoder writes. %@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Audiodatei %@ ist beschädigt und konnte deshalb nicht konvertiert werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67550,6 +67676,12 @@
     "The audio file %@ is not the kind of file its name says." : {
       "comment" : "Why an audio file could not be converted at import: its bytes are not of the format its extension names. %@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Audiodatei %@ ist nicht von der Art, die ihr Name angibt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -68128,6 +68260,12 @@
     "The book's navigation does not match its audio; get a fresh copy and import it again." : {
       "comment" : "Last sentence of an import failure: a section of a segmented audiobook does not fit the audio file it names, so the book's navigation (its manifest or headings) does not match its audio.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Navigation des Buchs passt nicht zum Audio; besorge dir eine neue Kopie und importiere es erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -68535,6 +68673,12 @@
     "The correction file %@ is damaged or belongs to another recording, so %@ could not be converted." : {
       "comment" : "Why a hybrid WavPack file could not be converted at import: the correction file beside it (the same name ending in .wvc) is damaged or belongs to another recording. %1$@ is the correction file's name and %2$@ the WavPack file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Korrekturdatei %1$@ ist beschädigt oder gehört zu einer anderen Aufnahme, daher konnte %2$@ nicht konvertiert werden."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -68614,6 +68758,12 @@
     "The cursor is %@." : {
       "comment" : "Announcement after Go to Page when the cursor is not on the page typed and there is no known reason. %@ says where the cursor is, such as \"on page 52\" or \"before page 1\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Cursor steht %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69429,6 +69579,12 @@
     "The file “%@”" : {
       "comment" : "Begins a sentence about a file that could not be read in the text encoding chosen for it, such as \"The file “Ledger.txt” can't be read as Shift JIS (Japanese): …\". %@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%@“"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69446,6 +69602,12 @@
     "The file “%@” declares the text encoding “%@”, but it holds bytes that are not valid in that encoding." : {
       "comment" : "First sentence of why a file could not be imported: an HTML file declares a text encoding its bytes are not valid in. %1$@ is the file's name and %2$@ the encoding's name as the file spells it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%1$@“ deklariert die Textcodierung „%2$@“, enthält aber Bytes, die in dieser Codierung ungültig sind."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -69469,6 +69631,12 @@
     "The file “%@” declares the text encoding “%@”, which TextMouth cannot read." : {
       "comment" : "First sentence of why a file could not be imported: an HTML file declares a text encoding TextMouth does not know. %1$@ is the file's name and %2$@ the encoding's name as the file spells it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%1$@“ deklariert die Textcodierung „%2$@“, die TextMouth nicht lesen kann."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -69492,6 +69660,12 @@
     "The file “%@” in this DAISY book refers to “%@”, outside the book's folder." : {
       "comment" : "First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%1$@“ in diesem DAISY-Buch verweist auf „%2$@“ außerhalb des Ordners des Buchs."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -69515,6 +69689,12 @@
     "The file “%@” in this archive is damaged or incomplete: %@. Get a fresh copy of the archive, then import it again." : {
       "comment" : "Why a ZIP archive or comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%1$@“ in diesem Archiv ist beschädigt oder unvollständig: %2$@. Besorge dir eine neue Kopie des Archivs und importiere es dann erneut."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -69538,6 +69718,12 @@
     "The file “%@” in this book is damaged or incomplete: %@. Get a fresh copy of the book, then import it again." : {
       "comment" : "Why a book could not be imported (a DAISY book, an EPUB book, or an audiobook): a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%1$@“ in diesem Buch ist beschädigt oder unvollständig: %2$@. Besorge dir eine neue Kopie des Buchs und importiere es dann erneut."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -69561,6 +69747,12 @@
     "The file “%@” in this document is damaged or incomplete: %@. Get a fresh copy of the document, then import it again." : {
       "comment" : "Why a Word or OpenDocument document could not be imported: a file inside it is damaged. %1$@ is the file's path inside the document and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%1$@“ in diesem Dokument ist beschädigt oder unvollständig: %2$@. Besorge dir eine neue Kopie des Dokuments und importiere es dann erneut."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -69584,6 +69776,12 @@
     "The file “%@” is damaged or incomplete: it begins with a %@ byte-order mark, but the rest is not valid %@ text." : {
       "comment" : "First sentence of why a file could not be imported: it begins with the byte-order mark of a Unicode encoding, but the bytes after it are not valid in that encoding. %1$@ is the file's name; %2$@ and %3$@ are both the encoding's standard name, such as UTF-16LE, which stays as it is.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Datei „%1$@“ ist beschädigt oder unvollständig: Sie beginnt mit einer %2$@-Byte-Order-Mark, der Rest ist aber kein gültiger %3$@-Text."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -69886,6 +70084,24 @@
     "The folder holds %lld DAISY books (%@)." : {
       "comment" : "First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Der Ordner enthält %lld DAISY-Buch (%@)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Der Ordner enthält %lld DAISY-Bücher (%@)."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -69974,6 +70190,12 @@
     "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level." : {
       "comment" : "Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Ordner ist kein DAISY-Buch: Er hat auf oberster Ebene weder eine ncc.html- noch eine .opf-Datei."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70653,6 +70875,12 @@
     "The manifest of %@ can't be edited: %@" : {
       "comment" : "Message when a book's manifest could not be readied for editing. %1$@ is the book's title; %2$@ is the reason, a sentence from the system or TextMouth.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Manifest von %1$@ kann nicht bearbeitet werden: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -71161,6 +71389,12 @@
     "The only chapter could not be read" : {
       "comment" : "Starts the warning after an import of a book of one chapter that could not be read. Has no full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das einzige Kapitel konnte nicht gelesen werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71363,6 +71597,12 @@
     "The original file you imported is not changed." : {
       "comment" : "Last sentence of the warning shown under the metadata editor's switch while it is on: the file the user first imported stays as it was.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Originaldatei, die du importiert hast, bleibt unverändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71380,6 +71620,12 @@
     "The original file you imported is not touched." : {
       "comment" : "Last sentence of the hint of the metadata editor's switch that also writes the EPUB file: the file the user first imported stays as it was.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Originaldatei, die du importiert hast, wird nicht angetastet."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71448,6 +71694,24 @@
     "The other %lld chapters have no text." : {
       "comment" : "Sentence in the warning after an EPUB book was imported with chapters left out: several other chapters are blank. %lld is how many, two or more.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Das andere Kapitel (%lld) hat keinen Text."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Die anderen %lld Kapitel haben keinen Text."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -71519,6 +71783,12 @@
     "The other chapter has no text." : {
       "comment" : "Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das andere Kapitel hat keinen Text."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71626,6 +71896,12 @@
     "The playlist “%@” is too large to read." : {
       "comment" : "Why a playlist file could not be imported: it is larger than the most TextMouth reads. %@ is the playlist's file name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Playlist „%@“ ist zu groß zum Lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72189,6 +72465,12 @@
     "The recording lasts %@." : {
       "comment" : "Second sentence of that refusal. %@ is the recording's length spoken in words, such as \"9 hours, 41 minutes, 7 seconds\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Aufnahme dauert %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72223,6 +72505,12 @@
     "The recording window" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the Record window.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aufnahmefenster"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72521,6 +72809,12 @@
     "The text content.md held before was kept as %@, in the book's package." : {
       "comment" : "Second sentence of that message. content.md is the file name of the book's text and stays as written; %@ is the backup's file name such as content.md.edited-20261004T123012Z, which stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text, den content.md zuvor enthielt, wurde als %@ im Paket des Buchs behalten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72578,6 +72872,12 @@
     "The text of %@ can't be read, so it can't be edited." : {
       "comment" : "Message when Edit Text finds the book's text file unreadable. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text von %@ kann nicht gelesen werden und daher auch nicht bearbeitet werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72595,6 +72895,12 @@
     "The text of %@ isn't ready to edit yet." : {
       "comment" : "First sentence of the message when Edit Text finds the book's text file missing. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text von %@ ist noch nicht bereit zum Bearbeiten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72612,6 +72918,12 @@
     "The text of %@ was read again from its own file." : {
       "comment" : "First sentence of the message after a book's text was read again from its own file. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text von %@ wurde erneut aus seiner eigenen Datei gelesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73268,6 +73580,12 @@
     "There is no page %@ in this book." : {
       "comment" : "First sentence of the message when Go to Page is given a page the book does not have. %@ is what the user typed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Buch hat keine Seite %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73860,6 +74178,12 @@
     "This EPUB book has no text to read." : {
       "comment" : "Why an EPUB book could not be imported: every chapter in it is blank.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses EPUB-Buch enthält keinen Text zum Lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73899,6 +74223,12 @@
     "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it." : {
       "comment" : "Why a Kindle (KFX) book could not be imported: its pages are fixed layouts or pictures, as in a comic or a print replica, with no text that flows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Kindle-Buch hat keinen fließenden Text, wie bei einem Comic oder einer Druckreplik, daher kann TextMouth es nicht lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73916,6 +74246,12 @@
     "This Kindle book is compressed in a way TextMouth can't read yet." : {
       "comment" : "Why a Kindle (MOBI) book could not be imported: its text is compressed in a way TextMouth does not read.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Kindle-Buch ist auf eine Weise komprimiert, die TextMouth noch nicht lesen kann."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73933,6 +74269,12 @@
     "This Kindle book is copy-protected, and TextMouth can't read copy-protected books." : {
       "comment" : "Why a Kindle (MOBI) book could not be imported: it is encrypted or carries copy protection (DRM), which TextMouth never removes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Kindle-Buch ist kopiergeschützt, und TextMouth kann kopiergeschützte Bücher nicht lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73950,6 +74292,12 @@
     "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again." : {
       "comment" : "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Kindle-Buch ist beschädigt oder unvollständig. Besorge dir eine neue Kopie und importiere sie dann erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73967,6 +74315,12 @@
     "This Kindle book is damaged or incomplete: %@. Get a fresh copy, then import it again." : {
       "comment" : "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Kindle-Buch ist beschädigt oder unvollständig: %@. Besorge dir eine neue Kopie und importiere sie dann erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74165,6 +74519,12 @@
     "This PDF needs a password to open." : {
       "comment" : "Why a PDF could not be imported: it is locked with a password TextMouth does not have.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese PDF-Datei erfordert zum Öffnen ein Passwort."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74182,6 +74542,12 @@
     "This SSML file is damaged or incomplete: %@." : {
       "comment" : "Why an SSML (Speech Synthesis Markup Language) file could not be imported: it is damaged. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese SSML-Datei ist beschädigt oder unvollständig: %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74374,6 +74740,24 @@
     "This book has %lld pages, from %@ to %@." : {
       "comment" : "First sentence of the Go to Page field's hint. %1$lld is the number of pages in the book; %2$@ is the first page's label and %3$@ the last page's label, identifiers such as i or 300 written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Dieses Buch hat %lld Seite, von %@ bis %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Dieses Buch hat %lld Seiten, von %@ bis %@."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -74479,6 +74863,12 @@
     "This book has no pages." : {
       "comment" : "Announcement when a page command is used in a book that has no pages.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Buch hat keine Seiten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74507,6 +74897,12 @@
     "This book has only one page." : {
       "comment" : "Announcement when a page command is used in a book that has one page, so there is no other page to go to.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Buch hat nur eine Seite."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74713,6 +75109,12 @@
     "This book's only page is %@." : {
       "comment" : "First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die einzige Seite dieses Buchs ist %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74786,6 +75188,12 @@
     "This document holds more than %@, the most TextMouth reads from one document." : {
       "comment" : "Why a document could not be imported: it is larger than the most TextMouth reads from one document. %@ is that limit with its unit, such as \"64 MB\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Dokument enthält mehr als %@, das Maximum, das TextMouth aus einem Dokument liest."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74803,6 +75211,12 @@
     "This document is protected by a password." : {
       "comment" : "First sentence of why a document could not be imported: it is locked with a password TextMouth does not have.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Dokument ist durch ein Passwort geschützt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74842,6 +75256,12 @@
     "This explanation appears only once." : {
       "comment" : "Last sentence of the Edit Manifest explanation: it is shown only the first time.\nLast sentence of the Edit Text explanation: it is shown only the first time.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Erklärung erscheint nur einmal."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74986,6 +75406,12 @@
     "This file holds only part of a Kindle book. Open the book's main .kfx file." : {
       "comment" : "Why a Kindle (KFX) file could not be imported: it is a part of a book, such as the metadata file beside the main file, and what to do. .kfx is a file extension and stays as it is.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Datei enthält nur einen Teil eines Kindle-Buchs. Öffne die .kfx-Hauptdatei des Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75003,6 +75429,12 @@
     "This file is a Kindle Create package, which TextMouth can't read yet." : {
       "comment" : "Why a file could not be imported: it is a package that Kindle Create writes for an author, which TextMouth does not read yet. Kindle Create is a program's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Datei ist ein Kindle-Create-Paket, das TextMouth noch nicht lesen kann."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75020,6 +75452,12 @@
     "This file is not SSML: it begins with the element “%@”, not “speak”." : {
       "comment" : "Why a file could not be imported as SSML (Speech Synthesis Markup Language): its first element is not speak. %@ is the name of the first element it has. SSML is a format's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Datei ist kein SSML: Sie beginnt mit dem Element „%@“, nicht mit „speak“."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75037,6 +75475,12 @@
     "This file is not a Kindle book that TextMouth can read." : {
       "comment" : "Why a file could not be imported as a Kindle (MOBI) book: it is not a Kindle book of a kind TextMouth reads.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Datei ist kein Kindle-Buch, das TextMouth lesen kann."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75054,6 +75498,12 @@
     "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file." : {
       "comment" : "Why a file could not be imported as a web archive (.webarchive, which Safari saves): it does not hold a main page.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Datei ist kein Webarchiv, das TextMouth lesen kann. Sie ist möglicherweise beschädigt oder eine andere Art von Datei."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75082,6 +75532,12 @@
     "This file's markup nests more than %@ levels deep, which TextMouth can't read safely." : {
       "comment" : "First sentence of why a file was refused: its markup has elements inside elements more levels deep than TextMouth reads. %@ is the most levels, a number.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Markup dieser Datei ist mehr als %@ Ebenen tief verschachtelt, was TextMouth nicht sicher lesen kann."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75099,6 +75555,12 @@
     "This file's markup would take TextMouth far too long to read." : {
       "comment" : "First sentence of why a file was refused: its markup is built so that reading it would take far too long.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth würde viel zu lange brauchen, um das Markup dieser Datei zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75559,6 +76021,12 @@
     "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read." : {
       "comment" : "Why a web archive (.webarchive, which Safari saves) could not be imported: its main file is not a page or text, but a picture or a PDF. %@ is the file's media type, such as image/png, which stays as it is.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dieses Webarchiv enthält eine Datei vom Typ „%@“, keine Webseite und keinen Text, daher gibt es nichts zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75576,6 +76044,12 @@
     "Tilde" : {
       "comment" : "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tilde"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75610,6 +76084,12 @@
     "Time In" : {
       "comment" : "Choice of the headings sheet's display picker: each heading shows the time into the book at which it begins.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeit im Buch"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75627,6 +76107,12 @@
     "Time at %@" : {
       "comment" : "Label of the Go to Time field for a text book. %@ is the reading speed the times count at, such as \"500 words a minute\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeit bei %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75644,6 +76130,12 @@
     "Time exceeds book length." : {
       "comment" : "First sentence of the refusal when the time typed in Go to Time is after the end of a text book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Zeit überschreitet die Länge des Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75661,6 +76153,12 @@
     "Time exceeds the recording's length." : {
       "comment" : "First sentence of the refusal when the time typed in Go to Time is after the end of an audiobook.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Zeit überschreitet die Länge der Aufnahme."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75678,6 +76176,12 @@
     "Time in the recording" : {
       "comment" : "Label of the Go to Time field for an audiobook: the time is counted in the recording itself.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeit in der Aufnahme"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75902,6 +76406,12 @@
     "Times" : {
       "comment" : "Heading of the group in Playback settings that holds the setting about naming the speed beside times.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeiten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76373,6 +76883,12 @@
     "Toggle Bookmark" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Adds a bookmark at the reading position, or removes the one there. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lesezeichen umschalten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76478,6 +76994,12 @@
     "Total book time: %@" : {
       "comment" : "Part of the full Where Am I? summary: the book's whole length. %@ is the time in words, such as \"4 hours, 50 minutes\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gesamtzeit des Buchs: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76512,6 +77034,12 @@
     "Total time: %@" : {
       "comment" : "The book's total time as the reader's status row speaks it. %@ is the time in words, such as \"4 hours, 50 minutes, 33 seconds\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gesamtzeit: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76529,6 +77057,12 @@
     "Total: %@" : {
       "comment" : "The book's total time as the reader's status row shows it. %@ is a clock time such as 4:50:33.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gesamt: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76642,6 +77176,12 @@
     "Transcribe it again, then edit the new transcript." : {
       "comment" : "Sentence after the reason that an audiobook's transcript no longer fits its audio: what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkribiere es erneut und bearbeite dann das neue Transkript."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76676,6 +77216,12 @@
     "Transcribe it first, with Transcribe Audio." : {
       "comment" : "Second sentence of that message. Transcribe Audio is the name of a menu command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkribiere es zuerst mit „Audio transkribieren“."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77170,6 +77716,12 @@
     "Tries to get the book again" : {
       "comment" : "Hint of the Try Again button of the reader's view for a book that could not be got from the cloud.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Versucht, das Buch erneut zu laden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77272,6 +77824,12 @@
     "True Audio" : {
       "comment" : "The name of an audio format, in a failure to read a file and in Book Information: True Audio, in .tta files. A format's own name, usually kept as it is.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "True Audio"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77289,6 +77847,12 @@
     "Try Again" : {
       "comment" : "Button of the library index recovery sheet that reads the index file again. Also the name sentences use for it.\nButton of the reader's alert about a chapter that could not be downloaded; it tries the download again.\nButton of the reader's view for a book that could not be got from the cloud; it tries again.\nButton on the Library Not Available screen that checks the library's folder again.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Erneut versuchen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77306,6 +77870,12 @@
     "Try a Double Press" : {
       "comment" : "Button in the Shortcuts tab of Settings that lets the listener press a key twice to find out whether the double press time counts the two presses as a double press.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Doppeldruck testen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77425,6 +77995,12 @@
     "Turn off “%@” to save the metadata to the library only." : {
       "comment" : "Second sentence of that message. %@ is the shown name of the editor's switch that also writes the file, quoted.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Deaktiviere „%@“, um die Metadaten nur in der Bibliothek zu sichern."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77442,6 +78018,12 @@
     "Two different keys, not a double press." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time when the two presses were of different keys.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zwei verschiedene Tasten, kein Doppeldruck."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77459,6 +78041,12 @@
     "Two presses, %@ apart. Set the time above %@ to count them as one." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time when the two presses were too far apart for the time set. Both %1$@ and %2$@ are the time between the presses, such as \"0.7 seconds\"; the listener should set the double press time above it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zwei Tastendrücke im Abstand von %1$@. Stelle die Zeit höher als %2$@ ein, damit sie als einer zählen."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -77482,6 +78070,12 @@
     "Two presses, %@ apart. The double press time goes up to %@." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time when the two presses were farther apart than the longest time allowed. %1$@ is the time between the presses, such as \"2.5 seconds\", and %2$@ is the longest time allowed, such as \"2 seconds\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zwei Tastendrücke im Abstand von %1$@. Die Doppeldruck-Zeit reicht bis %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -77522,6 +78116,12 @@
     "Type a page as the book numbers it, such as 12 or xii." : {
       "comment" : "Last sentence of the Go to Page field's hint: what the user may type. 12 and xii are examples of page labels, a number and a roman numeral.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib eine Seite so ein, wie das Buch sie nummeriert, etwa 12 oder xii."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77539,6 +78139,12 @@
     "Type a page number." : {
       "comment" : "Message when Go to Page is chosen with nothing typed in its field.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib eine Seitenzahl ein."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77556,6 +78162,12 @@
     "Type a percent from 0 to 100, such as 47.5." : {
       "comment" : "Hint of the Go to Percent field: what the user may type. 47.5 is an example number; write it as the language writes numbers.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib einen Prozentwert von 0 bis 100 ein, etwa 47,5."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77601,6 +78213,12 @@
     "Type a title, then save again." : {
       "comment" : "Second sentence of that message: what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib einen Titel ein und sichere dann erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77629,6 +78247,12 @@
     "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions." : {
       "comment" : "Third sentence of the Edit Manifest explanation. TextEdit is the Mac's text editor; Smart Quotes, Edit and Substitutions are its menu names, so use the words macOS shows for them.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib gerade Anführungszeichen ein: Deaktiviere in TextEdit unter „Bearbeiten“ > „Ersetzungen“ die intelligenten Anführungszeichen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77833,6 +78457,12 @@
     "Underscore" : {
       "comment" : "Name of the punctuation key \"_\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Underscore\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unterstrich"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77884,6 +78514,12 @@
     "Undo" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Undo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Undoes the last edit.\nName of the Edit menu's Undo command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Widerrufen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78003,6 +78639,12 @@
     "Unknown" : {
       "comment" : "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.\nShown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.\nThe author shown for a book whose author nothing names, in the library's author column and a book's information.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unbekannt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78365,6 +79007,12 @@
     "Unsupported audio format." : {
       "comment" : "Why an audio file could not be imported: TextMouth does not read its audio format.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nicht unterstütztes Audioformat."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78455,6 +79103,12 @@
     "Up Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Up Arrow\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pfeil nach oben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78489,6 +79143,12 @@
     "Updates the default voice, speed, and pitch for every book without settings of its own." : {
       "comment" : "Hint and tooltip of the buttons that save a text book's voice, speed and pitch as the settings for every book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aktualisiert die Standardstimme, -geschwindigkeit und -tonhöhe für jedes Buch ohne eigene Einstellungen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78563,6 +79223,12 @@
     "Use Global Default" : {
       "comment" : "Button of the book's own settings sheet that removes its own end of book choice, so the setting for every book applies.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Globalen Standard verwenden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78750,6 +79416,12 @@
     "User" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + User\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Benutzer"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78767,6 +79439,12 @@
     "Using global voice, speed, and pitch settings" : {
       "comment" : "Announcement after a text book's own voice, speed and pitch were removed, so it uses the settings for every book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Globale Einstellungen für Stimme, Geschwindigkeit und Tonhöhe werden verwendet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78818,6 +79496,12 @@
     "Vertical Bar" : {
       "comment" : "Name of the punctuation key \"|\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Vertical Bar\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Senkrechter Strich"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78920,6 +79604,12 @@
     "Voice & Speed" : {
       "comment" : "Name of the reader's sheet for a text book's own voice, speed and pitch.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stimme und Geschwindigkeit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78988,6 +79678,12 @@
     "Voice language filter" : {
       "comment" : "What VoiceOver calls the voice sheet's menu that limits the voices listed to one language.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stimmen nach Sprache filtern"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79315,6 +80011,12 @@
     "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash." : {
       "comment" : "First sentence of the warning shown under the metadata editor's switch while it is on. MD5 is the name of a checksum and stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Warnung: Dadurch wird die Kopie der EPUB-Datei in der Bibliothek neu geschrieben und ihr MD5-Hash neu berechnet."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80211,6 +80913,12 @@
     "When this book ends" : {
       "comment" : "Title of the book's own settings menu that chooses what happens when this book ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wenn dieses Buch endet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80228,6 +80936,12 @@
     "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track." : {
       "comment" : "Fourth sentence of the Edit Manifest explanation: what happens when the user saves the manifest.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beim Sichern prüft TextMouth das Manifest und ordnet das Buch neu an, wobei deine Stelle im Track erhalten bleibt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80245,6 +80959,12 @@
     "When you save, the book updates and keeps your place as near as it can." : {
       "comment" : "Fourth sentence of the Edit Text explanation: what happens when the user saves the edited text.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beim Sichern wird das Buch aktualisiert und behält deine Stelle so genau wie möglich bei."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80313,6 +81033,12 @@
     "Where Am I?" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the reading position. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks the position and the selection.\nTitle of the reader toolbar's button that says where the reader is in the book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wo bin ich?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80330,6 +81056,12 @@
     "Where Am I? Announces current position in the book" : {
       "comment" : "What VoiceOver calls the reader toolbar's Where Am I? button while nothing is announced.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wo bin ich? Sagt die aktuelle Position im Buch an"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80347,6 +81079,12 @@
     "Where Am I? Full Summary" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the reading position. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wo bin ich? Vollständige Zusammenfassung"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80679,6 +81417,12 @@
     "Windows-1250 (Central European)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1250 (Mitteleuropäisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80696,6 +81440,12 @@
     "Windows-1251 (Cyrillic)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1251 (Kyrillisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80713,6 +81463,12 @@
     "Windows-1252 (Western European)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1252 (Westeuropäisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80730,6 +81486,12 @@
     "Windows-1253 (Greek)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1253 (Griechisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80747,6 +81509,12 @@
     "Windows-1254 (Turkish)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1254 (Türkisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80764,6 +81532,12 @@
     "Windows-1255 (Hebrew)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1255 (Hebräisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80781,6 +81555,12 @@
     "Windows-1256 (Arabic)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1256 (Arabisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80798,6 +81578,12 @@
     "Windows-1257 (Baltic)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1257 (Baltisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -80815,6 +81601,12 @@
     "Windows-874 (Thai)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-874 (Thai)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81099,6 +81891,12 @@
     "Words per minute" : {
       "comment" : "Label of the voice sheet's speed slider, shown beside it.\nTitle of the default speed slider in the Voice settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wörter pro Minute"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81116,6 +81914,12 @@
     "Works in" : {
       "comment" : "Label of the pop-up button in a keyboard shortcut action's row that chooses in which windows the shortcut works, such as every window or Library windows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gilt für"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81133,6 +81937,12 @@
     "Works in %@" : {
       "comment" : "Says where a keyboard shortcut works, in a row of the Shortcuts tab or an announcement. %@ names the windows, such as \"every window\", \"Library windows\", or \"the audio editor\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gilt für %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81167,6 +81977,12 @@
     "Writes the title, author, publisher, and date into the library's copy of this book." : {
       "comment" : "First sentence of the hint of the metadata editor's switch that also writes the EPUB file.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schreibt Titel, Autor, Verlag und Datum in die Bibliothekskopie dieses Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81218,6 +82034,12 @@
     "Year" : {
       "comment" : "Name of the book information sheet's field for an audiobook's year; VoiceOver reads it as the field's label.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jahr"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81466,6 +82288,12 @@
     "Your edited text was also kept as %@, in the book's package." : {
       "comment" : "Sentence saying where a backup of the user's edited text was kept. %@ is a file name such as content.md.edited-20261004T123012Z, which stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dein bearbeiteter Text wurde außerdem als %@ im Paket des Buchs behalten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81704,6 +82532,12 @@
     "a menu command has one shortcut" : {
       "comment" : "The reason, said after \"not recorded\", why a second key cannot be added to a menu command's shortcut. Lower case, since it follows a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ein Menübefehl hat nur einen Kurzbefehl"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81721,6 +82555,12 @@
     "a menu command's shortcut is one press of a key with Command or Control" : {
       "comment" : "The reason, said after \"not recorded\", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "der Kurzbefehl eines Menübefehls ist ein einzelner Tastendruck mit Befehl oder Control"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82049,6 +82889,12 @@
     "at %@ of %@ at %@" : {
       "comment" : "Part of the text Copy Reading Position copies, for a text book. %1$@ is the time reached and %2$@ the book's length, both written as clock times such as 2:10:24; %3$@ is the reading speed they count at, such as \"500 words a minute\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bei %1$@ von %2$@ mit %3$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -82072,6 +82918,12 @@
     "at %@ of %@ in the recording" : {
       "comment" : "Part of the text Copy Reading Position copies, for an audiobook. %1$@ is the time reached and %2$@ the recording's length, both written as clock times such as 2:13:05.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bei %1$@ von %2$@ in der Aufnahme"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -82194,6 +83046,12 @@
     "before page %@" : {
       "comment" : "Where the cursor is, said after \"the cursor is\": before the book's first page. %@ is the first page's label, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "vor Seite %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82522,6 +83380,12 @@
     "content.md is only in the cloud, so TextMouth leaves it as it is." : {
       "comment" : "Reason after a colon: a rebuild left the book's text file alone because it is only in the cloud. content.md is a file name and stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "content.md ist nur in der Cloud, daher lässt TextMouth sie unverändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82713,6 +83577,12 @@
     "edited by hand" : {
       "comment" : "Words that follow a field's name in what VoiceOver says, when the user typed that field's value themselves. Begins in lower case, as it follows a comma.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "von Hand bearbeitet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82730,6 +83600,12 @@
     "eighth" : {
       "comment" : "Ordinal word 8th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "achte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82764,6 +83640,12 @@
     "every window" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in every window.\": all windows. Lower case in English, since it is in the middle of a sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "jedes Fenster"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82894,6 +83776,12 @@
     "fifth" : {
       "comment" : "Ordinal word 5th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "fünfte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82934,6 +83822,12 @@
     "first" : {
       "comment" : "Ordinal word 1st, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "erste"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83070,6 +83964,12 @@
     "fourth" : {
       "comment" : "Ordinal word 4th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "vierte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83320,6 +84220,12 @@
     "heading “%@”" : {
       "comment" : "How an error names a section of an audiobook by its heading's title, in a sentence such as \"The heading “Tide Tables” starts …\". %@ is the title. A masculine noun phrase in English, without its article, starting with a lowercase letter.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Überschrift „%@“"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83512,6 +84418,12 @@
     "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es %@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83529,6 +84441,12 @@
     "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows." : {
       "comment" : "Reason after a colon, for an audiobook whose edited text nests too deeply; begins in lower case. %@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es %@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83546,6 +84464,12 @@
     "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows." : {
       "comment" : "Reason after a colon: the user added words to a chapter of a transcript that has no speech; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es fügt Wörter zu einem Kapitel ohne Sprache hinzu, wo sie nicht behalten werden können. Entferne sie und sichere erneut, dann wird der Text angezeigt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83563,6 +84487,12 @@
     "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows." : {
       "comment" : "Reason after a colon: the user changed a chapter's heading in an edited transcript; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es ändert die Überschrift eines Kapitels, die aus dem Audio stammt. Setze sie zurück und sichere erneut, dann wird der Text angezeigt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83608,6 +84538,12 @@
     "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows." : {
       "comment" : "Reason after a colon: the edited transcript's number of chapters no longer matches the audiobook's; begins in lower case. %1$@ and %2$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es enthält %1$@, das Hörbuch aber %2$@. Behalte jede Zeile, die mit <!-- chapter: beginnt, und sichere erneut, dann wird der Text angezeigt."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -83631,6 +84567,12 @@
     "it has no chapter with any text. Undo the change and save again, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text has no chapter with any text; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann öffnet sich das Buch."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83648,6 +84590,12 @@
     "it has no chapter with any text. Undo the change and save again, and the text shows." : {
       "comment" : "Reason after a colon, for an audiobook whose edited text has no chapter with any text; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann wird der Text angezeigt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83723,6 +84671,12 @@
     "it isn't UTF-8 text. Save it as UTF-8, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es ist kein UTF-8-Text. Sichere es als UTF-8, dann öffnet sich das Buch."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83740,6 +84694,12 @@
     "it isn't UTF-8 text. Save it as UTF-8, and the text shows." : {
       "comment" : "Reason after a colon, for an audiobook whose edited text is not UTF-8 text; begins in lower case. UTF-8 is a text encoding.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es ist kein UTF-8-Text. Sichere es als UTF-8, dann wird der Text angezeigt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84079,6 +85039,12 @@
     "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens." : {
       "comment" : "Reason after a colon, for a book whose edited text nests one chapter too deeply; begins in lower case. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -84102,6 +85068,12 @@
     "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows." : {
       "comment" : "Reason after a colon, for an audiobook whose edited text nests one chapter too deeply; begins in lower case. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -84354,6 +85326,12 @@
     "manifest.json could not be read." : {
       "comment" : "Reason an edited manifest.json could not be read back. manifest.json is a file name and stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json konnte nicht gelesen werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84371,6 +85349,12 @@
     "manifest.json has segments, which TextMouth writes only for a DAISY book it converts." : {
       "comment" : "First sentence of a reason an edited manifest.json was refused. manifest.json is a file name and stays as written; DAISY is a book format.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json enthält Segmente, die TextMouth nur für ein von ihm konvertiertes DAISY-Buch schreibt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84721,6 +85705,12 @@
     "ninth" : {
       "comment" : "Ordinal word 9th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "neunte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84738,6 +85728,12 @@
     "no copy of the edited text could be kept, so TextMouth leaves content.md as it is." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because no backup could be made; begins in lower case. content.md is a file name and stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "es konnte keine Kopie des bearbeiteten Texts behalten werden, daher lässt TextMouth content.md unverändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84772,6 +85768,12 @@
     "no pages" : {
       "comment" : "Names an empty set of a PDF's pages, in a sentence about which pages were read.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "keine Seiten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85089,6 +86091,12 @@
     "on page %@" : {
       "comment" : "Where the cursor is, said after \"the cursor is\": on a page. %@ is the page's label, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "auf Seite %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85106,6 +86114,12 @@
     "on the %@ page labelled %@" : {
       "comment" : "Where the cursor is, said after \"the cursor is\": on one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as \"second\" or \"11th\"; %2$@ is the label, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "auf Seite %2$@ – die %1$@ Seite mit dieser Bezeichnung"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -85290,6 +86304,12 @@
     "page %@" : {
       "comment" : "Names one page of a PDF, in a sentence about which pages were read. %@ is the page's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seite %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85307,6 +86327,12 @@
     "pages %@" : {
       "comment" : "Names several pages of a PDF, in a sentence about which pages were read. %@ is a list of page numbers and ranges, such as \"3 and 7\" or \"1 to 4, 7, and 9\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seiten %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85380,6 +86406,12 @@
     "reader windows" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in reader windows.\": the windows where a book is read. Lower case in English, since it is in the middle of a sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Leseansichtsfenster"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85475,6 +86507,24 @@
     "reading the text of %lld books again in another encoding" : {
       "comment" : "What the Mac is still doing when the user quits, said after \"Quit is waiting for\" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "den Text eines Buchs erneut in einer anderen Codierung lesen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "den Text von %lld Büchern erneut in einer anderen Codierung lesen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -85613,6 +86663,12 @@
     "second" : {
       "comment" : "Ordinal word 2nd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "zweite"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85670,6 +86726,12 @@
     "seventh" : {
       "comment" : "Ordinal word 7th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "siebte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85775,6 +86837,12 @@
     "sixth" : {
       "comment" : "Ordinal word 6th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "sechste"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85999,6 +87067,12 @@
     "tenth" : {
       "comment" : "Ordinal word 10th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "zehnte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86016,6 +87090,12 @@
     "text fields use it for editing" : {
       "comment" : "The reason, said after \"not recorded\", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Textfelder verwenden sie zum Bearbeiten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86097,6 +87177,12 @@
     "the audio editor" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in the audio editor.\": the audio editor's windows. Lower case in English, since it is in the middle of a sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "den Audio-Editor"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86114,6 +87200,12 @@
     "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it." : {
       "comment" : "Reason after a colon: an audiobook's audio changed after it was transcribed, so its transcript no longer fits; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "das Audio des Hörbuchs hat sich seit der Transkription geändert, daher passt sein Transkript nicht mehr dazu."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86131,6 +87223,12 @@
     "the audiobook's transcript can't be read now, so the edit can't be taken into it." : {
       "comment" : "Reason after a colon: an audiobook's transcript can't be read, so an edit can't be taken into it; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "das Transkript des Hörbuchs kann gerade nicht gelesen werden, daher kann die Änderung nicht darin übernommen werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86148,6 +87246,12 @@
     "the book's own file changed too. Open the book again to read its text from that file." : {
       "comment" : "Reason after a colon: the book's own file changed after the text was edited; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "die Datei des Buchs hat sich auch geändert. Öffne das Buch erneut, um seinen Text aus dieser Datei zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86165,6 +87269,12 @@
     "the book's record can't be changed now. TextMouth tries again when you next save or return." : {
       "comment" : "Reason after a colon: an edit could not be saved to the library now; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "der Eintrag des Buchs kann gerade nicht geändert werden. TextMouth versucht es erneut, wenn du das nächste Mal sicherst oder zurückkehrst."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86182,6 +87292,12 @@
     "the book's transcript changed too. Open the book again to read its text from that transcript." : {
       "comment" : "Reason after a colon: the book's transcript changed after the text was edited; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "auch das Transkript des Buchs hat sich geändert. Öffne das Buch erneut, um seinen Text aus diesem Transkript zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86329,6 +87445,12 @@
     "the edited transcript can't be laid over the audiobook's audio." : {
       "comment" : "Reason after a colon: an edited transcript could not be matched to the audiobook's audio; begins in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "das bearbeitete Transkript lässt sich nicht über das Audio des Hörbuchs legen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86601,6 +87723,12 @@
     "the recording window" : {
       "comment" : "Names where a keyboard shortcut works, inside a sentence such as \"Works in the recording window.\": the Record window. Lower case in English, since it is in the middle of a sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "das Aufnahmefenster"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86702,6 +87830,12 @@
     "third" : {
       "comment" : "Ordinal word 3rd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "dritte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86893,6 +88027,12 @@
     "untitled heading %@" : {
       "comment" : "How an error names a section of an audiobook whose heading has no title, in a sentence such as \"The untitled heading 3 starts …\". %@ is the heading's place among the book's headings, from 1, an identifier written without digit grouping. A masculine noun phrase in English, without its article, starting with a lowercase letter.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "unbenannte Überschrift %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
