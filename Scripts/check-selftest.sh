@@ -123,6 +123,10 @@ write_stubs() {
 #                               bytes (at least 600); empty packages none
 #   STUB_APP_TEXT=<text>        build also writes <text> into the app, as
 #                               Contents/Resources/planted.txt
+#   STUB_LPROJ=<form>           the language files build packages in the app, in
+#                               Contents/Resources/es.lproj: compact (the default),
+#                               xml-strings (a .strings left as XML), xml-dict (a
+#                               .stringsdict left as XML), or none
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 # In the log and output files, @ROOT@ stands for the repository root, since
@@ -131,6 +135,23 @@ write_stubs() {
 # with_root <file>: prints <file> with the repository root in place of @ROOT@.
 with_root() {
   sed "s#@ROOT@#$(pwd -P)#g" "$1"
+}
+
+# plant_language_files <resources folder> <form>: writes es.lproj's two files
+# there as the build phase leaves them (a text .strings of 8 bytes and a
+# binary .stringsdict of 16), or with one left in XML, or none at all.
+plant_language_files() {
+  mkdir -p "$1"
+  case $2 in none) return 0 ;; esac
+  mkdir -p "$1/es.lproj"
+  case $2 in
+    xml-strings) printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist/>' > "$1/es.lproj/Localizable.strings" ;;
+    *) printf '"a"="b";' > "$1/es.lproj/Localizable.strings" ;;
+  esac
+  case $2 in
+    xml-dict) printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist/>' > "$1/es.lproj/Localizable.stringsdict" ;;
+    *) printf 'bplist0012345678' > "$1/es.lproj/Localizable.stringsdict" ;;
+  esac
 }
 
 echo "make $*" >> "$STUB_LOG"
@@ -159,8 +180,11 @@ case $target in
       rm -rf build/TextMouth.app
       mkdir -p build/TextMouth.app/Contents/MacOS
       head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
+      # The language files count toward the size, so the executable is sized to leave the total at STUB_APP_BYTES.
+      plant_language_files build/TextMouth.app/Contents/Resources "${STUB_LPROJ:-compact}"
+      language_bytes=$(cat build/TextMouth.app/Contents/Resources/es.lproj/* 2>/dev/null | wc -c)
       dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
-        seek=$(( STUB_APP_BYTES - 600 )) 2>/dev/null
+        seek=$(( STUB_APP_BYTES - 600 - language_bytes )) 2>/dev/null
       if [ -n "${STUB_APP_TEXT:-}" ]; then
         mkdir -p build/TextMouth.app/Contents/Resources
         printf '%s' "$STUB_APP_TEXT" | sed "s#@ROOT@#$(pwd -P)#g" > build/TextMouth.app/Contents/Resources/planted.txt
@@ -240,6 +264,19 @@ import sys
 
 with open(os.environ["STUB_LOG"], "a") as log:
     log.write("app-size " + " ".join(sys.argv[1:]) + "\n")
+# The iPhone app the real tool builds, with the language files STUB_IOS_LPROJ names:
+# compact (the default), xml-strings, xml-dict, or none.
+form = os.environ.get("STUB_IOS_LPROJ", "compact")
+app = "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app"
+os.makedirs(app, exist_ok=True)
+if form != "none":
+    folder = app + "/es.lproj"
+    os.makedirs(folder, exist_ok=True)
+    xml = b'<?xml version="1.0" encoding="UTF-8"?>\n<plist/>'
+    with open(folder + "/Localizable.strings", "wb") as out:
+        out.write(xml if form == "xml-strings" else b'"a"="b";')
+    with open(folder + "/Localizable.stringsdict", "wb") as out:
+        out.write(xml if form == "xml-dict" else b"bplist00" + b"12345678")
 if os.environ.get("STUB_IOS_SIZE_OUTPUT"):
     with open(os.environ["STUB_IOS_SIZE_OUTPUT"]) as output:
         sys.stdout.write(output.read())
@@ -401,6 +438,8 @@ begin_case() {
   cp "$ROOT/Scripts/check.sh" "$sandbox/Scripts/check.sh"
   mkdir -p "$sandbox/Scripts/ios"
   cp "$IOS_SIZE_STUB" "$sandbox/Scripts/ios/app-size.py"
+  mkdir -p "$sandbox/Scripts/l10n"
+  cp "$ROOT/Scripts/l10n/compact_packs.py" "$sandbox/Scripts/l10n/compact_packs.py"
   cp "$ROOT/$RESOLVED" "$sandbox/$RESOLVED"
   stub_log="$sandbox/commands.log"
   : > "$stub_log"
@@ -832,6 +871,71 @@ real_run_cases() {
   expect_report "| Contents/Resources/planted.txt"
   refute_report "holds no folder of this Mac"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
+  end_case
+
+  begin_case "a Release app with compact language files passes, and the gate reports each file's size (TL16)"
+  run_gate
+  expect_status 0
+  expect_report "8 bytes  text   es.lproj/Localizable.strings"
+  expect_report "16 bytes  binary es.lproj/Localizable.stringsdict"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "the iPhone app's language files are reported too, after its size"
+  run_gate
+  expect_status 0
+  expect_report "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app:"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
+  end_case
+
+  begin_case "a Mac app whose .strings is still XML fails the gate before the iPhone app is built, naming the file"
+  run_gate STUB_LPROJ=xml-strings
+  expect_status 1
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
+  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact (the build phase \"Compact language files\", Scripts/l10n/compact_packs.py, did not write it)"
+  end_case
+
+  begin_case "a Mac app whose .stringsdict is still XML fails the gate, naming the file"
+  run_gate STUB_LPROJ=xml-dict
+  expect_status 1
+  expect_report "NOT COMPACT: es.lproj/Localizable.stringsdict is xml, not binary"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact"
+  end_case
+
+  begin_case "a Mac app with no language files fails the gate"
+  run_gate STUB_LPROJ=none
+  expect_status 1
+  expect_report "NOT COMPACT: no language files found"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact"
+  end_case
+
+  begin_case "an iPhone app with no language files fails the gate"
+  run_gate STUB_IOS_LPROJ=none
+  expect_status 1
+  expect_report "NOT COMPACT: no language files found"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a language file that is not compact"
+  end_case
+
+  begin_case "an iPhone app whose .strings is still XML fails the gate, naming the file"
+  run_gate STUB_IOS_LPROJ=xml-strings
+  expect_status 1
+  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a language file that is not compact"
+  end_case
+
+  begin_case "an iPhone app whose .stringsdict is still XML fails the gate, naming the file"
+  run_gate STUB_IOS_LPROJ=xml-dict -- --without-tests
+  expect_status 1
+  expect_report "NOT COMPACT: es.lproj/Localizable.stringsdict is xml, not binary"
+  expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app ships a language file that is not compact"
+  end_case
+
+  begin_case "a dry run says it would require every language file to be compact"
+  run_gate -- --dry-run
+  expect_status 0
+  expect_report "would require every language file of build/TextMouth.app to be compact"
+  expect_report "would require every language file of the iPhone app to be compact"
   end_case
 
   begin_case "a Release app of exactly the warning size passes with no warning"
