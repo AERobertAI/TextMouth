@@ -31,24 +31,24 @@ enum SSMLReader {
         var errorDescription: String? {
             switch self {
             case .notSSML(let rootElement):
-                return String(localized: "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”.",
-                              comment: "Why a file could not be imported as SSML (Speech Synthesis Markup Language): its first element is not speak. %@ is the name of the first element it has. SSML is a format's name.")
+                // Translators: Why a file could not be imported as SSML (Speech Synthesis Markup Language): its first element is not speak. %@ is the name of the first element it has. SSML is a format's name.
+                return String(localized: "This file is not SSML: it begins with the element “\(rootElement)”, not “speak”.")
             case .damaged(let reason):
-                return String(localized: "This SSML file is damaged or incomplete: \(reason).",
-                              comment: "Why an SSML (Speech Synthesis Markup Language) file could not be imported: it is damaged. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
+                // Translators: Why an SSML (Speech Synthesis Markup Language) file could not be imported: it is damaged. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.
+                return String(localized: "This SSML file is damaged or incomplete: \(reason).")
             case .unsafe(.encoding(let name)):
                 return SentenceWording.joined([
-                    String(localized: "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding.",
-                           comment: "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it."),
-                    String(localized: "Save it as UTF-8, then import it again.",
-                           comment: "Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is."),
+                    // Translators: First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it.
+                    String(localized: "TextMouth can't safely read this SSML file, because it is written in the \(name) encoding."),
+                    // Translators: Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is.
+                    String(localized: "Save it as UTF-8, then import it again."),
                 ])
             case .unsafe:
                 return SentenceWording.joined([
-                    String(localized: "TextMouth can't safely read this SSML file, because it defines entities of its own.",
-                           comment: "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read."),
-                    String(localized: "Open it in a text editor, take the entity definitions out, save it, then import it again.",
-                           comment: "Last sentence of why an SSML file was refused because it defines entities of its own: what to do."),
+                    // Translators: First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read.
+                    String(localized: "TextMouth can't safely read this SSML file, because it defines entities of its own."),
+                    // Translators: Last sentence of why an SSML file was refused because it defines entities of its own: what to do.
+                    String(localized: "Open it in a text editor, take the entity definitions out, save it, then import it again."),
                 ])
             }
         }

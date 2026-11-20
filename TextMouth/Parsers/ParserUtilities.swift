@@ -9,17 +9,17 @@ extension AVSpeechSynthesisVoice {
     var qualityLabel: String {
         switch quality {
         case .default:
-            return String(localized: "Standard",
-                          comment: "A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Standard quality\".")
+            // Translators: A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as "Samantha, Standard quality".
+            return String(localized: "Standard")
         case .enhanced:
-            return String(localized: "Enhanced",
-                          comment: "A voice's quality tier, better than Standard, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Enhanced quality\".")
+            // Translators: A voice's quality tier, better than Standard, shown beside its name in the voice pickers and spoken by VoiceOver, such as "Samantha, Enhanced quality".
+            return String(localized: "Enhanced")
         case .premium:
-            return String(localized: "Premium",
-                          comment: "A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Premium quality\".")
+            // Translators: A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as "Samantha, Premium quality".
+            return String(localized: "Premium")
         @unknown default:
-            return String(localized: "Unknown",
-                          comment: "A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.")
+            // Translators: A voice's quality tier when the system reports one TextMouth does not know, shown beside its name in the voice pickers.
+            return String(localized: "Unknown")
         }
     }
 }

@@ -24,20 +24,20 @@ enum PDFParserError: LocalizedError, LogDescribing {
     var errorDescription: String? {
         switch self {
         case .fileNotFound(let path):
-            return String(localized: "PDF file not found at: \(path)",
-                          comment: "Why a PDF could not be imported: there is no file at its path. %@ is the path.")
+            // Translators: Why a PDF could not be imported: there is no file at its path. %@ is the path.
+            return String(localized: "PDF file not found at: \(path)")
         case .cannotOpenPDF:
-            return String(localized: "The PDF file could not be opened.",
-                          comment: "Why a PDF could not be imported: PDFKit could not open it.")
+            // Translators: Why a PDF could not be imported: PDFKit could not open it.
+            return String(localized: "The PDF file could not be opened.")
         case .passwordProtected:
-            return String(localized: "This PDF needs a password to open.",
-                          comment: "Why a PDF could not be imported: it is locked with a password TextMouth does not have.")
+            // Translators: Why a PDF could not be imported: it is locked with a password TextMouth does not have.
+            return String(localized: "This PDF needs a password to open.")
         case .noTextContent:
-            return String(localized: "No text content could be extracted from the PDF.",
-                          comment: "Why a PDF could not be imported: none of its pages holds text.")
+            // Translators: Why a PDF could not be imported: none of its pages holds text.
+            return String(localized: "No text content could be extracted from the PDF.")
         case .ocrFailed(let reason):
-            return String(localized: "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason)).",
-                          comment: "Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop.")
+            // Translators: Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop.
+            return String(localized: "No text could be read from the PDF: it has no embedded text, and OCR could not run (\(reason)).")
         }
     }
 

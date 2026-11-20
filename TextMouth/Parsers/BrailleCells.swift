@@ -88,15 +88,15 @@ enum BrailleCells {
         // A dot's number names it (dot 7), so each number is written without grouping.
         switch dots.count {
         case 0:
-            return String(localized: "no dots",
-                          comment: "How VoiceOver says the blank braille cell, which has no raised dots.")
+            // Translators: How VoiceOver says the blank braille cell, which has no raised dots.
+            return String(localized: "no dots")
         case 1:
-            return String(localized: "dot \(dots[0])",
-                          comment: "How VoiceOver says a braille cell with one raised dot. %@ is the dot's number, 1 to 8, an identifier.")
+            // Translators: How VoiceOver says a braille cell with one raised dot. %@ is the dot's number, 1 to 8, an identifier.
+            return String(localized: "dot \(dots[0])")
         default:
             // Two or more: "dots 4 and 7", "dots 1, 2, and 7", the list in the region's own style.
-            return String(localized: "dots \(CountWording.list(dots))",
-                          comment: "How VoiceOver says a braille cell with two or more raised dots. %@ is the list of the dots' numbers, 1 to 8, such as \"4 and 7\" or \"1, 2, and 7\".")
+            // Translators: How VoiceOver says a braille cell with two or more raised dots. %@ is the list of the dots' numbers, 1 to 8, such as "4 and 7" or "1, 2, and 7".
+            return String(localized: "dots \(CountWording.list(dots))")
         }
     }
 

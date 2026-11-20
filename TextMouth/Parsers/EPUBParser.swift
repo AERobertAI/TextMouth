@@ -29,26 +29,26 @@ enum EPUBParserError: LocalizedError, LogDescribing {
     var errorDescription: String? {
         switch self {
         case .invalidArchive:
-            return String(localized: "The EPUB file could not be opened as a ZIP archive.",
-                          comment: "Why an EPUB book could not be imported: it could not be opened as a ZIP archive.")
+            // Translators: Why an EPUB book could not be imported: it could not be opened as a ZIP archive.
+            return String(localized: "The EPUB file could not be opened as a ZIP archive.")
         case .fileNotFound(let path):
-            return String(localized: "The EPUB file was not found at: \(path)",
-                          comment: "Why an EPUB book could not be imported: there is no file at its path. %@ is the path.")
+            // Translators: Why an EPUB book could not be imported: there is no file at its path. %@ is the path.
+            return String(localized: "The EPUB file was not found at: \(path)")
         case .missingContainer:
-            return String(localized: "The EPUB is missing META-INF/container.xml.",
-                          comment: "Why an EPUB book could not be imported: it lacks the file that names its package document. META-INF/container.xml is a file's path and stays as it is.")
+            // Translators: Why an EPUB book could not be imported: it lacks the file that names its package document. META-INF/container.xml is a file's path and stays as it is.
+            return String(localized: "The EPUB is missing META-INF/container.xml.")
         case .missingOPF:
-            return String(localized: "The EPUB is missing its package document (OPF file).",
-                          comment: "Why an EPUB book could not be imported: the package document (an OPF file) that its container names is not in it.")
+            // Translators: Why an EPUB book could not be imported: the package document (an OPF file) that its container names is not in it.
+            return String(localized: "The EPUB is missing its package document (OPF file).")
         case .invalidOPF:
-            return String(localized: "The EPUB package document could not be parsed.",
-                          comment: "Why an EPUB book could not be imported: its package document (an OPF file) could not be read.")
+            // Translators: Why an EPUB book could not be imported: its package document (an OPF file) could not be read.
+            return String(localized: "The EPUB package document could not be parsed.")
         case .missingSpine:
-            return String(localized: "The EPUB has no reading order (spine).",
-                          comment: "Why an EPUB book could not be imported: its package document lists no reading order, which EPUB calls the spine.")
+            // Translators: Why an EPUB book could not be imported: its package document lists no reading order, which EPUB calls the spine.
+            return String(localized: "The EPUB has no reading order (spine).")
         case .writeFailed(let msg):
-            return String(localized: "Failed to write EPUB metadata: \(msg)",
-                          comment: "Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English.")
+            // Translators: Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English.
+            return String(localized: "Failed to write EPUB metadata: \(msg)")
         case .unsafeFile(let file, let problem):
             return XMLInputGuard.refusalSentence(for: problem, file: file, in: .epubBook)
         case .damagedFile(let file, let reason):
@@ -56,20 +56,20 @@ enum EPUBParserError: LocalizedError, LogDescribing {
         case .noReadableChapters(let report):
             // Blank pages alone are not damage, so there is nothing to replace.
             guard !report.isComplete else {
-                return String(localized: "This EPUB book has no text to read.",
-                              comment: "Why an EPUB book could not be imported: every chapter in it is blank.")
+                // Translators: Why an EPUB book could not be imported: every chapter in it is blank.
+                return String(localized: "This EPUB book has no text to read.")
             }
             var sentences = [report.message]
             let blank = report.blankChapterCount
             if blank == 1 {
-                sentences.append(String(localized: "The other chapter has no text.",
-                                        comment: "Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank."))
+                // Translators: Sentence in the warning after an EPUB book was imported with chapters left out: exactly one other chapter is blank.
+                sentences.append(String(localized: "The other chapter has no text."))
             } else if blank > 1 {
-                sentences.append(String(localized: "The other \(blank) chapters have no text.",
-                                        comment: "Sentence in the warning after an EPUB book was imported with chapters left out: several other chapters are blank. %lld is how many, two or more."))
+                // Translators: Sentence in the warning after an EPUB book was imported with chapters left out: several other chapters are blank. %lld is how many, two or more.
+                sentences.append(String(localized: "The other \(blank) chapters have no text."))
             }
-            sentences.append(String(localized: "Get a fresh copy of the book, then import it again.",
-                                    comment: "Last sentence of why an EPUB book could not be imported because of damage: what to do."))
+            // Translators: Last sentence of why an EPUB book could not be imported because of damage: what to do.
+            sentences.append(String(localized: "Get a fresh copy of the book, then import it again."))
             return SentenceWording.joined(sentences)
         }
     }

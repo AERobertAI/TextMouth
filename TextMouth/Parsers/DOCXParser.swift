@@ -22,14 +22,14 @@ enum DOCXParserError: LocalizedError, LogDescribing {
     var errorDescription: String? {
         switch self {
         case .fileNotFound(let path):
-            return String(localized: "DOCX file not found at: \(path)",
-                          comment: "Why a Word document (.docx) could not be imported: there is no file at its path. %@ is the path.")
+            // Translators: Why a Word document (.docx) could not be imported: there is no file at its path. %@ is the path.
+            return String(localized: "DOCX file not found at: \(path)")
         case .invalidArchive:
-            return String(localized: "The DOCX file could not be opened as a ZIP archive.",
-                          comment: "Why a Word document (.docx) could not be imported: it could not be opened as a ZIP archive.")
+            // Translators: Why a Word document (.docx) could not be imported: it could not be opened as a ZIP archive.
+            return String(localized: "The DOCX file could not be opened as a ZIP archive.")
         case .missingEntry(let path):
-            return String(localized: "The DOCX file is missing required entry: \(path)",
-                          comment: "Why a Word document (.docx) could not be imported: a part it needs is not in it. %@ is the part's path inside the document.")
+            // Translators: Why a Word document (.docx) could not be imported: a part it needs is not in it. %@ is the part's path inside the document.
+            return String(localized: "The DOCX file is missing required entry: \(path)")
         case .malformedXML(let file, let reason):
             return PackageDamage.message(file: file, reason: reason, container: .document)
         case .unsafeXML(let file, let problem):
