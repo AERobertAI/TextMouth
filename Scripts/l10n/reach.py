@@ -1,6 +1,6 @@
 """reach.py: the hosted test classes a branch's localization could break (`l10n.py reach`, TL13).
 
-A conversion wave rewrites interface text as `String(localized: "...", comment: "...")`. Tests that compare the English text,
+A conversion wave rewrites interface text as `String(localized: "...")` under a `// Translators: ...` line. Tests that compare the English text,
 or read a converted file's source, can then fail. This finds them for the train request (`build-train.py request --classes`),
 from the branch's own diff, with no type name written in. It covers the Mac tests (TextMouthProductionTests) and the iPhone
 unit tests (TextMouthiOSTests), each class under the bundle that runs it. A class is reached when its file:

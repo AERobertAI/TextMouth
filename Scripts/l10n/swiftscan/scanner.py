@@ -99,14 +99,19 @@ def scan_texts(texts: Mapping[str, str]) -> List[Literal]:
     localizer = classify.Localizer(collect_resource_params(texts.values()))
     literals: List[Literal] = []
     for path, text in texts.items():
+        lines = text.split("\n")
         wording_file = classify.is_wording_name(PurePosixPath(path).name)
         for lit in lex(text, path):
             lit.wording = classify.in_wording_type(lit, wording_file)
             lit.bucket, lit.rule = classify.classify(lit, wording_file, localizer)
             lit.status = classify.status_of(lit)
             lit.findings = tuple(classify.findings_of(lit))
-            lit.needs_comment = classify.needs_comment(lit, text)
+            lit.needs_comment = classify.needs_comment(lit, text, lines)
+            lit.note_problem = classify.note_problem(lit, lines)
             literals.append(lit)
+    # A line that holds two keys cannot carry a note for each.
+    for lit in classify.shared_lines(literals):
+        lit.note_problem = lit.note_problem or "shared-line"
     return literals
 
 

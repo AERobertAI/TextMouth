@@ -15,9 +15,11 @@ Commands:
         Each unlocalized interface literal of one file, with its line and bucket, and the
         file's findings; --all adds the localized and the marked literals. A section of its own
         lists the SwiftUI literals (Text, Button, Label, Toggle, .accessibilityLabel, .help, ...) that
-        the compiler extracts with no comment, which `l10n.py check` refuses: move each into a wording
-        static with String(localized:comment:). Text("...", comment: "...") and a line marked
-        `// l10n: no` are not listed. They count as localized: the lint and the baseline do not change.
+        the compiler extracts with no translator's note, which `l10n.py check` refuses once synced: write a
+        `// Translators: ...` line directly above each, or move it into a wording static. A literal with such
+        a line above it and a line marked `// l10n: no` are not listed. They count as localized: the
+        baseline does not change. A last section lists the file's translator's notes that are missing or
+        misplaced (a `comment:` argument, a key with no note line, two keys on a line), which `lint` refuses.
     lint [--base REF] [--update-baseline | --rebuild-baseline] [--renamed OLD NEW]
         The ratchet behind `make lint-l10n`: fails when a file has more unlocalized interface
         literals than Scripts/l10n/scan-baseline.json records for it (or a file the baseline
@@ -26,6 +28,10 @@ Commands:
         which only the orchestrator runs, writes the baseline from scratch. A branch never edits
         the baseline: the lint passes while each count is at most its baseline, so one left high
         fails nothing, and the merge chain runs --update-baseline after every merge.
+
+A translator's note is a `// Translators: <note>` line directly above the line that holds a localized key's
+literal (TL15). `lint` fails, in every file, on a `comment:` argument of a localized call (Foundation compiles it into
+the app), on a key with no such line above it, and on a line that holds two keys; the baseline holds these at zero.
 
 A literal is interface text when it is shown or spoken to the user (see swiftscan/classify.py
 for the buckets). It is *localized* when it is the key of a call the compiler extracts
@@ -55,7 +61,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from swiftscan import areas, ratchet, report  # noqa: E402
-from swiftscan.classify import FINDING_HELP, NEEDS_COMMENT_HELP  # noqa: E402
+from swiftscan.classify import FINDING_HELP, NEEDS_COMMENT_HELP, NOTE_PROBLEM_HELP  # noqa: E402
 from swiftscan.scanner import Scan, scan_tree  # noqa: E402
 
 EXIT_OK = 0      # the command did its work
@@ -140,6 +146,8 @@ def cmd_show(args: argparse.Namespace, scan: Scan, root: Path) -> int:
         print(json.dumps({
             "file": file, "area": areas.area_of(file), **{s: n for s, n in counts.items()},
             "extractedWithoutComment": [{"line": lit.line, "call": lit.call, "text": lit.text} for lit in bare],
+            "noteProblems": [{"line": lit.line, "problem": lit.note_problem, "text": lit.text}
+                             for lit in scan.literals if lit.file == file and lit.note_problem],
             "literals": [{"line": lit.line, "bucket": lit.bucket, "rule": lit.rule, "status": lit.status,
                           "text": lit.text, "findings": list(lit.findings)} for lit in items],
         }, indent=2, ensure_ascii=False))
@@ -154,6 +162,14 @@ def cmd_show(args: argparse.Namespace, scan: Scan, root: Path) -> int:
         for lit in bare:
             label = f"line {lit.line} [{lit.call}]"
             print(f"  {label} {quote(lit.text, max(20, args.width - len(label) - 3))}")
+    wrong = [lit for lit in scan.literals if lit.file == file and lit.note_problem]
+    if wrong:
+        print(f"translator's notes missing or misplaced ({len(wrong)}):")
+        for lit in wrong:
+            label = f"line {lit.line} [{lit.note_problem}]"
+            print(f"  {label} {quote(lit.text, max(20, args.width - len(label) - 3))}")
+        for kind in sorted({lit.note_problem for lit in wrong}):
+            print(f"  {kind}: {NOTE_PROBLEM_HELP[kind]}")
     found = [(lit.line, kind) for lit in scan.literals if lit.file == file for kind in lit.findings]
     if found:
         print("findings:")
@@ -194,12 +210,17 @@ def cmd_lint(args: argparse.Namespace, scan: Scan, root: Path) -> int:
         print("scan: --renamed goes with --update-baseline", file=sys.stderr)
         return EXIT_USAGE
     problems = ratchet.find_problems(baseline, scan.literals, added_lines(root, args.base) if args.base else None)
+    # A translator's note is held at zero in every file, whatever the baseline says (TL15).
+    notes = ratchet.note_problems(scan.literals)
     if problems:
         print("\n".join(ratchet.format_problems(problems)))
         vanished = sorted(f for f in baseline if f not in set(scan.files))
         if vanished:
             print("Baseline entries of files that are gone (a rename? --update-baseline --renamed OLD NEW): "
                   + ", ".join(vanished))
+    if notes:
+        print("\n".join(ratchet.format_note_problems(notes)))
+    if problems or notes:
         return EXIT_FAIL
     lower = sum(1 for f, n in baseline.items() if counts.get(f, 0) < n)
     print(f"l10n lint: ok, {sum(counts.values()):,} unlocalized literals in {len(counts)} files, none above its baseline."

@@ -80,37 +80,53 @@ class ShowTests(TreeCase):
             'struct SleepPanel: View {\n'
             '    var body: some View {\n'
             '        Text("Sleep Timer")\n'
-            '        Text("Saved", comment: "Shown when the timer is stored")\n'
+            '        // Translators: Shown when the timer is stored\n'
+            '        Text("Saved")\n'
             '        Button("Cancel") { stop() }\n'
             '        Label("Debug", systemImage: "ladybug") // l10n: no\n'
             '    }\n'
             '}\n')
+    # The same panel with a note above every key, as the lint needs it (TL15).
+    NOTED = ('import SwiftUI\n'
+             'struct SleepPanel: View {\n'
+             '    var body: some View {\n'
+             '        // Translators: The panel\'s title\n'
+             '        Text("Sleep Timer")\n'
+             '        // Translators: Shown when the timer is stored\n'
+             '        Text("Saved")\n'
+             '        // Translators: The button that stops the timer\n'
+             '        Button("Cancel") { stop() }\n'
+             '        // Translators: A debugging label\n'
+             '        Label("Debug", systemImage: "ladybug") // l10n: no\n'
+             '    }\n'
+             '}\n')
 
     def test_show_lists_the_section_with_its_lines_and_the_call(self) -> None:
         self.write("Views/SleepPanel.swift", self.CODE)
         status, out, _err = run_main("--root", str(self.root), "show", "TextMouth/Views/SleepPanel.swift")
         self.assertEqual(status, 0)
-        self.assertIn("extracted without a comment: move into a wording static with `String(localized:comment:)` (2):", out)
+        self.assertIn("extracted with no translator's note: write a `// Translators: ...` line directly above it, or move it into a wording static with `String(localized:)` and a note above (2):", out)
         self.assertIn('line 4 [Text] "Sleep Timer"', out)
-        self.assertIn('line 6 [Button] "Cancel"', out)
-        self.assertNotIn("Saved", out)
-        self.assertNotIn("Debug", out)
+        self.assertIn('line 7 [Button] "Cancel"', out)
+        extracted = out.split("translator's notes missing")[0]
+        self.assertNotIn("Saved", extracted, "a key with a note above it is not listed")
+        self.assertNotIn("Debug", extracted)
 
     def test_show_has_no_section_for_a_file_without_such_literals(self) -> None:
         self.write("Views/Plain.swift", 'import SwiftUI\nstruct A: View { var body: some View { Text("Hi", comment: "c") } }\n')
         _status, out, _err = run_main("--root", str(self.root), "show", "TextMouth/Views/Plain.swift")
-        self.assertNotIn("extracted without a comment", out)
+        self.assertNotIn("extracted with no translator's note", out)
 
     def test_show_json_names_them(self) -> None:
         self.write("Views/SleepPanel.swift", self.CODE)
         _status, out, _err = run_main("--root", str(self.root), "show", "TextMouth/Views/SleepPanel.swift", "--json")
         data = json.loads(out)
         self.assertEqual([(item["line"], item["call"], item["text"]) for item in data["extractedWithoutComment"]],
-                         [(4, "Text", "Sleep Timer"), (6, "Button", "Cancel")])
+                         [(4, "Text", "Sleep Timer"), (7, "Button", "Cancel")])
 
     def test_the_lints_counts_do_not_change(self) -> None:
         """The literals are localized, so a baseline of zero passes and the counts name no file."""
-        self.write("Views/SleepPanel.swift", self.CODE)
+        self.write("Views/SleepPanel.swift", self.NOTED)
         self.assertEqual(self.lint("--rebuild-baseline")[0], 0)
         self.assertEqual(json.loads(self.baseline.read_text(encoding="utf-8"))["files"], {}, "no file has unlocalized text")
         status, out, _err = self.lint()
