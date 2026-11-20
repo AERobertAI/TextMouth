@@ -15,7 +15,11 @@
 #      without failing, when the app is larger than APP_SIZE_WARNING_MB, and
 #      reports the app's size either way, so growth is noticed long before
 #      the limit is reached. No file of the app may hold a folder of this
-#      Mac (its home folder, the checkout, or $TMPDIR). Still in step 3, a
+#      Mac (its home folder, the checkout, or $TMPDIR). Every language file
+#      of each app must be compact (TL16): each `.strings` UTF-8 text and each
+#      `.stringsdict` binary, as the build phase "Compact language files"
+#      writes them (Scripts/l10n/compact_packs.py); the gate reports each
+#      file's size and fails on one still in XML. Still in step 3, a
 #      plain run (not --without-tests) then builds the iPhone app for a device
 #      (Scripts/ios/app-size.py build) and holds it to the same two limits: a
 #      warning above APP_SIZE_WARNING_MB and a failure above APP_SIZE_LIMIT_MB,
@@ -132,6 +136,14 @@ readonly RELEASE_APP="build/TextMouth.app"
 # of the repository, its one definition, which `make ios-size` uses too), and
 # takes the heavy-work lock from no one: the gate's caller holds it.
 readonly IOS_SIZE_TOOL="Scripts/ios/app-size.py"
+# The iPhone app that tool builds (its derived data, in the products folder it
+# names, under the app's own name): where the gate looks for its language files.
+readonly IOS_APP="build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app"
+# The folder of the Mac app that holds its *.lproj folders; the iPhone app's is
+# the bundle itself.
+readonly MAC_RESOURCES="$RELEASE_APP/Contents/Resources"
+# The tool that writes the language files compact and checks that they are (TL16).
+readonly COMPACT_TOOL="Scripts/l10n/compact_packs.py"
 # The Release app's two size limits, in megabytes of a million bytes. Its
 # developer's real limit is 30 MB and its strict one 40 MB (November 16, 2026,
 # when FFmpeg was built in: the 20 MB of before was a target to optimize
@@ -547,6 +559,25 @@ require_app_free_of_mac_paths() {
   detail "$RELEASE_APP holds no folder of this Mac"
 }
 
+# require_language_files_compact <resources folder> <app name>: reports the size
+# of each language file in the folder that holds an app's *.lproj folders, and
+# fails the gate when the app has none, or when one is not in the compact form
+# the build phase "Compact language files" writes: a `.strings` that is XML or
+# binary instead of UTF-8 text, or a `.stringsdict` that is not binary. Such a
+# file means the phase did not run or did not finish (TL16).
+require_language_files_compact() {
+  local resources=$1 app=$2 report status=0
+  if (( dry_run )); then
+    detail "would require every language file of $app to be compact"
+    return 0
+  fi
+  report=$(python3 -I -B "$COMPACT_TOOL" --verify "$resources" 2>&1) || status=$?
+  detail_lines "" "$report"
+  if (( status != 0 )); then
+    fail "step $step_number of $STEP_COUNT ($step_title): $app ships a language file that is not compact (the build phase \"Compact language files\", Scripts/l10n/compact_packs.py, did not write it)"
+  fi
+}
+
 # require_ios_app_within_size_limit: builds the iPhone app for a device and
 # measures it with Scripts/ios/app-size.py, which counts the app's size as
 # app_size does and has the same two limits (its own tests check that they
@@ -725,10 +756,12 @@ main() {
   require_no_swift_warnings "$RELEASE_BUILD_LOG"
   require_app_within_size_limit
   require_app_free_of_mac_paths
+  require_language_files_compact "$MAC_RESOURCES" "$RELEASE_APP"
   if [[ ${GITHUB_ACTIONS:-} == true ]]; then
     detail "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true); the trains measure it there"
   else
     require_ios_app_within_size_limit
+    require_language_files_compact "$IOS_APP" "the iPhone app"
   fi
 
   if (( without_tests )); then
