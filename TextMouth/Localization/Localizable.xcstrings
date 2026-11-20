@@ -20,6 +20,12 @@
             "state" : "machine_translated",
             "value" : "«%@» reproduce el siguiente libro de la misma carpeta, en orden de clasificación."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "« %@ » lit le livre suivant du même dossier, selon l’ordre de tri."
+          }
         }
       }
     },
@@ -336,6 +342,12 @@
             "state" : "machine_translated",
             "value" : "%@ no están descargados."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ne sont pas téléchargés."
+          }
         }
       }
     },
@@ -403,6 +415,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se puede crear %1$@ porque no se encuentra la carpeta que lo contendría, %2$@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ne peut pas être créé, car le dossier qui le contiendrait, %2$@, est introuvable."
           }
         }
       }
@@ -558,6 +576,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ no pudo descargar el libro: %2$@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ n’a pas pu télécharger le livre : %2$@"
+          }
         }
       }
     },
@@ -574,6 +598,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ no pudo quitar la descarga del libro: %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ n’a pas pu retirer le téléchargement du livre : %2$@"
           }
         }
       }
@@ -625,6 +655,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ no pudo subir este libro: %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ n’a pas pu envoyer ce livre : %2$@"
           }
         }
       }
@@ -717,6 +753,12 @@
             "state" : "machine_translated",
             "value" : "%@ no indica si la copia de este libro en esta Mac es la más reciente, así que no se puede quitar su descarga, y esperar no lo cambiará."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’indique pas si la copie de ce livre sur ce Mac est la plus récente ; son téléchargement ne peut donc pas être retiré, et attendre n’y changera rien."
+          }
         }
       }
     },
@@ -728,6 +770,12 @@
             "state" : "machine_translated",
             "value" : "%@ descargado"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ téléchargé"
+          }
         }
       }
     },
@@ -738,6 +786,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ transcurridos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ écoulé"
           }
         }
       }
@@ -1069,6 +1123,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ aún no ha llegado a esta Mac. Puede que %2$@ todavía lo esté sincronizando."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ n’est pas encore arrivé sur ce Mac. %2$@ est peut-être en train de le synchroniser."
+          }
         }
       }
     },
@@ -1116,6 +1176,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ n’a rien téléchargé depuis %lld de secondes."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ n’a rien téléchargé depuis %lld seconde."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ n’a rien téléchargé depuis %lld secondes."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -1127,6 +1211,12 @@
             "state" : "machine_translated",
             "value" : "%@ no ha indicado que todos los archivos de este libro estén subidos, así que no se puede quitar su descarga: la única copia podría estar en esta Mac."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’a pas indiqué que tous les fichiers de ce livre sont envoyés ; son téléchargement ne peut donc pas être retiré : la seule copie se trouve peut-être sur ce Mac."
+          }
         }
       }
     },
@@ -1137,6 +1227,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ no ha indicado que la copia de este libro en esta Mac sea la más reciente, así que no se puede quitar su descarga."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’a pas indiqué que la copie de ce livre sur ce Mac est la plus récente ; son téléchargement ne peut donc pas être retiré."
           }
         }
       }
@@ -1155,6 +1251,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en otro momento."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ contient une version en conflit de %2$@, enregistrée à un autre moment."
+          }
         }
       }
     },
@@ -1171,6 +1273,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada el %3$@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ contient une version en conflit de %2$@, enregistrée le %3$@."
           }
         }
       }
@@ -1189,6 +1297,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@» el %4$@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ contient une version en conflit de %2$@, enregistrée sur « %3$@ » le %4$@."
+          }
         }
       }
     },
@@ -1206,6 +1320,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@»."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ contient une version en conflit de %2$@, enregistrée sur « %3$@ »."
+          }
         }
       }
     },
@@ -1216,6 +1336,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ guarda dos versiones de un archivo de este libro, así que no se puede quitar su descarga."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ contient deux versions d’un fichier de ce livre ; son téléchargement ne peut donc pas être retiré."
           }
         }
       }
@@ -1288,6 +1414,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ ya se mantiene en esta Mac."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ est déjà conservé sur ce Mac."
           }
         }
       }
@@ -1423,6 +1555,12 @@
             "state" : "machine_translated",
             "value" : "%@ se mantiene en esta Mac por la lista de lectura."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ est conservé sur ce Mac pour la liste de lecture."
+          }
         }
       }
     },
@@ -1472,6 +1610,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ solo está en la nube y aún no está en esta Mac, así que no se escribió nada encima."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ se trouve uniquement dans le cloud et n’est pas encore sur ce Mac ; rien n’a donc été écrit par-dessus."
           }
         }
       }
@@ -1590,6 +1734,12 @@
             "state" : "machine_translated",
             "value" : "%@ no está descargado."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’est pas téléchargé."
+          }
         }
       }
     },
@@ -1611,6 +1761,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ no se mantiene en esta Mac."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’est pas conservé sur ce Mac."
           }
         }
       }
@@ -1681,6 +1837,12 @@
             "state" : "machine_translated",
             "value" : "Puede que %@ haya cerrado la sesión o no se esté ejecutando."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’est peut-être pas connecté ou ne fonctionne pas."
+          }
         }
       }
     },
@@ -1697,6 +1859,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ pasó a la posición %2$@ de %3$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ déplacé à la position %2$@ sur %3$@"
           }
         }
       }
@@ -2041,6 +2209,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ apartó una copia en conflicto de %2$@: «%3$@», en %4$@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ a mis de côté une copie en conflit de %2$@ : « %3$@ », dans %4$@."
+          }
         }
       }
     },
@@ -2362,6 +2536,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ no se descargó"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ n’a pas été téléchargé"
           }
         }
       }
@@ -2908,6 +3088,12 @@
             "state" : "machine_translated",
             "value" : "%1$@, de %2$@, %3$@, en %4$@, agregado el %5$@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, de %2$@, %3$@, dans %4$@, date d’ajout : %5$@"
+          }
         }
       }
     },
@@ -3042,6 +3228,12 @@
             "state" : "machine_translated",
             "value" : "%1$@, luego %2$@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, puis %2$@"
+          }
         }
       }
     },
@@ -3076,6 +3268,12 @@
             "state" : "machine_translated",
             "value" : "%1$@, donde lleva %2$@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, où mène %2$@"
+          }
         }
       }
     },
@@ -3092,6 +3290,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@, que lleva a %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, qui mène à %2$@"
           }
         }
       }
@@ -3139,6 +3343,12 @@
           }
         },
         "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@. %2$@"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@. %2$@"
@@ -3484,6 +3694,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@: Hay cambios sin guardar, y cambiar de biblioteca los perdería."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ : des modifications ne sont pas enregistrées, et changer de bibliothèque les perdrait."
           }
         }
       }
@@ -3988,6 +4204,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld d’articles"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld article"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld articles"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4078,6 +4318,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld marcadores"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de signets"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld signet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld signets"
                 }
               }
             }
@@ -4364,6 +4628,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livres ne sont pas téléchargés."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livre n’est pas téléchargé."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livres ne sont pas téléchargés."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4548,6 +4836,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld libros de la biblioteca"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livres de la bibliothèque"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livre de la bibliothèque"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livres de la bibliothèque"
                 }
               }
             }
@@ -4787,6 +5099,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livres dans le cloud ont été ignorés."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livre dans le cloud a été ignoré."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livres dans le cloud ont été ignorés."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -4844,6 +5180,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%lld libros de esta biblioteca necesitan una versión más reciente de TextMouth. Se conservan tal como están, pero no se muestran."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld livres de cette bibliothèque nécessitent une version plus récente de TextMouth. Ils sont conservés tels quels, mais ne sont pas affichés."
           }
         }
       }
@@ -4935,6 +5277,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld libros de la lista de lectura"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livres dans la liste de lecture"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livre dans la liste de lecture"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livres dans la liste de lecture"
                 }
               }
             }
@@ -5221,6 +5587,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livres n’ont pas été téléchargés : %@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livre n’a pas été téléchargé : %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livres n’ont pas été téléchargés : %@"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -5264,6 +5654,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Se omitieron %lld libros cuyo texto editado aún no se puede usar."
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de livres dont le texte modifié ne peut pas encore être utilisé ont été ignorés."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livre dont le texte modifié ne peut pas encore être utilisé a été ignoré."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld livres dont le texte modifié ne peut pas encore être utilisé ont été ignorés."
                 }
               }
             }
@@ -5661,6 +6075,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de règles par défaut"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld règle par défaut"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld règles par défaut"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -5939,6 +6377,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld grupos de duplicados encontrados"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de groupes de doublons trouvés"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld groupe de doublons trouvé"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld groupes de doublons trouvés"
                 }
               }
             }
@@ -6225,6 +6687,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld d’épisodes"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld épisode"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld épisodes"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -6315,6 +6801,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld canales"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de flux"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld flux"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld flux"
                 }
               }
             }
@@ -6648,6 +7158,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de dossiers"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld dossier"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld dossiers"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -6691,6 +7225,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld horas"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld d’heures"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld heure"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld heures"
                 }
               }
             }
@@ -7575,6 +8133,12 @@
             "state" : "machine_translated",
             "value" : "%1$lld de %2$@, %3$lld por ciento"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld sur %2$@, %3$lld pour cent"
+          }
         }
       }
     },
@@ -7591,6 +8155,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$lld de %2$@, %3$lld %%"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld sur %2$@, %3$lld %%"
           }
         }
       }
@@ -7784,6 +8354,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld d’autres fichiers d’origine n’ont pas pu être retirés non plus."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld autre fichier d’origine n’a pas pu être retiré non plus."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld autres fichiers d’origine n’ont pas pu être retirés non plus."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -7888,6 +8482,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%lld por ciento descargado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld pour cent téléchargés."
           }
         }
       }
@@ -8077,6 +8677,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de règles"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld règle"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld règles"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -8120,6 +8744,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%1$lld reglas (%2$@ activadas)"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de règles (%@ activées)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld règle (%@ activée)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld règles (%@ activées)"
                 }
               }
             }
@@ -8261,6 +8909,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld segundos"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld de secondes"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld seconde"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld secondes"
                 }
               }
             }
@@ -9222,6 +9894,12 @@
             "state" : "machine_translated",
             "value" : "%1$lld/%2$lld"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld/%2$lld"
+          }
         }
       }
     },
@@ -9291,6 +9969,12 @@
             "state" : "machine_translated",
             "value" : "(ninguno)"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "(aucun)"
+          }
         }
       }
     },
@@ -9301,6 +9985,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "(omitir)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "(ignorer)"
           }
         }
       }
@@ -9319,6 +10009,12 @@
             "state" : "machine_translated",
             "value" : "0 = %1$@, 1 = %2$@ (puntos), 2 = %3$@ (+ comas), 3 = %4$@ (+ saltos de párrafo)"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "0 = %1$@, 1 = %2$@ (points), 2 = %3$@ (+ virgules), 3 = %4$@ (+ sauts de paragraphe)"
+          }
         }
       }
     },
@@ -9330,6 +10026,12 @@
             "state" : "machine_translated",
             "value" : "1 libro de esta biblioteca necesita una versión más reciente de TextMouth. Se conserva tal como está, pero no se muestra."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1 livre de cette bibliothèque nécessite une version plus récente de TextMouth. Il est conservé tel quel, mais n’est pas affiché."
+          }
         }
       }
     },
@@ -9340,6 +10042,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Queda 1 archivo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1 fichier restant"
           }
         }
       }
@@ -9407,6 +10115,12 @@
             "state" : "machine_translated",
             "value" : "Un libro que solo está en %@ necesita conexión a internet para abrirse."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un livre qui se trouve uniquement dans %@ nécessite une connexion à Internet pour être ouvert."
+          }
         }
       }
     },
@@ -9417,6 +10131,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Un libro que solo está en la nube necesita conexión a internet para abrirse."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Un livre qui se trouve uniquement dans le cloud nécessite une connexion à Internet pour être ouvert."
           }
         }
       }
@@ -9799,6 +10519,12 @@
             "state" : "machine_translated",
             "value" : "Aa"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aa"
+          }
         }
       }
     },
@@ -9832,6 +10558,12 @@
             "state" : "machine_translated",
             "value" : "Acción: omitir"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Action : ignorer"
+          }
         }
       }
     },
@@ -9853,6 +10585,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Activo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Actif"
           }
         }
       }
@@ -10036,6 +10774,12 @@
             "state" : "machine_translated",
             "value" : "Agregar regla"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajouter une règle"
+          }
         }
       }
     },
@@ -10047,6 +10791,12 @@
             "state" : "machine_translated",
             "value" : "Agregar regla de sustitución"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajouter une règle de substitution"
+          }
         }
       }
     },
@@ -10057,6 +10807,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Agregar una regla de sustitución nueva"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajouter une nouvelle règle de substitution"
           }
         }
       }
@@ -10079,6 +10835,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Agregar paso del gesto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajouter une étape de geste"
           }
         }
       }
@@ -10113,6 +10875,12 @@
             "state" : "machine_translated",
             "value" : "Agrega reglas para cambiar cómo se pronuncia el texto. Se aplican de arriba abajo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajoutez des règles pour modifier la façon dont le texte est lu. Elles s’appliquent de haut en bas."
+          }
         }
       }
     },
@@ -10134,6 +10902,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Agregar paso"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajouter une étape"
           }
         }
       }
@@ -10331,6 +11105,12 @@
             "state" : "machine_translated",
             "value" : "Agrega o quita un marcador en la posición actual"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajoute ou retire un signet à la position actuelle."
+          }
         }
       }
     },
@@ -10341,6 +11121,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Agrega botones de velocidad y la velocidad actual"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajoute des boutons de vitesse et la vitesse actuelle."
           }
         }
       }
@@ -10418,6 +11204,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Después de importar un libro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Après l’importation d’un livre"
           }
         }
       }
@@ -10592,6 +11384,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Todos los libros del mismo autor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tous les livres du même auteur"
           }
         }
       }
@@ -10849,6 +11647,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Et %lld d’autres copies, que le journal énumère."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Et %lld autre copie, que le journal énumère."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Et %lld autres copies, que le journal énumère."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -10976,6 +11798,12 @@
             "state" : "machine_translated",
             "value" : "Responde esta cuando termine el traslado."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Répondez à cette question à la fin du déplacement."
+          }
         }
       }
     },
@@ -10998,6 +11826,12 @@
             "state" : "machine_translated",
             "value" : "Cualquier otro libro omite The, A y An."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tout autre livre ignore The, A et An."
+          }
         }
       }
     },
@@ -11019,6 +11853,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Agrega un paso nuevo al final de la secuencia del gesto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ajoute une nouvelle étape à la séquence de gestes."
           }
         }
       }
@@ -11091,6 +11931,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aplica las reglas al texto antes de pronunciarlo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Applique les règles au texte avant sa lecture à voix haute."
           }
         }
       }
@@ -11384,6 +12230,12 @@
             "state" : "machine_translated",
             "value" : "Preguntar cada vez"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Demander à chaque fois"
+          }
         }
       }
     },
@@ -11428,6 +12280,12 @@
             "state" : "machine_translated",
             "value" : "Pregunta primero, luego da una identidad nueva a la biblioteca y la abre."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Demande d’abord, puis donne une nouvelle identité à la bibliothèque et l’ouvre."
+          }
         }
       }
     },
@@ -11439,6 +12297,12 @@
             "state" : "machine_translated",
             "value" : "Pregunta primero, luego crea un índice nuevo de la biblioteca con los libros de esta carpeta y la abre."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Demande d’abord, puis crée un nouvel index de bibliothèque à partir des livres de ce dossier et ouvre la bibliothèque."
+          }
         }
       }
     },
@@ -11449,6 +12313,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pregunta primero, luego reemplaza todas las reglas por las predeterminadas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Demande d’abord, puis remplace toutes les règles par celles par défaut."
           }
         }
       }
@@ -11471,6 +12341,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pregunta primero, luego escribe la identidad que esta Mac conoce de la biblioteca y la abre."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Demande d’abord, puis écrit l’identité que ce Mac connaît pour la bibliothèque et l’ouvre."
           }
         }
       }
@@ -11907,6 +12783,12 @@
             "state" : "machine_translated",
             "value" : "Reproducir automáticamente tras navegar"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lecture automatique après la navigation"
+          }
         }
       }
     },
@@ -11928,6 +12810,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Empieza a reproducir automáticamente cuando navegas a un encabezado, un marcador o un resultado de búsqueda."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Démarre automatiquement la lecture quand vous accédez à un en-tête, à un signet ou à un résultat de recherche."
           }
         }
       }
@@ -12072,6 +12960,12 @@
             "state" : "machine_translated",
             "value" : "Unidad de navegación hacia atrás: %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unité de navigation arrière : %@"
+          }
         }
       }
     },
@@ -12166,6 +13060,12 @@
             "state" : "machine_translated",
             "value" : "Bloquea la orden de reproducir falsa que macOS envía al quitarse unos audífonos Bluetooth."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bloque la commande de lecture parasite que macOS envoie quand des écouteurs Bluetooth sont retirés."
+          }
         }
       }
     },
@@ -12173,6 +13073,12 @@
       "comment" : "Heading of the Bluetooth group in the Miscellaneous settings. Bluetooth is a trademark and stays as written in most languages.",
       "localizations" : {
         "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bluetooth"
+          }
+        },
+        "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Bluetooth"
@@ -12187,6 +13093,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retraso de desconexión de Bluetooth"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Délai de déconnexion Bluetooth"
           }
         }
       }
@@ -12337,6 +13249,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Marcador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Signet"
           }
         }
       }
@@ -12608,6 +13526,12 @@
             "state" : "machine_translated",
             "value" : "No se pueden agregar libros mientras se mueve la biblioteca."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Impossible d’ajouter des livres pendant le déplacement de la bibliothèque."
+          }
         }
       }
     },
@@ -12618,6 +13542,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se pueden agregar libros mientras la biblioteca no está disponible."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Impossible d’ajouter des livres tant que la bibliothèque n’est pas disponible."
           }
         }
       }
@@ -12641,6 +13571,12 @@
             "state" : "machine_translated",
             "value" : "No se pueden abrir libros mientras se mueve la biblioteca."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Impossible d’ouvrir des livres pendant le déplacement de la bibliothèque."
+          }
         }
       }
     },
@@ -12651,6 +13587,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se pueden abrir libros mientras la biblioteca no está disponible."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Impossible d’ouvrir des livres tant que la bibliothèque n’est pas disponible."
           }
         }
       }
@@ -12663,6 +13605,12 @@
             "state" : "machine_translated",
             "value" : "Los libros permanecen en esta Mac hasta que quites sus descargas o macOS necesite espacio."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les livres restent sur ce Mac jusqu’à ce que vous retiriez leurs téléchargements ou que macOS ait besoin d’espace."
+          }
         }
       }
     },
@@ -12673,6 +13621,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Libros con el mismo título, sin importar el autor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livres ayant le même titre, quel que soit l’auteur"
           }
         }
       }
@@ -12974,6 +13928,12 @@
             "state" : "machine_translated",
             "value" : "Cancelar movimiento"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annuler le déplacement"
+          }
         }
       }
     },
@@ -13007,6 +13967,12 @@
             "state" : "machine_translated",
             "value" : "Cancelando"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annulation"
+          }
         }
       }
     },
@@ -13029,6 +13995,12 @@
             "state" : "machine_translated",
             "value" : "Cancelando el traslado."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annulation du déplacement."
+          }
         }
       }
     },
@@ -13039,6 +14011,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cancelando el traslado…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Annulation du déplacement…"
           }
         }
       }
@@ -13101,6 +14079,12 @@
             "state" : "machine_translated",
             "value" : "Distinguir mayúsculas"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sensible à la casse"
+          }
         }
       }
     },
@@ -13111,6 +14095,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Coincidencia que distingue mayúsculas y minúsculas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Correspondance sensible à la casse"
           }
         }
       }
@@ -13144,6 +14134,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cambiar ubicación…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Changer l’emplacement…"
           }
         }
       }
@@ -13210,6 +14206,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cambios sin guardar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Modifications non enregistrées"
           }
         }
       }
@@ -13338,6 +14340,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les modifications apportées à %lld d’autres livres n’ont pas pu être enregistrées non plus."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les modifications apportées à %lld autre livre n’ont pas pu être enregistrées non plus."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les modifications apportées à %lld autres livres n’ont pas pu être enregistrées non plus."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -13385,6 +14411,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les modifications apportées à %lld d’autres flux n’ont pas pu être enregistrées non plus."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les modifications apportées à %lld autre flux n’ont pas pu être enregistrées non plus."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Les modifications apportées à %lld autres flux n’ont pas pu être enregistrées non plus."
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -13395,6 +14445,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cambios en los libros guardados."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Modifications des livres enregistrées."
           }
         }
       }
@@ -13413,6 +14469,12 @@
             "state" : "machine_translated",
             "value" : "No se pudieron guardar los cambios del canal «%1$@»: %2$@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les modifications du flux « %1$@ » n’ont pas pu être enregistrées : %2$@"
+          }
         }
       }
     },
@@ -13429,6 +14491,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se pudieron guardar los cambios de «%1$@»: %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les modifications de « %1$@ » n’ont pas pu être enregistrées : %2$@"
           }
         }
       }
@@ -13486,6 +14554,12 @@
             "state" : "machine_translated",
             "value" : "El capítulo %@ no está en esta Mac."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le chapitre %@ n’est pas sur ce Mac."
+          }
         }
       }
     },
@@ -13537,6 +14611,12 @@
             "state" : "machine_translated",
             "value" : "El capítulo %1$@ de %2$@ no está descargado."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le chapitre %1$@ de %2$@ n’est pas téléchargé."
+          }
         }
       }
     },
@@ -13570,6 +14650,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Capítulo %1$@, desde %2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Chapitre %1$@, depuis %2$@"
           }
         }
       }
@@ -13688,6 +14774,12 @@
             "state" : "machine_translated",
             "value" : "Comprueba que %@ se esté ejecutando y que esta Mac tenga conexión, y luego elige Reintentar."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vérifiez que %@ fonctionne et que ce Mac est en ligne, puis choisissez Réessayer."
+          }
         }
       }
     },
@@ -13709,6 +14801,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Revisa los criterios de arriba y luego elige %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vérifiez les critères ci-dessus, puis choisissez « %@ »."
           }
         }
       }
@@ -13742,6 +14840,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Comprobando %@…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vérification de %@…"
           }
         }
       }
@@ -13842,6 +14946,12 @@
             "state" : "machine_translated",
             "value" : "Vuelve a comprobar la ubicación de la biblioteca y la abre si está allí."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vérifie à nouveau l’emplacement de la bibliothèque et ouvre la bibliothèque si elle s’y trouve."
+          }
         }
       }
     },
@@ -13875,6 +14985,12 @@
             "state" : "machine_translated",
             "value" : "Primero elige %@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez d’abord %@."
+          }
         }
       }
     },
@@ -13903,6 +15019,12 @@
             "state" : "machine_translated",
             "value" : "Elige %1$@ o %2$@ en %3$@, en la parte superior de la ventana de la biblioteca."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez %1$@ ou %2$@ dans %3$@, en haut de la fenêtre de la bibliothèque."
+          }
         }
       }
     },
@@ -13914,6 +15036,12 @@
             "state" : "machine_translated",
             "value" : "Elegir otra biblioteca"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir une autre bibliothèque"
+          }
         }
       }
     },
@@ -13924,6 +15052,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elegir otra biblioteca…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir une autre bibliothèque…"
           }
         }
       }
@@ -13969,6 +15103,12 @@
             "state" : "machine_translated",
             "value" : "Elegir biblioteca"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir la bibliothèque"
+          }
         }
       }
     },
@@ -13979,6 +15119,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elegir ubicación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir l’emplacement"
           }
         }
       }
@@ -14002,6 +15148,12 @@
             "state" : "machine_translated",
             "value" : "Elige Reintentar guardado y vuelve a intentarlo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez Réessayer l’enregistrement, puis réessayez."
+          }
         }
       }
     },
@@ -14023,6 +15175,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige una ubicación para la biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir un emplacement pour la bibliothèque"
           }
         }
       }
@@ -14068,6 +15226,12 @@
             "state" : "machine_translated",
             "value" : "Elige una carpeta que esté fuera de ella."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un dossier situé en dehors de la Corbeille."
+          }
         }
       }
     },
@@ -14078,6 +15242,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige una carpeta que contenga una biblioteca de TextMouth para usarla en su lugar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un dossier contenant une bibliothèque TextMouth pour l’utiliser à la place."
           }
         }
       }
@@ -14090,6 +15260,12 @@
             "state" : "machine_translated",
             "value" : "Elige una carpeta que contenga una biblioteca de TextMouth, o usa la ubicación predeterminada."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un dossier contenant une bibliothèque TextMouth, ou utilisez l’emplacement par défaut."
+          }
         }
       }
     },
@@ -14100,6 +15276,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige una carpeta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un dossier."
           }
         }
       }
@@ -14112,6 +15294,12 @@
             "state" : "machine_translated",
             "value" : "Elige una ubicación que esté fuera de ella."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un emplacement en dehors de celui-ci."
+          }
         }
       }
     },
@@ -14123,6 +15311,12 @@
             "state" : "machine_translated",
             "value" : "Elige una ubicación que no la contenga."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un emplacement qui ne le contient pas."
+          }
         }
       }
     },
@@ -14133,6 +15327,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elegir una ubicación nueva para la biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir un nouvel emplacement pour la bibliothèque"
           }
         }
       }
@@ -14156,6 +15356,12 @@
             "state" : "machine_translated",
             "value" : "Elige una voz para la lectura. El cambio se aplica de inmediato."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisit une voix pour la lecture. Le changement prend effet immédiatement."
+          }
         }
       }
     },
@@ -14178,6 +15384,12 @@
             "state" : "machine_translated",
             "value" : "Elige una carpeta vacía a la que trasladar la biblioteca, o una carpeta que contenga una biblioteca de TextMouth para usarla."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un dossier vide dans lequel déplacer la bibliothèque, ou un dossier contenant une bibliothèque TextMouth pour l’utiliser."
+          }
         }
       }
     },
@@ -14188,6 +15400,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige una carpeta vacía o una que contenga una biblioteca de TextMouth."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un dossier vide, ou un dossier contenant une bibliothèque TextMouth."
           }
         }
       }
@@ -14200,6 +15418,12 @@
             "state" : "machine_translated",
             "value" : "Elige una ubicación vacía e intenta de nuevo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un emplacement vide et réessayez."
+          }
         }
       }
     },
@@ -14210,6 +15434,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige una ubicación vacía."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un emplacement vide."
           }
         }
       }
@@ -14244,6 +15474,12 @@
             "state" : "machine_translated",
             "value" : "Elige otra carpeta."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un autre dossier."
+          }
         }
       }
     },
@@ -14266,6 +15502,12 @@
             "state" : "machine_translated",
             "value" : "Elegir otra biblioteca"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisir une autre bibliothèque"
+          }
         }
       }
     },
@@ -14276,6 +15518,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige otra ubicación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisissez un autre emplacement."
           }
         }
       }
@@ -14320,6 +15568,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elige ningún control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisit entre aucun contrôle par livre, un sélecteur partagé, ou un menu avec des sélecteurs distincts pour l’avance et le retour."
           }
         }
       }
@@ -14607,6 +15861,12 @@
             "state" : "machine_translated",
             "value" : "Elige si The, A y An al principio de un título cuentan al ordenar y al escribir las primeras letras de un título."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Choisit si The, A et An au début d’un titre comptent pour le tri et la saisie des premières lettres d’un titre."
+          }
         }
       }
     },
@@ -14817,6 +16077,12 @@
             "state" : "machine_translated",
             "value" : "Cerrar la hoja tras fijar el temporizador"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fermer la feuille après le réglage du minuteur"
+          }
         }
       }
     },
@@ -14827,6 +16093,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cerrar la hoja del temporizador de apagado tras fijar un temporizador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fermer la feuille du minuteur de mise en veille après le réglage d’un minuteur"
           }
         }
       }
@@ -14849,6 +16121,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cierra primero estos: %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fermez d’abord : %@."
           }
         }
       }
@@ -14882,6 +16160,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cierra estas opciones para que sigas leyendo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ferme ces options pour que vous puissiez continuer à lire."
           }
         }
       }
@@ -15076,6 +16360,12 @@
             "state" : "machine_translated",
             "value" : "Comparando"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comparaison"
+          }
         }
       }
     },
@@ -15241,6 +16531,12 @@
             "state" : "machine_translated",
             "value" : "Confirmar antes de quitar un libro"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Confirmer avant de retirer un livre"
+          }
         }
       }
     },
@@ -15251,6 +16547,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se encontraron copias en conflicto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Copies en conflit trouvées"
           }
         }
       }
@@ -15273,6 +16575,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Conéctate a internet e intenta de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Connectez-vous à Internet et réessayez."
           }
         }
       }
@@ -15318,6 +16626,12 @@
             "state" : "machine_translated",
             "value" : "Seguir leyendo"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Continuer la lecture"
+          }
         }
       }
     },
@@ -15339,6 +16653,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Seguir con el siguiente libro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Passer au livre suivant"
           }
         }
       }
@@ -15654,6 +16974,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "¿Copiar todos los datos de TextMouth a %@, validarlos y usar la ubicación nueva?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Copier toutes les données de TextMouth vers %@, les valider et utiliser le nouvel emplacement ?"
           }
         }
       }
@@ -16253,6 +17579,12 @@
             "state" : "machine_translated",
             "value" : "Patrón actual: %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Motif actuel : %@"
+          }
         }
       }
     },
@@ -16274,6 +17606,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ubicación personalizada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Emplacement personnalisé"
           }
         }
       }
@@ -16407,6 +17745,12 @@
             "state" : "machine_translated",
             "value" : "Directorio de datos: %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dossier de données : %@"
+          }
         }
       }
     },
@@ -16417,6 +17761,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Los datos ahora están en %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les données sont maintenant dans %@."
           }
         }
       }
@@ -16542,6 +17892,12 @@
             "state" : "machine_translated",
             "value" : "Tono predeterminado"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hauteur par défaut"
+          }
         }
       }
     },
@@ -16553,6 +17909,12 @@
             "state" : "machine_translated",
             "value" : "Tono predeterminado: %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hauteur par défaut : %@"
+          }
         }
       }
     },
@@ -16563,6 +17925,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Velocidad predeterminada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vitesse par défaut"
           }
         }
       }
@@ -16611,6 +17979,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Vitesse par défaut : %lld mots/min"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Vitesse par défaut : %lld mots/min"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Vitesse par défaut : %lld mots/min"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -16621,6 +18013,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ubicación predeterminada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Emplacement par défaut"
           }
         }
       }
@@ -16633,6 +18031,12 @@
             "state" : "machine_translated",
             "value" : "Tono predeterminado"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hauteur par défaut"
+          }
         }
       }
     },
@@ -16643,6 +18047,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tono predeterminado para libros nuevos. 1.0 es normal. Cada libro puede cambiarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hauteur par défaut pour les nouveaux livres. 1.0 est la valeur normale. Chaque livre peut la remplacer."
           }
         }
       }
@@ -16655,6 +18065,12 @@
             "state" : "machine_translated",
             "value" : "Velocidad predeterminada"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vitesse par défaut"
+          }
         }
       }
     },
@@ -16665,6 +18081,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Velocidad predeterminada para libros nuevos. Cada libro puede cambiarla con su propia velocidad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vitesse par défaut pour les nouveaux livres. Chaque livre peut la remplacer par sa propre vitesse."
           }
         }
       }
@@ -16767,6 +18189,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Eliminar después de importar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Supprimer après l’importation"
           }
         }
       }
@@ -17302,6 +18730,12 @@
             "state" : "machine_translated",
             "value" : "Los detalles están en la parte superior de la ventana de la biblioteca."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les détails se trouvent en haut de la fenêtre de la bibliothèque."
+          }
         }
       }
     },
@@ -17324,6 +18758,12 @@
             "state" : "machine_translated",
             "value" : "Diferencias"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Différences"
+          }
         }
       }
     },
@@ -17334,6 +18774,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Desactivar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Désactiver"
           }
         }
       }
@@ -17418,6 +18864,12 @@
             "state" : "machine_translated",
             "value" : "Retraso de desconexión"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Délai de déconnexion"
+          }
         }
       }
     },
@@ -17428,6 +18880,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retraso de desconexión: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Délai de déconnexion : %@"
           }
         }
       }
@@ -17440,6 +18898,12 @@
             "state" : "machine_translated",
             "value" : "Descartar"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ignorer"
+          }
         }
       }
     },
@@ -17450,6 +18914,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Descartar el aviso sobre %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ignorer l’avis concernant %@"
           }
         }
       }
@@ -17517,6 +18987,12 @@
             "state" : "machine_translated",
             "value" : "No retroceder si la pausa es menor que esto."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aucun retour en arrière si la pause est plus courte que cette durée."
+          }
         }
       }
     },
@@ -17539,6 +19015,12 @@
             "state" : "machine_translated",
             "value" : "Listo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminé."
+          }
         }
       }
     },
@@ -17549,6 +19031,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Listo. %@ en la biblioteca."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terminé. %@ dans la bibliothèque."
           }
         }
       }
@@ -17688,6 +19176,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Télécharger %lld de livres"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Télécharger %lld livre"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Télécharger %lld livres"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -17727,6 +19239,12 @@
             "state" : "machine_translated",
             "value" : "Descarga no quitada"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement non retiré"
+          }
         }
       }
     },
@@ -17737,6 +19255,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Descargar ahora"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Télécharger maintenant"
           }
         }
       }
@@ -17759,6 +19283,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Descárgalo primero: selecciónalo en la biblioteca y luego elige %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargez-le d’abord : sélectionnez-le dans la bibliothèque, puis choisissez %@."
           }
         }
       }
@@ -17859,6 +19389,12 @@
             "state" : "machine_translated",
             "value" : "Progreso de la descarga"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Progression du téléchargement"
+          }
         }
       }
     },
@@ -17942,6 +19478,12 @@
             "state" : "machine_translated",
             "value" : "Descárgalos primero: selecciónalos en la biblioteca y luego elige %@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargez-les d’abord : sélectionnez-les dans la bibliothèque, puis choisissez %@."
+          }
         }
       }
     },
@@ -17964,6 +19506,12 @@
             "state" : "machine_translated",
             "value" : "Se descargó %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ téléchargés"
+          }
         }
       }
     },
@@ -17975,6 +19523,12 @@
             "state" : "machine_translated",
             "value" : "Descargado."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargé."
+          }
         }
       }
     },
@@ -17985,6 +19539,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Descargado. Cargando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargé. Chargement."
           }
         }
       }
@@ -18008,6 +19568,12 @@
             "state" : "machine_translated",
             "value" : "Descargando %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement de %@"
+          }
         }
       }
     },
@@ -18025,6 +19591,12 @@
             "state" : "machine_translated",
             "value" : "Descargando %1$@ desde %2$@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement de %1$@ depuis %2$@."
+          }
         }
       }
     },
@@ -18035,6 +19607,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Descargando %@, un libro de la lista de lectura"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement de %@, un livre de la liste de lecture"
           }
         }
       }
@@ -18079,6 +19657,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Descargando %lld ahora"
+                }
+              }
+            }
+          }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Téléchargement de %lld d’entre eux en cours"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Téléchargement de %lld d’entre eux en cours"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Téléchargement de %lld d’entre eux en cours"
                 }
               }
             }
@@ -18130,6 +19732,30 @@
               }
             }
           }
+        },
+        "fr" : {
+          "variations" : {
+            "plural" : {
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Téléchargement de %lld de livres de la liste de lecture"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Téléchargement de %lld livre de la liste de lecture"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Téléchargement de %lld livres de la liste de lecture"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -18141,6 +19767,12 @@
             "state" : "machine_translated",
             "value" : "Descargando %lld %%"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement : %lld %%"
+          }
         }
       }
     },
@@ -18151,6 +19783,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Descargándolo ahora"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement en cours"
           }
         }
       }
@@ -18265,6 +19903,12 @@
             "state" : "machine_translated",
             "value" : "Descargándolos ahora"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement en cours"
+          }
         }
       }
     },
@@ -18309,6 +19953,12 @@
             "state" : "machine_translated",
             "value" : "Descargando, %lld por ciento"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargement, %lld pour cent"
+          }
         }
       }
     },
@@ -18319,6 +19969,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Descargas no quitadas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Téléchargements non retirés"
           }
         }
       }
@@ -18462,6 +20118,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Libros EPUB con el mismo identificador ISBN"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Livres EPUB ayant le même identifiant ISBN"
           }
         }
       }
@@ -18721,6 +20383,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Editar regla de sustitución"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Modifier la règle de substitution"
           }
         }
       }
@@ -18998,6 +20666,12 @@
             "state" : "machine_translated",
             "value" : "Activar"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Activer"
+          }
         }
       }
     },
@@ -19009,6 +20683,12 @@
             "state" : "machine_translated",
             "value" : "Activar %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Activer %@"
+          }
         }
       }
     },
@@ -19019,6 +20699,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Activar la supervisión de Bluetooth"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Activer la surveillance Bluetooth"
           }
         }
       }
@@ -19042,6 +20728,12 @@
             "state" : "machine_translated",
             "value" : "Activar el gesto de reinicio del temporizador"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Activer le geste de redémarrage du minuteur"
+          }
         }
       }
     },
@@ -19052,6 +20744,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Activar sustituciones de texto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Activer les substitutions de texte"
           }
         }
       }
@@ -19107,6 +20805,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Comportamiento al terminar el libro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comportement à la fin du livre"
           }
         }
       }
@@ -19789,6 +21493,12 @@
             "state" : "machine_translated",
             "value" : "Coincidencia exacta del contenido del archivo: el indicador más fiable"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Contenu de fichier strictement identique : l’indicateur le plus fiable"
+          }
         }
       }
     },
@@ -19879,6 +21589,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Experimental. Una secuencia de teclas multimedia o controles de AirPods dentro de una ventana de tiempo corta vuelve a armar el último temporizador de apagado, útil cuando uno acaba de expirar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Expérimental. Une séquence de touches multimédias ou de commandes AirPods dans une courte fenêtre de temps réarme le dernier minuteur de mise en veille, pratique après son expiration."
           }
         }
       }
@@ -20527,6 +22243,12 @@
             "state" : "machine_translated",
             "value" : "Duración del desvanecimiento"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Durée du fondu de sortie"
+          }
         }
       }
     },
@@ -20537,6 +22259,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Desvanecimiento: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fondu de sortie : %@"
           }
         }
       }
@@ -20582,6 +22310,12 @@
             "state" : "machine_translated",
             "value" : "No se pudo trasladar el directorio"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Échec du déplacement du dossier"
+          }
         }
       }
     },
@@ -20592,6 +22326,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se pudo reconstruir el directorio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Échec de la reconstruction de l’index de la bibliothèque"
           }
         }
       }
@@ -20604,6 +22344,12 @@
             "state" : "machine_translated",
             "value" : "No se pudo restablecer lo predeterminado"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Échec de la restauration des valeurs par défaut"
+          }
         }
       }
     },
@@ -20614,6 +22360,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se pudo cambiar de biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Échec du changement de bibliothèque"
           }
         }
       }
@@ -20847,6 +22599,12 @@
             "state" : "machine_translated",
             "value" : "Suscripciones a canales guardadas."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abonnements aux flux enregistrés."
+          }
         }
       }
     },
@@ -21057,6 +22815,12 @@
             "state" : "machine_translated",
             "value" : "Buscar libros duplicados"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rechercher les livres en double"
+          }
         }
       }
     },
@@ -21067,6 +22831,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Buscar libros duplicados…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rechercher les livres en double…"
           }
         }
       }
@@ -21079,6 +22849,12 @@
             "state" : "machine_translated",
             "value" : "Buscar duplicados"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rechercher les doublons"
+          }
         }
       }
     },
@@ -21089,6 +22865,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Buscar libros duplicados"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rechercher les livres en double"
           }
         }
       }
@@ -21111,6 +22893,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Busca libros duplicados en todas las carpetas por contenido del archivo, título o autor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Recherche les livres en double dans tous les dossiers, selon le contenu du fichier, le titre ou l’auteur."
           }
         }
       }
@@ -21184,6 +22972,12 @@
             "state" : "machine_translated",
             "value" : "Terminando"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Finalisation"
+          }
         }
       }
     },
@@ -21194,6 +22988,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Terminando el traslado…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Finalisation du déplacement…"
           }
         }
       }
@@ -21306,6 +23106,12 @@
             "state" : "machine_translated",
             "value" : "Los nombres de carpeta quedan como los escribiste."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Les noms de dossiers restent tels que vous les avez saisis."
+          }
         }
       }
     },
@@ -21327,6 +23133,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La ubicación en carpetas y el orden manual que estaban guardados solo en el índice ilegible se pierden de la biblioteca."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Le placement des dossiers et l’ordre manuel, stockés uniquement dans l’index illisible, sont perdus pour la bibliothèque."
           }
         }
       }
@@ -21560,6 +23372,12 @@
             "state" : "machine_translated",
             "value" : "Unidad de navegación hacia adelante: %@"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Unité de navigation avant : %@"
+          }
         }
       }
     },
@@ -21657,6 +23475,12 @@
             "state" : "machine_translated",
             "value" : "Libera espacio y vuelve a importarlo."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Libérez de l’espace, puis importez-la de nouveau."
+          }
         }
       }
     },
@@ -21678,6 +23502,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Desde %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Depuis %@"
           }
         }
       }
@@ -21756,6 +23586,12 @@
             "state" : "machine_translated",
             "value" : "Patrón del gesto"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Motif du geste"
+          }
         }
       }
     },
@@ -21767,6 +23603,12 @@
             "state" : "machine_translated",
             "value" : "Ventana de tiempo del gesto"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fenêtre de temps du geste"
+          }
         }
       }
     },
@@ -21777,6 +23619,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Consigue una copia nueva del archivo comprimido y vuelve a importarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Obtenez une nouvelle copie de l’archive, puis importez-la de nouveau."
           }
         }
       }
@@ -21822,6 +23670,12 @@
             "state" : "machine_translated",
             "value" : "Obteniendo tu biblioteca"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Récupération de votre bibliothèque"
+          }
         }
       }
     },
@@ -21833,6 +23687,12 @@
             "state" : "machine_translated",
             "value" : "Preparando"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Préparation"
+          }
         }
       }
     },
@@ -21843,6 +23703,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Preparando el traslado de la biblioteca…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Préparation du déplacement de la bibliothèque…"
           }
         }
       }
@@ -21866,6 +23732,12 @@
             "state" : "machine_translated",
             "value" : "Dar una identidad nueva…"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Donner une nouvelle identité…"
+          }
         }
       }
     },
@@ -21877,6 +23749,12 @@
             "state" : "machine_translated",
             "value" : "Dar identidad nueva"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Donner une nouvelle identité"
+          }
         }
       }
     },
@@ -21887,6 +23765,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "¿Dar una identidad nueva a la biblioteca?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Donner une nouvelle identité à la bibliothèque ?"
           }
         }
       }
@@ -22229,6 +24113,12 @@
             "state" : "machine_translated",
             "value" : "Reduce el volumen poco a poco antes de pausar cuando expira el temporizador de apagado. 0 pausa al instante."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Réduit progressivement le volume avant la mise en pause à l’expiration du minuteur de mise en veille. 0 met en pause instantanément."
+          }
         }
       }
     },
@@ -22305,6 +24195,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Encabezado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "En-tête"
           }
         }
       }
@@ -22436,6 +24332,12 @@
             "state" : "machine_translated",
             "value" : "Intenso"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fort"
+          }
         }
       }
     },
@@ -22535,6 +24437,12 @@
             "state" : "machine_translated",
             "value" : "Oculta este aviso sin guardar nada."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Masque cet avis sans rien enregistrer."
+          }
         }
       }
     },
@@ -22545,6 +24453,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mantén pulsada la tecla Mayúsculas al saltar para usar una cantidad de salto secundaria."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Maintenez la touche Maj enfoncée pendant le saut pour utiliser une durée de saut secondaire."
           }
         }
       }
@@ -22611,6 +24525,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cuánto tiempo se bloquean las órdenes multimedia después de que se desconecta un dispositivo Bluetooth. Auméntalo si la reproducción se reanuda al quitarte los audífonos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Durée pendant laquelle les commandes multimédias sont bloquées après la déconnexion d’un appareil Bluetooth. Augmentez-la si la lecture reprend après le retrait des écouteurs."
           }
         }
       }
@@ -22810,6 +24730,12 @@
             "state" : "machine_translated",
             "value" : "Archivo idéntico (MD5)"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fichier identique (MD5)"
+          }
         }
       }
     },
@@ -22849,6 +24775,12 @@
             "state" : "machine_translated",
             "value" : "Si %1$@ llega más tarde desde %2$@, puede que %3$@ conserve dos copias."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si %1$@ arrive plus tard depuis %2$@, %3$@ peut en conserver deux copies."
+          }
         }
       }
     },
@@ -22860,6 +24792,12 @@
             "state" : "machine_translated",
             "value" : "Si ya no está, elige %@."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "S’il a disparu, choisissez %@."
+          }
         }
       }
     },
@@ -22870,6 +24808,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Si el archivo llega más tarde desde %@, nombra la misma biblioteca."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si le fichier arrive plus tard depuis %@, il désigne la même bibliothèque."
           }
         }
       }
@@ -22899,6 +24843,12 @@
             "state" : "machine_translated",
             "value" : "Si el %1$@ de la propia biblioteca llega más tarde desde %2$@, puede que %3$@ conserve dos copias, y esta Mac y la otra no coincidirían en cuál es esta biblioteca."
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Si le fichier %1$@ propre à la bibliothèque arrive plus tard depuis %2$@, %3$@ peut en conserver deux copies, et ce Mac et l’autre ne seraient pas d’accord sur la bibliothèque dont il s’agit."
+          }
         }
       }
     },
@@ -22910,6 +24860,12 @@
             "state" : "machine_translated",
             "value" : "Se ignora al escribir"
           }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ignoré à la saisie"
+          }
         }
       }
     },
@@ -22920,6 +24876,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se ignora al escribir y al ordenar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ignoré à la saisie et au tri"
           }
         }
       }
@@ -22942,6 +24904,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Comportamiento de la importación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comportement à l’importation"
           }
         }
       }
