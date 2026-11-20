@@ -202,6 +202,230 @@ class StringsSmallerFormTests(PackCase):
             compact_packs.render_strings_binary({"a": 1})
 
 
+class SqueezeTests(PackCase):
+    """The squeeze across a folder's languages (TL18, items 2 and 3)."""
+
+    def write_tables(self, resources, language, strings=None, plurals=None):
+        """Write a language's `.strings` and `.stringsdict` as Xcode would (XML), for the tables given."""
+        if strings is not None:
+            self.write_xml(resources, language, "strings", strings)
+        if plurals is not None:
+            self.write_xml(resources, language, "stringsdict", plurals)
+
+    def read(self, resources, language, kind):
+        """What `<language>.lproj/Localizable.<kind>` holds, read back through Apple's parser; None when absent."""
+        path = resources / f"{language}.lproj" / f"Localizable.{kind}"
+        return compact_packs.apple_parse(path.read_bytes()) if path.exists() else None
+
+    def one_text(self, text="%lld 冊"):
+        """A plural entry whose every form is `text` (as a language with only `other` has it)."""
+        return plural_entry({"other": text}, variable="value")
+
+    def english_minutes(self):
+        """English's plural entry for `%lld minutes`, with two forms."""
+        return plural_entry({"one": "%lld minute", "other": "%lld minutes"}, variable="value")
+
+    # -- item 3: one form, one plain entry ------------------------------------------------------------------
+
+    def test_a_plural_entry_with_one_text_becomes_a_plain_entry(self):
+        resources = self.folder()
+        self.write_tables(resources, "ja", plurals={"%lld books": self.one_text()})
+        result = compact_packs.compact_folder_counting(resources)
+        self.assertEqual((result.errors, result.merged), ([], 1))
+        self.assertEqual(self.read(resources, "ja", "strings"), {"%lld books": "%lld 冊"})
+        # The emptied `.stringsdict` stays, as an empty binary list (nothing is deleted).
+        self.assertEqual(self.read(resources, "ja", "stringsdict"), {})
+        self.assertTrue((resources / "ja.lproj" / "Localizable.stringsdict").read_bytes().startswith(b"bplist00"))
+
+    def test_forms_that_are_all_one_text_in_a_language_with_several_categories_merge_too(self):
+        """Russian's four forms of one text: the same rule, whatever the language's categories."""
+        entry = plural_entry({"one": "%d шт.", "few": "%d шт.", "many": "%d шт.", "other": "%d шт."}, variable="value")
+        self.assertEqual(compact_packs.plain_text_of_plural(entry), "%d шт.")
+
+    def test_an_entry_with_two_different_forms_stays(self):
+        entry = plural_entry({"one": "%d libro", "other": "%d libros"}, variable="value")
+        self.assertIsNone(compact_packs.plain_text_of_plural(entry))
+
+    def test_an_entry_without_other_stays(self):
+        """A count in a category with no form reads nothing as a plural; as a plain entry it would read text."""
+        self.assertIsNone(compact_packs.plain_text_of_plural(plural_entry({"one": "%d x"}, variable="value")))
+
+    def test_an_entry_with_two_variables_stays(self):
+        entry = plural_entry({"other": "x"}, variable="a")
+        entry["b"] = plural_entry({"other": "x"}, variable="b")["b"]
+        self.assertIsNone(compact_packs.plain_text_of_plural(entry))
+
+    def test_a_format_with_text_around_the_variable_stays(self):
+        entry = plural_entry({"other": "%d x"}, variable="value")
+        entry["NSStringLocalizedFormatKey"] = "Read %#@value@ today"
+        self.assertIsNone(compact_packs.plain_text_of_plural(entry))
+
+    def test_a_variable_that_is_not_a_plural_rule_stays(self):
+        entry = plural_entry({"other": "x"}, variable="value")
+        entry["value"]["NSStringFormatSpecTypeKey"] = "NSStringDeviceSpecificRuleType"
+        self.assertIsNone(compact_packs.plain_text_of_plural(entry))
+
+    def test_an_unknown_key_in_the_variable_stays(self):
+        entry = plural_entry({"other": "x", "surprise": "x"}, variable="value")
+        self.assertIsNone(compact_packs.plain_text_of_plural(entry))
+
+    def test_a_non_text_form_stays(self):
+        self.assertIsNone(compact_packs.plain_text_of_plural(plural_entry({"other": 5}, variable="value")))
+        self.assertIsNone(compact_packs.plain_text_of_plural("not a dictionary"))
+
+    def test_a_later_argument_needs_every_specifier_positioned(self):
+        """`%2$#@value@` hands its form argument 2: a plain `%d` would read argument 1, so that form stays."""
+        later = plural_entry({"other": "%d x"}, variable="value")
+        later["NSStringLocalizedFormatKey"] = "%2$#@value@"
+        self.assertIsNone(compact_packs.plain_text_of_plural(later))
+        later = plural_entry({"other": "%1$@ and %2$lld, 100%%"}, variable="value")
+        later["NSStringLocalizedFormatKey"] = "%2$#@value@"
+        self.assertEqual(compact_packs.plain_text_of_plural(later), "%1$@ and %2$lld, 100%%")
+        first = plural_entry({"other": "%d x"}, variable="value")
+        first["NSStringLocalizedFormatKey"] = "%1$#@value@"
+        self.assertEqual(compact_packs.plain_text_of_plural(first), "%d x")
+
+    def test_an_entry_whose_key_is_already_plain_is_not_merged(self):
+        """A key held both ways keeps its two entries, so neither is lost."""
+        resources = self.folder()
+        self.write_tables(resources, "ja", strings={"%lld books": "古い"}, plurals={"%lld books": self.one_text()})
+        result = compact_packs.compact_folder_counting(resources)
+        self.assertEqual(result.merged, 0)
+        self.assertEqual(self.read(resources, "ja", "strings"), {"%lld books": "古い"})
+        self.assertEqual(list(self.read(resources, "ja", "stringsdict")), ["%lld books"])
+
+    def test_a_merge_creates_the_strings_file_a_language_lacked(self):
+        resources = self.folder()
+        self.write_tables(resources, "ja", plurals={"%lld books": self.one_text()})
+        self.assertFalse((resources / "ja.lproj" / "Localizable.strings").exists())
+        compact_packs.compact_folder(resources)
+        self.assertTrue((resources / "ja.lproj" / "Localizable.strings").exists())
+
+    # -- item 2: no entry that equals its key -----------------------------------------------------------------
+
+    def test_an_entry_equal_to_its_key_is_left_out(self):
+        resources = self.folder()
+        self.write_tables(resources, "es", strings={"TextMouth": "TextMouth", "Open": "Abrir"})
+        result = compact_packs.compact_folder_counting(resources)
+        self.assertEqual(result.dropped, 1)
+        self.assertEqual(self.read(resources, "es", "strings"), {"Open": "Abrir"})
+
+    def test_a_table_left_with_no_entry_is_an_empty_binary_list(self):
+        resources = self.folder()
+        self.write_tables(resources, "es", strings={"TextMouth": "TextMouth"})
+        compact_packs.compact_folder(resources)
+        path = resources / "es.lproj" / "Localizable.strings"
+        self.assertTrue(path.read_bytes().startswith(b"bplist00"))
+        self.assertEqual(self.read(resources, "es", "strings"), {})
+
+    def test_an_entry_stays_when_english_holds_the_key_as_a_plural_entry(self):
+        """Without it a lookup falls back to English's plural, which formats differently."""
+        resources = self.folder()
+        self.write_tables(resources, "en", plurals={"%lld minutes": self.english_minutes()})
+        self.write_tables(resources, "ja", strings={"%lld minutes": "%lld minutes"})
+        result = compact_packs.compact_folder_counting(resources)
+        self.assertEqual(result.dropped, 0)
+        self.assertEqual(self.read(resources, "ja", "strings"), {"%lld minutes": "%lld minutes"})
+
+    def test_an_entry_stays_when_english_holds_the_key_with_another_text(self):
+        resources = self.folder()
+        self.write_tables(resources, "en", strings={"Open": "Open file"})
+        self.write_tables(resources, "ja", strings={"Open": "Open"})
+        compact_packs.compact_folder(resources)
+        self.assertEqual(self.read(resources, "ja", "strings"), {"Open": "Open"})
+
+    def test_an_entry_goes_when_english_holds_the_key_as_the_key(self):
+        resources = self.folder()
+        self.write_tables(resources, "en", strings={"Open": "Open"})
+        self.write_tables(resources, "ja", strings={"Open": "Open", "Close": "閉じる"})
+        compact_packs.compact_folder(resources)
+        self.assertEqual(self.read(resources, "ja", "strings"), {"Close": "閉じる"})
+        self.assertEqual(self.read(resources, "en", "strings"), {})
+
+    def test_an_entry_stays_when_its_own_language_holds_the_key_as_a_plural_entry(self):
+        """A plain entry beside a plural one of the same key in its own language is not touched."""
+        resources = self.folder()
+        self.write_tables(
+            resources, "es", strings={"%lld books": "%lld books"},
+            plurals={"%lld books": plural_entry({"one": "%d libro", "other": "%d libros"}, "value")},
+        )
+        self.assertEqual(compact_packs.compact_folder_counting(resources).dropped, 0)
+
+    def test_a_merged_entry_equal_to_its_key_goes_when_english_does_not_block_it(self):
+        """The two items together: a one-text plural whose text is its key is merged, then left out."""
+        resources = self.folder()
+        self.write_tables(resources, "ja", plurals={"%lld%% done": plural_entry({"other": "%lld%% done"}, "value")})
+        result = compact_packs.compact_folder_counting(resources)
+        self.assertEqual((result.merged, result.dropped), (1, 1))
+
+    def test_each_table_name_is_squeezed_on_its_own(self):
+        """A table other than Localizable is separate: English's plural of `Open` in Localizable does not block it."""
+        resources = self.folder()
+        self.write_tables(resources, "en", plurals={"Open": plural_entry({"one": "a", "other": "b"}, "value")})
+        other = resources / "ja.lproj"
+        other.mkdir()
+        (other / "Other.strings").write_bytes(plistlib.dumps({"Open": "Open"}, fmt=plistlib.FMT_XML))
+        compact_packs.compact_folder(resources)
+        self.assertEqual(compact_packs.apple_parse((other / "Other.strings").read_bytes()), {})
+
+    def test_each_item_can_be_switched_off_for_measuring(self):
+        """`merge` and `drop` stand for items 3 and 2: with both off nothing is squeezed."""
+        resources = self.folder()
+        self.write_tables(resources, "ja", strings={"TextMouth": "TextMouth"}, plurals={"%lld books": self.one_text()})
+        tables = {path: compact_packs.read_table(path) for path in compact_packs.language_files(resources)}
+        none = compact_packs.squeeze_tables(resources, tables, merge=False, drop=False)
+        self.assertEqual((none.merged, none.dropped), (0, 0))
+        merge_only = compact_packs.squeeze_tables(resources, tables, drop=False)
+        self.assertEqual((merge_only.merged, merge_only.dropped), (1, 0))
+        drop_only = compact_packs.squeeze_tables(resources, tables, merge=False)
+        self.assertEqual((drop_only.merged, drop_only.dropped), (0, 1))
+
+    def test_infoplist_strings_keep_an_entry_equal_to_its_key(self):
+        """A missing key in InfoPlist.strings falls back to the Info.plist's value, not to the key."""
+        resources = self.folder()
+        lproj = resources / "ja.lproj"
+        lproj.mkdir()
+        (lproj / "InfoPlist.strings").write_bytes(plistlib.dumps({"CFBundleName": "CFBundleName"}, fmt=plistlib.FMT_XML))
+        result = compact_packs.compact_folder_counting(resources)
+        self.assertEqual(result.dropped, 0)
+        self.assertEqual(compact_packs.apple_parse((lproj / "InfoPlist.strings").read_bytes()), {"CFBundleName": "CFBundleName"})
+
+    def test_the_squeeze_does_not_change_its_input(self):
+        tables = {Path("r/ja.lproj/Localizable.strings"): {"a": "a"}}
+        compact_packs.squeeze_tables(Path("r"), tables)
+        self.assertEqual(tables, {Path("r/ja.lproj/Localizable.strings"): {"a": "a"}})
+
+    def test_a_folder_that_cannot_be_read_is_not_squeezed(self):
+        """An unreadable table might hold what a drop relies on: the rest is compacted as it is, and the build fails."""
+        resources = self.folder()
+        self.write_tables(resources, "es", strings={"TextMouth": "TextMouth"})
+        (resources / "en.lproj").mkdir()
+        (resources / "en.lproj" / "Localizable.stringsdict").write_bytes(b"\x00 not a property list")
+        result = compact_packs.compact_folder_counting(resources)
+        self.assertTrue(result.errors)
+        self.assertEqual(result.dropped, 0)
+        self.assertEqual(self.read(resources, "es", "strings"), {"TextMouth": "TextMouth"})
+
+    def test_running_twice_changes_nothing_the_second_time(self):
+        resources = self.folder()
+        self.write_tables(resources, "en", plurals={"%lld minutes": self.english_minutes()})
+        self.write_tables(
+            resources, "ja", strings={"TextMouth": "TextMouth", "%lld minutes": "%lld minutes"},
+            plurals={"%lld books": self.one_text()},
+        )
+        first = compact_packs.compact_folder_counting(resources)
+        self.assertGreater(first.changed, 0)
+        second = compact_packs.compact_folder_counting(resources)
+        self.assertEqual((second.changed, second.merged, second.dropped, second.errors), (0, 0, 0, []))
+
+    def test_the_command_line_reports_the_squeeze(self):
+        resources = self.folder()
+        self.write_tables(resources, "ja", strings={"TextMouth": "TextMouth"}, plurals={"%lld books": self.one_text()})
+        status, out, err = self.run_main(resources)
+        self.assertEqual((status, err), (0, ""))
+        self.assertIn("1 plural entr(ies) written plain, 1 entr(ies) equal to their key left out", out)
+
+
 class StringsdictFormTests(PackCase):
     """The `.stringsdict`: a binary property list holding the same plural rules."""
 

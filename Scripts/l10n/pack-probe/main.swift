@@ -86,7 +86,12 @@ func dumpLookups(catalog: ProbeCatalog, language: String) -> [DumpedLookup] {
         fail("Bundle.main chose \(Bundle.main.preferredLocalizations), not \(language), in \(Bundle.main.bundlePath)")
     }
     var lookups: [DumpedLookup] = []
+    let plural = Set(catalog.pluralKeys)
     for key in catalog.keys {
+        // A plural string's table text is a placeholder for the plural rules, or the plain text that replaced
+        // them, so what is compared is the text at each count, below. A plural key whose specifiers the lookups
+        // cannot feed has nothing to format, so its table text is compared after all.
+        if plural.contains(key), LanguagePackLookups.arguments(forKey: key, count: 0) != nil { continue }
         lookups.append(DumpedLookup(key: key, count: nil, text: LanguagePackLookups.effectiveText(Bundle.main, key: key)))
     }
     for key in catalog.pluralKeys {

@@ -292,7 +292,7 @@
       }
     },
     "%lld minutes": {
-      "comment": "A plural string in English whose Japanese text is a plain entry equal to the key: the entry must stay.",
+      "comment": "A plural string in English whose French and Japanese texts are plain entries equal to the key: they must stay, since English would answer French with its own one form at 0 and 1.",
       "localizations": {
         "en": {
           "variations": {
@@ -313,27 +313,9 @@
           }
         },
         "fr": {
-          "variations": {
-            "plural": {
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld de minutes"
-                }
-              },
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld minute"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld minutes"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld minutes"
           }
         },
         "ja": {

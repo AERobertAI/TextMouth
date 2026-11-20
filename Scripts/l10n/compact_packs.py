@@ -15,11 +15,19 @@ source; what ships is rewritten here, in the build, before the app is signed:
     their keys so that the same catalog gives the same bytes in every build
     (`make check` is a reproducibility gate), and a tie goes to the text form;
   * each `.stringsdict` becomes a binary property list (the text form would be
-    larger for plurals).
+    larger for plurals);
+  * across the languages of a folder, two entries Foundation can do without are
+    left out (TL18, `squeeze_tables`): a plural entry whose forms are all one
+    text (always so in a language with only `other`: Chinese, Japanese, Korean)
+    is written as a plain `.strings` entry, and a plain entry whose text is its
+    key is dropped, since Foundation returns the key for a key it cannot find
+    (kept when English's tables hold that key as something else).
 
 Nothing may change what a lookup returns, so every file is read back with
 Apple's own parser (`plutil`) after it is rendered, and the dictionary that
-comes back must equal the dictionary the file started as. On any difference or
+comes back must equal the dictionary written (the file's own, less what the
+squeeze left out: `make l10n-check` compares every lookup through `Bundle`,
+before and after, with the same language files in one bundle). On any difference or
 any error the original file is left in place, the file and the first
 differing key are named on standard error, and the exit status is 1, so the
 build fails rather than ship a changed lookup.
@@ -43,8 +51,10 @@ from __future__ import annotations
 import argparse
 import json
 import plistlib
+import re
 import subprocess
 import sys
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -205,30 +215,171 @@ def first_difference(want: Any, got: Any, path: str = "") -> str | None:
 # Compacting
 # ---------------------------------------------------------------------------
 
-def compact_file(path: Path) -> bool:
-    """Rewrite one language file compact, if it is not already; True when it changed.
+# ---------------------------------------------------------------------------
+# Squeezing (TL18)
+# ---------------------------------------------------------------------------
 
-    The new bytes are checked with Apple's parser before anything is written,
-    so a failure leaves `path` exactly as it was. Raises CompactError.
+# The language Foundation falls back to for a key a language's table lacks: the app's development region.
+DEVELOPMENT_LANGUAGE = "en"
+
+# Tables whose missing keys are not answered with the key: InfoPlist.strings falls back to the Info.plist's own
+# value, so an entry equal to its key is not redundant there (item 2 leaves such a table alone).
+TABLES_WITH_OTHER_DEFAULTS = frozenset({"InfoPlist"})
+
+# The keys of a `.stringsdict` entry that Xcode compiles from a plural string, and the plural categories.
+FORMAT_KEY = "NSStringLocalizedFormatKey"
+SPEC_TYPE_KEY = "NSStringFormatSpecTypeKey"
+VALUE_TYPE_KEY = "NSStringFormatValueTypeKey"
+PLURAL_RULE = "NSStringPluralRuleType"
+PLURAL_CATEGORIES = frozenset({"zero", "one", "two", "few", "many", "other"})
+
+# A format that is nothing but one plural variable: `%#@value@` or `%2$#@value@` (capturing the position and name).
+_WHOLE_VARIABLE = re.compile(r"^%(?:(\d+)\$)?#@([A-Za-z0-9_]+)@$")
+# A literal percent sign, or the start of a format specifier with its optional position (`%2$`).
+_SPECIFIER_START = re.compile(r"%%|%(?:(\d+)\$)?")
+
+
+def plain_text_of_plural(entry: Any) -> str | None:
+    """The one text of a plural entry whose forms are all the same, or None when the entry must stay as it is.
+
+    An entry is merged only when it is exactly: one variable, whose rule is the plural rule, and the format
+    nothing but that variable, with every category's text identical and `other` among them (so no count can
+    reach a category without a form). Then Foundation reads the same text for every count, and a plain
+    `.strings` entry holding it formats the same. Anything else (a second variable, a format with text around
+    the variable, an unknown key, a form that is not text) stays a `.stringsdict` entry.
+
+    A variable that is not the first argument (`%2$#@value@`) hands its form that argument, so a form's own
+    specifier without a position would read argument 1 as a plain entry: such a form stays too.
     """
-    original_bytes = path.read_bytes()
+    if not isinstance(entry, dict) or len(entry) != 2 or not isinstance(entry.get(FORMAT_KEY), str):
+        return None
+    whole = _WHOLE_VARIABLE.match(entry[FORMAT_KEY])
+    variable = entry.get(whole.group(2)) if whole else None
+    if not isinstance(variable, dict) or variable.get(SPEC_TYPE_KEY) != PLURAL_RULE:
+        return None
+    forms = {name: text for name, text in variable.items() if name not in (SPEC_TYPE_KEY, VALUE_TYPE_KEY)}
+    if "other" not in forms or not set(forms) <= PLURAL_CATEGORIES:
+        return None
+    texts = set(forms.values())
+    if len(texts) != 1 or not all(isinstance(text, str) for text in texts):
+        return None
+    (text,) = texts
+    if whole.group(1) not in (None, "1"):
+        # Every specifier of the text must say which argument it takes.
+        if any(match.group(0) != "%%" and match.group(1) is None for match in _SPECIFIER_START.finditer(text)):
+            return None
+    return text
+
+
+@dataclass
+class Squeezed:
+    """The tables after the squeeze, by file path, and what it did."""
+
+    tables: dict[Path, dict[str, Any]]
+    merged: int = 0
+    dropped: int = 0
+
+
+def squeeze_tables(
+    resources: Path, tables: dict[Path, dict[str, Any]], merge: bool = True, drop: bool = True
+) -> Squeezed:
+    """The language files' tables without what a lookup does not need (TL18); `tables` itself is not changed.
+
+    Item 3: a plural entry whose forms are all one text (`plain_text_of_plural`) becomes a plain `.strings` entry
+    of the same language, unless that language's `.strings` already holds the key.
+
+    Item 2: a plain entry whose text is exactly its key is left out, since Foundation returns the key for a key
+    it cannot find (not in `TABLES_WITH_OTHER_DEFAULTS`, whose missing keys have another answer). Foundation looks in the language's own tables, then in the development language's, so the
+    entry stays when the development language holds that key with another text (a plural entry, or a plain one
+    that differs), and when its own language also holds the key as a plural entry.
+
+    Every table name (`Localizable`) is squeezed on its own, across the languages. `merge` and `drop` switch
+    item 3 and item 2 off, which the size measurements use to count what each saves.
+    """
+    work = {path: dict(table) for path, table in tables.items()}
+    merged = dropped = 0
+
+    def table_at(language: str, name: str, suffix: str) -> dict[str, Any]:
+        """The working table of a language's file, created empty (and written only if it gains entries)."""
+        return work.setdefault(resources / f"{language}.lproj" / f"{name}{suffix}", {})
+
+    names = sorted({path.stem for path in tables})
+    for name in names:
+        languages = sorted({path.parent.name.removesuffix(".lproj") for path in tables if path.stem == name})
+        # Item 3, language by language.
+        for language in languages:
+            plurals = table_at(language, name, STRINGSDICT_SUFFIX)
+            plain = table_at(language, name, STRINGS_SUFFIX)
+            for key in sorted(plurals):
+                text = plain_text_of_plural(plurals[key]) if merge else None
+                if text is not None and key not in plain:
+                    plain[key] = text
+                    del plurals[key]
+                    merged += 1
+        # Item 2, against the development language's tables as they now are.
+        english_plurals = table_at(DEVELOPMENT_LANGUAGE, name, STRINGSDICT_SUFFIX) if DEVELOPMENT_LANGUAGE in languages else {}
+        english_plain = table_at(DEVELOPMENT_LANGUAGE, name, STRINGS_SUFFIX) if DEVELOPMENT_LANGUAGE in languages else {}
+        for language in languages:
+            plain = table_at(language, name, STRINGS_SUFFIX)
+            plurals = table_at(language, name, STRINGSDICT_SUFFIX)
+            for key in sorted(plain if drop and name not in TABLES_WITH_OTHER_DEFAULTS else ()):
+                if plain[key] != key or key in plurals:
+                    continue
+                # Falling back to English must still give the key: English's own copy is dropped (or is the key).
+                if language != DEVELOPMENT_LANGUAGE and (key in english_plurals or english_plain.get(key, key) != key):
+                    continue
+                del plain[key]
+                dropped += 1
+    return Squeezed(work, merged, dropped)
+
+
+def write_table(path: Path, table: dict[str, Any], original_bytes: bytes | None) -> bool:
+    """Write `table` compact at `path`; True when the file changed. Raises CompactError.
+
+    `original_bytes` is what the file holds now (None when it does not exist), so a file that already holds
+    these bytes is left alone, not even touched. The new bytes are read back with Apple's parser and must
+    equal `table` before anything is written, so a failure leaves `path` exactly as it was.
+    """
     try:
-        original = read_original(original_bytes)
-        if not isinstance(original, dict):
-            raise CompactError("it is not a dictionary")
-        if not original:
-            return False  # An empty table has no text form Apple's parser reads, and nothing to save.
-        render = render_smaller_strings if path.suffix == STRINGS_SUFFIX else render_stringsdict
-        compact = render(original)
+        if path.suffix == STRINGS_SUFFIX and table:
+            compact = render_smaller_strings(table)
+        else:
+            # A `.stringsdict`, or an empty `.strings`: an empty text file is not one Apple's parser reads, but an
+            # empty binary list is, so a table left with nothing in it is written as one.
+            compact = render_stringsdict(table)
         if compact == original_bytes:
-            return False  # Already compact: left alone, not even touched.
-        difference = first_difference(original, apple_parse(compact))
+            return False
+        difference = first_difference(table, apple_parse(compact))
         if difference:
             raise CompactError(f"a lookup would change: {difference}")
     except CompactError as error:
         raise CompactError(f"{path}: {error}") from error
     path.write_bytes(compact)
     return True
+
+
+def read_table(path: Path) -> dict[str, Any]:
+    """The dictionary a language file holds now. Raises CompactError for a file that is not a dictionary."""
+    try:
+        table = read_original(path.read_bytes())
+        if not isinstance(table, dict):
+            raise CompactError("it is not a dictionary")
+    except CompactError as error:
+        raise CompactError(f"{path}: {error}") from error
+    return table
+
+
+def compact_file(path: Path) -> bool:
+    """Rewrite one language file compact, if it is not already; True when it changed.
+
+    Only this file is read, so nothing is squeezed (TL18's items 2 and 3 compare languages: `compact_folder`).
+    The new bytes are checked with Apple's parser before anything is written,
+    so a failure leaves `path` exactly as it was. Raises CompactError.
+    """
+    original = read_table(path)
+    if not original:
+        return False  # An empty table has no text form Apple's parser reads, and nothing to save.
+    return write_table(path, original, path.read_bytes())
 
 
 def language_files(resources: Path) -> list[Path]:
@@ -242,16 +393,59 @@ def language_files(resources: Path) -> list[Path]:
 def compact_folder(resources: Path) -> tuple[int, list[str]]:
     """Compact every language file under `resources`; returns (files changed, error messages).
 
-    Every file is tried even after a failure, so one run names every file at fault.
+    The languages are squeezed first (`squeeze_tables`, TL18), so each table is written without what Foundation
+    can do without. Every file is tried even after a failure, so one run names every file at fault; when a file
+    cannot be read nothing is squeezed, since a table not seen could hold what a squeeze relies on, and each
+    readable file is only compacted.
     """
-    changed = 0
-    errors: list[str] = []
-    for path in language_files(resources):
+    result = compact_folder_counting(resources)
+    return result.changed, result.errors
+
+
+@dataclass
+class FolderResult:
+    """What compacting a folder did: files written, errors, and what the squeeze left out."""
+
+    changed: int = 0
+    errors: list[str] = field(default_factory=list)
+    # Plural entries rewritten as plain entries (item 3), and entries left out for equalling their key (item 2).
+    merged: int = 0
+    dropped: int = 0
+
+
+def compact_folder_counting(resources: Path) -> FolderResult:
+    """`compact_folder`, with the squeeze's counts as well."""
+    result = FolderResult()
+    files = language_files(resources)
+    # Every file is read before any is written, since a squeeze looks across languages.
+    tables: dict[Path, dict[str, Any]] = {}
+    for path in files:
         try:
-            changed += compact_file(path)
+            tables[path] = read_table(path)
         except CompactError as error:
-            errors.append(str(error))
-    return changed, errors
+            result.errors.append(str(error))
+    if result.errors:
+        # A table that could not be read might hold what a squeeze relies on: compact the readable ones as they are.
+        for path in files:
+            try:
+                result.changed += compact_file(path)
+            except CompactError as error:
+                if str(error) not in result.errors:
+                    result.errors.append(str(error))
+        return result
+
+    squeezed = squeeze_tables(resources, tables)
+    result.merged, result.dropped = squeezed.merged, squeezed.dropped
+    for path, table in squeezed.tables.items():
+        try:
+            if not table and path not in tables:
+                continue  # A table that was never there and holds nothing is not created.
+            if not table and path in tables and not tables[path]:
+                continue  # An empty table that came empty has nothing to save.
+            result.changed += write_table(path, table, path.read_bytes() if path in tables else None)
+        except CompactError as error:
+            result.errors.append(str(error))
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -322,12 +516,16 @@ def main(argv: list[str] | None = None) -> int:
     if len(folders) != 1:
         print("compact_packs: give one folder to compact", file=sys.stderr)
         return 2
-    changed, errors = compact_folder(folders[0])
-    for error in errors:
+    result = compact_folder_counting(folders[0])
+    for error in result.errors:
         print(f"compact_packs: error: {error}", file=sys.stderr)
-    if errors:
+    if result.errors:
         return 1
-    print(f"compact_packs: {changed} language file(s) compacted, {len(language_files(folders[0])) - changed} already compact")
+    total = len(language_files(folders[0]))
+    print(
+        f"compact_packs: {result.changed} language file(s) compacted, {total - result.changed} already compact; "
+        f"{result.merged} plural entr(ies) written plain, {result.dropped} entr(ies) equal to their key left out"
+    )
     return 0
 
 
