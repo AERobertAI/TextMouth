@@ -4,6 +4,12 @@
     "\"%@\" is not a number." : {
       "comment" : "Message when the text typed in Go to Percent is no number. %@ is what the user typed, shown in quotation marks.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„%@“ ist keine Zahl."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -135,6 +141,12 @@
     "%@ (current heading) - level %lld" : {
       "comment" : "What VoiceOver says for the heading being read, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ (aktuelle Überschrift) – Ebene %2$lld"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -215,6 +227,12 @@
     "%@ - level %lld" : {
       "comment" : "What VoiceOver says for a heading in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ – Ebene %2$lld"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -611,6 +629,12 @@
     "%@ can't open while its edited text can't be used: %@" : {
       "comment" : "First part of the message a reader shows in place of a book whose edited text can't be used. %1$@ is the book's title; %2$@ is the reason, a clause that begins in lower case and ends with its full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ lässt sich nicht öffnen, solange sein bearbeiteter Text nicht verwendet werden kann: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1119,6 +1143,12 @@
     "%@ for This Book" : {
       "comment" : "Heading at the top of the reader's sheet for a book's own settings. %@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ für dieses Buch"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1253,6 +1283,12 @@
     "%@ has its default, %@" : {
       "comment" : "Said in the row of a keyboard shortcut action that has lost its default key to another action. %1$@ is the name of the action that now has the key, and %2$@ is the key in words, such as \"Shift + Command + T\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ hat %2$@ als Standard"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1407,6 +1443,12 @@
     "%@ has no words, so the cursor is %@." : {
       "comment" : "Announcement after Go to Page when the page typed has no words of its own. %1$@ names the page, such as \"Page 7\" or \"The first page labelled 3\"; %2$@ says where the cursor is, such as \"on page 8\" or \"before page 1\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ enthält keine Wörter, daher steht der Cursor %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1775,6 +1817,12 @@
     "%@ is an audiobook without a transcript, so it has no text to edit." : {
       "comment" : "First sentence of the message when Edit Text is chosen for an audiobook with no transcript. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ist ein Hörbuch ohne Transkript und hat daher keinen Text zum Bearbeiten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1906,6 +1954,12 @@
     "%@ is in a skipped section, so the cursor is %@." : {
       "comment" : "Announcement after Go to Page when every word of the page typed is in a skipped section. %1$@ names the page, such as \"Page 40\" or \"The first page labelled 3\"; %2$@ says where the cursor is, such as \"on page 52\" or \"before page 1\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ liegt in einem übersprungenen Abschnitt, daher steht der Cursor %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -2128,6 +2182,12 @@
     "%@ isn't an audiobook of tracks, so it has no manifest to edit." : {
       "comment" : "Message when the user asks to edit the manifest of a book that is not an audiobook of tracks. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ist kein Hörbuch aus Tracks und hat daher kein Manifest zum Bearbeiten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2408,6 +2468,12 @@
     "%@ not recorded for %@: %@" : {
       "comment" : "Announced by VoiceOver when a key cannot become a keyboard shortcut. %1$@ is the key in words, %2$@ is the action's name, and %3$@ is the reason, which starts in lower case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ nicht für %2$@ übernommen: %3$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -2448,6 +2514,12 @@
     "%@ now waits before %@, in case it is pressed twice." : {
       "comment" : "Announced by VoiceOver after a key's double press was given to an action: the key's single press now waits a moment before it acts, in case a second press follows. %1$@ is the key in words, such as \"J\", and %2$@ is the name of the action of its single press.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ wartet jetzt kurz, bevor %2$@ ausgeführt wird, falls die Taste zweimal gedrückt wird."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -2517,6 +2589,24 @@
     "%@ of %lld chapters could not be read" : {
       "comment" : "Starts the warning after an import that left chapters out: some of the book's chapters could not be read. %1$@ is how many could not be read, with digit grouping, and %2$lld how many chapters the book has, always two or more. Has no full stop.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ von %2$lld Kapitel konnte nicht gelesen werden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ von %2$lld Kapiteln konnten nicht gelesen werden"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -2599,6 +2689,12 @@
     "%@ or %@" : {
       "comment" : "Joins two keyboard shortcuts of one action with \"or\", as in \"Space or K\". %1$@ is the shortcuts so far and %2$@ the next one.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ oder %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -2690,6 +2786,12 @@
     "%@ remaining at current speed" : {
       "comment" : "Time left in the book as the reader's status row speaks it when no speed is named: it counts at the speed now set. %@ is the time in words, such as \"3 hours, 44 minutes, 1 second\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ verbleibend bei aktueller Geschwindigkeit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2741,6 +2843,12 @@
     "%@ reset to default: %@" : {
       "comment" : "Announced by VoiceOver after a keyboard shortcut action was given its default keys again. %1$@ is the action's name and %2$@ is its keys in words, such as \"Option + Shift + Command + B\", or \"No shortcut\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ auf Standard zurückgesetzt: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -2917,6 +3025,12 @@
     "%@ through the book" : {
       "comment" : "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ im Buch"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3013,6 +3127,12 @@
     "%@ tries again, %@ quits without saving, %@ keeps TextMouth open." : {
       "comment" : "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ versucht es erneut, %2$@ beendet ohne Sichern, %3$@ lässt TextMouth geöffnet."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3036,6 +3156,12 @@
     "%@ twice" : {
       "comment" : "A keyboard shortcut that is its key pressed twice quickly, as spoken or shown. %@ is the shortcut, such as \"W\" or \"Command + I\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ zweimal"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3064,6 +3190,12 @@
     "%@ uses it in the menus" : {
       "comment" : "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ belegt sie in den Menüs"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3200,6 +3332,12 @@
     "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was." : {
       "comment" : "Message when adding a book back to the library stopped because no backup of the text it held could be made. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wurde nicht wieder hinzugefügt: Der Text aus seinem Paket konnte vorher nicht gesichert werden, deshalb hat TextMouth ihn unverändert gelassen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3362,6 +3500,12 @@
     "%@ works in %@." : {
       "comment" : "Announced by VoiceOver after the listener chose where a keyboard shortcut works. %1$@ is the action's name and %2$@ names the windows, such as \"every window\" or \"Library windows\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ gilt in %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3465,6 +3609,12 @@
     "%@, %@ quality" : {
       "comment" : "VoiceOver label of a voice in the voice pop-up. %1$@ is the voice's name and %2$@ is its quality, such as Enhanced.\nWhat VoiceOver says for a voice in the voice sheet's menu. %1$@ is the voice's name; %2$@ is its quality, such as Enhanced.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, Qualität %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -4047,6 +4197,12 @@
     "%@, edited by hand" : {
       "comment" : "What VoiceOver says for a field of the book information sheet that the user edited by hand. %@ is the field's name, such as \"Book title\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, von Hand bearbeitet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4144,6 +4300,12 @@
     "%@, recorded for %@" : {
       "comment" : "Announced by VoiceOver after a key became a keyboard shortcut. %1$@ is the key in words, such as \"Shift + R\" or \"W twice\", and %2$@ is the action's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, für %2$@ übernommen"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -4361,6 +4523,12 @@
     "%@:" : {
       "comment" : "Caption beside the headings sheet's level filter. %@ is the filter's label; the colon follows it as the language writes a label before a control.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@:"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4378,6 +4546,12 @@
     "%@: %@" : {
       "comment" : "A label and its value on one line, such as \"Elapsed: 1:04\". %1$@ is the label and %2$@ its value. English puts a colon and a space between them.\nA label, a colon, and its value, as one line of the audio editor's sheets and the filter presets. %1$@ is the label and %2$@ the value.\nA name, a colon, and its value, such as a keyboard shortcut action's name and its keys, or a control's label and its value. %1$@ is the name and %2$@ is the value.\nThe name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.\nTitle of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.\nTitle of the reader's sheet for a book's own settings. %1$@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"; %2$@ is the book's title.\nWhat VoiceOver says for a detail of Book Information. %1$@ is the detail's label; %2$@ is its value.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -4401,6 +4575,12 @@
     "%@: %@ by %@" : {
       "comment" : "Title of a reader window. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title; %3$@ is the book's author.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@ von %3$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -4470,6 +4650,12 @@
     "%@: %@." : {
       "comment" : "Warning after an import that left chapters out: how many chapters could not be read, a colon, then each chapter with its file and why, which are in English, separated by semicolons. %1$@ is the count sentence, such as \"2 of 14 chapters could not be read\", and %2$@ the chapters.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -5370,6 +5556,24 @@
     "%lld WPM" : {
       "comment" : "The reader toolbar's caption for a text book's speed. WPM is the abbreviation of words per minute; %lld is the number of words.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Wörter/Min."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Wörter/Min."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -7414,6 +7618,24 @@
     "%lld chapters" : {
       "comment" : "A count of chapters inside a sentence about an edited transcript, such as \"3 chapters\". %lld is the number.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Kapitel"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Kapitel"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -7485,6 +7707,24 @@
     "%lld chapters could not be read" : {
       "comment" : "Starts the warning after an import that left chapters out, when the book's chapter count is not known. %lld is how many chapters could not be read. Has no full stop.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Kapitel konnte nicht gelesen werden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Kapitel konnten nicht gelesen werden"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -12233,6 +12473,24 @@
     "%lld words a minute" : {
       "comment" : "A text book's reading speed. %lld is the number of words read in a minute, such as 500.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Wort pro Minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Wörter pro Minute"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -12375,6 +12633,24 @@
     "%lld words per minute, book-specific speed" : {
       "comment" : "What VoiceOver says for the reader toolbar's speed caption when this book has a speed of its own. %lld is the number of words read in a minute.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Wort pro Minute, buchspezifische Geschwindigkeit"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Wörter pro Minute, buchspezifische Geschwindigkeit"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -12516,6 +12792,12 @@
     "(%@)" : {
       "comment" : "A voice's quality shown in parentheses beside its name in the voice sheet. %@ is the quality, such as Enhanced.\nA voice's quality, in parentheses, beside its name in the voice pop-up. %@ is the quality, such as Enhanced.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "(%@)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13628,6 +13910,12 @@
     "Add Feed…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Subscribes to a podcast or news feed. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Feed hinzufügen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13645,6 +13933,12 @@
     "Add Marker" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Adds a marker at the current position.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Marker hinzufügen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13730,6 +14024,12 @@
     "Add bookmark" : {
       "comment" : "What VoiceOver says for the playback bar's bookmark button while no bookmark is at the place being read; it adds one.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lesezeichen hinzufügen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13815,6 +14115,12 @@
     "Add shortcut" : {
       "comment" : "Label of the button, in a keyboard shortcut action's row in Settings, that adds one more key to the action.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kurzbefehl hinzufügen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13877,6 +14183,12 @@
     "Add to Reading List" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Leseliste hinzufügen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14180,6 +14492,12 @@
     "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page." : {
       "comment" : "Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. \"Page 12 of 300\" is an example of how the page is said.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fügt die Seite, etwa „Seite 12 von 300“, zu den Zusammenfassungen von „Wo bin ich?“ hinzu, bei Büchern mit mehr als einer Seite."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14214,6 +14532,12 @@
     "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations." : {
       "comment" : "Hint and caption of the Playback setting that names the speed beside times. 2.0x and 500 are examples; Where Am I?, Copy Reading Position and the Headings sheet are names of commands and a sheet in the app.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fügt die Geschwindigkeit hinzu, mit der gezählt wird, etwa 2,0x bei einem Hörbuch, das nicht mit 1x läuft, oder 500 Wörter pro Minute bei einem Textbuch, in der Leseansicht, bei „Wo bin ich?“, „Leseposition kopieren“ und in den Dauern des Überschriften-Sheets."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14327,6 +14651,12 @@
     "Album" : {
       "comment" : "Name of the book information sheet's field for an audiobook's album.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Album"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14344,6 +14674,12 @@
     "Album name" : {
       "comment" : "What VoiceOver says for the book information sheet's field for an audiobook's album.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Albumname"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14361,6 +14697,12 @@
     "All" : {
       "comment" : "A choice of the Language pop-up in the Voice settings: voices of every language are offered.\nChoice of the voice sheet's language menu that lists the voices of every language.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14528,6 +14870,12 @@
     "All levels" : {
       "comment" : "Choice of the headings sheet's level filter that shows every level.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Ebenen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14624,6 +14972,12 @@
     "Also write to the library's copy of the EPUB file" : {
       "comment" : "Label of the metadata editor's switch that also writes the edited title, author, publisher and date into the library's own copy of the book's EPUB file.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auch in die Kopie der EPUB-Datei in der Bibliothek schreiben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14675,6 +15029,12 @@
     "Ampersand" : {
       "comment" : "Name of the punctuation key \"&\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Ampersand\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Und-Zeichen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14703,6 +15063,12 @@
     "An audio section refers to a missing file or an invalid time range." : {
       "comment" : "Why an audio book could not be imported: one of its sections names a file that is not there, or a start and end time that do not make a range.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein Audioabschnitt verweist auf eine fehlende Datei oder einen ungültigen Zeitbereich."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15114,6 +15480,12 @@
     "Apostrophe" : {
       "comment" : "Name of the punctuation key \"'\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Apostrophe\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Apostroph"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15392,6 +15764,12 @@
     "Apply Filter…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the choice of audio filters to apply to the selection.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filter anwenden…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15565,6 +15943,12 @@
     "Artist" : {
       "comment" : "Name of the book information sheet's field for an audiobook's artist.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Interpret"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15582,6 +15966,12 @@
     "Artist or narrator" : {
       "comment" : "What VoiceOver says for the book information sheet's field for an audiobook's artist, who may be its narrator.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Interpret oder Sprecher"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15808,6 +16198,12 @@
     "Asterisk" : {
       "comment" : "Name of the punctuation key \"*\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Asterisk\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sternchen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15825,6 +16221,12 @@
     "At Sign" : {
       "comment" : "Name of the punctuation key \"@\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + At Sign\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "At-Zeichen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16187,6 +16589,12 @@
     "Audio Editor" : {
       "comment" : "Heading of the group of the audio editor's keyboard shortcuts in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audio-Editor"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16221,6 +16629,12 @@
     "Audio Info…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Shows information about the audio, such as its format and length.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audioinformationen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16238,6 +16652,12 @@
     "Audio Settings" : {
       "comment" : "Name of the reader's sheet and toolbar button for an audiobook's own settings (its speed), and what VoiceOver calls that button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audioeinstellungen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16255,6 +16675,12 @@
     "Audio Speed" : {
       "comment" : "Heading of the group in an audiobook's own settings sheet that holds its speed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audiogeschwindigkeit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16272,6 +16698,12 @@
     "Audio speed" : {
       "comment" : "Label of an audiobook's speed slider; VoiceOver reads it before the speed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audiogeschwindigkeit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16419,6 +16851,12 @@
     "Automatic" : {
       "comment" : "Name of the Text Encoding pop-up's first option, which reads the file again the way an import does, by guessing its encoding.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Automatisch"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16532,6 +16970,12 @@
     "Back 10 Seconds" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back ten seconds.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "10 Sekunden zurück"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16560,6 +17004,12 @@
     "Back One Second" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back one second.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Sekunde zurück"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16577,6 +17027,12 @@
     "Back a Tenth of a Second" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back a tenth of a second.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Zehntelsekunde zurück"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16594,6 +17050,12 @@
     "Back to Book" : {
       "comment" : "Button of the headings sheet that closes it and returns to the book.\nTitle of the button that closes the Search in Book sheet and returns to the book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zurück zum Buch"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16611,6 +17073,12 @@
     "Backslash" : {
       "comment" : "Name of the punctuation key \"\\\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Backslash\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Umgekehrter Schrägstrich"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16628,6 +17096,12 @@
     "Backward navigation unit" : {
       "comment" : "Label of the menu that sets the unit by which this book moves backward.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit rückwärts"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16673,6 +17147,12 @@
     "Before page %@" : {
       "comment" : "Where the reader is before the first page of a book that has pages. %@ is the first page's label, an identifier.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vor Seite %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16713,6 +17193,12 @@
     "Begin" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Begin\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anfang"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16764,6 +17250,12 @@
     "Big5 (Traditional Chinese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Big5 (Traditionelles Chinesisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16905,6 +17397,12 @@
     "Book Reader" : {
       "comment" : "Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buch-Leseansicht"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16939,6 +17437,12 @@
     "Book content" : {
       "comment" : "What VoiceOver calls the scrolling area that holds the book's text in the reader.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buchinhalt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16979,6 +17483,12 @@
     "Book title" : {
       "comment" : "What VoiceOver says for the book information sheet's field for the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buchtitel"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17657,6 +18167,12 @@
     "Break" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Break\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pause"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17779,6 +18295,12 @@
     "CP437 (US DOS)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP437 (US-DOS)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17796,6 +18318,12 @@
     "CP850 (Western European DOS)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP850 (Westeuropäisches DOS)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17813,6 +18341,12 @@
     "CP866 (Russian DOS)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP866 (Russisches DOS)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18095,6 +18629,12 @@
     "Caret" : {
       "comment" : "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zirkumflex"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18214,6 +18754,12 @@
     "Change this book's forward and backward navigation unit" : {
       "comment" : "Help text of the playback bar's menu that sets the one unit by which this book moves forward and backward.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit dieses Buchs für Vorwärts und Rückwärts ändern"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18231,6 +18777,12 @@
     "Change this book's forward and backward navigation units" : {
       "comment" : "Help text of the playback bar's menu that holds separate forward and backward navigation units.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheiten dieses Buchs für Vorwärts und Rückwärts ändern"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18248,6 +18800,12 @@
     "Change voice for this book" : {
       "comment" : "What VoiceOver calls the reader toolbar's button that opens a text book's own voice settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stimme für dieses Buch ändern"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18643,6 +19201,12 @@
     "Chapter %@ could not be played: %@ from the book's package." : {
       "comment" : "First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file chapter3.mp3 is missing\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel %1$@ konnte nicht wiedergegeben werden: %2$@ im Paket des Buchs."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -18666,6 +19230,12 @@
     "Chapter %@ could not be played: %@." : {
       "comment" : "First sentence of the message when a chapter's audio could not be played. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file is damaged\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel %1$@ konnte nicht wiedergegeben werden: %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -18884,6 +19454,12 @@
     "Chapter Not Downloaded" : {
       "comment" : "Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel nicht heruntergeladen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18986,6 +19562,12 @@
     "Check that the disk holding your library is connected, then choose Retry." : {
       "comment" : "Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Prüfe, ob der Datenträger mit deiner Bibliothek angeschlossen ist, und wähle dann „Erneut versuchen“."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19301,6 +19883,12 @@
     "Choose Edit Text again to edit the new copy's text." : {
       "comment" : "Second sentence of that announcement: what to do to edit the new copy. Edit Text is a menu command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle erneut „Text bearbeiten“, um den Text der neuen Kopie zu bearbeiten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19318,6 +19906,12 @@
     "Choose Edit Text again to edit the new text." : {
       "comment" : "Second sentence of that announcement: what to do to edit the new text. Edit Text is a menu command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle erneut „Text bearbeiten“, um den neuen Text zu bearbeiten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19386,6 +19980,12 @@
     "Choose Redo Text Extraction to read the book's file again." : {
       "comment" : "Second sentence of that message. Redo Text Extraction is the name of a menu command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle „Textextraktion wiederholen“, um die Datei des Buchs erneut zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19420,6 +20020,12 @@
     "Choose Retry to try again, or re-import the book if it keeps failing." : {
       "comment" : "Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle „Erneut versuchen“, um es noch einmal zu versuchen, oder importiere das Buch erneut, falls es weiter fehlschlägt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19912,6 +20518,12 @@
     "Choose separate forward and backward navigation units for this book" : {
       "comment" : "Hint of the playback bar's menu that holds separate forward and backward navigation units.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wählt getrennte Navigationseinheiten für Vorwärts und Rückwärts für dieses Buch."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19946,6 +20558,12 @@
     "Choose the app to edit the manifest of %@ with." : {
       "comment" : "Message of the panel in which the user chooses an app to edit a book's manifest.json with. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle die App, mit der das Manifest von %@ bearbeitet wird."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19963,6 +20581,12 @@
     "Choose the app to edit the text of %@ with." : {
       "comment" : "Message of the panel in which the user chooses an app to edit a book's text with. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle die App, mit der der Text von %@ bearbeitet wird."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20348,6 +20972,12 @@
     "Choosing makes the shortcut yours; Reset to Default restores where it works by default." : {
       "comment" : "VoiceOver hint of the Works in pop-up button of a keyboard shortcut action: choosing a choice makes the action the listener's own, and Reset to Default restores where it works by default.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Auswahl macht den Kurzbefehl zu deinem eigenen; „Auf Standard zurücksetzen“ stellt wieder her, wo er standardmäßig gilt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20479,6 +21109,12 @@
     "Clear" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20496,6 +21132,12 @@
     "Clear Display" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear Display\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anzeige löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20513,6 +21155,12 @@
     "Clear Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selection.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auswahl aufheben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20581,6 +21229,12 @@
     "Close All" : {
       "comment" : "Name of the File menu's Close All command, which closes every window, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle schließen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20660,6 +21314,12 @@
     "Close the headings screen and return to the book" : {
       "comment" : "Hint of the headings sheet's Back to Book button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schließt das Überschriften-Sheet und kehrt zum Buch zurück."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20745,6 +21405,12 @@
     "Closes this book's window" : {
       "comment" : "Hint of the Close button of the reader's view for a book that is not ready to read.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schließt das Fenster dieses Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20870,6 +21536,12 @@
     "Colon" : {
       "comment" : "Name of the punctuation key \":\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Colon\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Doppelpunkt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20904,6 +21576,12 @@
     "Comma" : {
       "comment" : "Name of the punctuation key \",\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Comma\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Komma"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20921,6 +21599,12 @@
     "Command" : {
       "comment" : "Name of the Command modifier key, spoken or brailled in a keyboard shortcut such as \"Command + I\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Befehl"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21380,6 +22064,12 @@
     "Continue" : {
       "comment" : "Button of the Edit Text explanation alert that goes on to open the text in the editor. Return presses it.\nButton of the warning that TextMouth is open on another Mac: keeps using the library on this Mac.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fortfahren"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21533,6 +22223,12 @@
     "Control" : {
       "comment" : "Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as \"Control + Shift + R\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Control"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21798,6 +22494,12 @@
     "Copy" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Copies the selected audio.\nName of the Edit menu's Copy command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopieren"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21832,6 +22534,12 @@
     "Copy Reading Position" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Copies a link to the current reading position. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Leseposition kopieren"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21968,6 +22676,12 @@
     "Could not determine audio duration." : {
       "comment" : "Why an audio book could not be imported: the length of its audio could not be measured.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Audiodauer konnte nicht ermittelt werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22256,6 +22970,12 @@
     "Could not save metadata to the library's copy of “%@”, because that file is missing from the library." : {
       "comment" : "First sentence of the message when the library's copy of an EPUB file is missing, so the metadata could not be written into it. %@ is the EPUB file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Metadaten konnten nicht in der Bibliothekskopie von „%@“ gesichert werden, weil die Datei in der Bibliothek fehlt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22273,6 +22993,12 @@
     "Could not save metadata to the library's copy of “%@”: %@" : {
       "comment" : "First part of the message when writing the metadata into the library's copy of an EPUB file failed. %1$@ is the EPUB file's name; %2$@ is the reason from the system, written as a sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Metadaten konnten nicht in der Bibliothekskopie von „%1$@“ gesichert werden: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -22296,6 +23022,12 @@
     "Could not save metadata: “%@” is no longer in the library." : {
       "comment" : "First sentence of the message when the book being edited left the library. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Metadaten konnten nicht gesichert werden: „%@“ ist nicht mehr in der Bibliothek."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22313,6 +23045,12 @@
     "Could not save: the book's title is empty." : {
       "comment" : "First sentence of the message when Save is pressed after the book's title was emptied.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sichern nicht möglich: Der Titel des Buchs ist leer."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22472,6 +23210,12 @@
     "Couldn't open the manifest of %@: %@" : {
       "comment" : "Message when the app that edits a manifest.json could not be opened. %1$@ is the book's title; %2$@ is the reason from the system.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Manifest von %1$@ konnte nicht geöffnet werden: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -22512,6 +23256,12 @@
     "Couldn't open the text of %@: %@" : {
       "comment" : "Message when the app that edits a book's text could not be opened. %1$@ is the book's title; %2$@ is the reason from the system.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text von %1$@ konnte nicht geöffnet werden: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -22715,6 +23465,12 @@
     "Currently reading" : {
       "comment" : "What VoiceOver says for the speaker mark on the heading being read.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird gerade gelesen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22783,6 +23539,12 @@
     "Cut" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selected audio and keeps it for pasting.\nName of the Edit menu's Cut command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ausschneiden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22851,6 +23613,12 @@
     "Cycle Backward Navigation Unit" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the previous one. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit rückwärts durchschalten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22868,6 +23636,12 @@
     "Cycle Forward Navigation Unit" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the next one. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit vorwärts durchschalten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22885,6 +23659,12 @@
     "DAISY file not found at: %@" : {
       "comment" : "Why a DAISY book could not be imported: there is no file at its path. %@ is the path.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY-Datei nicht gefunden unter: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22902,6 +23682,12 @@
     "DAISY parse error: %@" : {
       "comment" : "Why a DAISY book could not be imported: a file inside it could not be read. %@ is the reason, a phrase in English.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY-Analysefehler: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22919,6 +23705,12 @@
     "DOCX file not found at: %@" : {
       "comment" : "Why a Word document (.docx) could not be imported: there is no file at its path. %@ is the path.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX-Datei nicht gefunden unter: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23032,6 +23824,12 @@
     "Decrease Speed" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed slower. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geschwindigkeit verringern"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23522,6 +24320,12 @@
     "Delete Character" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Character\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeichen löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23651,6 +24455,12 @@
     "Delete Line" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Line\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeile löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24435,6 +25245,12 @@
     "Display" : {
       "comment" : "Name of the headings sheet's picker that chooses what each heading shows after its name.\nTitle of the picker in Search in Book that chooses how each result's position in the book is shown, as a percentage or as a time.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anzeige"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24452,6 +25268,12 @@
     "Divide the document into smaller files, then import them." : {
       "comment" : "Last sentence of why a file with too much markup was refused: what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teile das Dokument in kleinere Dateien und importiere sie dann."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24486,6 +25308,12 @@
     "Dollar Sign" : {
       "comment" : "Name of the punctuation key \"$\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Dollar Sign\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dollarzeichen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24659,6 +25487,12 @@
     "Double press time" : {
       "comment" : "Label of the stepper in Settings that sets how soon a second press of a key must follow the first to count as a double press.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Doppeldruck-Zeit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24676,6 +25510,12 @@
     "Double press." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time: the two presses counted as a double press.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Doppeldruck."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24693,6 +25533,12 @@
     "Down Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Down Arrow\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pfeil nach unten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25751,6 +26597,12 @@
     "Downloads the book again" : {
       "comment" : "Hint of the Download button of the reader's view for a book that is only in the cloud.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lädt das Buch erneut herunter."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25841,6 +26693,12 @@
     "Duration" : {
       "comment" : "Choice of the headings sheet's display picker: each heading shows how long it lasts.\nName of the book information sheet's row that shows an audiobook's length.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dauer"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25858,6 +26716,12 @@
     "Duration: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's duration row. %@ is the length, such as 9:41:07.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dauer: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25875,6 +26739,12 @@
     "EPUB Version" : {
       "comment" : "Name of the book information sheet's row that shows which version of the EPUB format the file uses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-Version"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25909,6 +26779,12 @@
     "EPUB version: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's EPUB version row. %@ is the version, such as 3.0.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-Version: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25926,6 +26802,12 @@
     "EUC-JP (Japanese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EUC-JP (Japanisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25943,6 +26825,12 @@
     "EUC-KR (Korean)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EUC-KR (Koreanisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25960,6 +26848,12 @@
     "Each <!-- page: … --> marks where a page begins." : {
       "comment" : "Third sentence of the Edit Text explanation. \"<!-- page: … -->\" is the literal text of a page marker in the file; it stays exactly as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jedes <!-- page: … --> markiert den Beginn einer Seite."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26045,6 +26939,12 @@
     "Each line beginning with <!-- chapter: starts a chapter; keep those lines." : {
       "comment" : "Second sentence of the Edit Text explanation. \"<!-- chapter:\" is the literal text that begins a chapter line in the file; it stays exactly as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jede Zeile, die mit <!-- chapter: beginnt, beginnt ein Kapitel; behalte diese Zeilen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26187,6 +27087,12 @@
     "Edit Manifest With" : {
       "comment" : "Title of the panel in which the user chooses an app to edit a manifest.json file with.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifest bearbeiten mit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26204,6 +27110,12 @@
     "Edit Manifest With…" : {
       "comment" : "Menu command that lets the user choose an app to edit an audiobook's manifest.json file with. The ellipsis shows that a chooser follows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifest bearbeiten mit…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26221,6 +27133,12 @@
     "Edit Manifest in Default Editor" : {
       "comment" : "Menu command that opens an audiobook's manifest.json file in the Mac's default app for JSON files.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifest im Standardeditor bearbeiten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26238,6 +27156,12 @@
     "Edit Mode" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Turns the library list's edit mode on or off. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeitungsmodus"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26306,6 +27230,12 @@
     "Edit Text With" : {
       "comment" : "Title of the panel in which the user chooses an app to edit a book's text with.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text bearbeiten mit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26323,6 +27253,12 @@
     "Edit Text With…" : {
       "comment" : "Menu command that lets the user choose an app to edit a book's text with. The ellipsis shows that a chooser follows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text bearbeiten mit…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26340,6 +27276,12 @@
     "Edit Text has stopped for %@, since a new copy replaced it." : {
       "comment" : "First sentence of the announcement when an Edit Text session ends because Replace Existing put a new copy in the book's place. %@ is the book's title. Edit Text is a menu command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text bearbeiten wurde für %@ beendet, weil eine neue Kopie ihn ersetzt hat."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26357,6 +27299,12 @@
     "Edit Text has stopped for %@, since its file was read again." : {
       "comment" : "First sentence of the announcement when an Edit Text session ends because the book's file was read again in another encoding. %@ is the book's title. Edit Text is a menu command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text bearbeiten wurde für %@ beendet, weil die Datei erneut gelesen wurde."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26374,6 +27322,12 @@
     "Edit Text in Default Editor" : {
       "comment" : "Menu command that opens a book's text, as a Markdown file, in the Mac's default app for Markdown files.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text im Standardeditor bearbeiten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26408,6 +27362,12 @@
     "Edit With" : {
       "comment" : "Button of the panel in which the user chooses an app to edit a book's text with.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeiten mit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26499,6 +27459,12 @@
     "Edit the Manifest of %@?" : {
       "comment" : "Title of the alert shown the first time Edit Manifest is used. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifest von %@ bearbeiten?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26516,6 +27482,12 @@
     "Edit the Text of %@?" : {
       "comment" : "Title of the alert shown the first time Edit Text is used. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text von %@ bearbeiten?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26533,6 +27505,12 @@
     "Editable" : {
       "comment" : "Heading of the group of fields of the book information sheet that the user can change.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeitbar"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26550,6 +27528,12 @@
     "Edited" : {
       "comment" : "Said after the keys of a keyboard shortcut action the listener changed in Settings, to tell it from one that follows the defaults.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geändert"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26833,6 +27817,12 @@
     "End of Book" : {
       "comment" : "Heading of the end of book group in the Playback settings.\nHeading of the group in a book's own settings sheet that holds what happens when the book ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buchende"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26884,6 +27874,12 @@
     "End of book behavior for this book" : {
       "comment" : "What VoiceOver calls the book's own settings menu that chooses what happens when this book ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Verhalten am Buchende für dieses Buch"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27003,6 +27999,12 @@
     "Enhanced" : {
       "comment" : "A voice's quality tier, better than Standard, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Enhanced quality\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Erweitert"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27020,6 +28022,12 @@
     "Enter" : {
       "comment" : "Name of the keypad's Enter key, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Enter\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Enter"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27037,6 +28045,12 @@
     "Enter a percent." : {
       "comment" : "Message when Go to Percent is chosen with nothing typed in its field.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib einen Prozentwert ein."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27255,6 +28269,12 @@
     "Equals" : {
       "comment" : "Name of the punctuation key \"=\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Equals\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gleichheitszeichen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27306,6 +28326,12 @@
     "Escape" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Escape\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escape"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27477,6 +28503,12 @@
     "Every chapter was read." : {
       "comment" : "Says that an import read every chapter of a book, with nothing left out.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Kapitel wurden gelesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27649,6 +28681,12 @@
     "Every page was read." : {
       "comment" : "Says that an import read every page of a PDF or of a book of pictures, with nothing left out.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Seiten wurden gelesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27666,6 +28704,12 @@
     "Every shortcut and where it works go back to the defaults. Your own keys are lost." : {
       "comment" : "Message of the alert that asks the listener to confirm resetting every keyboard shortcut to its default: the shortcuts they changed are lost.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Kurzbefehle und ihr Geltungsbereich werden auf die Standardwerte zurückgesetzt. Deine eigenen Tasten gehen verloren."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27683,6 +28727,12 @@
     "Every window" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in every window.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jedes Fenster"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27751,6 +28801,12 @@
     "Exclamation Mark" : {
       "comment" : "Name of the punctuation key \"!\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Exclamation Mark\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ausrufezeichen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27768,6 +28824,12 @@
     "Execute" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Execute\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ausführen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -28852,6 +29914,12 @@
     "Failed to load book" : {
       "comment" : "Heading of the view shown in place of a book that could not be loaded; the reason follows it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buch konnte nicht geladen werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -28937,6 +30005,12 @@
     "Failed to write EPUB metadata: %@" : {
       "comment" : "Why a book's details could not be saved into its EPUB file. %@ is the reason, a phrase in English.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB-Metadaten konnten nicht geschrieben werden: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -29329,6 +30403,12 @@
     "File format: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's file format row. %@ is the format, such as MP3.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dateiformat: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -29465,6 +30545,12 @@
     "Find" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Find\".\nTitle of the Find submenu of the Edit menu, which holds the command that searches the whole library.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Suchen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -29838,6 +30924,12 @@
     "Folder or Feed Settings" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the settings of the folder or feed the Library window shows. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einstellungen für Ordner oder Feed"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30053,6 +31145,12 @@
     "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press." : {
       "comment" : "VoiceOver hint of the Try a Double Press button: for five seconds key presses are not shortcuts, and TextMouth says whether two presses were a double press.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Für fünf Sekunden sind die nächsten zwei Tastendrücke keine Kurzbefehle; TextMouth sagt, ob sie ein Doppeldruck sind."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30104,6 +31202,12 @@
     "Forward 10 Seconds" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward ten seconds.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "10 Sekunden vor"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30121,6 +31225,12 @@
     "Forward Delete" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Forward Delete\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorwärts löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30138,6 +31248,12 @@
     "Forward One Second" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward one second.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Sekunde vor"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30155,6 +31271,12 @@
     "Forward a Tenth of a Second" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward a tenth of a second.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Zehntelsekunde vor"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30172,6 +31294,12 @@
     "Forward navigation unit" : {
       "comment" : "Label of the menu that sets the unit by which this book moves forward.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit vorwärts"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30206,6 +31334,12 @@
     "Forward navigation unit: %@; backward navigation unit: %@" : {
       "comment" : "What VoiceOver says for the value of the menu that holds separate navigation units. %1$@ is the forward unit and %2$@ the backward unit, each such as \"15 seconds\" or \"Sentence\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit vorwärts: %1$@; Navigationseinheit rückwärts: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -30396,6 +31530,12 @@
     "GB 18030 (Simplified Chinese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GB 18030 (Vereinfachtes Chinesisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30413,6 +31553,12 @@
     "GB 2312 (Simplified Chinese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GB 2312 (Vereinfachtes Chinesisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30430,6 +31576,12 @@
     "GBK (Simplified Chinese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GBK (Vereinfachtes Chinesisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30464,6 +31616,12 @@
     "Genre" : {
       "comment" : "Name of the book information sheet's field for an audiobook's genre; VoiceOver reads it as the field's label.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Genre"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30532,6 +31690,12 @@
     "Get a fresh copy of the book, then import it again." : {
       "comment" : "Last sentence of why an EPUB book could not be imported because of damage: what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Besorge dir eine neue Kopie des Buchs und importiere es dann erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30549,6 +31713,12 @@
     "Get a fresh copy of the file, then import it again." : {
       "comment" : "Last sentence of why a file could not be imported because it is damaged or incomplete: what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Besorge dir eine neue Kopie der Datei und importiere sie dann erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30566,6 +31736,12 @@
     "Get another copy of the file, or save it in another format, then import it again." : {
       "comment" : "Last sentence of why a file was refused for its markup: what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Besorge dir eine andere Kopie der Datei oder sichere sie in einem anderen Format und importiere sie dann erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30753,6 +31929,12 @@
     "Go Back" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Returns to the place the reader jumped from, like a browser's Back. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zurückgehen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30770,6 +31952,12 @@
     "Go Forward" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes forward again after Go Back. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorwärtsgehen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30804,6 +31992,12 @@
     "Go back to where you were before browsing headings or bookmarks" : {
       "comment" : "Hint of the reader toolbar's Return button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geht dorthin zurück, wo du vor dem Durchsuchen von Überschriften oder Lesezeichen warst."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30821,6 +32015,12 @@
     "Go to End" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the end of the audio.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zum Ende springen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30838,6 +32038,12 @@
     "Go to Library" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Brings the Library window forward from a book. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Bibliothek wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30855,6 +32061,12 @@
     "Go to Page…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens a field to type a page number as the book numbers its pages. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zu Seite springen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30872,6 +32084,12 @@
     "Go to Start" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the start of the audio.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zum Anfang springen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30906,6 +32124,12 @@
     "Go to Time…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a time to move to.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zu Zeit springen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30940,6 +32164,12 @@
     "Go to View 1" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the first view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 1 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30957,6 +32187,12 @@
     "Go to View 2" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the second view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 2 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30974,6 +32210,12 @@
     "Go to View 3" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the third view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 3 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -30991,6 +32233,12 @@
     "Go to View 4" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fourth view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 4 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31008,6 +32256,12 @@
     "Go to View 5" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fifth view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 5 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31025,6 +32279,12 @@
     "Go to View 6" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the sixth view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 6 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31042,6 +32302,12 @@
     "Go to View 7" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the seventh view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 7 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31059,6 +32325,12 @@
     "Go to View 8" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the eighth view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 8 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31076,6 +32348,12 @@
     "Go to View 9" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the ninth view of the Library window's View pop-up; the number is part of the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Ansicht 9 wechseln"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31229,6 +32507,12 @@
     "Grave Accent" : {
       "comment" : "Name of the punctuation key \"`\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Grave Accent\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gravis"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31246,6 +32530,12 @@
     "Greater Than" : {
       "comment" : "Name of the punctuation key \">\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Greater Than\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Größer als"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31365,6 +32655,12 @@
     "Heading Levels" : {
       "comment" : "Name of the VoiceOver rotor that moves among the headings of the headings list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Überschriftenebenen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31382,6 +32678,12 @@
     "Heading info display mode" : {
       "comment" : "What VoiceOver calls the headings sheet's picker that chooses what each heading shows after its name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anzeigemodus der Überschrifteninfos"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31399,6 +32701,12 @@
     "Heading: %@" : {
       "comment" : "Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Überschrift: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31416,6 +32724,12 @@
     "Headings" : {
       "comment" : "Heading of the headings sheet, which lists a book's headings.\nThe name of the Headings checkbox in the Export dialog: a list of the book's headings and where each begins.\nTitle of the reader toolbar's button that opens the headings sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Überschriften"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31433,6 +32747,24 @@
     "Headings, %lld headings" : {
       "comment" : "What VoiceOver calls the list of headings, with how many it shows. %lld is the number of headings the level filter shows.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Überschriften, %lld Überschrift"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Überschriften, %lld Überschriften"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -31504,6 +32836,12 @@
     "Headings: %@" : {
       "comment" : "Navigation title of the headings sheet. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Überschriften: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31538,6 +32876,12 @@
     "Help" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Help\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hilfe"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31589,6 +32933,12 @@
     "Hide Others" : {
       "comment" : "Name of the application menu's Hide Others command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Andere ausblenden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31606,6 +32956,12 @@
     "Hide TextMouth" : {
       "comment" : "Name of the application menu's Hide command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth ausblenden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31623,6 +32979,12 @@
     "Hides jump to page controls" : {
       "comment" : "Hint of the status row's page button while the jump to page panel is open.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Blendet die Steuerung zum Springen zu einer Seite aus."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31640,6 +33002,12 @@
     "Hides jump to percent controls" : {
       "comment" : "Hint of the reader's percent button while the jump to percent panel is open.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Blendet die Steuerung zum Springen zu einem Prozentwert aus."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31657,6 +33025,12 @@
     "Hides jump to time controls" : {
       "comment" : "Hint of the reader's time button while the jump to time panel is open.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Blendet die Steuerung zum Springen zu einer Zeit aus."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31708,6 +33082,12 @@
     "Home" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Home\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pos1"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31849,6 +33229,12 @@
     "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts." : {
       "comment" : "Hint of the double press time stepper in Settings: what the time is, and that a key that has one action for a single press and another for a double press waits for that time before acting on a single press.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wie schnell ein zweiter Tastendruck auf den ersten folgen muss. Eine Taste mit unterschiedlichen Aktionen für einfachen und doppelten Druck wartet so lange, bevor ihr einfacher Druck wirkt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31900,6 +33286,12 @@
     "ISBN" : {
       "comment" : "Name of the book information sheet's row that shows a book's ISBN, its international book number.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISBN"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31917,6 +33309,12 @@
     "ISBN: %@" : {
       "comment" : "The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written.\nWhat VoiceOver says for the book information sheet's ISBN row. %@ is the book's ISBN.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISBN: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31934,6 +33332,12 @@
     "ISO 2022-JP (Japanese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 2022-JP (Japanisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31951,6 +33355,12 @@
     "ISO 8859-13 (Baltic)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-13 (Baltisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31968,6 +33378,12 @@
     "ISO 8859-15 (Western European)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-15 (Westeuropäisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -31985,6 +33401,12 @@
     "ISO 8859-2 (Central European)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-2 (Mitteleuropäisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32002,6 +33424,12 @@
     "ISO 8859-5 (Cyrillic)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-5 (Kyrillisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32019,6 +33447,12 @@
     "ISO 8859-6 (Arabic)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-6 (Arabisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32036,6 +33470,12 @@
     "ISO 8859-7 (Greek)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-7 (Griechisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32053,6 +33493,12 @@
     "ISO 8859-8 (Hebrew)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-8 (Hebräisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32070,6 +33516,12 @@
     "ISO 8859-9 (Turkish)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-9 (Türkisch)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32104,6 +33556,12 @@
     "Identifier" : {
       "comment" : "Name of the book information sheet's row that shows a book's identifier, a code that names it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kennung"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32121,6 +33579,12 @@
     "Identifier: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's identifier row. %@ is the book's identifier code.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kennung: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32325,6 +33789,12 @@
     "Import Folder…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Imports a DAISY book, or a folder of audio tracks, as a book. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordner importieren…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32403,6 +33873,12 @@
     "Import each book's .opf file on its own." : {
       "comment" : "Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importiere die .opf-Datei jedes Buchs einzeln."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -32870,6 +34346,12 @@
     "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows." : {
       "comment" : "Note in the Shortcuts tab of Settings. In a Library window, a letter key pressed with no other key jumps to the first book or folder starting with that letter, so a shortcut made of a letter alone, such as W, cannot work in a Library window.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "In Bibliotheksfenstern springt ein einzelner Buchstabe zum ersten Buch oder Ordner, der damit beginnt. Ein Kurzbefehl aus einem einzelnen Buchstaben, etwa W, funktioniert daher nur in anderen Fenstern."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33035,6 +34517,12 @@
     "Include Section" : {
       "comment" : "Name of a heading row's command that stops skipping the section, as a VoiceOver action and a context menu item.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abschnitt einschließen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33052,6 +34540,12 @@
     "Include the speed with time left and total time" : {
       "comment" : "Label of the Playback setting's checkbox that names the speed beside the time left and the total time.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geschwindigkeit mit verbleibender Zeit und Gesamtzeit nennen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33086,6 +34580,12 @@
     "Increase Speed" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed faster. Also the title of the menu command of the same name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geschwindigkeit erhöhen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33202,6 +34702,12 @@
     "Information" : {
       "comment" : "Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Informationen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33298,6 +34804,12 @@
     "Insert Chapter Marker…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to name and insert a chapter marker.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitelmarker einfügen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33315,6 +34827,12 @@
     "Insert Character" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Character\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeichen einfügen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33332,6 +34850,12 @@
     "Insert Line" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Line\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeile einfügen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -33366,6 +34890,12 @@
     "Insert Silence…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a length of silence to insert.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stille einfügen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -34158,6 +35688,12 @@
     "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them." : {
       "comment" : "Second sentence of the Edit Manifest explanation: what the manifest lists and what the user can change in it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es listet die Tracks des Buchs in Wiedergabereihenfolge auf, jeweils mit dem Titel ihrer Überschrift. Du kannst sie neu anordnen, umbenennen und unter eigenen Überschriften gruppieren sowie die Pausen dazwischen festlegen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -34634,6 +36170,12 @@
     "Its earlier text was kept as %@, in the book's package." : {
       "comment" : "Sentence saying where a backup of a book's earlier text was kept. %@ is a file name such as content.md.edited-20261024T123012Z, which stays as written.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sein früherer Text wurde im Paket des Buchs als %@ behalten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -34746,6 +36288,12 @@
     "Its only page is %@." : {
       "comment" : "Second sentence of that message for a book of one page. %@ is that page's label, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die einzige Seite ist %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -34814,6 +36362,12 @@
     "Its pages run from %@ to %@." : {
       "comment" : "Second sentence of that message. %1$@ is the first page's label and %2$@ the last page's label, identifiers such as i or 300 written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Seiten reichen von %1$@ bis %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -34933,6 +36487,12 @@
     "Jump" : {
       "comment" : "Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Springen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -35001,6 +36561,12 @@
     "Jumped to %@ in the recording." : {
       "comment" : "Announcement after Go to Time jumped in an audiobook. %@ is the time spoken in words, such as \"2 hours, 13 minutes, 5 seconds\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zu %@ in der Aufnahme gesprungen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -35018,6 +36584,12 @@
     "Jumped to %@ percent." : {
       "comment" : "Announcement after Go to Percent jumped. %@ is the percent reached with one decimal place, such as 47.5.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zu %@ Prozent gesprungen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -35035,6 +36607,12 @@
     "Jumped to %@." : {
       "comment" : "Announcement after Go to Time jumped in a text book. %@ is the time spoken in words, such as \"2 hours, 13 minutes, 5 seconds\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zu %@ gesprungen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -35052,6 +36630,12 @@
     "Jumped to page %@, the %@ page labelled %@." : {
       "comment" : "Announcement after Go to Page jumped to one of several pages that carry the same label. %1$@ is the page's label, an identifier; %2$@ is which of them it is, as an ordinal word such as \"second\" or \"11th\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zu Seite %1$@ gesprungen, die %2$@ Seite mit der Bezeichnung %3$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
