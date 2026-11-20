@@ -20,8 +20,9 @@ extension LibraryViewModel {
     /// main-thread turn and the manifest queue's earlier work. It would put
     /// the values the take read over any save the user made in between, and
     /// TextMouth would never take that save (Q16). A field the manifest is
-    /// owed (`ManifestOwedFields`), which the edit leaves out, stays owed
-    /// until the next look writes it, before that look compares.
+    /// owed (`ManifestOwedFields`), which the edit leaves out, stays owed,
+    /// and is written as every owed field is: before the next look
+    /// compares, or by the next retitle.
     func commitManifestEdit(_ edit: BookManifestEdit) {
         applyAnalysisSummaries([ContentAnalysisSummary(committed: edit.committed, movedPlaces: edit.movedPlaces)])
         setRowTitleAndAuthor(of: edit.committed.id, title: edit.title, author: edit.author)
