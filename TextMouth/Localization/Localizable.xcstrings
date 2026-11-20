@@ -3335,7 +3335,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ è impostato per essere letto come «%@», una codifica del testo che questa versione di TextMouth non sa leggere."
+            "value" : "%@ è impostato per essere letto come “%@”, una codifica del testo che questa versione di TextMouth non sa leggere."
           }
         },
         "pt-BR" : {
@@ -11704,19 +11704,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di libri sono stati importati da «%@»."
+                  "value" : "%lld di libri sono stati importati da “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libro è stato importato da «%@»."
+                  "value" : "%lld libro è stato importato da “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libri sono stati importati da «%@»."
+                  "value" : "%lld libri sono stati importati da “%@”."
                 }
               }
             }
@@ -16472,19 +16472,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di nuovi articoli, il più recente è «%@»"
+                  "value" : "%lld di nuovi articoli, il più recente è “%@”"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld nuovo articolo, il più recente è «%@»"
+                  "value" : "%lld nuovo articolo, il più recente è “%@”"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld nuovi articoli, il più recente è «%@»"
+                  "value" : "%lld nuovi articoli, il più recente è “%@”"
                 }
               }
             }
@@ -16829,19 +16829,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di nuovi episodi, il più recente è «%@»"
+                  "value" : "%lld di nuovi episodi, il più recente è “%@”"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld nuovo episodio, il più recente è «%@»"
+                  "value" : "%lld nuovo episodio, il più recente è “%@”"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld nuovi episodi, il più recente è «%@»"
+                  "value" : "%lld nuovi episodi, il più recente è “%@”"
                 }
               }
             }
@@ -17186,19 +17186,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di nuovi elementi, il più recente è «%@»"
+                  "value" : "%lld di nuovi elementi, il più recente è “%@”"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld nuovo elemento, il più recente è «%@»"
+                  "value" : "%lld nuovo elemento, il più recente è “%@”"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld nuovi elementi, il più recente è «%@»"
+                  "value" : "%lld nuovi elementi, il più recente è “%@”"
                 }
               }
             }
@@ -18507,19 +18507,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di podcast trovati per «%@»."
+                  "value" : "%lld di podcast trovati per “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld podcast trovato per «%@»."
+                  "value" : "%lld podcast trovato per “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld podcast trovati per «%@»."
+                  "value" : "%lld podcast trovati per “%@”."
                 }
               }
             }
@@ -22038,7 +22038,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il nome di una cartella non può essere vuoto, «.» o «..», terminare con «.tmb» né essere riservato da TextMouth."
+            "value" : "Il nome di una cartella non può essere vuoto, “.” o “..”, terminare con “.tmb” né essere riservato da TextMouth."
           }
         },
         "pt-BR" : {
@@ -24759,7 +24759,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«Sempre» mostra una vista in ogni momento. «Se applicabile» la mostra solo quando elenca qualcosa: l’elenco di lettura quando contiene un libro, un episodio o un articolo, e Feed quando c’è un feed. «Nascosta» la esclude. Una finestra mantiene la sua vista finché non ne scegli un’altra."
+            "value" : "“Sempre” mostra una vista in ogni momento. “Se applicabile” la mostra solo quando elenca qualcosa: l’elenco di lettura quando contiene un libro, un episodio o un articolo, e Feed quando c’è un feed. “Nascosta” la esclude. Una finestra mantiene la sua vista finché non ne scegli un’altra."
           }
         },
         "pt-BR" : {
@@ -28390,7 +28390,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Libro %1$lld di %2$lld: «%3$@», %4$@"
+            "value" : "Libro %1$lld di %2$lld: “%3$@”, %4$@"
           }
         },
         "pt-BR" : {
@@ -33492,7 +33492,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scegli dove spostare i libri e le sottocartelle prima di eliminare «%@»."
+            "value" : "Scegli dove spostare i libri e le sottocartelle prima di eliminare “%@”."
           }
         },
         "pt-BR" : {
@@ -36111,7 +36111,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conversione audio: %1$@ di «%2$@»"
+            "value" : "Conversione audio: %1$@ di “%2$@”"
           }
         },
         "pt-BR" : {
@@ -36498,7 +36498,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossibile eliminare «%@» e spostarne il contenuto"
+            "value" : "Impossibile eliminare “%@” e spostarne il contenuto"
           }
         },
         "pt-BR" : {
@@ -36585,7 +36585,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossibile scaricare «%@»."
+            "value" : "Impossibile scaricare “%@”."
           }
         },
         "pt-BR" : {
@@ -36614,7 +36614,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossibile importare «%@»."
+            "value" : "Impossibile importare “%@”."
           }
         },
         "pt-BR" : {
@@ -36643,7 +36643,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossibile spostare «%@»"
+            "value" : "Impossibile spostare “%@”"
           }
         },
         "pt-BR" : {
@@ -36950,7 +36950,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossibile rinominare «%@»"
+            "value" : "Impossibile rinominare “%@”"
           }
         },
         "pt-BR" : {
@@ -39582,7 +39582,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eliminare il feed «%@»?"
+            "value" : "Eliminare il feed “%@”?"
           }
         },
         "pt-BR" : {
@@ -39640,7 +39640,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eliminare definitivamente il file originale «%@»?"
+            "value" : "Eliminare definitivamente il file originale “%@”?"
           }
         },
         "pt-BR" : {
@@ -39669,7 +39669,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eliminare la vista «%@»?"
+            "value" : "Eliminare la vista “%@”?"
           }
         },
         "pt-BR" : {
@@ -39698,7 +39698,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eliminare «%@»?"
+            "value" : "Eliminare “%@”?"
           }
         },
         "pt-BR" : {
@@ -39849,7 +39849,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download di «%@» eliminato."
+            "value" : "Download di “%@” eliminato."
           }
         },
         "pt-BR" : {
@@ -39907,7 +39907,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» eliminato dal suo feed; il suo libro resta nella tua libreria."
+            "value" : "“%@” eliminato dal suo feed; il suo libro resta nella tua libreria."
           }
         },
         "pt-BR" : {
@@ -39936,7 +39936,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» eliminato."
+            "value" : "“%@” eliminato."
           }
         },
         "pt-BR" : {
@@ -41397,7 +41397,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download %1$lld di %2$lld: «%3$@» da %4$@"
+            "value" : "Download %1$lld di %2$lld: “%3$@” da %4$@"
           }
         },
         "pt-BR" : {
@@ -42801,7 +42801,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download di «%@» in corso."
+            "value" : "Download di “%@” in corso."
           }
         },
         "pt-BR" : {
@@ -42830,7 +42830,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download di «%@» in corso. Si apre al termine del download."
+            "value" : "Download di “%@” in corso. Si apre al termine del download."
           }
         },
         "pt-BR" : {
@@ -47870,7 +47870,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Estrazione di «%1$@»: %2$@..."
+            "value" : "Estrazione di “%1$@”: %2$@..."
           }
         },
         "pt-BR" : {
@@ -49482,7 +49482,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download di «%@» terminato."
+            "value" : "Download di “%@” terminato."
           }
         },
         "pt-BR" : {
@@ -49511,7 +49511,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importazione di «%@» terminata."
+            "value" : "Importazione di “%@” terminata."
           }
         },
         "pt-BR" : {
@@ -49546,7 +49546,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importazione di «%1$@» terminata: %2$@."
+            "value" : "Importazione di “%1$@” terminata: %2$@."
           }
         },
         "pt-BR" : {
@@ -50103,7 +50103,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La cartella «%@» in %@ è «%@» in %@."
+            "value" : "La cartella “%@” in %@ è “%@” in %@."
           }
         },
         "pt-BR" : {
@@ -50138,7 +50138,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La cartella «%@» è solo in %@."
+            "value" : "La cartella “%@” è solo in %@."
           }
         },
         "pt-BR" : {
@@ -54732,7 +54732,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importazione di «%1$@»: %2$@, %3$@."
+            "value" : "Importazione di “%1$@”: %2$@, %3$@."
           }
         },
         "pt-BR" : {
@@ -54767,7 +54767,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importazione di «%1$@»: %2$@."
+            "value" : "Importazione di “%1$@”: %2$@."
           }
         },
         "pt-BR" : {
@@ -58203,7 +58203,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anche la sua cartella «%@» viene eliminata se non contiene altro."
+            "value" : "Anche la sua cartella “%@” viene eliminata se non contiene altro."
           }
         },
         "pt-BR" : {
@@ -58232,7 +58232,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La sua cartella «%@» è vuota, ma non è stato possibile eliminarla."
+            "value" : "La sua cartella “%@” è vuota, ma non è stato possibile eliminarla."
           }
         },
         "pt-BR" : {
@@ -58261,7 +58261,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anche la sua cartella «%@» è stata eliminata."
+            "value" : "Anche la sua cartella “%@” è stata eliminata."
           }
         },
         "pt-BR" : {
@@ -58290,7 +58290,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La sua cartella «%@» resta, perché contiene altro."
+            "value" : "La sua cartella “%@” resta, perché contiene altro."
           }
         },
         "pt-BR" : {
@@ -64031,7 +64031,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» segnato come riprodotto."
+            "value" : "“%@” segnato come riprodotto."
           }
         },
         "pt-BR" : {
@@ -64060,7 +64060,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» segnato come letto."
+            "value" : "“%@” segnato come letto."
           }
         },
         "pt-BR" : {
@@ -64089,7 +64089,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» segnato come non riprodotto."
+            "value" : "“%@” segnato come non riprodotto."
           }
         },
         "pt-BR" : {
@@ -64118,7 +64118,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» segnato come non letto."
+            "value" : "“%@” segnato come non letto."
           }
         },
         "pt-BR" : {
@@ -65555,7 +65555,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sposta «%@»"
+            "value" : "Sposta “%@”"
           }
         },
         "pt-BR" : {
@@ -66559,7 +66559,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sposta il contenuto di «%@»"
+            "value" : "Sposta il contenuto di “%@”"
           }
         },
         "pt-BR" : {
@@ -66907,7 +66907,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spostare il file originale «%@» nel Cestino?"
+            "value" : "Spostare il file originale “%@” nel Cestino?"
           }
         },
         "pt-BR" : {
@@ -67081,7 +67081,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sposta «%@» nella libreria"
+            "value" : "Sposta “%@” nella libreria"
           }
         },
         "pt-BR" : {
@@ -67301,19 +67301,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostati %lld di articoli (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota «%@»."
+                  "value" : "Spostati %lld di articoli (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostato %lld articolo (posizione: %@). Ora è un libro della libreria e il suo feed lo elenca con la nota «%@»."
+                  "value" : "Spostato %lld articolo (posizione: %@). Ora è un libro della libreria e il suo feed lo elenca con la nota “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostati %lld articoli (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota «%@»."
+                  "value" : "Spostati %lld articoli (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota “%@”."
                 }
               }
             }
@@ -67420,19 +67420,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostati %lld di episodi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota «%@»."
+                  "value" : "Spostati %lld di episodi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostato %lld episodio (posizione: %@). Ora è un libro della libreria e il suo feed lo elenca con la nota «%@»."
+                  "value" : "Spostato %lld episodio (posizione: %@). Ora è un libro della libreria e il suo feed lo elenca con la nota “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostati %lld episodi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota «%@»."
+                  "value" : "Spostati %lld episodi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota “%@”."
                 }
               }
             }
@@ -67539,19 +67539,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostati %lld di elementi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota «%@»."
+                  "value" : "Spostati %lld di elementi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota “%@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostato %lld elemento (posizione: %@). Ora è un libro della libreria e il suo feed lo elenca con la nota «%@»."
+                  "value" : "Spostato %lld elemento (posizione: %@). Ora è un libro della libreria e il suo feed lo elenca con la nota “%@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostati %lld elementi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota «%@»."
+                  "value" : "Spostati %lld elementi (posizione: %@). Ora sono libri della libreria e i loro feed li elencano con la nota “%@”."
                 }
               }
             }
@@ -67729,7 +67729,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spostato «%1$@» (posizione: %2$@). Ora è un libro della libreria e il suo feed lo elenca con la nota «%3$@»."
+            "value" : "Spostato “%1$@” (posizione: %2$@). Ora è un libro della libreria e il suo feed lo elenca con la nota “%3$@”."
           }
         },
         "pt-BR" : {
@@ -70255,7 +70255,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nuovo articolo: «%@»"
+            "value" : "Nuovo articolo: “%@”"
           }
         },
         "pt-BR" : {
@@ -70284,7 +70284,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nuovo episodio: «%@»"
+            "value" : "Nuovo episodio: “%@”"
           }
         },
         "pt-BR" : {
@@ -70371,7 +70371,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nuovo elemento: «%@»"
+            "value" : "Nuovo elemento: “%@”"
           }
         },
         "pt-BR" : {
@@ -71152,7 +71152,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessun libro trovato in «%@»."
+            "value" : "Nessun libro trovato in “%@”."
           }
         },
         "pt-BR" : {
@@ -71922,19 +71922,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessun nuovo libro in «%@»: tutti i %lld erano già nella tua libreria."
+                  "value" : "Nessun nuovo libro in “%@”: tutti i %lld erano già nella tua libreria."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessun nuovo libro in «%@»: %lld era già nella tua libreria."
+                  "value" : "Nessun nuovo libro in “%@”: %lld era già nella tua libreria."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessun nuovo libro in «%@»: tutti i %lld erano già nella tua libreria."
+                  "value" : "Nessun nuovo libro in “%@”: tutti i %lld erano già nella tua libreria."
                 }
               }
             }
@@ -71984,7 +71984,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessun nuovo libro in «%@»: entrambi erano già nella tua libreria."
+            "value" : "Nessun nuovo libro in “%@”: entrambi erano già nella tua libreria."
           }
         },
         "pt-BR" : {
@@ -72013,7 +72013,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessun nuovo libro in «%@»: il suo unico libro era già nella tua libreria."
+            "value" : "Nessun nuovo libro in “%@”: il suo unico libro era già nella tua libreria."
           }
         },
         "pt-BR" : {
@@ -72352,7 +72352,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessun podcast trovato per «%@». Prova altre parole o scrivi l’indirizzo del feed."
+            "value" : "Nessun podcast trovato per “%@”. Prova altre parole o scrivi l’indirizzo del feed."
           }
         },
         "pt-BR" : {
@@ -82316,7 +82316,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rileggere «%@» come %@?"
+            "value" : "Rileggere “%@” come %@?"
           }
         },
         "pt-BR" : {
@@ -82345,7 +82345,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rileggere «%@» automaticamente?"
+            "value" : "Rileggere “%@” automaticamente?"
           }
         },
         "pt-BR" : {
@@ -82610,7 +82610,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elenco di lettura: «%@» è %@ in %@ e %@ in %@."
+            "value" : "Elenco di lettura: “%@” è %@ in %@ e %@ in %@."
           }
         },
         "pt-BR" : {
@@ -86182,7 +86182,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sostituito «%@»."
+            "value" : "Sostituito “%@”."
           }
         },
         "pt-BR" : {
@@ -86443,7 +86443,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sostituzione di «%@» in corso. Potrebbe richiedere qualche istante."
+            "value" : "Sostituzione di “%@” in corso. Potrebbe richiedere qualche istante."
           }
         },
         "pt-BR" : {
@@ -87311,7 +87311,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ripristinare «%@» al valore predefinito?"
+            "value" : "Ripristinare “%@” al valore predefinito?"
           }
         },
         "pt-BR" : {
@@ -95138,7 +95138,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alcuni file di «%@» sono solo nel cloud e sostituirlo ora li lascerebbe indietro. Scarica il libro, poi scegli di nuovo %@."
+            "value" : "Alcuni file di “%@” sono solo nel cloud e sostituirlo ora li lascerebbe indietro. Scarica il libro, poi scegli di nuovo %@."
           }
         },
         "pt-BR" : {
@@ -97400,7 +97400,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download di «%@» interrotto."
+            "value" : "Download di “%@” interrotto."
           }
         },
         "pt-BR" : {
@@ -100098,7 +100098,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non può convertire l’audio di «%@»: è in un tipo di audio che non legge."
+            "value" : "TextMouth non può convertire l’audio di “%@”: è in un tipo di audio che non legge."
           }
         },
         "pt-BR" : {
@@ -100127,7 +100127,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non può convertire «%@»: il suo audio cambia frequenza o canali a metà, più di quanto riesca a seguire."
+            "value" : "TextMouth non può convertire “%@”: il suo audio cambia frequenza o canali a metà, più di quanto riesca a seguire."
           }
         },
         "pt-BR" : {
@@ -100156,7 +100156,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non può convertire «%@»: una parte del suo audio è in un blocco troppo grande da decodificare."
+            "value" : "TextMouth non può convertire “%@”: una parte del suo audio è in un blocco troppo grande da decodificare."
           }
         },
         "pt-BR" : {
@@ -100319,7 +100319,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non può leggere «%1$@» come %2$@. Potrebbe essere danneggiato, o avere il nome di un altro formato."
+            "value" : "TextMouth non può leggere “%1$@” come %2$@. Potrebbe essere danneggiato, o avere il nome di un altro formato."
           }
         },
         "pt-BR" : {
@@ -100701,7 +100701,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non ha potuto conservare la nuova copia di «%@». Scegli Annulla per scartare la copia, poi importa di nuovo il file."
+            "value" : "TextMouth non ha potuto conservare la nuova copia di “%@”. Scegli Annulla per scartare la copia, poi importa di nuovo il file."
           }
         },
         "pt-BR" : {
@@ -100805,7 +100805,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non ha potuto leggere il cue sheet «%@», quindi le sue intestazioni non sono state usate."
+            "value" : "TextMouth non ha potuto leggere il cue sheet “%@”, quindi le sue intestazioni non sono state usate."
           }
         },
         "pt-BR" : {
@@ -100834,7 +100834,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non ha potuto leggere il file di etichette «%@», quindi le sue intestazioni non sono state usate."
+            "value" : "TextMouth non ha potuto leggere il file di etichette “%@”, quindi le sue intestazioni non sono state usate."
           }
         },
         "pt-BR" : {
@@ -101262,7 +101262,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non è riuscito a conservare il testo che hai modificato in «%@» accanto alla nuova lettura, quindi ha lasciato il libro com’era."
+            "value" : "TextMouth non è riuscito a conservare il testo che hai modificato in “%@” accanto alla nuova lettura, quindi ha lasciato il libro com’era."
           }
         },
         "pt-BR" : {
@@ -101468,7 +101468,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non è riuscito a rileggere «%@», quindi ha lasciato il libro com’era."
+            "value" : "TextMouth non è riuscito a rileggere “%@”, quindi ha lasciato il libro com’era."
           }
         },
         "pt-BR" : {
@@ -101503,7 +101503,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non è riuscito a rileggere «%@», quindi ha lasciato il libro com’era: %@"
+            "value" : "TextMouth non è riuscito a rileggere “%@”, quindi ha lasciato il libro com’era: %@"
           }
         },
         "pt-BR" : {
@@ -101590,7 +101590,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non ha potuto salvare la libreria prima di eliminare il feed «%@», quindi non è stato eliminato nulla."
+            "value" : "TextMouth non ha potuto salvare la libreria prima di eliminare il feed “%@”, quindi non è stato eliminato nulla."
           }
         },
         "pt-BR" : {
@@ -102728,7 +102728,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sta rileggendo «%@» con un’altra codifica. Riprova quando ha finito."
+            "value" : "TextMouth sta rileggendo “%@” con un’altra codifica. Riprova quando ha finito."
           }
         },
         "pt-BR" : {
@@ -102757,7 +102757,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sta rileggendo «%@» con un altro codice braille. Riprova quando ha finito."
+            "value" : "TextMouth sta rileggendo “%@” con un altro codice braille. Riprova quando ha finito."
           }
         },
         "pt-BR" : {
@@ -102786,7 +102786,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sta rileggendo «%@» con altri caratteri del file braille. Riprova quando ha finito."
+            "value" : "TextMouth sta rileggendo “%@” con altri caratteri del file braille. Riprova quando ha finito."
           }
         },
         "pt-BR" : {
@@ -102873,7 +102873,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sta sostituendo «%@» con la nuova copia. Riprova quando ha finito."
+            "value" : "TextMouth sta sostituendo “%@” con la nuova copia. Riprova quando ha finito."
           }
         },
         "pt-BR" : {
@@ -103601,7 +103601,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth ha spostato nel Cestino la nuova copia di «%@», perché la domanda se conservarla come duplicato non ha avuto risposta prima della chiusura di TextMouth. Per recuperarla, apri il Cestino e scegli Rimetti a posto."
+            "value" : "TextMouth ha spostato nel Cestino la nuova copia di “%@”, perché la domanda se conservarla come duplicato non ha avuto risposta prima della chiusura di TextMouth. Per recuperarla, apri il Cestino e scegli Rimetti a posto."
           }
         },
         "pt-BR" : {
@@ -104080,19 +104080,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ha saltato %lld di voci di «%@»: %@."
+                  "value" : "TextMouth ha saltato %lld di voci di “%@”: %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ha saltato %lld voce di «%@»: %@."
+                  "value" : "TextMouth ha saltato %lld voce di “%@”: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ha saltato %lld voci di «%@»: %@."
+                  "value" : "TextMouth ha saltato %lld voci di “%@”: %@."
                 }
               }
             }
@@ -104600,7 +104600,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il convertitore di TextMouth non ha potuto proteggersi prima di leggere «%@», quindi non ha letto il file."
+            "value" : "Il convertitore di TextMouth non ha potuto proteggersi prima di leggere “%@”, quindi non ha letto il file."
           }
         },
         "pt-BR" : {
@@ -104629,7 +104629,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il convertitore di TextMouth ha restituito dell’audio di «%@» che TextMouth non ha potuto leggere."
+            "value" : "Il convertitore di TextMouth ha restituito dell’audio di “%@” che TextMouth non ha potuto leggere."
           }
         },
         "pt-BR" : {
@@ -104658,7 +104658,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il convertitore di TextMouth si è fermato prima della fine di «%@», quindi non è stato possibile importarlo."
+            "value" : "Il convertitore di TextMouth si è fermato prima della fine di “%@”, quindi non è stato possibile importarlo."
           }
         },
         "pt-BR" : {
@@ -104687,7 +104687,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il convertitore di TextMouth si è fermato inaspettatamente durante la lettura di «%@». Il file potrebbe essere danneggiato."
+            "value" : "Il convertitore di TextMouth si è fermato inaspettatamente durante la lettura di “%@”. Il file potrebbe essere danneggiato."
           }
         },
         "pt-BR" : {
@@ -108432,7 +108432,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’audio di «%@» è in fase di modifica. Chiudi l’editor audio o attendi che venga salvato, poi scegli di nuovo %@."
+            "value" : "L’audio di “%@” è in fase di modifica. Chiudi l’editor audio o attendi che venga salvato, poi scegli di nuovo %@."
           }
         },
         "pt-BR" : {
@@ -109811,7 +109811,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il cue sheet «%@» è troppo grande per essere letto."
+            "value" : "Il cue sheet “%@” è troppo grande per essere letto."
           }
         },
         "pt-BR" : {
@@ -109840,7 +109840,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il cue sheet «%@» non nomina nessuno degli audio accanto a esso, quindi le sue intestazioni non sono state usate."
+            "value" : "Il cue sheet “%@” non nomina nessuno degli audio accanto a esso, quindi le sue intestazioni non sono state usate."
           }
         },
         "pt-BR" : {
@@ -110205,7 +110205,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il download di «%@» verrà eliminato."
+            "value" : "Il download di “%@” verrà eliminato."
           }
         },
         "pt-BR" : {
@@ -110997,7 +110997,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il feed «%@» resta con esso."
+            "value" : "Il feed “%@” resta con esso."
           }
         },
         "pt-BR" : {
@@ -111026,7 +111026,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il feed «%@» resta con essi."
+            "value" : "Il feed “%@” resta con essi."
           }
         },
         "pt-BR" : {
@@ -111669,7 +111669,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "I file della nuova copia di «%@» non sono più nella libreria, quindi non può essere conservata. Scegli Annulla, poi importa di nuovo il file."
+            "value" : "I file della nuova copia di “%@” non sono più nella libreria, quindi non può essere conservata. Scegli Annulla, poi importa di nuovo il file."
           }
         },
         "pt-BR" : {
@@ -112609,7 +112609,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il file di etichette «%@» non corrisponde per nome a nessun file audio accanto a esso, quindi le sue intestazioni non sono state usate."
+            "value" : "Il file di etichette “%@” non corrisponde per nome a nessun file audio accanto a esso, quindi le sue intestazioni non sono state usate."
           }
         },
         "pt-BR" : {
@@ -112638,7 +112638,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le etichette del file «%@» superano la fine del suo audio, quindi le sue intestazioni non sono state usate."
+            "value" : "Le etichette del file “%@” superano la fine del suo audio, quindi le sue intestazioni non sono state usate."
           }
         },
         "pt-BR" : {
@@ -112765,7 +112765,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La libreria non è raggiungibile, quindi TextMouth non può conservare la nuova copia di «%@». Rispondi di nuovo quando sarà tornata."
+            "value" : "La libreria non è raggiungibile, quindi TextMouth non può conservare la nuova copia di “%@”. Rispondi di nuovo quando sarà tornata."
           }
         },
         "pt-BR" : {
@@ -113746,7 +113746,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La nuova copia ha sostituito «%@», ma i file della vecchia copia non sono stati eliminati e restano nella sua cartella: %@"
+            "value" : "La nuova copia ha sostituito “%@”, ma i file della vecchia copia non sono stati eliminati e restano nella sua cartella: %@"
           }
         },
         "pt-BR" : {
@@ -113781,7 +113781,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La nuova copia ha sostituito «%@», ma i file della vecchia copia non sono stati spostati nel Cestino e restano nella sua cartella: %@"
+            "value" : "La nuova copia ha sostituito “%@”, ma i file della vecchia copia non sono stati spostati nel Cestino e restano nella sua cartella: %@"
           }
         },
         "pt-BR" : {
@@ -114536,7 +114536,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il file originale è stato conservato: TextMouth ha importato solo il libro DAISY «%1$@» dall’archivio «%2$@»."
+            "value" : "Il file originale è stato conservato: TextMouth ha importato solo il libro DAISY “%1$@” dall’archivio “%2$@”."
           }
         },
         "pt-BR" : {
@@ -114571,7 +114571,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il file originale è stato conservato: TextMouth ha importato l’audio di «%1$@» dall’archivio «%2$@», e l’archivio è l’unica copia del suo testo."
+            "value" : "Il file originale è stato conservato: TextMouth ha importato l’audio di “%1$@” dall’archivio “%2$@”, e l’archivio è l’unica copia del suo testo."
           }
         },
         "pt-BR" : {
@@ -114780,7 +114780,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossibile eliminare il file originale «%1$@»: %2$@"
+            "value" : "Impossibile eliminare il file originale “%1$@”: %2$@"
           }
         },
         "pt-BR" : {
@@ -114815,7 +114815,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossibile spostare il file originale «%1$@» nel Cestino: %2$@"
+            "value" : "Impossibile spostare il file originale “%1$@” nel Cestino: %2$@"
           }
         },
         "pt-BR" : {
@@ -115148,7 +115148,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La playlist «%@» non è un file di playlist completo e valido."
+            "value" : "La playlist “%@” non è un file di playlist completo e valido."
           }
         },
         "pt-BR" : {
@@ -115206,7 +115206,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La playlist «%@» usa entità XML proprie, che TextMouth non legge."
+            "value" : "La playlist “%@” usa entità XML proprie, che TextMouth non legge."
           }
         },
         "pt-BR" : {
@@ -117006,7 +117006,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le tracce del cue sheet «%@» superano la fine del suo audio, quindi le sue intestazioni non sono state usate."
+            "value" : "Le tracce del cue sheet “%@” superano la fine del suo audio, quindi le sue intestazioni non sono state usate."
           }
         },
         "pt-BR" : {
@@ -119436,7 +119436,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Questo Mac è offline, quindi «%@» non può essere scaricato. Connettiti a internet e riprova."
+            "value" : "Questo Mac è offline, quindi “%@” non può essere scaricato. Connettiti a internet e riprova."
           }
         },
         "pt-BR" : {
@@ -130700,7 +130700,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con «%@», %@."
+            "value" : "Con “%@”, %@."
           }
         },
         "pt-BR" : {
@@ -130729,7 +130729,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con «%@», il feed e i suoi download restano, senza cartella, finché Info feed non gli assegna un’altra cartella; Elimina feed… sulla sua riga lo elimina."
+            "value" : "Con “%@”, il feed e i suoi download restano, senza cartella, finché Info feed non gli assegna un’altra cartella; Elimina feed… sulla sua riga lo elimina."
           }
         },
         "pt-BR" : {
@@ -130758,7 +130758,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con «%@», i feed e i loro download restano, senza cartella, finché Info feed non assegna a ciascuno un’altra cartella; Elimina feed… sulla riga di un feed lo elimina."
+            "value" : "Con “%@”, i feed e i loro download restano, senza cartella, finché Info feed non assegna a ciascuno un’altra cartella; Elimina feed… sulla riga di un feed lo elimina."
           }
         },
         "pt-BR" : {
@@ -130793,7 +130793,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con «%@», la cartella e tutto ciò che contiene escono dalla libreria, e %@."
+            "value" : "Con “%@”, la cartella e tutto ciò che contiene escono dalla libreria, e %@."
           }
         },
         "pt-BR" : {
@@ -130822,7 +130822,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con «Sposta fuori il contenuto», la cartella del feed viene spostata insieme al resto."
+            "value" : "Con “Sposta fuori il contenuto”, la cartella del feed viene spostata insieme al resto."
           }
         },
         "pt-BR" : {
@@ -130851,7 +130851,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con «Sposta fuori il contenuto», le loro cartelle vengono spostate insieme al resto."
+            "value" : "Con “Sposta fuori il contenuto”, le loro cartelle vengono spostate insieme al resto."
           }
         },
         "pt-BR" : {
@@ -130880,7 +130880,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con «Sposta fuori il contenuto», restano nella libreria e viene eliminata solo la cartella."
+            "value" : "Con “Sposta fuori il contenuto”, restano nella libreria e viene eliminata solo la cartella."
           }
         },
         "pt-BR" : {
@@ -133323,7 +133323,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "capitolo %@, con la nota «%@»"
+            "value" : "capitolo %@, con la nota “%@”"
           }
         },
         "pt-BR" : {
@@ -135085,7 +135085,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nella cartella «%@»"
+            "value" : "nella cartella “%@”"
           }
         },
         "pt-BR" : {
@@ -140267,7 +140267,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il download di «%@»"
+            "value" : "il download di “%@”"
           }
         },
         "pt-BR" : {
@@ -140325,7 +140325,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il feed «%@»"
+            "value" : "il feed “%@”"
           }
         },
         "pt-BR" : {
@@ -141001,7 +141001,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il titolo o l’autore contiene «%@»"
+            "value" : "il titolo o l’autore contiene “%@”"
           }
         },
         "pt-BR" : {
@@ -141030,7 +141030,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il titolo o l’autore non contiene «%@»"
+            "value" : "il titolo o l’autore non contiene “%@”"
           }
         },
         "pt-BR" : {
@@ -141601,7 +141601,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@»"
+            "value" : "“%@”"
           }
         },
         "pt-BR" : {
@@ -141636,7 +141636,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%1$@» (%2$@)"
+            "value" : "“%1$@” (%2$@)"
           }
         },
         "pt-BR" : {
@@ -141776,7 +141776,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» non può essere letto come %@: %@ Nulla è stato modificato."
+            "value" : "“%@” non può essere letto come %@: %@ Nulla è stato modificato."
           }
         },
         "pt-BR" : {
@@ -141805,7 +141805,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» è cambiato durante la sostituzione, quindi TextMouth ha lasciato entrambe le copie come sono. Scegli di nuovo Sostituisci l’esistente."
+            "value" : "“%@” è cambiato durante la sostituzione, quindi TextMouth ha lasciato entrambe le copie come sono. Scegli di nuovo Sostituisci l’esistente."
           }
         },
         "pt-BR" : {
@@ -141921,7 +141921,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» verrà scaricato quando questo Mac sarà su una rete senza limiti di dati."
+            "value" : "“%@” verrà scaricato quando questo Mac sarà su una rete senza limiti di dati."
           }
         },
         "pt-BR" : {
@@ -141950,7 +141950,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» non contiene alcun libro DAISY né tracce audio da importare come un unico libro."
+            "value" : "“%@” non contiene alcun libro DAISY né tracce audio da importare come un unico libro."
           }
         },
         "pt-BR" : {
@@ -141979,7 +141979,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» non contiene audio da importare."
+            "value" : "“%@” non contiene audio da importare."
           }
         },
         "pt-BR" : {
@@ -142031,7 +142031,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» è un lessico di pronuncia, non una playlist."
+            "value" : "“%@” è un lessico di pronuncia, non una playlist."
           }
         },
         "pt-BR" : {
@@ -142060,7 +142060,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» è già in fase di aggiunta alla libreria."
+            "value" : "“%@” è già in fase di aggiunta alla libreria."
           }
         },
         "pt-BR" : {
@@ -142112,7 +142112,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» è in fase di esportazione. %@, poi %@."
+            "value" : "“%@” è in fase di esportazione. %@, poi %@."
           }
         },
         "pt-BR" : {
@@ -142164,7 +142164,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» ora viene letto come %@."
+            "value" : "“%@” ora viene letto come %@."
           }
         },
         "pt-BR" : {
@@ -142332,7 +142332,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» mantiene %@."
+            "value" : "“%@” mantiene %@."
           }
         },
         "pt-BR" : {
@@ -142367,7 +142367,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%1$@» corrisponde a «%2$@», già nella tua libreria. Sostituire la copia esistente, o conservarle entrambe come libri separati?"
+            "value" : "“%1$@” corrisponde a “%2$@”, già nella tua libreria. Sostituire la copia esistente, o conservarle entrambe come libri separati?"
           }
         },
         "pt-BR" : {
@@ -142402,7 +142402,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%1$@» richiede %2$@ liberi"
+            "value" : "“%1$@” richiede %2$@ liberi"
           }
         },
         "pt-BR" : {
@@ -142437,7 +142437,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%1$@» non è più in attesa di download; viene scaricato quando scegli %2$@."
+            "value" : "“%1$@” non è più in attesa di download; viene scaricato quando scegli %2$@."
           }
         },
         "pt-BR" : {
@@ -142582,7 +142582,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» è stato riletto."
+            "value" : "“%@” è stato riletto."
           }
         },
         "pt-BR" : {
@@ -142652,7 +142652,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%1$@», %2$@"
+            "value" : "“%1$@”, %2$@"
           }
         },
         "pt-BR" : {
@@ -142687,7 +142687,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%1$@», %2$@: %3$@"
+            "value" : "“%1$@”, %2$@: %3$@"
           }
         },
         "pt-BR" : {
@@ -142716,7 +142716,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@», che questa versione di TextMouth non sa leggere"
+            "value" : "“%@”, che questa versione di TextMouth non sa leggere"
           }
         },
         "pt-BR" : {
