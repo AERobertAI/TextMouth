@@ -223,6 +223,38 @@ targetTemplates:
   # The module is named SwiftSoup, as the package was. Its warnings are
   # SwiftSoup's own and are not shown; the gate counts Swift warnings only.
   # SwiftSoupCorpusTests checks that it builds the trees the package built.
+  # The compact language files (TL16, FR34), for both apps. Xcode compiles the String
+  # Catalog into XML property lists, about 80 bytes of markup an entry. This phase, the
+  # last of the target (so after the Resources phase has put the compiled files in the
+  # product, and before Xcode signs the product), rewrites every *.lproj/*.strings as
+  # UTF-8 text and every *.stringsdict as a binary list, and reads each one back with
+  # Apple's parser: a change to any lookup fails the build and leaves the file as it was
+  # (Scripts/l10n/compact_packs.py; make l10n-check proves the same on the catalog, and
+  # LanguagePackTests on each built app). UNLOCALIZED_RESOURCES_FOLDER_PATH is the folder
+  # that holds the *.lproj folders: Contents/Resources in the Mac app, the bundle itself
+  # on the iPhone. The system's Python 3, as the FFmpeg phase uses, so a runner needs no
+  # other.
+  #
+  # It runs on every build and in every configuration (the tests see what ships): Xcode's
+  # own copy of the compiled catalog is not a file this phase could name as an input, and
+  # an incremental build may or may not have replaced it. It runs again over files it
+  # already compacted and then changes nothing, in a fraction of a second.
+  #
+  # Script sandboxing is off for the two apps, as the FFmpeg target's is. A sandboxed phase
+  # may touch only the files it declares, and the files here are the languages the catalog
+  # holds, which grow with it (eleven are planned): a list of outputs in this file would go
+  # stale on the day a language is added, and then either the sandbox would stop the phase
+  # or the language would ship in XML. The build step checks its own output and
+  # `make check` fails on a file left in XML, so nothing ships unchecked.
+  CompactLanguageFiles:
+    postBuildScripts:
+      - name: Compact language files
+        script: /usr/bin/python3 -I -B "$SRCROOT/Scripts/l10n/compact_packs.py" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH"
+        basedOnDependencyAnalysis: false
+    settings:
+      base:
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+
   SwiftSoupLibrary:
     type: library.static
     # Swift alone: no Objective-C class or category for the linker to keep.
@@ -243,6 +275,8 @@ targetTemplates:
 targets:
   TextMouth:
     type: application
+    templates:
+      - CompactLanguageFiles
     platform: macOS
     sources:
       # Every source file, less the iOS app's own folder: a new file is
@@ -537,6 +571,8 @@ targets:
   # this app (DR34, FMT54).
   TextMouthiOS:
     type: application
+    templates:
+      - CompactLanguageFiles
     platform: iOS
     deploymentTarget: "26.0"
     sources:
@@ -991,6 +1027,7 @@ targets:
       - TextMouthProductionTests/KFXPrivateBooksTests.swift
       - TextMouthProductionTests/KFXTestBook.swift
       - TextMouthProductionTests/KFXWalkTests.swift
+      - TextMouthProductionTests/LanguagePackTests.swift
       - TextMouthProductionTests/LeadingArticlesSortTests.swift
       - TextMouthProductionTests/LeadingArticlesTests.swift
       - TextMouthProductionTests/LegacyDocumentAndAccessibilityTests.swift

@@ -459,6 +459,7 @@
 		25212DF554EFBA13418BC531 /* CueSheetArrangement.swift in Sources */ = {isa = PBXBuildFile; fileRef = B928D26791E7367459B255A0 /* CueSheetArrangement.swift */; };
 		25219B646825F4D605488F2C /* AudacityLabelsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9FA9B199C26C3311BD18AF6A /* AudacityLabelsTests.swift */; };
 		252F45819BE7424580534B4D /* PhoneLibraryOffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECF4E91120763A352E606CBD /* PhoneLibraryOffer.swift */; };
+		2541E459B230062704FBD5BD /* LanguagePackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF3245ABB0D866FC345872E /* LanguagePackTests.swift */; };
 		25426DEEA244FFB297D1707D /* DocumentContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCFCBACA33B07A5F3D5C2291 /* DocumentContent.swift */; };
 		2546A43537AD6E5092ED5615 /* TimeRemainingTallyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7E1F1189DE894477934C24 /* TimeRemainingTallyTests.swift */; };
 		2552092057F943323FD8AEEE /* LogsSettingsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB782467B0C65A1556A61344 /* LogsSettingsSection.swift */; };
@@ -994,6 +995,7 @@
 		51A2E29CF93218D6575F7FB6 /* AudioExportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C6B17E0F6F50CD3C22ADC1D /* AudioExportTests.swift */; };
 		51A3515241D66690FA90497B /* LibraryViewModel+FeedItemMove.swift in Sources */ = {isa = PBXBuildFile; fileRef = EDD7B145EA146691AE7D9B27 /* LibraryViewModel+FeedItemMove.swift */; };
 		51C5D04F2B4799F2C115579E /* SoundEffectsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78D20D205E302A5F6F7739FF /* SoundEffectsSettingsView.swift */; };
+		51D22C3FEAAFEAE253765FC0 /* LanguagePackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DF3245ABB0D866FC345872E /* LanguagePackTests.swift */; };
 		520469F9E1E82AA643B8631B /* DAISYParser+DTBookHeadParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = B06E8CAC9CFB99C1CDEA0BA4 /* DAISYParser+DTBookHeadParser.swift */; };
 		52195F68D7C4510D31787D7F /* TextEncodingGuesser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43F59A558FA1CA98187E21DD /* TextEncodingGuesser.swift */; };
 		5227808989F13DB6DD518DAC /* ExportDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 023053943F17582DBD53523B /* ExportDocument.swift */; };
@@ -4420,6 +4422,7 @@
 		7D58E23CB816806460F68829 /* lame_global_flags.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lame_global_flags.h; sourceTree = "<group>"; };
 		7D8ABAF885921CCC9068372C /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
 		7DD1A4A2C32FFB392ACF99B8 /* BookFolder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookFolder.swift; sourceTree = "<group>"; };
+		7DF3245ABB0D866FC345872E /* LanguagePackTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguagePackTests.swift; sourceTree = "<group>"; };
 		7E193F6B61E573491530D803 /* ChapterListWriters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChapterListWriters.swift; sourceTree = "<group>"; };
 		7E409911ED32ECB321520D44 /* EPUBPageListTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EPUBPageListTests.swift; sourceTree = "<group>"; };
 		7E771FFBB9272C947C5E3C20 /* PlaceSnapshotRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaceSnapshotRecoveryTests.swift; sourceTree = "<group>"; };
@@ -7175,6 +7178,7 @@
 				201335713BB975F161C5D653 /* KFXTestBook.swift */,
 				BDB1CD670E6672F384A7D4CA /* KFXVerifyRoundTests.swift */,
 				C73B1986B199D65CA1695AE4 /* KFXWalkTests.swift */,
+				7DF3245ABB0D866FC345872E /* LanguagePackTests.swift */,
 				B47F5A5E8044FCF6CC2C34DC /* LeadingArticlesDisplayTests.swift */,
 				D162BB44C72E2BACA309EF7F /* LeadingArticlesSettingsTests.swift */,
 				608F3E8707C682A483E73D75 /* LeadingArticlesSortTests.swift */,
@@ -8198,6 +8202,7 @@
 				1C95A964EBB5395E1F896244 /* CopyFiles */,
 				FF0E856FCEDDA3C191BC39A0 /* CopyFiles */,
 				BAC07B34CF68D2587F4A0963 /* Frameworks */,
+				F4C002DE3DE0291522FC0C06 /* Compact language files */,
 			);
 			buildRules = (
 			);
@@ -8436,6 +8441,7 @@
 				9F57258FDEE304E9FBEBBDF0 /* CopyFiles */,
 				5B26D5AA6DDCEFAEAEB67A60 /* Frameworks */,
 				C0C794FB23B67989FD99D8E3 /* Embed Dependencies */,
+				89748C857B721999D73DFDFB /* Compact language files */,
 			);
 			buildRules = (
 			);
@@ -8591,6 +8597,25 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		89748C857B721999D73DFDFB /* Compact language files */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Compact language files";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/compact_packs.py\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"";
+		};
 		95A9340E5DF0C0BAE4AE8BCC /* Build FFmpeg */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -8664,6 +8689,25 @@
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "ditto \"${SCRIPT_INPUT_FILE_0}\" \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+		};
+		F4C002DE3DE0291522FC0C06 /* Compact language files */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Compact language files";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/python3 -I -B \"$SRCROOT/Scripts/l10n/compact_packs.py\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -8754,6 +8798,7 @@
 				F2F4D0B107D7A02D5DB0F5D9 /* KFXPrivateBooksTests.swift in Sources */,
 				357A76E631E75240507154E8 /* KFXTestBook.swift in Sources */,
 				7FCF9092A414605E44D91187 /* KFXWalkTests.swift in Sources */,
+				51D22C3FEAAFEAE253765FC0 /* LanguagePackTests.swift in Sources */,
 				94020D8375CF0FF1D1833ADA /* LeadingArticlesSortTests.swift in Sources */,
 				C4077059B1E94577E74560BC /* LeadingArticlesTests.swift in Sources */,
 				25A084BCB174C6A36F3586EF /* LegacyDocumentAndAccessibilityTests.swift in Sources */,
@@ -9264,6 +9309,7 @@
 				B6044620E2D0B1C22D11B2FC /* KeepOnThisMacTests.swift in Sources */,
 				0B4B79B3DE7A7A5233B4A2E6 /* KeyboardReachabilityTests.swift in Sources */,
 				209C72D15DFDEF9A5358F65D /* KeyboardShortcutTests.swift in Sources */,
+				2541E459B230062704FBD5BD /* LanguagePackTests.swift in Sources */,
 				BD0BCED3A57250E1F4C3DF88 /* LeadingArticlesDisplayTests.swift in Sources */,
 				6C573DA28BBE470FA6C38132 /* LeadingArticlesSettingsTests.swift in Sources */,
 				1CA93FE2A4066FEBB9E093B5 /* LeadingArticlesSortTests.swift in Sources */,
@@ -11978,6 +12024,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TextMouth/Platform/iOS/Info.plist;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
@@ -12161,6 +12208,7 @@
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = TextMouth/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -12561,6 +12609,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TextMouth/Platform/iOS/Info.plist;
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
@@ -12723,6 +12772,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEPLOYMENT_POSTPROCESSING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = TextMouth/Resources/Info.plist;
 				LD_EXPORT_SYMBOLS = NO;
