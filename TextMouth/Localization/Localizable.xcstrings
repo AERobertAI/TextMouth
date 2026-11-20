@@ -834,7 +834,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Les fichiers %1$@ ne peuvent pas contenir de marqueurs de chapitre ; le marqueur de chapitre (%2$lld) est omis de ce fichier."
+                  "value" : "Les fichiers %1$@ ne peuvent pas contenir de marqueurs de chapitre ; le marqueur de chapitre (%2$lld) est omis de ce fichier."
                 }
               },
               "other" : {
