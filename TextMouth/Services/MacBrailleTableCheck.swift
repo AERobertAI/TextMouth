@@ -176,7 +176,11 @@ enum MacBrailleTableCheck {
         /// How long reading braille back takes for each MB of input, in
         /// seconds, beyond loading.
         var backSecondsPerMB: TimeInterval
-        /// The most resident memory a run held, in bytes.
+        /// The most resident memory a run held, in bytes. 0 means no reading
+        /// came, never that the table needs nothing: `limits(raising:...)`
+        /// takes the larger of today's limit and twice this, so a 0 sets none
+        /// (Q15; the watchdog reads once as the child starts, so a fast run
+        /// is read too).
         var peakResidentBytes: Int64
 
         /// No need beyond what every table gets: a bundled table's.

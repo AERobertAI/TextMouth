@@ -463,6 +463,14 @@ enum WatchedProcess {
         // process's copy goes, or the reader would never see the pipe's end.
         try? closingAfterLaunch?.close()
         let pid = process.processIdentifier
+        // One memory reading the moment the child exists, before anything
+        // else is started (Q15). The loop below reads only after the first
+        // wait, and starting the reaper takes several milliseconds, so a
+        // child that ends within them (a table's check on a small table)
+        // would otherwise end with no reading at all, and a measured run
+        // would record a peak of 0. The reading is kept by the caller's
+        // `residentMemory`; the limit is judged by the loop's own readings.
+        _ = residentMemory(pid)
         // Registered and published together: a cancellation that came first
         // kills the child now, one that comes later finds the pid. It is
         // counted as it is registered (`launchCount`).
