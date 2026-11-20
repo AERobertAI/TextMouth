@@ -10,32 +10,51 @@ Spanish is the first language, as the test of the system, and about eleven are p
 The plan and its measurements are in `research/LOCALIZATION-RESEARCH-2026-11-18.md`.
 
 ## The String Catalog
-<!-- id: localization-string-catalog; keys: Localizable.xcstrings, es.lproj, development language, STRINGS_FILE_OUTPUT_ENCODING, SWIFT_EMIT_LOC_STRINGS, stringsdict; src: TextMouth/Localization/Localizable.xcstrings, project.yml, TextMouth/Resources/Info.plist, TextMouth/Platform/iOS/Info.plist, Scripts/l10n/catalog.py -->
+<!-- id: localization-string-catalog; keys: Localizable.xcstrings, es.lproj, development language, SWIFT_EMIT_LOC_STRINGS, stringsdict, Translators, comment argument, TL15; src: TextMouth/Localization/Localizable.xcstrings, project.yml, TextMouth/Resources/Info.plist, TextMouth/Platform/iOS/Info.plist, Scripts/l10n/catalog.py, Scripts/l10n/l10n.py, Scripts/l10n/swiftscan/classify.py -->
 
 Both apps share one catalog, `TextMouth/Localization/Localizable.xcstrings`, with English as the development language (`CFBundleDevelopmentRegion` in both Info.plists).
 The compiler extracts each string a source file uses, and `l10n.py sync` merges them into the catalog; nobody edits the catalog by hand.
 `project.yml` turns the extraction on (`SWIFT_EMIT_LOC_STRINGS`).
 It ships the catalog as `.strings` and `.stringsdict` files in each language's `.lproj` (`LOCALIZATION_PREFERS_STRING_CATALOGS`).
-It writes them as UTF-8 (`STRINGS_FILE_OUTPUT_ENCODING: UTF-8`), the smallest of the encodings Xcode offers.
-Each string needs a comment that says where it appears and what each placeholder holds, which `l10n.py check` enforces.
-Apple's `String(localized:comment:)`, or a SwiftUI literal, is the only way to write one; never `NSLocalizedString`, and never a helper of TextMouth's own, since the compiler drops the comment of a helper's literal.
+It writes them as UTF-8 (`STRINGS_FILE_OUTPUT_ENCODING: UTF-8`), and a build phase then rewrites them compact (see The compact language files, below).
+Each string needs a note for the translators that says where it appears and what each placeholder holds, which `l10n.py check` enforces.
+The note is a `// Translators: <note>` line directly above the line that holds the key's literal, one line at that line's indentation, and `sync` copies it into the catalog as the key's comment.
+Never write a `comment:` argument: Foundation compiles every one into the app, which cost the Mac's executable 673 KB and the iPhone's 311 KB (TL15).
+Start each key on a line of its own, so a note belongs to one key; `scan.py lint` fails on a `comment:` argument, a key with no note above it, and a line that holds two keys.
+Apple's `String(localized:)`, or a SwiftUI literal, is the only way to write a string; never `NSLocalizedString`, and never a helper of TextMouth's own, which the scanner does not count as localized.
 A key is the English text, and keys are app-wide: one translation serves every place that shows the same words.
 A word with two meanings gets a key of its own only when a translator says so.
+
+## The compact language files
+<!-- id: localization-compact-files; keys: TL16, compact_packs.py, verify_packs.py, LanguagePackTests, binary stringsdict, Compact language files, ENABLE_USER_SCRIPT_SANDBOXING, LanguagePackPluralRules; src: Scripts/l10n/compact_packs.py, Scripts/l10n/verify_packs.py, Scripts/l10n/pack-probe/main.swift, TextMouthProductionTests/LanguagePackTests.swift, project.yml, Scripts/check.sh -->
+
+Xcode writes each language's files as XML property lists, and the last build phase of both apps, "Compact language files" (`Scripts/l10n/compact_packs.py`), rewrites them before Xcode signs the app, in every configuration.
+Each `.strings` becomes the UTF-8 text form, `"key"="value";` with no whitespace, its keys in code-point order so every build writes the same bytes.
+Each `.stringsdict` becomes a binary property list: the text form would be larger for plurals, and a binary `.strings` larger for any language with accents, which a binary list stores as UTF-16.
+The phase reads each new file back with Apple's parser, and on any difference it leaves the file as it was, names the first differing key, and fails the build.
+Its script sandboxing is off: the files are each language the catalog holds, so a list of outputs would go stale when a language is added.
+Three checks hold it:
+- `make l10n-check` compiles the catalog with `xcstringstool`, compacts a copy, and compares every lookup through `Bundle`, plurals at seven counts (`verify_packs.py`, with the probe in `Scripts/l10n/pack-probe/`);
+- `LanguagePackTests`, on both apps, checks the built app's files are compact and every lookup equals the catalog;
+- `make check` fails when a file of either app is left in XML.
+
+A new language needs its plural rule in `LanguagePackPluralRules`, or `LanguagePackTests` fails and names it.
+Compact, English ships 42,341 bytes and Spanish 466,619, against 158,097 and 651,532 as XML.
+Binary plurals compress worse than XML, so the IPA grows about 9 KB while each app shrinks 301 KB; the size limits count the app on disk.
 
 ## The size budget
 <!-- id: localization-size-budget; keys: 150 KB, budgetBytes, budgetFails, l10n-size, English bytes, es.lproj size; status: incomplete; issues: FR34; src: Scripts/l10n/config.json, Scripts/l10n/l10n.py -->
 
 The English text in the catalog has a budget of 150,000 bytes (`budgetBytes` in `Scripts/l10n/config.json`), and `make l10n-size` reports it, with each language's shipped size in each format.
 The budget only reports for now (`budgetFails` is false); it will fail once the cutting is done.
-Measured on the pilot's Spanish, 5,805 bytes of English shipped as 22,576 bytes in the XML Xcode writes as UTF-8, about four times as many.
-The catalog now holds 188 strings and 6,035 bytes of English.
+The catalog holds 4,190 strings and 177,883 bytes of English; what each language ships is under The compact language files, above.
 Converting a sentence whole grows the English by about a fifth before any cut, because glued sentences become whole ones and each count gets its plural forms.
 
 ## The commands
 <!-- id: localization-commands; keys: make l10n-sync, l10n-status, l10n-check, lint-l10n, plural, prune, reach, scan.py show; status: incomplete; issues: TL14; src: Makefile, Scripts/l10n/l10n.py, Scripts/l10n/scan.py, Scripts/l10n/reach.py -->
 
 - `make l10n-sync` (`REF=commit`, or `WORKTREE=1` for uncommitted work) extracts the strings of both apps and merges them into the catalog.
-- `make l10n-status` counts each language's strings by state (`LANG_CODE=es` for one), `make l10n-size` is the size report, and `make l10n-check` checks the catalog: comments, placeholders, plural forms, empty values, stale strings, and malformed parts.
+- `make l10n-status` counts each language's strings by state (`LANG_CODE=es` for one), `make l10n-size` is the size report, and `make l10n-check` checks the catalog: comments, placeholders, plural forms, empty values, stale strings, and malformed parts, and that compacting changes no lookup.
   `make check` runs `l10n-check`.
 - `make lint-l10n` is the scanner's ratchet (below).
 - `l10n.py plural KEY --lang en --one "..." --other "..."` writes a string's plural forms.
@@ -44,7 +63,7 @@ Converting a sentence whole grows the English by about a fifth before any cut, b
 - `l10n.py prune` deletes the stale strings a cut leaves, which `check` otherwise reports until someone does; `prune --all` and `--dry-run` are in [Translating TextMouth](translation.md#syncing-pruning-and-the-test-classes).
 - `l10n.py reach` lists the test classes the branch's localization could break, for `build-train.py request --classes`, and the iPhone unit classes on a line of their own.
 - `scan.py report [--by area|file]` totals the unlocalized text by area or file.
-  `scan.py show FILE` lists a file's unlocalized literals until it shows none, and also the SwiftUI literals the compiler extracts with no comment, which `check` refuses once the file is synced.
+  `scan.py show FILE` lists a file's unlocalized literals until it shows none, and also its keys whose note is missing or misplaced, which `lint` refuses.
   A line ending `// l10n: no (reason)` is left out on purpose: an identifier, a stored value, a log line.
 - `todo` and `apply` are the translators' commands; see [Translating TextMouth](translation.md).
 
@@ -67,7 +86,8 @@ A branch never edits the baseline.
 The merge chain runs `scan.py lint --base HEAD` on the merged tree, and aborts the merge (`L10N_LINT_FAILED`) when a file got worse.
 On success it runs `scan.py lint --update-baseline`, which lowers each count that fell and drops a file that reached zero, and stages the baseline into the merge itself.
 So the baseline falls with every conversion merged, and never rises.
-A literal counts as localized when the compiler extracts it with a comment, and as marked when its line ends `// l10n: no`.
+The notes have no baseline: a `comment:` argument, a key with no note line, or a line that holds two keys fails `lint` in any file.
+A literal counts as localized when it is the key of a call the compiler extracts, and as marked when its line ends `// l10n: no`.
 The scanner reads a log-only argument (`stop(reason:)`) as prose, so mark it.
 
 ## The catalog's merge driver
@@ -92,12 +112,12 @@ Git merges the file by union, which kept both sides' lines where each added them
 The pilot (FR35) took the sleep timer, bookmarks, and the Reading List on both apps from English to Spanish.
 Each pattern keeps the English word for word, so the suite's assertions keep passing; read the commit to see it worked.
 
-1. A wording enum's `static let` becomes a computed `static var` with `String(localized:comment:)`, so no language is cached (d7b1b7784, `EndOfBookWording`).
-2. A view's literal moves into the view's wording statics, which the view shows as a String, since a SwiftUI literal has no comment (d7b1b7784, `SleepTimerView`; 6a13a6387, `BookmarkPanelView`).
+1. A wording enum's `static let` becomes a computed `static var` with `String(localized:)` under its note line, so no language is cached (d7b1b7784, `EndOfBookWording`).
+2. A view's literal moves into the view's wording statics, which the view shows as a String, so a test can name it (d7b1b7784, `SleepTimerView`; 6a13a6387, `BookmarkPanelView`).
    A static that a plain enum or a test reads is `nonisolated`, and each iPhone vocabulary member forwards to the Mac's static, so one definition serves both apps.
 3. A count inside a sentence becomes the whole sentence with `%lld`, with English `one` and `other` forms added by `plural` (d7b1b7784; ea0aa881d).
 4. A glued sentence becomes one whole string for each case of a `switch`, never `noun.singular + "s"` (d7b1b7784, `NextBookWindowWording`; ea0aa881d, `ReadingListReaderWording`).
-   A label of parts joined with commas (`Bookmark.accessibilityLabel`) is one whole string for each set of parts, with positions in the comment (`%1$lld`, `%2$@`).
+   A label of parts joined with commas (`Bookmark.accessibilityLabel`) is one whole string for each set of parts, with positions in the note (`%1$lld`, `%2$@`).
 5. A raw value shown as a title keeps its raw value, which `config.json` stores (`// l10n: no`), and gains a `title`; every place that showed the raw value shows `title` (d7b1b7784, `NextBookWindow`).
 6. An announcement is one `nonisolated static func` that the Mac and the phone share, not two copies of a literal (6a13a6387).
 7. A time uses `Duration.formatted(.time(pattern: .minuteSecond))` in place of `String(format: "%d:%02d")`, which writes the same English past an hour ("61:00") and each language's digits (d7b1b7784, `SleepTimerService.formattedRemaining`).
@@ -127,7 +147,7 @@ The waves added these to the pilot's patterns (the numbering above goes on); eac
 16. A choice that code makes about a name compares the name's identity, never its localized text: `TextEncodingCatalog.Label` has one case for each encoding name, and `TextEncodingChoices` compares labels (33cd7c8e4).
     Foundation's names for an encoding differ from ours in English too, so comparing text was never right.
 17. Mac code names no `Phone*` type outside an iOS branch, which `IOSBranchTests.testOnlyTheIPhonesFoldersNameItsTypesOutsideAnIOSBranch` enforces by reading the source.
-    The phone's words forward to the Mac's statics; where Mac code needs a word the phone's type holds (Cancel), it gets its own static with the same key and comment, so the catalog is unchanged (33df32b4d).
+    The phone's words forward to the Mac's statics; where Mac code needs a word the phone's type holds (Cancel), it gets its own static with the same key and note, so the catalog is unchanged (33df32b4d).
     A comparison against a menu's or a button's title follows pattern 10 and the menus bullet below.
 
 ## The rules that bite
@@ -145,7 +165,7 @@ The waves added these to the pilot's patterns (the numbering above goes on); eac
 - **An identifier stays ungrouped; a count is grouped.**
   An `Int` placeholder is formatted for the region, so 1234 reads "1,234" in en_US.
   That is right for a count ("1,000 books"), and wrong for a number that names a thing: a bookmark's number, a page or track number, an ID, a version.
-  Write an identifier as `String(number)`, so the key holds `%@` and its comment says it is an identifier written without grouping (`Bookmark.name`, 93d5d874b).
+  Write an identifier as `String(number)`, so the key holds `%@` and its note says it is an identifier written without grouping (`Bookmark.name`, 93d5d874b).
   Ask of every `Int` placeholder whether it is counted or named, and test with 12345.
   A `Double` becomes `%lf` ("1.500000 seconds"): format it before interpolating.
 - **A fragment inside another area's English sentence stays English** until that area converts, marked `// l10n: no (inside <file>'s English sentences)`.

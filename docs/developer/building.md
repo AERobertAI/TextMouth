@@ -266,20 +266,31 @@ The script, Scripts/set-version.sh:
 TextMouth locks its Swift packages deliberately: `project.yml` requires an exact version of each direct dependency, and the committed `TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` pins every exact revision, including the transitive swift-cmark.
 SwiftSoup is vendored and has no pin (see Make targets, above).
 Run `make check` before merging.
-- It regenerates the project and checks the String Catalog (`make l10n-check`, which builds nothing);
+- It regenerates the project and checks the String Catalog (`make l10n-check`, which builds no app);
 - resolves packages strictly from `Package.resolved` (failing if anything would change);
 - builds Release and runs the hosted test suite, with the performance baselines tests measuring even on a busy Mac;
 - and fails on any Swift warning in either build, about concurrency or anything else, naming the first five.
 
 It also reports the size of the Release app it built, build/TextMouth.app, the app `make install` copies, counted as Finder counts it (the sizes of its files, a megabyte being a million bytes), as in "build/TextMouth.app is 17.9 MB (17,888,466 bytes), within the 30 MB limit".
 It warns, without failing, above 30 MB and fails above 40 MB, limits set once, as APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh, which `app-size.py` reads for the iPhone app too ([the gate's step](#the-iphone-app-in-the-gate)).
+It lists the size of each language file of both apps, and fails on one left in XML ([the compact language files](localization.md#the-compact-language-files)).
 Its Release build signs the app as `make build` does, which needs this Mac's login keychain unlocked: with it locked, codesign waits for a password nobody can type, and the gate hangs in codesign.
 In a session that cannot answer the prompt, run `make check SIGN_APP=true`, which skips only the signing (`make install` on the user's Mac signs as always).
 It repeats, once each, the PERFORMANCE WARNING: and PERFORMANCE SKIPPED: lines those tests print; neither kind fails the gate, since a number more than twice its baseline has already failed its test.
 Both builds start from scratch: the gate first removes `build/DerivedData/Build` and `TextMouthTests/.build`, keeping the package checkouts, because xcodebuild prints a file's warnings only when it compiles that file.
 It prints one line per step and ends with PASSED or FAILED, with full logs in `build/check/` and the Release build's in `build/xcodebuild-Release.log`.
-A run takes about seven minutes on the development Mac (2 minutes for the Release build, 5 for the tests).
+On the development Mac the hosted suite's tests alone take about 30 minutes.
 To upgrade a package, change its version in `project.yml`, run `make update-packages`, review the `Package.resolved` diff, run `make check`, and commit both files.
+GitHub Actions runs the gate's checks in two sets of jobs side by side (`.github/workflows/check.yml`, on macOS 26 with Xcode 26.0.1, for every push to main and every pull request).
+The `gate` job runs `make check CHECK_ARGS=--without-tests` (`Scripts/check.sh --without-tests`: steps 1 to 3, the project, the pins, and the Release build with its warnings and size).
+The `suite` job runs the hosted suite through `.github/workflows/tests.yml`, the shared jobs a push to `TestBuild` uses, dealt out among 4 parallel shards.
+It runs only for a push and for a pull request from this repository, not from a fork, because it starts 5 macOS jobs and GitHub runs 5 at once.
+It asks for a build from nothing (`"cold": true`, since xcodebuild prints a file's warnings only when it compiles that file) and no Swift warning in it (`"no_warnings": true`, which `run-on-runner.py` checks with the same pattern as `check.sh`).
+One machine could not finish the whole suite in the old job's 60-minute limit (run 42765562754 was cancelled at it); the shards finish it in about 20 minutes cold.
+
+### The gate's self-test
+<!-- id: make-check-selftest; keys: check-selftest, dry run, CHECK_ARGS, gate tests, stand-ins; src: Scripts/check-selftest.sh, Scripts/check.sh, Scripts/make-signing-identity.sh, Makefile -->
+
 `make check-selftest` and `make check CHECK_ARGS=--dry-run` test the gate itself in seconds.
 `make check-selftest` also tests:
 - the baseline-recording script;
@@ -292,13 +303,6 @@ To upgrade a package, change its version in `project.yml`, run `make update-pack
 - that `make release-goldens` names its settings and golden classes;
 - that `make install` keeps the dSYMs, running install and uninstall in a sandbox folder, never /Applications;
 - and the signing script, Scripts/make-signing-identity.sh, once for real, run twice against a throwaway keychain it creates unlocked, and otherwise with stand-ins for security and codesign, so it never asks for a password or touches the login keychain.
-
-GitHub Actions runs the gate's checks in two sets of jobs side by side (`.github/workflows/check.yml`, on macOS 26 with Xcode 26.0.1, for every push to main and every pull request).
-The `gate` job runs `make check CHECK_ARGS=--without-tests` (`Scripts/check.sh --without-tests`: steps 1 to 3, the project, the pins, and the Release build with its warnings and size).
-The `suite` job runs the hosted suite through `.github/workflows/tests.yml`, the shared jobs a push to `TestBuild` uses, dealt out among 4 parallel shards.
-It runs only for a push and for a pull request from this repository, not from a fork, because it starts 5 macOS jobs and GitHub runs 5 at once.
-It asks for a build from nothing (`"cold": true`, since xcodebuild prints a file's warnings only when it compiles that file) and no Swift warning in it (`"no_warnings": true`, which `run-on-runner.py` checks with the same pattern as `check.sh`).
-One machine could not finish the whole suite in the old job's 60-minute limit (run 42765562754 was cancelled at it); the shards finish it in about 20 minutes cold.
 
 ### The iPhone app in the gate
 <!-- id: make-check-iphone-size; keys: ios-size, app-size.py, check.sh, without-tests, GITHUB_ACTIONS, TL05; src: Scripts/check.sh, Scripts/ios/app-size.py -->

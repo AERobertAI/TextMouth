@@ -16,6 +16,7 @@ Run every command as `python3 -I -B Scripts/l10n/l10n.py COMMAND`; `--help` afte
 1. `sync` type-checks both apps and merges the strings the compiler finds into the catalog.
    The agent that changed the code runs it, and it takes the heavy-work lock for about four minutes, so a translator does not.
    It also writes `build/l10n/locations.json`, the file and line of each string and the commit it read them from, which `todo` reads for the code around a string.
+   It copies each key's note, the `// Translators:` line above its literal, into the catalog as the key's comment; a source that does not match the compiler's record is named, its keys keep their comments, and `sync` exits 1.
 2. `todo --lang es --out batch.json` writes a batch of up to 300 strings that still need Spanish.
    `--keys-from FILE`, `--file PATH...`, and `--area NAME` pick the strings (a list of keys, the strings some files use, or one of the scanner's areas); `--limit N` sets the batch size, and 0 means all (a negative number is refused).
    `--area` needs the unlocalized-text scanner (its area table, from the `l10n/scan` branch); without it `--area` says so, and `--file` and `--keys-from` still work.
@@ -60,7 +61,7 @@ An old `config.json` that still has a `syncPaths` key is refused with a sentence
 - `reach [--base REF] [--explain]` prints the hosted test classes that the branch's localization could break, for `build-train.py request --classes`.
   The first line holds the Mac classes, comma-separated; the iPhone unit test classes follow on a line of their own, since a train names them by the area `phone`.
   It finds the classes whose files hold an English text the branch localized (cut at its first interpolation, 12 characters or more), name a converted file (they read its source), or are what `run-area.py --changed` finds; `--explain` gives each reason.
-- `scan.py show FILE` lists, apart from the unlocalized text, the SwiftUI literals the compiler extracts with no comment (`Button("…")`, `.accessibilityLabel("…")`, and the like): `check` refuses them once the file is synced, so move each into a wording static with `String(localized:comment:)`.
+- `scan.py show FILE` lists, apart from the unlocalized text, each key whose note is missing or misplaced: a `comment:` argument, a key with no `// Translators:` line directly above it (a SwiftUI literal such as `Button("…")` too), and a line that holds two keys; `lint` refuses each.
 
 ## The catalog's merge driver
 <!-- id: translation-merge-driver; keys: merge driver, .gitattributes, xcstrings, merge conflict, make l10n-merge-driver, shared keys, comment; src: Scripts/l10n/merge.py, Scripts/l10n/l10n.py, Makefile -->
