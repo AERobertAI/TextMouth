@@ -281,94 +281,94 @@ private struct GesturePatternEditor: View {
 enum MiscellaneousSettingsWording {
     /// The Bluetooth switch's title and label.
     static var bluetoothTitle: String {
-        String(localized: "Enable Bluetooth monitoring",
-               comment: "Title and VoiceOver label of the switch in the Miscellaneous settings that turns on Bluetooth monitoring.")
+        // Translators: Title and VoiceOver label of the switch in the Miscellaneous settings that turns on Bluetooth monitoring.
+        String(localized: "Enable Bluetooth monitoring")
     }
     /// The Bluetooth switch's hint.
     static var bluetoothHint: String {
-        String(localized: "Stops playback resuming when headphones disconnect",
-               comment: "VoiceOver hint of the Enable Bluetooth monitoring switch in the Miscellaneous settings.")
+        // Translators: VoiceOver hint of the Enable Bluetooth monitoring switch in the Miscellaneous settings.
+        String(localized: "Stops playback resuming when headphones disconnect")
     }
     /// The text under the Bluetooth switch.
     static var bluetoothExplanation: String {
-        String(localized: "Blocks the spurious play command macOS sends when Bluetooth headphones are removed.",
-               comment: "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system.")
+        // Translators: Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system.
+        String(localized: "Blocks the spurious play command macOS sends when Bluetooth headphones are removed.")
     }
     /// The delay as the screen shows it, beside its slider.
     static func disconnectDelayText(_ delay: String) -> String {
-        String(localized: "Disconnect delay: \(delay)",
-               comment: "The Bluetooth disconnect delay shown above its slider in the Miscellaneous settings. %@ is the delay in seconds, such as \"3 seconds\".")
+        // Translators: The Bluetooth disconnect delay shown above its slider in the Miscellaneous settings. %@ is the delay in seconds, such as "3 seconds".
+        String(localized: "Disconnect delay: \(delay)")
     }
     /// The slider's title.
     static var disconnectDelayTitle: String {
-        String(localized: "Disconnect delay",
-               comment: "Title of the slider in the Miscellaneous settings that sets how long media commands are suppressed after a Bluetooth device disconnects.")
+        // Translators: Title of the slider in the Miscellaneous settings that sets how long media commands are suppressed after a Bluetooth device disconnects.
+        String(localized: "Disconnect delay")
     }
     /// The slider's VoiceOver label.
     static var disconnectDelayLabel: String {
-        String(localized: "Bluetooth disconnect delay",
-               comment: "VoiceOver label of the Bluetooth disconnect delay slider in the Miscellaneous settings.")
+        // Translators: VoiceOver label of the Bluetooth disconnect delay slider in the Miscellaneous settings.
+        String(localized: "Bluetooth disconnect delay")
     }
     /// The text under the slider.
     static var disconnectDelayExplanation: String {
-        String(localized: "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
-               comment: "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings.")
+        // Translators: Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings.
+        String(localized: "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.")
     }
     /// The Bluetooth group's heading.
     static var bluetoothHeader: String {
-        String(localized: "Bluetooth",
-               comment: "Heading of the Bluetooth group in the Miscellaneous settings. Bluetooth is a trademark and stays as written in most languages.")
+        // Translators: Heading of the Bluetooth group in the Miscellaneous settings. Bluetooth is a trademark and stays as written in most languages.
+        String(localized: "Bluetooth")
     }
 
     /// The restart gesture switch's title.
     static var restartGestureTitle: String {
-        String(localized: "Enable restart-timer gesture",
-               comment: "Title of the switch in the Miscellaneous settings that turns on the experimental gesture that restarts the sleep timer.")
+        // Translators: Title of the switch in the Miscellaneous settings that turns on the experimental gesture that restarts the sleep timer.
+        String(localized: "Enable restart-timer gesture")
     }
     /// The restart gesture switch's hint.
     static var restartGestureHint: String {
-        String(localized: "Restarts the most recent sleep timer with a sequence of media-control presses",
-               comment: "VoiceOver hint of the Enable restart-timer gesture switch in the Miscellaneous settings.")
+        // Translators: VoiceOver hint of the Enable restart-timer gesture switch in the Miscellaneous settings.
+        String(localized: "Restarts the most recent sleep timer with a sequence of media-control presses")
     }
     /// The text under the restart gesture switch.
     static var restartGestureExplanation: String {
-        String(localized: "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
-               comment: "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written.")
+        // Translators: Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written.
+        String(localized: "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.")
     }
     /// The restart gesture group's heading.
     static var restartGestureHeader: String {
-        String(localized: "Restart Sleep Timer Gesture",
-               comment: "Heading of the experimental restart gesture group in the Miscellaneous settings.")
+        // Translators: Heading of the experimental restart gesture group in the Miscellaneous settings.
+        String(localized: "Restart Sleep Timer Gesture")
     }
     /// The pattern's heading.
     static var patternHeading: String {
-        String(localized: "Gesture pattern",
-               comment: "Heading of the list of steps that make up the restart gesture, in the Miscellaneous settings.")
+        // Translators: Heading of the list of steps that make up the restart gesture, in the Miscellaneous settings.
+        String(localized: "Gesture pattern")
     }
     /// The text under the pattern's heading.
     static var patternExplanation: String {
-        String(localized: "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
-               comment: "Explanation under the restart gesture's pattern heading in the Miscellaneous settings.")
+        // Translators: Explanation under the restart gesture's pattern heading in the Miscellaneous settings.
+        String(localized: "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.")
     }
     /// The time window as the screen shows it, above its slider.
     static func timeWindowText(_ window: String) -> String {
-        String(localized: "Time window: \(window)",
-               comment: "The restart gesture's time window shown above its slider in the Miscellaneous settings. %@ is the window in seconds, such as \"2 seconds\".")
+        // Translators: The restart gesture's time window shown above its slider in the Miscellaneous settings. %@ is the window in seconds, such as "2 seconds".
+        String(localized: "Time window: \(window)")
     }
     /// The time window slider's title.
     static var timeWindowTitle: String {
-        String(localized: "Time window",
-               comment: "Title of the slider in the Miscellaneous settings that sets how long the restart gesture's sequence may take.")
+        // Translators: Title of the slider in the Miscellaneous settings that sets how long the restart gesture's sequence may take.
+        String(localized: "Time window")
     }
     /// The time window slider's VoiceOver label.
     static var timeWindowLabel: String {
-        String(localized: "Gesture time window",
-               comment: "VoiceOver label of the restart gesture's time window slider in the Miscellaneous settings.")
+        // Translators: VoiceOver label of the restart gesture's time window slider in the Miscellaneous settings.
+        String(localized: "Gesture time window")
     }
     /// The text under the time window slider.
     static var timeWindowExplanation: String {
-        String(localized: "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
-               comment: "Explanation under the restart gesture's time window slider in the Miscellaneous settings.")
+        // Translators: Explanation under the restart gesture's time window slider in the Miscellaneous settings.
+        String(localized: "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.")
     }
 
     /// The note under the restart gesture: where its keyboard shortcut is
@@ -376,56 +376,56 @@ enum MiscellaneousSettingsWording {
     /// key in words: "The keyboard shortcut for the same action is Restart
     /// Sleep Timer in the Shortcuts tab; its default is Shift + Command + R."
     nonisolated static func restartShortcutNote(action: String, tab: String, defaultKeys: String) -> String {
-        String(localized: "Set its shortcut with \(action) in the \(tab) tab; the default is \(defaultKeys).",
-               comment: "Note under the restart gesture in the Miscellaneous settings. %1$@ is the name of the shortcut's action, %2$@ is the name of the Settings tab where shortcuts are set, and %3$@ is the default key in words, such as \"Shift + Command + R\".")
+        // Translators: Note under the restart gesture in the Miscellaneous settings. %1$@ is the name of the shortcut's action, %2$@ is the name of the Settings tab where shortcuts are set, and %3$@ is the default key in words, such as "Shift + Command + R".
+        String(localized: "Set its shortcut with \(action) in the \(tab) tab; the default is \(defaultKeys).")
     }
 
     /// A step's place in the pattern editor, as the screen shows it beside its pop-up.
     static func stepNumbered(_ number: Int) -> String {
-        String(localized: "Step \(String(number)):",
-               comment: "The number of a step of the restart gesture in the Miscellaneous settings, shown beside its pop-up, ending with a colon. %@ is the step's number, an identifier written without digit grouping.")
+        // Translators: The number of a step of the restart gesture in the Miscellaneous settings, shown beside its pop-up, ending with a colon. %@ is the step's number, an identifier written without digit grouping.
+        String(localized: "Step \(String(number)):")
     }
     /// A step pop-up's VoiceOver label.
     static func stepLabel(_ number: Int) -> String {
-        String(localized: "Step \(String(number))",
-               comment: "VoiceOver label of one step's pop-up of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping.")
+        // Translators: VoiceOver label of one step's pop-up of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping.
+        String(localized: "Step \(String(number))")
     }
     /// A step's remove button's VoiceOver label.
     static func removeStepLabel(_ number: Int) -> String {
-        String(localized: "Remove step \(String(number))",
-               comment: "VoiceOver label of the button that removes one step of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping.")
+        // Translators: VoiceOver label of the button that removes one step of the restart gesture in the Miscellaneous settings. %@ is the step's number, an identifier written without digit grouping.
+        String(localized: "Remove step \(String(number))")
     }
     /// The button that adds a step.
     static var addStepTitle: String {
-        String(localized: "Add step",
-               comment: "Title of the button that adds a step to the restart gesture in the Miscellaneous settings.")
+        // Translators: Title of the button that adds a step to the restart gesture in the Miscellaneous settings.
+        String(localized: "Add step")
     }
     /// The same button's VoiceOver label.
     static var addStepLabel: String {
-        String(localized: "Add gesture step",
-               comment: "VoiceOver label of the button that adds a step to the restart gesture in the Miscellaneous settings.")
+        // Translators: VoiceOver label of the button that adds a step to the restart gesture in the Miscellaneous settings.
+        String(localized: "Add gesture step")
     }
     /// The same button's VoiceOver hint.
     static var addStepHint: String {
-        String(localized: "Appends a new step to the gesture sequence",
-               comment: "VoiceOver hint of the Add gesture step button in the Miscellaneous settings.")
+        // Translators: VoiceOver hint of the Add gesture step button in the Miscellaneous settings.
+        String(localized: "Appends a new step to the gesture sequence")
     }
     /// The summary line under the steps, shown and spoken alike.
     static func currentPattern(_ summary: String) -> String {
-        String(localized: "Current pattern: \(summary)",
-               comment: "A summary of the restart gesture's steps under its editor in the Miscellaneous settings, shown and read by VoiceOver. %@ is the steps in order, such as \"Previous track, then Play\".")
+        // Translators: A summary of the restart gesture's steps under its editor in the Miscellaneous settings, shown and read by VoiceOver. %@ is the steps in order, such as "Previous track, then Play".
+        String(localized: "Current pattern: \(summary)")
     }
     /// The steps' names in order, as a summary reads them: "Previous
     /// track, then Previous track, then Play"; "(none)" for no step, which
     /// the editor does not normally allow.
     static func steps(_ names: [String]) -> String {
         guard let first = names.first else {
-            return String(localized: "(none)",
-                          comment: "The restart gesture's summary when it has no steps, which the editor does not normally allow.")
+            // Translators: The restart gesture's summary when it has no steps, which the editor does not normally allow.
+            return String(localized: "(none)")
         }
         return names.dropFirst().reduce(first) { summary, next in
-            String(localized: "\(summary), then \(next)",
-                   comment: "Joins two steps of the restart gesture's summary in the Miscellaneous settings. %1$@ is the steps so far and %2$@ is the next step, such as \"Previous track, then Play\".")
+            // Translators: Joins two steps of the restart gesture's summary in the Miscellaneous settings. %1$@ is the steps so far and %2$@ is the next step, such as "Previous track, then Play".
+            String(localized: "\(summary), then \(next)")
         }
     }
 }

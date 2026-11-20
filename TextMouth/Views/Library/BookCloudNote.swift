@@ -91,14 +91,14 @@ extension BookCloudStates {
 enum KeptOnThisMacNote {
     /// The note's words, shown and spoken.
     static var text: String {
-        String(localized: "Kept on this Mac",
-               comment: "Note in the library list for a book the listener keeps downloaded on this Mac.")
+        // Translators: Note in the library list for a book the listener keeps downloaded on this Mac.
+        String(localized: "Kept on this Mac")
     }
     /// The words Book Information says when the reading list alone keeps the
     /// book, not the listener's own choice.
     static var forReadingListText: String {
-        String(localized: "Kept on this Mac for the reading list",
-               comment: "Note in Book Information for a book that only the reading list keeps downloaded on this Mac.")
+        // Translators: Note in Book Information for a book that only the reading list keeps downloaded on this Mac.
+        String(localized: "Kept on this Mac for the reading list")
     }
     /// The SF Symbol drawn before the words.
     static let symbolName = "pin.fill"

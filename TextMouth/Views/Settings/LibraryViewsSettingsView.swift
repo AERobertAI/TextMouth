@@ -145,8 +145,8 @@ struct LibraryViewsSettingsView: View {
     /// The kind and visibility a row shows beside a view's name: "built in,
     /// always". Each part is the library wording's own word for it.
     private static func kindAndVisibility(_ view: LibraryViewDefinition) -> String {
-        String(localized: "\(view.isBuiltIn ? Wording.builtIn : Wording.custom), \(Wording.visibilityWord(view.visibility))",
-               comment: "The right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".")
+        // Translators: The right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as "always".
+        String(localized: "\(view.isBuiltIn ? Wording.builtIn : Wording.custom), \(Wording.visibilityWord(view.visibility))")
     }
 
     /// One view's row: its name, then its kind and visibility, read as one

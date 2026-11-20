@@ -8,35 +8,35 @@ extension FeedWording {
     /// The note after a feed's title in the Feeds section, and after its
     /// folder's name in the Folders list and the Folders rotor.
     static var feedNote: String {
-        String(localized: "Feed",
-               comment: "The note after a feed's title in the Library's feed rows and in the Folders list, saying the row is a feed. Title case.")
+        // Translators: The note after a feed's title in the Library's feed rows and in the Folders list, saying the row is a feed. Title case.
+        String(localized: "Feed")
     }
     /// The note on an item that played to its end, or was marked played.
     static func playedNote(isArticle: Bool) -> String {
         isArticle
-            ? String(localized: "Read",
-                     comment: "The note on a feed's article that was read to its end or marked read. Title case.")
-            : String(localized: "Played",
-                     comment: "The note on a feed's episode that played to its end or was marked played. Title case.")
+            // Translators: The note on a feed's article that was read to its end or marked read. Title case.
+            ? String(localized: "Read")
+            // Translators: The note on a feed's episode that played to its end or was marked played. Title case.
+            : String(localized: "Played")
     }
     /// The note on an item that is new: published since the subscription
     /// began, and neither played nor opened.
     static var newNote: String {
-        String(localized: "New",
-               comment: "The note on a feed's episode or article that is new: published since the subscription began and neither played nor opened. Title case.")
+        // Translators: The note on a feed's episode or article that is new: published since the subscription began and neither played nor opened. Title case.
+        String(localized: "New")
     }
     /// What a feed row says when its folder is no longer in the library.
     static var folderMissingNote: String {
-        String(localized: "Folder missing",
-               comment: "The note on a feed's row when its library folder was removed.")
+        // Translators: The note on a feed's row when its library folder was removed.
+        String(localized: "Folder missing")
     }
     /// The note after a feed's title, or its folder's name, while the
     /// listener is unsubscribed from it (FR11, branch D), which TextMouth
     /// then does not check; spoken in lower case after "Feed", as in
     /// "Finish It!, Feed, unsubscribed, 10 of 381 episodes listed".
     static var unsubscribedNote: String {
-        String(localized: "Unsubscribed",
-               comment: "The note after a feed's title while the listener is unsubscribed from it, so TextMouth does not check it. Title case.")
+        // Translators: The note after a feed's title while the listener is unsubscribed from it, so TextMouth does not check it. Title case.
+        String(localized: "Unsubscribed")
     }
 
     /// The notes that follow "Feed" for a feed counted as `counts`: the
@@ -57,25 +57,25 @@ extension FeedWording {
     static func countsPhrase(_ counts: FeedItemCounts) -> String {
         var parts = [sizePhrase(counts)]
         if counts.downloaded > 0 {
-            parts.append(String(localized: "\(counts.downloaded) downloaded",
-                                comment: "How many of a feed's items are downloaded, in the feed's counts. %lld is the number."))
+            // Translators: How many of a feed's items are downloaded, in the feed's counts. %lld is the number.
+            parts.append(String(localized: "\(counts.downloaded) downloaded"))
         }
         if counts.downloading > 0 {
-            parts.append(String(localized: "\(counts.downloading) downloading",
-                                comment: "How many of a feed's items are downloading now, in the feed's counts. %lld is the number."))
+            // Translators: How many of a feed's items are downloading now, in the feed's counts. %lld is the number.
+            parts.append(String(localized: "\(counts.downloading) downloading"))
         }
         if counts.new > 0 {
-            parts.append(String(localized: "\(counts.new) new",
-                                comment: "How many of a feed's items are new, in the feed's counts. %lld is the number."))
+            // Translators: How many of a feed's items are new, in the feed's counts. %lld is the number.
+            parts.append(String(localized: "\(counts.new) new"))
         }
         if counts.unplayed > 0 {
             // "unread" for articles, "unplayed" for episodes and for a feed
             // mixing the two.
             parts.append(counts.noun == .article
-                ? String(localized: "\(counts.unplayed) unread",
-                         comment: "How many of a feed's articles are not yet read, in the feed's counts. %lld is the number.")
-                : String(localized: "\(counts.unplayed) unplayed",
-                         comment: "How many of a feed's episodes are not yet played, in the feed's counts. %lld is the number."))
+                // Translators: How many of a feed's articles are not yet read, in the feed's counts. %lld is the number.
+                ? String(localized: "\(counts.unplayed) unread")
+                // Translators: How many of a feed's episodes are not yet played, in the feed's counts. %lld is the number.
+                : String(localized: "\(counts.unplayed) unplayed"))
         }
         return SentenceWording.commaJoined(parts)
     }
@@ -89,34 +89,34 @@ extension FeedWording {
     static func sectionTitle(_ noun: ItemNoun, count: Int, total: FeedEntryTotal? = nil) -> String {
         guard let total, total.exceeds(count) else {
             return noun.choose(
-                episode: String(localized: "Episodes (\(count))",
-                                comment: "The heading of a feed's episodes, which counts the rows under it. %lld is how many. Title case."),
-                article: String(localized: "Articles (\(count))",
-                                comment: "The heading of a feed's articles, which counts the rows under it. %lld is how many. Title case."),
-                item: String(localized: "Items (\(count))",
-                             comment: "The heading of a feed's items, episodes and articles, which counts the rows under it. %lld is how many. Title case."))
+                // Translators: The heading of a feed's episodes, which counts the rows under it. %lld is how many. Title case.
+                episode: String(localized: "Episodes (\(count))"),
+                // Translators: The heading of a feed's articles, which counts the rows under it. %lld is how many. Title case.
+                article: String(localized: "Articles (\(count))"),
+                // Translators: The heading of a feed's items, episodes and articles, which counts the rows under it. %lld is how many. Title case.
+                item: String(localized: "Items (\(count))"))
         }
         let size = entriesPhrase(total, noun: nil)
         return noun.choose(
-            episode: String(localized: "Episodes (\(count) of \(size) listed)",
-                            comment: "The heading of a feed's episodes when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as \"381\" or \"more than 2000\". Title case."),
-            article: String(localized: "Articles (\(count) of \(size) listed)",
-                            comment: "The heading of a feed's articles when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as \"381\" or \"more than 2000\". Title case."),
-            item: String(localized: "Items (\(count) of \(size) listed)",
-                         comment: "The heading of a feed's items when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as \"381\" or \"more than 2000\". Title case."))
+            // Translators: The heading of a feed's episodes when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as "381" or "more than 2000". Title case.
+            episode: String(localized: "Episodes (\(count) of \(size) listed)"),
+            // Translators: The heading of a feed's articles when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as "381" or "more than 2000". Title case.
+            article: String(localized: "Articles (\(count) of \(size) listed)"),
+            // Translators: The heading of a feed's items when the library lists fewer than the feed has. %lld is how many are listed; %@ is the feed's size, such as "381" or "more than 2000". Title case.
+            item: String(localized: "Items (\(count) of \(size) listed)"))
     }
 
     /// The heading of a feed's folder's books that came from no item of the
     /// feed, as every folder's books are headed: "Books (2)".
     static func otherBooksTitle(count: Int) -> String {
-        String(localized: "Books (\(count))",
-               comment: "The heading of a folder's books, which counts the rows under it. %lld is how many. Title case.")
+        // Translators: The heading of a folder's books, which counts the rows under it. %lld is how many. Title case.
+        String(localized: "Books (\(count))")
     }
 
     /// The heading of the Feeds section.
     static var feedsSectionTitle: String {
-        String(localized: "Feeds",
-               comment: "The heading of the Library's section of feeds. Title case.")
+        // Translators: The heading of the Library's section of feeds. Title case.
+        String(localized: "Feeds")
     }
 
     // MARK: Checks
@@ -165,29 +165,29 @@ extension FeedWording {
     ) -> Check {
         guard isSubscribed else {
             guard let last = fetch.lastCheck else {
-                return Check(String(localized: "Not checked",
-                                    comment: "How an unsubscribed feed's last check reads when this Mac never checked it. Spoken after a comma with its first letter in lower case."))
+                // Translators: How an unsubscribed feed's last check reads when this Mac never checked it. Spoken after a comma with its first letter in lower case.
+                return Check(String(localized: "Not checked"))
             }
             let when = moment(last, now: now, calendar: calendar, locale: locale)
-            return Check(String(localized: "Not checked since \(when)",
-                                comment: "How an unsubscribed feed's last check reads. %@ is when, such as \"October 9 at 3:05 PM\". Spoken after a comma with its first letter in lower case."))
+            // Translators: How an unsubscribed feed's last check reads. %@ is when, such as "October 9 at 3:05 PM". Spoken after a comma with its first letter in lower case.
+            return Check(String(localized: "Not checked since \(when)"))
         }
         if isRefreshing {
-            return Check(String(localized: "Checking now",
-                                comment: "How a feed's last check reads while it is being checked. Spoken after a comma with its first letter in lower case."))
+            // Translators: How a feed's last check reads while it is being checked. Spoken after a comma with its first letter in lower case.
+            return Check(String(localized: "Checking now"))
         }
         if let failure = fetch.lastError {
-            return Check(String(localized: "Last check failed: \(failure.message)",
-                                comment: "How a feed's last check reads when it failed. %@ is the reason, a sentence, such as \"This Mac is offline, so Planet Money can't be refreshed.\" Spoken after a comma with its first letter in lower case."),
+            // Translators: How a feed's last check reads when it failed. %@ is the reason, a sentence, such as "This Mac is offline, so Planet Money can't be refreshed." Spoken after a comma with its first letter in lower case.
+            return Check(String(localized: "Last check failed: \(failure.message)"),
                          failed: true)
         }
         guard let checked = fetch.lastCheck else {
-            return Check(String(localized: "Not checked yet",
-                                comment: "How a feed's last check reads before it was ever checked. Spoken after a comma with its first letter in lower case."))
+            // Translators: How a feed's last check reads before it was ever checked. Spoken after a comma with its first letter in lower case.
+            return Check(String(localized: "Not checked yet"))
         }
         let when = moment(checked, now: now, calendar: calendar, locale: locale)
-        return Check(String(localized: "Checked \(when)",
-                            comment: "How a feed's last check reads. %@ is when, such as \"today at 3:05 PM\". Spoken after a comma with its first letter in lower case."))
+        // Translators: How a feed's last check reads. %@ is when, such as "today at 3:05 PM". Spoken after a comma with its first letter in lower case.
+        return Check(String(localized: "Checked \(when)"))
     }
 
     /// `date` as "today at 3:05 PM", "yesterday at 9:00 AM", "October 1 at
@@ -200,20 +200,20 @@ extension FeedWording {
         time.timeStyle = .short
         let clock = time.string(from: date)
         if calendar.isDate(date, inSameDayAs: now) {
-            return String(localized: "today at \(clock)",
-                          comment: "A moment on the day of the check. %@ is the time of day, such as 3:05 PM. Lower case.")
+            // Translators: A moment on the day of the check. %@ is the time of day, such as 3:05 PM. Lower case.
+            return String(localized: "today at \(clock)")
         }
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: now), calendar.isDate(date, inSameDayAs: yesterday) {
-            return String(localized: "yesterday at \(clock)",
-                          comment: "A moment on the day before the check. %@ is the time of day, such as 9:00 AM. Lower case.")
+            // Translators: A moment on the day before the check. %@ is the time of day, such as 9:00 AM. Lower case.
+            return String(localized: "yesterday at \(clock)")
         }
         let day = DateFormatter()
         day.locale = locale
         day.timeZone = calendar.timeZone
         let sameYear = calendar.component(.year, from: date) == calendar.component(.year, from: now)
         day.setLocalizedDateFormatFromTemplate(sameYear ? "MMMMd" : "MMMMdy")
-        return String(localized: "\(day.string(from: date)) at \(clock)",
-                      comment: "A moment on another day. The first %@ is the date, such as \"October 1\" or \"October 1, 2025\"; the second is the time of day, such as 3:05 PM.")
+        // Translators: A moment on another day. The first %@ is the date, such as "October 1" or "October 1, 2025"; the second is the time of day, such as 3:05 PM.
+        return String(localized: "\(day.string(from: date)) at \(clock)")
     }
 
     // MARK: Feed Rows
@@ -234,22 +234,22 @@ extension FeedWording {
 
     /// A feed row's spoken hint.
     static var feedRowHint: String {
-        String(localized: "Opens the feed's folder",
-               comment: "VoiceOver hint of a feed's row in the Library.")
+        // Translators: VoiceOver hint of a feed's row in the Library.
+        String(localized: "Opens the feed's folder")
     }
 
     /// What VoiceOver hears when a feed's row is opened and its folder is
     /// no longer in the library.
     static func folderMissing(title: String) -> String {
-        String(localized: "The folder of \(title) is no longer in the library.",
-               comment: "What VoiceOver says when a feed's row is opened and its library folder was removed. %@ is the feed's title.")
+        // Translators: What VoiceOver says when a feed's row is opened and its library folder was removed. %@ is the feed's title.
+        String(localized: "The folder of \(title) is no longer in the library.")
     }
 
     /// What VoiceOver hears when an item not downloaded is opened: it
     /// downloads, and then opens.
     static func downloadingToOpen(title: String) -> String {
-        String(localized: "Downloading “\(title)”. It opens once it has downloaded.",
-               comment: "What VoiceOver says when a feed item that is not downloaded is opened: it downloads, then opens. %@ is the item's title.")
+        // Translators: What VoiceOver says when a feed item that is not downloaded is opened: it downloads, then opens. %@ is the item's title.
+        String(localized: "Downloading “\(title)”. It opens once it has downloaded.")
     }
 
     /// What entering a feed's folder says, and its folder's row and Folders
@@ -307,18 +307,18 @@ extension FeedWording {
     /// opens it".
     static func itemRowHint(_ state: FeedItemState, keptPlace: Bool = false) -> String {
         if state.bookID != nil {
-            return String(localized: "Opens it",
-                          comment: "VoiceOver hint of a downloaded feed item's row: its default action opens it.")
+            // Translators: VoiceOver hint of a downloaded feed item's row: its default action opens it.
+            return String(localized: "Opens it")
         }
         if state.libraryBookID != nil {
-            return String(localized: "Opens its book in your library",
-                          comment: "VoiceOver hint of the row of a feed item that was moved into the library: its default action opens its book.")
+            // Translators: VoiceOver hint of the row of a feed item that was moved into the library: its default action opens its book.
+            return String(localized: "Opens its book in your library")
         }
         return keptPlace
-            ? String(localized: "Downloads it again, then opens it where you left off",
-                     comment: "VoiceOver hint of a feed item's row whose place was kept after its file was deleted: its default action downloads it again and opens it at the place kept.")
-            : String(localized: "Downloads it, then opens it",
-                     comment: "VoiceOver hint of the row of a feed item that is not downloaded: its default action downloads it, then opens it.")
+            // Translators: VoiceOver hint of a feed item's row whose place was kept after its file was deleted: its default action downloads it again and opens it at the place kept.
+            ? String(localized: "Downloads it again, then opens it where you left off")
+            // Translators: VoiceOver hint of the row of a feed item that is not downloaded: its default action downloads it, then opens it.
+            : String(localized: "Downloads it, then opens it")
     }
 
     // MARK: The Summary Bar

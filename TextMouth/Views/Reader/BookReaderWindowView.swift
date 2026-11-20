@@ -218,8 +218,8 @@ struct BookReaderWindowView: View {
     /// What a reader window's title begins with for a book read from
     /// anywhere but the reading list.
     nonisolated static var windowTitlePrefix: String {
-        String(localized: "Book",
-               comment: "The word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".")
+        // Translators: The word that begins the title of a reader window for a book, before its title and author: "Book: <title> by <author>".
+        String(localized: "Book")
     }
 
     /// The title of the reader window of `book`: "Book: <title> by
@@ -231,10 +231,10 @@ struct BookReaderWindowView: View {
     nonisolated static func windowTitle(for book: Book, readFromReadingList: Bool) -> String {
         let prefix = readFromReadingList ? ReadingListReaderWording.windowTitlePrefix : windowTitlePrefix
         if Book.isUnknownAuthor(book.author) {
-            return String(localized: "\(prefix): \(book.title)",
-                          comment: "Title of a reader window for a book whose author is unknown. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title.")
+            // Translators: Title of a reader window for a book whose author is unknown. %1$@ is the word that begins it ("Book" or "Reading List"); %2$@ is the book's title.
+            return String(localized: "\(prefix): \(book.title)")
         }
-        return String(localized: "\(prefix): \(book.title) by \(book.author)",
-                      comment: "Title of a reader window. %1$@ is the word that begins it (\"Book\" or \"Reading List\"); %2$@ is the book's title; %3$@ is the book's author.")
+        // Translators: Title of a reader window. %1$@ is the word that begins it ("Book" or "Reading List"); %2$@ is the book's title; %3$@ is the book's author.
+        return String(localized: "\(prefix): \(book.title) by \(book.author)")
     }
 }

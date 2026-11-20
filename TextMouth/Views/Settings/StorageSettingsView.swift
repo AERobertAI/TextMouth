@@ -19,17 +19,17 @@ enum StorageOperation: Equatable {
     var runningMessage: String {
         switch self {
         case .rebuild:
-            return String(localized: "Rebuilding the data directory...",
-                          comment: "Storage settings status line while Rebuild Directory runs.")
+            // Translators: Storage settings status line while Rebuild Directory runs.
+            return String(localized: "Rebuilding the data directory...")
         case .resetToDefault:
-            return String(localized: "Moving data to the default location...",
-                          comment: "Storage settings status line while Reset to Default Location runs.")
+            // Translators: Storage settings status line while Reset to Default Location runs.
+            return String(localized: "Moving data to the default location...")
         case .move(let destination):
-            return String(localized: "Moving data to \(destination.path)...",
-                          comment: "Storage settings status line while the library moves to a chosen folder. %@ is the folder's path.")
+            // Translators: Storage settings status line while the library moves to a chosen folder. %@ is the folder's path.
+            return String(localized: "Moving data to \(destination.path)...")
         case .useLibrary(let folder):
-            return String(localized: "Switching to the library in \(folder.path)...",
-                          comment: "Storage settings status line while TextMouth switches to the library in a chosen folder. %@ is the folder's path.")
+            // Translators: Storage settings status line while TextMouth switches to the library in a chosen folder. %@ is the folder's path.
+            return String(localized: "Switching to the library in \(folder.path)...")
         }
     }
 }
@@ -52,8 +52,8 @@ struct StorageStatus: Equatable {
     /// looked at before anything is offered (FR02).
     static func checking(_ folder: URL) -> StorageStatus {
         StorageStatus(
-            message: String(localized: "Checking \(folder.path)...",
-                            comment: "Storage settings status line while a chosen folder is looked at. %@ is the folder's path."),
+            // Translators: Storage settings status line while a chosen folder is looked at. %@ is the folder's path.
+            message: String(localized: "Checking \(folder.path)..."),
             isFailure: false
         )
     }
@@ -92,87 +92,87 @@ enum StorageLocationWording {
         guard count > 0 else { return nil }
         // One sentence for each count: "It is kept" for one book, "They are kept" for more.
         if count == 1 {
-            return String(localized: "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown.",
-                          comment: "Storage settings note: one book of the library was added by a newer TextMouth, which this one keeps but can't show.")
+            // Translators: Storage settings note: one book of the library was added by a newer TextMouth, which this one keeps but can't show.
+            return String(localized: "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown.")
         }
-        return String(localized: "\(count) books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
-                      comment: "Storage settings note: several books of the library were added by a newer TextMouth, which this one keeps but can't show. %lld is how many books.")
+        // Translators: Storage settings note: several books of the library were added by a newer TextMouth, which this one keeps but can't show. %lld is how many books.
+        return String(localized: "\(count) books in this library need a newer version of TextMouth. They are kept as they are, but not shown.")
     }
 
     /// The button that opens the folder chooser: Change Location while the
     /// library is available, Choose Another Library while it isn't.
     static func chooserTitle(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
-            ? String(localized: "Change Location...",
-                     comment: "Button in Storage settings that opens a folder chooser to move the library. The three dots show that a chooser opens.")
-            : String(localized: "Choose Another Library...",
-                     comment: "Button in Storage settings, shown while the library isn't available, that opens a folder chooser to pick another library. The three dots show that a chooser opens.")
+            // Translators: Button in Storage settings that opens a folder chooser to move the library. The three dots show that a chooser opens.
+            ? String(localized: "Change Location...")
+            // Translators: Button in Storage settings, shown while the library isn't available, that opens a folder chooser to pick another library. The three dots show that a chooser opens.
+            : String(localized: "Choose Another Library...")
     }
 
     /// What VoiceOver calls that button.
     static func chooserLabel(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
-            ? String(localized: "Choose a new location for the library",
-                     comment: "VoiceOver label of the Change Location button in Storage settings.")
-            : String(localized: "Choose another library",
-                     comment: "VoiceOver label of the Choose Another Library button in Storage settings.")
+            // Translators: VoiceOver label of the Change Location button in Storage settings.
+            ? String(localized: "Choose a new location for the library")
+            // Translators: VoiceOver label of the Choose Another Library button in Storage settings.
+            : String(localized: "Choose another library")
     }
 
     /// What that button does.
     static func chooserHint(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
-            ? String(localized: "Opens a folder chooser. An empty folder receives a copy of the library; a folder that holds a TextMouth library can be used as it is.",
-                     comment: "VoiceOver hint of the Change Location button in Storage settings.")
-            : String(localized: "Opens a folder chooser to pick a folder that holds a TextMouth library, which TextMouth then opens instead.",
-                     comment: "VoiceOver hint of the Choose Another Library button in Storage settings.")
+            // Translators: VoiceOver hint of the Change Location button in Storage settings.
+            ? String(localized: "Opens a folder chooser. An empty folder receives a copy of the library; a folder that holds a TextMouth library can be used as it is.")
+            // Translators: VoiceOver hint of the Choose Another Library button in Storage settings.
+            : String(localized: "Opens a folder chooser to pick a folder that holds a TextMouth library, which TextMouth then opens instead.")
     }
 
     /// The button, shown while the library isn't available, that opens the
     /// library in the default location, or starts a new one there.
     static var useDefaultTitle: String {
-        String(localized: "Use Default Location...",
-               comment: "Button in Storage settings, shown while the library isn't available, that opens the library in the default location or starts a new one there. The three dots show that a question follows.")
+        // Translators: Button in Storage settings, shown while the library isn't available, that opens the library in the default location or starts a new one there. The three dots show that a question follows.
+        String(localized: "Use Default Location...")
     }
     /// What VoiceOver calls it.
     static var useDefaultLabel: String {
-        String(localized: "Use the default location",
-               comment: "VoiceOver label of the Use Default Location button in Storage settings.")
+        // Translators: VoiceOver label of the Use Default Location button in Storage settings.
+        String(localized: "Use the default location")
     }
     /// What it does.
     static var useDefaultHint: String {
-        String(localized: "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available.",
-               comment: "VoiceOver hint of the Use Default Location button in Storage settings. ~/.TextMouth is the default folder's path and stays as written.")
+        // Translators: VoiceOver hint of the Use Default Location button in Storage settings. ~/.TextMouth is the default folder's path and stays as written.
+        String(localized: "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available.")
     }
 
     /// The folder chooser's title.
     static func panelTitle(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
-            ? String(localized: "Choose a Location for the Library",
-                     comment: "Title of the folder chooser that Change Location opens.")
-            : String(localized: "Choose Another Library",
-                     comment: "Title of the folder chooser that Choose Another Library opens.")
+            // Translators: Title of the folder chooser that Change Location opens.
+            ? String(localized: "Choose a Location for the Library")
+            // Translators: Title of the folder chooser that Choose Another Library opens.
+            : String(localized: "Choose Another Library")
     }
 
     /// What the folder chooser explains.
     static func panelMessage(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
             ? SentenceWording.joined([
-                String(localized: "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it.",
-                       comment: "First sentence of the message of the folder chooser that Change Location opens."),
-                String(localized: "You can make a new folder here.",
-                       comment: "Last sentence of the message of the folder chooser that Change Location opens: the chooser has a button that makes a folder."),
+                // Translators: First sentence of the message of the folder chooser that Change Location opens.
+                String(localized: "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it."),
+                // Translators: Last sentence of the message of the folder chooser that Change Location opens: the chooser has a button that makes a folder.
+                String(localized: "You can make a new folder here."),
             ])
-            : String(localized: "Choose a folder that holds a TextMouth library to use it instead.",
-                     comment: "Message of the folder chooser that Choose Another Library opens.")
+            // Translators: Message of the folder chooser that Choose Another Library opens.
+            : String(localized: "Choose a folder that holds a TextMouth library to use it instead.")
     }
 
     /// The folder chooser's button, which names the action.
     static func panelPrompt(isLibraryAvailable: Bool) -> String {
         isLibraryAvailable
-            ? String(localized: "Choose Location",
-                     comment: "Button of the folder chooser that Change Location opens: picks the folder.")
-            : String(localized: "Choose Library",
-                     comment: "Button of the folder chooser that Choose Another Library opens: picks the folder.")
+            // Translators: Button of the folder chooser that Change Location opens: picks the folder.
+            ? String(localized: "Choose Location")
+            // Translators: Button of the folder chooser that Choose Another Library opens: picks the folder.
+            : String(localized: "Choose Library")
     }
 }
 
@@ -181,215 +181,215 @@ enum StorageLocationWording {
 enum StorageSettingsWording {
     /// The status after an operation that has nothing more to say.
     static var done: String {
-        String(localized: "Done.",
-               comment: "Storage settings status line after an operation finished and has nothing more to say.")
+        // Translators: Storage settings status line after an operation finished and has nothing more to say.
+        String(localized: "Done.")
     }
 
     /// The status's words for each state of the data directory.
     static var changesNotSaved: String {
-        String(localized: "Changes not saved",
-               comment: "Storage settings status: some changes could not be saved.")
+        // Translators: Storage settings status: some changes could not be saved.
+        String(localized: "Changes not saved")
     }
     static var active: String {
-        String(localized: "Active",
-               comment: "Storage settings status: the data directory exists and is working.")
+        // Translators: Storage settings status: the data directory exists and is working.
+        String(localized: "Active")
     }
     static var notCreated: String {
-        String(localized: "Not Created",
-               comment: "Storage settings status: the data directory does not exist yet.")
+        // Translators: Storage settings status: the data directory does not exist yet.
+        String(localized: "Not Created")
     }
 
     /// Begins the message when moving the data directory failed; the reason follows after a colon.
     static var moveFailureContext: String {
-        String(localized: "Failed to move directory",
-               comment: "Begins the message when moving the data directory failed; the reason follows after a colon.")
+        // Translators: Begins the message when moving the data directory failed; the reason follows after a colon.
+        String(localized: "Failed to move directory")
     }
 
     // MARK: The Storage Directory Section
     static var storageDirectoryHeader: String {
-        String(localized: "Storage Directory",
-               comment: "Heading of the first section of Storage settings, about where the library lives.")
+        // Translators: Heading of the first section of Storage settings, about where the library lives.
+        String(localized: "Storage Directory")
     }
     static var customLocation: String {
-        String(localized: "Custom location",
-               comment: "Under the data directory's path in Storage settings: the library is not in the default location.")
+        // Translators: Under the data directory's path in Storage settings: the library is not in the default location.
+        String(localized: "Custom location")
     }
     static var defaultLocation: String {
-        String(localized: "Default location",
-               comment: "Under the data directory's path in Storage settings: the library is in the default location.")
+        // Translators: Under the data directory's path in Storage settings: the library is in the default location.
+        String(localized: "Default location")
     }
     static func dataDirectoryLabel(path: String) -> String {
-        String(localized: "Data directory: \(path)",
-               comment: "VoiceOver label of the data directory's row in Storage settings. %@ is the folder's path.")
+        // Translators: VoiceOver label of the data directory's row in Storage settings. %@ is the folder's path.
+        String(localized: "Data directory: \(path)")
     }
     static var statusLabel: String {
-        String(localized: "Status",
-               comment: "Label of the data directory's status row in Storage settings.")
+        // Translators: Label of the data directory's status row in Storage settings.
+        String(localized: "Status")
     }
     static var retrySavingTitle: String {
-        String(localized: "Retry Saving",
-               comment: "Button in Storage settings that tries again to save changes that could not be saved.")
+        // Translators: Button in Storage settings that tries again to save changes that could not be saved.
+        String(localized: "Retry Saving")
     }
     static var retrySavingHint: String {
-        String(localized: "Tries again to save every change that could not be saved",
-               comment: "VoiceOver hint of the Retry Saving button in Storage settings.")
+        // Translators: VoiceOver hint of the Retry Saving button in Storage settings.
+        String(localized: "Tries again to save every change that could not be saved")
     }
     static var rebuildDirectoryTitle: String {
-        String(localized: "Rebuild Directory",
-               comment: "Button in Storage settings that rebuilds the data directory's structure. Also the title of its confirmation.")
+        // Translators: Button in Storage settings that rebuilds the data directory's structure. Also the title of its confirmation.
+        String(localized: "Rebuild Directory")
     }
     static var rebuildDirectoryLabel: String {
-        String(localized: "Rebuild TextMouth directory",
-               comment: "VoiceOver label of the Rebuild Directory button in Storage settings.")
+        // Translators: VoiceOver label of the Rebuild Directory button in Storage settings.
+        String(localized: "Rebuild TextMouth directory")
     }
     static var rebuildDirectoryHint: String {
-        String(localized: "Recreates the directory structure and migrates any books using old storage",
-               comment: "VoiceOver hint of the Rebuild Directory button in Storage settings.")
+        // Translators: VoiceOver hint of the Rebuild Directory button in Storage settings.
+        String(localized: "Recreates the directory structure and migrates any books using old storage")
     }
     static var resetToDefaultTitle: String {
-        String(localized: "Reset to Default",
-               comment: "Button in Storage settings that moves the library back to the default location.")
+        // Translators: Button in Storage settings that moves the library back to the default location.
+        String(localized: "Reset to Default")
     }
     static var resetToDefaultLabel: String {
-        String(localized: "Reset to default location",
-               comment: "VoiceOver label of the Reset to Default button in Storage settings.")
+        // Translators: VoiceOver label of the Reset to Default button in Storage settings.
+        String(localized: "Reset to default location")
     }
     static var resetToDefaultHint: String {
-        String(localized: "Moves data back to the default location at ~/.TextMouth",
-               comment: "VoiceOver hint of the Reset to Default button in Storage settings. ~/.TextMouth is the default folder's path and stays as written.")
+        // Translators: VoiceOver hint of the Reset to Default button in Storage settings. ~/.TextMouth is the default folder's path and stays as written.
+        String(localized: "Moves data back to the default location at ~/.TextMouth")
     }
 
     // MARK: The Import and Removal Sections
     static var afterImportingTitle: String {
-        String(localized: "After Importing a Book",
-               comment: "Label of the pop-up in Storage settings that says what to do with a book's original file after importing it.")
+        // Translators: Label of the pop-up in Storage settings that says what to do with a book's original file after importing it.
+        String(localized: "After Importing a Book")
     }
     static var originalFileLabel: String {
-        String(localized: "Original file handling",
-               comment: "VoiceOver label of the After Importing a Book pop-up in Storage settings.")
+        // Translators: VoiceOver label of the After Importing a Book pop-up in Storage settings.
+        String(localized: "Original file handling")
     }
     static var originalFileHint: String {
-        String(localized: "What to do with the original file after importing a book",
-               comment: "VoiceOver hint of the After Importing a Book pop-up in Storage settings.")
+        // Translators: VoiceOver hint of the After Importing a Book pop-up in Storage settings.
+        String(localized: "What to do with the original file after importing a book")
     }
     static var originalRemains: String {
-        String(localized: "The original file will remain untouched after import.",
-               comment: "Caption in Storage settings when the original file is kept after an import.")
+        // Translators: Caption in Storage settings when the original file is kept after an import.
+        String(localized: "The original file will remain untouched after import.")
     }
     static var importBehaviorHeader: String {
-        String(localized: "Import Behavior",
-               comment: "Heading of the section of Storage settings about what an import does.")
+        // Translators: Heading of the section of Storage settings about what an import does.
+        String(localized: "Import Behavior")
     }
     static var confirmBeforeRemovingTitle: String {
-        String(localized: "Confirm before removing a book",
-               comment: "Checkbox in Storage settings: ask before a book is removed.")
+        // Translators: Checkbox in Storage settings: ask before a book is removed.
+        String(localized: "Confirm before removing a book")
     }
     static var moveToTrashTitle: String {
-        String(localized: "Move to Trash instead of deleting",
-               comment: "Checkbox in Storage settings: removed books' files go to the Trash instead of being deleted at once.")
+        // Translators: Checkbox in Storage settings: removed books' files go to the Trash instead of being deleted at once.
+        String(localized: "Move to Trash instead of deleting")
     }
     static var removalBehaviorHeader: String {
-        String(localized: "Removal Behavior",
-               comment: "Heading of the section of Storage settings about what removing a book does.")
+        // Translators: Heading of the section of Storage settings about what removing a book does.
+        String(localized: "Removal Behavior")
     }
     static var libraryStatisticsHeader: String {
-        String(localized: "Library Statistics",
-               comment: "Heading of the section of Storage settings that lists counts about the library.")
+        // Translators: Heading of the section of Storage settings that lists counts about the library.
+        String(localized: "Library Statistics")
     }
 
     // MARK: The Maintenance Section
     static var findDuplicatesTitle: String {
-        String(localized: "Find Duplicate Books...",
-               comment: "Button in Storage settings that opens the duplicate finder. The three dots show that a window opens.")
+        // Translators: Button in Storage settings that opens the duplicate finder. The three dots show that a window opens.
+        String(localized: "Find Duplicate Books...")
     }
     static var findDuplicatesLabel: String {
-        String(localized: "Find duplicate books",
-               comment: "VoiceOver label of the Find Duplicate Books button in Storage settings.")
+        // Translators: VoiceOver label of the Find Duplicate Books button in Storage settings.
+        String(localized: "Find duplicate books")
     }
     static var findDuplicatesHint: String {
-        String(localized: "Scans the library for books with matching files, titles, or authors",
-               comment: "VoiceOver hint of the Find Duplicate Books button in Storage settings.")
+        // Translators: VoiceOver hint of the Find Duplicate Books button in Storage settings.
+        String(localized: "Scans the library for books with matching files, titles, or authors")
     }
     static var findDuplicatesCaption: String {
-        String(localized: "Finds duplicate books in all folders by file content, title, or author.",
-               comment: "Caption under the Find Duplicate Books button in Storage settings.")
+        // Translators: Caption under the Find Duplicate Books button in Storage settings.
+        String(localized: "Finds duplicate books in all folders by file content, title, or author.")
     }
     static var redoExtractionTitle: String {
-        String(localized: "Redo Text Extraction...",
-               comment: "Button in Storage settings that reads every book's text again. The three dots show that a question follows.")
+        // Translators: Button in Storage settings that reads every book's text again. The three dots show that a question follows.
+        String(localized: "Redo Text Extraction...")
     }
     static var redoExtractionLabel: String {
-        String(localized: "Redo text extraction",
-               comment: "VoiceOver label of the Redo Text Extraction button in Storage settings.")
+        // Translators: VoiceOver label of the Redo Text Extraction button in Storage settings.
+        String(localized: "Redo text extraction")
     }
     static var redoExtractionHint: String {
-        String(localized: "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
-               comment: "VoiceOver hint of the Redo Text Extraction button in Storage settings.")
+        // Translators: VoiceOver hint of the Redo Text Extraction button in Storage settings.
+        String(localized: "Re-extracts cached text from all books. Useful after parser fixes or format improvements.")
     }
     static func extractionProgress(current: Int, total: Int) -> String {
-        String(localized: "\(current)/\(total)",
-               comment: "How far Redo Text Extraction has got, beside its progress bar. %1$lld is how many books are done; %2$lld is how many books there are.")
+        // Translators: How far Redo Text Extraction has got, beside its progress bar. %1$lld is how many books are done; %2$lld is how many books there are.
+        String(localized: "\(current)/\(total)")
     }
     static func extractionProgressLabel(current: Int, total: Int) -> String {
-        String(localized: "Text extraction progress: \(current) of \(total)",
-               comment: "VoiceOver label of the progress of Redo Text Extraction. %1$lld is how many books are done; %2$lld is how many books there are.")
+        // Translators: VoiceOver label of the progress of Redo Text Extraction. %1$lld is how many books are done; %2$lld is how many books there are.
+        String(localized: "Text extraction progress: \(current) of \(total)")
     }
     static var redoExtractionCaption: String {
         SentenceWording.joined([
-            String(localized: "Re-extracts every book's cached text.",
-                   comment: "First sentence of the caption under the Redo Text Extraction button in Storage settings."),
-            String(localized: "Use it after parser updates.",
-                   comment: "Last sentence of the caption under the Redo Text Extraction button in Storage settings. \"It\" is Redo Text Extraction."),
+            // Translators: First sentence of the caption under the Redo Text Extraction button in Storage settings.
+            String(localized: "Re-extracts every book's cached text."),
+            // Translators: Last sentence of the caption under the Redo Text Extraction button in Storage settings. "It" is Redo Text Extraction.
+            String(localized: "Use it after parser updates."),
         ])
     }
     static var libraryMaintenanceHeader: String {
-        String(localized: "Library Maintenance",
-               comment: "Heading of the section of Storage settings with the duplicate finder and Redo Text Extraction.")
+        // Translators: Heading of the section of Storage settings with the duplicate finder and Redo Text Extraction.
+        String(localized: "Library Maintenance")
     }
 
     // MARK: The Alerts
     static var cancelTitle: String {
-        String(localized: "Cancel",
-               comment: "Button of a confirmation in Storage settings that changes nothing.")
+        // Translators: Button of a confirmation in Storage settings that changes nothing.
+        String(localized: "Cancel")
     }
     static var rebuildButtonTitle: String {
-        String(localized: "Rebuild",
-               comment: "Button of the Rebuild Directory confirmation that rebuilds the directory.")
+        // Translators: Button of the Rebuild Directory confirmation that rebuilds the directory.
+        String(localized: "Rebuild")
     }
     static var rebuildMessage: String {
         SentenceWording.joined([
-            String(localized: "This recreates the directory structure and migrates books using old storage.",
-                   comment: "First sentence of the Rebuild Directory confirmation."),
-            String(localized: "Your books and reading positions are kept.",
-                   comment: "Last sentence of the Rebuild Directory confirmation."),
+            // Translators: First sentence of the Rebuild Directory confirmation.
+            String(localized: "This recreates the directory structure and migrates books using old storage."),
+            // Translators: Last sentence of the Rebuild Directory confirmation.
+            String(localized: "Your books and reading positions are kept."),
         ])
     }
     static var resetAlertTitle: String {
-        String(localized: "Reset to Default Location?",
-               comment: "Title of the question asked before moving the library back to the default location.")
+        // Translators: Title of the question asked before moving the library back to the default location.
+        String(localized: "Reset to Default Location?")
     }
     static var resetAndMoveTitle: String {
-        String(localized: "Reset & Move",
-               comment: "Button of the Reset to Default Location question that moves the library.")
+        // Translators: Button of the Reset to Default Location question that moves the library.
+        String(localized: "Reset & Move")
     }
     static func resetMessage(from root: String, to defaultRoot: String) -> String {
-        String(localized: "This moves all data from \(root) back to the default location, \(defaultRoot).",
-               comment: "Message of the question asked before moving the library back to the default location. %1$@ is the current folder's path; %2$@ is the default folder's path.")
+        // Translators: Message of the question asked before moving the library back to the default location. %1$@ is the current folder's path; %2$@ is the default folder's path.
+        String(localized: "This moves all data from \(root) back to the default location, \(defaultRoot).")
     }
     static var redoAlertTitle: String {
-        String(localized: "Redo Text Extraction?",
-               comment: "Title of the question asked before Redo Text Extraction.")
+        // Translators: Title of the question asked before Redo Text Extraction.
+        String(localized: "Redo Text Extraction?")
     }
     static var reExtractAllTitle: String {
-        String(localized: "Re-extract All",
-               comment: "Button of the Redo Text Extraction question that starts the extraction.")
+        // Translators: Button of the Redo Text Extraction question that starts the extraction.
+        String(localized: "Re-extract All")
     }
     static var redoMessage: String {
         SentenceWording.joined([
-            String(localized: "This re-extracts the cached text of every book, which may take a while for a large library.",
-                   comment: "First sentence of the Redo Text Extraction question."),
-            String(localized: "Reading positions are kept, but character offsets may shift slightly if the text changes.",
-                   comment: "Last sentence of the Redo Text Extraction question."),
+            // Translators: First sentence of the Redo Text Extraction question.
+            String(localized: "This re-extracts the cached text of every book, which may take a while for a large library."),
+            // Translators: Last sentence of the Redo Text Extraction question.
+            String(localized: "Reading positions are kept, but character offsets may shift slightly if the text changes."),
         ])
     }
 }

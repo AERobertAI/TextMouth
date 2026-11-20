@@ -8,38 +8,38 @@ enum LibraryFolderSettingsWording {
 
     /// The button's title in a feed's folder.
     static var feedButtonTitle: String {
-        String(localized: "Feed Settings",
-               comment: "Title of the Library toolbar button, in the folder of a feed, that opens the feed's settings.")
+        // Translators: Title of the Library toolbar button, in the folder of a feed, that opens the feed's settings.
+        String(localized: "Feed Settings")
     }
 
     /// The button's title in a plain folder.
     static var folderButtonTitle: String {
-        String(localized: "Folder Settings",
-               comment: "Title of the Library toolbar button, in a plain folder, that opens the folder's settings.")
+        // Translators: Title of the Library toolbar button, in a plain folder, that opens the folder's settings.
+        String(localized: "Folder Settings")
     }
 
     /// What VoiceOver calls the button in the folder of the feed `title`.
     static func feedLabel(title: String) -> String {
-        String(localized: "Feed settings for \(title)",
-               comment: "Spoken label of the Library toolbar button, in the folder of a feed, that opens the feed's settings. %@ is the feed's title.")
+        // Translators: Spoken label of the Library toolbar button, in the folder of a feed, that opens the feed's settings. %@ is the feed's title.
+        String(localized: "Feed settings for \(title)")
     }
 
     /// What VoiceOver calls the button in the plain folder `name`.
     static func folderLabel(name: String) -> String {
-        String(localized: "Folder settings for \(name)",
-               comment: "Spoken label of the Library toolbar button, in a plain folder, that opens the folder's settings. %@ is the folder's name.")
+        // Translators: Spoken label of the Library toolbar button, in a plain folder, that opens the folder's settings. %@ is the folder's name.
+        String(localized: "Folder settings for \(name)")
     }
 
     /// What VoiceOver says the button does, in a feed's folder.
     static var feedHint: String {
-        String(localized: "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends",
-               comment: "Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings.")
+        // Translators: Hint of the Library toolbar button, in the folder of a feed, that opens the feed's settings.
+        String(localized: "Opens the feed's settings: where its downloads go, what it lists and downloads, and what happens when an episode ends")
     }
 
     /// What VoiceOver says the button does, in a plain folder.
     static var folderHint: String {
-        String(localized: "Opens the folder's settings: what it holds, and what happens when one of its books ends",
-               comment: "Hint of the Library toolbar button, in a plain folder, that opens the folder's settings.")
+        // Translators: Hint of the Library toolbar button, in a plain folder, that opens the folder's settings.
+        String(localized: "Opens the folder's settings: what it holds, and what happens when one of its books ends")
     }
 
     /// The symbol both buttons draw.
@@ -48,8 +48,8 @@ enum LibraryFolderSettingsWording {
     /// Said when the Folder or Feed Settings shortcut is pressed where the
     /// window shows no folder: the top level, or a category but Folders.
     static var nothingToOpen: String {
-        String(localized: "Open a folder first to see its settings",
-               comment: "VoiceOver announcement when the Folder Settings shortcut is pressed where the window shows no folder, at the top level or in a view other than Folders.")
+        // Translators: VoiceOver announcement when the Folder Settings shortcut is pressed where the window shows no folder, at the top level or in a view other than Folders.
+        String(localized: "Open a folder first to see its settings")
     }
 }
 

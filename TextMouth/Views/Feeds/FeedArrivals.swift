@@ -55,12 +55,12 @@ struct FeedArrivalAlert: Identifiable, Equatable {
         let nouns = Set(arrivals.map(\.noun))
         let noun = nouns.count == 1 ? (nouns.first ?? .item) : .item
         return noun.choose(
-            episode: String(localized: "New Episodes",
-                            comment: "Title of the alert shown after a refresh TextMouth made by itself brought new episodes. Title case."),
-            article: String(localized: "New Articles",
-                            comment: "Title of the alert shown after a refresh TextMouth made by itself brought new articles. Title case."),
-            item: String(localized: "New Items",
-                         comment: "Title of the alert shown after a refresh TextMouth made by itself brought new episodes and articles, or from several kinds of feed. Title case."))
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new episodes. Title case.
+            episode: String(localized: "New Episodes"),
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new articles. Title case.
+            article: String(localized: "New Articles"),
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new episodes and articles, or from several kinds of feed. Title case.
+            item: String(localized: "New Items"))
     }
 
     /// The alert's message: a sentence for each feed, "Planet Money: 2 new
@@ -328,12 +328,12 @@ extension FeedWording {
         let title = arrival.feedTitle
         let count = arrival.count
         return arrival.noun.choose(
-            episode: String(localized: "\(title): \(count) new episodes.",
-                            comment: "A sentence of the alert after a refresh brought new episodes: one feed's arrivals. %@ is the feed's title; %lld is how many new episodes."),
-            article: String(localized: "\(title): \(count) new articles.",
-                            comment: "A sentence of the alert after a refresh brought new articles: one feed's arrivals. %@ is the feed's title; %lld is how many new articles."),
-            item: String(localized: "\(title): \(count) new items.",
-                         comment: "A sentence of the alert after a refresh brought new items, episodes and articles: one feed's arrivals. %@ is the feed's title; %lld is how many new items."))
+            // Translators: A sentence of the alert after a refresh brought new episodes: one feed's arrivals. %@ is the feed's title; %lld is how many new episodes.
+            episode: String(localized: "\(title): \(count) new episodes."),
+            // Translators: A sentence of the alert after a refresh brought new articles: one feed's arrivals. %@ is the feed's title; %lld is how many new articles.
+            article: String(localized: "\(title): \(count) new articles."),
+            // Translators: A sentence of the alert after a refresh brought new items, episodes and articles: one feed's arrivals. %@ is the feed's title; %lld is how many new items.
+            item: String(localized: "\(title): \(count) new items."))
     }
 
     /// The notification of one feed's arrivals: titled with the feed, and
@@ -344,28 +344,28 @@ extension FeedWording {
         switch (arrival.count, arrival.latestTitle) {
         case (1, let title?):
             body = arrival.noun.choose(
-                episode: String(localized: "New episode: “\(title)”",
-                                comment: "The body of the notification of one new episode. %@ is its title."),
-                article: String(localized: "New article: “\(title)”",
-                                comment: "The body of the notification of one new article. %@ is its title."),
-                item: String(localized: "New item: “\(title)”",
-                             comment: "The body of the notification of one new item, an episode or an article. %@ is its title."))
+                // Translators: The body of the notification of one new episode. %@ is its title.
+                episode: String(localized: "New episode: “\(title)”"),
+                // Translators: The body of the notification of one new article. %@ is its title.
+                article: String(localized: "New article: “\(title)”"),
+                // Translators: The body of the notification of one new item, an episode or an article. %@ is its title.
+                item: String(localized: "New item: “\(title)”"))
         case (let count, let title?):
             body = arrival.noun.choose(
-                episode: String(localized: "\(count) new episodes, the newest “\(title)”",
-                                comment: "The body of the notification of new episodes. %lld is how many; %@ is the newest one's title."),
-                article: String(localized: "\(count) new articles, the newest “\(title)”",
-                                comment: "The body of the notification of new articles. %lld is how many; %@ is the newest one's title."),
-                item: String(localized: "\(count) new items, the newest “\(title)”",
-                             comment: "The body of the notification of new items, episodes and articles. %lld is how many; %@ is the newest one's title."))
+                // Translators: The body of the notification of new episodes. %lld is how many; %@ is the newest one's title.
+                episode: String(localized: "\(count) new episodes, the newest “\(title)”"),
+                // Translators: The body of the notification of new articles. %lld is how many; %@ is the newest one's title.
+                article: String(localized: "\(count) new articles, the newest “\(title)”"),
+                // Translators: The body of the notification of new items, episodes and articles. %lld is how many; %@ is the newest one's title.
+                item: String(localized: "\(count) new items, the newest “\(title)”"))
         case (let count, nil):
             body = arrival.noun.choose(
-                episode: String(localized: "\(count) new episodes",
-                                comment: "The body of the notification of new episodes when the newest one's title is not known. %lld is how many."),
-                article: String(localized: "\(count) new articles",
-                                comment: "The body of the notification of new articles when the newest one's title is not known. %lld is how many."),
-                item: String(localized: "\(count) new items",
-                             comment: "The body of the notification of new items when the newest one's title is not known. %lld is how many."))
+                // Translators: The body of the notification of new episodes when the newest one's title is not known. %lld is how many.
+                episode: String(localized: "\(count) new episodes"),
+                // Translators: The body of the notification of new articles when the newest one's title is not known. %lld is how many.
+                article: String(localized: "\(count) new articles"),
+                // Translators: The body of the notification of new items when the newest one's title is not known. %lld is how many.
+                item: String(localized: "\(count) new items"))
         }
         return FeedNotification(
             identifier: "feed-\(arrival.feedID.uuidString)-\(Int(date.timeIntervalSince1970))",
@@ -378,7 +378,7 @@ extension FeedWording {
     /// What the notifications setting's help says while notifications are
     /// not allowed.
     static var notificationsRefused: String {
-        String(localized: "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
-               comment: "What the notifications setting's help says while macOS does not allow TextMouth to post notifications. System Settings and Notifications are macOS's own names, in the language of macOS.")
+        // Translators: What the notifications setting's help says while macOS does not allow TextMouth to post notifications. System Settings and Notifications are macOS's own names, in the language of macOS.
+        String(localized: "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.")
     }
 }

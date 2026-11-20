@@ -10,33 +10,38 @@ import Combine
 enum LibraryWindowWording {
     /// The title of the overlay shown while the library's text is extracted.
     static var extractingTextTitle: String {
-        String(localized: "Extracting Text",
-               comment: "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it.")
+        // Translators: Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it.
+        String(localized: "Extracting Text")
     }
 
     /// The button that closes a sheet or answers a question with nothing done.
     static var cancel: String {
-        String(localized: "Cancel", comment: "Button that closes a sheet or answers a question without doing or changing anything.")
+        // Translators: Button that closes a sheet or answers a question without doing or changing anything.
+        String(localized: "Cancel")
     }
 
     /// The button that saves the changes made in a sheet.
     static var save: String {
-        String(localized: "Save", comment: "Button that saves the changes made in a sheet.")
+        // Translators: Button that saves the changes made in a sheet.
+        String(localized: "Save")
     }
 
     /// The title of the alert about a problem, when it has no more specific title.
     static var errorTitle: String {
-        String(localized: "Error", comment: "Title of an alert about a problem, when the problem has no more specific title.")
+        // Translators: Title of an alert about a problem, when the problem has no more specific title.
+        String(localized: "Error")
     }
 
     /// The button that dismisses an alert about a problem.
     static var errorDismiss: String {
-        String(localized: "OK", comment: "Button that dismisses an alert about a problem.")
+        // Translators: Button that dismisses an alert about a problem.
+        String(localized: "OK")
     }
 
     /// The message of an alert about a problem, when nothing more is known about it.
     static var unknownError: String {
-        String(localized: "An unknown error occurred.", comment: "Message of an alert about a problem, when nothing more is known about it.")
+        // Translators: Message of an alert about a problem, when nothing more is known about it.
+        String(localized: "An unknown error occurred.")
     }
 }
 

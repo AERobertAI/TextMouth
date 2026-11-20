@@ -67,96 +67,96 @@ extension SoundEffectsSettingsView {
 enum SoundEffectsSettingsWording {
     /// The title of the switch that turns every sound effect on or off.
     static var enableTitle: String {
-        String(localized: "Enable Sound Effects",
-               comment: "Title of the switch in Settings, Sound Effects that turns the short sounds for playback actions on or off.")
+        // Translators: Title of the switch in Settings, Sound Effects that turns the short sounds for playback actions on or off.
+        String(localized: "Enable Sound Effects")
     }
     /// The switch's hint. The switch speaks its title as its label.
     static var enableHint: String {
-        String(localized: "Plays short sounds for playback actions",
-               comment: "VoiceOver hint of the Enable Sound Effects switch.")
+        // Translators: VoiceOver hint of the Enable Sound Effects switch.
+        String(localized: "Plays short sounds for playback actions")
     }
 
     /// The volume as the eye reads it, above the slider: "Volume: 50%".
     static func volumeCaption(percent: Int) -> String {
-        String(localized: "Volume: \(percent)%",
-               comment: "Caption above the sound effects volume slider in Settings. %lld is the volume as a percentage from 0 to 100; the percent sign after it is written as %%.")
+        // Translators: Caption above the sound effects volume slider in Settings. %lld is the volume as a percentage from 0 to 100; the percent sign after it is written as %%.
+        String(localized: "Volume: \(percent)%")
     }
     /// The slider's own title.
     static var volumeTitle: String {
-        String(localized: "Volume",
-               comment: "Title of the sound effects volume slider in Settings, Sound Effects.")
+        // Translators: Title of the sound effects volume slider in Settings, Sound Effects.
+        String(localized: "Volume")
     }
     /// What VoiceOver reads for the slider.
     static var volumeLabel: String {
-        String(localized: "Sound effect volume",
-               comment: "VoiceOver label of the sound effects volume slider in Settings.")
+        // Translators: VoiceOver label of the sound effects volume slider in Settings.
+        String(localized: "Sound effect volume")
     }
     /// What VoiceOver reads as the slider's value: "50 percent".
     static func volumeValue(percent: Int) -> String {
-        String(localized: "\(percent) percent",
-               comment: "VoiceOver value of the sound effects volume slider. %lld is the volume as a percentage from 0 to 100.")
+        // Translators: VoiceOver value of the sound effects volume slider. %lld is the volume as a percentage from 0 to 100.
+        String(localized: "\(percent) percent")
     }
 
     /// The heading of the section holding the switch and the volume.
     static var generalHeader: String {
-        String(localized: "General",
-               comment: "Heading of the section of Settings, Sound Effects that holds the switch and the volume.")
+        // Translators: Heading of the section of Settings, Sound Effects that holds the switch and the volume.
+        String(localized: "General")
     }
     /// The heading of the section choosing each event's sound.
     static var assignmentsHeader: String {
-        String(localized: "Sound Assignments",
-               comment: "Heading of the section of Settings, Sound Effects that chooses the sound for each event.")
+        // Translators: Heading of the section of Settings, Sound Effects that chooses the sound for each event.
+        String(localized: "Sound Assignments")
     }
 
     /// What VoiceOver reads for an event's pop-up button: "Play sound".
     static func soundLabel(_ event: SoundEvent) -> String {
-        String(localized: "\(event.title) sound",
-               comment: "VoiceOver label of the pop-up button that chooses the sound for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause.")
+        // Translators: VoiceOver label of the pop-up button that chooses the sound for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause.
+        String(localized: "\(event.title) sound")
     }
     /// What VoiceOver reads for an event's preview button: "Preview Play sound".
     static func previewLabel(_ event: SoundEvent) -> String {
-        String(localized: "Preview \(event.title) sound",
-               comment: "VoiceOver label of the button that plays the sound chosen for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause.")
+        // Translators: VoiceOver label of the button that plays the sound chosen for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause.
+        String(localized: "Preview \(event.title) sound")
     }
     /// The hint of an event's pop-up button: when its sound plays.
     static func eventHint(_ event: SoundEvent) -> String {
         switch event {
         case .play:
-            return String(localized: "Plays when you start reading",
-                          comment: "VoiceOver hint of the pop-up button that chooses the sound for the Play event: when the sound plays.")
+            // Translators: VoiceOver hint of the pop-up button that chooses the sound for the Play event: when the sound plays.
+            return String(localized: "Plays when you start reading")
         case .pause:
-            return String(localized: "Plays when you pause reading",
-                          comment: "VoiceOver hint of the pop-up button that chooses the sound for the Pause event: when the sound plays.")
+            // Translators: VoiceOver hint of the pop-up button that chooses the sound for the Pause event: when the sound plays.
+            return String(localized: "Plays when you pause reading")
         case .skipForward:
-            return String(localized: "Plays when you skip forward",
-                          comment: "VoiceOver hint of the pop-up button that chooses the sound for the Skip Forward event: when the sound plays.")
+            // Translators: VoiceOver hint of the pop-up button that chooses the sound for the Skip Forward event: when the sound plays.
+            return String(localized: "Plays when you skip forward")
         case .skipBackward:
-            return String(localized: "Plays when you skip backward",
-                          comment: "VoiceOver hint of the pop-up button that chooses the sound for the Skip Backward event: when the sound plays.")
+            // Translators: VoiceOver hint of the pop-up button that chooses the sound for the Skip Backward event: when the sound plays.
+            return String(localized: "Plays when you skip backward")
         case .whereAmIStart:
-            return String(localized: "Plays when Where Am I starts speaking",
-                          comment: "VoiceOver hint of the pop-up button that chooses the sound for the start of the Where Am I announcement. Where Am I is the name of a command.")
+            // Translators: VoiceOver hint of the pop-up button that chooses the sound for the start of the Where Am I announcement. Where Am I is the name of a command.
+            return String(localized: "Plays when Where Am I starts speaking")
         case .whereAmIEnd:
-            return String(localized: "Plays when Where Am I finishes speaking",
-                          comment: "VoiceOver hint of the pop-up button that chooses the sound for the end of the Where Am I announcement. Where Am I is the name of a command.")
+            // Translators: VoiceOver hint of the pop-up button that chooses the sound for the end of the Where Am I announcement. Where Am I is the name of a command.
+            return String(localized: "Plays when Where Am I finishes speaking")
         }
     }
 
     /// The button's title, on screen and to VoiceOver as its name.
     static var resetTitle: String {
-        String(localized: "Reset to Defaults",
-               comment: "Title of the button in Settings, Sound Effects that restores every sound effect setting.")
+        // Translators: Title of the button in Settings, Sound Effects that restores every sound effect setting.
+        String(localized: "Reset to Defaults")
     }
     /// The button's VoiceOver label: which settings it resets.
     static var resetLabel: String {
-        String(localized: "Reset all sound effects to defaults",
-               comment: "VoiceOver label of the Reset to Defaults button in Settings, Sound Effects.")
+        // Translators: VoiceOver label of the Reset to Defaults button in Settings, Sound Effects.
+        String(localized: "Reset all sound effects to defaults")
     }
     /// What VoiceOver hears after the reset. It follows the audio filter
     /// presets' reset wording.
     static var resetDone: String {
-        String(localized: "Sound effects reset to defaults",
-               comment: "Announcement after Reset to Defaults restored every sound effect setting.")
+        // Translators: Announcement after Reset to Defaults restored every sound effect setting.
+        String(localized: "Sound effects reset to defaults")
     }
 }
 

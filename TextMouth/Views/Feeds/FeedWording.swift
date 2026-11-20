@@ -18,78 +18,78 @@ enum FeedWording {
 
     /// The Library menu's command that refreshes every feed now.
     static var refreshAllCommand: String {
-        String(localized: "Refresh All Feeds",
-               comment: "Title of the Library menu's command that refreshes every feed now. Title case.")
+        // Translators: Title of the Library menu's command that refreshes every feed now. Title case.
+        String(localized: "Refresh All Feeds")
     }
     /// What Add Feed does, spoken as its hint in the Add to Library sheet.
     static var addFeedButtonHint: String {
-        String(localized: "Opens a sheet to type a feed's address and choose its folder",
-               comment: "VoiceOver hint of the Add Feed button in the Add to Library sheet.")
+        // Translators: VoiceOver hint of the Add Feed button in the Add to Library sheet.
+        String(localized: "Opens a sheet to type a feed's address and choose its folder")
     }
     /// The Add Feed sheet's heading.
     static var addFeedTitle: String {
-        String(localized: "Add Feed",
-               comment: "Heading of the sheet where the listener subscribes to a feed. Title case.")
+        // Translators: Heading of the sheet where the listener subscribes to a feed. Title case.
+        String(localized: "Add Feed")
     }
     /// The address field's visible caption and spoken label.
     static var addressLabel: String {
-        String(localized: "Feed or web page address",
-               comment: "Caption and VoiceOver label of the field where the listener types a feed's address.")
+        // Translators: Caption and VoiceOver label of the field where the listener types a feed's address.
+        String(localized: "Feed or web page address")
     }
     /// The address field's spoken hint.
     static var addressHint: String {
-        String(localized: "Type or paste a feed or web page address, then press Return",
-               comment: "VoiceOver hint of the field where the listener types a feed's address. Return is the Return key.")
+        // Translators: VoiceOver hint of the field where the listener types a feed's address. Return is the Return key.
+        String(localized: "Type or paste a feed or web page address, then press Return")
     }
     /// The line under the address field.
     static var addressHelp: String {
-        String(localized: "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
-               comment: "The line under the address field of the Add Feed sheet. .rss and .xml are file extensions.")
+        // Translators: The line under the address field of the Add Feed sheet. .rss and .xml are file extensions.
+        String(localized: "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.")
     }
     /// The folder picker's visible caption.
     static var folderCaption: String {
-        String(localized: "Put the feed's folder in",
-               comment: "Caption of the folder picker of the Add Feed sheet: the library folder that will hold the feed's own folder.")
+        // Translators: Caption of the folder picker of the Add Feed sheet: the library folder that will hold the feed's own folder.
+        String(localized: "Put the feed's folder in")
     }
     /// The folder picker's spoken label.
     static var folderLabel: String {
-        String(localized: "Folder to hold the feed's own folder",
-               comment: "VoiceOver label of the folder picker of the Add Feed sheet.")
+        // Translators: VoiceOver label of the folder picker of the Add Feed sheet.
+        String(localized: "Folder to hold the feed's own folder")
     }
     /// The line under the folder picker, naming the folder chosen.
     static func folderHelp(parentPath: String) -> String {
         let place = parentPath.isEmpty ? LibraryFolderOption.rootLabel : parentPath
-        return String(localized: "TextMouth makes a folder named after the feed in \(place), and its episodes and articles download into it.",
-                      comment: "The line under the folder picker of the Add Feed sheet. %@ is the library folder chosen, or the name of the library's top level.")
+        // Translators: The line under the folder picker of the Add Feed sheet. %@ is the library folder chosen, or the name of the library's top level.
+        return String(localized: "TextMouth makes a folder named after the feed in \(place), and its episodes and articles download into it.")
     }
     /// The Subscribe button's title.
     static var subscribeTitle: String {
-        String(localized: "Subscribe",
-               comment: "Title of the button that subscribes to a feed, in the Add Feed sheet.")
+        // Translators: Title of the button that subscribes to a feed, in the Add Feed sheet.
+        String(localized: "Subscribe")
     }
     /// What the sheet shows, and VoiceOver hears, while it reads the address.
     static var checkingAddress: String {
-        String(localized: "Checking the address…",
-               comment: "What the Add Feed sheet shows and VoiceOver says while it reads the address typed.")
+        // Translators: What the Add Feed sheet shows and VoiceOver says while it reads the address typed.
+        String(localized: "Checking the address…")
     }
 
     /// What the sheet says, and VoiceOver hears, when the address is a web
     /// page naming `count` feeds, so the listener chooses one.
     static func choosePrompt(count: Int) -> String {
-        String(localized: "That page names \(count) feeds. Choose one, then Subscribe.",
-               comment: "What the Add Feed sheet says when a web page names several feeds. %lld is how many feeds the page names. Subscribe is the name of the Subscribe button.")
+        // Translators: What the Add Feed sheet says when a web page names several feeds. %lld is how many feeds the page names. Subscribe is the name of the Subscribe button.
+        String(localized: "That page names \(count) feeds. Choose one, then Subscribe.")
     }
     /// The radio group's visible caption.
     static var chooseCaption: String {
-        String(localized: "Feeds on this page",
-               comment: "Caption of the choice of feeds a web page names, in the Add Feed sheet.")
+        // Translators: Caption of the choice of feeds a web page names, in the Add Feed sheet.
+        String(localized: "Feeds on this page")
     }
     /// The radio group's spoken label.
     static var chooseLabel: String { chooseCaption }
     /// The Back button's title, which returns to the address.
     static var backTitle: String {
-        String(localized: "Back",
-               comment: "Title of the button that returns to the address field in the Add Feed sheet.")
+        // Translators: Title of the button that returns to the address field in the Add Feed sheet.
+        String(localized: "Back")
     }
 
     /// One feed a page names, as the radio group lists it: its title on the
@@ -117,44 +117,44 @@ enum FeedWording {
 
     /// The Search field's visible caption and spoken label.
     static var searchLabel: String {
-        String(localized: "Search for a podcast",
-               comment: "Caption and VoiceOver label of the field where the listener searches Apple's podcast directory.")
+        // Translators: Caption and VoiceOver label of the field where the listener searches Apple's podcast directory.
+        String(localized: "Search for a podcast")
     }
     /// The Search field's spoken hint.
     static var searchHint: String {
-        String(localized: "Type a podcast's title or publisher, then press Return to search Apple's directory",
-               comment: "VoiceOver hint of the podcast search field. Return is the Return key.")
+        // Translators: VoiceOver hint of the podcast search field. Return is the Return key.
+        String(localized: "Type a podcast's title or publisher, then press Return to search Apple's directory")
     }
     /// The Search button's title.
     static var searchButtonTitle: String {
-        String(localized: "Search",
-               comment: "Title of the button that searches Apple's podcast directory.")
+        // Translators: Title of the button that searches Apple's podcast directory.
+        String(localized: "Search")
     }
     /// What the sheet shows, and VoiceOver hears, while it searches.
     static var searching: String {
-        String(localized: "Searching for podcasts…",
-               comment: "What the Add Feed sheet shows and VoiceOver says while a podcast search runs.")
+        // Translators: What the Add Feed sheet shows and VoiceOver says while a podcast search runs.
+        String(localized: "Searching for podcasts…")
     }
 
     /// What VoiceOver hears when a search for `term` found `count` podcasts:
     /// "3 podcasts found for “braille”."
     static func podcastsFound(count: Int, term: String) -> String {
-        String(localized: "\(count) podcasts found for “\(term)”.",
-               comment: "What VoiceOver says when a podcast search found podcasts. %lld is how many; %@ is the words searched for.")
+        // Translators: What VoiceOver says when a podcast search found podcasts. %lld is how many; %@ is the words searched for.
+        String(localized: "\(count) podcasts found for “\(term)”.")
     }
 
     /// What the sheet says, and VoiceOver hears, when a search for `term`
     /// found nothing.
     static func noPodcastsFound(term: String) -> String {
-        String(localized: "No podcasts were found for “\(term)”. Try other words, or type the feed's address.",
-               comment: "What the Add Feed sheet says when a podcast search found nothing. %@ is the words searched for.")
+        // Translators: What the Add Feed sheet says when a podcast search found nothing. %@ is the words searched for.
+        String(localized: "No podcasts were found for “\(term)”. Try other words, or type the feed's address.")
     }
 
     /// The spoken label of the list of podcasts found: "Search results, 3
     /// podcasts".
     static func searchResultsLabel(count: Int) -> String {
-        String(localized: "Search results, \(count) podcasts",
-               comment: "VoiceOver label of the list of podcasts a search found. %lld is how many podcasts.")
+        // Translators: VoiceOver label of the list of podcasts a search found. %lld is how many podcasts.
+        String(localized: "Search results, \(count) podcasts")
     }
 
     /// The line under a podcast's title in the list: who publishes it and
@@ -163,8 +163,8 @@ enum FeedWording {
     static func searchResultDetails(_ result: FeedDirectoryResult) -> String? {
         var parts: [String] = []
         if let author = result.author {
-            parts.append(String(localized: "by \(author)",
-                                comment: "Who publishes a podcast, in the line under its title in the search results. %@ is the publisher's name."))
+            // Translators: Who publishes a podcast, in the line under its title in the search results. %@ is the publisher's name.
+            parts.append(String(localized: "by \(author)"))
         }
         if let count = result.episodeCount {
             parts.append(CountWording.episodes(count))
@@ -180,14 +180,14 @@ enum FeedWording {
 
     /// The spoken label of a podcast's own Subscribe button.
     static func subscribeToResultLabel(_ result: FeedDirectoryResult) -> String {
-        String(localized: "Subscribe to \(result.title)",
-               comment: "VoiceOver label of the Subscribe button of one podcast in the search results. %@ is the podcast's title.")
+        // Translators: VoiceOver label of the Subscribe button of one podcast in the search results. %@ is the podcast's title.
+        String(localized: "Subscribe to \(result.title)")
     }
 
     /// The spoken hint of a podcast's own Subscribe button.
     static var subscribeToResultHint: String {
-        String(localized: "Subscribes to this podcast and fills the address field",
-               comment: "VoiceOver hint of the Subscribe button of one podcast in the search results.")
+        // Translators: VoiceOver hint of the Subscribe button of one podcast in the search results.
+        String(localized: "Subscribes to this podcast and fills the address field")
     }
 
     // MARK: Nouns
@@ -215,8 +215,8 @@ enum FeedWording {
         case .episode: return CountWording.episodes(count)
         case .article: return CountWording.articles(count)
         case .item:
-            return String(localized: "\(count) items",
-                          comment: "A count of a feed's items when it holds both episodes and articles. %lld is the number of items.")
+            // Translators: A count of a feed's items when it holds both episodes and articles. %lld is the number of items.
+            return String(localized: "\(count) items")
         }
     }
 
@@ -245,8 +245,8 @@ enum FeedWording {
     /// before it. The screen and VoiceOver say the same words.
     static func sizePhrase(listed: Int, total: FeedEntryTotal?, noun: ItemNoun) -> String {
         guard let total, total.exceeds(listed) else { return count(listed, noun) }
-        return String(localized: "\(listed) of \(entriesPhrase(total, noun: noun)) listed",
-                      comment: "A feed's size when the library lists fewer entries than the feed has. The first %lld is how many are listed; %@ is the feed's size with its noun, such as \"381 episodes\" or \"more than 2000 episodes\".")
+        // Translators: A feed's size when the library lists fewer entries than the feed has. The first %lld is how many are listed; %@ is the feed's size with its noun, such as "381 episodes" or "more than 2000 episodes".
+        return String(localized: "\(listed) of \(entriesPhrase(total, noun: noun)) listed")
     }
 
     /// The size of the feed `counts` counts: its items listed of the
@@ -262,8 +262,8 @@ enum FeedWording {
     static func entriesPhrase(_ total: FeedEntryTotal, noun: ItemNoun?) -> String {
         let number = noun.map { count(total.count, $0) } ?? total.count.formatted()
         guard total.listsMore else { return number }
-        return String(localized: "more than \(number)",
-                      comment: "A feed's size when it is longer than TextMouth reads. %@ is the size, such as \"2000 episodes\" or just \"2000\".")
+        // Translators: A feed's size when it is longer than TextMouth reads. %@ is the size, such as "2000 episodes" or just "2000".
+        return String(localized: "more than \(number)")
     }
 
     // MARK: After Subscribing
@@ -273,21 +273,21 @@ enum FeedWording {
     /// listed.", or, listing every entry, "Subscribed to Planet Money: 12
     /// episodes."
     static func subscribed(title: String, counts: FeedItemCounts) -> String {
-        String(localized: "Subscribed to \(title): \(sizePhrase(counts)).",
-               comment: "What VoiceOver says once a subscription is made. The first %@ is the feed's title; the second is the feed's size, such as \"10 of 381 episodes listed\" or \"12 episodes\".")
+        // Translators: What VoiceOver says once a subscription is made. The first %@ is the feed's title; the second is the feed's size, such as "10 of 381 episodes listed" or "12 episodes".
+        String(localized: "Subscribed to \(title): \(sizePhrase(counts)).")
     }
 
     /// The plain-http warning's title.
     static var insecureTitle: String {
-        String(localized: "This Feed Uses Plain http",
-               comment: "Title of the warning shown once after subscribing to a feed whose address uses plain http, which is not encrypted. Title case.")
+        // Translators: Title of the warning shown once after subscribing to a feed whose address uses plain http, which is not encrypted. Title case.
+        String(localized: "This Feed Uses Plain http")
     }
 
     /// The plain-http warning shown once, right after subscribing to a feed
     /// that uses plain http (`Feed.usesInsecureTransport`), which also says
     /// the subscription was made.
     static func insecureMessage(title: String) -> String {
-        String(localized: "Subscribed to \(title). This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
-               comment: "The warning shown once after subscribing to a feed whose address uses plain http. %@ is the feed's title.")
+        // Translators: The warning shown once after subscribing to a feed whose address uses plain http. %@ is the feed's title.
+        String(localized: "Subscribed to \(title). This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.")
     }
 }

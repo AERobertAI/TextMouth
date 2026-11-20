@@ -258,19 +258,19 @@ struct ReaderWhereAmIToolbarButton: View {
 
     /// The words on the button.
     nonisolated static var title: String {
-        String(localized: "Where Am I?",
-               comment: "Title of the reader toolbar's button that says where the reader is in the book.")
+        // Translators: Title of the reader toolbar's button that says where the reader is in the book.
+        String(localized: "Where Am I?")
     }
     /// What VoiceOver calls the button while nothing is announced.
     nonisolated static var spokenLabel: String {
-        String(localized: "Where Am I? Announces current position in the book",
-               comment: "What VoiceOver calls the reader toolbar's Where Am I? button while nothing is announced.")
+        // Translators: What VoiceOver calls the reader toolbar's Where Am I? button while nothing is announced.
+        String(localized: "Where Am I? Announces current position in the book")
     }
     /// What VoiceOver calls it while an announcement speaks, which a press
     /// stops.
     nonisolated static var stopLabel: String {
-        String(localized: "Stop Where Am I announcement",
-               comment: "What VoiceOver calls the reader toolbar's Where Am I? button while an announcement speaks; pressing it stops the announcement.")
+        // Translators: What VoiceOver calls the reader toolbar's Where Am I? button while an announcement speaks; pressing it stops the announcement.
+        String(localized: "Stop Where Am I announcement")
     }
     /// The name of its VoiceOver action, the Playback menu's name for the
     /// command (`ShortcutAction.whereAmIFull`).
@@ -386,8 +386,8 @@ struct ReaderTextArea: View {
 
     /// What VoiceOver calls the scroll area holding the book's text.
     nonisolated static var accessibilityLabel: String {
-        String(localized: "Book content",
-               comment: "What VoiceOver calls the scrolling area that holds the book's text in the reader.")
+        // Translators: What VoiceOver calls the scrolling area that holds the book's text in the reader.
+        String(localized: "Book content")
     }
 
     var body: some View {
@@ -1144,8 +1144,8 @@ enum BookSettingsWording {
     /// An audiobook's sheet: the button's title, its VoiceOver label, and
     /// the sheet's name.
     private static var audioSettings: String {
-        String(localized: "Audio Settings",
-               comment: "Name of the reader's sheet and toolbar button for an audiobook's own settings (its speed), and what VoiceOver calls that button.")
+        // Translators: Name of the reader's sheet and toolbar button for an audiobook's own settings (its speed), and what VoiceOver calls that button.
+        String(localized: "Audio Settings")
     }
 
     /// The sheet's name, which begins its heading and its title: "Audio
@@ -1153,8 +1153,8 @@ enum BookSettingsWording {
     private static func sheetName(isAudioBook: Bool) -> String {
         isAudioBook
             ? audioSettings
-            : String(localized: "Voice & Speed",
-                     comment: "Name of the reader's sheet for a text book's own voice, speed and pitch.")
+            // Translators: Name of the reader's sheet for a text book's own voice, speed and pitch.
+            : String(localized: "Voice & Speed")
     }
 
     /// The toolbar button's title: "Audio Settings", or a text book's
@@ -1162,35 +1162,35 @@ enum BookSettingsWording {
     static func buttonTitle(isAudioBook: Bool) -> String {
         isAudioBook
             ? audioSettings
-            : String(localized: "Voice",
-                     comment: "Title of the reader toolbar's button that opens a text book's own voice settings.")
+            // Translators: Title of the reader toolbar's button that opens a text book's own voice settings.
+            : String(localized: "Voice")
     }
 
     /// What VoiceOver calls the toolbar button: an audiobook's is its title.
     static func buttonLabel(isAudioBook: Bool) -> String {
         isAudioBook
             ? audioSettings
-            : String(localized: "Change voice for this book",
-                     comment: "What VoiceOver calls the reader toolbar's button that opens a text book's own voice settings.")
+            // Translators: What VoiceOver calls the reader toolbar's button that opens a text book's own voice settings.
+            : String(localized: "Change voice for this book")
     }
 
     /// The heading at the top of the sheet: "Audio Settings for This Book".
     static func heading(isAudioBook: Bool) -> String {
-        String(localized: "\(sheetName(isAudioBook: isAudioBook)) for This Book",
-               comment: "Heading at the top of the reader's sheet for a book's own settings. %@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\".")
+        // Translators: Heading at the top of the reader's sheet for a book's own settings. %@ is the sheet's name, "Audio Settings" or "Voice & Speed".
+        String(localized: "\(sheetName(isAudioBook: isAudioBook)) for This Book")
     }
 
     /// The sheet's title, naming the book: "Audio Settings: " and the title.
     static func title(isAudioBook: Bool, bookTitle: String) -> String {
-        String(localized: "\(sheetName(isAudioBook: isAudioBook)): \(bookTitle)",
-               comment: "Title of the reader's sheet for a book's own settings. %1$@ is the sheet's name, \"Audio Settings\" or \"Voice & Speed\"; %2$@ is the book's title.")
+        // Translators: Title of the reader's sheet for a book's own settings. %1$@ is the sheet's name, "Audio Settings" or "Voice & Speed"; %2$@ is the book's title.
+        String(localized: "\(sheetName(isAudioBook: isAudioBook)): \(bookTitle)")
     }
 
     /// The audiobook speed slider's label, which VoiceOver reads before the
     /// speed: "Audio speed, 1.25 times speed".
     static var audioSpeedLabel: String {
-        String(localized: "Audio speed",
-               comment: "Label of an audiobook's speed slider; VoiceOver reads it before the speed.")
+        // Translators: Label of an audiobook's speed slider; VoiceOver reads it before the speed.
+        String(localized: "Audio speed")
     }
 
     // MARK: Saving and resetting
@@ -1198,50 +1198,50 @@ enum BookSettingsWording {
     /// The sheet's Save to Global Settings button's title (a text book's
     /// only; an audiobook's sheet has no such button).
     static var saveButtonTitle: String {
-        String(localized: "Save to Global Settings",
-               comment: "Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book.")
+        // Translators: Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book.
+        String(localized: "Save to Global Settings")
     }
 
     /// The save buttons' VoiceOver label.
     static var saveAsDefaultsLabel: String {
-        String(localized: "Save this book's voice, speed, and pitch as the global defaults",
-               comment: "What VoiceOver calls the buttons that save a text book's voice, speed and pitch as the settings for every book.")
+        // Translators: What VoiceOver calls the buttons that save a text book's voice, speed and pitch as the settings for every book.
+        String(localized: "Save this book's voice, speed, and pitch as the global defaults")
     }
 
     /// The save buttons' hint, and the bar's tooltip: what saving does.
     static var saveAsDefaultsHint: String {
-        String(localized: "Updates the default voice, speed, and pitch for every book without settings of its own.",
-               comment: "Hint and tooltip of the buttons that save a text book's voice, speed and pitch as the settings for every book.")
+        // Translators: Hint and tooltip of the buttons that save a text book's voice, speed and pitch as the settings for every book.
+        String(localized: "Updates the default voice, speed, and pitch for every book without settings of its own.")
     }
 
     /// The sheet's Reset button's title: an audiobook's "Reset to Normal
     /// Speed", or a text book's "Reset to Global Settings".
     static func resetButtonTitle(isAudioBook: Bool) -> String {
         isAudioBook
-            ? String(localized: "Reset to Normal Speed",
-                     comment: "Button of an audiobook's own settings sheet that sets its speed back to normal.")
-            : String(localized: "Reset to Global Settings",
-                     comment: "Button of a text book's own settings sheet that removes its own voice, speed and pitch.")
+            // Translators: Button of an audiobook's own settings sheet that sets its speed back to normal.
+            ? String(localized: "Reset to Normal Speed")
+            // Translators: Button of a text book's own settings sheet that removes its own voice, speed and pitch.
+            : String(localized: "Reset to Global Settings")
     }
 
     /// The VoiceOver label of a text book's Reset to Global Settings.
     static var resetToDefaultsLabel: String {
-        String(localized: "Reset this book's voice, speed, and pitch to the global defaults",
-               comment: "What VoiceOver calls the button that removes a text book's own voice, speed and pitch.")
+        // Translators: What VoiceOver calls the button that removes a text book's own voice, speed and pitch.
+        String(localized: "Reset this book's voice, speed, and pitch to the global defaults")
     }
 
     /// A text book's Reset hint: what resetting does.
     static var resetToDefaultsHint: String {
-        String(localized: "Removes this book's own voice, speed, and pitch, so it uses the global defaults.",
-               comment: "Hint of the button that removes a text book's own voice, speed and pitch.")
+        // Translators: Hint of the button that removes a text book's own voice, speed and pitch.
+        String(localized: "Removes this book's own voice, speed, and pitch, so it uses the global defaults.")
     }
 
     /// What VoiceOver calls the sheet's Reset button: an audiobook's "Reset
     /// to normal audio speed", or a text book's `resetToDefaultsLabel`.
     static func resetLabel(isAudioBook: Bool) -> String {
         isAudioBook
-            ? String(localized: "Reset to normal audio speed",
-                     comment: "What VoiceOver calls the button that sets an audiobook's speed back to normal.")
+            // Translators: What VoiceOver calls the button that sets an audiobook's speed back to normal.
+            ? String(localized: "Reset to normal audio speed")
             : resetToDefaultsLabel
     }
 
@@ -1249,16 +1249,16 @@ enum BookSettingsWording {
     /// resets to, a text book's is `resetToDefaultsHint`.
     static func resetHint(isAudioBook: Bool) -> String {
         isAudioBook
-            ? String(localized: "Resets this book to \(AudioSpeed.spokenLabel(for: AudioSpeed.normal))",
-                     comment: "Hint of the button that sets an audiobook's speed back to normal. %@ names the normal speed, such as \"1.0 times speed\".")
+            // Translators: Hint of the button that sets an audiobook's speed back to normal. %@ names the normal speed, such as "1.0 times speed".
+            ? String(localized: "Resets this book to \(AudioSpeed.spokenLabel(for: AudioSpeed.normal))")
             : resetToDefaultsHint
     }
 
     /// What VoiceOver is told once a text book's reset has run; it names
     /// all three settings the reset clears, as the button does.
     static var resetDone: String {
-        String(localized: "Using global voice, speed, and pitch settings",
-               comment: "Announcement after a text book's own voice, speed and pitch were removed, so it uses the settings for every book.")
+        // Translators: Announcement after a text book's own voice, speed and pitch were removed, so it uses the settings for every book.
+        String(localized: "Using global voice, speed, and pitch settings")
     }
 }
 
@@ -1500,123 +1500,145 @@ enum ReaderViewWording {
 
     /// The words beside the spinner while a book loads.
     static var loadingBook: String {
-        String(localized: "Loading book...",
-               comment: "Words beside the spinner in the reader while a book loads.")
+        // Translators: Words beside the spinner in the reader while a book loads.
+        String(localized: "Loading book...")
     }
     /// What VoiceOver says for the spinner while a book loads.
     static func loading(title: String) -> String {
-        String(localized: "Loading \(title)",
-               comment: "What VoiceOver says for the spinner in the reader while a book loads. %@ is the book's title.")
+        // Translators: What VoiceOver says for the spinner in the reader while a book loads. %@ is the book's title.
+        String(localized: "Loading \(title)")
     }
     /// The heading of the view shown when a book could not be loaded.
     static var failedToLoad: String {
-        String(localized: "Failed to load book",
-               comment: "Heading of the view shown in place of a book that could not be loaded; the reason follows it.")
+        // Translators: Heading of the view shown in place of a book that could not be loaded; the reason follows it.
+        String(localized: "Failed to load book")
     }
     /// The Cancel button of the reader's alerts and views.
     static var cancelTitle: String {
-        String(localized: "Cancel", comment: "Button that closes an alert or stops waiting, in the reader.")
+        // Translators: Button that closes an alert or stops waiting, in the reader.
+        String(localized: "Cancel")
     }
     /// The OK button of the reader's alerts.
     static var okTitle: String {
-        String(localized: "OK", comment: "Button that dismisses the reader's error alert.")
+        // Translators: Button that dismisses the reader's error alert.
+        String(localized: "OK")
     }
     /// The Close button of the reader's views and sheets.
     static var closeTitle: String {
-        String(localized: "Close", comment: "Button that closes a reader view or sheet.")
+        // Translators: Button that closes a reader view or sheet.
+        String(localized: "Close")
     }
 
     // MARK: Cloud views
 
     /// The button that downloads a book that is only in the cloud.
     static var downloadTitle: String {
-        String(localized: "Download", comment: "Button of the reader's view for a book that is only in the cloud; it downloads the book.")
+        // Translators: Button of the reader's view for a book that is only in the cloud; it downloads the book.
+        String(localized: "Download")
     }
     /// That button's hint.
     static var downloadHint: String {
-        String(localized: "Downloads the book again", comment: "Hint of the Download button of the reader's view for a book that is only in the cloud.")
+        // Translators: Hint of the Download button of the reader's view for a book that is only in the cloud.
+        String(localized: "Downloads the book again")
     }
     /// The button that tries to get a book again.
     static var tryAgainTitle: String {
-        String(localized: "Try Again", comment: "Button of the reader's view for a book that could not be got from the cloud; it tries again.")
+        // Translators: Button of the reader's view for a book that could not be got from the cloud; it tries again.
+        String(localized: "Try Again")
     }
     /// The hint of Try Again after a failure.
     static var tryAgainHint: String {
-        String(localized: "Tries to get the book again", comment: "Hint of the Try Again button of the reader's view for a book that could not be got from the cloud.")
+        // Translators: Hint of the Try Again button of the reader's view for a book that could not be got from the cloud.
+        String(localized: "Tries to get the book again")
     }
     /// The hint of Try Again while the cloud has not yet synced the book.
     static var lookAgainHint: String {
-        String(localized: "Looks for the book again", comment: "Hint of the Try Again button of the reader's view for a book that the cloud has not yet synced.")
+        // Translators: Hint of the Try Again button of the reader's view for a book that the cloud has not yet synced.
+        String(localized: "Looks for the book again")
     }
     /// The hint of Cancel while a book downloads.
     static var cancelDownloadHint: String {
-        String(localized: "Stops waiting for the download", comment: "Hint of the Cancel button of the reader's view while a book downloads.")
+        // Translators: Hint of the Cancel button of the reader's view while a book downloads.
+        String(localized: "Stops waiting for the download")
     }
     /// The hint of Close in the reader's view for a book that is not ready.
     static var closeWindowHint: String {
-        String(localized: "Closes this book's window", comment: "Hint of the Close button of the reader's view for a book that is not ready to read.")
+        // Translators: Hint of the Close button of the reader's view for a book that is not ready to read.
+        String(localized: "Closes this book's window")
     }
 
     // MARK: Toolbar
 
     /// The Return button's title.
     static var returnTitle: String {
-        String(localized: "Return", comment: "Title of the reader toolbar's button that goes back to the reading position left before browsing.")
+        // Translators: Title of the reader toolbar's button that goes back to the reading position left before browsing.
+        String(localized: "Return")
     }
     /// What VoiceOver calls the Return button.
     static var returnSpoken: String {
-        String(localized: "Return to previous reading position", comment: "What VoiceOver calls the reader toolbar's Return button.")
+        // Translators: What VoiceOver calls the reader toolbar's Return button.
+        String(localized: "Return to previous reading position")
     }
     /// The Return button's hint.
     static var returnHint: String {
-        String(localized: "Go back to where you were before browsing headings or bookmarks", comment: "Hint of the reader toolbar's Return button.")
+        // Translators: Hint of the reader toolbar's Return button.
+        String(localized: "Go back to where you were before browsing headings or bookmarks")
     }
     /// The Headings button's title.
     static var headingsTitle: String {
-        String(localized: "Headings", comment: "Title of the reader toolbar's button that opens the headings sheet.")
+        // Translators: Title of the reader toolbar's button that opens the headings sheet.
+        String(localized: "Headings")
     }
     /// What VoiceOver calls the Headings button.
     static var headingsSpoken: String {
-        String(localized: "Show heading navigator", comment: "What VoiceOver calls the reader toolbar's button that opens the headings sheet.")
+        // Translators: What VoiceOver calls the reader toolbar's button that opens the headings sheet.
+        String(localized: "Show heading navigator")
     }
     /// The Bookmarks button's title.
     static var bookmarksTitle: String {
-        String(localized: "Bookmarks", comment: "Title of the reader toolbar's button that opens the bookmarks sheet.")
+        // Translators: Title of the reader toolbar's button that opens the bookmarks sheet.
+        String(localized: "Bookmarks")
     }
     /// What VoiceOver calls the Bookmarks button.
     static var bookmarksSpoken: String {
-        String(localized: "Show bookmarks", comment: "What VoiceOver calls the reader toolbar's button that opens the bookmarks sheet.")
+        // Translators: What VoiceOver calls the reader toolbar's button that opens the bookmarks sheet.
+        String(localized: "Show bookmarks")
     }
     /// The Sleep Timer button's title.
     static var sleepTimerTitle: String {
-        String(localized: "Sleep Timer", comment: "Title of the reader toolbar's button that opens the sleep timer sheet.")
+        // Translators: Title of the reader toolbar's button that opens the sleep timer sheet.
+        String(localized: "Sleep Timer")
     }
     /// What VoiceOver calls the Sleep Timer button.
     static var sleepTimerSpoken: String {
-        String(localized: "Sleep timer", comment: "What VoiceOver calls the reader toolbar's button that opens the sleep timer sheet.")
+        // Translators: What VoiceOver calls the reader toolbar's button that opens the sleep timer sheet.
+        String(localized: "Sleep timer")
     }
     /// The Search button's title.
     static var searchTitle: String {
-        String(localized: "Search", comment: "Title of the reader toolbar's button that opens the search in the book.")
+        // Translators: Title of the reader toolbar's button that opens the search in the book.
+        String(localized: "Search")
     }
     /// What VoiceOver calls the Search button.
     static var searchSpoken: String {
-        String(localized: "Search in book", comment: "What VoiceOver calls the reader toolbar's button that opens the search in the book.")
+        // Translators: What VoiceOver calls the reader toolbar's button that opens the search in the book.
+        String(localized: "Search in book")
     }
     /// The Book Info button's title.
     static var bookInfoTitle: String {
-        String(localized: "Book Info", comment: "Title of the reader toolbar's button that opens the book's information sheet.")
+        // Translators: Title of the reader toolbar's button that opens the book's information sheet.
+        String(localized: "Book Info")
     }
     /// The speed caption of a text book: "500 WPM".
     static func wpmCaption(_ wordsPerMinute: Int) -> String {
-        String(localized: "\(wordsPerMinute) WPM",
-               comment: "The reader toolbar's caption for a text book's speed. WPM is the abbreviation of words per minute; %lld is the number of words.")
+        // Translators: The reader toolbar's caption for a text book's speed. WPM is the abbreviation of words per minute; %lld is the number of words.
+        String(localized: "\(wordsPerMinute) WPM")
     }
     /// What VoiceOver says for that caption, naming a speed the book has of its own.
     static func wpmSpoken(_ wordsPerMinute: Int, bookSpecific: Bool) -> String {
         bookSpecific
-            ? String(localized: "\(wordsPerMinute) words per minute, book-specific speed",
-                     comment: "What VoiceOver says for the reader toolbar's speed caption when this book has a speed of its own. %lld is the number of words read in a minute.")
+            // Translators: What VoiceOver says for the reader toolbar's speed caption when this book has a speed of its own. %lld is the number of words read in a minute.
+            ? String(localized: "\(wordsPerMinute) words per minute, book-specific speed")
             : PlaybackControlsWording.wordsPerMinute(wordsPerMinute)
     }
 
@@ -1624,121 +1646,145 @@ enum ReaderViewWording {
 
     /// The heading of the audio speed group.
     static var audioSpeedHeading: String {
-        String(localized: "Audio Speed", comment: "Heading of the group in an audiobook's own settings sheet that holds its speed.")
+        // Translators: Heading of the group in an audiobook's own settings sheet that holds its speed.
+        String(localized: "Audio Speed")
     }
     /// The language filter's title.
     static var languageTitle: String {
-        String(localized: "Language", comment: "Title of the voice sheet's menu that limits the voices listed to one language.")
+        // Translators: Title of the voice sheet's menu that limits the voices listed to one language.
+        String(localized: "Language")
     }
     /// The language filter's choice that shows every language.
     static var allLanguages: String {
-        String(localized: "All", comment: "Choice of the voice sheet's language menu that lists the voices of every language.")
+        // Translators: Choice of the voice sheet's language menu that lists the voices of every language.
+        String(localized: "All")
     }
     /// What VoiceOver calls the language filter.
     static var languageFilterLabel: String {
-        String(localized: "Voice language filter", comment: "What VoiceOver calls the voice sheet's menu that limits the voices listed to one language.")
+        // Translators: What VoiceOver calls the voice sheet's menu that limits the voices listed to one language.
+        String(localized: "Voice language filter")
     }
     /// The voice menu's title, and the heading of its group.
     static var voiceTitle: String {
-        String(localized: "Voice", comment: "Title of the voice sheet's menu of voices, and the heading of its group.")
+        // Translators: Title of the voice sheet's menu of voices, and the heading of its group.
+        String(localized: "Voice")
     }
     /// A voice's quality in parentheses, beside its name.
     static func qualityShown(_ quality: String) -> String {
-        String(localized: "(\(quality))", comment: "A voice's quality shown in parentheses beside its name in the voice sheet. %@ is the quality, such as Enhanced.")
+        // Translators: A voice's quality shown in parentheses beside its name in the voice sheet. %@ is the quality, such as Enhanced.
+        String(localized: "(\(quality))")
     }
     /// What VoiceOver says for a voice in the menu.
     static func voiceSpoken(name: String, quality: String) -> String {
-        String(localized: "\(name), \(quality) quality",
-               comment: "What VoiceOver says for a voice in the voice sheet's menu. %1$@ is the voice's name; %2$@ is its quality, such as Enhanced.")
+        // Translators: What VoiceOver says for a voice in the voice sheet's menu. %1$@ is the voice's name; %2$@ is its quality, such as Enhanced.
+        String(localized: "\(name), \(quality) quality")
     }
     /// What VoiceOver calls the voice menu.
     static var selectVoiceLabel: String {
-        String(localized: "Select voice for this book", comment: "What VoiceOver calls the voice sheet's menu of voices.")
+        // Translators: What VoiceOver calls the voice sheet's menu of voices.
+        String(localized: "Select voice for this book")
     }
     /// The preview button's title.
     static var previewTitle: String {
-        String(localized: "Preview Voice", comment: "Button of the voice sheet that speaks a sample in the chosen voice.")
+        // Translators: Button of the voice sheet that speaks a sample in the chosen voice.
+        String(localized: "Preview Voice")
     }
     /// What VoiceOver calls the preview button.
     static var previewLabel: String {
-        String(localized: "Preview selected voice", comment: "What VoiceOver calls the voice sheet's button that speaks a sample in the chosen voice.")
+        // Translators: What VoiceOver calls the voice sheet's button that speaks a sample in the chosen voice.
+        String(localized: "Preview selected voice")
     }
     /// The speed slider's caption for a text book: "Speed: 175 WPM".
     static func speedWPM(_ wordsPerMinute: Int) -> String {
-        String(localized: "Speed: \(wordsPerMinute) WPM",
-               comment: "Caption above the voice sheet's speed slider for a text book. WPM is the abbreviation of words per minute; %lld is the number of words.")
+        // Translators: Caption above the voice sheet's speed slider for a text book. WPM is the abbreviation of words per minute; %lld is the number of words.
+        String(localized: "Speed: \(wordsPerMinute) WPM")
     }
     /// The speed caption for an audiobook: "Speed: 1.25x".
     static func speedShown(_ speed: String) -> String {
-        String(localized: "Speed: \(speed)",
-               comment: "Caption above an audiobook's speed slider in its own settings sheet. %@ is the speed, such as 1.25x.")
+        // Translators: Caption above an audiobook's speed slider in its own settings sheet. %@ is the speed, such as 1.25x.
+        String(localized: "Speed: \(speed)")
     }
     /// The slider's own text label.
     static var wordsPerMinuteLabel: String {
-        String(localized: "Words per minute", comment: "Label of the voice sheet's speed slider, shown beside it.")
+        // Translators: Label of the voice sheet's speed slider, shown beside it.
+        String(localized: "Words per minute")
     }
     /// The speed group's heading and the slider's VoiceOver label.
     static var speedTitle: String {
-        String(localized: "Speed", comment: "Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider.")
+        // Translators: Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider.
+        String(localized: "Speed")
     }
     /// The pitch caption: "Pitch: 1.0".
     static func pitchShown(_ pitch: String) -> String {
-        String(localized: "Pitch: \(pitch)", comment: "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x.")
+        // Translators: Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x.
+        String(localized: "Pitch: \(pitch)")
     }
     /// The pitch group's heading, the slider's label, and what VoiceOver calls it.
     static var pitchTitle: String {
-        String(localized: "Pitch", comment: "Heading of the voice sheet's pitch group, and the label of its pitch slider.")
+        // Translators: Heading of the voice sheet's pitch group, and the label of its pitch slider.
+        String(localized: "Pitch")
     }
     /// The end of book menu's title.
     static var endOfBookTitle: String {
-        String(localized: "When this book ends", comment: "Title of the book's own settings menu that chooses what happens when this book ends.")
+        // Translators: Title of the book's own settings menu that chooses what happens when this book ends.
+        String(localized: "When this book ends")
     }
     /// What VoiceOver calls the end of book menu.
     static var endOfBookLabel: String {
-        String(localized: "End of book behavior for this book", comment: "What VoiceOver calls the book's own settings menu that chooses what happens when this book ends.")
+        // Translators: What VoiceOver calls the book's own settings menu that chooses what happens when this book ends.
+        String(localized: "End of book behavior for this book")
     }
     /// The button that removes the book's own end of book choice.
     static var useGlobalDefaultTitle: String {
-        String(localized: "Use Global Default", comment: "Button of the book's own settings sheet that removes its own end of book choice, so the setting for every book applies.")
+        // Translators: Button of the book's own settings sheet that removes its own end of book choice, so the setting for every book applies.
+        String(localized: "Use Global Default")
     }
     /// What VoiceOver calls that button.
     static var useGlobalDefaultLabel: String {
-        String(localized: "Reset to global end-of-book setting", comment: "What VoiceOver calls the button that removes the book's own end of book choice.")
+        // Translators: What VoiceOver calls the button that removes the book's own end of book choice.
+        String(localized: "Reset to global end-of-book setting")
     }
     /// The heading of the end of book group.
     static var endOfBookHeading: String {
-        String(localized: "End of Book", comment: "Heading of the group in a book's own settings sheet that holds what happens when the book ends.")
+        // Translators: Heading of the group in a book's own settings sheet that holds what happens when the book ends.
+        String(localized: "End of Book")
     }
 
     // MARK: Status row
 
     /// What VoiceOver says for the percent button: "29% through the book".
     static func throughTheBook(percent: String) -> String {
-        String(localized: "\(percent) through the book",
-               comment: "What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%.")
+        // Translators: What VoiceOver says for the reader's percent button. %@ is the percent, such as 22.9%.
+        String(localized: "\(percent) through the book")
     }
     /// The percent button's hint while no panel is open.
     static var openPercentHint: String {
-        String(localized: "Opens jump to percent controls", comment: "Hint of the reader's percent button while no jump panel is open.")
+        // Translators: Hint of the reader's percent button while no jump panel is open.
+        String(localized: "Opens jump to percent controls")
     }
     /// The percent button's hint while the percent panel is open.
     static var hidePercentHint: String {
-        String(localized: "Hides jump to percent controls", comment: "Hint of the reader's percent button while the jump to percent panel is open.")
+        // Translators: Hint of the reader's percent button while the jump to percent panel is open.
+        String(localized: "Hides jump to percent controls")
     }
     /// The percent button's hint while another jump panel is open.
     static var switchPercentHint: String {
-        String(localized: "Switches to jump to percent controls", comment: "Hint of the reader's percent button while the jump to time or page panel is open.")
+        // Translators: Hint of the reader's percent button while the jump to time or page panel is open.
+        String(localized: "Switches to jump to percent controls")
     }
     /// The time button's hint while no panel is open.
     static var openTimeHint: String {
-        String(localized: "Opens jump to time controls", comment: "Hint of the reader's time button while no jump panel is open.")
+        // Translators: Hint of the reader's time button while no jump panel is open.
+        String(localized: "Opens jump to time controls")
     }
     /// The time button's hint while the time panel is open.
     static var hideTimeHint: String {
-        String(localized: "Hides jump to time controls", comment: "Hint of the reader's time button while the jump to time panel is open.")
+        // Translators: Hint of the reader's time button while the jump to time panel is open.
+        String(localized: "Hides jump to time controls")
     }
     /// The time button's hint while another jump panel is open.
     static var switchTimeHint: String {
-        String(localized: "Switches to jump to time controls", comment: "Hint of the reader's time button while the jump to percent or page panel is open.")
+        // Translators: Hint of the reader's time button while the jump to percent or page panel is open.
+        String(localized: "Switches to jump to time controls")
     }
 }

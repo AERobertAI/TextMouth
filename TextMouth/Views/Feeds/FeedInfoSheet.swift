@@ -629,155 +629,155 @@ extension FeedWording {
     /// its own Feed Info (FR14), so only Delete Feed… in another window, or
     /// a record lost outside TextMouth, does.
     static var feedGone: String {
-        String(localized: "This feed is no longer in your library.",
-               comment: "Feed Info's line for a feed whose record went while the sheet was open.")
+        // Translators: Feed Info's line for a feed whose record went while the sheet was open.
+        String(localized: "This feed is no longer in your library.")
     }
     /// The unsubscription date's label in Feed Info (FR11, branch D).
     static var unsubscribedLabel: String { unsubscribedNote }
 
     /// The Done button of a sheet that keeps every change as it is made.
     static var doneTitle: String {
-        String(localized: "Done",
-               comment: "Title of the button that closes a sheet whose changes were already kept, such as Feed Info. Title case.")
+        // Translators: Title of the button that closes a sheet whose changes were already kept, such as Feed Info. Title case.
+        String(localized: "Done")
     }
     /// The OK button of an alert that only informs.
     static var okTitle: String {
-        String(localized: "OK",
-               comment: "Button that closes an alert that only informs. Title case.")
+        // Translators: Button that closes an alert that only informs. Title case.
+        String(localized: "OK")
     }
     /// The Cancel button of a confirmation.
     static var cancelTitle: String {
-        String(localized: "Cancel",
-               comment: "Button that closes a sheet or dialog without doing what it offered.")
+        // Translators: Button that closes a sheet or dialog without doing what it offered.
+        String(localized: "Cancel")
     }
     /// The Close button of a sheet that only shows something.
     static var closeTitle: String {
-        String(localized: "Close",
-               comment: "Button that closes a sheet, such as the sleep timer sheet over a book's reader.")
+        // Translators: Button that closes a sheet, such as the sleep timer sheet over a book's reader.
+        String(localized: "Close")
     }
     /// Unsubscribe's spoken hint in Feed Info (FR11, branch D): it asks
     /// first only when it would delete the places kept for removed
     /// downloads (FR14).
     static func unsubscribeHint(asksFirst: Bool) -> String {
         asksFirst
-            ? String(localized: "Asks first, then stops checking; the feed and its downloads stay",
-                     comment: "VoiceOver hint of the Unsubscribe button in Feed Info when it asks a question first.")
-            : String(localized: "Stops checking; the feed and its downloads stay",
-                     comment: "VoiceOver hint of the Unsubscribe button in Feed Info when it acts at once.")
+            // Translators: VoiceOver hint of the Unsubscribe button in Feed Info when it asks a question first.
+            ? String(localized: "Asks first, then stops checking; the feed and its downloads stay")
+            // Translators: VoiceOver hint of the Unsubscribe button in Feed Info when it acts at once.
+            : String(localized: "Stops checking; the feed and its downloads stay")
     }
     /// Resubscribe's spoken hint in Feed Info (FR11, branch D).
     static var resubscribeHint: String {
-        String(localized: "Checks this feed again from now on, and at once",
-               comment: "VoiceOver hint of the Resubscribe button in Feed Info.")
+        // Translators: VoiceOver hint of the Resubscribe button in Feed Info.
+        String(localized: "Checks this feed again from now on, and at once")
     }
     /// The address's label in Feed Info.
     static var addressLabelInInfo: String {
-        String(localized: "Address",
-               comment: "Label of the feed's address in Feed Info. Title case.")
+        // Translators: Label of the feed's address in Feed Info. Title case.
+        String(localized: "Address")
     }
     /// The web site's label.
     static var siteLabel: String {
-        String(localized: "Web site",
-               comment: "Label of the feed's web site in Feed Info.")
+        // Translators: Label of the feed's web site in Feed Info.
+        String(localized: "Web site")
     }
     /// The author's label.
     static var authorLabel: String {
-        String(localized: "Published by",
-               comment: "Label of the feed's publisher in Feed Info.")
+        // Translators: Label of the feed's publisher in Feed Info.
+        String(localized: "Published by")
     }
     /// The items' label: "Episodes".
     static func itemsLabel(_ noun: ItemNoun) -> String {
         noun.choose(
-            episode: String(localized: "Episodes",
-                            comment: "Label of the count of a feed's episodes in Feed Info. Title case."),
-            article: String(localized: "Articles",
-                            comment: "Label of the count of a feed's articles in Feed Info. Title case."),
-            item: String(localized: "Items",
-                         comment: "Label of the count of a feed's items, episodes and articles, in Feed Info. Title case."))
+            // Translators: Label of the count of a feed's episodes in Feed Info. Title case.
+            episode: String(localized: "Episodes"),
+            // Translators: Label of the count of a feed's articles in Feed Info. Title case.
+            article: String(localized: "Articles"),
+            // Translators: Label of the count of a feed's items, episodes and articles, in Feed Info. Title case.
+            item: String(localized: "Items"))
     }
     /// The last check's label.
     static var lastCheckLabel: String {
-        String(localized: "Last check",
-               comment: "Label of when the feed was last checked, in Feed Info.")
+        // Translators: Label of when the feed was last checked, in Feed Info.
+        String(localized: "Last check")
     }
     /// The subscription date's label.
     static var subscribedLabel: String {
-        String(localized: "Subscribed",
-               comment: "Label of when the listener subscribed to the feed, in Feed Info.")
+        // Translators: Label of when the listener subscribed to the feed, in Feed Info.
+        String(localized: "Subscribed")
     }
     /// The plain-http note's label.
     static var securityLabel: String {
-        String(localized: "Security",
-               comment: "Label of the note about a feed that uses plain http, in Feed Info.")
+        // Translators: Label of the note about a feed that uses plain http, in Feed Info.
+        String(localized: "Security")
     }
     /// The plain-http note in Feed Info.
     static var insecureNote: String {
-        String(localized: "Plain http: others can read or change what this feed sends.",
-               comment: "The note in Feed Info about a feed whose address uses plain http, which is not encrypted. Plain http is a term; keep it.")
+        // Translators: The note in Feed Info about a feed whose address uses plain http, which is not encrypted. Plain http is a term; keep it.
+        String(localized: "Plain http: others can read or change what this feed sends.")
     }
     /// The folder picker's caption in Feed Info.
     static var folderInfoCaption: String {
-        String(localized: "Downloads go to",
-               comment: "Caption of the folder picker in Feed Info: the library folder the feed's downloads are listed in.")
+        // Translators: Caption of the folder picker in Feed Info: the library folder the feed's downloads are listed in.
+        String(localized: "Downloads go to")
     }
     /// The folder picker's spoken label in Feed Info.
     static var folderInfoLabel: String {
-        String(localized: "Folder the feed's downloads go to",
-               comment: "VoiceOver label of the folder picker in Feed Info.")
+        // Translators: VoiceOver label of the folder picker in Feed Info.
+        String(localized: "Folder the feed's downloads go to")
     }
     /// The line under Feed Info's folder picker. A feed's downloads stay in
     /// the feed's own folder in the data directory, and the library folder
     /// only lists them (FR11), so all of them follow the choice.
     static var folderInfoHelp: String {
-        String(localized: "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
-               comment: "The line under the folder picker in Feed Info.")
+        // Translators: The line under the folder picker in Feed Info.
+        String(localized: "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.")
     }
     /// The stand-in Feed Info's folder picker shows while the feed's folder is gone.
     static var chooseFolderOption: String {
-        String(localized: "Choose a folder",
-               comment: "What Feed Info's folder picker shows while the feed's folder was removed from the library.")
+        // Translators: What Feed Info's folder picker shows while the feed's folder was removed from the library.
+        String(localized: "Choose a folder")
     }
     /// The Description heading in Feed Info; the text area under it is
     /// labelled `descriptionTextLabel(title:)`, so VoiceOver does not say
     /// Description twice.
     static var descriptionLabel: String {
-        String(localized: "Description",
-               comment: "Heading of the feed's or the item's description, in Feed Info and Show Description.")
+        // Translators: Heading of the feed's or the item's description, in Feed Info and Show Description.
+        String(localized: "Description")
     }
     /// The heading of the feed's own settings.
     static var ownSettingsHeading: String {
-        String(localized: "This Feed's Settings",
-               comment: "Heading of the group of settings a feed can have of its own, in Feed Info. Title case.")
+        // Translators: Heading of the group of settings a feed can have of its own, in Feed Info. Title case.
+        String(localized: "This Feed's Settings")
     }
     /// A "Use the global setting" checkbox's title, naming the global value:
     /// "Use the global setting (Every item listed, newest 5 downloaded)".
     static func useGlobal(_ globalCaption: String) -> String {
-        String(localized: "Use the global setting (\(globalCaption))",
-               comment: "Title of the checkbox that makes a feed follow the global setting. %@ is the global setting's value, such as \"Every item listed, newest 5 downloaded\".")
+        // Translators: Title of the checkbox that makes a feed follow the global setting. %@ is the global setting's value, such as "Every item listed, newest 5 downloaded".
+        String(localized: "Use the global setting (\(globalCaption))")
     }
     /// A "Use the global setting" checkbox's hint.
     static var useGlobalHint: String {
-        String(localized: "When checked, this feed follows the setting in Settings, \(FeedSettingsWording.tabTitle); uncheck it to give the feed its own",
-               comment: "VoiceOver hint of the checkbox that makes a feed follow the global setting. %@ is the name of the Feeds tab of Settings.")
+        // Translators: VoiceOver hint of the checkbox that makes a feed follow the global setting. %@ is the name of the Feeds tab of Settings.
+        String(localized: "When checked, this feed follows the setting in Settings, \(FeedSettingsWording.tabTitle); uncheck it to give the feed its own")
     }
     /// The web page's label in Show Description.
     static var webPageLabel: String {
-        String(localized: "Web page",
-               comment: "Label of an item's web page in Show Description.")
+        // Translators: Label of an item's web page in Show Description.
+        String(localized: "Web page")
     }
     /// The spoken label of a description's text area, naming whose it is:
     /// Feed Info's, with the feed's title, and Show Description's, with the
     /// item's.
     static func descriptionTextLabel(title: String) -> String {
-        String(localized: "Description of \(title)",
-               comment: "VoiceOver label of the text area that shows a description. %@ is the feed's or the item's title.")
+        // Translators: VoiceOver label of the text area that shows a description. %@ is the feed's or the item's title.
+        String(localized: "Description of \(title)")
     }
     /// What Show Description says for an item without one.
     static func noDescription(isArticle: Bool) -> String {
         isArticle
-            ? String(localized: "This article has no description.",
-                     comment: "What Show Description says for an article that has no description.")
-            : String(localized: "This episode has no description.",
-                     comment: "What Show Description says for an episode that has no description.")
+            // Translators: What Show Description says for an article that has no description.
+            ? String(localized: "This article has no description.")
+            // Translators: What Show Description says for an episode that has no description.
+            : String(localized: "This episode has no description.")
     }
 }

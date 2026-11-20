@@ -85,13 +85,13 @@ struct CompareLibrariesSheet: View {
 enum CompareLibrariesSheetWording {
     /// The label of the progress bar shown while the comparison runs.
     static var comparingLabel: String {
-        String(localized: "Comparing",
-               comment: "VoiceOver label of the progress bar of the Compare Libraries sheet while the two copies of the library are being compared.")
+        // Translators: VoiceOver label of the progress bar of the Compare Libraries sheet while the two copies of the library are being compared.
+        String(localized: "Comparing")
     }
 
     /// The label of the list of differences found.
     static var differencesLabel: String {
-        String(localized: "Differences",
-               comment: "VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library.")
+        // Translators: VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library.
+        String(localized: "Differences")
     }
 }

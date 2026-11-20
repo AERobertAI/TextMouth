@@ -20,17 +20,17 @@ enum DuplicateFilter: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .md5Hash:
-            return String(localized: "Identical File (MD5)",
-                          comment: "A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them.")
+            // Translators: A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them.
+            return String(localized: "Identical File (MD5)")
         case .isbn:
-            return String(localized: "Same ISBN",
-                          comment: "A match criterion of Find Duplicate Books: the books have the same ISBN, the book's international number. ISBN stays as written.")
+            // Translators: A match criterion of Find Duplicate Books: the books have the same ISBN, the book's international number. ISBN stays as written.
+            return String(localized: "Same ISBN")
         case .title:
-            return String(localized: "Same Title",
-                          comment: "A match criterion of Find Duplicate Books: the books have the same title.")
+            // Translators: A match criterion of Find Duplicate Books: the books have the same title.
+            return String(localized: "Same Title")
         case .author:
-            return String(localized: "Same Author",
-                          comment: "A match criterion of Find Duplicate Books: the books have the same author.")
+            // Translators: A match criterion of Find Duplicate Books: the books have the same author.
+            return String(localized: "Same Author")
         }
     }
 
@@ -38,17 +38,17 @@ enum DuplicateFilter: String, CaseIterable, Identifiable {
     var hint: String {
         switch self {
         case .md5Hash:
-            return String(localized: "Exact file content match — the strongest indicator",
-                          comment: "Hint of the Identical File criterion of Find Duplicate Books.")
+            // Translators: Hint of the Identical File criterion of Find Duplicate Books.
+            return String(localized: "Exact file content match — the strongest indicator")
         case .isbn:
-            return String(localized: "EPUB books with the same ISBN identifier",
-                          comment: "Hint of the Same ISBN criterion of Find Duplicate Books. EPUB is a book format and ISBN is the book's international number; both stay as written.")
+            // Translators: Hint of the Same ISBN criterion of Find Duplicate Books. EPUB is a book format and ISBN is the book's international number; both stay as written.
+            return String(localized: "EPUB books with the same ISBN identifier")
         case .title:
-            return String(localized: "Books with the same title, regardless of author",
-                          comment: "Hint of the Same Title criterion of Find Duplicate Books.")
+            // Translators: Hint of the Same Title criterion of Find Duplicate Books.
+            return String(localized: "Books with the same title, regardless of author")
         case .author:
-            return String(localized: "All books by the same author",
-                          comment: "Hint of the Same Author criterion of Find Duplicate Books.")
+            // Translators: Hint of the Same Author criterion of Find Duplicate Books.
+            return String(localized: "All books by the same author")
         }
     }
 }
@@ -295,21 +295,21 @@ struct DuplicateGroupPages: Equatable {
 enum DuplicateFinderWording {
     /// The folder named for a book at the library's top level.
     static var libraryRoot: String {
-        String(localized: "Library Root",
-               comment: "The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label.")
+        // Translators: The folder name Find Duplicate Books gives a book at the top level of the library, in a duplicate's spoken label.
+        String(localized: "Library Root")
     }
 
     /// A group's value for the ISBN criterion: "ISBN: 9780000000000".
     static func isbnValue(_ isbn: String) -> String {
-        String(localized: "ISBN: \(isbn)",
-               comment: "The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written.")
+        // Translators: The shared value of a group of duplicate books that match by ISBN, in the group's heading. %@ is the ISBN. ISBN stays as written.
+        String(localized: "ISBN: \(isbn)")
     }
 
     /// A group's value when title and author are matched together: "Atlas by
     /// Dorothy Vance".
     static func titleByAuthor(_ title: String, author: String) -> String {
-        String(localized: "\(title) by \(author)",
-               comment: "The shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.")
+        // Translators: The shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.
+        String(localized: "\(title) by \(author)")
     }
 
 
@@ -318,28 +318,28 @@ enum DuplicateFinderWording {
     /// book was added tells two copies apart, so it is spoken, not only
     /// shown.
     static func bookLabel(_ book: Book) -> String {
-        String(localized: "\(book.title), by \(book.author), \(book.format.displayName), in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath), added \(book.dateAdded.formatted(date: .long, time: .omitted))",
-               comment: "A duplicate book's row, spoken and shown as one label in Find Duplicate Books. %1$@ is the title, %2$@ the author, %3$@ the format, %4$@ the library folder it is in, and %5$@ the date it was added.")
+        // Translators: A duplicate book's row, spoken and shown as one label in Find Duplicate Books. %1$@ is the title, %2$@ the author, %3$@ the format, %4$@ the library folder it is in, and %5$@ the date it was added.
+        String(localized: "\(book.title), by \(book.author), \(book.format.displayName), in \(book.folderPath.isEmpty ? libraryRoot : book.folderPath), added \(book.dateAdded.formatted(date: .long, time: .omitted))")
     }
 
     /// What the sheet shows when a scan finds nothing.
     static var noDuplicates: String {
-        String(localized: "No duplicates found.",
-               comment: "What Find Duplicate Books shows when a scan finds nothing.")
+        // Translators: What Find Duplicate Books shows when a scan finds nothing.
+        String(localized: "No duplicates found.")
     }
 
     /// The scan button's title.
     static var scanTitle: String {
-        String(localized: "Scan for Duplicates",
-               comment: "Title of the button in Find Duplicate Books that scans the library for duplicates.")
+        // Translators: Title of the button in Find Duplicate Books that scans the library for duplicates.
+        String(localized: "Scan for Duplicates")
     }
 
     /// What the sheet shows before its first scan, naming the scan button
     /// by its title, which reads as what to do; it said "press Scan", a
     /// button with another name (TODO A10).
     static var notScannedYet: String {
-        String(localized: "Check the criteria above, then \(scanTitle).",
-               comment: "What Find Duplicate Books shows before its first scan. %@ is the title of the scan button.")
+        // Translators: What Find Duplicate Books shows before its first scan. %@ is the title of the scan button.
+        String(localized: "Check the criteria above, then \(scanTitle).")
     }
 
     /// What a scan found, read from its results and spoken when the scan
@@ -347,11 +347,11 @@ enum DuplicateFinderWording {
     /// group found", "3 duplicate groups found".
     static func scanResult(groupCount: Int) -> String {
         guard groupCount > 0 else {
-            return String(localized: "No duplicates found with the selected criteria",
-                          comment: "Spoken and read when a scan of Find Duplicate Books ends having found nothing.")
+            // Translators: Spoken and read when a scan of Find Duplicate Books ends having found nothing.
+            return String(localized: "No duplicates found with the selected criteria")
         }
-        return String(localized: "\(groupCount) duplicate groups found",
-                      comment: "Spoken and read when a scan of Find Duplicate Books ends. %lld is the number of groups of duplicate books found.")
+        // Translators: Spoken and read when a scan of Find Duplicate Books ends. %lld is the number of groups of duplicate books found.
+        return String(localized: "\(groupCount) duplicate groups found")
     }
 
     /// Says what a scan the user asked for found, as the removal's outcome
@@ -371,76 +371,76 @@ enum DuplicateFinderWording {
     /// "Showing group 12 of 116". `range` is a page's group indices.
     static func pageLine(groups range: Range<Int>, of total: Int) -> String {
         if range.count == 1 {
-            return String(localized: "Showing group \(range.upperBound.formatted()) of \(total.formatted())",
-                          comment: "The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.")
+            // Translators: The line over a page of one group of duplicate books. %1$@ is the group's place and %2$@ is how many groups were found.
+            return String(localized: "Showing group \(range.upperBound.formatted()) of \(total.formatted())")
         }
-        return String(localized: "Showing groups \((range.lowerBound + 1).formatted()) to \(range.upperBound.formatted()) of \(total.formatted())",
-                      comment: "The line over a page of groups of duplicate books. %1$@ is the place of the first group shown, %2$@ is the place of the last, and %3$@ is how many groups were found.")
+        // Translators: The line over a page of groups of duplicate books. %1$@ is the place of the first group shown, %2$@ is the place of the last, and %3$@ is how many groups were found.
+        return String(localized: "Showing groups \((range.lowerBound + 1).formatted()) to \(range.upperBound.formatted()) of \(total.formatted())")
     }
 
     /// The title of the button turning to the page of groups before.
     static var previousPageTitle: String {
-        String(localized: "Previous Groups",
-               comment: "Title of the button in Find Duplicate Books that shows the page of groups before the current one.")
+        // Translators: Title of the button in Find Duplicate Books that shows the page of groups before the current one.
+        String(localized: "Previous Groups")
     }
     /// What that button does.
     static var previousPageHint: String {
-        String(localized: "Shows the groups before these.",
-               comment: "VoiceOver hint of the Previous Groups button of Find Duplicate Books.")
+        // Translators: VoiceOver hint of the Previous Groups button of Find Duplicate Books.
+        String(localized: "Shows the groups before these.")
     }
     /// The title of the button turning to the page of groups after.
     static var nextPageTitle: String {
-        String(localized: "Next Groups",
-               comment: "Title of the button in Find Duplicate Books that shows the page of groups after the current one.")
+        // Translators: Title of the button in Find Duplicate Books that shows the page of groups after the current one.
+        String(localized: "Next Groups")
     }
     /// What that button does.
     static var nextPageHint: String {
-        String(localized: "Shows the groups after these.",
-               comment: "VoiceOver hint of the Next Groups button of Find Duplicate Books.")
+        // Translators: VoiceOver hint of the Next Groups button of Find Duplicate Books.
+        String(localized: "Shows the groups after these.")
     }
 
     // MARK: The Sheet
 
     /// The sheet's heading.
     static var sheetTitle: String {
-        String(localized: "Find Duplicate Books",
-               comment: "Heading of the Find Duplicate Books sheet.")
+        // Translators: Heading of the Find Duplicate Books sheet.
+        String(localized: "Find Duplicate Books")
     }
 
     /// The sheet's navigation title.
     static var navigationTitle: String {
-        String(localized: "Find Duplicates",
-               comment: "Navigation title of the Find Duplicate Books sheet.")
+        // Translators: Navigation title of the Find Duplicate Books sheet.
+        String(localized: "Find Duplicates")
     }
 
     /// The button that closes the sheet.
     static var doneTitle: String {
-        String(localized: "Done",
-               comment: "Title of the button that closes the Find Duplicate Books sheet.")
+        // Translators: Title of the button that closes the Find Duplicate Books sheet.
+        String(localized: "Done")
     }
 
     /// The line over the match criteria's checkboxes.
     static var criteriaHeading: String {
-        String(localized: "Match criteria (checked filters are combined):",
-               comment: "The line over the checkboxes of Find Duplicate Books that choose how books are matched. Checked criteria must all match together.")
+        // Translators: The line over the checkboxes of Find Duplicate Books that choose how books are matched. Checked criteria must all match together.
+        String(localized: "Match criteria (checked filters are combined):")
     }
 
     /// The scan button's title while the ISBNs load.
     static var loadingISBNsTitle: String {
-        String(localized: "Loading ISBNs...",
-               comment: "Title of the scan button in Find Duplicate Books while the books' ISBNs are being read first. ISBN stays as written.")
+        // Translators: Title of the scan button in Find Duplicate Books while the books' ISBNs are being read first. ISBN stays as written.
+        String(localized: "Loading ISBNs...")
     }
 
     /// The scan button's hint.
     static var scanHint: String {
-        String(localized: "Searches the entire library for books matching the selected criteria",
-               comment: "VoiceOver hint of the Scan for Duplicates button of Find Duplicate Books.")
+        // Translators: VoiceOver hint of the Scan for Duplicates button of Find Duplicate Books.
+        String(localized: "Searches the entire library for books matching the selected criteria")
     }
 
     /// The button of the removal's confirmation that keeps the books.
     static var cancelTitle: String {
-        String(localized: "Cancel",
-               comment: "Title of the button that cancels the removal of the duplicate books selected, in its confirmation.")
+        // Translators: Title of the button that cancels the removal of the duplicate books selected, in its confirmation.
+        String(localized: "Cancel")
     }
 }
 

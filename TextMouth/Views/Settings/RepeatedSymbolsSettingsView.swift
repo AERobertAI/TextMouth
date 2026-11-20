@@ -239,99 +239,99 @@ extension RepeatedSymbolsSettingsView {
 extension RepeatedSymbolsSettingsView {
     /// The group's heading.
     nonisolated static var title: String {
-        String(localized: "Repeated Symbols",
-               comment: "Heading of the group in Settings, Text that sets how the voice reads one symbol written several times in a row, such as a line of asterisks.")
+        // Translators: Heading of the group in Settings, Text that sets how the voice reads one symbol written several times in a row, such as a line of asterisks.
+        String(localized: "Repeated Symbols")
     }
     /// The style picker's visible caption.
     nonisolated static var styleCaption: String {
-        String(localized: "Style:",
-               comment: "Caption beside the pop-up button that chooses how the voice reads a run of one symbol, in Settings, Text, Repeated Symbols.")
+        // Translators: Caption beside the pop-up button that chooses how the voice reads a run of one symbol, in Settings, Text, Repeated Symbols.
+        String(localized: "Style:")
     }
     /// The style picker's spoken label.
     nonisolated static var styleLabel: String {
-        String(localized: "Repeated symbol style",
-               comment: "VoiceOver label of the pop-up button that chooses how the voice reads a run of one symbol.")
+        // Translators: VoiceOver label of the pop-up button that chooses how the voice reads a run of one symbol.
+        String(localized: "Repeated symbol style")
     }
     /// The style picker's spoken hint.
     nonisolated static var styleHint: String {
-        String(localized: "How the voice reads a symbol written several times in a row",
-               comment: "VoiceOver hint of the pop-up button that chooses how the voice reads a run of one symbol.")
+        // Translators: VoiceOver hint of the pop-up button that chooses how the voice reads a run of one symbol.
+        String(localized: "How the voice reads a symbol written several times in a row")
     }
     /// The threshold field and stepper's label, shown beside them too.
     nonisolated static var thresholdLabel: String {
-        String(localized: "Collapse runs of at least",
-               comment: "Label of the field and stepper that set the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols. The number of symbols and the word symbols follow it.")
+        // Translators: Label of the field and stepper that set the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols. The number of symbols and the word symbols follow it.
+        String(localized: "Collapse runs of at least")
     }
     /// The unit shown after the stepper.
     nonisolated static var thresholdUnit: String {
-        String(localized: "symbols",
-               comment: "The unit shown after the field and stepper that set the length from which a run of one symbol is collapsed, such as \"Collapse runs of at least 4 symbols\".")
+        // Translators: The unit shown after the field and stepper that set the length from which a run of one symbol is collapsed, such as "Collapse runs of at least 4 symbols".
+        String(localized: "symbols")
     }
     /// The threshold field's spoken hint.
     nonisolated static var thresholdFieldHint: String {
-        String(localized: "A number from 2 to 99",
-               comment: "VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.")
+        // Translators: VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.
+        String(localized: "A number from 2 to 99")
     }
     /// The threshold stepper's spoken hint.
     nonisolated static var thresholdStepperHint: String {
-        String(localized: "Changes the number by one, from 2 to 99",
-               comment: "VoiceOver hint of the stepper that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.")
+        // Translators: VoiceOver hint of the stepper that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.
+        String(localized: "Changes the number by one, from 2 to 99")
     }
     /// The Never collapse checkbox's label.
     nonisolated static var neverCollapseLabel: String {
-        String(localized: "Never collapse: read every symbol",
-               comment: "Label of the checkbox in Settings, Text, Repeated Symbols that makes the voice read every symbol of a run, whatever the style.")
+        // Translators: Label of the checkbox in Settings, Text, Repeated Symbols that makes the voice read every symbol of a run, whatever the style.
+        String(localized: "Never collapse: read every symbol")
     }
     /// The Never collapse checkbox's spoken hint.
     nonisolated static var neverCollapseHint: String {
-        String(localized: "Overrides the style",
-               comment: "VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols.")
+        // Translators: VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols.
+        String(localized: "Overrides the style")
     }
     /// The symbols field's visible caption.
     nonisolated static var symbolsCaption: String {
-        String(localized: "Symbols:",
-               comment: "Caption beside the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.")
+        // Translators: Caption beside the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.
+        String(localized: "Symbols:")
     }
     /// The symbols field's spoken label.
     nonisolated static var symbolsLabel: String {
-        String(localized: "Symbols that form runs",
-               comment: "VoiceOver label of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.")
+        // Translators: VoiceOver label of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.
+        String(localized: "Symbols that form runs")
     }
     /// The symbols field's tooltip and spoken hint: what its characters mean.
     nonisolated static var symbolsHint: String {
-        String(localized: "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs.",
-               comment: "Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.")
+        // Translators: Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.
+        String(localized: "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs.")
     }
     /// The reset button's title.
     nonisolated static var resetTitle: String {
-        String(localized: "Reset to Default",
-               comment: "Title of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.")
+        // Translators: Title of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.
+        String(localized: "Reset to Default")
     }
     /// The reset button's spoken label.
     nonisolated static var resetLabel: String {
-        String(localized: "Reset symbols to default",
-               comment: "VoiceOver label of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.")
+        // Translators: VoiceOver label of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.
+        String(localized: "Reset symbols to default")
     }
     /// The reset button's spoken hint.
     nonisolated static var resetHint: String {
-        String(localized: "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
-               comment: "VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.")
+        // Translators: VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.
+        String(localized: "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines")
     }
     /// What VoiceOver says once the list is reset.
     nonisolated static var resetAnnouncement: String {
-        String(localized: "Symbols reset to the default list",
-               comment: "Announcement after the list of symbols that can form a run was restored to the standard one.")
+        // Translators: Announcement after the list of symbols that can form a run was restored to the standard one.
+        String(localized: "Symbols reset to the default list")
     }
     /// The caption under the group's controls.
     nonisolated static var explanation: String {
-        String(localized: "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
-               comment: "Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes.")
+        // Translators: Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes.
+        String(localized: "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.")
     }
 
     /// The stepper's spoken value for `threshold`, such as "4 symbols".
     nonisolated static func thresholdValue(_ threshold: Int) -> String {
-        String(localized: "\(threshold) symbols",
-               comment: "VoiceOver value of the stepper that sets the length from which a run of one symbol is collapsed. %lld is the number of symbols.")
+        // Translators: VoiceOver value of the stepper that sets the length from which a run of one symbol is collapsed. %lld is the number of symbols.
+        String(localized: "\(threshold) symbols")
     }
 }
 
@@ -340,14 +340,14 @@ extension RepeatedSymbolStyle {
     var title: String {
         switch self {
         case .repeatEach:
-            return String(localized: "Repeat each symbol",
-                          comment: "A style of reading a run of one symbol: the voice says every symbol of it.")
+            // Translators: A style of reading a run of one symbol: the voice says every symbol of it.
+            return String(localized: "Repeat each symbol")
         case .sayCount:
-            return String(localized: "Say how many",
-                          comment: "A style of reading a run of one symbol: the voice says how many symbols the run holds, such as 7 asterisks.")
+            // Translators: A style of reading a run of one symbol: the voice says how many symbols the run holds, such as 7 asterisks.
+            return String(localized: "Say how many")
         case .leaveOut:
-            return String(localized: "Leave out",
-                          comment: "A style of reading a run of one symbol: the voice leaves the run out and pauses in its place.")
+            // Translators: A style of reading a run of one symbol: the voice leaves the run out and pauses in its place.
+            return String(localized: "Leave out")
         }
     }
 
@@ -359,18 +359,18 @@ extension RepeatedSymbolStyle {
         let name = title
         switch self {
         case .repeatEach:
-            return String(localized: "\(name): every symbol is read as written",
-                          comment: "A choice of the pop-up button that sets how a run of one symbol is read. %@ is the name of the style, Repeat each symbol.")
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read. %@ is the name of the style, Repeat each symbol.
+            return String(localized: "\(name): every symbol is read as written")
         case .sayCount where RepeatedSymbolsSettingsView.neverCollapses(threshold),
              .leaveOut where RepeatedSymbolsSettingsView.neverCollapses(threshold):
-            return String(localized: "\(name): off while Never collapse is checked",
-                          comment: "A choice of the pop-up button that sets how a run of one symbol is read, while the Never collapse checkbox is checked. %@ is the name of the style, Say how many or Leave out. Never collapse is the name of the checkbox.")
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read, while the Never collapse checkbox is checked. %@ is the name of the style, Say how many or Leave out. Never collapse is the name of the checkbox.
+            return String(localized: "\(name): off while Never collapse is checked")
         case .sayCount:
-            return String(localized: "\(name): runs of \(threshold) or more are read as a count",
-                          comment: "A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Say how many; %2$lld is the length from which a run is collapsed.")
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Say how many; %2$lld is the length from which a run is collapsed.
+            return String(localized: "\(name): runs of \(threshold) or more are read as a count")
         case .leaveOut:
-            return String(localized: "\(name): runs of \(threshold) or more are skipped, with a pause",
-                          comment: "A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Leave out; %2$lld is the length from which a run is collapsed.")
+            // Translators: A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Leave out; %2$lld is the length from which a run is collapsed.
+            return String(localized: "\(name): runs of \(threshold) or more are skipped, with a pause")
         }
     }
 }
