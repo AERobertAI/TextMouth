@@ -34822,6 +34822,12 @@
     "In reading list" : {
       "comment" : "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "In der Leseliste"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -34879,6 +34885,12 @@
     "In the spoken text, whose offsets the speech log gives: speech stopped at character %@; the refused text runs from character %@ to %@." : {
       "comment" : "A line of the speech refusal report. %1$@ is the character offset in the spoken text where speech stopped; %2$@ and %3$@ are where the refused text begins and ends, each written without digit grouping like the speech log's offsets.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Im gesprochenen Text, dessen Positionen das Sprachprotokoll angibt: Die Sprachausgabe stoppte bei Zeichen %1$@; der abgelehnte Text reicht von Zeichen %2$@ bis %3$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -34987,6 +34999,12 @@
     "Increase audio speed by %@ times" : {
       "comment" : "Accessibility label of the button that raises the audio speed. %@ is the size of one step, such as 0.1.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Audiogeschwindigkeit um %@ erhöhen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -35004,6 +35022,24 @@
     "Increase speed by %lld words per minute" : {
       "comment" : "VoiceOver label of the playback bar's button that raises a text book's speed. %lld is the size of one step in words per minute.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Geschwindigkeit um %lld Wort pro Minute erhöhen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Geschwindigkeit um %lld Wörter pro Minute erhöhen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -35625,6 +35661,12 @@
     "It has a page list, and the start of each page is marked in the text." : {
       "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has pages.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es hat eine Seitenliste, und der Anfang jeder Seite ist im Text markiert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -35642,6 +35684,24 @@
     "It has no headings, so the contents list has %lld entries for its chapters and the places it marks." : {
       "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has several entries. %lld is the number of entries.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Es hat keine Überschriften, daher hat das Inhaltsverzeichnis %lld Eintrag für seine Kapitel und die Stellen, die es markiert."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Es hat keine Überschriften, daher hat das Inhaltsverzeichnis %lld Einträge für seine Kapitel und die Stellen, die es markiert."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -35713,6 +35773,12 @@
     "It has no headings, so the contents list has one entry for the whole book." : {
       "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has no headings and its contents list has one entry.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es hat keine Überschriften, daher hat das Inhaltsverzeichnis einen Eintrag für das ganze Buch."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -35730,6 +35796,12 @@
     "It has no pictures, sound, or video, and the text of a picture's description is kept as text." : {
       "comment" : "The last sentence of the accessibility summary written into an exported EPUB.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es enthält keine Bilder, keinen Ton und kein Video, und der Text der Beschreibung eines Bildes bleibt als Text erhalten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -36596,6 +36668,12 @@
     "Its headings are real headings, and the contents list links them." : {
       "comment" : "A sentence of the accessibility summary written into an exported EPUB: the book has headings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seine Überschriften sind echte Überschriften, und das Inhaltsverzeichnis verlinkt sie."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -36800,6 +36878,12 @@
     "JSON and Markdown" : {
       "comment" : "The first choice of the Transcript's Convert to picker in the Export dialog: the transcript as TextMouth keeps it, a JSON file and a Markdown file.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "JSON und Markdown"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -36834,6 +36918,12 @@
     "Jump to page" : {
       "comment" : "VoiceOver label of the Jump button under the Page field of the iPhone's Go To sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Seite springen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -36851,6 +36941,12 @@
     "Jump to percent" : {
       "comment" : "VoiceOver label of the Jump button under the Percent field of the iPhone's Go To sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zum Prozentwert springen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -36868,6 +36964,12 @@
     "Jump to time" : {
       "comment" : "VoiceOver label of the Jump button under the Time field of the iPhone's Go To sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur Zeit springen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -37188,6 +37290,12 @@
     "Keep these books on this Mac" : {
       "comment" : "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Bücher auf diesem Mac behalten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -37250,6 +37358,12 @@
     "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download." : {
       "comment" : "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hält die Bücher der Liste auf diesem Mac heruntergeladen; jeder Mac entscheidet für sich. Das Deaktivieren entfernt keinen Download."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -37267,6 +37381,12 @@
     "Keeps the order you set with Move Book Up, Move Book Down, or dragging." : {
       "comment" : "VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Behält die Reihenfolge bei, die du mit „Buch nach oben bewegen“, „Buch nach unten bewegen“ oder durch Ziehen festgelegt hast."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -37301,6 +37421,24 @@
     "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch." : {
       "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept some of its chapters. %1$@ is how many chapters are kept, %2$lld how many there are, and %3$@ the number of the chapter to go on from, both written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ von %2$lld Kapitel aufbewahrt, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um ab Kapitel %3$@ fortzufahren, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ von %2$lld Kapiteln aufbewahrt, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um ab Kapitel %3$@ fortzufahren, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -37372,6 +37510,24 @@
     "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch." : {
       "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept every one of its chapters. %lld is the number of chapters, more than one.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Das gesprochene Kapitel wurde aufbewahrt, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um daraus die Audiodatei zu erstellen, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Alle %lld gesprochenen Kapitel aufbewahrt, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um daraus die Audiodatei zu erstellen, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -37477,6 +37633,12 @@
     "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch." : {
       "comment" : "What the Export dialog says after a spoken audio export ended without its file and kept its only chapter.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das gesprochene Kapitel wurde aufbewahrt, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Um daraus die Audiodatei zu erstellen, exportiere denselben Bereich mit derselben Geschwindigkeit und Tonhöhe."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -37748,6 +37910,12 @@
     "Leave out" : {
       "comment" : "A style of reading a run of one symbol: the voice leaves the run out and pauses in its place.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auslassen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -38292,6 +38460,12 @@
     "Line ends" : {
       "comment" : "The label of the pop-up in the Export dialog's braille options that chooses how each line of a BRF file ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeilenenden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -38309,6 +38483,12 @@
     "Lines per page" : {
       "comment" : "The label of the stepper in the Export dialog's braille options that sets how many lines each braille page holds.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeilen pro Seite"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -38371,6 +38551,12 @@
     "Listening Time" : {
       "comment" : "Heading of the section of Settings, Stats that shows the listening time of today, this week, and all time.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hördauer"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -38422,6 +38608,12 @@
     "Listening time this week" : {
       "comment" : "What VoiceOver says before the listening time of this week on the Stats pane; a colon and the time follow.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hördauer diese Woche"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -38439,6 +38631,12 @@
     "Listening time today" : {
       "comment" : "What VoiceOver says before the listening time of today on the Stats pane; a colon and the time follow.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hördauer heute"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -39062,6 +39260,12 @@
     "Loading" : {
       "comment" : "Value of the Play button while the book is loading, spoken by VoiceOver.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird geladen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -39678,6 +39882,12 @@
     "Markdown" : {
       "comment" : "Name of the book format of a Markdown file (.md), shown in a book's information, the format column, and the duplicate finder.\nThe name of the Markdown format, the first choice of the Convert to picker in the Export dialog.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markdown"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -40068,6 +40278,12 @@
     "Markup guard: strict, every angle bracket silent, from character %@ to %@ of the spoken text." : {
       "comment" : "A line of the speech refusal report: the markup guard silenced every angle bracket between two characters. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markup-Schutz: streng, jede spitze Klammer stumm, von Zeichen %1$@ bis %2$@ des gesprochenen Textes."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -40091,6 +40307,12 @@
     "Markup guard: the usual one, which silences only the brackets of tag-shaped text." : {
       "comment" : "A line of the speech refusal report: the markup guard that was used silences only the angle brackets that make tags.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markup-Schutz: der übliche, der nur die Klammern von tagförmigem Text stumm schaltet."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -40221,6 +40443,12 @@
     "Media controls not released: this book does not hold them." : {
       "comment" : "Announcement when Release Media Controls is chosen in a window whose book does not hold the media controls, so nothing changed. It begins like the announcement Media controls released, so the two are told apart from their first words.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mediensteuerung nicht freigegeben: Dieses Buch hält sie nicht."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -40238,6 +40466,12 @@
     "Media controls released" : {
       "comment" : "Announcement after Release Media Controls handed the media keys and AirPods back to the system.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mediensteuerung freigegeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -40340,6 +40574,12 @@
     "Metadata updated" : {
       "comment" : "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metadaten aktualisiert"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -40530,6 +40770,12 @@
     "Minutes" : {
       "comment" : "Placeholder of the sleep timer sheet's field of a custom number of minutes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minuten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -41895,6 +42141,24 @@
     "Moves back or forward by %lld seconds." : {
       "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a length of time. %lld is how many seconds a move covers: 10, 15, 30, or 60.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Springt um %lld Sekunde zurück oder vor."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Springt um %lld Sekunden zurück oder vor."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -41966,6 +42230,12 @@
     "Moves back or forward by bookmark." : {
       "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a bookmark.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Springt zurück oder vor, jeweils um ein Lesezeichen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -41983,6 +42253,12 @@
     "Moves back or forward by heading." : {
       "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a heading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Springt zurück oder vor, jeweils um eine Überschrift."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42000,6 +42276,12 @@
     "Moves back or forward by page." : {
       "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a page of the book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Springt zurück oder vor, jeweils um eine Seite."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42017,6 +42299,12 @@
     "Moves back or forward by paragraph." : {
       "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a paragraph.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Springt zurück oder vor, jeweils um einen Absatz."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42034,6 +42322,12 @@
     "Moves back or forward by sentence." : {
       "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Springt zurück oder vor, jeweils um einen Satz."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42051,6 +42345,12 @@
     "Moves back or forward by subheading." : {
       "comment" : "Hint of the iPhone reader's Play button while the navigation unit is a subheading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Springt zurück oder vor, jeweils um eine Unterüberschrift."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42525,6 +42825,12 @@
     "Moves to the next heading, keeping the navigation unit." : {
       "comment" : "Hint of the iPhone reader's Next Heading button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geht zur nächsten Überschrift und behält die Navigationseinheit."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42542,6 +42848,12 @@
     "Moves to the previous heading, keeping the navigation unit." : {
       "comment" : "Hint of the iPhone reader's Previous Heading button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geht zur vorherigen Überschrift und behält die Navigationseinheit."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42981,6 +43293,12 @@
     "Navigation unit for audiobooks" : {
       "comment" : "Label and title of the iPhone Settings row that chooses what an audiobook moves by until it has a unit of its own.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit für Hörbücher"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42998,6 +43316,12 @@
     "Navigation unit for text books" : {
       "comment" : "Label and title of the iPhone Settings row that chooses what a text book moves by until it has a unit of its own.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigationseinheit für Textbücher"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -43083,6 +43407,12 @@
     "Never collapse: read every symbol" : {
       "comment" : "Label of the checkbox in Settings, Text, Repeated Symbols that makes the voice read every symbol of a run, whatever the style.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie zusammenfassen: jedes Symbol lesen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -43297,6 +43627,12 @@
     "New Timer" : {
       "comment" : "Heading of the sleep timer sheet's section of timers to set: the minute presets and a custom number of minutes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Neuer Timer"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -43578,6 +43914,12 @@
     "Next book not started because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the next book was not started, because the sleep timer would not stop it. Written without its full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nächstes Buch wegen des Einschlaf-Timers nicht gestartet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -43680,6 +44022,12 @@
     "Next track" : {
       "comment" : "Name of the Next Track media event, a choice for one step of the media-key pattern in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nächster Titel"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -43714,6 +44062,12 @@
     "No Library window or book is open, so there is nothing to export." : {
       "comment" : "What choosing File, Export says when no Library window or book is open.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es ist kein Bibliotheksfenster und kein Buch geöffnet, daher gibt es nichts zu exportieren."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -43810,6 +44164,12 @@
     "No bookmarks yet." : {
       "comment" : "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Noch keine Lesezeichen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -43844,6 +44204,12 @@
     "No books match." : {
       "comment" : "The only row of the iPhone Library's list while a search matches nothing; also what VoiceOver says then.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine passenden Bücher."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44245,6 +44611,12 @@
     "No more books in folder" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": its library folder has no book after it. Written without its full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine weiteren Bücher im Ordner"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44331,6 +44703,12 @@
     "No next book in the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List finds no book below this one.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein nächstes Buch in der Leseliste."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44348,6 +44726,12 @@
     "No next book in the reading list: every book below this one is finished." : {
       "comment" : "VoiceOver announcement when Next in Reading List finds only finished books below this one, which the list passes over.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein nächstes Buch in der Leseliste: Jedes Buch darunter ist beendet."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44365,6 +44749,12 @@
     "No next bookmark." : {
       "comment" : "What the iPhone reader says when a move forward by bookmark has no next bookmark.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein nächstes Lesezeichen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44382,6 +44772,12 @@
     "No next heading." : {
       "comment" : "What the iPhone reader says when a move forward by heading has no next heading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine nächste Überschrift."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44399,6 +44795,12 @@
     "No next page." : {
       "comment" : "What the iPhone reader says when a move forward by page has no next page.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine nächste Seite."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44416,6 +44818,12 @@
     "No next paragraph." : {
       "comment" : "What the iPhone reader says when a move forward by paragraph has no next paragraph.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein nächster Absatz."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44433,6 +44841,12 @@
     "No next sentence." : {
       "comment" : "What the iPhone reader says when a move forward by sentence has no next sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein nächster Satz."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44450,6 +44864,12 @@
     "No next subheading." : {
       "comment" : "What the iPhone reader says when a move forward by subheading has no next subheading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine nächste Unterüberschrift."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44580,6 +45000,12 @@
     "No previous book in the reading list." : {
       "comment" : "VoiceOver announcement when Previous in Reading List finds no book above this one.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein vorheriges Buch in der Leseliste."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44597,6 +45023,12 @@
     "No previous book in the reading list: every book above this one is finished." : {
       "comment" : "VoiceOver announcement when Previous in Reading List finds only finished books above this one, which the list passes over.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein vorheriges Buch in der Leseliste: Jedes Buch darüber ist beendet."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44614,6 +45046,12 @@
     "No previous bookmark." : {
       "comment" : "What the iPhone reader says when a move back by bookmark has no previous bookmark.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein vorheriges Lesezeichen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44631,6 +45069,12 @@
     "No previous heading." : {
       "comment" : "What the iPhone reader says when a move back by heading has no previous heading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine vorherige Überschrift."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44648,6 +45092,12 @@
     "No previous page." : {
       "comment" : "What the iPhone reader says when a move back by page has no previous page.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine vorherige Seite."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44665,6 +45115,12 @@
     "No previous paragraph." : {
       "comment" : "What the iPhone reader says when a move back by paragraph has no previous paragraph.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein vorheriger Absatz."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44699,6 +45155,12 @@
     "No previous sentence." : {
       "comment" : "What the iPhone reader says when a move back by sentence has no previous sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein vorheriger Satz."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44716,6 +45178,12 @@
     "No previous sleep timer to restart." : {
       "comment" : "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kein vorheriger Einschlaf-Timer zum Neustarten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44733,6 +45201,12 @@
     "No previous subheading." : {
       "comment" : "What the iPhone reader says when a move back by subheading has no previous subheading.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine vorherige Unterüberschrift."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44784,6 +45258,12 @@
     "No rules to export: only plain text rules that are on can be written in a lexicon." : {
       "comment" : "Message of the alert when Export Rules finds no rule it can write as a pronunciation lexicon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keine Regeln zu exportieren: Nur aktivierte Klartextregeln können in ein Lexikon geschrieben werden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -44801,6 +45281,12 @@
     "No rules were added from “%@”." : {
       "comment" : "A sentence of the alert after a pronunciation lexicon import: nothing was added. %@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aus „%@“ wurden keine Regeln hinzugefügt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45075,6 +45561,12 @@
     "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again." : {
       "comment" : "Why a spoken audio export was refused: no voice is installed. System Settings, Accessibility, and Spoken Content are the names of macOS settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es ist keine Stimme installiert. Füge in den Systemeinstellungen unter „Bedienungshilfen“ > „Gesprochene Inhalte“ eine hinzu und exportiere dann erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45092,6 +45584,12 @@
     "No voices are installed. Add voices in Settings, Accessibility, Read & Speak." : {
       "comment" : "What the iPhone's voice list says once the voices have loaded and none is installed. \"Settings, Accessibility, Read & Speak\" is the path in iOS's own Settings app, so keep those names as iOS shows them in the language.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es sind keine Stimmen installiert. Füge in „Einstellungen“ > „Bedienungshilfen“ > „Gesprochene Inhalte“ Stimmen hinzu."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45285,6 +45783,12 @@
     "None of the %lld selected books is in the reading list." : {
       "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keines der %lld ausgewählten Bücher ist in der Leseliste."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45373,6 +45877,12 @@
     "Normal (1.0x)" : {
       "comment" : "The voice pitch when it is the normal one, as the pitch sliders say it. 1.0x means the voice's own pitch, unchanged.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Normal (1,0-fach)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45707,6 +46217,12 @@
     "Not restarted because of the sleep timer" : {
       "comment" : "A sentence of the announcement as a book set to loop ends: it did not start again, because the sleep timer stopped it. Written without its full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nicht neu gestartet wegen des Einschlaf-Timers"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45724,6 +46240,12 @@
     "Note" : {
       "comment" : "Placeholder of the note field when editing a bookmark's note.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Notiz"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45741,6 +46263,12 @@
     "Note (optional)" : {
       "comment" : "Placeholder of the note field when adding a bookmark.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Notiz (optional)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45990,6 +46518,12 @@
     "Nothing was exported." : {
       "comment" : "What an export says once it ends when it wrote nothing.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Es wurde nichts exportiert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46041,6 +46575,12 @@
     "Now Playing: %@" : {
       "comment" : "What VoiceOver says for the iPhone Library's Continue row while that book plays. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aktuelle Wiedergabe: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46285,6 +46825,12 @@
     "Off" : {
       "comment" : "The word for a setting that is turned off, as a slider's or stepper's value says it, such as the sleep timer's fade out.\nVoiceOver value of the iPhone reader's Sleep Timer button while no sleep timer runs.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aus"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46392,6 +46938,12 @@
     "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another." : {
       "comment" : "The caption under the guess switch in the Braille tab of Settings. English Braille, American Edition is the name of a braille code, and Book Information is a window.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nur ein Buch, das deutlich English Braille, American Edition zeigt, wird beim Hinzufügen geändert. „Buchinformationen“ sagt, dass der Code erraten wurde, und lässt dich einen anderen wählen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46812,6 +47364,12 @@
     "Open the next article in" : {
       "comment" : "Label of the pop-up button in a news feed's Feed Info, choosing where the feed's next article opens.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nächsten Artikel öffnen in"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46829,6 +47387,12 @@
     "Open the next book in" : {
       "comment" : "Label of the pop-up button in Settings, Playback, and in a folder's settings, choosing where the next book opens; its choices are This Window and A New Window.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nächstes Buch öffnen in"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46846,6 +47410,12 @@
     "Open the next episode in" : {
       "comment" : "Label of the pop-up button in a podcast feed's Feed Info, choosing where the feed's next episode opens.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nächste Folge öffnen in"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46863,6 +47433,12 @@
     "Open the next item in" : {
       "comment" : "Label of the pop-up button in a feed's Feed Info, choosing where the feed's next item opens.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nächstes Element öffnen in"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46931,6 +47507,12 @@
     "Opening: %@" : {
       "comment" : "VoiceOver announcement as Next in Reading List or Previous in Reading List opens a book without playing it. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird geöffnet: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46982,6 +47564,12 @@
     "Opens TextMouth's settings." : {
       "comment" : "Hint of the iPhone Library's Settings button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öffnet die Einstellungen von TextMouth."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47067,6 +47655,12 @@
     "Opens a search of the book's text." : {
       "comment" : "Hint of the reader's Search in Book button on the iPhone.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öffnet eine Suche im Text des Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47179,6 +47773,12 @@
     "Opens options to open a book or import a folder." : {
       "comment" : "Hint of the iPhone Library's Add to Library button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öffnet Optionen, um ein Buch zu öffnen oder einen Ordner zu importieren."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47196,6 +47796,12 @@
     "Opens the Export dialog: the book's audio, its text, or its own file." : {
       "comment" : "The hint of the Export button in a reader's toolbar.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öffnet den Exportdialog: das Audio des Buchs, seinen Text oder seine eigene Datei."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47377,6 +47983,12 @@
     "Opens the list of bookmarks." : {
       "comment" : "Hint of the iPhone reader's Bookmarks button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öffnet die Liste der Lesezeichen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47394,6 +48006,12 @@
     "Opens the list of headings." : {
       "comment" : "Hint of the iPhone reader's Headings button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öffnet die Liste der Überschriften."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47411,6 +48029,12 @@
     "Opens the sleep timer." : {
       "comment" : "Hint of the iPhone reader's Sleep Timer button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öffnet den Einschlaf-Timer."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47513,6 +48137,12 @@
     "Original audio (before edits)" : {
       "comment" : "The name of a checkbox in the Export dialog: the book's audio as it was before its first edit.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalaudio (vor Änderungen)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47547,6 +48177,12 @@
     "Original file" : {
       "comment" : "The name of a checkbox in the Export dialog: the book's own file as it was imported.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originaldatei"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47598,6 +48234,12 @@
     "Original recording" : {
       "comment" : "The name of a checkbox in the Export dialog: a recording as it was made, before any edits.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalaufnahme"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47720,6 +48362,12 @@
     "Overrides the style" : {
       "comment" : "VoiceOver hint of the Never collapse checkbox in Settings, Text, Repeated Symbols.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Überschreibt den Stil"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -47839,6 +48487,12 @@
     "Pages" : {
       "comment" : "Heading of the group in Playback settings that holds the settings about pages.\nName of the VoiceOver rotor on the iPhone reader's Play button that moves between pages.\nThe heading of the page list written into an exported EPUB's navigation document.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seiten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48016,6 +48670,12 @@
     "Partly contracted" : {
       "comment" : "How a braille table contracts: it shortens some words, not all.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teilweise Kurzschrift"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48033,6 +48693,12 @@
     "Passes over finished books when a book from the list ends." : {
       "comment" : "VoiceOver hint of the Reading List's Skip finished books checkbox.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Überspringt beendete Bücher, wenn ein Buch aus der Liste endet."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48243,6 +48909,12 @@
     "Pause" : {
       "comment" : "Label of the button that pauses the book while it is playing.\nLabel of the reader's play and pause button while the book plays; it pauses.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".\nName of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.\nTitle of the button in the Record window that pauses the recording.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausieren"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48311,6 +48983,12 @@
     "Pause playback after:" : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while no timer runs; the minute presets follow it, such as 10 minutes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wiedergabe pausieren nach:"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48552,6 +49230,12 @@
     "Permanently deletes the book and its files from this iPhone." : {
       "comment" : "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Löscht das Buch und seine Dateien endgültig von diesem iPhone."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48586,6 +49270,12 @@
     "Pitch" : {
       "comment" : "Heading of the voice sheet's pitch group, and the label of its pitch slider.\nThe label of the slider in the Export dialog's spoken audio options that sets how high the voice sounds.\nTitle of the default pitch slider in the Voice settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tonhöhe"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48603,6 +49293,12 @@
     "Pitch %@" : {
       "comment" : "Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tonhöhe %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48665,6 +49361,12 @@
     "Play" : {
       "comment" : "Label of the button that starts playing the book.\nLabel of the reader's play and pause button while the book is not playing; it plays.\nName of the Play media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.\nName of the playback event whose sound is chosen in Settings, Sound Effects: playing starts.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48733,6 +49435,12 @@
     "Play the article above" : {
       "comment" : "A choice of the pop-up button that sets what happens when a news article ends: play the article above it in the list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Artikel darüber wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48750,6 +49458,12 @@
     "Play the article below" : {
       "comment" : "A choice of the pop-up button that sets what happens when a news article ends: play the article below it in the list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Artikel darunter wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48767,6 +49481,12 @@
     "Play the book above" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.\nA choice of the pop-up button that sets what happens when a book ends: play the book above it in the folder.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buch darüber wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48784,6 +49504,12 @@
     "Play the book below" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.\nA choice of the pop-up button that sets what happens when a book ends: play the book below it in the folder.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buch darunter wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48801,6 +49527,12 @@
     "Play the episode above" : {
       "comment" : "A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode above it in the list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Folge darüber wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48818,6 +49550,12 @@
     "Play the episode below" : {
       "comment" : "A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode below it in the list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Folge darunter wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48835,6 +49573,12 @@
     "Play the item above" : {
       "comment" : "A choice of the pop-up button that sets what happens when a feed's item ends: play the item above it in the list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Element darüber wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48852,6 +49596,12 @@
     "Play the item below" : {
       "comment" : "A choice of the pop-up button that sets what happens when a feed's item ends: play the item below it in the list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Element darunter wiedergeben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48869,6 +49619,12 @@
     "Play/Pause toggle" : {
       "comment" : "Name of the media event of the combined Play and Pause key, a choice for one step of the media-key pattern in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wiedergabe/Pause umschalten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49078,6 +49834,12 @@
     "Plays from here." : {
       "comment" : "Hint of the iPhone reader's book text while the book is paused: activating it plays from the place VoiceOver is at.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt ab hier wieder."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49129,6 +49891,12 @@
     "Plays short sounds for playback actions" : {
       "comment" : "VoiceOver hint of the Enable Sound Effects switch.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt bei Wiedergabeaktionen kurze Töne wieder"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49146,6 +49914,12 @@
     "Plays the book and pauses before it starts again." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to start again from its beginning when it ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt das Buch wieder und pausiert, bevor es von vorn beginnt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49163,6 +49937,12 @@
     "Plays the book and pauses before the next book." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book set to go on to the next book when it ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt das Buch wieder und pausiert vor dem nächsten Buch."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49180,6 +49960,12 @@
     "Plays the book until the next heading." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of heading button: the book plays, and pauses where the next heading begins.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt das Buch bis zur nächsten Überschrift wieder."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49197,6 +49983,12 @@
     "Plays the book." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's minute presets and Set button: setting the timer also plays the book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt das Buch wieder."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49214,6 +50006,12 @@
     "Plays the book; it stops at its end anyway." : {
       "comment" : "VoiceOver hint and help tag of the sleep timer sheet's End of book button, for a book that stops at its end on its own, so the timer adds nothing there.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gibt das Buch wieder; es hält an seinem Ende ohnehin an."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49248,6 +50046,12 @@
     "Plays when Where Am I finishes speaking" : {
       "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the end of the Where Am I announcement. Where Am I is the name of a command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird wiedergegeben, wenn „Wo bin ich?“ zu Ende gesprochen hat"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49265,6 +50069,12 @@
     "Plays when Where Am I starts speaking" : {
       "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the start of the Where Am I announcement. Where Am I is the name of a command.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird wiedergegeben, wenn „Wo bin ich?“ zu sprechen beginnt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49282,6 +50092,12 @@
     "Plays when you pause reading" : {
       "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Pause event: when the sound plays.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird wiedergegeben, wenn du das Lesen pausierst"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49299,6 +50115,12 @@
     "Plays when you skip backward" : {
       "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Skip Backward event: when the sound plays.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird wiedergegeben, wenn du zurückspulst"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49316,6 +50138,12 @@
     "Plays when you skip forward" : {
       "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Skip Forward event: when the sound plays.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird wiedergegeben, wenn du vorspulst"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49333,6 +50161,12 @@
     "Plays when you start reading" : {
       "comment" : "VoiceOver hint of the pop-up button that chooses the sound for the Play event: when the sound plays.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird wiedergegeben, wenn du das Lesen startest"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49438,6 +50272,12 @@
     "Portable Embosser Format: pages of Unicode braille in XML, for embossers." : {
       "comment" : "The hint of the Convert to picker in the Export dialog while PEF is chosen. Portable Embosser Format is the name of the file format.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Portable Embosser Format: Seiten mit Unicode-Braille in XML, für Punktschriftdrucker."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49665,6 +50505,12 @@
     "Preview %@ sound" : {
       "comment" : "VoiceOver label of the button that plays the sound chosen for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ton für %@ anhören"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49954,6 +50800,12 @@
     "Previous track" : {
       "comment" : "Name of the Previous Track media event, a choice for one step of the media-key pattern in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorheriger Titel"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50649,6 +51501,12 @@
     "Reader Toolbar" : {
       "comment" : "The heading of the Playback settings section that holds the options of the reader's toolbar.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symbolleiste der Leseansicht"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50683,6 +51541,12 @@
     "Reading" : {
       "comment" : "Heading of the iPhone Settings section that holds Follow in Braille.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lesen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50700,6 +51564,12 @@
     "Reading List" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .inReadingList.\nThe start of the window title of a book read from the reading list, before a colon and the book's title, in place of \"Book\"; also the name of the Library's Reading List.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Leseliste"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50717,6 +51587,12 @@
     "Reading List Order" : {
       "comment" : "Name of the order the Reading List shows its books in, the one the listener arranges: the only item of its Sort menu.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Reihenfolge der Leseliste"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50751,6 +51627,12 @@
     "Reading Statistics" : {
       "comment" : "Row in iPhone Settings that opens the reading statistics, and the title of the screen it opens.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lesestatistik"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50768,6 +51650,12 @@
     "Reading list, book %lld of %lld" : {
       "comment" : "Where a book read from the reading list stands in it, in the reader's header and in Where Am I?. %1$lld is the book's place in the list; %2$lld how many books the list holds.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Leseliste, Buch %1$lld von %2$lld"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -51064,6 +51952,12 @@
     "Reading the book's headings…" : {
       "comment" : "Shown under the Text as spoken audio checkbox in the Export dialog while the book's text is read for its headings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Überschriften des Buchs werden eingelesen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -51245,6 +52139,12 @@
     "Recently Finished" : {
       "comment" : "Heading of the section of Settings, Stats that lists the books finished most recently, each with the date.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt beendet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -51839,6 +52739,24 @@
     "Refused here: %lld times while this window has been open." : {
       "comment" : "A line of the speech refusal report. %lld is how many times the speech engine refused text while the book's window has been open.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Hier abgelehnt: %lld Mal, seit dieses Fenster geöffnet ist."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Hier abgelehnt: %lld Mal, seit dieses Fenster geöffnet ist."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -52012,6 +52930,12 @@
     "Remove" : {
       "comment" : "Button of a chapter marker's row in the audio editor's list that removes the chapter marker.\nButton of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The remove button's visible title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Entfernen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52151,6 +53075,24 @@
     "Remove %lld Books from Reading List" : {
       "comment" : "Context menu item for the books selected in the Library: takes them off the reading list. Title case. %lld is the number of books selected.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch aus Leseliste entfernen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher aus Leseliste entfernen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -52293,6 +53235,24 @@
     "Remove %lld books from the reading list" : {
       "comment" : "VoiceOver label of the Library's edit-mode bar button that takes the selected books off the reading list. %lld is the number of books selected.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch aus der Leseliste entfernen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher aus der Leseliste entfernen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -52381,6 +53341,12 @@
     "Remove Bookmark %@?" : {
       "comment" : "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lesezeichen %@ entfernen?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52537,6 +53503,12 @@
     "Remove books when finished" : {
       "comment" : "Checkbox of the Reading List's options bar: take each book off the list once it is finished.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher nach dem Beenden entfernen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52730,6 +53702,12 @@
     "Removed %lld books from the reading list." : {
       "comment" : "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld Bücher aus der Leseliste entfernt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52747,6 +53725,12 @@
     "Removed from reading list: %@" : {
       "comment" : "VoiceOver announcement after one book was taken off the reading list. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aus der Leseliste entfernt: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52894,6 +53878,12 @@
     "Repeat each symbol" : {
       "comment" : "A style of reading a run of one symbol: the voice says every symbol of it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jedes Symbol wiederholen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52911,6 +53901,12 @@
     "Repeated Symbols" : {
       "comment" : "Heading of the group in Settings, Text that sets how the voice reads one symbol written several times in a row, such as a line of asterisks.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wiederholte Symbole"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52928,6 +53924,12 @@
     "Repeated symbol style" : {
       "comment" : "VoiceOver label of the pop-up button that chooses how the voice reads a run of one symbol.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stil für wiederholte Symbole"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53289,6 +54291,12 @@
     "Reset Timer" : {
       "comment" : "Button of the sleep timer sheet that starts the running timer again from its whole length.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Timer zurücksetzen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53340,6 +54348,12 @@
     "Reset all sound effects to defaults" : {
       "comment" : "VoiceOver label of the Reset to Defaults button in Settings, Sound Effects.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Soundeffekte auf Standard zurücksetzen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53357,6 +54371,12 @@
     "Reset symbols to default" : {
       "comment" : "VoiceOver label of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symbole auf Standard zurücksetzen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53578,6 +54598,12 @@
     "Restarting: %@" : {
       "comment" : "VoiceOver announcement as a book set to loop starts again from its beginning. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Neustart: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53612,6 +54638,12 @@
     "Restarts the timer at its full length and plays the book." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's Reset Timer button: the running timer starts again from the length it was set to, and the book plays.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startet den Timer mit seiner vollen Dauer neu und gibt das Buch wieder."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53748,6 +54780,12 @@
     "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines" : {
       "comment" : "VoiceOver hint of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stellt die Standardliste wieder her: die ASCII-Symbole, Aufzählungszeichen, Striche, die Auslassungspunkte und Rahmenlinien"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54076,6 +55114,12 @@
     "Returned to previous position" : {
       "comment" : "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zur vorherigen Position zurückgekehrt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54093,6 +55137,12 @@
     "Returns to the book." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's Close button: closing the sheet goes back to the book's reader.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kehrt zum Buch zurück."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54351,6 +55401,12 @@
     "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit." : {
       "comment" : "The hint of the Convert to picker in the Export dialog while RTF is chosen. Word, Pages, and TextEdit are apps' names.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Formatierter Text mit jeder Überschrift auf ihrer Gliederungsebene, für Word, Pages und TextEdit."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54453,6 +55509,12 @@
     "Rules Exported" : {
       "comment" : "Title of the alert after substitution rules were saved as a pronunciation lexicon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regeln exportiert"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54470,6 +55532,12 @@
     "Rules Imported" : {
       "comment" : "Title of the alert after a pronunciation lexicon was imported as substitution rules.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regeln importiert"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54714,6 +55782,12 @@
     "Save" : {
       "comment" : "Button of the book information sheet that saves the edits.\nButton that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.\nButton that saves the changes made in a sheet.\nButton that saves what a sheet or window edited, such as a filter preset or the audio editor's edits.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Saves the edited audio.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that saves the view.\nTitle of the button that saves an edited substitution rule, in the rule editor.\nTitle of the question's default button when the Record window is closed with a recording that could not be saved: it tries to save it again.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sichern"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55037,6 +56111,12 @@
     "Save your rules as a pronunciation lexicon file." : {
       "comment" : "Message of the Save panel that Export Rules shows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sichere deine Regeln als Aussprache-Lexikondatei."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55235,6 +56315,12 @@
     "Saves your plain text rules that are on; regular expression rules are left out" : {
       "comment" : "VoiceOver hint of the Export Rules button in Settings, Text, Substitutions: which rules are saved and which are left out.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sichert deine aktivierten Klartextregeln; Regeln mit regulären Ausdrücken werden ausgelassen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55326,6 +56412,12 @@
     "Say how many" : {
       "comment" : "A style of reading a run of one symbol: the voice says how many symbols the run holds, such as 7 asterisks.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anzahl sagen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55874,6 +56966,12 @@
     "Section included: %@" : {
       "comment" : "Announcement after a heading's section that was skipped is read again. %@ is the heading's text.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abschnitt eingeschlossen: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55891,6 +56989,12 @@
     "Section skipped: %@" : {
       "comment" : "Announcement after a heading's section is set to be skipped. %@ is the heading's text.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Abschnitt übersprungen: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -56427,6 +57531,12 @@
     "Sentences" : {
       "comment" : "Name of the VoiceOver rotor on the iPhone reader's book text that moves between sentences.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sätze"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -56461,6 +57571,12 @@
     "Set" : {
       "comment" : "Button after the sleep timer sheet's custom minutes field: sets a timer for those minutes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Setzen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -56518,6 +57634,24 @@
     "Set timer for %lld minutes" : {
       "comment" : "VoiceOver label of a sleep timer button that sets a timer of so many minutes. %lld is the number of minutes.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Timer auf %lld Minute stellen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Timer auf %lld Minuten stellen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -56640,6 +57774,12 @@
     "Settings" : {
       "comment" : "Label and title of the iPhone Library's button that opens the app's settings.\nName of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key.\nTitle of the iPhone's Settings screen.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einstellungen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -56657,6 +57797,12 @@
     "Settings applied as global defaults" : {
       "comment" : "Announcement after the open book's own voice, speed, and pitch were applied as the global settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einstellungen als globale Standards angewendet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -56725,6 +57871,12 @@
     "Share Logs…" : {
       "comment" : "Button in iPhone Settings that shares TextMouth's recent logs as a text file. The ellipsis means the share sheet opens.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Protokolle teilen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -56742,6 +57894,12 @@
     "Shares recent logs as a text file. They hold no book text." : {
       "comment" : "Hint of the Share Logs button in iPhone Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Teilt aktuelle Protokolle als Textdatei. Sie enthalten keinen Buchtext."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57079,6 +58237,12 @@
     "Show Export in the reader toolbar" : {
       "comment" : "The title of the Playback settings checkbox that shows the Export button in the reader's toolbar.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Export in der Symbolleiste der Leseansicht anzeigen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57427,6 +58591,12 @@
     "Show the Export button in the reader toolbar" : {
       "comment" : "The spoken label of the Playback settings checkbox that shows the Export button in the reader's toolbar.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Taste „Exportieren“ in der Symbolleiste der Leseansicht anzeigen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57649,6 +58819,12 @@
     "Showing the logs in Finder isn't available on iPhone yet." : {
       "comment" : "What the iPhone's Settings says when asked to show the logs in Finder, which the iPhone does not have.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Anzeigen der Protokolle im Finder ist auf dem iPhone noch nicht verfügbar."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57921,6 +59097,12 @@
     "Skip backward" : {
       "comment" : "Name of the Skip Backward media event, a choice for one step of the media-key pattern in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zurückspulen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57972,6 +59154,12 @@
     "Skip finished articles" : {
       "comment" : "Label of the switch in a news feed's Feed Info that passes over articles already finished.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beendete Artikel überspringen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57989,6 +59177,12 @@
     "Skip finished books" : {
       "comment" : "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.\nLabel of the switch in a folder's settings that passes over books already finished.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beendete Bücher überspringen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58006,6 +59200,12 @@
     "Skip finished episodes" : {
       "comment" : "Label of the switch in a podcast feed's Feed Info that passes over episodes already finished.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beendete Folgen überspringen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58023,6 +59223,12 @@
     "Skip finished items" : {
       "comment" : "Label of the switch in a feed's Feed Info that passes over items already finished.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beendete Elemente überspringen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58040,6 +59246,12 @@
     "Skip forward" : {
       "comment" : "Name of the Skip Forward media event, a choice for one step of the media-key pattern in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorspulen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58188,6 +59400,12 @@
     "Sleep Timer" : {
       "comment" : "Heading of the sleep timer group in the Playback settings.\nThe name of the sleep timer, wherever it is named: the title of its sheet over a book's reader (read by VoiceOver as its heading), the reader's Sleep Timer toolbar button, and the heading of its defaults in Settings.\nTitle of the reader toolbar's button that opens the sleep timer sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58222,6 +59440,12 @@
     "Sleep timer cancelled, because the next book could not be opened." : {
       "comment" : "VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer abgebrochen, weil das nächste Buch nicht geöffnet werden konnte."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58239,6 +59463,12 @@
     "Sleep timer cancelled, because you moved to another book while it faded out." : {
       "comment" : "VoiceOver announcement after \"Starting: <title>\": moving to another book while the sleep timer was fading the sound out ended the timer.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer abgebrochen, weil du während des Ausblendens zu einem anderen Buch gewechselt hast."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58256,6 +59486,12 @@
     "Sleep timer cancelled." : {
       "comment" : "VoiceOver announcement after the Cancel Timer button stopped the sleep timer.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer abgebrochen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58273,6 +59509,12 @@
     "Sleep timer expired" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": the sleep timer stopped playback there. Written without its full stop, which is added after it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer abgelaufen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58290,6 +59532,12 @@
     "Sleep timer expired at the end of the heading. Playback paused." : {
       "comment" : "VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer am Ende der Überschrift abgelaufen. Wiedergabe pausiert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58307,6 +59555,12 @@
     "Sleep timer expired. Playback paused." : {
       "comment" : "VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer abgelaufen. Wiedergabe pausiert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58324,6 +59578,12 @@
     "Sleep timer: %@" : {
       "comment" : "VoiceOver label of the sleep timer's status in the reader and the sleep timer sheet. %@ is the timer's state, such as \"4:59 remaining\" or \"stops at the end of this heading\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58341,6 +59601,12 @@
     "Sleep timer: %@." : {
       "comment" : "VoiceOver announcement after a sleep timer that stops at a place was set. %@ says where it stops, such as \"stops at the end of this heading\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer: %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58358,6 +59624,24 @@
     "Sleep timer: %lld minutes remaining" : {
       "comment" : "VoiceOver announcement as the sleep timer's countdown passes a milestone. %lld is the whole minutes left (5 or 1).",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Einschlaf-Timer: %lld Minute verbleibend"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Einschlaf-Timer: %lld Minuten verbleibend"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -58429,6 +59713,12 @@
     "Sleep timer: %lld seconds remaining" : {
       "comment" : "VoiceOver announcement as the sleep timer's countdown passes a milestone under a minute. %lld is the seconds left (30 or 10).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einschlaf-Timer: %lld Sekunden verbleibend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58667,6 +59957,12 @@
     "Sort books by %@" : {
       "comment" : "Spoken label of the Sort button. %@ is the current sort, such as \"Title, ascending\" or \"Manual Order\".\nVoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher sortiert nach %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58701,6 +59997,12 @@
     "Sorted by %@" : {
       "comment" : "VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order.\nVoiceOver announcement after the sort changes. %@ is the new sort, such as \"Author, descending\" or \"Manual Order\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sortiert nach %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58718,6 +60020,12 @@
     "Sound Assignments" : {
       "comment" : "Heading of the section of Settings, Sound Effects that chooses the sound for each event.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Soundzuweisungen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58735,6 +60043,12 @@
     "Sound effect volume" : {
       "comment" : "VoiceOver label of the sound effects volume slider in Settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lautstärke der Soundeffekte"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58752,6 +60066,12 @@
     "Sound effects reset to defaults" : {
       "comment" : "Announcement after Reset to Defaults restored every sound effect setting.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Soundeffekte auf Standard zurückgesetzt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58888,6 +60208,12 @@
     "Speaking chapter %@ of %@…" : {
       "comment" : "The progress of a spoken audio export while it speaks the chapters. %1$@ is the number of the chapter being spoken and %2$@ the number of chapters, both written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kapitel %1$@ von %2$@ wird gesprochen…"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -58911,6 +60237,12 @@
     "Speech Stopped" : {
       "comment" : "Heading of the sheet that reports speech stopped because the speech engine refused a passage, and the first line of its report.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorlesen gestoppt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58928,6 +60260,12 @@
     "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence." : {
       "comment" : "The line in the Export dialog's spoken audio options about the licence the Mac's voices come with.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Sprachausgabe der Stimmen des Mac ist für den persönlichen, nicht kommerziellen Gebrauch bestimmt, gemäß der Lizenz von Apple."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58945,6 +60283,24 @@
     "Speech log, its last %lld lines, offsets and lengths only:" : {
       "comment" : "A line of the speech refusal report, above the speech log's own lines (which stay English, as the log wrote them). %lld is how many lines follow.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sprachprotokoll, seine letzte %lld Zeile, nur Positionen und Längen:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Sprachprotokoll, seine letzten %lld Zeilen, nur Positionen und Längen:"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -59016,6 +60372,12 @@
     "Speech log: no lines." : {
       "comment" : "A line of the speech refusal report: the speech log has no lines to show.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sprachprotokoll: keine Zeilen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59033,6 +60395,12 @@
     "Speech paused: the voice did not start. Press Play to try again." : {
       "comment" : "Announcement when the voice did not start a passage, even on fresh synthesizers, so speech paused there. Play is the name of a button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sprachausgabe pausiert: Die Stimme hat nicht begonnen. Drücke „Wiedergeben“, um es erneut zu versuchen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59050,6 +60418,12 @@
     "Speech stopped at character %@ of %@ in the chapter." : {
       "comment" : "A line of the speech refusal report. %1$@ is the character offset where speech stopped and %2$@ the chapter's length in characters, each written without digit grouping like the speech log's offsets.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Sprachausgabe stoppte bei Zeichen %1$@ von %2$@ im Kapitel."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -59073,6 +60447,12 @@
     "Speech stopped: the Mac's speech engine refused this text." : {
       "comment" : "Announcement when the Mac's speech engine refused a text twice and speech ended where it was, in a window with no report sheet to say so.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorlesen gestoppt: Die Sprachausgabe des Mac hat diesen Text abgelehnt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59090,6 +60470,12 @@
     "Speech stopped: the speech engine refused this passage. Details are in the book's window." : {
       "comment" : "Announcement when speech stopped because the speech engine refused a passage and the book's window is not in front, so its report sheet cannot speak.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorlesen gestoppt: Die Sprachausgabe hat diese Passage abgelehnt. Details stehen im Fenster des Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59107,6 +60493,12 @@
     "Speed" : {
       "comment" : "Heading of the voice sheet's speed group, and what VoiceOver calls its speed slider.\nThe label of the slider in the Export dialog's spoken audio options that sets how fast the voice speaks.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geschwindigkeit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59212,6 +60604,24 @@
     "Speed: %lld words per minute; rate %@, pitch %@, volume %@" : {
       "comment" : "A line of the speech refusal report. %1$lld is the speaking speed in words per minute; %2$@, %3$@, and %4$@ are the engine's rate, pitch multiplier, and volume, each written with two decimals.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Geschwindigkeit: %1$lld Wort pro Minute; Rate %2$@, Tonhöhe %3$@, Lautstärke %4$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Geschwindigkeit: %1$lld Wörter pro Minute; Rate %2$@, Tonhöhe %3$@, Lautstärke %4$@"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -59379,6 +60789,12 @@
     "Start of the book." : {
       "comment" : "What the iPhone reader says when a move back by a length of time has nothing before it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anfang des Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59396,6 +60812,12 @@
     "Start of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: no book above it. Written without its full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anfang der Leseliste"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59430,6 +60852,12 @@
     "Starting again: %@" : {
       "comment" : "VoiceOver announcement as Play starts a finished book over from its beginning. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startet erneut: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59447,6 +60875,12 @@
     "Starting: %@" : {
       "comment" : "VoiceOver announcement as the next book starts playing after one ends. %@ is the next book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startet: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59515,6 +60949,12 @@
     "Statistics" : {
       "comment" : "Heading of the iPhone Settings section that holds the row for Reading Statistics.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Statistik"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59705,6 +61145,12 @@
     "Still starting: %@" : {
       "comment" : "VoiceOver announcement when Play is pressed while the next book is still opening. %@ is the next book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wird noch gestartet: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59756,6 +61202,12 @@
     "Stop" : {
       "comment" : "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.\nA choice of the When a Book Ends picker: the book stops at its end, finished. Play then says it is finished.\nA choice of the pop-up button that sets what happens when an item ends: stop when it ends.\nButton of the Compare Libraries sheet that stops the comparison.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".\nName of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.\nThe button in the Export dialog that stops an export under way.\nTitle of the button in the Record window that stops recording and saves it.\nTitle of the button that stops a running search in the Search Library window.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59773,6 +61225,12 @@
     "Stop At" : {
       "comment" : "Heading of the sleep timer sheet's section of timers that stop at a place in the book: End of heading and End of book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppen bei"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59980,6 +61438,12 @@
     "Stop at the end of the book" : {
       "comment" : "VoiceOver label of the sleep timer sheet's End of book button, which sets a timer that stops where the book ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Am Ende des Buchs stoppen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59997,6 +61461,12 @@
     "Stop at the end of this heading" : {
       "comment" : "VoiceOver label of the sleep timer sheet's End of heading button, which sets a timer that stops where the heading playing ends.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Am Ende dieser Überschrift stoppen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60304,6 +61774,12 @@
     "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them." : {
       "comment" : "The hint of the Stop button in the Export dialog while a spoken audio export runs.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppt den Export und behält die bereits gesprochenen Kapitel, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Ein Export desselben Bereichs mit derselben Geschwindigkeit und Tonhöhe setzt dort fort."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60321,6 +61797,12 @@
     "Stops the export. The file being made is not kept." : {
       "comment" : "The hint of the Stop button in the Export dialog.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppt den Export. Die Datei, die gerade erstellt wird, wird nicht behalten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60366,6 +61848,12 @@
     "Stops the whole export. Files already written stay." : {
       "comment" : "The hint of the Cancel Export button in the alert an export shows when a chapter nests too deeply.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppt den gesamten Export. Bereits geschriebene Dateien bleiben erhalten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60468,6 +61956,12 @@
     "Style:" : {
       "comment" : "Caption beside the pop-up button that chooses how the voice reads a run of one symbol, in Settings, Text, Repeated Symbols.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stil:"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60689,6 +62183,12 @@
     "Switch to a Library or book window, then choose Export again." : {
       "comment" : "What choosing File, Export says when another window, such as Settings, is in front of the Library and book windows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wechsle zu einem Bibliotheks- oder Buchfenster und wähle dann erneut „Exportieren“."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60791,6 +62291,12 @@
     "Symbols reset to the default list" : {
       "comment" : "Announcement after the list of symbols that can form a run was restored to the standard one.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symbole auf die Standardliste zurückgesetzt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60808,6 +62314,12 @@
     "Symbols that form runs" : {
       "comment" : "VoiceOver label of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symbole, die Reihen bilden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60825,6 +62337,12 @@
     "Symbols:" : {
       "comment" : "Caption beside the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symbole:"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60927,6 +62445,12 @@
     "Takes %lld to %lld minutes." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the iPhone: the fewest and most minutes it takes. %1$lld is the fewest (1); %2$lld the most (480).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Akzeptiert %1$lld bis %2$lld Minuten."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -60950,6 +62474,12 @@
     "Takes %lld to %lld minutes. Return sets the timer and plays the book." : {
       "comment" : "VoiceOver hint of the sleep timer sheet's custom minutes field on the Mac: the fewest and most minutes it takes, and what the Return key does there. %1$lld is the fewest (1); %2$lld the most (480). Return is the name of the key.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Akzeptiert %1$lld bis %2$lld Minuten. Mit Return wird der Timer gesetzt und das Buch wiedergegeben."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -60973,6 +62503,12 @@
     "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay." : {
       "comment" : "VoiceOver hint of the Reading List's Remove books when finished checkbox.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Entfernt jedes beendete Buch aus der Liste, wenn sein Fenster weiterwechselt oder geschlossen wird. Bücher, die vor dem Aktivieren beendet wurden, bleiben."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60990,6 +62526,12 @@
     "Takes the selected books off the reading list. They stay in the library." : {
       "comment" : "VoiceOver hint of the Library's edit-mode bar button Remove from Reading List.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Entfernt die ausgewählten Bücher aus der Leseliste. Sie bleiben in der Bibliothek."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61126,6 +62668,12 @@
     "Text as %@" : {
       "comment" : "The name of a text checkbox in the Export dialog while its text is converted. %@ is the name of the format, such as HTML or RTF.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text als %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61143,6 +62691,12 @@
     "Text as Markdown" : {
       "comment" : "The name of a checkbox in the Export dialog: the book's text written as Markdown.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text als Markdown"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61160,6 +62714,12 @@
     "Text as plain text" : {
       "comment" : "The name of a checkbox in the Export dialog: the words TextMouth reads aloud, as plain text.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text als reiner Text"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61177,6 +62737,12 @@
     "Text as spoken audio" : {
       "comment" : "The name of a checkbox in the Export dialog: the book's text spoken by its voice into one audio file.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text als gesprochenes Audio"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61633,6 +63199,12 @@
     "TextMouth Quit to Protect Your Mac" : {
       "comment" : "Title of the alert at launch telling that TextMouth quit at its last run because its memory grew too large while a book played.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth wurde zum Schutz deines Mac beendet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61921,6 +63493,12 @@
     "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@." : {
       "comment" : "Shown in the Export dialog's braille options when the table chosen in Settings can't be used. %1$@ is that table's name as macOS gives it and %2$@ the table the export starts from, in words such as \"Unified English Braille, uncontracted\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kann die in den Einstellungen gewählte Brailletabelle „%1$@“ nicht verwenden, daher beginnt dieser Export mit %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -61944,6 +63522,12 @@
     "TextMouth can't use this Mac's table “%@”: %@." : {
       "comment" : "Announced when one of this Mac's braille tables, just chosen, was refused by its check. %1$@ is the table's name as macOS gives it and %2$@ the reason, a clause.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kann die Tabelle „%1$@“ dieses Mac nicht verwenden: %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -61978,6 +63562,12 @@
     "TextMouth closed while opening %@, so it wasn't reopened." : {
       "comment" : "Announced at launch after the app closed while it was opening a book. %@ is the book's title, which is not opened again.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth wurde beim Öffnen von %@ beendet und öffnete es daher nicht erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61995,6 +63585,12 @@
     "TextMouth could not check this Mac's braille table “%@”: %@. Try again." : {
       "comment" : "Why a braille translation was refused: one of this Mac's braille tables could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, which stays English.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth konnte die Brailletabelle „%1$@“ dieses Mac nicht prüfen: %2$@. Versuche es erneut."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -62018,6 +63614,12 @@
     "TextMouth could not check this Mac's table “%@”: %@. Choose it again to retry." : {
       "comment" : "Announced when one of this Mac's braille tables, just chosen, could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, a clause.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth konnte die Tabelle „%1$@“ dieses Mac nicht prüfen: %2$@. Wähle sie erneut, um es noch einmal zu versuchen."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -62069,6 +63671,12 @@
     "TextMouth could not make a folder to check it in" : {
       "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth konnte keinen Ordner zum Prüfen anlegen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62244,6 +63852,12 @@
     "TextMouth could not read “%@”." : {
       "comment" : "Message of the alert when a pronunciation lexicon file could not be read at all. %@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth konnte „%@“ nicht lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62312,6 +63926,12 @@
     "TextMouth could not save “%@”." : {
       "comment" : "Message of the alert when a pronunciation lexicon file could not be saved. %@ is the file's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth konnte „%@“ nicht sichern."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62329,6 +63949,12 @@
     "TextMouth could not translate this braille." : {
       "comment" : "Why a braille translation failed, when no more is known.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth konnte dieses Braille nicht übersetzen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62816,6 +64442,12 @@
     "TextMouth exports one spoken audio file at a time. Export this once the current one has finished." : {
       "comment" : "Why a spoken audio export was refused: another one is running.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth exportiert jeweils eine gesprochene Audiodatei. Exportiere dies, sobald der aktuelle Export beendet ist."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62850,6 +64482,12 @@
     "TextMouth found no braille tables in its bundle." : {
       "comment" : "Shown in the Braille tab of Settings in place of the pop-ups when the app holds no braille tables.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth hat in seinem Paket keine Brailletabellen gefunden."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62867,6 +64505,12 @@
     "TextMouth has no braille table named “%@”." : {
       "comment" : "Why a braille translation was refused: no braille table has this name. %@ is the table's name as liblouis or macOS gives it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth hat keine Brailletabelle namens „%@“."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
