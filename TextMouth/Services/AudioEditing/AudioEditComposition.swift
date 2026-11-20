@@ -236,8 +236,8 @@ struct AudioEditStretchSound {
             // Rounding to frames can reach half a frame past a source's
             // measured end; anything more names sound that isn't there.
             guard CMTimeCompare(range.end, CMTimeAdd(source.end, time(1))) <= 0 else {
-                throw AudioEditError.invalidEdit(String(localized: "A stretch of the edits runs past the end of “\(name)”.",
-                                                         comment: "Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name."))
+                // Translators: Said when an edit names a stretch of a source audio file that lies past the file's end. %@ is the file's name.
+                throw AudioEditError.invalidEdit(String(localized: "A stretch of the edits runs past the end of “\(name)”."))
             }
             return [Piece(asset: source.asset, track: source.track, range: range, length: segment.length, sourceEnd: source.end)]
         }

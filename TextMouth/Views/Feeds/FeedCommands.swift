@@ -273,18 +273,18 @@ extension FeedWording.ItemNoun {
 extension FeedWording {
     /// Check Feed's title.
     static var checkFeedTitle: String {
-        String(localized: "Check Feed",
-               comment: "Title of the command that checks a feed for new items now, in a feed's menu and among its VoiceOver actions. Title case.")
+        // Translators: Title of the command that checks a feed for new items now, in a feed's menu and among its VoiceOver actions. Title case.
+        String(localized: "Check Feed")
     }
     /// Feed Info's title.
     static var feedInfoTitle: String {
-        String(localized: "Feed Info…",
-               comment: "Title of the command that shows a feed's information and its own settings, in a feed's menu and among its VoiceOver actions. The ellipsis says a sheet follows. Title case.")
+        // Translators: Title of the command that shows a feed's information and its own settings, in a feed's menu and among its VoiceOver actions. The ellipsis says a sheet follows. Title case.
+        String(localized: "Feed Info…")
     }
     /// The name of the Feed Info sheet, as a sentence names it.
     static var feedInfoName: String {
-        String(localized: "Feed Info",
-               comment: "The name of the Feed Info command or sheet, without its ellipsis, as a sentence names it. Title case.")
+        // Translators: The name of the Feed Info command or sheet, without its ellipsis, as a sentence names it. Title case.
+        String(localized: "Feed Info")
     }
 
     /// Unsubscribe's title: "Unsubscribe…" when it asks first, as it would
@@ -292,24 +292,24 @@ extension FeedWording {
     /// "Unsubscribe", with no ellipsis, when it acts at once (FR14).
     static func unsubscribeTitle(asksFirst: Bool) -> String {
         asksFirst
-            ? String(localized: "Unsubscribe…",
-                     comment: "Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case.")
+            // Translators: Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case.
+            ? String(localized: "Unsubscribe…")
             : unsubscribeButton
     }
     /// Resubscribe's title (FR11, branch D): no ellipsis, since it asks
     /// nothing first.
     static var resubscribeTitle: String {
-        String(localized: "Resubscribe",
-               comment: "Title of the command that checks an unsubscribed feed again, in a feed's menu and among its VoiceOver actions. Title case.")
+        // Translators: Title of the command that checks an unsubscribed feed again, in a feed's menu and among its VoiceOver actions. Title case.
+        String(localized: "Resubscribe")
     }
 
     /// Mark All Played's title, or Mark All Read's for a feed of articles.
     static func markAllPlayedTitle(_ noun: ItemNoun) -> String {
         noun == .article
-            ? String(localized: "Mark All Read",
-                     comment: "Title of the command that marks every article of a feed read. Title case.")
-            : String(localized: "Mark All Played",
-                     comment: "Title of the command that marks every episode of a feed played. Title case.")
+            // Translators: Title of the command that marks every article of a feed read. Title case.
+            ? String(localized: "Mark All Read")
+            // Translators: Title of the command that marks every episode of a feed played. Title case.
+            : String(localized: "Mark All Played")
     }
 
     /// The title of the item command `command`, for an article when
@@ -317,36 +317,36 @@ extension FeedWording {
     static func title(of command: FeedItemCommand, isArticle: Bool) -> String {
         switch command {
         case .open:
-            return String(localized: "Open",
-                          comment: "Title of the command that opens a feed item's book, downloading it first when needed. Title case.")
+            // Translators: Title of the command that opens a feed item's book, downloading it first when needed. Title case.
+            return String(localized: "Open")
         case .download:
-            return String(localized: "Download",
-                          comment: "Title of the command that downloads a feed item, or tries a failed download again. Title case.")
+            // Translators: Title of the command that downloads a feed item, or tries a failed download again. Title case.
+            return String(localized: "Download")
         case .cancelDownload:
-            return String(localized: "Cancel Download",
-                          comment: "Title of the command that stops a feed item's download. Title case.")
+            // Translators: Title of the command that stops a feed item's download. Title case.
+            return String(localized: "Cancel Download")
         case .deleteDownload:
-            return String(localized: "Delete Download",
-                          comment: "Title of the command that deletes a feed item's downloaded book and keeps the item. Title case.")
+            // Translators: Title of the command that deletes a feed item's downloaded book and keeps the item. Title case.
+            return String(localized: "Delete Download")
         case .markPlayed:
             return isArticle
-                ? String(localized: "Mark Read",
-                         comment: "Title of the command that marks a feed's article read. Title case.")
-                : String(localized: "Mark Played",
-                         comment: "Title of the command that marks a feed's episode played. Title case.")
+                // Translators: Title of the command that marks a feed's article read. Title case.
+                ? String(localized: "Mark Read")
+                // Translators: Title of the command that marks a feed's episode played. Title case.
+                : String(localized: "Mark Played")
         case .markUnplayed:
             return isArticle
-                ? String(localized: "Mark Unread",
-                         comment: "Title of the command that marks a feed's article unread. Title case.")
-                : String(localized: "Mark Unplayed",
-                         comment: "Title of the command that marks a feed's episode unplayed. Title case.")
+                // Translators: Title of the command that marks a feed's article unread. Title case.
+                ? String(localized: "Mark Unread")
+                // Translators: Title of the command that marks a feed's episode unplayed. Title case.
+                : String(localized: "Mark Unplayed")
         case .showDescription:
-            return String(localized: "Show Description…",
-                          comment: "Title of the command that shows a feed item's text in a sheet. The ellipsis says a sheet follows. Title case.")
+            // Translators: Title of the command that shows a feed item's text in a sheet. The ellipsis says a sheet follows. Title case.
+            return String(localized: "Show Description…")
         case .moveToLibrary: return ShortcutAction.moveToLibrary.title
         case .showInFinder:
-            return String(localized: "Show in Finder",
-                          comment: "Title of the command that shows a feed item's book in Finder. Title case.")
+            // Translators: Title of the command that shows a feed item's book in Finder. Title case.
+            return String(localized: "Show in Finder")
         case .deleteItem: return deleteItemTitle(isArticle: isArticle)
         }
     }
@@ -361,20 +361,20 @@ extension FeedWording {
         case .updated(let newItemIDs) where !newItemIDs.isEmpty:
             let count = newItemIDs.count
             return noun.choose(
-                episode: String(localized: "\(title): \(count) new episodes.",
-                                comment: "What VoiceOver says once Check Feed found new episodes. %@ is the feed's title; %lld is how many new episodes."),
-                article: String(localized: "\(title): \(count) new articles.",
-                                comment: "What VoiceOver says once Check Feed found new articles. %@ is the feed's title; %lld is how many new articles."),
-                item: String(localized: "\(title): \(count) new items.",
-                             comment: "What VoiceOver says once Check Feed found new items, in a feed of episodes and articles. %@ is the feed's title; %lld is how many new items."))
+                // Translators: What VoiceOver says once Check Feed found new episodes. %@ is the feed's title; %lld is how many new episodes.
+                episode: String(localized: "\(title): \(count) new episodes."),
+                // Translators: What VoiceOver says once Check Feed found new articles. %@ is the feed's title; %lld is how many new articles.
+                article: String(localized: "\(title): \(count) new articles."),
+                // Translators: What VoiceOver says once Check Feed found new items, in a feed of episodes and articles. %@ is the feed's title; %lld is how many new items.
+                item: String(localized: "\(title): \(count) new items."))
         case .updated, .unchanged, .skipped:
             return noun.choose(
-                episode: String(localized: "\(title): no new episodes.",
-                                comment: "What VoiceOver says once Check Feed found no new episodes. %@ is the feed's title."),
-                article: String(localized: "\(title): no new articles.",
-                                comment: "What VoiceOver says once Check Feed found no new articles. %@ is the feed's title."),
-                item: String(localized: "\(title): no new items.",
-                             comment: "What VoiceOver says once Check Feed found no new items, in a feed of episodes and articles. %@ is the feed's title."))
+                // Translators: What VoiceOver says once Check Feed found no new episodes. %@ is the feed's title.
+                episode: String(localized: "\(title): no new episodes."),
+                // Translators: What VoiceOver says once Check Feed found no new articles. %@ is the feed's title.
+                article: String(localized: "\(title): no new articles."),
+                // Translators: What VoiceOver says once Check Feed found no new items, in a feed of episodes and articles. %@ is the feed's title.
+                item: String(localized: "\(title): no new items."))
         case .failed(let message):
             return message
         }
@@ -382,24 +382,24 @@ extension FeedWording {
 
     /// What VoiceOver hears as Check Feed starts.
     static func checking(title: String) -> String {
-        String(localized: "Checking \(title)…",
-               comment: "What VoiceOver says as Check Feed starts. %@ is the feed's title.")
+        // Translators: What VoiceOver says as Check Feed starts. %@ is the feed's title.
+        String(localized: "Checking \(title)…")
     }
 
     /// What VoiceOver hears when Check Feed is chosen for a feed the
     /// listener unsubscribed from (FR11, branch D), as from a menu drawn
     /// before Unsubscribe: nothing is checked.
     static func notChecked(title: String) -> String {
-        String(localized: "\(title) is unsubscribed, so TextMouth doesn't check it. Choose \(resubscribeTitle) to check it again.",
-               comment: "What VoiceOver says when Check Feed is chosen for an unsubscribed feed. The first %@ is the feed's title; the second is the name of the Resubscribe command.")
+        // Translators: What VoiceOver says when Check Feed is chosen for an unsubscribed feed. The first %@ is the feed's title; the second is the name of the Resubscribe command.
+        String(localized: "\(title) is unsubscribed, so TextMouth doesn't check it. Choose \(resubscribeTitle) to check it again.")
     }
 
     /// What VoiceOver hears as Resubscribe starts the check it makes at once
     /// (FR11, branch D); the check's outcome follows, as Check Feed's does
     /// (`checked(_:noun:)`).
     static func resubscribed(title: String) -> String {
-        String(localized: "Resubscribed to \(title). Checking it now…",
-               comment: "What VoiceOver says as Resubscribe starts checking the feed. %@ is the feed's title.")
+        // Translators: What VoiceOver says as Resubscribe starts checking the feed. %@ is the feed's title.
+        String(localized: "Resubscribed to \(title). Checking it now…")
     }
 
     // MARK: Marking
@@ -409,37 +409,37 @@ extension FeedWording {
     static func markedAll(count: Int, title: String, noun: ItemNoun) -> String {
         guard count > 0 else {
             return noun.choose(
-                episode: String(localized: "Every episode of \(title) is already played.",
-                                comment: "What VoiceOver says when Mark All Played finds no unplayed episode. %@ is the feed's title."),
-                article: String(localized: "Every article of \(title) is already read.",
-                                comment: "What VoiceOver says when Mark All Read finds no unread article. %@ is the feed's title."),
-                item: String(localized: "Every item of \(title) is already played.",
-                             comment: "What VoiceOver says when Mark All Played finds no unplayed item, in a feed of episodes and articles. %@ is the feed's title."))
+                // Translators: What VoiceOver says when Mark All Played finds no unplayed episode. %@ is the feed's title.
+                episode: String(localized: "Every episode of \(title) is already played."),
+                // Translators: What VoiceOver says when Mark All Read finds no unread article. %@ is the feed's title.
+                article: String(localized: "Every article of \(title) is already read."),
+                // Translators: What VoiceOver says when Mark All Played finds no unplayed item, in a feed of episodes and articles. %@ is the feed's title.
+                item: String(localized: "Every item of \(title) is already played."))
         }
         return noun.choose(
-            episode: String(localized: "Marked \(count) episodes of \(title) played.",
-                            comment: "What VoiceOver says once Mark All Played marked episodes played. %lld is how many; %@ is the feed's title."),
-            article: String(localized: "Marked \(count) articles of \(title) read.",
-                            comment: "What VoiceOver says once Mark All Read marked articles read. %lld is how many; %@ is the feed's title."),
-            item: String(localized: "Marked \(count) items of \(title) played.",
-                         comment: "What VoiceOver says once Mark All Played marked items played, in a feed of episodes and articles. %lld is how many; %@ is the feed's title."))
+            // Translators: What VoiceOver says once Mark All Played marked episodes played. %lld is how many; %@ is the feed's title.
+            episode: String(localized: "Marked \(count) episodes of \(title) played."),
+            // Translators: What VoiceOver says once Mark All Read marked articles read. %lld is how many; %@ is the feed's title.
+            article: String(localized: "Marked \(count) articles of \(title) read."),
+            // Translators: What VoiceOver says once Mark All Played marked items played, in a feed of episodes and articles. %lld is how many; %@ is the feed's title.
+            item: String(localized: "Marked \(count) items of \(title) played."))
     }
 
     /// What VoiceOver hears once an item is marked played or unplayed.
     static func marked(title: String, played: Bool, isArticle: Bool) -> String {
         switch (played, isArticle) {
         case (true, false):
-            return String(localized: "Marked “\(title)” played.",
-                          comment: "What VoiceOver says once an episode is marked played. %@ is the episode's title.")
+            // Translators: What VoiceOver says once an episode is marked played. %@ is the episode's title.
+            return String(localized: "Marked “\(title)” played.")
         case (true, true):
-            return String(localized: "Marked “\(title)” read.",
-                          comment: "What VoiceOver says once an article is marked read. %@ is the article's title.")
+            // Translators: What VoiceOver says once an article is marked read. %@ is the article's title.
+            return String(localized: "Marked “\(title)” read.")
         case (false, false):
-            return String(localized: "Marked “\(title)” unplayed.",
-                          comment: "What VoiceOver says once an episode is marked unplayed. %@ is the episode's title.")
+            // Translators: What VoiceOver says once an episode is marked unplayed. %@ is the episode's title.
+            return String(localized: "Marked “\(title)” unplayed.")
         case (false, true):
-            return String(localized: "Marked “\(title)” unread.",
-                          comment: "What VoiceOver says once an article is marked unread. %@ is the article's title.")
+            // Translators: What VoiceOver says once an article is marked unread. %@ is the article's title.
+            return String(localized: "Marked “\(title)” unread.")
         }
     }
 
@@ -447,14 +447,14 @@ extension FeedWording {
 
     /// What VoiceOver hears as Download starts.
     static func downloading(title: String) -> String {
-        String(localized: "Downloading “\(title)”.",
-               comment: "What VoiceOver says as Download starts. %@ is the episode's or article's title.")
+        // Translators: What VoiceOver says as Download starts. %@ is the episode's or article's title.
+        String(localized: "Downloading “\(title)”.")
     }
 
     /// What VoiceOver hears once Cancel Download stopped a download.
     static func downloadCancelled(title: String) -> String {
-        String(localized: "Stopped downloading “\(title)”.",
-               comment: "What VoiceOver says once Cancel Download stopped a download. %@ is the episode's or article's title.")
+        // Translators: What VoiceOver says once Cancel Download stopped a download. %@ is the episode's or article's title.
+        String(localized: "Stopped downloading “\(title)”.")
     }
 
     /// What VoiceOver hears when Cancel Download comes too late, the book
@@ -463,16 +463,16 @@ extension FeedWording {
     /// Cancel says it too of such a download
     /// (`FeedDownloadProgressWording.cancelled(stopped:finishing:comingBack:)`).
     static func alreadyBeingAdded(title: String) -> String {
-        String(localized: "“\(title)” is already being added to the library.",
-               comment: "What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title.")
+        // Translators: What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title.
+        String(localized: "“\(title)” is already being added to the library.")
     }
 
     /// What VoiceOver hears once Cancel Download took back a download the
     /// newest-N rule had put off (FR11): it waits no more, and downloads
     /// only when the listener asks.
     static func waitingDownloadCancelled(title: String) -> String {
-        String(localized: "“\(title)” no longer waits to download; it downloads when you choose \(FeedWording.title(of: .download, isArticle: false)).",
-               comment: "What VoiceOver says once Cancel Download took back a download that waited. The first %@ is the title; the second is the name of the Download command.")
+        // Translators: What VoiceOver says once Cancel Download took back a download that waited. The first %@ is the title; the second is the name of the Download command.
+        String(localized: "“\(title)” no longer waits to download; it downloads when you choose \(FeedWording.title(of: .download, isArticle: false)).")
     }
 
     /// What VoiceOver hears once Delete Download deleted a download: that it
@@ -481,8 +481,8 @@ extension FeedWording {
     /// it holds (`kept`, feed review item 18): "Its place and bookmarks are
     /// kept for when you download it again."
     static func downloadDeleted(title: String, kept: KeptParts = []) -> String {
-        let deleted = String(localized: "Deleted the download of “\(title)”.",
-                             comment: "What VoiceOver says once Delete Download deleted a download. %@ is the title. A sentence about what is kept follows.")
+        // Translators: What VoiceOver says once Delete Download deleted a download. %@ is the title. A sentence about what is kept follows.
+        let deleted = String(localized: "Deleted the download of “\(title)”.")
         return SentenceWording.joined([deleted, kept.keptForRedownloadSentence])
     }
 
@@ -529,16 +529,22 @@ extension FeedWording {
             switch part {
             case .place:
                 return several
-                    ? String(localized: "places", comment: "The places in books that several deleted downloads kept, a noun inside a list such as \"the places and bookmarks kept for 3 removed downloads\". Lower case.")
-                    : String(localized: "place", comment: "The place in the book that a deleted download kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case.")
+                    // Translators: The places in books that several deleted downloads kept, a noun inside a list such as "the places and bookmarks kept for 3 removed downloads". Lower case.
+                    ? String(localized: "places")
+                    // Translators: The place in the book that a deleted download kept, a noun inside a list such as "the place and bookmarks kept for 1 removed download". Lower case.
+                    : String(localized: "place")
             case .bookmarks:
-                return String(localized: "bookmarks", comment: "The bookmarks that a deleted download or several kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case.")
+                // Translators: The bookmarks that a deleted download or several kept, a noun inside a list such as "the place and bookmarks kept for 1 removed download". Lower case.
+                return String(localized: "bookmarks")
             case .settings:
-                return String(localized: "own settings", comment: "The settings of their own that a deleted download or several kept, a noun inside a list such as \"the place and own settings kept for 1 removed download\". Lower case.")
+                // Translators: The settings of their own that a deleted download or several kept, a noun inside a list such as "the place and own settings kept for 1 removed download". Lower case.
+                return String(localized: "own settings")
             default:
                 return several
-                    ? String(localized: "transcripts", comment: "The transcripts that several deleted downloads kept, a noun inside a list such as \"the places and transcripts kept for 3 removed downloads\". Lower case.")
-                    : String(localized: "transcript", comment: "The transcript that a deleted download kept, a noun inside a list such as \"the place and transcript kept for 1 removed download\". Lower case.")
+                    // Translators: The transcripts that several deleted downloads kept, a noun inside a list such as "the places and transcripts kept for 3 removed downloads". Lower case.
+                    ? String(localized: "transcripts")
+                    // Translators: The transcript that a deleted download kept, a noun inside a list such as "the place and transcript kept for 1 removed download". Lower case.
+                    : String(localized: "transcript")
             }
         }
 
@@ -562,15 +568,15 @@ extension FeedWording {
         /// the item can be downloaded again when nothing is kept.
         var keptForRedownloadSentence: String {
             guard !isEmpty else {
-                return String(localized: "It can be downloaded again.",
-                              comment: "What VoiceOver says after Delete Download deleted a download that kept nothing of the listener's: the item can be downloaded again.")
+                // Translators: What VoiceOver says after Delete Download deleted a download that kept nothing of the listener's: the item can be downloaded again.
+                return String(localized: "It can be downloaded again.")
             }
             let list = CountWording.list(nouns(several: false))
             return takesPluralVerb
-                ? String(localized: "Its \(list) are kept for when you download it again.",
-                         comment: "What VoiceOver says after Delete Download deleted a download whose package kept parts of the listener's. %@ is a list of what is kept, such as \"place and bookmarks\". The verb agrees with a list of several parts.")
-                : String(localized: "Its \(list) is kept for when you download it again.",
-                         comment: "What VoiceOver says after Delete Download deleted a download whose package kept one part of the listener's. %@ is what is kept, such as \"place\" or \"transcript\".")
+                // Translators: What VoiceOver says after Delete Download deleted a download whose package kept parts of the listener's. %@ is a list of what is kept, such as "place and bookmarks". The verb agrees with a list of several parts.
+                ? String(localized: "Its \(list) are kept for when you download it again.")
+                // Translators: What VoiceOver says after Delete Download deleted a download whose package kept one part of the listener's. %@ is what is kept, such as "place" or "transcript".
+                : String(localized: "Its \(list) is kept for when you download it again.")
         }
 
         /// What is kept of one deleted download, as a whole sentence, "Its
@@ -579,18 +585,18 @@ extension FeedWording {
             guard !isEmpty else { return nil }
             let list = CountWording.list(nouns(several: false))
             return takesPluralVerb
-                ? String(localized: "Its \(list) are kept.",
-                         comment: "Sentence that says what is kept of one deleted download. %@ is a list of what is kept, such as \"place and bookmarks\". The verb agrees with a list of several parts.")
-                : String(localized: "Its \(list) is kept.",
-                         comment: "Sentence that says what is kept of one deleted download. %@ is one part that is kept, such as \"place\" or \"transcript\".")
+                // Translators: Sentence that says what is kept of one deleted download. %@ is a list of what is kept, such as "place and bookmarks". The verb agrees with a list of several parts.
+                ? String(localized: "Its \(list) are kept.")
+                // Translators: Sentence that says what is kept of one deleted download. %@ is one part that is kept, such as "place" or "transcript".
+                : String(localized: "Its \(list) is kept.")
         }
     }
 
     /// The title of the alert saying why a download, or an item, could not
     /// be deleted.
     static var deleteRefusedTitle: String {
-        String(localized: "Couldn't Delete",
-               comment: "Title of the alert that says why a download or a feed item could not be deleted. Title case.")
+        // Translators: Title of the alert that says why a download or a feed item could not be deleted. Title case.
+        String(localized: "Couldn't Delete")
     }
 
     // MARK: Moving Into the Library (FR11, Branch D)
@@ -609,17 +615,17 @@ extension FeedWording {
     static func moveToLibraryHeading(titles: [String], noun: ItemNoun) -> String {
         guard titles.count != 1, !titles.isEmpty else {
             let title = titles.first ?? ""
-            return String(localized: "Move “\(title)” to Library",
-                          comment: "Heading of the sheet that moves one feed item's download into the library. %@ is the item's title. Title case.")
+            // Translators: Heading of the sheet that moves one feed item's download into the library. %@ is the item's title. Title case.
+            return String(localized: "Move “\(title)” to Library")
         }
         let count = titles.count
         return noun.choose(
-            episode: String(localized: "Move \(count) Episodes to Library",
-                            comment: "Heading of the sheet that moves several feed episodes into the library. %lld is how many. Title case."),
-            article: String(localized: "Move \(count) Articles to Library",
-                            comment: "Heading of the sheet that moves several feed articles into the library. %lld is how many. Title case."),
-            item: String(localized: "Move \(count) Items to Library",
-                         comment: "Heading of the sheet that moves several feed items, episodes and articles, into the library. %lld is how many. Title case."))
+            // Translators: Heading of the sheet that moves several feed episodes into the library. %lld is how many. Title case.
+            episode: String(localized: "Move \(count) Episodes to Library"),
+            // Translators: Heading of the sheet that moves several feed articles into the library. %lld is how many. Title case.
+            article: String(localized: "Move \(count) Articles to Library"),
+            // Translators: Heading of the sheet that moves several feed items, episodes and articles, into the library. %lld is how many. Title case.
+            item: String(localized: "Move \(count) Items to Library"))
     }
 
     /// What Move to Library… does, which its sheet says under its heading,
@@ -631,20 +637,20 @@ extension FeedWording {
     static func moveToLibraryHint(count: Int, noun: ItemNoun) -> String {
         guard count != 1 else {
             return noun.choose(
-                episode: String(localized: "Moves this episode into a library folder as a book you can edit; it leaves the feed",
-                                comment: "What the Move to Library sheet says about one episode: it moves into a library folder as a book and leaves its feed."),
-                article: String(localized: "Moves this article into a library folder as a book you can edit; it leaves the feed",
-                                comment: "What the Move to Library sheet says about one article: it moves into a library folder as a book and leaves its feed."),
-                item: String(localized: "Moves this item into a library folder as a book you can edit; it leaves the feed",
-                             comment: "What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed."))
+                // Translators: What the Move to Library sheet says about one episode: it moves into a library folder as a book and leaves its feed.
+                episode: String(localized: "Moves this episode into a library folder as a book you can edit; it leaves the feed"),
+                // Translators: What the Move to Library sheet says about one article: it moves into a library folder as a book and leaves its feed.
+                article: String(localized: "Moves this article into a library folder as a book you can edit; it leaves the feed"),
+                // Translators: What the Move to Library sheet says about one item, an episode or an article: it moves into a library folder as a book and leaves its feed.
+                item: String(localized: "Moves this item into a library folder as a book you can edit; it leaves the feed"))
         }
         return noun.choose(
-            episode: String(localized: "Moves these \(count) episodes into a library folder as books you can edit; they leave their feeds",
-                            comment: "What the Move to Library sheet says about several episodes: they move into a library folder as books and leave their feeds. %lld is how many."),
-            article: String(localized: "Moves these \(count) articles into a library folder as books you can edit; they leave their feeds",
-                            comment: "What the Move to Library sheet says about several articles: they move into a library folder as books and leave their feeds. %lld is how many."),
-            item: String(localized: "Moves these \(count) items into a library folder as books you can edit; they leave their feeds",
-                         comment: "What the Move to Library sheet says about several items, episodes and articles: they move into a library folder as books and leave their feeds. %lld is how many."))
+            // Translators: What the Move to Library sheet says about several episodes: they move into a library folder as books and leave their feeds. %lld is how many.
+            episode: String(localized: "Moves these \(count) episodes into a library folder as books you can edit; they leave their feeds"),
+            // Translators: What the Move to Library sheet says about several articles: they move into a library folder as books and leave their feeds. %lld is how many.
+            article: String(localized: "Moves these \(count) articles into a library folder as books you can edit; they leave their feeds"),
+            // Translators: What the Move to Library sheet says about several items, episodes and articles: they move into a library folder as books and leave their feeds. %lld is how many.
+            item: String(localized: "Moves these \(count) items into a library folder as books you can edit; they leave their feeds"))
     }
 
     /// What VoiceOver hears once Move to Library… moved the items titled
@@ -653,24 +659,24 @@ extension FeedWording {
     /// book of your library now, and its feed lists it In Library."
     static func movedToLibrary(titles: [String], noun: ItemNoun, folderPath: String) -> String {
         let place = folderPath.isEmpty
-            ? String(localized: "the top of your library",
-                     comment: "Where a book is when it is in no library folder, as in \"Moved “Ep. 368” into the top of your library.\" Lower case.")
+            // Translators: Where a book is when it is in no library folder, as in "Moved “Ep. 368” into the top of your library." Lower case.
+            ? String(localized: "the top of your library")
             : folderPath
         // The note a moved item's row carries, which the sentence names.
         let inLibrary = FeedItemState.inLibrary(bookID: UUID()).visibleNote
         guard titles.count != 1, !titles.isEmpty else {
             let title = titles.first ?? ""
-            return String(localized: "Moved “\(title)” into \(place). It's a library book now, and its feed lists it \(inLibrary).",
-                          comment: "What VoiceOver says once Move to Library moved one feed item into the library. The first %@ is the item's title; the second is the library folder, or \"the top of your library\"; the third is the note its feed's row shows, \"In Library\".")
+            // Translators: What VoiceOver says once Move to Library moved one feed item into the library. The first %@ is the item's title; the second is the library folder, or "the top of your library"; the third is the note its feed's row shows, "In Library".
+            return String(localized: "Moved “\(title)” into \(place). It's a library book now, and its feed lists it \(inLibrary).")
         }
         let count = titles.count
         return noun.choose(
-            episode: String(localized: "Moved \(count) episodes into \(place). They're library books now, and their feeds list them \(inLibrary).",
-                            comment: "What VoiceOver says once Move to Library moved several episodes into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\"."),
-            article: String(localized: "Moved \(count) articles into \(place). They're library books now, and their feeds list them \(inLibrary).",
-                            comment: "What VoiceOver says once Move to Library moved several articles into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\"."),
-            item: String(localized: "Moved \(count) items into \(place). They're library books now, and their feeds list them \(inLibrary).",
-                         comment: "What VoiceOver says once Move to Library moved several items, episodes and articles, into the library. %lld is how many; the first %@ is the library folder, or \"the top of your library\"; the second is the note their feeds' rows show, \"In Library\"."))
+            // Translators: What VoiceOver says once Move to Library moved several episodes into the library. %lld is how many; the first %@ is the library folder, or "the top of your library"; the second is the note their feeds' rows show, "In Library".
+            episode: String(localized: "Moved \(count) episodes into \(place). They're library books now, and their feeds list them \(inLibrary)."),
+            // Translators: What VoiceOver says once Move to Library moved several articles into the library. %lld is how many; the first %@ is the library folder, or "the top of your library"; the second is the note their feeds' rows show, "In Library".
+            article: String(localized: "Moved \(count) articles into \(place). They're library books now, and their feeds list them \(inLibrary)."),
+            // Translators: What VoiceOver says once Move to Library moved several items, episodes and articles, into the library. %lld is how many; the first %@ is the library folder, or "the top of your library"; the second is the note their feeds' rows show, "In Library".
+            item: String(localized: "Moved \(count) items into \(place). They're library books now, and their feeds list them \(inLibrary)."))
     }
 
     /// What Move to Library… says when it moved some of the items asked for
@@ -700,10 +706,10 @@ extension FeedWording {
             let titles = titlesByReason[reason] ?? []
             let list = CountWording.list(titles)
             return titles.count == 1
-                ? String(localized: "\(list) stays in its feed: \(reason)",
-                         comment: "What the Move to Library sheet says about one item that stayed in its feed. The first %@ is its title in quotation marks; the second is the reason, a sentence or clause.")
-                : String(localized: "\(list) stay in their feeds: \(reason)",
-                         comment: "What the Move to Library sheet says about several items that stayed in their feeds for one reason. The first %@ is their titles in quotation marks; the second is the reason, a sentence or clause.")
+                // Translators: What the Move to Library sheet says about one item that stayed in its feed. The first %@ is its title in quotation marks; the second is the reason, a sentence or clause.
+                ? String(localized: "\(list) stays in its feed: \(reason)")
+                // Translators: What the Move to Library sheet says about several items that stayed in their feeds for one reason. The first %@ is their titles in quotation marks; the second is the reason, a sentence or clause.
+                : String(localized: "\(list) stay in their feeds: \(reason)")
         }
         return SentenceWording.joined([movedToLibrary(titles: moved, noun: noun, folderPath: folderPath)] + stays)
     }
@@ -712,8 +718,8 @@ extension FeedWording {
     /// can move: no episode or article downloaded in its feed among the books
     /// chosen.
     static var nothingToMoveToLibrary: String {
-        String(localized: "\(title(of: .moveToLibrary, isArticle: false)) moves an episode or article downloaded in its feed. Select one in its feed's folder.",
-               comment: "What VoiceOver says when Move to Library is chosen and no selected book is a feed's download. %@ is the name of the Move to Library command, with its ellipsis.")
+        // Translators: What VoiceOver says when Move to Library is chosen and no selected book is a feed's download. %@ is the name of the Move to Library command, with its ellipsis.
+        String(localized: "\(title(of: .moveToLibrary, isArticle: false)) moves an episode or article downloaded in its feed. Select one in its feed's folder.")
     }
 
     // MARK: Deleting an Item
@@ -722,27 +728,27 @@ extension FeedWording {
     /// ellipsis, as it asks first: "Delete Episode", or "Delete Article".
     static func deleteItemButton(isArticle: Bool) -> String {
         isArticle
-            ? String(localized: "Delete Article",
-                     comment: "Title of the button that confirms deleting a feed's article. Title case.")
-            : String(localized: "Delete Episode",
-                     comment: "Title of the button that confirms deleting a feed's episode. Title case.")
+            // Translators: Title of the button that confirms deleting a feed's article. Title case.
+            ? String(localized: "Delete Article")
+            // Translators: Title of the button that confirms deleting a feed's episode. Title case.
+            : String(localized: "Delete Episode")
     }
 
     /// The title of the command Delete Episode… or Delete Article…, which
     /// asks first.
     static func deleteItemTitle(isArticle: Bool) -> String {
         isArticle
-            ? String(localized: "Delete Article…",
-                     comment: "Title of the command that deletes a feed's article, after a confirmation. The ellipsis says a question follows. Title case.")
-            : String(localized: "Delete Episode…",
-                     comment: "Title of the command that deletes a feed's episode, after a confirmation. The ellipsis says a question follows. Title case.")
+            // Translators: Title of the command that deletes a feed's article, after a confirmation. The ellipsis says a question follows. Title case.
+            ? String(localized: "Delete Article…")
+            // Translators: Title of the command that deletes a feed's episode, after a confirmation. The ellipsis says a question follows. Title case.
+            : String(localized: "Delete Episode…")
     }
 
     /// The title of the confirmation before Delete Episode or Delete
     /// Article.
     static func deleteItemQuestion(title: String) -> String {
-        String(localized: "Delete “\(title)”?",
-               comment: "Title of the confirmation before a feed's episode or article is deleted. %@ is its title.")
+        // Translators: Title of the confirmation before a feed's episode or article is deleted. %@ is its title.
+        String(localized: "Delete “\(title)”?")
     }
 
     /// The confirmation's message, saying what deleting does: the item
@@ -752,24 +758,24 @@ extension FeedWording {
     /// moved into the library (`isInLibrary`, FR11, branch D), the item
     /// leaves the list and its book stays.
     static func deleteItemMessage(isArticle: Bool, keepsListenerState: Bool = false, isInLibrary: Bool = false) -> String {
-        let comeBack = String(localized: "Checking the feed won't bring it back.",
-                              comment: "The last sentence of the confirmation before a feed's episode or article is deleted: a refresh of the feed does not list it again.")
+        // Translators: The last sentence of the confirmation before a feed's episode or article is deleted: a refresh of the feed does not list it again.
+        let comeBack = String(localized: "Checking the feed won't bring it back.")
         guard !isInLibrary else {
             let leaves = isArticle
-                ? String(localized: "The article leaves the list for good; the book it became in your library stays.",
-                         comment: "First sentence of the confirmation before an article that was moved into the library is deleted from its feed.")
-                : String(localized: "The episode leaves the list for good; the book it became in your library stays.",
-                         comment: "First sentence of the confirmation before an episode that was moved into the library is deleted from its feed.")
+                // Translators: First sentence of the confirmation before an article that was moved into the library is deleted from its feed.
+                ? String(localized: "The article leaves the list for good; the book it became in your library stays.")
+                // Translators: First sentence of the confirmation before an episode that was moved into the library is deleted from its feed.
+                : String(localized: "The episode leaves the list for good; the book it became in your library stays.")
             return SentenceWording.joined([leaves, comeBack])
         }
         let leaves = isArticle
-            ? String(localized: "The article leaves the list for good, and its download, if any, is deleted.",
-                     comment: "First sentence of the confirmation before an article is deleted from its feed.")
-            : String(localized: "The episode leaves the list for good, and its download, if any, is deleted.",
-                     comment: "First sentence of the confirmation before an episode is deleted from its feed.")
+            // Translators: First sentence of the confirmation before an article is deleted from its feed.
+            ? String(localized: "The article leaves the list for good, and its download, if any, is deleted.")
+            // Translators: First sentence of the confirmation before an episode is deleted from its feed.
+            : String(localized: "The episode leaves the list for good, and its download, if any, is deleted.")
         guard keepsListenerState else { return SentenceWording.joined([leaves, comeBack]) }
-        let kept = String(localized: "The place, bookmarks, and transcript kept for it are deleted too.",
-                          comment: "A sentence of the confirmation before a feed's episode or article is deleted: what TextMouth kept of the listener's for it goes too.")
+        // Translators: A sentence of the confirmation before a feed's episode or article is deleted: what TextMouth kept of the listener's for it goes too.
+        let kept = String(localized: "The place, bookmarks, and transcript kept for it are deleted too.")
         return SentenceWording.joined([leaves, kept, comeBack])
     }
 
@@ -777,24 +783,24 @@ extension FeedWording {
     /// library (`isInLibrary`, FR11, branch D), that its book stays.
     static func itemDeleted(title: String, isInLibrary: Bool = false) -> String {
         isInLibrary
-            ? String(localized: "Deleted “\(title)” from its feed; its book stays in your library.",
-                     comment: "What VoiceOver says once an item that was moved into the library is deleted from its feed. %@ is its title.")
-            : String(localized: "Deleted “\(title)”.",
-                     comment: "What VoiceOver says once a feed's episode or article is deleted. %@ is its title.")
+            // Translators: What VoiceOver says once an item that was moved into the library is deleted from its feed. %@ is its title.
+            ? String(localized: "Deleted “\(title)” from its feed; its book stays in your library.")
+            // Translators: What VoiceOver says once a feed's episode or article is deleted. %@ is its title.
+            : String(localized: "Deleted “\(title)”.")
     }
 
     // MARK: Unsubscribing
 
     /// The title of the confirmation before Unsubscribe.
     static func unsubscribeQuestion(title: String) -> String {
-        String(localized: "Unsubscribe from \(title)?",
-               comment: "Title of the confirmation before Unsubscribe. %@ is the feed's title.")
+        // Translators: Title of the confirmation before Unsubscribe. %@ is the feed's title.
+        String(localized: "Unsubscribe from \(title)?")
     }
 
     /// The Unsubscribe confirmation's button.
     static var unsubscribeButton: String {
-        String(localized: "Unsubscribe",
-               comment: "Title of the command that stops checking a feed when it acts at once, and of the confirmation's button. Title case.")
+        // Translators: Title of the command that stops checking a feed when it acts at once, and of the confirmation's button. Title case.
+        String(localized: "Unsubscribe")
     }
 
     /// The Unsubscribe confirmation's message, saying what unsubscribing
@@ -811,22 +817,22 @@ extension FeedWording {
     /// downloads."
     static func unsubscribeMessage(downloadCount: Int, keptCount: Int, keptParts: KeptParts, noun: ItemNoun) -> String {
         let stops = noun.choose(
-            episode: String(localized: "TextMouth stops checking this feed for new episodes.",
-                            comment: "The first sentence of the confirmation before Unsubscribe, for a feed of episodes."),
-            article: String(localized: "TextMouth stops checking this feed for new articles.",
-                            comment: "The first sentence of the confirmation before Unsubscribe, for a feed of articles."),
-            item: String(localized: "TextMouth stops checking this feed for new items.",
-                         comment: "The first sentence of the confirmation before Unsubscribe, for a feed of episodes and articles."))
+            // Translators: The first sentence of the confirmation before Unsubscribe, for a feed of episodes.
+            episode: String(localized: "TextMouth stops checking this feed for new episodes."),
+            // Translators: The first sentence of the confirmation before Unsubscribe, for a feed of articles.
+            article: String(localized: "TextMouth stops checking this feed for new articles."),
+            // Translators: The first sentence of the confirmation before Unsubscribe, for a feed of episodes and articles.
+            item: String(localized: "TextMouth stops checking this feed for new items."))
         let resubscribe = resubscribeTitle
         let stays = downloadCount > 0
-            ? String(localized: "The feed stays in your library with its settings and \(downloadsPhrase(downloadCount, noun)), and \(resubscribe) checks it again.",
-                     comment: "A sentence of the confirmation before Unsubscribe: the feed stays, with its settings and its downloads. The first %@ is the downloads, such as \"its 2 downloaded episodes\"; the second is the name of the Resubscribe command.")
-            : String(localized: "The feed stays in your library with its settings, and \(resubscribe) checks it again.",
-                     comment: "A sentence of the confirmation before Unsubscribe: the feed stays, with its settings. %@ is the name of the Resubscribe command.")
+            // Translators: A sentence of the confirmation before Unsubscribe: the feed stays, with its settings and its downloads. The first %@ is the downloads, such as "its 2 downloaded episodes"; the second is the name of the Resubscribe command.
+            ? String(localized: "The feed stays in your library with its settings and \(downloadsPhrase(downloadCount, noun)), and \(resubscribe) checks it again.")
+            // Translators: A sentence of the confirmation before Unsubscribe: the feed stays, with its settings. %@ is the name of the Resubscribe command.
+            : String(localized: "The feed stays in your library with its settings, and \(resubscribe) checks it again.")
         var sentences = [stops, stays]
         if keptCount > 0 {
-            sentences.append(String(localized: "It also deletes \(keptPhrase(count: keptCount, parts: keptParts)).",
-                                    comment: "The last sentence of the confirmation before Unsubscribe: what else it deletes. %@ is what the feed kept for removed downloads, such as \"the places and bookmarks kept for 3 removed downloads\"."))
+            // Translators: The last sentence of the confirmation before Unsubscribe: what else it deletes. %@ is what the feed kept for removed downloads, such as "the places and bookmarks kept for 3 removed downloads".
+            sentences.append(String(localized: "It also deletes \(keptPhrase(count: keptCount, parts: keptParts))."))
         }
         return SentenceWording.joined(sentences)
     }
@@ -845,31 +851,31 @@ extension FeedWording {
         if outcome.downloadCount > 0 {
             let phrase = downloadsPhrase(outcome.downloadCount, noun)
             downloads = outcome.downloadCount == 1
-                ? String(localized: "; \(phrase) stays",
-                         comment: "A clause that ends the announcement of Unsubscribe: the one download the feed kept stays. %@ is the download, such as \"its downloaded episode\". Starts with a semicolon.")
-                : String(localized: "; \(phrase) stay",
-                         comment: "A clause that ends the announcement of Unsubscribe: the feed's downloads stay. %@ is the downloads, such as \"its 5 downloaded episodes\". Starts with a semicolon.")
+                // Translators: A clause that ends the announcement of Unsubscribe: the one download the feed kept stays. %@ is the download, such as "its downloaded episode". Starts with a semicolon.
+                ? String(localized: "; \(phrase) stays")
+                // Translators: A clause that ends the announcement of Unsubscribe: the feed's downloads stay. %@ is the downloads, such as "its 5 downloaded episodes". Starts with a semicolon.
+                : String(localized: "; \(phrase) stay")
         }
         let stopped = noun.choose(
-            episode: String(localized: "Unsubscribed from \(title): TextMouth no longer checks it for new episodes\(downloads).",
-                            comment: "What VoiceOver says once Unsubscribe is done, for a feed of episodes. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty."),
-            article: String(localized: "Unsubscribed from \(title): TextMouth no longer checks it for new articles\(downloads).",
-                            comment: "What VoiceOver says once Unsubscribe is done, for a feed of articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty."),
-            item: String(localized: "Unsubscribed from \(title): TextMouth no longer checks it for new items\(downloads).",
-                         comment: "What VoiceOver says once Unsubscribe is done, for a feed of episodes and articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty."))
+            // Translators: What VoiceOver says once Unsubscribe is done, for a feed of episodes. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.
+            episode: String(localized: "Unsubscribed from \(title): TextMouth no longer checks it for new episodes\(downloads)."),
+            // Translators: What VoiceOver says once Unsubscribe is done, for a feed of articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.
+            article: String(localized: "Unsubscribed from \(title): TextMouth no longer checks it for new articles\(downloads)."),
+            // Translators: What VoiceOver says once Unsubscribe is done, for a feed of episodes and articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.
+            item: String(localized: "Unsubscribed from \(title): TextMouth no longer checks it for new items\(downloads)."))
         guard outcome.deletedKeptCount > 0 else { return stopped }
         let count = outcome.deletedKeptCount
         let list = CountWording.list(keptParts.nouns(several: count > 1))
         let deleted: String
         if keptParts.nouns(several: false).isEmpty {
-            deleted = String(localized: "What was kept for \(count) removed downloads was deleted.",
-                             comment: "The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads whose packages held none of the named parts was deleted. %lld is how many removed downloads.")
+            // Translators: The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads whose packages held none of the named parts was deleted. %lld is how many removed downloads.
+            deleted = String(localized: "What was kept for \(count) removed downloads was deleted.")
         } else if keptPhraseTakesPluralVerb(count: count, parts: keptParts) {
-            deleted = String(localized: "The \(list) kept for \(count) removed downloads were deleted.",
-                             comment: "The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads was deleted. %@ is a list of what was kept, such as \"places and bookmarks\"; %lld is how many removed downloads. The verb is plural.")
+            // Translators: The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads was deleted. %@ is a list of what was kept, such as "places and bookmarks"; %lld is how many removed downloads. The verb is plural.
+            deleted = String(localized: "The \(list) kept for \(count) removed downloads were deleted.")
         } else {
-            deleted = String(localized: "The \(list) kept for \(count) removed downloads was deleted.",
-                             comment: "The last sentence of the announcement of Unsubscribe: what the feed kept for one removed download was deleted. %@ is one part that was kept, such as \"transcript\"; %lld is how many removed downloads. The verb is singular.")
+            // Translators: The last sentence of the announcement of Unsubscribe: what the feed kept for one removed download was deleted. %@ is one part that was kept, such as "transcript"; %lld is how many removed downloads. The verb is singular.
+            deleted = String(localized: "The \(list) kept for \(count) removed downloads was deleted.")
         }
         return SentenceWording.joined([stopped, deleted])
     }
@@ -882,14 +888,20 @@ extension FeedWording {
     static func downloadsPhrase(_ count: Int, _ noun: ItemNoun) -> String {
         if count == 1 {
             return noun.choose(
-                episode: String(localized: "its downloaded episode", comment: "The one downloaded episode of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."),
-                article: String(localized: "its downloaded article", comment: "The one downloaded article of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."),
-                item: String(localized: "its downloaded item", comment: "The one downloaded item, an episode or an article, of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case."))
+                // Translators: The one downloaded episode of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.
+                episode: String(localized: "its downloaded episode"),
+                // Translators: The one downloaded article of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.
+                article: String(localized: "its downloaded article"),
+                // Translators: The one downloaded item, an episode or an article, of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.
+                item: String(localized: "its downloaded item"))
         }
         return noun.choose(
-            episode: String(localized: "its \(count) downloaded episodes", comment: "A feed's downloaded episodes, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case."),
-            article: String(localized: "its \(count) downloaded articles", comment: "A feed's downloaded articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case."),
-            item: String(localized: "its \(count) downloaded items", comment: "A feed's downloaded items, episodes and articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case."))
+            // Translators: A feed's downloaded episodes, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.
+            episode: String(localized: "its \(count) downloaded episodes"),
+            // Translators: A feed's downloaded articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.
+            article: String(localized: "its \(count) downloaded articles"),
+            // Translators: A feed's downloaded items, episodes and articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.
+            item: String(localized: "its \(count) downloaded items"))
     }
 
     /// What a feed kept for `count` downloads removed earlier, naming only
@@ -901,12 +913,12 @@ extension FeedWording {
     static func keptPhrase(count: Int, parts: KeptParts) -> String {
         let nouns = parts.nouns(several: count > 1)
         guard !nouns.isEmpty else {
-            return String(localized: "what was kept for \(count) removed downloads",
-                          comment: "What a feed kept for downloads the listener removed, when their packages held none of the parts named, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many removed downloads. Lower case.")
+            // Translators: What a feed kept for downloads the listener removed, when their packages held none of the parts named, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many removed downloads. Lower case.
+            return String(localized: "what was kept for \(count) removed downloads")
         }
         let list = CountWording.list(nouns)
-        return String(localized: "the \(list) kept for \(count) removed downloads",
-                      comment: "What a feed kept for downloads the listener removed, inside a sentence about what Unsubscribe or Delete Feed does. %@ is a list of what was kept, such as \"places and bookmarks\"; %lld is how many removed downloads. Lower case.")
+        // Translators: What a feed kept for downloads the listener removed, inside a sentence about what Unsubscribe or Delete Feed does. %@ is a list of what was kept, such as "places and bookmarks"; %lld is how many removed downloads. Lower case.
+        return String(localized: "the \(list) kept for \(count) removed downloads")
     }
 
     /// Whether `keptPhrase(count:parts:)`, as a sentence's subject, takes a
@@ -923,25 +935,25 @@ extension FeedWording {
     /// Delete Feed…'s title, in a feed's menu, among its VoiceOver actions,
     /// and in Feed Info: it asks first.
     static var deleteFeedTitle: String {
-        String(localized: "Delete Feed…",
-               comment: "Title of the command that deletes a feed with its downloads, after a confirmation, in a feed's menu, among its VoiceOver actions, and in Feed Info. The ellipsis says a question follows. Title case.")
+        // Translators: Title of the command that deletes a feed with its downloads, after a confirmation, in a feed's menu, among its VoiceOver actions, and in Feed Info. The ellipsis says a question follows. Title case.
+        String(localized: "Delete Feed…")
     }
     /// The Delete Feed confirmation's button.
     static var deleteFeedButton: String {
-        String(localized: "Delete Feed",
-               comment: "Title of the button that confirms deleting a feed. Title case.")
+        // Translators: Title of the button that confirms deleting a feed. Title case.
+        String(localized: "Delete Feed")
     }
     /// Delete Feed…'s spoken hint in Feed Info.
     static var deleteFeedHint: String {
-        String(localized: "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed",
-               comment: "VoiceOver hint of the Delete Feed button in Feed Info.")
+        // Translators: VoiceOver hint of the Delete Feed button in Feed Info.
+        String(localized: "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed")
     }
 
     /// The title of the confirmation before Delete Feed: "Delete the feed
     /// “Finish It!”?"
     static func deleteFeedQuestion(title: String) -> String {
-        String(localized: "Delete the feed “\(title)”?",
-               comment: "Title of the confirmation before Delete Feed. %@ is the feed's title.")
+        // Translators: Title of the confirmation before Delete Feed. %@ is the feed's title.
+        String(localized: "Delete the feed “\(title)”?")
     }
 
     /// The Delete Feed confirmation's message (FR14), saying what goes, as
@@ -966,12 +978,12 @@ extension FeedWording {
         mode: RemovalMode
     ) -> String {
         var sentences = [noun.choose(
-            episode: String(localized: "The feed leaves your library, with its list of episodes and its settings.",
-                            comment: "The first sentence of the confirmation before Delete Feed, for a feed of episodes."),
-            article: String(localized: "The feed leaves your library, with its list of articles and its settings.",
-                            comment: "The first sentence of the confirmation before Delete Feed, for a feed of articles."),
-            item: String(localized: "The feed leaves your library, with its list of items and its settings.",
-                         comment: "The first sentence of the confirmation before Delete Feed, for a feed of episodes and articles."))]
+            // Translators: The first sentence of the confirmation before Delete Feed, for a feed of episodes.
+            episode: String(localized: "The feed leaves your library, with its list of episodes and its settings."),
+            // Translators: The first sentence of the confirmation before Delete Feed, for a feed of articles.
+            article: String(localized: "The feed leaves your library, with its list of articles and its settings."),
+            // Translators: The first sentence of the confirmation before Delete Feed, for a feed of episodes and articles.
+            item: String(localized: "The feed leaves your library, with its list of items and its settings."))]
         var deleted: [String] = []
         if downloads > 0 {
             deleted.append(downloadsPhrase(downloads, noun))
@@ -986,18 +998,18 @@ extension FeedWording {
             sentences.append(deletesSentence(CountWording.list(deleted), several: several, mode: mode))
         }
         if let folderPath, !folderPath.isEmpty {
-            sentences.append(String(localized: "Its folder “\(folderPath)” goes too when nothing else is in it.",
-                                    comment: "A sentence of the confirmation before Delete Feed: the feed's library folder is deleted too when it holds nothing else. %@ is the folder's path."))
+            // Translators: A sentence of the confirmation before Delete Feed: the feed's library folder is deleted too when it holds nothing else. %@ is the folder's path.
+            sentences.append(String(localized: "Its folder “\(folderPath)” goes too when nothing else is in it."))
         }
         if downloads > 0 {
             let moveName = title(of: .moveToLibrary, isArticle: false)
             sentences.append(noun.choose(
-                episode: String(localized: "To keep an episode, choose \(moveName) on its row first.",
-                                comment: "The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command."),
-                article: String(localized: "To keep an article, choose \(moveName) on its row first.",
-                                comment: "The last sentence of the confirmation before Delete Feed, for a feed of articles. %@ is the name of the Move to Library command."),
-                item: String(localized: "To keep an item, choose \(moveName) on its row first.",
-                             comment: "The last sentence of the confirmation before Delete Feed, for a feed of episodes and articles. %@ is the name of the Move to Library command.")))
+                // Translators: The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command.
+                episode: String(localized: "To keep an episode, choose \(moveName) on its row first."),
+                // Translators: The last sentence of the confirmation before Delete Feed, for a feed of articles. %@ is the name of the Move to Library command.
+                article: String(localized: "To keep an article, choose \(moveName) on its row first."),
+                // Translators: The last sentence of the confirmation before Delete Feed, for a feed of episodes and articles. %@ is the name of the Move to Library command.
+                item: String(localized: "To keep an item, choose \(moveName) on its row first.")))
         }
         return SentenceWording.joined(sentences)
     }
@@ -1008,23 +1020,23 @@ extension FeedWording {
     private static func deletesSentence(_ list: String, several: Bool, mode: RemovalMode) -> String {
         switch (mode, several) {
         case (.keepFiles, true):
-            return String(localized: "It deletes \(list): they stay in the TextMouth library folder.",
-                          comment: "A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, several things, which stay in the library folder. %@ is a list of what is deleted.")
+            // Translators: A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, several things, which stay in the library folder. %@ is a list of what is deleted.
+            return String(localized: "It deletes \(list): they stay in the TextMouth library folder.")
         case (.keepFiles, false):
-            return String(localized: "It deletes \(list): it stays in the TextMouth library folder.",
-                          comment: "A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, one thing, which stays in the library folder. %@ is what is deleted.")
+            // Translators: A sentence of the confirmation before Delete Feed, when the setting keeps files: what the feed deletes, one thing, which stays in the library folder. %@ is what is deleted.
+            return String(localized: "It deletes \(list): it stays in the TextMouth library folder.")
         case (.moveToTrash, true):
-            return String(localized: "It deletes \(list): they go to the Trash, where you can recover them until the Trash is emptied.",
-                          comment: "A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, several things. %@ is a list of what is deleted.")
+            // Translators: A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, several things. %@ is a list of what is deleted.
+            return String(localized: "It deletes \(list): they go to the Trash, where you can recover them until the Trash is emptied.")
         case (.moveToTrash, false):
-            return String(localized: "It deletes \(list): it goes to the Trash, where you can recover it until the Trash is emptied.",
-                          comment: "A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, one thing. %@ is what is deleted.")
+            // Translators: A sentence of the confirmation before Delete Feed, when files go to the Trash: what the feed deletes, one thing. %@ is what is deleted.
+            return String(localized: "It deletes \(list): it goes to the Trash, where you can recover it until the Trash is emptied.")
         case (.deletePermanently, true):
-            return String(localized: "It deletes \(list): they are deleted permanently and cannot be recovered.",
-                          comment: "A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, several things. %@ is a list of what is deleted.")
+            // Translators: A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, several things. %@ is a list of what is deleted.
+            return String(localized: "It deletes \(list): they are deleted permanently and cannot be recovered.")
         case (.deletePermanently, false):
-            return String(localized: "It deletes \(list): it is deleted permanently and cannot be recovered.",
-                          comment: "A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, one thing. %@ is what is deleted.")
+            // Translators: A sentence of the confirmation before Delete Feed, when files are deleted permanently: what the feed deletes, one thing. %@ is what is deleted.
+            return String(localized: "It deletes \(list): it is deleted permanently and cannot be recovered.")
         }
     }
 
@@ -1037,27 +1049,27 @@ extension FeedWording {
     /// episodes, and the places and bookmarks kept for 3 removed downloads.
     /// Its folder “Podcasts/Finish It!” is gone too."
     static func deletedFeed(_ outcome: FeedDeleteOutcome, noun: ItemNoun, keptParts: KeptParts) -> String {
-        var deleted = [String(localized: "the feed “\(outcome.title)”",
-                              comment: "The feed itself, first in the list of what Delete Feed deleted, inside the announcement \"Deleted the feed “Finish It!”, its 5 downloaded episodes, and ...\". %@ is the feed's title. Lower case.")]
+        // Translators: The feed itself, first in the list of what Delete Feed deleted, inside the announcement "Deleted the feed “Finish It!”, its 5 downloaded episodes, and ...". %@ is the feed's title. Lower case.
+        var deleted = [String(localized: "the feed “\(outcome.title)”")]
         if outcome.deletedDownloads > 0 {
             deleted.append(downloadsPhrase(outcome.deletedDownloads, noun))
         }
         if outcome.deletedKeptPlaces > 0 {
             deleted.append(keptPhrase(count: outcome.deletedKeptPlaces, parts: keptParts))
         }
-        let sentence = String(localized: "Deleted \(CountWording.list(deleted)).",
-                              comment: "What VoiceOver says once Delete Feed deleted a feed. %@ is a list of what went: the feed, its downloads, and what it kept for removed downloads.")
+        // Translators: What VoiceOver says once Delete Feed deleted a feed. %@ is a list of what went: the feed, its downloads, and what it kept for removed downloads.
+        let sentence = String(localized: "Deleted \(CountWording.list(deleted)).")
         let folder: String
         switch outcome.folder {
         case .deleted(let path):
-            folder = String(localized: "Its folder “\(path)” is gone too.",
-                            comment: "A sentence of the announcement after Delete Feed: the feed's library folder was deleted too. %@ is the folder's path.")
+            // Translators: A sentence of the announcement after Delete Feed: the feed's library folder was deleted too. %@ is the folder's path.
+            folder = String(localized: "Its folder “\(path)” is gone too.")
         case .stays(let path):
-            folder = String(localized: "Its folder “\(path)” stays, as something else is in it.",
-                            comment: "A sentence of the announcement after Delete Feed: the feed's library folder stays because it holds other things. %@ is the folder's path.")
+            // Translators: A sentence of the announcement after Delete Feed: the feed's library folder stays because it holds other things. %@ is the folder's path.
+            folder = String(localized: "Its folder “\(path)” stays, as something else is in it.")
         case .notDeleted(let path):
-            folder = String(localized: "Its folder “\(path)” is empty, but could not be deleted.",
-                            comment: "A sentence of the announcement after Delete Feed: the feed's library folder is empty but could not be deleted. %@ is the folder's path.")
+            // Translators: A sentence of the announcement after Delete Feed: the feed's library folder is empty but could not be deleted. %@ is the folder's path.
+            folder = String(localized: "Its folder “\(path)” is empty, but could not be deleted.")
         case .none:
             return sentence
         }
@@ -1073,18 +1085,18 @@ extension FeedWording {
     static func deleteFeedRefused(_ error: FeedDeleteError, title: String, mode: RemovalMode) -> String {
         switch error {
         case let .downloadInUse(download, use):
-            let again = String(localized: "choose \(deleteFeedTitle) again",
-                               comment: "The next step after a refusal to delete a feed whose download is in use: \"Close it, then choose Delete Feed… again.\" %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow \"then\".")
+            // Translators: The next step after a refusal to delete a feed whose download is in use: "Close it, then choose Delete Feed… again." %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow "then".
+            let again = String(localized: "choose \(deleteFeedTitle) again")
             return use.refusal(of: RemovalText.quoted(download), retry: again)
         case .indexNotWritten:
-            return String(localized: "TextMouth couldn't save the library before deleting the feed “\(title)”, so nothing was deleted.",
-                          comment: "Why Delete Feed did nothing: the library could not be saved first. %@ is the feed's title.")
+            // Translators: Why Delete Feed did nothing: the library could not be saved first. %@ is the feed's title.
+            return String(localized: "TextMouth couldn't save the library before deleting the feed “\(title)”, so nothing was deleted.")
         case .filesStayed(let stayed):
             let stays = stayed.count == 1
-                ? String(localized: "The feed “\(title)” stays with it.",
-                         comment: "The last line of the alert when Delete Feed could not delete one of the feed's items: the feed stays with it. %@ is the feed's title.")
-                : String(localized: "The feed “\(title)” stays with them.",
-                         comment: "The last line of the alert when Delete Feed could not delete several of the feed's items: the feed stays with them. %@ is the feed's title.")
+                // Translators: The last line of the alert when Delete Feed could not delete one of the feed's items: the feed stays with it. %@ is the feed's title.
+                ? String(localized: "The feed “\(title)” stays with it.")
+                // Translators: The last line of the alert when Delete Feed could not delete several of the feed's items: the feed stays with them. %@ is the feed's title.
+                : String(localized: "The feed “\(title)” stays with them.")
             return mode.failureMessage(stayed, noun: .item) + "\n" + stays
         }
     }

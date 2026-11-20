@@ -746,8 +746,8 @@ final class TextRereads {
             finishing: {
                 // One whole phrase for each count, as a plural string.
                 let count = self.bookIDs.count
-                return String(localized: "reading the text of \(count) books again in another encoding",
-                              comment: "What the Mac is still doing when the user quits, said after \"Quit is waiting for\" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.")
+                // Translators: What the Mac is still doing when the user quits, said after "Quit is waiting for" or the like: books whose text is being read again in another character encoding. %lld is the number of books. Begins in lower case.
+                return String(localized: "reading the text of \(count) books again in another encoding")
             }
         )
     }

@@ -7,112 +7,127 @@ import SwiftUI
 enum AudioFilterPresetsWording {
     /// The sheet's title.
     static var title: String {
-        String(localized: "Filter Presets", comment: "Title of the sheet, opened from Storage settings, that lists the audio editor's filter presets.")
+        // Translators: Title of the sheet, opened from Storage settings, that lists the audio editor's filter presets.
+        String(localized: "Filter Presets")
     }
 
     /// What the presets are.
     static var explanation: String {
-        String(localized: "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
-               comment: "Explains the filter presets sheet. Apply Filter is the audio editor's command. \"highpass=f=80,volume=3dB\" is filter syntax and stays as it is. ffmpeg is the name of a program. \"turned on above\" refers to the Use ffmpeg for filters switch in Storage settings.")
+        // Translators: Explains the filter presets sheet. Apply Filter is the audio editor's command. "highpass=f=80,volume=3dB" is filter syntax and stays as it is. ffmpeg is the name of a program. "turned on above" refers to the Use ffmpeg for filters switch in Storage settings.
+        String(localized: "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.")
     }
 
     /// The button that adds a preset.
     static var addButton: String {
-        String(localized: "Add Preset", comment: "Button in the filter presets sheet that adds a new filter preset.")
+        // Translators: Button in the filter presets sheet that adds a new filter preset.
+        String(localized: "Add Preset")
     }
 
     /// The button that puts the premade presets back.
     static var resetAllButton: String {
-        String(localized: "Reset All to Defaults", comment: "Button in the filter presets sheet that puts back TextMouth's premade presets.")
+        // Translators: Button in the filter presets sheet that puts back TextMouth's premade presets.
+        String(localized: "Reset All to Defaults")
     }
 
     /// What Reset All does.
     static var resetAllHint: String {
-        String(localized: "Puts back TextMouth's premade presets, removing the ones you added.",
-               comment: "Hint of the Reset All to Defaults button in the filter presets sheet.")
+        // Translators: Hint of the Reset All to Defaults button in the filter presets sheet.
+        String(localized: "Puts back TextMouth's premade presets, removing the ones you added.")
     }
 
     /// The button that closes the sheet.
     static var doneButton: String {
-        String(localized: "Done", comment: "Button that closes a sheet, such as the filter presets sheet.")
+        // Translators: Button that closes a sheet, such as the filter presets sheet.
+        String(localized: "Done")
     }
 
     /// Shown when there are no presets.
     static var noPresets: String {
-        String(localized: "No filter presets. Add one, or reset to the defaults.",
-               comment: "Shown in the filter presets sheet when the list is empty.")
+        // Translators: Shown in the filter presets sheet when the list is empty.
+        String(localized: "No filter presets. Add one, or reset to the defaults.")
     }
 
     /// The editor's titles.
     static var newTitle: String {
-        String(localized: "New Filter Preset", comment: "Title of the editor opened by Add Preset in the filter presets sheet.")
+        // Translators: Title of the editor opened by Add Preset in the filter presets sheet.
+        String(localized: "New Filter Preset")
     }
 
     static var editTitle: String {
-        String(localized: "Edit Filter Preset", comment: "Title of the editor opened by a filter preset's Edit button.")
+        // Translators: Title of the editor opened by a filter preset's Edit button.
+        String(localized: "Edit Filter Preset")
     }
 
     /// The editor's fields.
     static var nameLabel: String {
-        String(localized: "Name", comment: "Label of the name field of a filter preset or an audio marker.")
+        // Translators: Label of the name field of a filter preset or an audio marker.
+        String(localized: "Name")
     }
 
     static var chainLabel: String {
-        String(localized: "Chain", comment: "Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter.")
+        // Translators: Label of the field that holds a filter preset's chain of filters, and of the line that shows it in the audio editor's Apply Filter.
+        String(localized: "Chain")
     }
 
     /// The chain field's hint.
     static var chainHint: String {
-        String(localized: "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.",
-               comment: "Hint of the chain field of a filter preset. ffmpeg is the name of a program.")
+        // Translators: Hint of the chain field of a filter preset. ffmpeg is the name of a program.
+        String(localized: "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.")
     }
 
     /// The editor's buttons.
     static var saveButton: String {
-        String(localized: "Save", comment: "Button that saves what a sheet or window edited, such as a filter preset or the audio editor's edits.")
+        // Translators: Button that saves what a sheet or window edited, such as a filter preset or the audio editor's edits.
+        String(localized: "Save")
     }
 
     static var cancelButton: String {
-        String(localized: "Cancel", comment: "Button that closes a sheet or dialog without making its change.")
+        // Translators: Button that closes a sheet or dialog without making its change.
+        String(localized: "Cancel")
     }
 
     /// A preset's row, as VoiceOver reads it: its name, its chain, and
     /// whether it is a premade one changed.
     static func row(_ preset: AudioFilterPreset, isChangedPremade: Bool) -> String {
         guard isChangedPremade else { return AudioEditorWording.labeled(preset.title, preset.chain) }
-        return String(localized: "\(preset.title): \(preset.chain), changed from its default",
-                      comment: "A filter preset's row as VoiceOver reads it, for a premade preset the user changed. %1$@ is the preset's name and %2$@ its chain of filters, in filter syntax.")
+        // Translators: A filter preset's row as VoiceOver reads it, for a premade preset the user changed. %1$@ is the preset's name and %2$@ its chain of filters, in filter syntax.
+        return String(localized: "\(preset.title): \(preset.chain), changed from its default")
     }
 
     /// Said as a preset moves.
     static func moved(_ name: String, to index: Int, of count: Int) -> String {
-        String(localized: "\(name) moved to position \(index + 1) of \(count)",
-               comment: "Said as a filter preset moves in the list. %1$@ is the preset's name, %2$lld its new place and %3$lld how many presets the list holds.")
+        // Translators: Said as a filter preset moves in the list. %1$@ is the preset's name, %2$lld its new place and %3$lld how many presets the list holds.
+        String(localized: "\(name) moved to position \(index + 1) of \(count)")
     }
 
     /// Said as a preset is deleted.
     static func deleted(_ name: String) -> String {
-        String(localized: "\(name) deleted", comment: "Said as a filter preset is deleted. %@ is the preset's name.")
+        // Translators: Said as a filter preset is deleted. %@ is the preset's name.
+        String(localized: "\(name) deleted")
     }
 
     /// Said as a premade preset is put back as it came.
     static func reset(_ name: String) -> String {
-        String(localized: "\(name) reset to its default", comment: "Said as a premade filter preset is put back as it came. %@ is the preset's name.")
+        // Translators: Said as a premade filter preset is put back as it came. %@ is the preset's name.
+        String(localized: "\(name) reset to its default")
     }
 
     /// Said as every preset is put back.
     static var resetAll: String {
-        String(localized: "The filter presets are reset to the defaults.", comment: "Said as every filter preset is put back to TextMouth's premade ones.")
+        // Translators: Said as every filter preset is put back to TextMouth's premade ones.
+        String(localized: "The filter presets are reset to the defaults.")
     }
 
     /// Said as a preset is added.
     static func added(_ name: String) -> String {
-        String(localized: "Added \(name)", comment: "Said as a filter preset is added. %@ is the preset's name.")
+        // Translators: Said as a filter preset is added. %@ is the preset's name.
+        String(localized: "Added \(name)")
     }
 
     /// Said as a preset is saved.
     static func saved(_ name: String) -> String {
-        String(localized: "Saved \(name)", comment: "Said as an edited filter preset is saved. %@ is the preset's name.")
+        // Translators: Said as an edited filter preset is saved. %@ is the preset's name.
+        String(localized: "Saved \(name)")
     }
 
     /// What the editor says of a chain: that TextMouth's own filters run
@@ -120,17 +135,20 @@ enum AudioFilterPresetsWording {
     static func chainCheck(_ chain: String) -> String {
         let trimmed = chain.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return String(localized: "Type a chain of filters.", comment: "Shown under a filter preset's chain field while it is empty.")
+            // Translators: Shown under a filter preset's chain field while it is empty.
+            return String(localized: "Type a chain of filters.")
         }
         do {
             let parsed = try AudioFilterChain.parse(trimmed)
             do {
                 _ = try parsed.builtInFilters()
-                return String(localized: "TextMouth's own filters run this chain.", comment: "Shown under a filter preset's chain field: every filter in it is one TextMouth runs itself.")
+                // Translators: Shown under a filter preset's chain field: every filter in it is one TextMouth runs itself.
+                return String(localized: "TextMouth's own filters run this chain.")
             } catch {
                 return SentenceWording.joined([
                     error.localizedDescription,
-                    String(localized: "It runs only through ffmpeg.", comment: "Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name.")
+                    // Translators: Ends a line under a filter preset's chain field that says why TextMouth's own filters can't run it: only the ffmpeg program can. ffmpeg is the program's name.
+                    String(localized: "It runs only through ffmpeg.")
                 ])
             }
         } catch {
@@ -158,15 +176,20 @@ enum AudioFilterPresetCommand: CaseIterable {
     var title: String {
         switch self {
         case .edit:
-            return String(localized: "Edit", comment: "Name of a filter preset's Edit button, also its VoiceOver action and context menu item.")
+            // Translators: Name of a filter preset's Edit button, also its VoiceOver action and context menu item.
+            return String(localized: "Edit")
         case .reset:
-            return String(localized: "Reset", comment: "Name of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.")
+            // Translators: Name of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.
+            return String(localized: "Reset")
         case .moveUp:
-            return String(localized: "Move Up", comment: "Name of a filter preset's Move Up button, also its VoiceOver action and context menu item.")
+            // Translators: Name of a filter preset's Move Up button, also its VoiceOver action and context menu item.
+            return String(localized: "Move Up")
         case .moveDown:
-            return String(localized: "Move Down", comment: "Name of a filter preset's Move Down button, also its VoiceOver action and context menu item.")
+            // Translators: Name of a filter preset's Move Down button, also its VoiceOver action and context menu item.
+            return String(localized: "Move Down")
         case .delete:
-            return String(localized: "Delete", comment: "Name of a filter preset's Delete button, also its VoiceOver action and context menu item.")
+            // Translators: Name of a filter preset's Delete button, also its VoiceOver action and context menu item.
+            return String(localized: "Delete")
         }
     }
 

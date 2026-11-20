@@ -5,28 +5,28 @@ import SwiftUI
 enum LogsSettingsWording {
     /// The group's heading.
     static var title: String {
-        String(localized: "Logs",
-               comment: "Heading of the Logs group in the Storage settings, which holds the choice of where TextMouth writes its diagnostic logs.")
+        // Translators: Heading of the Logs group in the Storage settings, which holds the choice of where TextMouth writes its diagnostic logs.
+        String(localized: "Logs")
     }
 
     /// The picker's label, on screen and for VoiceOver alike.
     static var pickerLabel: String {
-        String(localized: "Log location",
-               comment: "Label of the pop-up in the Storage settings that chooses where TextMouth writes its diagnostic logs.")
+        // Translators: Label of the pop-up in the Storage settings that chooses where TextMouth writes its diagnostic logs.
+        String(localized: "Log location")
     }
 
     /// The first choice's name, without the folder: the logs go inside the
     /// data directory.
     private static var dataDirectoryChoice: String {
-        String(localized: "Inside the data directory",
-               comment: "A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library.")
+        // Translators: A choice of the Log location pop-up in the Storage settings: the diagnostic logs are written in the Logs folder of the data directory, the folder that holds the library.
+        String(localized: "Inside the data directory")
     }
 
     /// The second choice's name, without the folder: the logs go in this
     /// Mac's own Logs folder.
     private static var machineChoice: String {
-        String(localized: "In this Mac's Logs folder",
-               comment: "A choice of the Log location pop-up in the Storage settings, and its name inside the pop-up's hint: the diagnostic logs are written in a folder on this Mac that never syncs. The folder's path follows in parentheses where the choice is listed.")
+        // Translators: A choice of the Log location pop-up in the Storage settings, and its name inside the pop-up's hint: the diagnostic logs are written in a folder on this Mac that never syncs. The folder's path follows in parentheses where the choice is listed.
+        String(localized: "In this Mac's Logs folder")
     }
 
     /// What each choice is called in the picker; VoiceOver reads the one in
@@ -36,8 +36,8 @@ enum LogsSettingsWording {
         case .dataDirectory:
             return dataDirectoryChoice
         case .machine:
-            return String(localized: "\(machineChoice) (\(MachineLocalPaths.logsName))",
-                          comment: "The second choice of the Log location pop-up in the Storage settings. %1$@ is the choice's name, and %2$@ is the folder's name on this Mac, a path that stays as written, such as ~/Library/Logs/TextMouth.")
+            // Translators: The second choice of the Log location pop-up in the Storage settings. %1$@ is the choice's name, and %2$@ is the folder's name on this Mac, a path that stays as written, such as ~/Library/Logs/TextMouth.
+            return String(localized: "\(machineChoice) (\(MachineLocalPaths.logsName))")
         }
     }
 
@@ -45,8 +45,8 @@ enum LogsSettingsWording {
     /// pointer's help tag say it: both choices, and that a change applies to
     /// the next line and moves no file.
     static var pickerHint: String {
-        String(localized: "Where TextMouth writes its diagnostic logs. \(dataDirectoryChoice) keeps them with your books, so they move and sync with the library. \(machineChoice) keeps them in \(MachineLocalPaths.logsName), which never syncs. A change applies from the next line; existing logs stay.",
-               comment: "VoiceOver hint and tooltip of the Log location pop-up in the Storage settings. %1$@ and %2$@ are the names of its two choices, as the pop-up lists them, and %3$@ is the folder's path on this Mac, which stays as written.")
+        // Translators: VoiceOver hint and tooltip of the Log location pop-up in the Storage settings. %1$@ and %2$@ are the names of its two choices, as the pop-up lists them, and %3$@ is the folder's path on this Mac, which stays as written.
+        String(localized: "Where TextMouth writes its diagnostic logs. \(dataDirectoryChoice) keeps them with your books, so they move and sync with the library. \(machineChoice) keeps them in \(MachineLocalPaths.logsName), which never syncs. A change applies from the next line; existing logs stay.")
     }
 
     /// Where the logs are written now, as the line under the picker says it:
@@ -56,40 +56,40 @@ enum LogsSettingsWording {
         let folder = destination.folder.path
         switch destination.reason {
         case .dataDirectory, .thisMac:
-            return String(localized: "Logs are written to \(folder).",
-                          comment: "The line under the Log location pop-up in the Storage settings. %@ is the folder's full path, which stays as written.")
+            // Translators: The line under the Log location pop-up in the Storage settings. %@ is the folder's full path, which stays as written.
+            return String(localized: "Logs are written to \(folder).")
         case .fallback(.libraryUnavailable):
-            return String(localized: "The library isn't available, so logs go to \(folder) until it is.",
-                          comment: "The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written.")
+            // Translators: The line under the Log location pop-up in the Storage settings while the library cannot be reached. %@ is the folder's full path, which stays as written.
+            return String(localized: "The library isn't available, so logs go to \(folder) until it is.")
         case .fallback(.dataDirectoryMissing):
-            return String(localized: "The data directory is missing, so logs go to \(folder) until it is back.",
-                          comment: "The line under the Log location pop-up in the Storage settings while the data directory is missing. %@ is the folder's full path, which stays as written.")
+            // Translators: The line under the Log location pop-up in the Storage settings while the data directory is missing. %@ is the folder's full path, which stays as written.
+            return String(localized: "The data directory is missing, so logs go to \(folder) until it is back.")
         case .fallback(.logsFolderMissing):
-            return String(localized: "The data directory has no Logs folder, so logs go to \(folder) until it has one.",
-                          comment: "The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written.")
+            // Translators: The line under the Log location pop-up in the Storage settings while the data directory has no Logs folder. %@ is the folder's full path, which stays as written.
+            return String(localized: "The data directory has no Logs folder, so logs go to \(folder) until it has one.")
         case .fallback(.logsFolderUnusable(let reason)):
-            return String(localized: "The data directory's Logs folder can't be written (\(reason)), so logs go to \(folder) until it can.",
-                          comment: "The line under the Log location pop-up in the Storage settings while the data directory's Logs folder cannot be written. %1$@ is the reason the system gives, which may be in English, and %2$@ is the folder's full path, which stays as written.")
+            // Translators: The line under the Log location pop-up in the Storage settings while the data directory's Logs folder cannot be written. %1$@ is the reason the system gives, which may be in English, and %2$@ is the folder's full path, which stays as written.
+            return String(localized: "The data directory's Logs folder can't be written (\(reason)), so logs go to \(folder) until it can.")
         }
     }
 
     /// The button that opens the folder the logs are written to now.
     static var showTitle: String {
-        String(localized: "Show Logs in Finder",
-               comment: "Title of the button in the Storage settings that shows the folder the diagnostic logs are written to, in Finder.")
+        // Translators: Title of the button in the Storage settings that shows the folder the diagnostic logs are written to, in Finder.
+        String(localized: "Show Logs in Finder")
     }
 
     /// What that button does, naming the folder it opens.
     static func showHint(folder: URL) -> String {
-        String(localized: "Opens \(folder.path), the folder the logs are written to now, in Finder.",
-               comment: "VoiceOver hint and tooltip of the Show Logs in Finder button. %@ is the folder's full path, which stays as written.")
+        // Translators: VoiceOver hint and tooltip of the Show Logs in Finder button. %@ is the folder's full path, which stays as written.
+        String(localized: "Opens \(folder.path), the folder the logs are written to now, in Finder.")
     }
 
     /// What the line under the button says, and VoiceOver hears, when
     /// Finder could not open the folder.
     static func showFailure(folder: URL) -> String {
-        String(localized: "TextMouth couldn't open \(folder.path) in Finder.",
-               comment: "Shown under the Show Logs in Finder button when Finder could not open the folder. %@ is the folder's full path, which stays as written.")
+        // Translators: Shown under the Show Logs in Finder button when Finder could not open the folder. %@ is the folder's full path, which stays as written.
+        String(localized: "TextMouth couldn't open \(folder.path) in Finder.")
     }
 }
 

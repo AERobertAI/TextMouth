@@ -14,8 +14,10 @@ enum AudioEditWording {
         // overflow the whole numbers below.
         guard seconds.isFinite, seconds >= 0, seconds < 3.6e9 else {
             return titleCase
-                ? String(localized: "Unknown Length", comment: "A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's \"Cut Unknown Length\".")
-                : String(localized: "unknown length", comment: "A length of audio that is no length (not a finite number of seconds), said in a sentence, such as \"Cut unknown length.\"")
+                // Translators: A length of audio that is no length (not a finite number of seconds), as a menu item's title-cased words, such as the Undo item's "Cut Unknown Length".
+                ? String(localized: "Unknown Length")
+                // Translators: A length of audio that is no length (not a finite number of seconds), said in a sentence, such as "Cut unknown length."
+                : String(localized: "unknown length")
         }
         let tenths = (seconds * 10).rounded() / 10
         let shown = tenths == 0 && seconds > 0 ? (seconds * 100).rounded() / 100 : tenths
@@ -52,8 +54,8 @@ enum AudioEditWording {
         }
         // A decimal has no plural form of its own, so it is one string
         // around the formatted number.
-        return String(localized: "\(number(rest)) seconds",
-                      comment: "A number of seconds with decimals inside a spoken duration, such as \"4.2 seconds\" in \"12 minutes, 4.2 seconds\". %@ is the already formatted number.")
+        // Translators: A number of seconds with decimals inside a spoken duration, such as "4.2 seconds" in "12 minutes, 4.2 seconds". %@ is the already formatted number.
+        return String(localized: "\(number(rest)) seconds")
     }
 
     /// `value` with at most two decimal places and no trailing zeros, in the
@@ -67,33 +69,38 @@ enum AudioEditWording {
     static func actionName(_ edit: AudioEdit) -> String {
         switch edit {
         case .trimStart:
-            return String(localized: "Trim Start", comment: "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": trimming the start of the audio.")
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": trimming the start of the audio.
+            return String(localized: "Trim Start")
         case .trimEnd:
-            return String(localized: "Trim End", comment: "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": trimming the end of the audio.")
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": trimming the end of the audio.
+            return String(localized: "Trim End")
         case .cut(let range):
-            return String(localized: "Cut \(duration(range.duration, titleCase: true))",
-                          comment: "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": cutting a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\".")
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": cutting a stretch of audio. %@ is its length in title-cased words, such as "2.5 Seconds".
+            return String(localized: "Cut \(duration(range.duration, titleCase: true))")
         case .move(let range, _):
-            return String(localized: "Move \(duration(range.duration, titleCase: true))",
-                          comment: "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": moving a stretch of audio. %@ is its length in title-cased words, such as \"2.5 Seconds\".")
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": moving a stretch of audio. %@ is its length in title-cased words, such as "2.5 Seconds".
+            return String(localized: "Move \(duration(range.duration, titleCase: true))")
         case .insertSilence(_, let length):
-            return String(localized: "Insert \(duration(length, titleCase: true)) of Silence",
-                          comment: "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting silence. %@ is its length in title-cased words, such as \"1 Second\".")
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": inserting silence. %@ is its length in title-cased words, such as "1 Second".
+            return String(localized: "Insert \(duration(length, titleCase: true)) of Silence")
         case .replace(let range, _):
-            return String(localized: "Replace \(duration(range.duration, titleCase: true))",
-                          comment: "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as \"2.5 Seconds\".")
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": replacing a stretch of audio with a new recording. %@ is the replaced length in title-cased words, such as "2.5 Seconds".
+            return String(localized: "Replace \(duration(range.duration, titleCase: true))")
         case .insert(_, let take):
-            return String(localized: "Insert \(duration(take.range.duration, titleCase: true)) of Audio",
-                          comment: "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": inserting a new recording. %@ is its length in title-cased words, such as \"2.5 Seconds\".")
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": inserting a new recording. %@ is its length in title-cased words, such as "2.5 Seconds".
+            return String(localized: "Insert \(duration(take.range.duration, titleCase: true)) of Audio")
         case .setChapter:
-            return String(localized: "Set Chapter Marker", comment: "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": setting a chapter marker.")
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": setting a chapter marker.
+            return String(localized: "Set Chapter Marker")
         case .removeChapter:
-            return String(localized: "Remove Chapter Marker", comment: "Name of an edit, as the Undo and Redo menu items and VoiceOver say it after \"Undo\" or \"Redo\": removing a chapter marker.")
+            // Translators: Name of an edit, as the Undo and Redo menu items and VoiceOver say it after "Undo" or "Redo": removing a chapter marker.
+            return String(localized: "Remove Chapter Marker")
         case .filter:
-            return String(localized: "Apply Filter", comment: "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\"; also the title of the audio editor's filter sheet.")
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo"; also the title of the audio editor's filter sheet.
+            return String(localized: "Apply Filter")
         case .gain(let decibels, _):
-            return String(localized: "Change Volume by \(signedDecibels(decibels))",
-                          comment: "Name of an edit, as the Undo and Redo menu items say it after \"Undo\" or \"Redo\": changing the volume. %@ is the change with its sign, such as \"+3 dB\".")
+            // Translators: Name of an edit, as the Undo and Redo menu items say it after "Undo" or "Redo": changing the volume. %@ is the change with its sign, such as "+3 dB".
+            return String(localized: "Change Volume by \(signedDecibels(decibels))")
         }
     }
 
@@ -101,8 +108,8 @@ enum AudioEditWording {
     /// "+1.5 dB".
     static func signedDecibels(_ decibels: Double) -> String {
         let sign = decibels > 0 ? "+" : (decibels < 0 ? "-" : "")
-        return String(localized: "\(sign)\(number(abs(decibels))) dB",
-                      comment: "A level change in decibels with its sign, such as \"+3 dB\" or \"-6 dB\". %1$@ is the sign, \"+\" or \"-\" or nothing, and %2$@ the number, already formatted.")
+        // Translators: A level change in decibels with its sign, such as "+3 dB" or "-6 dB". %1$@ is the sign, "+" or "-" or nothing, and %2$@ the number, already formatted.
+        return String(localized: "\(sign)\(number(abs(decibels))) dB")
     }
 
     /// Why undo can go no further, as a sentence, or nil when it can: what
@@ -113,13 +120,14 @@ enum AudioEditWording {
         case .canUndo:
             return nil
         case .nothingToUndo:
-            return String(localized: "There's nothing to undo.", comment: "Said when Undo is asked for and there is no edit to undo, and the hint of a dimmed Undo in the audio editor.")
+            // Translators: Said when Undo is asked for and there is no edit to undo, and the hint of a dimmed Undo in the audio editor.
+            return String(localized: "There's nothing to undo.")
         case .originalDeleted(let date):
-            return String(localized: "The original audio was deleted on \(date.formatted(date: .long, time: .omitted)), so edits saved before then can't be undone.",
-                          comment: "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form.")
+            // Translators: Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book's original audio was deleted. %@ is the date it was deleted, in long form.
+            return String(localized: "The original audio was deleted on \(date.formatted(date: .long, time: .omitted)), so edits saved before then can't be undone.")
         case .editedInPlace:
-            return String(localized: "No original audio is kept for this book, so saved edits can't be undone.",
-                          comment: "Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book keeps no original audio.")
+            // Translators: Said when Undo can't reach edits already saved, and the hint of a dimmed Undo in the audio editor: the book keeps no original audio.
+            return String(localized: "No original audio is kept for this book, so saved edits can't be undone.")
         }
     }
 }

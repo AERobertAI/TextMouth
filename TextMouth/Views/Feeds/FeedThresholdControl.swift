@@ -212,40 +212,40 @@ extension FeedThresholdWording {
     /// How often feeds refresh while TextMouth runs.
     static var refreshInterval: FeedThresholdWording {
         FeedThresholdWording(
-            label: String(localized: "Refresh feeds every",
-                          comment: "Label of the number field and stepper that say how many hours pass between refreshes of every feed."),
+            // Translators: Label of the number field and stepper that say how many hours pass between refreshes of every feed.
+            label: String(localized: "Refresh feeds every"),
             valuePhrase: { CountWording.hours($0) },
-            offPhrase: String(localized: "only at launch and when you ask",
-                              comment: "What the caption of the refresh interval says while the setting is off: \"Refresh feeds every: only at launch and when you ask\". Lower case."),
-            offTitle: String(localized: "Only at launch and when I ask",
-                             comment: "Title of the checkbox that turns the refresh interval off, so feeds refresh only at launch and on request."),
-            hint: String(localized: "Hours between refreshes while TextMouth runs, from 1 to 168",
-                         comment: "VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours."),
-            offHint: String(localized: "Feeds refresh only at launch, if that is on, and when you choose \(FeedWording.checkFeedTitle) or \(FeedWording.refreshAllCommand)",
-                            comment: "VoiceOver hint of the checkbox that turns the refresh interval off. The first %@ is the name of the Check Feed command; the second is the name of the Refresh All Feeds command.")
+            // Translators: What the caption of the refresh interval says while the setting is off: "Refresh feeds every: only at launch and when you ask". Lower case.
+            offPhrase: String(localized: "only at launch and when you ask"),
+            // Translators: Title of the checkbox that turns the refresh interval off, so feeds refresh only at launch and on request.
+            offTitle: String(localized: "Only at launch and when I ask"),
+            // Translators: VoiceOver hint of the refresh interval's number field and stepper. The range is the limits of the number, in hours.
+            hint: String(localized: "Hours between refreshes while TextMouth runs, from 1 to 168"),
+            // Translators: VoiceOver hint of the checkbox that turns the refresh interval off. The first %@ is the name of the Check Feed command; the second is the name of the Refresh All Feeds command.
+            offHint: String(localized: "Feeds refresh only at launch, if that is on, and when you choose \(FeedWording.checkFeedTitle) or \(FeedWording.refreshAllCommand)")
         )
     }
 
     /// How long after playing a download is deleted.
     static var deleteDownloadsAfterPlaying: FeedThresholdWording {
         FeedThresholdWording(
-            label: String(localized: "Delete downloads after playing",
-                          comment: "Label of the number field and stepper that say how many days after an episode plays its download is deleted."),
+            // Translators: Label of the number field and stepper that say how many days after an episode plays its download is deleted.
+            label: String(localized: "Delete downloads after playing"),
             valuePhrase: { days in
                 days == 0
-                    ? String(localized: "at once",
-                             comment: "The value of the days after playing that a download is deleted, when it is 0: the download is deleted as soon as it has played. Lower case.")
-                    : String(localized: "\(days) days",
-                             comment: "A number of days, as the setting that deletes downloads after playing says it. %lld is the number of days.")
+                    // Translators: The value of the days after playing that a download is deleted, when it is 0: the download is deleted as soon as it has played. Lower case.
+                    ? String(localized: "at once")
+                    // Translators: A number of days, as the setting that deletes downloads after playing says it. %lld is the number of days.
+                    : String(localized: "\(days) days")
             },
-            offPhrase: String(localized: "never",
-                              comment: "What the caption of the delete-after-playing setting says while the setting is off: \"Delete downloads after playing: never\". Lower case."),
-            offTitle: String(localized: "Never delete played downloads",
-                             comment: "Title of the checkbox that turns off deleting downloads after playing."),
-            hint: String(localized: "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
-                         comment: "VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days."),
-            offHint: String(localized: "Played downloads are kept until you delete them",
-                            comment: "VoiceOver hint of the checkbox that turns off deleting downloads after playing.")
+            // Translators: What the caption of the delete-after-playing setting says while the setting is off: "Delete downloads after playing: never". Lower case.
+            offPhrase: String(localized: "never"),
+            // Translators: Title of the checkbox that turns off deleting downloads after playing.
+            offTitle: String(localized: "Never delete played downloads"),
+            // Translators: VoiceOver hint of the delete-after-playing number field and stepper. The range is the limits of the number, in days.
+            hint: String(localized: "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes"),
+            // Translators: VoiceOver hint of the checkbox that turns off deleting downloads after playing.
+            offHint: String(localized: "Played downloads are kept until you delete them")
         )
     }
 }

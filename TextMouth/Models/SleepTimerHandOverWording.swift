@@ -15,8 +15,8 @@ enum SleepTimerHandOverWording {
     /// stops the timer without a word, as closing the window a timer belongs
     /// to does.
     static var noBook: String {
-        String(localized: "Sleep timer cancelled, because the next book could not be opened.",
-               comment: "VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped.")
+        // Translators: VoiceOver announcement, after the reason a book failed to open: the sleep timer that was to go on with that book has stopped.
+        String(localized: "Sleep timer cancelled, because the next book could not be opened.")
     }
 
     /// How long the sentence waits after a book fails to open, in seconds, so
@@ -29,7 +29,7 @@ enum SleepTimerHandOverWording {
     /// the timer fades out ended it, as a Pause during a fade does: the
     /// listener did not ask to cancel it.
     static var fadeEndedByTheMove: String {
-        String(localized: "Sleep timer cancelled, because you moved to another book while it faded out.",
-               comment: "VoiceOver announcement after \"Starting: <title>\": moving to another book while the sleep timer was fading the sound out ended the timer.")
+        // Translators: VoiceOver announcement after "Starting: <title>": moving to another book while the sleep timer was fading the sound out ended the timer.
+        String(localized: "Sleep timer cancelled, because you moved to another book while it faded out.")
     }
 }

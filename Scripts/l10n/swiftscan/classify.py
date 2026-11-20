@@ -132,7 +132,8 @@ KEY_CALLS: Dict[str, KeySpec] = {
 SWIFTUI_KEY_CALLS = frozenset(name for name, (labels, positional, _whole) in KEY_CALLS.items() if positional and not labels
                               and name in _SWIFTUI_TITLE_CALLS)
 # What `show` tells the converter about such a literal.
-NEEDS_COMMENT_HELP = "extracted without a comment: move into a wording static with `String(localized:comment:)`"
+NEEDS_COMMENT_HELP = ("extracted with no translator's note: write a `// Translators: ...` line directly above it, "
+                      "or move it into a wording static with `String(localized:)` and a note above")
 # How far past a literal `call_has_comment` reads for the call's closing parenthesis.
 _COMMENT_SCAN_LIMIT = 800
 
@@ -308,16 +309,62 @@ def call_has_comment(source: str, start: int) -> bool:
     return False
 
 
-def needs_comment(lit: Literal, source: str) -> bool:
+def needs_comment(lit: Literal, source: str, lines: Optional[List[str]] = None) -> bool:
     """Whether the literal is a SwiftUI key that the compiler extracts with no comment, which `l10n.py check` refuses
     once the file is synced: a first argument of `Text`, `Button`, `Label`, `Toggle`, `.accessibilityLabel`,
     `.accessibilityHint`, `.accessibilityValue`, `.help`, `.navigationTitle`, and the other calls of SWIFTUI_KEY_CALLS.
     Only `Text` can carry a comment (`Text("...", comment: "...")`, which is not listed); the others must move
-    into a wording static. A literal marked `// l10n: no` is not listed. It is not counted unlocalized: the lint and
+    into a wording static. A literal marked `// l10n: no` is not listed, and neither is one with a `// Translators:` line
+    above it (given the file's `lines`), which gives the catalog its comment. It is not counted unlocalized: the lint and
     the baseline do not see it."""
     if lit.rule != "localized-key" or lit.call not in SWIFTUI_KEY_CALLS or lit.label is not None or is_marked(lit):
         return False
+    if lines is not None and has_note(lines, lit.line):
+        return False
     return not (lit.call == "Text" and call_has_comment(source, lit.end))
+
+
+# The marker of a translator's note: a line comment on the line directly above the line of the key's literal (TL15).
+# `l10n.py sync` reads it into the catalog; a `comment:` argument would be compiled into the app.
+NOTE_MARKER = "// Translators:"
+# What `note_problem` says, and what each asks of the code.
+NOTE_PROBLEM_HELP = {
+    "comment-argument": "a `comment:` argument is compiled into the app: write the note as a `// Translators: ...` line directly "
+                        "above the line of the key's literal, and drop the argument",
+    "missing-note": "no `// Translators: ...` line directly above the key's literal: say where the text appears and what each "
+                    "placeholder holds, in one line",
+    "shared-line": "another key's literal is on this line, and a note belongs to one key: start each key on a line of its own",
+}
+
+
+def has_note(lines: List[str], line: int) -> bool:
+    """Whether the 1-based `line` has a translator's note directly above it: the line before it, less its indentation,
+    starts with NOTE_MARKER and holds a note after it."""
+    if not 2 <= line <= len(lines) + 1:
+        return False
+    above = lines[line - 2].strip()
+    return above.startswith(NOTE_MARKER) and bool(above[len(NOTE_MARKER):].strip())
+
+
+def note_problem(lit: Literal, lines: List[str]) -> str:
+    """What is wrong with a localized call's note, or "" when nothing is: "comment-argument" for the `comment:` argument of
+    a localized call (Foundation compiles it into the app); "missing-note" for a key with no `// Translators:` line
+    directly above its literal. ("shared-line" is found across literals, see `shared_lines`.)"""
+    if lit.label == "comment" and not lit.in_interp and lit.call in KEY_CALLS:
+        return "comment-argument"
+    if lit.rule == "localized-key" and not has_note(lines, lit.line):
+        return "missing-note"
+    return ""
+
+
+def shared_lines(literals: List[Literal]) -> List[Literal]:
+    """The localized keys whose line holds another key's literal (a different text): one note above the line cannot say
+    which of them it is for."""
+    by_line: Dict[Tuple[str, int], List[Literal]] = {}
+    for lit in literals:
+        if lit.rule == "localized-key":
+            by_line.setdefault((lit.file, lit.line), []).append(lit)
+    return [lit for group in by_line.values() if len({other.text for other in group}) > 1 for lit in group]
 
 
 def is_marked(lit: Literal) -> bool:

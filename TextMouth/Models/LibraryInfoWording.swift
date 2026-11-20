@@ -120,8 +120,8 @@ enum BrailleCodeWording {
     /// The label of Book Information's row that names a braille book's code,
     /// and of its pop-up, which reads the book again with another.
     static var bookInfoLabel: String {
-        String(localized: "Braille Code",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row that names a braille book's code, and of its pop-up, which reads the book again with another.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row that names a braille book's code, and of its pop-up, which reads the book again with another.
+        String(localized: "Braille Code")
     }
 
     // MARK: What Chose It (brfguess)
@@ -137,8 +137,8 @@ enum BrailleCodeWording {
     static func describe(_ name: String, origin: BrailleTableOrigin?) -> String {
         guard origin == .guessed else { return name }
         let note = guessedNote
-        return String(localized: "\(name), \(note)",
-                      comment: "Joins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.")
+        // Translators: Joins a name and a note about it with a comma, such as an encoding or braille code and "guessed". %1$@ is the name and %2$@ the note.
+        return String(localized: "\(name), \(note)")
     }
 
     /// What Book Information says under the pop-up of a book whose code the
@@ -146,34 +146,34 @@ enum BrailleCodeWording {
     /// to keep it. Plain and short, so VoiceOver and a braille display read
     /// it as it is.
     static var guessedRecovery: String {
-        String(localized: "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a book whose code the import guessed: where the code came from, how to correct it, and how to keep it. Plain and short, so VoiceOver and a braille display read it as it is.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a book whose code the import guessed: where the code came from, how to correct it, and how to keep it. Plain and short, so VoiceOver and a braille display read it as it is.
+        String(localized: "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.")
     }
     /// The label of the button under that note that keeps the guessed code
     /// (a pop-up cannot be asked for the choice already selected), and what
     /// it does.
     static var keepGuessLabel: String {
-        String(localized: "Keep This Code",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of the button under that note that keeps the guessed code (a pop-up cannot be asked for the choice already selected), and what it does.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of the button under that note that keeps the guessed code (a pop-up cannot be asked for the choice already selected), and what it does.
+        String(localized: "Keep This Code")
     }
     static var keepGuessHint: String {
-        String(localized: "Stops saying the code was guessed. The book is not read again.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts.
+        String(localized: "Stops saying the code was guessed. The book is not read again.")
     }
 
     /// What VoiceOver hears when the listener keeps a guessed code by
     /// choosing it again: the book and the code, now the listener's own.
     static func keptGuess(bookTitle: String, codeName: String) -> String {
-        String(localized: "“\(bookTitle)” keeps \(codeName).",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What VoiceOver hears when the listener keeps a guessed code by choosing it again: the book and the code, now the listener's own. Placeholders in order: bookTitle, codeName.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What VoiceOver hears when the listener keeps a guessed code by choosing it again: the book and the code, now the listener's own. Placeholders in order: bookTitle, codeName.
+        String(localized: "“\(bookTitle)” keeps \(codeName).")
     }
 
     // MARK: The Pop-up
 
     /// The pop-up's hint, which VoiceOver says after its label and value.
     static var popUpHint: String {
-        String(localized: "Choose another braille code to read the book's file again with it.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.
+        String(localized: "Choose another braille code to read the book's file again with it.")
     }
 
     /// Why what would rewrite the text of the braille book titled
@@ -182,8 +182,8 @@ enum BrailleCodeWording {
     /// (`TextEncodingWording.readingAgainRefusal(bookTitle:)`,
     /// `BrailleFileCodeWording.readingAgainRefusal(bookTitle:)`).
     static func readingAgainRefusal(bookTitle: String) -> String {
-        String(localized: "TextMouth is reading “\(bookTitle)” again with another braille code. Try again when that finishes.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with another braille code, as the other re-reads' sentences say it (TextEncodingWording.readingAgainRefusal(bookTitle:), BrailleFileCodeWording.readingAgainRefusal(bookTitle:)). Placeholders in order: bookTitle.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with another braille code, as the other re-reads' sentences say it (TextEncodingWording.readingAgainRefusal(bookTitle:), BrailleFileCodeWording.readingAgainRefusal(bookTitle:)). Placeholders in order: bookTitle.
+        String(localized: "TextMouth is reading “\(bookTitle)” again with another braille code. Try again when that finishes.")
     }
 
     // MARK: The Suggestion
@@ -194,8 +194,8 @@ enum BrailleCodeWording {
     /// where to choose it. Plain, so that VoiceOver and a braille display read
     /// it as it is.
     static var suggestsEnglishBrailleAmericanEdition: String {
-        String(localized: "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information says under the pop-up of a braille book that is read as UEB but whose braille shows English Braille, American Edition's signs (BrailleCodeDetector): which code it looks like and where to choose it. Plain, so that VoiceOver and a braille display read it as it is.
+        String(localized: "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.")
     }
 
     // MARK: The Confirmation
@@ -214,8 +214,8 @@ enum BrailleCodeWording {
     /// one, since every braille text translates in every table, so a wrong
     /// one reads with no error.
     static var translatedAgainNote: String {
-        String(localized: "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first: the braille is translated to print again with the code chosen, and nothing can tell whether it is the right one, since every braille text translates in every table, so a wrong one reads with no error.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first: the braille is translated to print again with the code chosen, and nothing can tell whether it is the right one, since every braille text translates in every table, so a wrong one reads with no error.
+        String(localized: "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.")
     }
 
     /// The alert's message before a braille book is read again with another
@@ -252,14 +252,14 @@ enum BrailleFileCodeWording {
     /// Export pop-ups say "Braille file characters", in their own sentence
     /// case.
     static var bookInfoLabel: String {
-        String(localized: "Braille File Characters",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's pop-up that names the braille file characters a BRF or BRL book's file is read with, in title case, as the sheet's \"Braille Code\" and \"Text Encoding\" are; the Settings and Export pop-ups say \"Braille file characters\", in their own sentence case.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's pop-up that names the braille file characters a BRF or BRL book's file is read with, in title case, as the sheet's "Braille Code" and "Text Encoding" are; the Settings and Export pop-ups say "Braille file characters", in their own sentence case.
+        String(localized: "Braille File Characters")
     }
 
     /// The pop-up's hint, which VoiceOver says after its label and value.
     static var popUpHint: String {
-        String(localized: "Choose other characters to read the book's file again with them.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.
+        String(localized: "Choose other characters to read the book's file again with them.")
     }
 
     /// The pop-up's value, and Speak Info's words, for a book whose stored
@@ -267,8 +267,8 @@ enum BrailleFileCodeWording {
     /// TextMouth's may be: "“ascii-braillo-no-047-01”, which this version of
     /// TextMouth can't read".
     static func unknownValue(_ id: String) -> String {
-        String(localized: "“\(id)”, which this version of TextMouth can't read",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value, and Speak Info's words, for a book whose stored code is id, which this TextMouth does not know, as a later TextMouth's may be: \"“ascii-braillo-no-047-01”, which this version of TextMouth can't read\". Placeholders in order: id.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value, and Speak Info's words, for a book whose stored code is id, which this TextMouth does not know, as a later TextMouth's may be: "“ascii-braillo-no-047-01”, which this version of TextMouth can't read". Placeholders in order: id.
+        String(localized: "“\(id)”, which this version of TextMouth can't read")
     }
 
     /// The braille file characters a book's stored code
@@ -288,8 +288,8 @@ enum BrailleFileCodeWording {
     /// the braille code's: "Braille characters: North American Braille
     /// ASCII".
     static func speakInfoPart(_ description: String) -> String {
-        String(localized: "Braille characters: \(description)",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for braille file characters described as description (Book.brailleFileCodeDescription), said right after the braille code's: \"Braille characters: North American Braille ASCII\". Placeholders in order: description.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for braille file characters described as description (Book.brailleFileCodeDescription), said right after the braille code's: "Braille characters: North American Braille ASCII". Placeholders in order: description.
+        String(localized: "Braille characters: \(description)")
     }
 
     // MARK: The Confirmation
@@ -307,8 +307,8 @@ enum BrailleFileCodeWording {
     /// byte is a cell in every seven-bit code, so a wrong one reads with no
     /// error (research of October 25, section 8.3).
     static var uncheckedNote: String {
-        String(localized: "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice between two seven-bit codes: nothing can tell whether it is right, since every printable ASCII byte is a cell in every seven-bit code, so a wrong one reads with no error (research of October 25, section 8.3).")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice between two seven-bit codes: nothing can tell whether it is right, since every printable ASCII byte is a cell in every seven-bit code, so a wrong one reads with no error (research of October 25, section 8.3).
+        String(localized: "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.")
     }
 
     /// What the alert says first of a choice to or from Unicode braille
@@ -319,8 +319,8 @@ enum BrailleFileCodeWording {
     /// refused, and nothing changes. "If the file is not written in Unicode
     /// braille patterns, TextMouth refuses it, and nothing changes."
     static func checkedNote(codeName: String) -> String {
-        String(localized: "If the file is not written in \(codeName), TextMouth refuses it, and nothing changes.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice to or from Unicode braille patterns, which the re-read checks byte by byte before it changes anything (BrailleBookReader.requireReadable(_:as:)), so a wrong one is refused at its first line (review of October 30, finding 5): a file not written in the code named codeName, the one chosen, is refused, and nothing changes. \"If the file is not written in Unicode braille patterns, TextMouth refuses it, and nothing changes.\". Placeholders in order: codeName.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What the alert says first of a choice to or from Unicode braille patterns, which the re-read checks byte by byte before it changes anything (BrailleBookReader.requireReadable(_:as:)), so a wrong one is refused at its first line (review of October 30, finding 5): a file not written in the code named codeName, the one chosen, is refused, and nothing changes. "If the file is not written in Unicode braille patterns, TextMouth refuses it, and nothing changes.". Placeholders in order: codeName.
+        String(localized: "If the file is not written in \(codeName), TextMouth refuses it, and nothing changes.")
     }
 
     /// What a re-read does to the book's places, in the encoding's sentence
@@ -363,8 +363,8 @@ enum BrailleFileCodeWording {
     /// countries): Line 3 holds the control character U+0007, which is not
     /// Eurobraille. Nothing was changed."
     static func notReadableRefusal(bookTitle: String, codeName: String, reason: String) -> String {
-        String(localized: "“\(bookTitle)” can't be read as \(codeName): \(reason) Nothing was changed.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again with the braille file characters named codeName: its file is not braille in them, as reason, the reader's own sentence (BrailleFileError), says, and nothing changed. It has the shape of an encoding's refusal (TextEncodingWording.notValidRefusal(bookTitle:encoding:)): \"“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds the control character U+0007, which is not Eurobraille. Nothing was changed.\". Placeholders in order: bookTitle, codeName, reason.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again with the braille file characters named codeName: its file is not braille in them, as reason, the reader's own sentence (BrailleFileError), says, and nothing changed. It has the shape of an encoding's refusal (TextEncodingWording.notValidRefusal(bookTitle:encoding:)): "“Ledger” can't be read as Eurobraille, six-dot (German-speaking countries): Line 3 holds the control character U+0007, which is not Eurobraille. Nothing was changed.". Placeholders in order: bookTitle, codeName, reason.
+        String(localized: "“\(bookTitle)” can't be read as \(codeName): \(reason) Nothing was changed.")
     }
 
     /// Why what would rewrite the text of the braille book titled
@@ -374,8 +374,8 @@ enum BrailleFileCodeWording {
     /// re-read of it, Edit Text, Redo Text Extraction, and Replace Existing
     /// (`LibraryViewModel.readingAgainRefusal(of:)`).
     static func readingAgainRefusal(bookTitle: String) -> String {
-        String(localized: "TextMouth is reading “\(bookTitle)” again with other braille file characters. Try again when that finishes.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with other braille file characters, as the encoding's sentence says it for any other book (TextEncodingWording.readingAgainRefusal(bookTitle:)): a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the braille book titled bookTitle waits while TextMouth reads it again with other braille file characters, as the encoding's sentence says it for any other book (TextEncodingWording.readingAgainRefusal(bookTitle:)): a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle.
+        String(localized: "TextMouth is reading “\(bookTitle)” again with other braille file characters. Try again when that finishes.")
     }
 }
 
@@ -409,8 +409,8 @@ enum TextEncodingWording {
     /// The label of Book Information's row, and pop-up, that names the
     /// encoding.
     static var bookInfoLabel: String {
-        String(localized: "Text Encoding",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row, and pop-up, that names the encoding.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row, and pop-up, that names the encoding.
+        String(localized: "Text Encoding")
     }
 
     // MARK: What Decided It
@@ -418,36 +418,36 @@ enum TextEncodingWording {
     /// What follows the encoding's name when TextMouth guessed it, since the
     /// file did not say it.
     static var guessNote: String {
-        String(localized: "guessed",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when TextMouth guessed it, since the file did not say it.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when TextMouth guessed it, since the file did not say it.
+        String(localized: "guessed")
     }
     /// What follows the encoding's name when the listener chose it.
     static var chosenNote: String {
-        String(localized: "chosen",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when the listener chose it.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the encoding's name when the listener chose it.
+        String(localized: "chosen")
     }
     /// What follows the name of a Unicode encoding a byte-order mark names.
     static var byteOrderMarkNote: String {
-        String(localized: "from its byte order mark",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding a byte-order mark names.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding a byte-order mark names.
+        String(localized: "from its byte order mark")
     }
     /// What follows the name of a Unicode encoding for a file recognized as
     /// UTF-16 or UTF-32 by the structure of its bytes, which has no
     /// byte-order mark.
     static var unmarkedUnicodeNote: String {
-        String(localized: "recognized by its bytes",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding for a file recognized as UTF-16 or UTF-32 by the structure of its bytes, which has no byte-order mark.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of a Unicode encoding for a file recognized as UTF-16 or UTF-32 by the structure of its bytes, which has no byte-order mark.
+        String(localized: "recognized by its bytes")
     }
     /// What follows the name of the encoding an HTML file declares.
     static var declaredNote: String {
-        String(localized: "declared in the file",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of the encoding an HTML file declares.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows the name of the encoding an HTML file declares.
+        String(localized: "declared in the file")
     }
     /// What follows "Windows-1252 (Western European)" for a file whose bytes
     /// say nothing of their encoding and that no guess was made for.
     static var defaultNote: String {
-        String(localized: "the default",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows \"Windows-1252 (Western European)\" for a file whose bytes say nothing of their encoding and that no guess was made for.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What follows "Windows-1252 (Western European)" for a file whose bytes say nothing of their encoding and that no guess was made for.
+        String(localized: "the default")
     }
 
     /// The encoding named `name`, decided as `basis` says, in words: the
@@ -466,8 +466,8 @@ enum TextEncodingWording {
         case .defaultEncoding: note = defaultNote
         }
         guard let note else { return name }
-        return String(localized: "\(name), \(note)",
-                      comment: "Joins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.")
+        // Translators: Joins a name and a note about it with a comma, such as an encoding or braille code and "guessed". %1$@ is the name and %2$@ the note.
+        return String(localized: "\(name), \(note)")
     }
 
     /// The name a listener hears for `encoding`: the catalog's for one of its
@@ -477,16 +477,16 @@ enum TextEncodingWording {
     /// declares that the catalog does not hold.
     static func name(of encoding: String.Encoding) -> String {
         switch encoding {
-        case .utf8: return String(localized: "UTF-8",
-                           comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf8.")
-        case .utf16LittleEndian: return String(localized: "UTF-16 (little-endian)",
-                                        comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf16LittleEndian.")
-        case .utf16BigEndian: return String(localized: "UTF-16 (big-endian)",
-                                     comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf16BigEndian.")
-        case .utf32LittleEndian: return String(localized: "UTF-32 (little-endian)",
-                                        comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf32LittleEndian.")
-        case .utf32BigEndian: return String(localized: "UTF-32 (big-endian)",
-                                     comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, \"UTF-8\", the Unicode encodings with their byte order in words (\"UTF-16 (little-endian)\"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf32BigEndian.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, "UTF-8", the Unicode encodings with their byte order in words ("UTF-16 (little-endian)"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf8.
+        case .utf8: return String(localized: "UTF-8")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, "UTF-8", the Unicode encodings with their byte order in words ("UTF-16 (little-endian)"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf16LittleEndian.
+        case .utf16LittleEndian: return String(localized: "UTF-16 (little-endian)")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, "UTF-8", the Unicode encodings with their byte order in words ("UTF-16 (little-endian)"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf16BigEndian.
+        case .utf16BigEndian: return String(localized: "UTF-16 (big-endian)")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, "UTF-8", the Unicode encodings with their byte order in words ("UTF-16 (little-endian)"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf32LittleEndian.
+        case .utf32LittleEndian: return String(localized: "UTF-32 (little-endian)")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The name a listener hears for encoding: the catalog's for one of its own, "UTF-8", the Unicode encodings with their byte order in words ("UTF-16 (little-endian)"), and any other by its IANA name (TextFileDecoder.name(of:)), such as an encoding an HTML file declares that the catalog does not hold. This is the case .utf32BigEndian.
+        case .utf32BigEndian: return String(localized: "UTF-32 (big-endian)")
         default: return TextEncodingCatalog.entry(for: encoding)?.name ?? TextFileDecoder.name(of: encoding)
         }
     }
@@ -495,22 +495,22 @@ enum TextEncodingWording {
     /// ("Windows-1251 (Cyrillic), guessed"): "Text encoding: Windows-1251
     /// (Cyrillic), guessed".
     static func speakInfoPart(_ description: String) -> String {
-        String(localized: "Text encoding: \(description)",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for an encoding described as description (\"Windows-1251 (Cyrillic), guessed\"): \"Text encoding: Windows-1251 (Cyrillic), guessed\". Placeholders in order: description.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for an encoding described as description ("Windows-1251 (Cyrillic), guessed"): "Text encoding: Windows-1251 (Cyrillic), guessed". Placeholders in order: description.
+        String(localized: "Text encoding: \(description)")
     }
 
     // MARK: The Pop-up
 
     /// The pop-up's hint, which VoiceOver says after its label and value.
     static var popUpHint: String {
-        String(localized: "Choose another encoding to read the book's file again in it.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.
+        String(localized: "Choose another encoding to read the book's file again in it.")
     }
     /// What Book Information shows, beside a spinner, while the book is read
     /// again (`SheetWorkIndicator`).
     static var workingLabel: String {
-        String(localized: "Reading the book again...",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information shows, beside a spinner, while the book is read again (SheetWorkIndicator).")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Book Information shows, beside a spinner, while the book is read again (SheetWorkIndicator).
+        String(localized: "Reading the book again...")
     }
 
     // MARK: The Pop-up While the File Says Nothing Yet
@@ -518,20 +518,20 @@ enum TextEncodingWording {
     /// The pop-up's value while the book's file is read to learn what it
     /// says of its encoding.
     static var checkingValue: String {
-        String(localized: "Checking the file",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding.
+        String(localized: "Checking the file")
     }
     /// The pop-up's value for a book that records no encoding and whose file
     /// is only in the cloud, which is never downloaded to learn it.
     static var inCloudValue: String {
-        String(localized: "Not known until the book is downloaded",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file is only in the cloud, which is never downloaded to learn it.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file is only in the cloud, which is never downloaded to learn it.
+        String(localized: "Not known until the book is downloaded")
     }
     /// The pop-up's value for a book that records no encoding and whose file
     /// cannot be read.
     static var unreadableValue: String {
-        String(localized: "Not known, since the file can't be read",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file cannot be read.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value for a book that records no encoding and whose file cannot be read.
+        String(localized: "Not known, since the file can't be read")
     }
 
     // MARK: The Confirmation
@@ -542,8 +542,8 @@ enum TextEncodingWording {
     static func confirmTitle(bookTitle: String, option: TextEncodingOption) -> String {
         switch option {
         case .automatic:
-            return String(localized: "Read “\(bookTitle)” again automatically?",
-                   comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before a book is read again as option says: \"Read “Ledger” again as Shift JIS (Japanese)?\", or \"Read “Ledger” again automatically?\". Placeholders in order: bookTitle.")
+            // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before a book is read again as option says: "Read “Ledger” again as Shift JIS (Japanese)?", or "Read “Ledger” again automatically?". Placeholders in order: bookTitle.
+            return String(localized: "Read “\(bookTitle)” again automatically?")
         case .encoding:
             return confirmTitle(bookTitle: bookTitle, readingName: TextEncodingChoices.name(of: option))
         }
@@ -554,26 +554,26 @@ enum TextEncodingWording {
     /// as Shift JIS (Japanese)?". Braille file characters are asked about in
     /// the same sentence (`BrailleFileCodeWording.confirmTitle(bookTitle:code:)`).
     static func confirmTitle(bookTitle: String, readingName: String) -> String {
-        String(localized: "Read “\(bookTitle)” again as \(readingName)?",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before the book titled bookTitle is read again as the reading named readingName: \"Read “Ledger” again as Shift JIS (Japanese)?\". Braille file characters are asked about in the same sentence (BrailleFileCodeWording.confirmTitle(bookTitle:code:)). Placeholders in order: bookTitle, readingName.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The title of the alert that asks before the book titled bookTitle is read again as the reading named readingName: "Read “Ledger” again as Shift JIS (Japanese)?". Braille file characters are asked about in the same sentence (BrailleFileCodeWording.confirmTitle(bookTitle:code:)). Placeholders in order: bookTitle, readingName.
+        String(localized: "Read “\(bookTitle)” again as \(readingName)?")
     }
 
     /// What Automatic does, as the alert says it before it is chosen.
     static var automaticNote: String {
-        String(localized: "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What Automatic does, as the alert says it before it is chosen.
+        String(localized: "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.")
     }
     /// What any re-read does to the book's text.
     static var replacedNote: String {
-        String(localized: "Its text is replaced by the new reading.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What any re-read does to the book's text.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What any re-read does to the book's text.
+        String(localized: "Its text is replaced by the new reading.")
     }
     /// What the encoding's alert says a re-read does to the book's places
     /// (`placesSentence(example:)`), with garbled letters becoming Cyrillic
     /// as its example.
     static var placesNote: String {
-        placesSentence(example: String(localized: "as when garbled letters become Cyrillic",
-                                       comment: "An example inside the sentence about what a re-read does to the listener's place: the places move when none of the old words are left, as when letters read wrongly become Cyrillic."))
+        // Translators: An example inside the sentence about what a re-read does to the listener's place: the places move when none of the old words are left, as when letters read wrongly become Cyrillic.
+        placesSentence(example: String(localized: "as when garbled letters become Cyrillic"))
     }
 
     /// What a re-read does to the book's places (T06), as both re-read
@@ -593,13 +593,13 @@ enum TextEncodingWording {
     static func placesSentence(example: String?) -> String {
         // The second sentence has two whole forms, with and without the example.
         let whereNoneAreLeft = example.map { example in
-            String(localized: "Where none of their words are left, \(example), each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
-                   comment: "Second sentence of what a re-read does to the listener's place and bookmarks. %@ is an example of when that happens, such as \"as when garbled letters become Cyrillic\", set between commas.")
-        } ?? String(localized: "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
-                    comment: "Second sentence of what a re-read does to the listener's place and bookmarks, without an example.")
+            // Translators: Second sentence of what a re-read does to the listener's place and bookmarks. %@ is an example of when that happens, such as "as when garbled letters become Cyrillic", set between commas.
+            String(localized: "Where none of their words are left, \(example), each goes to about the same point in its chapter, or to the nearest passage the two readings share.")
+        // Translators: Second sentence of what a re-read does to the listener's place and bookmarks, without an example.
+        } ?? String(localized: "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.")
         return SentenceWording.joined([
-            String(localized: "Your place and bookmarks move with their words.",
-                   comment: "First sentence of what a re-read does to the listener's place and bookmarks."),
+            // Translators: First sentence of what a re-read does to the listener's place and bookmarks.
+            String(localized: "Your place and bookmarks move with their words."),
             whereNoneAreLeft,
         ])
     }
@@ -609,15 +609,15 @@ enum TextEncodingWording {
     /// or a save no edit took, either kept as Replace Existing keeps it
     /// (`ImportDecisionWording.replacingKeepsTextSentence`).
     static var keptTextNote: String {
-        String(localized: "An edit of its text is kept beside the new reading, as a copy in the book's package.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence).")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence).
+        String(localized: "An edit of its text is kept beside the new reading, as a copy in the book's package.")
     }
     /// What a re-read does to Edit Text, said only for a book being edited:
     /// the session ends with the re-read, whose new text it never watched
     /// (`BookTextEditWording.stoppedBookReadAgain(bookTitle:)`).
     static var stopsEditingNote: String {
-        String(localized: "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to Edit Text, said only for a book being edited: the session ends with the re-read, whose new text it never watched (BookTextEditWording.stoppedBookReadAgain(bookTitle:)).")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to Edit Text, said only for a book being edited: the session ends with the re-read, whose new text it never watched (BookTextEditWording.stoppedBookReadAgain(bookTitle:)).
+        String(localized: "Edit Text stops for this book; choose Edit Text again to edit the new reading.")
     }
 
     /// The alert's message before a book is read again as `option` says:
@@ -649,8 +649,8 @@ enum TextEncodingWording {
 
     /// The alert's button that reads the book again; Cancel leaves it.
     static var confirmButton: String {
-        String(localized: "Read Again",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The alert's button that reads the book again; Cancel leaves it.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The alert's button that reads the book again; Cancel leaves it.
+        String(localized: "Read Again")
     }
 
     // MARK: Refusals
@@ -659,8 +659,8 @@ enum TextEncodingWording {
     /// read again (the launch batch, Redo Text Extraction), in the words
     /// TextMouth uses while its storage work is held (`StorageBusyError`).
     static var extractionRefusal: String {
-        String(localized: "TextMouth is reading the library's text again. Try again when that finishes.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book can't be read again while the library's text is being read again (the launch batch, Redo Text Extraction), in the words TextMouth uses while its storage work is held (StorageBusyError).")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book can't be read again while the library's text is being read again (the launch batch, Redo Text Extraction), in the words TextMouth uses while its storage work is held (StorageBusyError).
+        String(localized: "TextMouth is reading the library's text again. Try again when that finishes.")
     }
 
     /// Why what would rewrite the text of the book titled `bookTitle` waits
@@ -669,8 +669,8 @@ enum TextEncodingWording {
     /// Text Extraction, and Replace Existing
     /// (`LibraryViewModel.readingAgainRefusal(of:)`).
     static func readingAgainRefusal(bookTitle: String) -> String {
-        String(localized: "TextMouth is reading “\(bookTitle)” again in another encoding. Try again when that finishes.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the book titled bookTitle waits while TextMouth reads it again in another encoding, in the same words as extractionRefusal: a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why what would rewrite the text of the book titled bookTitle waits while TextMouth reads it again in another encoding, in the same words as extractionRefusal: a second re-read of it, Edit Text, Redo Text Extraction, and Replace Existing (LibraryViewModel.readingAgainRefusal(of:)). Placeholders in order: bookTitle.
+        String(localized: "TextMouth is reading “\(bookTitle)” again in another encoding. Try again when that finishes.")
     }
 
     /// Why the book titled `bookTitle` can't be read again while it is being
@@ -678,8 +678,8 @@ enum TextEncodingWording {
     /// (`FeedBookUse.exporting`): "“Ledger” is being exported. Wait until the
     /// export ends, then try again."
     static func exportingRefusal(bookTitle: String) -> String {
-        String(localized: "“\(bookTitle)” is being exported. \(FeedBookUse.exporting.remedy), then \(FeedBookUse.tryAgain).",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle can't be read again while it is being exported, with what to do, as a refusal for a book in use says it (FeedBookUse.exporting): \"“Ledger” is being exported. Wait until the export ends, then try again.\". Placeholders in order: bookTitle, FeedBookUse.exporting.remedy, FeedBookUse.tryAgain.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle can't be read again while it is being exported, with what to do, as a refusal for a book in use says it (FeedBookUse.exporting): "“Ledger” is being exported. Wait until the export ends, then try again.". Placeholders in order: bookTitle, FeedBookUse.exporting.remedy, FeedBookUse.tryAgain.
+        String(localized: "“\(bookTitle)” is being exported. \(FeedBookUse.exporting.remedy), then \(FeedBookUse.tryAgain).")
     }
 
     /// Why the book titled `bookTitle` was not read again as `encoding`: its
@@ -688,8 +688,8 @@ enum TextEncodingWording {
     static func notValidRefusal(bookTitle: String, encoding: String) -> String {
         SentenceWording.joined([
             notValid(in: encoding, subject: RemovalText.quoted(bookTitle)),
-            String(localized: "Nothing was changed.",
-                   comment: "Last sentence of a refusal to read a book again: the book and its text are as they were."),
+            // Translators: Last sentence of a refusal to read a book again: the book and its text are as they were.
+            String(localized: "Nothing was changed."),
         ])
     }
 
@@ -698,27 +698,27 @@ enum TextEncodingWording {
     /// was replaced, as Replace Existing leaves both copies then
     /// (`DuplicateReplacement.TextNotKept`).
     static func editNotKeptRefusal(bookTitle: String) -> String {
-        String(localized: "TextMouth couldn't keep the text you changed in “\(bookTitle)” beside the new reading, so it left the book as it was.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again: the text changed with Edit Text could not be kept beside the new reading, so nothing was replaced, as Replace Existing leaves both copies then (DuplicateReplacement.TextNotKept). Placeholders in order: bookTitle.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why the book titled bookTitle was not read again: the text changed with Edit Text could not be kept beside the new reading, so nothing was replaced, as Replace Existing leaves both copies then (DuplicateReplacement.TextNotKept). Placeholders in order: bookTitle.
+        String(localized: "TextMouth couldn't keep the text you changed in “\(bookTitle)” beside the new reading, so it left the book as it was.")
     }
 
     /// Why the book titled `bookTitle` was not read again: the reading
     /// failed, for `reason` when one was given.
     static func failedRefusal(bookTitle: String, reason: String?) -> String {
         guard let reason, !reason.isEmpty else {
-            return String(localized: "TextMouth couldn't read “\(bookTitle)” again, so it left the book as it was.",
-                          comment: "Why a book was not read again with another encoding or braille code: the reading failed. %@ is the book's title.")
+            // Translators: Why a book was not read again with another encoding or braille code: the reading failed. %@ is the book's title.
+            return String(localized: "TextMouth couldn't read “\(bookTitle)” again, so it left the book as it was.")
         }
         // The reason is the reading's own English sentence (question 3).
-        return String(localized: "TextMouth couldn't read “\(bookTitle)” again, so it left the book as it was: \(reason)",
-                      comment: "Why a book was not read again with another encoding or braille code: the reading failed. %1$@ is the book's title and %2$@ is the reason in English, as the reader worded it.")
+        // Translators: Why a book was not read again with another encoding or braille code: the reading failed. %1$@ is the book's title and %2$@ is the reason in English, as the reader worded it.
+        return String(localized: "TextMouth couldn't read “\(bookTitle)” again, so it left the book as it was: \(reason)")
     }
 
     /// Why a book that left the library while its Book Information was open
     /// is not read again.
     static var bookGoneRefusal: String {
-        String(localized: "The book is no longer in the library, so it was not read again.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book that left the library while its Book Information was open is not read again.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a book that left the library while its Book Information was open is not read again.
+        String(localized: "The book is no longer in the library, so it was not read again.")
     }
 
     // MARK: Done
@@ -745,10 +745,10 @@ enum TextEncodingWording {
         bookTitle: String, readingDescription: String?, keptCopy: URL?, stoppedEditing: Bool = false
     ) -> String {
         var sentences = [readingDescription.map { description in
-            String(localized: "“\(bookTitle)” is now read as \(description).",
-                   comment: "VoiceOver announcement once a book was read again. %1$@ is the book's title and %2$@ describes how it is read now, such as \"Windows-1251 (Cyrillic), chosen\".")
-        } ?? String(localized: "“\(bookTitle)” was read again.",
-                    comment: "VoiceOver announcement once a book was read again. %@ is the book's title.")]
+            // Translators: VoiceOver announcement once a book was read again. %1$@ is the book's title and %2$@ describes how it is read now, such as "Windows-1251 (Cyrillic), chosen".
+            String(localized: "“\(bookTitle)” is now read as \(description).")
+        // Translators: VoiceOver announcement once a book was read again. %@ is the book's title.
+        } ?? String(localized: "“\(bookTitle)” was read again.")]
         if let keptCopy {
             sentences.append(BookTextEditWording.earlierTextKept(keptCopy))
         }
@@ -779,8 +779,8 @@ enum TextEncodingWording {
     /// The decoder's error (`TextEncodingError.invalidForChosenEncoding`) and
     /// Book Information's refusal both say it from here.
     static func notValid(in encoding: String, subject: String) -> String {
-        String(localized: "\(subject) can't be read as \(encoding): it holds bytes that are not valid in that encoding.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a file chosen to be read in the encoding named encoding was not read: some of its bytes are not valid in it. subject names the file or the book, as the sentence begins: \"“Ledger” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding.\" The decoder's error (TextEncodingError.invalidForChosenEncoding) and Book Information's refusal both say it from here. Placeholders in order: subject, encoding.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a file chosen to be read in the encoding named encoding was not read: some of its bytes are not valid in it. subject names the file or the book, as the sentence begins: "“Ledger” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding." The decoder's error (TextEncodingError.invalidForChosenEncoding) and Book Information's refusal both say it from here. Placeholders in order: subject, encoding.
+        String(localized: "\(subject) can't be read as \(encoding): it holds bytes that are not valid in that encoding.")
     }
 
     /// Why a file chosen to be read in an encoding this TextMouth does not
@@ -789,10 +789,10 @@ enum TextEncodingWording {
     /// TextMouth can't read. Choose another in Book Information."
     static func unknownChoice(_ identifier: String, subject: String) -> String {
         SentenceWording.joined([
-            String(localized: "\(subject) is set to be read as “\(identifier)”, a text encoding this version of TextMouth can't read.",
-                   comment: "First sentence of why a book set to an unknown text encoding cannot be read. %1$@ names the book, as in “Ledger”, and %2$@ is the encoding's stored identifier."),
-            String(localized: "Choose another in Book Information.",
-                   comment: "Last sentence of why a book set to an unknown text encoding cannot be read. \"Book Information\" is the name of the sheet with the encoding pop-up."),
+            // Translators: First sentence of why a book set to an unknown text encoding cannot be read. %1$@ names the book, as in “Ledger”, and %2$@ is the encoding's stored identifier.
+            String(localized: "\(subject) is set to be read as “\(identifier)”, a text encoding this version of TextMouth can't read."),
+            // Translators: Last sentence of why a book set to an unknown text encoding cannot be read. "Book Information" is the name of the sheet with the encoding pop-up.
+            String(localized: "Choose another in Book Information."),
         ])
     }
 }
@@ -865,28 +865,28 @@ enum LibraryInfoWording {
     /// What a press of Speak Info, or of Return (Open Selected Book), says
     /// when no row is selected.
     static var nothingSelected: String {
-        String(localized: "Nothing is selected.",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a press of Speak Info, or of Return (Open Selected Book), says when no row is selected.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a press of Speak Info, or of Return (Open Selected Book), says when no row is selected.
+        String(localized: "Nothing is selected.")
     }
     /// The kind a folder's summary names after the folder's name.
     static var folderKind: String {
-        String(localized: "Folder",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The kind a folder's summary names after the folder's name.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The kind a folder's summary names after the folder's name.
+        String(localized: "Folder")
     }
     /// What a book's summary says of a book never opened.
     static var unopenedNote: String {
-        String(localized: "Unopened",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book never opened.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book never opened.
+        String(localized: "Unopened")
     }
     /// What a book's summary says of a book in no folder.
     static var noFolderNote: String {
-        String(localized: "Not in a folder",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book in no folder.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's summary says of a book in no folder.
+        String(localized: "Not in a folder")
     }
     /// What a book's full summary says of a book a reader window has open.
     static var openInWindowNote: String {
-        String(localized: "Open in a reader window",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's full summary says of a book a reader window has open.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a book's full summary says of a book a reader window has open.
+        String(localized: "Open in a reader window")
     }
 
     // MARK: Summaries
@@ -936,8 +936,8 @@ enum LibraryInfoWording {
         var parts = [book.title]
         if !Book.isUnknownAuthor(book.author) {
             let author = book.author
-            parts.append(String(localized: "By \(author)",
-                                comment: "Speak Info: the part of a book's summary that names its author. %@ is the author's name."))
+            // Translators: Speak Info: the part of a book's summary that names its author. %@ is the author's name.
+            parts.append(String(localized: "By \(author)"))
         }
         parts.append(book.format)
         parts.append(placeNote(of: book))
@@ -969,15 +969,15 @@ enum LibraryInfoWording {
 
     /// "In Fiction/Mystery": where a book is, or where a feed's folder is.
     static func inFolderNote(_ path: String) -> String {
-        String(localized: "In \(path)",
-               comment: "Speak Info: the part of a summary that says where a book or a feed's folder is. %@ is the folder's path, such as Fiction/Mystery.")
+        // Translators: Speak Info: the part of a summary that says where a book or a feed's folder is. %@ is the folder's path, such as Fiction/Mystery.
+        String(localized: "In \(path)")
     }
 
     /// Where an episode or an article is, in the feed titled `feedTitle`:
     /// "In The Digital Antiquarian, a feed".
     static func inFeedNote(_ feedTitle: String) -> String {
-        String(localized: "In \(feedTitle), a feed",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where an episode or an article is, in the feed titled feedTitle: \"In The Digital Antiquarian, a feed\". Placeholders in order: feedTitle.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where an episode or an article is, in the feed titled feedTitle: "In The Digital Antiquarian, a feed". Placeholders in order: feedTitle.
+        String(localized: "In \(feedTitle), a feed")
     }
 
     /// Where a book in the reading list stands in it, as its brief summary
@@ -985,8 +985,8 @@ enum LibraryInfoWording {
     /// reading list, 3 of 12". Said in every view, the Reading List's own
     /// included, where its rows say no more than the list's order does.
     static func readingListNote(_ place: ReadingListPlace) -> String {
-        String(localized: "In reading list, \(place.position) of \(place.count)",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where a book in the reading list stands in it, as its brief summary says it, counted as the Reading List shows the list (FR09): \"In reading list, 3 of 12\". Said in every view, the Reading List's own included, where its rows say no more than the list's order does. Placeholders in order: place.position, place.count.")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Where a book in the reading list stands in it, as its brief summary says it, counted as the Reading List shows the list (FR09): "In reading list, 3 of 12". Said in every view, the Reading List's own included, where its rows say no more than the list's order does. Placeholders in order: place.position, place.count.
+        String(localized: "In reading list, \(place.position) of \(place.count)")
     }
 
     /// What a book's full summary adds: when it was added and last opened,
@@ -1004,17 +1004,17 @@ enum LibraryInfoWording {
     /// 1.2 MB."
     static func fullParts(of book: BookInfoFacts, now: Date, calendar: Calendar, locale: Locale) -> [String] {
         let added = FeedWording.moment(book.dateAdded, now: now, calendar: calendar, locale: locale)
-        var parts = [String(localized: "Added \(added)",
-                            comment: "Speak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as \"today\" or \"3 days ago\".")]
+        // Translators: Speak Info: the part of a book's full summary that says when it was added. %@ is a date or time, such as "today" or "3 days ago".
+        var parts = [String(localized: "Added \(added)")]
         if let lastOpened = book.lastOpened {
             let opened = FeedWording.moment(lastOpened, now: now, calendar: calendar, locale: locale)
-            parts.append(String(localized: "Last opened \(opened)",
-                                comment: "Speak Info: the part of a book's full summary that says when it was last opened. %@ is a date or time, such as \"yesterday\"."))
+            // Translators: Speak Info: the part of a book's full summary that says when it was last opened. %@ is a date or time, such as "yesterday".
+            parts.append(String(localized: "Last opened \(opened)"))
         }
         parts.append(CountWording.bookmarks(book.bookmarkCount))
         if let code = book.brailleCode {
-            parts.append(String(localized: "Braille code: \(code)",
-                                comment: "Speak Info: the part of a braille book's full summary that names its braille code. %@ is the code's description, such as \"Unified English Braille, contracted (Grade 2)\"."))
+            // Translators: Speak Info: the part of a braille book's full summary that names its braille code. %@ is the code's description, such as "Unified English Braille, contracted (Grade 2)".
+            parts.append(String(localized: "Braille code: \(code)"))
         }
         if let characters = book.brailleFileCharacters {
             parts.append(BrailleFileCodeWording.speakInfoPart(characters))
@@ -1024,8 +1024,8 @@ enum LibraryInfoWording {
         }
         if let size = book.fileSize {
             let bytes = ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
-            parts.append(String(localized: "File size \(bytes)",
-                                comment: "Speak Info: the part of a book's full summary that says how big its file is. %@ is a size such as \"2.4 MB\"."))
+            // Translators: Speak Info: the part of a book's full summary that says how big its file is. %@ is a size such as "2.4 MB".
+            parts.append(String(localized: "File size \(bytes)"))
         }
         if let note = book.cloudNote {
             parts.append(note)
@@ -1065,8 +1065,8 @@ enum LibraryInfoWording {
         let books = CountWording.books(folder.bookCount)
         guard folder.unopenedCount > 0 else { return books }
         let unopened = folder.unopenedCount
-        return String(localized: "\(books), \(unopened) unopened",
-                      comment: "Speak Info and Folder Settings: how many books a folder holds and how many of them were never opened. %1$@ is the count of books, such as \"12 books\", and %2$lld is how many are unopened, a count.")
+        // Translators: Speak Info and Folder Settings: how many books a folder holds and how many of them were never opened. %1$@ is the count of books, such as "12 books", and %2$lld is how many are unopened, a count.
+        return String(localized: "\(books), \(unopened) unopened")
     }
 
     /// A folder's feeds counted, or nil when it has none. Example: "2 feeds".
@@ -1080,16 +1080,16 @@ enum LibraryInfoWording {
     static func subfoldersPhrase(of folder: FolderInfoFacts) -> String? {
         guard folder.subfolderCount > 0 else { return nil }
         let count = folder.subfolderCount
-        return String(localized: "\(count) subfolders",
-                      comment: "Speak Info and Folder Settings: how many subfolders a folder has. %lld is the number of subfolders, a count.")
+        // Translators: Speak Info and Folder Settings: how many subfolders a folder has. %lld is the number of subfolders, a count.
+        return String(localized: "\(count) subfolders")
     }
 
     /// The time left in all of a folder's books, or nil when none is known.
     /// Example: "14 hours, 3 minutes remaining in total".
     static func timeRemainingPhrase(of folder: FolderInfoFacts) -> String? {
         guard let remaining = folder.timeRemaining else { return nil }
-        return String(localized: "\(TimeFormatting.spoken(remaining)) remaining in total",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The time left in all of a folder's books, or nil when none is known. Example: \"14 hours, 3 minutes remaining in total\". Placeholders in order: TimeFormatting.spoken(remaining).")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The time left in all of a folder's books, or nil when none is known. Example: "14 hours, 3 minutes remaining in total". Placeholders in order: TimeFormatting.spoken(remaining).
+        return String(localized: "\(TimeFormatting.spoken(remaining)) remaining in total")
     }
 
     // MARK: A Feed
@@ -1124,8 +1124,8 @@ enum LibraryInfoWording {
             parts.append(inFolderNote(path))
         }
         if let address = feed.address {
-            parts.append(String(localized: "Address \(address)",
-                                comment: "Speak Info: the part of a feed's full summary that gives its web address. %@ is the address."))
+            // Translators: Speak Info: the part of a feed's full summary that gives its web address. %@ is the address.
+            parts.append(String(localized: "Address \(address)"))
         }
         return parts
     }
@@ -1152,8 +1152,8 @@ enum LibraryInfoWording {
     /// `remaining` as a row speaks a time left: "2 hours, 5 minutes
     /// remaining".
     static func remaining(_ remaining: TimeInterval) -> String {
-        String(localized: "\(TimeFormatting.spoken(remaining)) remaining",
-               comment: "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. remaining as a row speaks a time left: \"2 hours, 5 minutes remaining\". Placeholders in order: TimeFormatting.spoken(remaining).")
+        // Translators: Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. remaining as a row speaks a time left: "2 hours, 5 minutes remaining". Placeholders in order: TimeFormatting.spoken(remaining).
+        String(localized: "\(TimeFormatting.spoken(remaining)) remaining")
     }
 
     /// `parts` as spoken sentences, joined as `SentenceWording` joins them

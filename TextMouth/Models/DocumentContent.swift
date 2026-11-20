@@ -329,11 +329,11 @@ struct HeadingPosition: Equatable {
     var label: String {
         guard count > 0 else { return "" }
         guard let number else {
-            return String(localized: "Before heading 1 of \(count)",
-                          comment: "Where the reader is when it precedes the first heading of a book. %lld is the number of headings in the book.")
+            // Translators: Where the reader is when it precedes the first heading of a book. %lld is the number of headings in the book.
+            return String(localized: "Before heading 1 of \(count)")
         }
-        return String(localized: "Heading \(number) of \(count)",
-                      comment: "Where the reader is: the heading it is in. %1$lld is that heading's place among the book's headings and %2$lld the number of headings.")
+        // Translators: Where the reader is: the heading it is in. %1$lld is that heading's place among the book's headings and %2$lld the number of headings.
+        return String(localized: "Heading \(number) of \(count)")
     }
 
     /// The containing heading's text, or nil before the first heading or when
@@ -453,14 +453,14 @@ enum SleepTimerDuration: Hashable {
     var displayName: String {
         switch self {
         case .minutes(let m):
-            return String(localized: "\(m) minutes",
-                          comment: "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.")
+            // Translators: A sleep timer's length, as its preset button and the custom minutes' value say it, such as "10 minutes". %lld is the number of minutes.
+            return String(localized: "\(m) minutes")
         case .endOfHeading:
-            return String(localized: "End of heading",
-                          comment: "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.")
+            // Translators: Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.
+            return String(localized: "End of heading")
         case .endOfBook:
-            return String(localized: "End of book",
-                          comment: "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.")
+            // Translators: Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.
+            return String(localized: "End of book")
         }
     }
 
@@ -484,11 +484,11 @@ enum SleepTimerDuration: Hashable {
         case .minutes:
             return nil
         case .endOfHeading:
-            return String(localized: "stops at the end of this heading",
-                          comment: "The state of a sleep timer set to End of heading, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.")
+            // Translators: The state of a sleep timer set to End of heading, as VoiceOver reads it after "Sleep timer:". Lowercase, since it follows a colon.
+            return String(localized: "stops at the end of this heading")
         case .endOfBook:
-            return String(localized: "stops at the end of the book",
-                          comment: "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.")
+            // Translators: The state of a sleep timer set to End of book, as VoiceOver reads it after "Sleep timer:". Lowercase, since it follows a colon.
+            return String(localized: "stops at the end of the book")
         }
     }
 
@@ -531,8 +531,8 @@ enum TimeFormatting {
     /// Format seconds to h:mm:ss or m:ss (for visual display)
     static func format(_ seconds: TimeInterval) -> String {
         guard let totalSeconds = wholeSeconds(seconds) else {
-            return String(localized: "Unknown",
-                          comment: "Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.")
+            // Translators: Shown in place of a time (hours, minutes and seconds) that is not a usable number, such as an enormous or missing length.
+            return String(localized: "Unknown")
         }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60
@@ -547,8 +547,8 @@ enum TimeFormatting {
     /// Omits zero-valued leading fields so "0:54:35" becomes "54 minutes, 35 seconds".
     static func spoken(_ seconds: TimeInterval) -> String {
         guard let totalSeconds = wholeSeconds(seconds) else {
-            return String(localized: "Unknown duration",
-                          comment: "Spoken in place of a length of time that is not a usable number, such as an enormous or missing length.")
+            // Translators: Spoken in place of a length of time that is not a usable number, such as an enormous or missing length.
+            return String(localized: "Unknown duration")
         }
         let hours = totalSeconds / 3600
         let minutes = (totalSeconds % 3600) / 60

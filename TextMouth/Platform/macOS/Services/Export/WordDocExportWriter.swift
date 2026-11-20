@@ -32,8 +32,8 @@ struct WordDocExportWriter: TextExportWriter {
     let name = "Word 97-2003 (.doc)" // l10n: no (a file format's name)
     let fileExtension = "doc"
     var hint: String {
-        String(localized: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them.",
-               comment: "The hint of the Convert to picker in the Export dialog while Word 97-2003 is chosen. Word is an app's name.")
+        // Translators: The hint of the Convert to picker in the Export dialog while Word 97-2003 is chosen. Word is an app's name.
+        String(localized: "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them.")
     }
 
     /// Writes the Word document of `document` as a new file at `url`; a file
@@ -54,8 +54,8 @@ struct WordDocExportWriter: TextExportWriter {
     /// The sentence a Word export fails with when Apple's reader or writer
     /// refuses the book's text; the dialog names it after the file's name.
     static var failureSentence: String {
-        String(localized: "The book's text could not be made into a Word 97-2003 document.",
-               comment: "Why a Word 97-2003 export failed, after the file's name in a failure sentence: Apple's reader or writer refused the book's text.")
+        // Translators: Why a Word 97-2003 export failed, after the file's name in a failure sentence: Apple's reader or writer refused the book's text.
+        String(localized: "The book's text could not be made into a Word 97-2003 document.")
     }
 
     /// The bytes of the Word 97-2003 document of `document`, made from the

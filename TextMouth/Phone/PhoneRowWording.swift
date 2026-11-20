@@ -32,23 +32,23 @@ enum PhoneRowWording {
     @MainActor static var libraryViewLabel: String { LibraryView.categoryPickerLabel }
     /// What the Library view row does (the spec's).
     static var libraryViewHint: String {
-        String(localized: "Chooses what the Library lists.",
-               comment: "Hint of the iPhone Library's row that chooses which view of the library is listed.")
+        // Translators: Hint of the iPhone Library's row that chooses which view of the library is listed.
+        String(localized: "Chooses what the Library lists.")
     }
     /// Settings' label and title (the spec's).
     static var settingsTitle: String {
-        String(localized: "Settings",
-               comment: "Label and title of the iPhone Library's button that opens the app's settings.")
+        // Translators: Label and title of the iPhone Library's button that opens the app's settings.
+        String(localized: "Settings")
     }
     /// What Settings does (the spec's).
     static var settingsHint: String {
-        String(localized: "Opens TextMouth's settings.",
-               comment: "Hint of the iPhone Library's Settings button.")
+        // Translators: Hint of the iPhone Library's Settings button.
+        String(localized: "Opens TextMouth's settings.")
     }
     /// What Sort does (the spec's).
     static var sortHint: String {
-        String(localized: "Chooses the order of the books.",
-               comment: "Hint of the iPhone Library's Sort button.")
+        // Translators: Hint of the iPhone Library's Sort button.
+        String(localized: "Chooses the order of the books.")
     }
     /// What Add to Library does on a phone, which offers only these two ways
     /// (the spec's; the Mac's hint names ways a phone doesn't have): the
@@ -69,8 +69,8 @@ enum PhoneRowWording {
     /// would change as the book plays, and its first cells differ from
     /// "Continue" for a braille display's Item Overview.
     static func nowPlayingLabel(title: String) -> String {
-        String(localized: "Now Playing: \(title)",
-               comment: "What VoiceOver says for the iPhone Library's Continue row while that book plays. %@ is the book's title.")
+        // Translators: What VoiceOver says for the iPhone Library's Continue row while that book plays. %@ is the book's title.
+        String(localized: "Now Playing: \(title)")
     }
 
     /// What the Continue row shows, for sight: the Mac's "Continue: Emma",
@@ -103,20 +103,20 @@ enum PhoneRowWording {
     static var emptyLibrary: String { PhoneAppWording.emptyLibrary }
     /// The row of a folder that holds no book and no folder.
     static var emptyFolder: String {
-        String(localized: "This folder is empty.",
-               comment: "The only row of a folder in the iPhone Library that holds no book and no folder.")
+        // Translators: The only row of a folder in the iPhone Library that holds no book and no folder.
+        String(localized: "This folder is empty.")
     }
     /// The row of a search that matches nothing.
     static var noMatches: String {
-        String(localized: "No books match.",
-               comment: "The only row of the iPhone Library's list while a search matches nothing; also what VoiceOver says then.")
+        // Translators: The only row of the iPhone Library's list while a search matches nothing; also what VoiceOver says then.
+        String(localized: "No books match.")
     }
     /// The row of an empty Reading List: the Mac's sentence without its
     /// Library menu, which a phone doesn't have (the spec, "Words that say
     /// Mac").
     static var emptyReadingList: String {
-        String(localized: "The reading list is empty. To add a book, choose Add to Reading List from its actions.",
-               comment: "The only row of the iPhone's empty Reading List. \"Add to Reading List\" is the name of a book's action, so keep it the same as that action's label.")
+        // Translators: The only row of the iPhone's empty Reading List. "Add to Reading List" is the name of a book's action, so keep it the same as that action's label.
+        String(localized: "The reading list is empty. To add a book, choose Add to Reading List from its actions.")
     }
     /// The row of a view that lists nothing now, the Mac's.
     static var emptyView: String { LibraryViewPickerWording.emptyView }
@@ -158,10 +158,10 @@ enum PhoneRowWording {
     /// can open (the spec's).
     static var removalMessage: String {
         SentenceWording.joined([
-            String(localized: "Permanently deletes the book and its files from this iPhone.",
-                   comment: "First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone."),
-            String(localized: "Your Mac's library isn't touched.",
-                   comment: "Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays."),
+            // Translators: First sentence of the message of the iPhone's question before a book is removed: nothing is kept on this iPhone.
+            String(localized: "Permanently deletes the book and its files from this iPhone."),
+            // Translators: Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays.
+            String(localized: "Your Mac's library isn't touched."),
         ])
     }
 

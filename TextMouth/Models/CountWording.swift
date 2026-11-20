@@ -44,55 +44,55 @@ enum CountWording {
 
     /// `count` books: "0 books", "1 book", "2 books".
     static func books(_ count: Int) -> String {
-        String(localized: "\(count) books",
-               comment: "A count of books standing alone, such as a library summary. %lld is the number of books.")
+        // Translators: A count of books standing alone, such as a library summary. %lld is the number of books.
+        String(localized: "\(count) books")
     }
 
     /// `count` feeds: "1 feed", "2 feeds".
     static func feeds(_ count: Int) -> String {
-        String(localized: "\(count) feeds",
-               comment: "A count of podcast and news feeds standing alone, such as a library summary. %lld is the number of feeds.")
+        // Translators: A count of podcast and news feeds standing alone, such as a library summary. %lld is the number of feeds.
+        String(localized: "\(count) feeds")
     }
 
     /// `count` bookmarks: "1 bookmark", "2 bookmarks", as Speak Info and a
     /// feed's item row say them.
     static func bookmarks(_ count: Int) -> String {
-        String(localized: "\(count) bookmarks",
-               comment: "A count of bookmarks standing alone, as Speak Info and a feed item's row say it. %lld is the number of bookmarks.")
+        // Translators: A count of bookmarks standing alone, as Speak Info and a feed item's row say it. %lld is the number of bookmarks.
+        String(localized: "\(count) bookmarks")
     }
 
     /// `count` hours: "1 hour", "2 hours", as spoken durations and the
     /// audio editor's lengths count them.
     static func hours(_ count: Int) -> String {
-        String(localized: "\(count) hours",
-               comment: "A count of hours inside a duration, such as \"2 hours, 3 minutes\". %lld is the number of hours.")
+        // Translators: A count of hours inside a duration, such as "2 hours, 3 minutes". %lld is the number of hours.
+        String(localized: "\(count) hours")
     }
 
     /// `count` minutes: "1 minute", "30 minutes", as the sleep timer and
     /// spoken durations count them.
     static func minutes(_ count: Int) -> String {
-        String(localized: "\(count) minutes",
-               comment: "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.")
+        // Translators: A sleep timer's length, as its preset button and the custom minutes' value say it, such as "10 minutes". %lld is the number of minutes.
+        String(localized: "\(count) minutes")
     }
 
     /// `count` seconds: "1 second", "5 seconds".
     static func seconds(_ count: Int) -> String {
-        String(localized: "\(count) seconds",
-               comment: "A count of whole seconds inside a duration or a setting's length. %lld is the number of seconds.")
+        // Translators: A count of whole seconds inside a duration or a setting's length. %lld is the number of seconds.
+        String(localized: "\(count) seconds")
     }
 
     /// `count` episodes: "1 episode", "5 episodes", as a list of audio feed
     /// items counts them beside its books.
     static func episodes(_ count: Int) -> String {
-        String(localized: "\(count) episodes",
-               comment: "A count of podcast episodes in a list, counted beside books. %lld is the number of episodes.")
+        // Translators: A count of podcast episodes in a list, counted beside books. %lld is the number of episodes.
+        String(localized: "\(count) episodes")
     }
 
     /// `count` articles: "1 article", "2 articles", as a list of text feed
     /// items counts them beside its books.
     static func articles(_ count: Int) -> String {
-        String(localized: "\(count) articles",
-               comment: "A count of news articles in a list, counted beside books. %lld is the number of articles.")
+        // Translators: A count of news articles in a list, counted beside books. %lld is the number of articles.
+        String(localized: "\(count) articles")
     }
 
     /// `value` seconds to the nearest tenth, as a setting kept in tenths of
@@ -113,8 +113,8 @@ enum CountWording {
         // A decimal has no plural form that varies with it, so it is one
         // string of its own around the formatted number.
         let decimal = (tenths / 10).formatted(.number.precision(.fractionLength(1)))
-        return String(localized: "\(decimal) seconds",
-                      comment: "A length of time in seconds with one decimal digit, such as \"0.5 seconds\". %@ is the already formatted number.")
+        // Translators: A length of time in seconds with one decimal digit, such as "0.5 seconds". %@ is the already formatted number.
+        return String(localized: "\(decimal) seconds")
     }
 
     /// `part` of `whole` things, the noun agreeing with the whole, which it
@@ -188,16 +188,16 @@ enum CountWording {
         let counts = ListCounts(rows)
         var parts: [String] = []
         if counts.books > 0 || counts.episodes + counts.articles == 0 {
-            parts.append(String(localized: "Books (\(counts.books))",
-                                comment: "The header of a list's books, with their count: \"Books (743)\". %lld is the number of books."))
+            // Translators: The header of a list's books, with their count: "Books (743)". %lld is the number of books.
+            parts.append(String(localized: "Books (\(counts.books))"))
         }
         if counts.episodes > 0 {
-            parts.append(String(localized: "Episodes (\(counts.episodes))",
-                                comment: "The header of a list's podcast episodes, with their count: \"Episodes (5)\". %lld is the number of episodes."))
+            // Translators: The header of a list's podcast episodes, with their count: "Episodes (5)". %lld is the number of episodes.
+            parts.append(String(localized: "Episodes (\(counts.episodes))"))
         }
         if counts.articles > 0 {
-            parts.append(String(localized: "Articles (\(counts.articles))",
-                                comment: "The header of a list's news articles, with their count: \"Articles (3)\". %lld is the number of articles."))
+            // Translators: The header of a list's news articles, with their count: "Articles (3)". %lld is the number of articles.
+            parts.append(String(localized: "Articles (\(counts.articles))"))
         }
         return joinedCounts(parts)
     }

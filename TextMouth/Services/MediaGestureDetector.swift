@@ -56,26 +56,26 @@ final class MediaGestureDetector: Sendable {
         var displayName: String {
             switch self {
             case .play:
-                return String(localized: "Play",
-                              comment: "Name of the Play media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.")
+                // Translators: Name of the Play media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.
+                return String(localized: "Play")
             case .pause:
-                return String(localized: "Pause",
-                              comment: "Name of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.")
+                // Translators: Name of the Pause media event, a choice for one step of the media-key pattern that starts a sleep timer in Settings.
+                return String(localized: "Pause")
             case .togglePlayPause:
-                return String(localized: "Play/Pause toggle",
-                              comment: "Name of the media event of the combined Play and Pause key, a choice for one step of the media-key pattern in Settings.")
+                // Translators: Name of the media event of the combined Play and Pause key, a choice for one step of the media-key pattern in Settings.
+                return String(localized: "Play/Pause toggle")
             case .previousTrack:
-                return String(localized: "Previous track",
-                              comment: "Name of the Previous Track media event, a choice for one step of the media-key pattern in Settings.")
+                // Translators: Name of the Previous Track media event, a choice for one step of the media-key pattern in Settings.
+                return String(localized: "Previous track")
             case .nextTrack:
-                return String(localized: "Next track",
-                              comment: "Name of the Next Track media event, a choice for one step of the media-key pattern in Settings.")
+                // Translators: Name of the Next Track media event, a choice for one step of the media-key pattern in Settings.
+                return String(localized: "Next track")
             case .skipForward:
-                return String(localized: "Skip forward",
-                              comment: "Name of the Skip Forward media event, a choice for one step of the media-key pattern in Settings.")
+                // Translators: Name of the Skip Forward media event, a choice for one step of the media-key pattern in Settings.
+                return String(localized: "Skip forward")
             case .skipBackward:
-                return String(localized: "Skip backward",
-                              comment: "Name of the Skip Backward media event, a choice for one step of the media-key pattern in Settings.")
+                // Translators: Name of the Skip Backward media event, a choice for one step of the media-key pattern in Settings.
+                return String(localized: "Skip backward")
             }
         }
     }

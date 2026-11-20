@@ -34,7 +34,8 @@ enum UnsavedChangesChoice: Equatable {
 enum UnsavedChangesPrompt {
     /// The alert's title.
     static var title: String {
-        String(localized: "Some Changes Could Not Be Saved", comment: "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk.")
+        // Translators: Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk.
+        String(localized: "Some Changes Could Not Be Saved")
     }
 
     /// What the alert explains: each unsaved subsystem's sentence, as the
@@ -49,30 +50,34 @@ enum UnsavedChangesPrompt {
     /// The line that opens the alert's message, before the list of what is
     /// unsaved.
     static var quittingLeavesUnsaved: String {
-        String(localized: "Quitting now leaves these changes unsaved:", comment: "First line of the alert's message when quitting would leave changes unsaved; a list of what is unsaved follows it.")
+        // Translators: First line of the alert's message when quitting would leave changes unsaved; a list of what is unsaved follows it.
+        String(localized: "Quitting now leaves these changes unsaved:")
     }
 
     /// What each of the prompt's buttons does. The names it quotes are the
     /// buttons' own words (`retryTitle`, `quitAnywayTitle`, `cancelTitle`),
     /// so the sentence and the buttons agree in every language.
     static var choices: String {
-        String(localized: "\(retryTitle) tries again, \(quitAnywayTitle) quits without saving, \(cancelTitle) keeps TextMouth open.",
-               comment: "Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.")
+        // Translators: Last line of the alert's message, saying what each button does. %1$@ is the name of the first button, which tries saving again, %2$@ the name of the second, which quits without saving, and %3$@ the name of the third, which keeps TextMouth open. Keep each name exactly as the buttons show it.
+        String(localized: "\(retryTitle) tries again, \(quitAnywayTitle) quits without saving, \(cancelTitle) keeps TextMouth open.")
     }
 
     /// The first button: tries to save again.
     static var retryTitle: String {
-        String(localized: "Retry", comment: "Button of the unsaved-changes alert that tries to save the changes again.")
+        // Translators: Button of the unsaved-changes alert that tries to save the changes again.
+        String(localized: "Retry")
     }
 
     /// The second button: quits without saving.
     static var quitAnywayTitle: String {
-        String(localized: "Quit Anyway", comment: "Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved.")
+        // Translators: Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved.
+        String(localized: "Quit Anyway")
     }
 
     /// The third button: keeps TextMouth open.
     static var cancelTitle: String {
-        String(localized: "Cancel", comment: "Button that closes a sheet or answers a question without doing or changing anything.")
+        // Translators: Button that closes a sheet or answers a question without doing or changing anything.
+        String(localized: "Cancel")
     }
 
 #if os(macOS)

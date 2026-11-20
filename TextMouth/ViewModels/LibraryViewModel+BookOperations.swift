@@ -1268,8 +1268,8 @@ enum LibraryTransitionWording {
     /// `announcedPackageCount`.
     static func completion(movingPackagesOf count: Int) -> String? {
         guard count >= announcedPackageCount else { return nil }
-        return String(localized: "Done. Moved \(count) books.",
-                      comment: "VoiceOver announcement when a move of many books to a folder finishes. %lld is how many books were moved.")
+        // Translators: VoiceOver announcement when a move of many books to a folder finishes. %lld is how many books were moved.
+        return String(localized: "Done. Moved \(count) books.")
     }
 
     /// The Move to Folder… command for `targets`, the books a row's commands
@@ -1281,10 +1281,10 @@ enum LibraryTransitionWording {
         let movable = targets.reduce(0) { $1.isFeedItem ? $0 : $0 + 1 }
         guard movable > 0 else { return nil }
         return movable > 1
-            ? String(localized: "Move \(movable) Books to Folder...",
-                     comment: "Title of the command that moves several selected books to a folder, in a row's menu. %lld is how many books it moves.")
-            : String(localized: "Move to Folder...",
-                     comment: "Title of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder.")
+            // Translators: Title of the command that moves several selected books to a folder, in a row's menu. %lld is how many books it moves.
+            ? String(localized: "Move \(movable) Books to Folder...")
+            // Translators: Title of the command that moves the selected book to a folder, in a row's menu. The three dots mean a sheet opens to choose the folder.
+            : String(localized: "Move to Folder...")
     }
 
     /// What VoiceOver hears when Move to Folder… leaves feed items titled
@@ -1300,15 +1300,15 @@ enum LibraryTransitionWording {
         // The names: all of them when there are three or fewer, else the
         // first three and how many more.
         let names = rest > 0
-            ? String(localized: "\(shown.joined(separator: ", ")), and \(rest) more",
-                     comment: "The first three titles of the feed items that were left where they are, then how many others there were. %1$@ is the three titles, in quotes, separated by commas. %2$lld is how many more.")
+            // Translators: The first three titles of the feed items that were left where they are, then how many others there were. %1$@ is the three titles, in quotes, separated by commas. %2$lld is how many more.
+            ? String(localized: "\(shown.joined(separator: ", ")), and \(rest) more")
             : CountWording.list(Array(shown))
         let command = ShortcutAction.moveToLibrary.title
         if titles.count == 1 {
-            return String(localized: "Left \(names) where it is: episodes and articles stay in their feeds; \(command) makes one a book of your library.",
-                          comment: "VoiceOver announcement when Move to Folder left one feed item where it is. %1$@ is the item's title, in quotes. %2$@ is the name of the Move to Library command, which makes an item a book of the library.")
+            // Translators: VoiceOver announcement when Move to Folder left one feed item where it is. %1$@ is the item's title, in quotes. %2$@ is the name of the Move to Library command, which makes an item a book of the library.
+            return String(localized: "Left \(names) where it is: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
         }
-        return String(localized: "Left \(names) where they are: episodes and articles stay in their feeds; \(command) makes one a book of your library.",
-                      comment: "VoiceOver announcement when Move to Folder left several feed items where they are. %1$@ is the items' titles, in quotes, such as \"A\", \"B\", and 2 more. %2$@ is the name of the Move to Library command, which makes an item a book of the library.")
+        // Translators: VoiceOver announcement when Move to Folder left several feed items where they are. %1$@ is the items' titles, in quotes, such as "A", "B", and 2 more. %2$@ is the name of the Move to Library command, which makes an item a book of the library.
+        return String(localized: "Left \(names) where they are: episodes and articles stay in their feeds; \(command) makes one a book of your library.")
     }
 }

@@ -26,23 +26,23 @@ enum MOBIError: LocalizedError, LogDescribing, Equatable {
     var errorDescription: String? {
         switch self {
         case .notAKindleBook:
-            return String(localized: "This file is not a Kindle book that TextMouth can read.",
-                          comment: "Why a file could not be imported as a Kindle (MOBI) book: it is not a Kindle book of a kind TextMouth reads.")
+            // Translators: Why a file could not be imported as a Kindle (MOBI) book: it is not a Kindle book of a kind TextMouth reads.
+            return String(localized: "This file is not a Kindle book that TextMouth can read.")
         case .damaged(let detail):
             // A fault only a programmer can name (a table's place, a count)
             // is left out of what a listener hears: the sentence says what to do.
             guard !detail.isEmpty else {
-                return String(localized: "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again.",
-                              comment: "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do.")
+                // Translators: Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do.
+                return String(localized: "This Kindle book is damaged or incomplete. Get a fresh copy, then import it again.")
             }
-            return String(localized: "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy, then import it again.",
-                          comment: "Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
+            // Translators: Why a Kindle (MOBI) book could not be imported: it is damaged, and what to do. %@ is the reason, a phrase in English that begins with a lowercase letter and has no full stop.
+            return String(localized: "This Kindle book is damaged or incomplete: \(detail). Get a fresh copy, then import it again.")
         case .copyProtected:
-            return String(localized: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
-                          comment: "Why a Kindle (MOBI) book could not be imported: it is encrypted or carries copy protection (DRM), which TextMouth never removes.")
+            // Translators: Why a Kindle (MOBI) book could not be imported: it is encrypted or carries copy protection (DRM), which TextMouth never removes.
+            return String(localized: "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.")
         case .unsupportedCompression:
-            return String(localized: "This Kindle book is compressed in a way TextMouth can't read yet.",
-                          comment: "Why a Kindle (MOBI) book could not be imported: its text is compressed in a way TextMouth does not read.")
+            // Translators: Why a Kindle (MOBI) book could not be imported: its text is compressed in a way TextMouth does not read.
+            return String(localized: "This Kindle book is compressed in a way TextMouth can't read yet.")
         }
     }
 

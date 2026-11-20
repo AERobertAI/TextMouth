@@ -198,8 +198,8 @@ struct BRFExportWriter: TextExportWriter {
     /// The picker's hint. It says "braille", not "braille ASCII": the options
     /// may write a BRF in Eurobraille or in Unicode braille patterns.
     var hint: String {
-        String(localized: "Braille Ready Format: pages of braille, for braille displays and embossers.",
-               comment: "The hint of the Convert to picker in the Export dialog while BRF is chosen. Braille Ready Format is the name of the file format.")
+        // Translators: The hint of the Convert to picker in the Export dialog while BRF is chosen. Braille Ready Format is the name of the file format.
+        String(localized: "Braille Ready Format: pages of braille, for braille displays and embossers.")
     }
     let fileExtension = "brf"
 
@@ -235,8 +235,8 @@ struct PEFExportWriter: TextExportWriter {
     let id = "pef"
     let name = "PEF"
     var hint: String {
-        String(localized: "Portable Embosser Format: pages of Unicode braille in XML, for embossers.",
-               comment: "The hint of the Convert to picker in the Export dialog while PEF is chosen. Portable Embosser Format is the name of the file format.")
+        // Translators: The hint of the Convert to picker in the Export dialog while PEF is chosen. Portable Embosser Format is the name of the file format.
+        String(localized: "Portable Embosser Format: pages of Unicode braille in XML, for embossers.")
     }
     let fileExtension = "pef"
 

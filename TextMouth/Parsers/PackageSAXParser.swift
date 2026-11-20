@@ -201,14 +201,14 @@ enum PackageDamage {
     static func message(file: String, reason: String, container: Container) -> String {
         switch container {
         case .daisyBook, .epubBook, .audiobook:
-            return String(localized: "The file “\(file)” in this book is damaged or incomplete: \(reason). Get a fresh copy of the book, then import it again.",
-                          comment: "Why a book could not be imported (a DAISY book, an EPUB book, or an audiobook): a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
+            // Translators: Why a book could not be imported (a DAISY book, an EPUB book, or an audiobook): a file inside it is damaged. %1$@ is the file's path inside the book and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.
+            return String(localized: "The file “\(file)” in this book is damaged or incomplete: \(reason). Get a fresh copy of the book, then import it again.")
         case .document:
-            return String(localized: "The file “\(file)” in this document is damaged or incomplete: \(reason). Get a fresh copy of the document, then import it again.",
-                          comment: "Why a Word or OpenDocument document could not be imported: a file inside it is damaged. %1$@ is the file's path inside the document and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
+            // Translators: Why a Word or OpenDocument document could not be imported: a file inside it is damaged. %1$@ is the file's path inside the document and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.
+            return String(localized: "The file “\(file)” in this document is damaged or incomplete: \(reason). Get a fresh copy of the document, then import it again.")
         case .archive, .comicBookArchive:
-            return String(localized: "The file “\(file)” in this archive is damaged or incomplete: \(reason). Get a fresh copy of the archive, then import it again.",
-                          comment: "Why a ZIP archive or comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.")
+            // Translators: Why a ZIP archive or comic book archive (a ZIP of pictures named .cbz) could not be imported: a file inside it is damaged. %1$@ is the file's path inside the archive and %2$@ the reason, a phrase in English that begins with a lowercase letter and has no full stop.
+            return String(localized: "The file “\(file)” in this archive is damaged or incomplete: \(reason). Get a fresh copy of the archive, then import it again.")
         }
     }
 

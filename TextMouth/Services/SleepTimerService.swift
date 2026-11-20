@@ -1256,11 +1256,11 @@ final class SleepTimerService: ObservableObject {
     nonisolated static func milestoneAnnouncement(secondsLeft: Int) -> String {
         if secondsLeft >= 60 {
             let minutes = secondsLeft / 60
-            return String(localized: "Sleep timer: \(minutes) minutes remaining",
-                          comment: "VoiceOver announcement as the sleep timer's countdown passes a milestone. %lld is the whole minutes left (5 or 1).")
+            // Translators: VoiceOver announcement as the sleep timer's countdown passes a milestone. %lld is the whole minutes left (5 or 1).
+            return String(localized: "Sleep timer: \(minutes) minutes remaining")
         }
-        return String(localized: "Sleep timer: \(secondsLeft) seconds remaining",
-                      comment: "VoiceOver announcement as the sleep timer's countdown passes a milestone under a minute. %lld is the seconds left (30 or 10).")
+        // Translators: VoiceOver announcement as the sleep timer's countdown passes a milestone under a minute. %lld is the seconds left (30 or 10).
+        return String(localized: "Sleep timer: \(secondsLeft) seconds remaining")
     }
 
     /// The timer's state as the sheet and the reader show it: the time left
@@ -1273,8 +1273,8 @@ final class SleepTimerService: ObservableObject {
     var formattedRemaining: String {
         guard isActive, let duration else { return "" }
         if isFadingOut {
-            return String(localized: "Fading out",
-                          comment: "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.")
+            // Translators: The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.
+            return String(localized: "Fading out")
         }
         // A timer waiting for a place in the book shows the place.
         guard case .minutes = duration else { return duration.displayName }
@@ -1288,12 +1288,12 @@ final class SleepTimerService: ObservableObject {
     var spokenStatus: String {
         guard isActive, let duration else { return "" }
         if isFadingOut {
-            return String(localized: "fading out",
-                          comment: "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.")
+            // Translators: The sleep timer's state as VoiceOver reads it after "Sleep timer:" while the timer fades the sound out. Lowercase, since it follows a colon.
+            return String(localized: "fading out")
         }
         if let stop = duration.spokenStop { return stop }
-        return String(localized: "\(formattedRemaining) remaining",
-                      comment: "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.")
+        // Translators: The sleep timer's state as VoiceOver reads it after "Sleep timer:" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.
+        return String(localized: "\(formattedRemaining) remaining")
     }
 
     /// The label VoiceOver reads for the timer's status, wherever it is
@@ -1301,8 +1301,8 @@ final class SleepTimerService: ObservableObject {
     /// end of the book"; empty with no timer.
     var spokenLabel: String {
         guard isActive else { return "" }
-        return String(localized: "Sleep timer: \(spokenStatus)",
-                      comment: "VoiceOver label of the sleep timer's status in the reader and the sleep timer sheet. %@ is the timer's state, such as \"4:59 remaining\" or \"stops at the end of this heading\".")
+        // Translators: VoiceOver label of the sleep timer's status in the reader and the sleep timer sheet. %@ is the timer's state, such as "4:59 remaining" or "stops at the end of this heading".
+        return String(localized: "Sleep timer: \(spokenStatus)")
     }
 
     // MARK: - Test Support

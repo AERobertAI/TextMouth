@@ -665,15 +665,15 @@ enum FeedRecordQuitWording {
     /// What the quit is finishing, after "TextMouth is finishing up before
     /// it quits:" (`QuitHoldWording`).
     static var finishing: String {
-        String(localized: "saving the changes to your feed subscriptions",
-               comment: "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop.")
+        // Translators: What the app is finishing before it quits, after "TextMouth is finishing up before it quits:". Lower case, without a full stop.
+        String(localized: "saving the changes to your feed subscriptions")
     }
 
     /// Why a feed's change is still unsaved when the quit stopped waiting:
     /// the reason that ends "Changes to the feed “Planet Money” could not be
     /// saved:" in the quit's prompt and the banner.
     static var stillSaving: String {
-        String(localized: "TextMouth is still saving them.",
-               comment: "The reason that ends \"Changes to the feed “Planet Money” could not be saved:\" in the quit prompt and banner. Them are the feed's changes.")
+        // Translators: The reason that ends "Changes to the feed “Planet Money” could not be saved:" in the quit prompt and banner. Them are the feed's changes.
+        String(localized: "TextMouth is still saving them.")
     }
 }

@@ -128,20 +128,20 @@ enum DAISYPackageError: LocalizedError, LogDescribing, Equatable {
         switch self {
         case let .referenceOutsidePackage(reference, file):
             return SentenceWording.joined([
-                String(localized: "The file “\(file)” in this DAISY book refers to “\(reference)”, outside the book's folder.",
-                       comment: "First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it."),
-                String(localized: "Only files inside the folder can be imported.",
-                       comment: "Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder."),
+                // Translators: First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it.
+                String(localized: "The file “\(file)” in this DAISY book refers to “\(reference)”, outside the book's folder."),
+                // Translators: Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder.
+                String(localized: "Only files inside the folder can be imported."),
             ])
         case .notAPackage:
-            return String(localized: "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
-                          comment: "Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are.")
+            // Translators: Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are.
+            return String(localized: "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.")
         case .severalPackages(let names):
             return SentenceWording.joined([
-                String(localized: "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))).",
-                       comment: "First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas."),
-                String(localized: "Import each book's .opf file on its own.",
-                       comment: "Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is."),
+                // Translators: First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas.
+                String(localized: "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", ")))."),
+                // Translators: Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is.
+                String(localized: "Import each book's .opf file on its own."),
             ])
         }
     }

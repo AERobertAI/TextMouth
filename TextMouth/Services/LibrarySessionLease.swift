@@ -451,8 +451,8 @@ final class LibrarySessionLease {
 
     /// What a Mac whose lease can't be read yet is called.
     nonisolated static var anotherMac: String {
-        String(localized: "another Mac",
-               comment: "What the warning that TextMouth is open on another Mac calls that Mac when its name can't be read yet. It sits where the Mac's name would go, inside curly quotes, so it has no capital letter.")
+        // Translators: What the warning that TextMouth is open on another Mac calls that Mac when its name can't be read yet. It sits where the Mac's name would go, inside curly quotes, so it has no capital letter.
+        String(localized: "another Mac")
     }
 
     /// Writes a record as people can read it.
@@ -474,31 +474,31 @@ final class LibrarySessionLease {
 
     /// The warning's title.
     static var warningTitle: String {
-        String(localized: "TextMouth Is Open on Another Mac",
-               comment: "Title of the warning shown when another Mac has this library open too.")
+        // Translators: Title of the warning shown when another Mac has this library open too.
+        String(localized: "TextMouth Is Open on Another Mac")
     }
     /// The warning's button that keeps using the library here, the default.
     static var continueTitle: String {
-        String(localized: "Continue",
-               comment: "Button of the warning that TextMouth is open on another Mac: keeps using the library on this Mac.")
+        // Translators: Button of the warning that TextMouth is open on another Mac: keeps using the library on this Mac.
+        String(localized: "Continue")
     }
     /// The warning's button that quits.
     static var quitTitle: String {
-        String(localized: "Quit TextMouth",
-               comment: "Button of the warning that TextMouth is open on another Mac: quits TextMouth.")
+        // Translators: Button of the warning that TextMouth is open on another Mac: quits TextMouth.
+        String(localized: "Quit TextMouth")
     }
 
     /// What the warning says about `other`.
     static func warningMessage(about other: OtherMac) -> String {
         let opening = other.minutesAgo == 0
-            ? String(localized: "TextMouth is also open on “\(other.computerName)” (active less than a minute ago).",
-                     comment: "First sentence of the warning that another Mac has this library open. %@ is that Mac's name.")
-            : String(localized: "TextMouth is also open on “\(other.computerName)” (active \(other.minutesAgo) minutes ago).",
-                     comment: "First sentence of the warning that another Mac has this library open. %1$@ is that Mac's name; %2$lld is how many minutes ago it was last active.")
+            // Translators: First sentence of the warning that another Mac has this library open. %@ is that Mac's name.
+            ? String(localized: "TextMouth is also open on “\(other.computerName)” (active less than a minute ago).")
+            // Translators: First sentence of the warning that another Mac has this library open. %1$@ is that Mac's name; %2$lld is how many minutes ago it was last active.
+            : String(localized: "TextMouth is also open on “\(other.computerName)” (active \(other.minutesAgo) minutes ago).")
         return SentenceWording.joined([
             opening,
-            String(localized: "Using one library on two Macs at the same time can lose reading positions and changes.",
-                   comment: "Last sentence of the warning that another Mac has this library open: the risk."),
+            // Translators: Last sentence of the warning that another Mac has this library open: the risk.
+            String(localized: "Using one library on two Macs at the same time can lose reading positions and changes."),
         ])
     }
 

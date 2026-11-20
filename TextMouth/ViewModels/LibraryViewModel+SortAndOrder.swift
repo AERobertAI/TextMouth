@@ -21,10 +21,10 @@ enum ManualBookOrder {
         /// Almanac below Bestiary".
         var announcement: String {
             direction < 0
-                ? String(localized: "Moved \(movedTitle) above \(adjacentTitle)",
-                         comment: "VoiceOver announcement after a book moved up past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved above.")
-                : String(localized: "Moved \(movedTitle) below \(adjacentTitle)",
-                         comment: "VoiceOver announcement after a book moved down past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved below.")
+                // Translators: VoiceOver announcement after a book moved up past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved above.
+                ? String(localized: "Moved \(movedTitle) above \(adjacentTitle)")
+                // Translators: VoiceOver announcement after a book moved down past another in a manual order. %1$@ is the moved book's title. %2$@ is the title of the book it moved below.
+                : String(localized: "Moved \(movedTitle) below \(adjacentTitle)")
         }
 
         /// What VoiceOver says of a move made with a row's Move Up or Move
@@ -32,8 +32,8 @@ enum ManualBookOrder {
         /// counted from 1 at the top, "Dune, 3 of 12", short enough to hear
         /// after each of many moves in a row.
         var placeAnnouncement: String {
-            String(localized: "\(movedTitle), \(newIndex + 1) of \(count)",
-                   comment: "VoiceOver announcement after a book moved one place in an order the user arranges. %1$@ is the book's title. %2$lld is its new place, counted from 1. %3$lld is how many books the order holds.")
+            // Translators: VoiceOver announcement after a book moved one place in an order the user arranges. %1$@ is the book's title. %2$lld is its new place, counted from 1. %3$lld is how many books the order holds.
+            String(localized: "\(movedTitle), \(newIndex + 1) of \(count)")
         }
     }
 
@@ -45,10 +45,10 @@ enum ManualBookOrder {
     /// (`LibraryViewModel.moveSelection`).
     static func cannotMoveAnnouncement(_ title: String, direction: Int) -> String {
         direction < 0
-            ? String(localized: "\(title) can't move up.",
-                     comment: "VoiceOver announcement when a book is at the top of a manual order and cannot move up. %@ is the book's title.")
-            : String(localized: "\(title) can't move down.",
-                     comment: "VoiceOver announcement when a book is at the bottom of a manual order and cannot move down. %@ is the book's title.")
+            // Translators: VoiceOver announcement when a book is at the top of a manual order and cannot move up. %@ is the book's title.
+            ? String(localized: "\(title) can't move up.")
+            // Translators: VoiceOver announcement when a book is at the bottom of a manual order and cannot move down. %@ is the book's title.
+            : String(localized: "\(title) can't move down.")
     }
 
     /// What VoiceOver says when Move Book Up or Move Book Down is used
@@ -63,42 +63,42 @@ enum ManualBookOrder {
         if location.view.kind == .folders {
             let manual = LibrarySortField.manual.title
             return SentenceWording.joined([
-                String(localized: "Books can be moved only in a folder sorted by \(manual), and this folder is not.",
-                       comment: "First sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort."),
-                String(localized: "Choose \(manual) in the Sort menu, then try again.",
-                       comment: "Second sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort, a choice in the Sort menu."),
+                // Translators: First sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort.
+                String(localized: "Books can be moved only in a folder sorted by \(manual), and this folder is not."),
+                // Translators: Second sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort, a choice in the Sort menu.
+                String(localized: "Choose \(manual) in the Sort menu, then try again."),
             ])
         }
-        return String(localized: "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
-                      comment: "VoiceOver announcement when Move Book Up or Move Book Down is used in a view that mixes books from many folders. Folders and Reading List are names of views in the View menu.")
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used in a view that mixes books from many folders. Folders and Reading List are names of views in the View menu.
+        return String(localized: "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.")
     }
 
     /// What VoiceOver says when Move Book Up or Move Book Down is used on a
     /// feed's item in a folder, where it has no place in the order the user
     /// arranges. In the Reading List it moves like any book.
     static func feedItemCannotMoveAnnouncement(_ title: String) -> String {
-        String(localized: "\(title) is an item of a feed, and a feed's items can't be moved.",
-               comment: "VoiceOver announcement when Move Book Up or Move Book Down is used on an episode or article of a feed in a folder. %@ is its title.")
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used on an episode or article of a feed in a folder. %@ is its title.
+        String(localized: "\(title) is an item of a feed, and a feed's items can't be moved.")
     }
 
     /// What VoiceOver says when Move Book Up or Move Book Down is used with
     /// no book selected.
     static var noBookToMoveAnnouncement: String {
-        String(localized: "No book is selected. Select the book to move, then try again.",
-               comment: "VoiceOver announcement when Move Book Up or Move Book Down is used with no book selected.")
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used with no book selected.
+        String(localized: "No book is selected. Select the book to move, then try again.")
     }
 
     /// What VoiceOver says when Move Book Up or Move Book Down is used with
     /// several books selected, since a move shifts one book one place.
     static var severalBooksToMoveAnnouncement: String {
-        String(localized: "A move shifts one book at a time, and several are selected. Select one book, then try again.",
-               comment: "VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected.")
+        // Translators: VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected.
+        String(localized: "A move shifts one book at a time, and several are selected. Select one book, then try again.")
     }
 
     /// What the announcement calls a book it has no title for.
     static var theBook: String {
-        String(localized: "The book",
-               comment: "How an announcement names a book whose title is not known, as in \"The book can't move up.\"")
+        // Translators: How an announcement names a book whose title is not known, as in "The book can't move up."
+        String(localized: "The book")
     }
 
     /// The books in `folderPath`, in the folder's manual order exactly as

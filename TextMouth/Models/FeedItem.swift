@@ -226,23 +226,23 @@ enum FeedItemState: Equatable, Sendable {
     var visibleNote: String {
         switch self {
         case .notDownloaded:
-            return String(localized: "Not Downloaded",
-                          comment: "The note on a feed's episode or article row, and in a book's row, when its file is not on this Mac. Title case.")
+            // Translators: The note on a feed's episode or article row, and in a book's row, when its file is not on this Mac. Title case.
+            return String(localized: "Not Downloaded")
         case .downloading:
-            return String(localized: "Downloading",
-                          comment: "The note on a feed's episode or article row while its file downloads. Title case.")
+            // Translators: The note on a feed's episode or article row while its file downloads. Title case.
+            return String(localized: "Downloading")
         case .waiting:
-            return String(localized: "Waiting to Download",
-                          comment: "The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case.")
+            // Translators: The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case.
+            return String(localized: "Waiting to Download")
         case .failed:
-            return String(localized: "Download Failed",
-                          comment: "The note on a feed's episode or article row whose last download failed. A reason may follow it. Title case.")
+            // Translators: The note on a feed's episode or article row whose last download failed. A reason may follow it. Title case.
+            return String(localized: "Download Failed")
         case .downloaded:
-            return String(localized: "Downloaded",
-                          comment: "The note on a feed's episode or article row whose file is on this Mac. Title case.")
+            // Translators: The note on a feed's episode or article row whose file is on this Mac. Title case.
+            return String(localized: "Downloaded")
         case .inLibrary:
-            return String(localized: "In Library",
-                          comment: "The note on a feed's episode or article row that was moved into the library as a book of its own. Title case.")
+            // Translators: The note on a feed's episode or article row that was moved into the library as a book of its own. Title case.
+            return String(localized: "In Library")
         }
     }
 

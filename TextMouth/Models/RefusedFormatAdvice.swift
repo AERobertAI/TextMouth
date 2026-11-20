@@ -13,53 +13,53 @@ import Foundation
 enum RefusedFormatAdvice {
     /// Pages documents, whose newer form is a ZIP of undocumented files.
     static var pages: String {
-        String(localized: "Export Pages documents from Pages as Word documents or EPUB books, then import those.",
-               comment: "Advice after the refusal of a Pages document: how to get the book out of Pages.")
+        // Translators: Advice after the refusal of a Pages document: how to get the book out of Pages.
+        String(localized: "Export Pages documents from Pages as Word documents or EPUB books, then import those.")
     }
     /// Keynote presentations. TextMouth reads no slide format, so a PDF is the way.
     static var keynote: String {
-        String(localized: "Export Keynote presentations from Keynote as PDF files, then import those.",
-               comment: "Advice after the refusal of a Keynote presentation, which TextMouth reads in no slide format.")
+        // Translators: Advice after the refusal of a Keynote presentation, which TextMouth reads in no slide format.
+        String(localized: "Export Keynote presentations from Keynote as PDF files, then import those.")
     }
     /// Numbers spreadsheets, for the same reason.
     static var numbers: String {
-        String(localized: "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
-               comment: "Advice after the refusal of a Numbers spreadsheet.")
+        // Translators: Advice after the refusal of a Numbers spreadsheet.
+        String(localized: "Export Numbers spreadsheets from Numbers as PDF files, then import those.")
     }
     /// WordPerfect documents, which no part of macOS reads.
     static var wordPerfect: String {
-        String(localized: "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
-               comment: "Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name.")
+        // Translators: Advice after the refusal of a WordPerfect document, which no part of macOS reads. LibreOffice is a program's name.
+        String(localized: "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.")
     }
     /// Compiled HTML Help files.
     static var compiledHelp: String {
-        String(localized: "Convert Compiled HTML Help files to HTML files or PDF files, then import those.",
-               comment: "Advice after the refusal of a Compiled HTML Help file.")
+        // Translators: Advice after the refusal of a Compiled HTML Help file.
+        String(localized: "Convert Compiled HTML Help files to HTML files or PDF files, then import those.")
     }
     /// DjVu scans.
     static var djVu: String {
-        String(localized: "Convert DjVu documents to PDF files, then import those.",
-               comment: "Advice after the refusal of a DjVu scan.")
+        // Translators: Advice after the refusal of a DjVu scan.
+        String(localized: "Convert DjVu documents to PDF files, then import those.")
     }
     /// XPS documents.
     static var xps: String {
-        String(localized: "Convert XPS documents to PDF files, then import those.",
-               comment: "Advice after the refusal of an XPS document.")
+        // Translators: Advice after the refusal of an XPS document.
+        String(localized: "Convert XPS documents to PDF files, then import those.")
     }
     /// A comic whose pages are in a RAR archive, which TextMouth does not open.
     static var rarComic: String {
-        String(localized: "Repack the pages of RAR comics as CBZ comics, then import those.",
-               comment: "Advice after the refusal of a comic whose pages are in a RAR archive.")
+        // Translators: Advice after the refusal of a comic whose pages are in a RAR archive.
+        String(localized: "Repack the pages of RAR comics as CBZ comics, then import those.")
     }
     /// A RAR archive that is no comic.
     static var rarArchive: String {
-        String(localized: "TextMouth does not open RAR archives. Unpack them, then import what they hold.",
-               comment: "Advice after the refusal of a RAR archive that is no comic.")
+        // Translators: Advice after the refusal of a RAR archive that is no comic.
+        String(localized: "TextMouth does not open RAR archives. Unpack them, then import what they hold.")
     }
     /// Audio that is locked to a store's own player.
     static var copyProtected: String {
-        String(localized: "TextMouth cannot open copy-protected files.",
-               comment: "Advice after the refusal of audio that is locked to a store's own player, such as Audible's .aa and .aax files.")
+        // Translators: Advice after the refusal of audio that is locked to a store's own player, such as Audible's .aa and .aax files.
+        String(localized: "TextMouth cannot open copy-protected files.")
     }
 
     /// Every refused extension (lowercase, no dot) and its sentence. The one

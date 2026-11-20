@@ -1557,8 +1557,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// it, Paused, with Play to go on from there (REV11; it once said
     /// "Speech stopped").
     nonisolated static var voiceDidNotStartAnnouncement: String {
-        String(localized: "Speech paused: the voice did not start. Press Play to try again.",
-               comment: "Announcement when the voice did not start a passage, even on fresh synthesizers, so speech paused there. Play is the name of a button.")
+        // Translators: Announcement when the voice did not start a passage, even on fresh synthesizers, so speech paused there. Play is the name of a button.
+        String(localized: "Speech paused: the voice did not start. Press Play to try again.")
     }
 
     /// Stop speech at `offset` as a pause, the cursor kept there, once a
@@ -1608,8 +1608,8 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// listener itself (`SpeechRefusalWording.announcement`). Play speaks on
     /// from there.
     nonisolated static var engineRefusedAnnouncement: String {
-        String(localized: "Speech stopped: the Mac's speech engine refused this text.",
-               comment: "Announcement when the Mac's speech engine refused a text twice and speech ended where it was, in a window with no report sheet to say so.")
+        // Translators: Announcement when the Mac's speech engine refused a text twice and speech ended where it was, in a window with no report sheet to say so.
+        String(localized: "Speech stopped: the Mac's speech engine refused this text.")
     }
 
     /// Speak again after the system cancelled the live utterance on its own
@@ -2370,13 +2370,13 @@ final class SpeechService: NSObject, ObservableObject, @unchecked Sendable {
     /// User-facing pitch label shared by reader and global settings screens.
     nonisolated static func pitchLabel(_ pitch: Double) -> String {
         if abs(pitch - 1.0) < 0.05 {
-            return String(localized: "Normal (1.0x)",
-                          comment: "The voice pitch when it is the normal one, as the pitch sliders say it. 1.0x means the voice's own pitch, unchanged.")
+            // Translators: The voice pitch when it is the normal one, as the pitch sliders say it. 1.0x means the voice's own pitch, unchanged.
+            return String(localized: "Normal (1.0x)")
         }
         // The multiplier with one decimal, then its "x": a pitch that is not the normal one.
         let multiplier = String(format: "%.1f", pitch)
-        return String(localized: "\(multiplier)x",
-                      comment: "The voice pitch as a multiplier of the voice's own, as the pitch sliders say it, such as \"1.2x\". %@ is the multiplier with one decimal.")
+        // Translators: The voice pitch as a multiplier of the voice's own, as the pitch sliders say it, such as "1.2x". %@ is the multiplier with one decimal.
+        return String(localized: "\(multiplier)x")
     }
 
     // MARK: - Position Tracking

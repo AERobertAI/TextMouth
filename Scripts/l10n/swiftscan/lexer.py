@@ -74,6 +74,7 @@ class Literal:
     wording: bool = False          # whether it sits in a Wording or Vocabulary type or file
     findings: Tuple[str, ...] = ()  # what the conversion must restructure, see classify.findings_of
     needs_comment: bool = False    # a SwiftUI literal the compiler extracts with no comment, see classify.needs_comment
+    note_problem: str = ""         # what is wrong with the literal's translator's note, see classify.note_problem
 
 
 class Lexer:
@@ -99,6 +100,9 @@ class Lexer:
         # The starts of the literals whose innermost bracket is a named call's parenthesis (not
         # a bare one such as `a + (b ? "x" : "y")`), which a ternary's branches must be in.
         self._directly_in_call: Set[int] = set()
+        # The comments lexed so far, as {offset just past a comment: its first offset} (a line comment ends at its newline),
+        # so that `_back` can step over one: a `// Translators:` line between `String(` and `localized:` must not hide the label.
+        self._comment_starts: Dict[int, int] = {}
 
     # ------------------------------------------------------------------ helpers
 
@@ -123,9 +127,14 @@ class Lexer:
         """Moves the offset j back over any of the characters, so that the character before
         the result is the first one that is not among them."""
         s = self.s
-        while j > 0 and s[j - 1] in chars:
-            j -= 1
-        return j
+        while True:
+            while j > 0 and s[j - 1] in chars:
+                j -= 1
+            # Whitespace is skipped through the comments in it; the characters of an identifier are not.
+            if chars is _WHITESPACE and j in self._comment_starts:
+                j = self._comment_starts[j]
+            else:
+                return j
 
     def _forward(self, j: int, chars: str = _WHITESPACE) -> int:
         """Moves the offset j forward over any of the characters, to the first one that is not."""
@@ -195,9 +204,12 @@ class Lexer:
             i = m.start()
             if tok == "//":
                 j = s.find("\n", i)
+                self._comment_starts[n if j < 0 else j] = i
                 i = n if j < 0 else j
             elif tok == "/*":
+                started = i
                 i = self._skip_block_comment(i)
+                self._comment_starts[i] = started
             elif tok == "#/":
                 # An extended regex literal: skip to its closing /#.
                 j = s.find("/#", i + 2)

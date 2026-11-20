@@ -81,26 +81,26 @@ struct FinishedBookCounts: Equatable {
 
     /// `count` text books: "1 text book", "4 text books".
     private static func textBooksPhrase(_ count: Int) -> String {
-        String(localized: "\(count) text books",
-               comment: "A count of finished text books, one item of the Stats pane's breakdown of finished books by kind, such as \"4 text books\". %lld is the number of books.")
+        // Translators: A count of finished text books, one item of the Stats pane's breakdown of finished books by kind, such as "4 text books". %lld is the number of books.
+        String(localized: "\(count) text books")
     }
 
     /// `count` audiobooks: "1 audiobook", "2 audiobooks".
     private static func audiobooksPhrase(_ count: Int) -> String {
-        String(localized: "\(count) audiobooks",
-               comment: "A count of finished audiobooks, one item of the Stats pane's breakdown of finished books by kind, such as \"2 audiobooks\". %lld is the number of books.")
+        // Translators: A count of finished audiobooks, one item of the Stats pane's breakdown of finished books by kind, such as "2 audiobooks". %lld is the number of books.
+        String(localized: "\(count) audiobooks")
     }
 
     /// `count` podcast episodes: "1 podcast episode".
     private static func podcastEpisodesPhrase(_ count: Int) -> String {
-        String(localized: "\(count) podcast episodes",
-               comment: "A count of finished podcast episodes, one item of the Stats pane's breakdown of finished books by kind, such as \"1 podcast episode\". %lld is the number of episodes.")
+        // Translators: A count of finished podcast episodes, one item of the Stats pane's breakdown of finished books by kind, such as "1 podcast episode". %lld is the number of episodes.
+        String(localized: "\(count) podcast episodes")
     }
 
     /// `count` books of no known kind: "1 other book".
     private static func otherBooksPhrase(_ count: Int) -> String {
-        String(localized: "\(count) other books",
-               comment: "A count of finished books of no known kind, one item of the Stats pane's breakdown of finished books by kind, such as \"1 other book\". %lld is the number of books.")
+        // Translators: A count of finished books of no known kind, one item of the Stats pane's breakdown of finished books by kind, such as "1 other book". %lld is the number of books.
+        String(localized: "\(count) other books")
     }
 
     /// How many books of a known kind there are.
@@ -158,23 +158,23 @@ enum ReadingStatsTile: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .today:
-            return String(localized: "Today",
-                          comment: "Title of the Stats pane's tile showing the listening time of today.")
+            // Translators: Title of the Stats pane's tile showing the listening time of today.
+            return String(localized: "Today")
         case .thisWeek:
-            return String(localized: "This Week",
-                          comment: "Title of the Stats pane's tile showing the listening time of this week.")
+            // Translators: Title of the Stats pane's tile showing the listening time of this week.
+            return String(localized: "This Week")
         case .allTime:
-            return String(localized: "All Time",
-                          comment: "Title of the Stats pane's tile showing the total listening time.")
+            // Translators: Title of the Stats pane's tile showing the total listening time.
+            return String(localized: "All Time")
         case .currentStreak:
-            return String(localized: "Current Streak",
-                          comment: "Title of the Stats pane's tile showing how many days in a row the user has listened.")
+            // Translators: Title of the Stats pane's tile showing how many days in a row the user has listened.
+            return String(localized: "Current Streak")
         case .booksFinishedThisYear:
-            return String(localized: "Books Finished This Year",
-                          comment: "Title of the Stats pane's tile showing how many books were finished this year.")
+            // Translators: Title of the Stats pane's tile showing how many books were finished this year.
+            return String(localized: "Books Finished This Year")
         case .booksFinishedAllTime:
-            return String(localized: "Books Finished All Time",
-                          comment: "Title of the Stats pane's tile showing how many books were ever finished.")
+            // Translators: Title of the Stats pane's tile showing how many books were ever finished.
+            return String(localized: "Books Finished All Time")
         }
     }
 
@@ -189,24 +189,24 @@ enum ReadingStatsTile: String, CaseIterable, Identifiable {
     func wording(for figures: ReadingStatsFigures) -> ReadingStatsTileWording {
         switch self {
         case .today:
-            return .duration(figures.today, spokenAfter: String(localized: "Listening time today",
-                comment: "What VoiceOver says before the listening time of today on the Stats pane; a colon and the time follow."))
+            // Translators: What VoiceOver says before the listening time of today on the Stats pane; a colon and the time follow.
+            return .duration(figures.today, spokenAfter: String(localized: "Listening time today"))
         case .thisWeek:
-            return .duration(figures.thisWeek, spokenAfter: String(localized: "Listening time this week",
-                comment: "What VoiceOver says before the listening time of this week on the Stats pane; a colon and the time follow."))
+            // Translators: What VoiceOver says before the listening time of this week on the Stats pane; a colon and the time follow.
+            return .duration(figures.thisWeek, spokenAfter: String(localized: "Listening time this week"))
         case .allTime:
-            return .duration(figures.allTime, spokenAfter: String(localized: "Total listening time",
-                comment: "What VoiceOver says before the total listening time on the Stats pane; a colon and the time follow."))
+            // Translators: What VoiceOver says before the total listening time on the Stats pane; a colon and the time follow.
+            return .duration(figures.allTime, spokenAfter: String(localized: "Total listening time"))
         case .currentStreak:
             return .streak(figures.currentStreakDays)
         case .booksFinishedThisYear:
             let total = figures.booksFinishedThisYear
-            return .books(total, byKind: figures.booksFinishedThisYearByKind, spoken: String(localized: "\(total) books finished this year",
-                comment: "What VoiceOver says for the Stats pane's tile of books finished this year; a colon and the count of each kind may follow. %lld is the number of books."))
+            // Translators: What VoiceOver says for the Stats pane's tile of books finished this year; a colon and the count of each kind may follow. %lld is the number of books.
+            return .books(total, byKind: figures.booksFinishedThisYearByKind, spoken: String(localized: "\(total) books finished this year"))
         case .booksFinishedAllTime:
             let total = figures.booksFinishedAllTime
-            return .books(total, byKind: figures.booksFinishedAllTimeByKind, spoken: String(localized: "\(total) books finished all time",
-                comment: "What VoiceOver says for the Stats pane's tile of books finished in all, the library's whole history; a colon and the count of each kind may follow. %lld is the number of books."))
+            // Translators: What VoiceOver says for the Stats pane's tile of books finished in all, the library's whole history; a colon and the count of each kind may follow. %lld is the number of books.
+            return .books(total, byKind: figures.booksFinishedAllTimeByKind, spoken: String(localized: "\(total) books finished all time"))
         }
     }
 }
@@ -243,10 +243,10 @@ struct ReadingStatsTileWording: Equatable {
     /// days") and spoken after "Current listening streak": the same count,
     /// so the screen and VoiceOver agree, plural included.
     static func streak(_ days: Int) -> ReadingStatsTileWording {
-        let phrase = String(localized: "\(days) days",
-                            comment: "A count of days in a row, the Stats pane's current listening streak, such as \"3 days\". %lld is the number of days.")
-        let subject = String(localized: "Current listening streak",
-                             comment: "What VoiceOver says before the count of days of the current listening streak on the Stats pane; a colon and the count follow.")
+        // Translators: A count of days in a row, the Stats pane's current listening streak, such as "3 days". %lld is the number of days.
+        let phrase = String(localized: "\(days) days")
+        // Translators: What VoiceOver says before the count of days of the current listening streak on the Stats pane; a colon and the count follow.
+        let subject = String(localized: "Current listening streak")
         return ReadingStatsTileWording(value: phrase, accessibilityLabel: SentenceWording.labelled(subject, phrase))
     }
 

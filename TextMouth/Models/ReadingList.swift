@@ -39,14 +39,14 @@ struct ReadingList: Codable, Equatable, Sendable, KeepsUnknownKeysBesideSynthesi
         var title: String {
             switch self {
             case .playBookBelow:
-                return String(localized: "Play the book below",
-                              comment: "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.")
+                // Translators: A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book below it in the list.
+                return String(localized: "Play the book below")
             case .playBookAbove:
-                return String(localized: "Play the book above",
-                              comment: "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.")
+                // Translators: A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, play the book above it in the list.
+                return String(localized: "Play the book above")
             case .stop:
-                return String(localized: "Stop",
-                              comment: "A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.")
+                // Translators: A choice of the Reading List's When a book ends pop-up button: when a book opened from the list ends, stop there.
+                return String(localized: "Stop")
             }
         }
 

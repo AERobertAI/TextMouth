@@ -17,16 +17,16 @@ enum FeedRefreshError: Error, Equatable, Sendable {
         case .fetch(let error):
             return error.message(about: name)
         case .parse(.empty):
-            return String(localized: "The feed at \(host) is empty.",
-                          comment: "Why a feed could not be refreshed or subscribed to: its document is empty. %@ is the feed's server, such as example.com.")
+            // Translators: Why a feed could not be refreshed or subscribed to: its document is empty. %@ is the feed's server, such as example.com.
+            return String(localized: "The feed at \(host) is empty.")
         case .parse(.tooLarge):
             return FeedFetchError.tooLarge(host: host).message(about: name)
         case .parse(.notAFeed):
-            return String(localized: "The address of \(name) doesn't hold a feed TextMouth can read.",
-                          comment: "Why a feed could not be refreshed or subscribed to: its address holds something that is not a feed, such as a web page. %@ is the feed's title or server.")
+            // Translators: Why a feed could not be refreshed or subscribed to: its address holds something that is not a feed, such as a web page. %@ is the feed's title or server.
+            return String(localized: "The address of \(name) doesn't hold a feed TextMouth can read.")
         case let .parse(.damaged(problem, line, _)):
-            return String(localized: "The feed is damaged at line \(String(line)): \(problem).",
-                          comment: "Why a feed could not be refreshed or subscribed to: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.")
+            // Translators: Why a feed could not be refreshed or subscribed to: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.
+            return String(localized: "The feed is damaged at line \(String(line)): \(problem).")
         }
     }
 

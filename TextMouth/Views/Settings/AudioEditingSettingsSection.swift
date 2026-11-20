@@ -5,107 +5,118 @@ import SwiftUI
 enum AudioEditingSettingsWording {
     /// The group's heading.
     static var title: String {
-        String(localized: "Audio Editing", comment: "Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour.")
+        // Translators: Heading of the Audio Editing group in Storage settings: what happens to originals of edited audio, ffmpeg, and the audio editor's behaviour.
+        String(localized: "Audio Editing")
     }
 
     /// The policy picker's label.
     static var policyLabel: String {
-        String(localized: "Original audio", comment: "Label of the picker in Storage settings (Audio Editing) that chooses what happens to the original audio of recordings and edited audiobooks.")
+        // Translators: Label of the picker in Storage settings (Audio Editing) that chooses what happens to the original audio of recordings and edited audiobooks.
+        String(localized: "Original audio")
     }
 
     /// The policy picker's hint: what an original is, what it costs, and
     /// whom a change reaches.
     static var policyHint: String {
-        String(localized: "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
-               comment: "Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept.")
+        // Translators: Hint of the Original audio picker in Storage settings (Audio Editing): what an original is, what keeping it costs (345 MB is for an hour of a recording), and that a change reaches originals already kept.
+        String(localized: "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.")
     }
 
     /// The days stepper's label.
     static var daysLabel: String {
-        String(localized: "Days to keep an original", comment: "Label of the stepper that sets how many days an original audio is kept, in Storage settings (Audio Editing) and the audio editor's Audio Info.")
+        // Translators: Label of the stepper that sets how many days an original audio is kept, in Storage settings (Audio Editing) and the audio editor's Audio Info.
+        String(localized: "Days to keep an original")
     }
 
     /// The ffmpeg switch's label.
     static var ffmpegLabel: String {
-        String(localized: "Use ffmpeg for filters", comment: "Label of the switch in Storage settings (Audio Editing) that lets the audio editor's filters run through an installed ffmpeg program. ffmpeg is the program's name.")
+        // Translators: Label of the switch in Storage settings (Audio Editing) that lets the audio editor's filters run through an installed ffmpeg program. ffmpeg is the program's name.
+        String(localized: "Use ffmpeg for filters")
     }
 
     /// The ffmpeg switch's hint: where TextMouth found ffmpeg, and what it
     /// does when the switch is on. MP3 needs no ffmpeg: TextMouth writes it
     /// with the LAME encoder built in (`MP3Route`).
     static func ffmpegHint(path: String) -> String {
-        String(localized: "Found at \(path). When on, the editor's filters run through ffmpeg, with every filter it has.",
-               comment: "Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name.")
+        // Translators: Hint of the Use ffmpeg for filters switch in Storage settings. %@ is the folder path where the ffmpeg program was found. ffmpeg is the program's name.
+        String(localized: "Found at \(path). When on, the editor's filters run through ffmpeg, with every filter it has.")
     }
 
     /// The line shown when no ffmpeg is installed.
     static var noFFmpeg: String {
-        String(localized: "ffmpeg isn't installed; TextMouth's own filters are used.",
-               comment: "Shown in Storage settings (Audio Editing) when no ffmpeg program is installed. ffmpeg is the program's name.")
+        // Translators: Shown in Storage settings (Audio Editing) when no ffmpeg program is installed. ffmpeg is the program's name.
+        String(localized: "ffmpeg isn't installed; TextMouth's own filters are used.")
     }
 
     /// The preview switch's label.
     static var previewFiltersLabel: String {
-        String(localized: "Preview filters before applying", comment: "Label of the switch in Storage settings (Audio Editing) that makes the audio editor's Apply Filter play the filtered audio first.")
+        // Translators: Label of the switch in Storage settings (Audio Editing) that makes the audio editor's Apply Filter play the filtered audio first.
+        String(localized: "Preview filters before applying")
     }
 
     /// What the preview switch does.
     static var previewFiltersHint: String {
-        String(localized: "Apply Filter plays a preview first, and applies when you choose Apply again.",
-               comment: "Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button.")
+        // Translators: Hint of the Preview filters before applying switch in Storage settings. Apply Filter and Apply are the audio editor's command and button.
+        String(localized: "Apply Filter plays a preview first, and applies when you choose Apply again.")
     }
 
     /// The half-second switch's label.
     static var playAfterMovesLabel: String {
-        String(localized: "Play half a second after each move", comment: "Label of the switch in Storage settings (Audio Editing) that makes the audio editor play half a second at the cursor after each move.")
+        // Translators: Label of the switch in Storage settings (Audio Editing) that makes the audio editor play half a second at the cursor after each move.
+        String(localized: "Play half a second after each move")
     }
 
     /// What the half-second switch does.
     static var playAfterMovesHint: String {
-        String(localized: "Plays half a second at the cursor after each move.",
-               comment: "Hint of the Play half a second after each move switch in Storage settings.")
+        // Translators: Hint of the Play half a second after each move switch in Storage settings.
+        String(localized: "Plays half a second at the cursor after each move.")
     }
 
     /// The button that opens the filter presets.
     static var presetsButton: String {
-        String(localized: "Filter Presets…", comment: "Button in Storage settings (Audio Editing) that opens the list of the audio editor's filter presets.")
+        // Translators: Button in Storage settings (Audio Editing) that opens the list of the audio editor's filter presets.
+        String(localized: "Filter Presets…")
     }
 
     /// What it opens.
     static var presetsHint: String {
-        String(localized: "Opens the filter presets, to edit, add, reorder, delete, or reset.",
-               comment: "Hint of the Filter Presets button in Storage settings.")
+        // Translators: Hint of the Filter Presets button in Storage settings.
+        String(localized: "Opens the filter presets, to edit, add, reorder, delete, or reset.")
     }
 
     /// How the picker names `choice`.
     static func choiceTitle(_ choice: AudioOriginalPolicy.Choice) -> String {
         switch choice {
         case .keep:
-            return String(localized: "Keep", comment: "Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed.")
+            // Translators: Choice of the Original audio picker: keep the original audio of a recording or edited audiobook until its book is removed.
+            return String(localized: "Keep")
         case .delete:
-            return String(localized: "Don't keep", comment: "Choice of the Original audio picker: keep no original audio.")
+            // Translators: Choice of the Original audio picker: keep no original audio.
+            return String(localized: "Don't keep")
         case .deleteAfterDays:
-            return String(localized: "Keep for a number of days", comment: "Choice of the Original audio picker: keep the original audio for a number of days, set by a stepper beside it.")
+            // Translators: Choice of the Original audio picker: keep the original audio for a number of days, set by a stepper beside it.
+            return String(localized: "Keep for a number of days")
         }
     }
 
     /// The days, in words: "1 day", "14 days".
     static func days(_ days: Int) -> String {
-        String(localized: "\(days) days", comment: "A number of days, as the audio editor's original audio is kept for them. %lld is the number of days.")
+        // Translators: A number of days, as the audio editor's original audio is kept for them. %lld is the number of days.
+        String(localized: "\(days) days")
     }
 
     /// The line under the controls saying what the policy in force does.
     static func explanation(_ policy: AudioOriginalPolicy) -> String {
         switch policy {
         case .keep:
-            return String(localized: "Originals are kept until the book is removed.",
-                          comment: "Explains Storage settings' Original audio choice Keep: originals are kept until their book is removed.")
+            // Translators: Explains Storage settings' Original audio choice Keep: originals are kept until their book is removed.
+            return String(localized: "Originals are kept until the book is removed.")
         case .delete:
-            return String(localized: "No original is kept: edits change the audio in place, and saved edits can't be undone.",
-                          comment: "Explains Storage settings' Original audio choice Don't keep: no original is kept, so saved edits can't be undone.")
+            // Translators: Explains Storage settings' Original audio choice Don't keep: no original is kept, so saved edits can't be undone.
+            return String(localized: "No original is kept: edits change the audio in place, and saved edits can't be undone.")
         case .deleteAfter(let count):
-            return String(localized: "Originals are kept for \(Int(count.rounded())) days after the book was saved or last edited, then deleted.",
-                          comment: "Explains Storage settings' Original audio choice Keep for a number of days. %lld is the number of days.")
+            // Translators: Explains Storage settings' Original audio choice Keep for a number of days. %lld is the number of days.
+            return String(localized: "Originals are kept for \(Int(count.rounded())) days after the book was saved or last edited, then deleted.")
         }
     }
 

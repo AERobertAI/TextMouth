@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, Iterable, List, Mapping, Optional, Sequence, Set, Tuple
 
+from .classify import NOTE_PROBLEM_HELP
 from .lexer import Literal
 
 # The version of the baseline file's format.
@@ -90,6 +91,27 @@ def find_problems(baseline: Mapping[str, int], literals: Iterable[Literal],
         shown = [lit for lit in items if lines and lit.line in lines] or items
         problems.append(Problem(file, allowed, len(items), shown))
     return problems
+
+
+def note_problems(literals: Iterable[Literal]) -> List[Literal]:
+    """The literals whose translator's note is wrong (see classify.note_problem), in path and line order. The baseline holds
+    these at zero for every file: it has no record of them, and the lint fails on any."""
+    return sorted((lit for lit in literals if lit.note_problem), key=lambda lit: (lit.file, lit.line, lit.start))
+
+
+def format_note_problems(problems: Sequence[Literal], limit: int = 40, width: int = 100) -> List[str]:
+    """The lint's failure text for the notes: each literal's file and line, what is wrong, and what the code should say."""
+    lines = [f"l10n lint: {len(problems)} localized call{'s' if len(problems) != 1 else ''} with a translator's note that is "
+             "missing or in the wrong place (every file's allowance is zero):"]
+    for lit in problems[:limit]:
+        text = json.dumps(lit.text, ensure_ascii=False)
+        room = max(20, width - 40)
+        lines.append(f"{lit.file}:{lit.line}: {lit.note_problem} {text if len(text) <= room else text[:room - 1] + '…'}")
+    if len(problems) > limit:
+        lines.append(f"... and {len(problems) - limit} more")
+    for kind in sorted({lit.note_problem for lit in problems}):
+        lines.append(f"{kind}: {NOTE_PROBLEM_HELP[kind]}")
+    return lines
 
 
 def lowered_baseline(baseline: Mapping[str, int], counts: Mapping[str, int],

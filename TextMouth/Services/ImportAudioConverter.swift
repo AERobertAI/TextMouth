@@ -194,32 +194,32 @@ enum ImportAudioConverter {
         var errorDescription: String? {
             switch self {
             case let .unreadable(fileName):
-                return String(localized: "The audio file \(fileName) could not be read for converting.",
-                              comment: "Why an audio file could not be converted at import: it could not be read as audio, or it is only in the cloud. %@ is the file's name.")
+                // Translators: Why an audio file could not be converted at import: it could not be read as audio, or it is only in the cloud. %@ is the file's name.
+                return String(localized: "The audio file \(fileName) could not be read for converting.")
             case let .checkFailed(fileName, reason):
-                return String(localized: "The audio converted from \(fileName) failed its check: \(reason).",
-                              comment: "Why a converted audio file was refused: it failed the check made after conversion. %1$@ is the source file's name and %2$@ the reason, a phrase with no full stop.")
+                // Translators: Why a converted audio file was refused: it failed the check made after conversion. %1$@ is the source file's name and %2$@ the reason, a phrase with no full stop.
+                return String(localized: "The audio converted from \(fileName) failed its check: \(reason).")
             case let .cannotName(fileName):
-                return String(localized: "The audio converted from \(fileName) could not be given its name.",
-                              comment: "Why a converted audio file was refused: it could not be given its final name. %@ is the source file's name.")
+                // Translators: Why a converted audio file was refused: it could not be given its final name. %@ is the source file's name.
+                return String(localized: "The audio converted from \(fileName) could not be given its name.")
             case let .killed(fileName, reason):
                 // The reason is a phrase in English (`KillReason.words`), which the debug log writes too.
-                return String(localized: "Converting \(fileName) was stopped because \(reason).",
-                              comment: "Why an audio conversion was stopped: it ran too long or used too much memory. %1$@ is the source file's name and %2$@ the reason, a clause in English that follows \"because\".")
+                // Translators: Why an audio conversion was stopped: it ran too long or used too much memory. %1$@ is the source file's name and %2$@ the reason, a clause in English that follows "because".
+                return String(localized: "Converting \(fileName) was stopped because \(reason).")
             case let .processFailed(fileName, status):
-                return String(localized: "Converting \(fileName) failed (the converter ended with code \(String(status))).",
-                              comment: "Why an audio conversion failed: the converting program ended with an error. %1$@ is the source file's name and %2$@ the program's exit code, an identifier written without digit grouping.")
+                // Translators: Why an audio conversion failed: the converting program ended with an error. %1$@ is the source file's name and %2$@ the program's exit code, an identifier written without digit grouping.
+                return String(localized: "Converting \(fileName) failed (the converter ended with code \(String(status))).")
             case let .notEnoughSpace(fileName, bytesNeeded):
-                return String(localized: "There is not enough free disk space to convert \(fileName): it needs \(ImportProgressWording.size(bytesNeeded)) free.",
-                              comment: "Why an audio conversion did not start: the disk holds too little free space. %1$@ is the source file's name and %2$@ the free space it needs, with its unit, such as \"1.2 GB\".")
+                // Translators: Why an audio conversion did not start: the disk holds too little free space. %1$@ is the source file's name and %2$@ the free space it needs, with its unit, such as "1.2 GB".
+                return String(localized: "There is not enough free disk space to convert \(fileName): it needs \(ImportProgressWording.size(bytesNeeded)) free.")
             case let .unlabelledChannels(fileName, channels):
-                return String(localized: "The audio file \(fileName) has \(channels) channels but does not say which is which, so TextMouth cannot mix it to stereo.",
-                              comment: "Why an audio file was not converted: it has more than two channels and does not say which is which, so a mix to stereo would keep two arbitrary channels. %1$@ is the file's name and %2$lld the number of channels, always more than two.")
+                // Translators: Why an audio file was not converted: it has more than two channels and does not say which is which, so a mix to stereo would keep two arbitrary channels. %1$@ is the file's name and %2$lld the number of channels, always more than two.
+                return String(localized: "The audio file \(fileName) has \(channels) channels but does not say which is which, so TextMouth cannot mix it to stereo.")
             case let .notRead(fileName, problem):
                 return OwnAudioWording.sentence(for: problem, fileName: fileName)
             case let .notWritten(fileName, reason):
-                return String(localized: "The audio converted from \(fileName) could not be written (\(reason)).",
-                              comment: "Why converted audio was not saved as an .m4a file. %1$@ is the source file's name and %2$@ the error's domain and code, in the system's words.")
+                // Translators: Why converted audio was not saved as an .m4a file. %1$@ is the source file's name and %2$@ the error's domain and code, in the system's words.
+                return String(localized: "The audio converted from \(fileName) could not be written (\(reason)).")
             case let .unsupportedSamples(fileName, form):
                 return AudioSampleFormWording.refusal(fileName: fileName, form: form)
             }

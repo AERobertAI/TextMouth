@@ -66,8 +66,8 @@ enum PhoneReaderVocabulary {
     static func percent(_ percentComplete: Double) -> String {
         // Rounded half to even, as the format "%.0f" the Mac's summaries use does.
         let rounded = Int(percentComplete.rounded(.toNearestOrEven))
-        return String(localized: "\(rounded) percent",
-                      comment: "Part of the iPhone reader's brief Where Am I? summary: how far through the book the place is. %lld is the whole percent.")
+        // Translators: Part of the iPhone reader's brief Where Am I? summary: how far through the book the place is. %lld is the whole percent.
+        return String(localized: "\(rounded) percent")
     }
 
     /// The summaries' time left in the book, with the speed it counts at when
@@ -80,7 +80,7 @@ enum PhoneReaderVocabulary {
     /// remaining in this heading".
     static func remainingInHeading(_ timeRemaining: TimeInterval) -> String {
         // The Mac's full summary says the same words (`ReaderViewModel.whereAmIFull`), so the key is shared.
-        String(localized: "\(TimeFormatting.spoken(timeRemaining)) remaining in this heading",
-               comment: "Part of the full Where Am I? summary: the time left in the heading being read. %@ is the time in words, such as \"12 minutes\".")
+        // Translators: Part of the full Where Am I? summary: the time left in the heading being read. %@ is the time in words, such as "12 minutes".
+        String(localized: "\(TimeFormatting.spoken(timeRemaining)) remaining in this heading")
     }
 }

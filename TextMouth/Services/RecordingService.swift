@@ -28,26 +28,26 @@ enum RecordingFailure: Error, Equatable, Sendable, LocalizedError {
         case .permission(let refusal):
             return refusal.errorDescription
         case .deviceUnavailable(let name):
-            return String(localized: "\(name) isn't available, so TextMouth can't record from it. Choose another microphone.",
-                          comment: "Error in the Record window when the chosen microphone is not available. %@ is the microphone's name.")
+            // Translators: Error in the Record window when the chosen microphone is not available. %@ is the microphone's name.
+            return String(localized: "\(name) isn't available, so TextMouth can't record from it. Choose another microphone.")
         case .couldNotStart(let name):
-            return String(localized: "TextMouth couldn't start recording from \(name).",
-                          comment: "Error in the Record window when recording from the chosen microphone failed to start. %@ is the microphone's name.")
+            // Translators: Error in the Record window when recording from the chosen microphone failed to start. %@ is the microphone's name.
+            return String(localized: "TextMouth couldn't start recording from \(name).")
         case .deviceDisconnected(let name):
-            return String(localized: "\(name) was disconnected, so recording stopped. What was recorded is kept.",
-                          comment: "Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name.")
+            // Translators: Error in the Record window when the microphone was unplugged while recording. %@ is the microphone's name.
+            return String(localized: "\(name) was disconnected, so recording stopped. What was recorded is kept.")
         case .diskFull:
-            return String(localized: "The disk is almost full, so recording stopped. What was recorded is kept.",
-                          comment: "Error in the Record window when the disk filled up while recording.")
+            // Translators: Error in the Record window when the disk filled up while recording.
+            return String(localized: "The disk is almost full, so recording stopped. What was recorded is kept.")
         case .stoppedUnexpectedly:
-            return String(localized: "Recording stopped because the microphone reported a problem. What was recorded is kept.",
-                          comment: "Error in the Record window when recording stopped by itself because capture failed.")
+            // Translators: Error in the Record window when recording stopped by itself because capture failed.
+            return String(localized: "Recording stopped because the microphone reported a problem. What was recorded is kept.")
         case .couldNotFinish:
-            return String(localized: "The recording couldn't be finished properly. What was recorded is kept.",
-                          comment: "Error in the Record window when stopping could not finish the recording's file properly.")
+            // Translators: Error in the Record window when stopping could not finish the recording's file properly.
+            return String(localized: "The recording couldn't be finished properly. What was recorded is kept.")
         case .nothingRecorded:
-            return String(localized: "Nothing was recorded, so there is nothing to save.",
-                          comment: "Error in the Record window when the recording was stopped before any audio was captured.")
+            // Translators: Error in the Record window when the recording was stopped before any audio was captured.
+            return String(localized: "Nothing was recorded, so there is nothing to save.")
         }
     }
 }

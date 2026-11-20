@@ -123,17 +123,17 @@ enum DuplicateReplacement {
             case .inUse(let use, let title):
                 return use.refusal(of: "“\(title)”", doing: "replacing it", retry: DuplicateReplacement.retry) // l10n: no (inside FeedBookUse's English sentences until the feeds area converts)
             case .audioBeingEdited(let title):
-                return String(localized: "The audio of “\(title)” is being edited. Close the audio editor or wait for it to save, then choose \(DuplicateReplacement.replaceExistingName) again.",
-                              comment: "Why Replace Existing waits: the library's copy has its audio open in the audio editor. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
+                // Translators: Why Replace Existing waits: the library's copy has its audio open in the audio editor. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return String(localized: "The audio of “\(title)” is being edited. Close the audio editor or wait for it to save, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .filesInCloud(let title):
-                return String(localized: "Some files of “\(title)” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose \(DuplicateReplacement.replaceExistingName) again.",
-                              comment: "Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
+                // Translators: Why Replace Existing waits: some files of the library's copy are only in the cloud. %1$@ is the book's title. %2$@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return String(localized: "Some files of “\(title)” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .storageBusy(.movingBooksBetweenFolders):
-                return String(localized: "TextMouth is moving books between folders. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.",
-                              comment: "Why Replace Existing waits: TextMouth is moving books between folders. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
+                // Translators: Why Replace Existing waits: TextMouth is moving books between folders. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return String(localized: "TextMouth is moving books between folders. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .storageBusy(.rebuildingDirectory):
-                return String(localized: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.",
-                              comment: "Why Replace Existing waits: TextMouth is rebuilding its data directory, the folder that holds the library. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.")
+                // Translators: Why Replace Existing waits: TextMouth is rebuilding its data directory, the folder that holds the library. %@ is the name of the Replace Existing button, which the sentence asks the user to choose again.
+                return String(localized: "TextMouth is rebuilding its data directory. Wait until that finishes, then choose \(DuplicateReplacement.replaceExistingName) again.")
             case .storageBusy(.movingDataDirectory):
                 return DataDirectoryMoveWording.importAnswerRefusal
             case .storageBusy(let reason):
@@ -152,8 +152,8 @@ enum DuplicateReplacement {
     /// copy's: nothing was replaced, and the question stays.
     struct TextNotKept: LocalizedError, Equatable {
         var errorDescription: String? {
-            String(localized: "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
-                   comment: "Error shown when Replace Existing could not keep the edited text of the library's copy beside the new copy's text. Nothing was replaced.")
+            // Translators: Error shown when Replace Existing could not keep the edited text of the library's copy beside the new copy's text. Nothing was replaced.
+            String(localized: "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.")
         }
     }
 
@@ -162,8 +162,8 @@ enum DuplicateReplacement {
     /// now. Nothing was replaced, and the question stays.
     struct IndexNotSaved: LocalizedError, Equatable {
         var errorDescription: String? {
-            String(localized: "TextMouth couldn't save the library's index, so it left both copies as they are.",
-                   comment: "Error shown when Replace Existing could not save the library's index, which must name the new copy before the old one goes. Nothing was replaced.")
+            // Translators: Error shown when Replace Existing could not save the library's index, which must name the new copy before the old one goes. Nothing was replaced.
+            String(localized: "TextMouth couldn't save the library's index, so it left both copies as they are.")
         }
     }
 
@@ -212,8 +212,8 @@ enum DuplicateReplacement {
     /// encoding says too), so the user knows where the earlier text is.
     static func keptTextAnnouncement(title: String, copy: URL) -> String {
         SentenceWording.joined([
-            String(localized: "Replaced “\(title)”.",
-                   comment: "First sentence of the announcement after Replace Existing put the new copy in place of a book and kept the old copy's text beside the new text. %@ is the book's title. A sentence about where the earlier text is kept follows."),
+            // Translators: First sentence of the announcement after Replace Existing put the new copy in place of a book and kept the old copy's text beside the new text. %@ is the book's title. A sentence about where the earlier text is kept follows.
+            String(localized: "Replaced “\(title)”."),
             BookTextEditWording.earlierTextKept(copy),
         ])
     }
@@ -224,11 +224,11 @@ enum DuplicateReplacement {
     /// `movesToTrash` says, and the old files stay in their folder.
     static func oldCopyLeftMessage(title: String, movesToTrash: Bool, reason: String) -> String {
         if movesToTrash {
-            return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be moved to the Trash and stay in its folder: \(reason)",
-                          comment: "Alert after Replace Existing when the old copy's files could not be moved to the Trash. %1$@ is the book's title. %2$@ is why they could not be moved.")
+            // Translators: Alert after Replace Existing when the old copy's files could not be moved to the Trash. %1$@ is the book's title. %2$@ is why they could not be moved.
+            return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be moved to the Trash and stay in its folder: \(reason)")
         }
-        return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be deleted and stay in its folder: \(reason)",
-                      comment: "Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.")
+        // Translators: Alert after Replace Existing when the old copy's files could not be deleted. %1$@ is the book's title. %2$@ is why they could not be deleted.
+        return String(localized: "The new copy replaced “\(title)”, but the old copy's files could not be deleted and stay in its folder: \(reason)")
     }
 
     // MARK: The Row

@@ -180,30 +180,30 @@ extension ReaderViewModel {
     /// while its reader was open. It does not say that nothing was changed:
     /// the reader's own list of bookmarks is emptied too.
     nonisolated static func bookmarkNotAddedAnnouncement(bookTitle: String) -> String {
-        String(localized: "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.",
-               comment: "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.")
+        // Translators: VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.
+        String(localized: "Could not add the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.")
     }
 
     /// What VoiceOver says when a bookmark could not be removed because the
     /// library holds no record of the book.
     nonisolated static func bookmarkNotRemovedAnnouncement(bookTitle: String) -> String {
-        String(localized: "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.",
-               comment: "VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.")
+        // Translators: VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.
+        String(localized: "Could not remove the bookmark: \u{201C}\(bookTitle)\u{201D} is no longer in the library.")
     }
 
     /// What VoiceOver says once a bookmark was added, by the number it was
     /// given: "Bookmark 3 added". The Mac's toggle and Add, and the phone's
     /// Add, say it alike.
     nonisolated static func bookmarkAddedAnnouncement(number: Int) -> String {
-        String(localized: "Bookmark \(String(number)) added",
-               comment: "VoiceOver announcement after a bookmark was added at the reading position. %@ is the new bookmark's number, an identifier written without digit grouping.")
+        // Translators: VoiceOver announcement after a bookmark was added at the reading position. %@ is the new bookmark's number, an identifier written without digit grouping.
+        String(localized: "Bookmark \(String(number)) added")
     }
 
     /// What VoiceOver says once the toggle removed the bookmark near the
     /// reading position: "Bookmark 3 removed".
     nonisolated static func bookmarkRemovedAnnouncement(number: Int) -> String {
-        String(localized: "Bookmark \(String(number)) removed",
-               comment: "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %@ is that bookmark's number, an identifier written without digit grouping.")
+        // Translators: VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %@ is that bookmark's number, an identifier written without digit grouping.
+        String(localized: "Bookmark \(String(number)) removed")
     }
 
     /// Says `sentence`, which tells that a bookmark command did nothing, a
@@ -449,8 +449,8 @@ extension ReaderViewModel {
         guard hasSavedPosition else { return }
         hasSavedPosition = false
         navigateTo(chapterIndex: savedChapterIndex, characterOffset: savedCharacterOffset)
-        announceToVoiceOver(String(localized: "Returned to previous position",
-                                   comment: "VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result."))
+        // Translators: VoiceOver announcement after the Return command moved the book back to where it was before the last jump to a heading, bookmark, or search result.
+        announceToVoiceOver(String(localized: "Returned to previous position"))
     }
 
     // MARK: - Metadata Editing
@@ -534,8 +534,8 @@ extension ReaderViewModel {
     /// audiobook, and in the iPhone's Book Info (`PhoneLibraryVocabulary`), which
     /// says the same words through this.
     nonisolated static var metadataUpdatedAnnouncement: String {
-        String(localized: "Metadata updated",
-               comment: "VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.")
+        // Translators: VoiceOver announcement after a book's edited details were saved: an audiobook's title, artist, album, genre, or year on the Mac, or a book's title and author in the iPhone's Book Info.
+        String(localized: "Metadata updated")
     }
 
     /// Shows the book's title and author, as a metadata save left them, in

@@ -29,17 +29,17 @@ enum OPMLReadError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .empty:
-            return String(localized: "That file is empty.",
-                          comment: "Why an OPML file of subscriptions could not be imported: it is empty.")
+            // Translators: Why an OPML file of subscriptions could not be imported: it is empty.
+            return String(localized: "That file is empty.")
         case .notOPML:
-            return String(localized: "That file isn't an OPML list of subscriptions.",
-                          comment: "Why an OPML file of subscriptions could not be imported: it is another kind of file.")
+            // Translators: Why an OPML file of subscriptions could not be imported: it is another kind of file.
+            return String(localized: "That file isn't an OPML list of subscriptions.")
         case let .damaged(problem, line):
-            return String(localized: "That OPML file is damaged at line \(String(line)): \(problem).",
-                          comment: "Why an OPML file of subscriptions could not be imported: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.")
+            // Translators: Why an OPML file of subscriptions could not be imported: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.
+            return String(localized: "That OPML file is damaged at line \(String(line)): \(problem).")
         case .noFeeds:
-            return String(localized: "That OPML file lists no feeds.",
-                          comment: "Why an OPML file of subscriptions could not be imported: it lists no feed TextMouth can subscribe to.")
+            // Translators: Why an OPML file of subscriptions could not be imported: it lists no feed TextMouth can subscribe to.
+            return String(localized: "That OPML file lists no feeds.")
         }
     }
 }

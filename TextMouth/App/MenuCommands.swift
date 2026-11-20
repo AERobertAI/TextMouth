@@ -11,37 +11,44 @@ import SwiftUI
 enum MenuWording {
     /// The Edit menu's Find submenu, which holds Search Library.
     static var find: String {
-        String(localized: "Find", comment: "Title of the Find submenu of the Edit menu, which holds the command that searches the whole library.")
+        // Translators: Title of the Find submenu of the Edit menu, which holds the command that searches the whole library.
+        String(localized: "Find")
     }
 
     /// The Playback menu, which only reader windows show.
     static var playback: String {
-        String(localized: "Playback", comment: "Title of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it.")
+        // Translators: Title of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it.
+        String(localized: "Playback")
     }
 
     /// The Navigate menu, which only reader windows show.
     static var navigate: String {
-        String(localized: "Navigate", comment: "Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it.")
+        // Translators: Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it.
+        String(localized: "Navigate")
     }
 
     /// The Library menu, which only Library windows show.
     static var library: String {
-        String(localized: "Library", comment: "Title of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.")
+        // Translators: Title of the Library menu in the menu bar, which holds the commands for the library's books and folders. Only a Library window shows it.
+        String(localized: "Library")
     }
 
     /// The Bookmarks menu, which only reader windows show.
     static var bookmarks: String {
-        String(localized: "Bookmarks", comment: "Title of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.")
+        // Translators: Title of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.
+        String(localized: "Bookmarks")
     }
 
     /// The Book menu, which only reader windows show.
     static var book: String {
-        String(localized: "Book", comment: "Title of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.")
+        // Translators: Title of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.
+        String(localized: "Book")
     }
 
     /// The Library menu's Move to Folder command, which asks for the folder.
     static var moveToFolder: String {
-        String(localized: "Move to Folder...", comment: "Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.")
+        // Translators: Menu command of the Library menu that moves the selected books into a folder, asking which one. The three periods say that a question follows.
+        String(localized: "Move to Folder...")
     }
 }
 

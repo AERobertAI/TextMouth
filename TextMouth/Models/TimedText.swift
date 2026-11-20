@@ -291,21 +291,21 @@ enum TimedTextError: LocalizedError, LogDescribing, Equatable {
     var errorDescription: String? {
         switch self {
         case .tooLarge(let byteLimit):
-            return String(localized: "The file is over the \(byteLimit / 1_048_576) MB limit for a transcript.",
-                          comment: "Error shown when a transcript file chosen to attach is too big. %lld is the size limit in megabytes (MB).")
+            // Translators: Error shown when a transcript file chosen to attach is too big. %lld is the size limit in megabytes (MB).
+            return String(localized: "The file is over the \(byteLimit / 1_048_576) MB limit for a transcript.")
         case .notTimedText(let format):
-            return String(localized: "The file isn't a \(format.name) transcript TextMouth can read.",
-                          comment: "Error shown when a chosen transcript file's content is not in the format its name says. %@ is the format's name, such as WebVTT, SubRip, or Podcasting 2.0 JSON.")
+            // Translators: Error shown when a chosen transcript file's content is not in the format its name says. %@ is the format's name, such as WebVTT, SubRip, or Podcasting 2.0 JSON.
+            return String(localized: "The file isn't a \(format.name) transcript TextMouth can read.")
         case .unsupportedVersion(let format, let version):
             // The version is the file's own text, shown as it is.
-            return String(localized: "The file is a \(format.name) transcript of version \(version), which TextMouth doesn't read.",
-                          comment: "Error shown when a chosen transcript file is of a version of its format that this app does not read. %1$@ is the format's name, such as Podcasting 2.0 JSON; %2$@ is the version the file gives, written as the file writes it.")
+            // Translators: Error shown when a chosen transcript file is of a version of its format that this app does not read. %1$@ is the format's name, such as Podcasting 2.0 JSON; %2$@ is the version the file gives, written as the file writes it.
+            return String(localized: "The file is a \(format.name) transcript of version \(version), which TextMouth doesn't read.")
         case .noCues(let format):
-            return String(localized: "The \(format.name) file holds no timed text TextMouth can use.",
-                          comment: "Error shown when a chosen transcript file holds no usable timed passage. %@ is the format's name, such as WebVTT or SubRip.")
+            // Translators: Error shown when a chosen transcript file holds no usable timed passage. %@ is the format's name, such as WebVTT or SubRip.
+            return String(localized: "The \(format.name) file holds no timed text TextMouth can use.")
         case .tooManyCues(let limit):
-            return String(localized: "Too many timed passages: the limit is \(limit).",
-                          comment: "Error shown when a chosen transcript file holds more timed passages than the app reads. %lld is the limit, written with the region's digit grouping.")
+            // Translators: Error shown when a chosen transcript file holds more timed passages than the app reads. %lld is the limit, written with the region's digit grouping.
+            return String(localized: "Too many timed passages: the limit is \(limit).")
         }
     }
 

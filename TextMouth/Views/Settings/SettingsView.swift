@@ -641,293 +641,293 @@ enum SettingsWording {
 
     /// The Voice tab's name.
     static var voiceTab: String {
-        String(localized: "Voice",
-               comment: "Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.")
+        // Translators: Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.
+        String(localized: "Voice")
     }
     /// The Playback tab's name.
     static var playbackTab: String {
-        String(localized: "Playback",
-               comment: "Name of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls.")
+        // Translators: Name of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls.
+        String(localized: "Playback")
     }
     /// The Shortcuts tab's name.
     static var shortcutsTab: String {
-        String(localized: "Shortcuts",
-               comment: "Name of the Settings tab for keyboard shortcuts.")
+        // Translators: Name of the Settings tab for keyboard shortcuts.
+        String(localized: "Shortcuts")
     }
     /// The Text tab's name.
     static var textTab: String {
-        String(localized: "Text",
-               comment: "Name of the Settings tab for text substitution rules and repeated symbols.")
+        // Translators: Name of the Settings tab for text substitution rules and repeated symbols.
+        String(localized: "Text")
     }
     /// The Sounds tab's name.
     static var soundsTab: String {
-        String(localized: "Sounds",
-               comment: "Name of the Settings tab for the sounds played for playback events.")
+        // Translators: Name of the Settings tab for the sounds played for playback events.
+        String(localized: "Sounds")
     }
     /// The Stats tab's name.
     static var statsTab: String {
-        String(localized: "Stats",
-               comment: "Name of the Settings tab for reading statistics.")
+        // Translators: Name of the Settings tab for reading statistics.
+        String(localized: "Stats")
     }
     /// The Storage tab's name.
     static var storageTab: String {
-        String(localized: "Storage",
-               comment: "Name of the Settings tab for where the library is stored, importing books, and the logs.")
+        // Translators: Name of the Settings tab for where the library is stored, importing books, and the logs.
+        String(localized: "Storage")
     }
     /// The Miscellaneous tab's name.
     static var miscellaneousTab: String {
-        String(localized: "Miscellaneous",
-               comment: "Name of the Settings tab for the options that fit no other tab, such as Bluetooth monitoring.")
+        // Translators: Name of the Settings tab for the options that fit no other tab, such as Bluetooth monitoring.
+        String(localized: "Miscellaneous")
     }
 
     /// A setting's off position, as a stepper or slider says it.
     static var off: String {
-        String(localized: "Off",
-               comment: "The word for a setting that is turned off, as a slider's or stepper's value says it, such as the sleep timer's fade out.")
+        // Translators: The word for a setting that is turned off, as a slider's or stepper's value says it, such as the sleep timer's fade out.
+        String(localized: "Off")
     }
 
     // MARK: Voice
 
     /// The language pop-up's title, and the title of the selected voice's language.
     static var languageTitle: String {
-        String(localized: "Language",
-               comment: "Title of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.")
+        // Translators: Title of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.
+        String(localized: "Language")
     }
     /// The language pop-up's choice of every language.
     static var allLanguages: String {
-        String(localized: "All",
-               comment: "A choice of the Language pop-up in the Voice settings: voices of every language are offered.")
+        // Translators: A choice of the Language pop-up in the Voice settings: voices of every language are offered.
+        String(localized: "All")
     }
     /// The language pop-up's VoiceOver label.
     static var voiceLanguageLabel: String {
-        String(localized: "Voice language",
-               comment: "VoiceOver label of the Language pop-up in the Voice settings.")
+        // Translators: VoiceOver label of the Language pop-up in the Voice settings.
+        String(localized: "Voice language")
     }
     /// The voice pop-up's title.
     static var voiceTitle: String {
-        String(localized: "Voice",
-               comment: "Title of the pop-up in the Voice settings that chooses the voice.")
+        // Translators: Title of the pop-up in the Voice settings that chooses the voice.
+        String(localized: "Voice")
     }
     /// A voice's quality beside its name in the pop-up.
     static func qualityInParentheses(_ quality: String) -> String {
-        String(localized: "(\(quality))",
-               comment: "A voice's quality, in parentheses, beside its name in the voice pop-up. %@ is the quality, such as Enhanced.")
+        // Translators: A voice's quality, in parentheses, beside its name in the voice pop-up. %@ is the quality, such as Enhanced.
+        String(localized: "(\(quality))")
     }
     /// A voice's VoiceOver label.
     static func voiceLabel(name: String, quality: String) -> String {
-        String(localized: "\(name), \(quality) quality",
-               comment: "VoiceOver label of a voice in the voice pop-up. %1$@ is the voice's name and %2$@ is its quality, such as Enhanced.")
+        // Translators: VoiceOver label of a voice in the voice pop-up. %1$@ is the voice's name and %2$@ is its quality, such as Enhanced.
+        String(localized: "\(name), \(quality) quality")
     }
     /// The voice pop-up's VoiceOver label.
     static var selectVoiceLabel: String {
-        String(localized: "Select voice",
-               comment: "VoiceOver label of the voice pop-up in the Voice settings.")
+        // Translators: VoiceOver label of the voice pop-up in the Voice settings.
+        String(localized: "Select voice")
     }
     /// The voice pop-up's hint.
     static var selectVoiceHint: String {
-        String(localized: "Choose a voice for reading. Change takes effect immediately.",
-               comment: "VoiceOver hint of the voice pop-up in the Voice settings.")
+        // Translators: VoiceOver hint of the voice pop-up in the Voice settings.
+        String(localized: "Choose a voice for reading. Change takes effect immediately.")
     }
     /// The selected voice's quality, labelled.
     static var qualityTitle: String {
-        String(localized: "Quality",
-               comment: "Label of the selected voice's quality in the Voice settings, such as Enhanced.")
+        // Translators: Label of the selected voice's quality in the Voice settings, such as Enhanced.
+        String(localized: "Quality")
     }
     /// The button that speaks a sample.
     static var previewTitle: String {
-        String(localized: "Preview Voice",
-               comment: "Title of the button in the Voice settings that speaks a sample sentence in the selected voice.")
+        // Translators: Title of the button in the Voice settings that speaks a sample sentence in the selected voice.
+        String(localized: "Preview Voice")
     }
     /// The same button's VoiceOver label.
     static var previewLabel: String {
-        String(localized: "Preview selected voice",
-               comment: "VoiceOver label of the Preview Voice button in the Voice settings.")
+        // Translators: VoiceOver label of the Preview Voice button in the Voice settings.
+        String(localized: "Preview selected voice")
     }
     /// The default speed as the screen shows it, above its slider.
     static func defaultSpeedText(_ wordsPerMinute: Int) -> String {
-        String(localized: "Default Speed: \(wordsPerMinute) WPM",
-               comment: "The default reading speed shown above its slider in the Voice settings. %lld is the speed in words per minute; WPM is the abbreviation of words per minute.")
+        // Translators: The default reading speed shown above its slider in the Voice settings. %lld is the speed in words per minute; WPM is the abbreviation of words per minute.
+        String(localized: "Default Speed: \(wordsPerMinute) WPM")
     }
     /// The speed slider's title.
     static var wordsPerMinuteTitle: String {
-        String(localized: "Words per minute",
-               comment: "Title of the default speed slider in the Voice settings.")
+        // Translators: Title of the default speed slider in the Voice settings.
+        String(localized: "Words per minute")
     }
     /// The speed slider's VoiceOver label.
     static var defaultSpeedLabel: String {
-        String(localized: "Default speed",
-               comment: "VoiceOver label of the default speed slider in the Voice settings.")
+        // Translators: VoiceOver label of the default speed slider in the Voice settings.
+        String(localized: "Default speed")
     }
     /// The speed slider's value, spoken.
     static func wordsPerMinuteValue(_ wordsPerMinute: Int) -> String {
-        String(localized: "\(wordsPerMinute) words per minute",
-               comment: "VoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.")
+        // Translators: VoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.
+        String(localized: "\(wordsPerMinute) words per minute")
     }
     /// The text under the speed slider.
     static var defaultSpeedExplanation: String {
-        String(localized: "Default speed for new books. Each book can override this with its own speed.",
-               comment: "Explanation under the default speed slider in the Voice settings.")
+        // Translators: Explanation under the default speed slider in the Voice settings.
+        String(localized: "Default speed for new books. Each book can override this with its own speed.")
     }
     /// The speed group's heading.
     static var defaultSpeedHeader: String {
-        String(localized: "Default Speed",
-               comment: "Heading of the default speed group in the Voice settings.")
+        // Translators: Heading of the default speed group in the Voice settings.
+        String(localized: "Default Speed")
     }
     /// The default pitch as the screen shows it, above its slider.
     static func defaultPitchText(_ pitch: String) -> String {
-        String(localized: "Default Pitch: \(pitch)",
-               comment: "The default pitch shown above its slider in the Voice settings. %@ is the pitch, such as Normal (1.0x).")
+        // Translators: The default pitch shown above its slider in the Voice settings. %@ is the pitch, such as Normal (1.0x).
+        String(localized: "Default Pitch: \(pitch)")
     }
     /// The pitch slider's title.
     static var pitchTitle: String {
-        String(localized: "Pitch",
-               comment: "Title of the default pitch slider in the Voice settings.")
+        // Translators: Title of the default pitch slider in the Voice settings.
+        String(localized: "Pitch")
     }
     /// The pitch slider's VoiceOver label.
     static var defaultPitchLabel: String {
-        String(localized: "Default pitch",
-               comment: "VoiceOver label of the default pitch slider in the Voice settings.")
+        // Translators: VoiceOver label of the default pitch slider in the Voice settings.
+        String(localized: "Default pitch")
     }
     /// The text under the pitch slider.
     static var defaultPitchExplanation: String {
-        String(localized: "Default pitch for new books. 1.0 is normal. Each book can override this.",
-               comment: "Explanation under the default pitch slider in the Voice settings.")
+        // Translators: Explanation under the default pitch slider in the Voice settings.
+        String(localized: "Default pitch for new books. 1.0 is normal. Each book can override this.")
     }
     /// The pitch group's heading.
     static var defaultPitchHeader: String {
-        String(localized: "Default Pitch",
-               comment: "Heading of the default pitch group in the Voice settings.")
+        // Translators: Heading of the default pitch group in the Voice settings.
+        String(localized: "Default Pitch")
     }
 
     // MARK: Playback: Skipping
 
     /// The Skip Forward pop-up's title.
     static var skipForwardTitle: String {
-        String(localized: "Skip Forward",
-               comment: "Title of the pop-up in the Playback settings that chooses what the skip forward button moves by.")
+        // Translators: Title of the pop-up in the Playback settings that chooses what the skip forward button moves by.
+        String(localized: "Skip Forward")
     }
     /// The same pop-up's VoiceOver label.
     static var skipForwardLabel: String {
-        String(localized: "Skip forward unit",
-               comment: "VoiceOver label of the Skip Forward pop-up in the Playback settings.")
+        // Translators: VoiceOver label of the Skip Forward pop-up in the Playback settings.
+        String(localized: "Skip forward unit")
     }
     /// The same pop-up's VoiceOver hint.
     static var skipForwardHint: String {
-        String(localized: "What happens when you skip forward",
-               comment: "VoiceOver hint of the Skip Forward pop-up in the Playback settings.")
+        // Translators: VoiceOver hint of the Skip Forward pop-up in the Playback settings.
+        String(localized: "What happens when you skip forward")
     }
     /// The Skip Backward pop-up's title.
     static var skipBackwardTitle: String {
-        String(localized: "Skip Backward",
-               comment: "Title of the pop-up in the Playback settings that chooses what the skip backward button moves by.")
+        // Translators: Title of the pop-up in the Playback settings that chooses what the skip backward button moves by.
+        String(localized: "Skip Backward")
     }
     /// The same pop-up's VoiceOver label.
     static var skipBackwardLabel: String {
-        String(localized: "Skip backward unit",
-               comment: "VoiceOver label of the Skip Backward pop-up in the Playback settings.")
+        // Translators: VoiceOver label of the Skip Backward pop-up in the Playback settings.
+        String(localized: "Skip backward unit")
     }
     /// The same pop-up's VoiceOver hint.
     static var skipBackwardHint: String {
-        String(localized: "What happens when you skip backward",
-               comment: "VoiceOver hint of the Skip Backward pop-up in the Playback settings.")
+        // Translators: VoiceOver hint of the Skip Backward pop-up in the Playback settings.
+        String(localized: "What happens when you skip backward")
     }
     /// The skip group's heading.
     static var skipControlsHeader: String {
-        String(localized: "Skip Controls",
-               comment: "Heading of the group of skip pop-ups in the Playback settings.")
+        // Translators: Heading of the group of skip pop-ups in the Playback settings.
+        String(localized: "Skip Controls")
     }
     /// The Shift+Skip Forward pop-up's title.
     static var shiftSkipForwardTitle: String {
-        String(localized: "Shift+Skip Forward",
-               comment: "Title of the pop-up in the Playback settings that chooses what skipping forward moves by while Shift is held. Shift is the key's name.")
+        // Translators: Title of the pop-up in the Playback settings that chooses what skipping forward moves by while Shift is held. Shift is the key's name.
+        String(localized: "Shift+Skip Forward")
     }
     /// The same pop-up's VoiceOver label.
     static var shiftSkipForwardLabel: String {
-        String(localized: "Shift skip forward unit",
-               comment: "VoiceOver label of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name.")
+        // Translators: VoiceOver label of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name.
+        String(localized: "Shift skip forward unit")
     }
     /// The same pop-up's VoiceOver hint.
     static var shiftSkipForwardHint: String {
-        String(localized: "What happens when you hold Shift and skip forward",
-               comment: "VoiceOver hint of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name.")
+        // Translators: VoiceOver hint of the Shift+Skip Forward pop-up in the Playback settings. Shift is the key's name.
+        String(localized: "What happens when you hold Shift and skip forward")
     }
     /// The Shift+Skip Backward pop-up's title.
     static var shiftSkipBackwardTitle: String {
-        String(localized: "Shift+Skip Backward",
-               comment: "Title of the pop-up in the Playback settings that chooses what skipping backward moves by while Shift is held. Shift is the key's name.")
+        // Translators: Title of the pop-up in the Playback settings that chooses what skipping backward moves by while Shift is held. Shift is the key's name.
+        String(localized: "Shift+Skip Backward")
     }
     /// The same pop-up's VoiceOver label.
     static var shiftSkipBackwardLabel: String {
-        String(localized: "Shift skip backward unit",
-               comment: "VoiceOver label of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name.")
+        // Translators: VoiceOver label of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name.
+        String(localized: "Shift skip backward unit")
     }
     /// The same pop-up's VoiceOver hint.
     static var shiftSkipBackwardHint: String {
-        String(localized: "What happens when you hold Shift and skip backward",
-               comment: "VoiceOver hint of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name.")
+        // Translators: VoiceOver hint of the Shift+Skip Backward pop-up in the Playback settings. Shift is the key's name.
+        String(localized: "What happens when you hold Shift and skip backward")
     }
     /// The text under the Shift+Skip pop-ups.
     static var shiftSkipExplanation: String {
-        String(localized: "Hold Shift while skipping to use a secondary skip amount.",
-               comment: "Explanation under the Shift+Skip pop-ups in the Playback settings. Shift is the key's name.")
+        // Translators: Explanation under the Shift+Skip pop-ups in the Playback settings. Shift is the key's name.
+        String(localized: "Hold Shift while skipping to use a secondary skip amount.")
     }
     /// The Shift+Skip group's heading.
     static var shiftSkipHeader: String {
-        String(localized: "Shift+Skip (Secondary)",
-               comment: "Heading of the group of Shift+Skip pop-ups in the Playback settings. Shift is the key's name.")
+        // Translators: Heading of the group of Shift+Skip pop-ups in the Playback settings. Shift is the key's name.
+        String(localized: "Shift+Skip (Secondary)")
     }
 
     // MARK: Playback: Rewinding
 
     /// The Rewind to pop-up's title.
     static var rewindToTitle: String {
-        String(localized: "Rewind to",
-               comment: "Title of the pop-up in the Playback settings that chooses how far playback rewinds when it resumes: to the start of a sentence, paragraph, or heading.")
+        // Translators: Title of the pop-up in the Playback settings that chooses how far playback rewinds when it resumes: to the start of a sentence, paragraph, or heading.
+        String(localized: "Rewind to")
     }
     /// The same pop-up's VoiceOver label.
     static var rewindUnitLabel: String {
-        String(localized: "Rewind on resume unit",
-               comment: "VoiceOver label of the Rewind to pop-up in the Playback settings.")
+        // Translators: VoiceOver label of the Rewind to pop-up in the Playback settings.
+        String(localized: "Rewind on resume unit")
     }
     /// The same pop-up's VoiceOver hint.
     static var rewindUnitHint: String {
-        String(localized: "When resuming playback, rewind to the start of this unit",
-               comment: "VoiceOver hint of the Rewind to pop-up in the Playback settings.")
+        // Translators: VoiceOver hint of the Rewind to pop-up in the Playback settings.
+        String(localized: "When resuming playback, rewind to the start of this unit")
     }
     /// The smart mode checkbox's title.
     static var smartModeTitle: String {
-        String(localized: "Smart mode",
-               comment: "Title of the checkbox in the Playback settings that makes playback rewind only after a long enough pause.")
+        // Translators: Title of the checkbox in the Playback settings that makes playback rewind only after a long enough pause.
+        String(localized: "Smart mode")
     }
     /// The same checkbox's VoiceOver label.
     static var smartModeLabel: String {
-        String(localized: "Smart rewind mode",
-               comment: "VoiceOver label of the Smart mode checkbox in the Playback settings.")
+        // Translators: VoiceOver label of the Smart mode checkbox in the Playback settings.
+        String(localized: "Smart rewind mode")
     }
     /// The same checkbox's VoiceOver hint.
     static var smartModeHint: String {
-        String(localized: "Only rewind if the pause was longer than the threshold",
-               comment: "VoiceOver hint of the Smart mode checkbox in the Playback settings.")
+        // Translators: VoiceOver hint of the Smart mode checkbox in the Playback settings.
+        String(localized: "Only rewind if the pause was longer than the threshold")
     }
     /// The minimum pause as the screen shows it, above its stepper.
     static func minimumPauseText(_ seconds: Int) -> String {
-        String(localized: "Minimum pause: \(seconds) seconds",
-               comment: "The smart rewind's minimum pause shown above its stepper in the Playback settings. %lld is the pause in seconds.")
+        // Translators: The smart rewind's minimum pause shown above its stepper in the Playback settings. %lld is the pause in seconds.
+        String(localized: "Minimum pause: \(seconds) seconds")
     }
     /// The stepper's VoiceOver label.
     static var minimumPauseLabel: String {
-        String(localized: "Minimum pause threshold",
-               comment: "VoiceOver label of the minimum pause stepper in the Playback settings.")
+        // Translators: VoiceOver label of the minimum pause stepper in the Playback settings.
+        String(localized: "Minimum pause threshold")
     }
     /// The text under the stepper.
     static var minimumPauseExplanation: String {
-        String(localized: "Don't rewind if paused for less than this.",
-               comment: "Explanation under the minimum pause stepper in the Playback settings.")
+        // Translators: Explanation under the minimum pause stepper in the Playback settings.
+        String(localized: "Don't rewind if paused for less than this.")
     }
     /// The rewind group's heading.
     static var rewindHeader: String {
-        String(localized: "Rewind on Resume",
-               comment: "Heading of the rewind group in the Playback settings.")
+        // Translators: Heading of the rewind group in the Playback settings.
+        String(localized: "Rewind on Resume")
     }
 
     // MARK: Playback: Punctuation Pauses
@@ -937,183 +937,183 @@ enum SettingsWording {
         switch min(max(level, 0), 3) {
         case 0: return off
         case 1:
-            return String(localized: "Subtle",
-                          comment: "The name of punctuation pause level 1: only periods pause.")
+            // Translators: The name of punctuation pause level 1: only periods pause.
+            return String(localized: "Subtle")
         case 2:
-            return String(localized: "Moderate",
-                          comment: "The name of punctuation pause level 2: periods and commas pause.")
+            // Translators: The name of punctuation pause level 2: periods and commas pause.
+            return String(localized: "Moderate")
         default:
-            return String(localized: "Heavy",
-                          comment: "The name of punctuation pause level 3: periods, commas, and paragraph breaks pause.")
+            // Translators: The name of punctuation pause level 3: periods, commas, and paragraph breaks pause.
+            return String(localized: "Heavy")
         }
     }
     /// The level as the screen shows it, above its slider.
     static func punctuationPausesText(_ levelName: String) -> String {
-        String(localized: "Punctuation pauses: \(levelName)",
-               comment: "The punctuation pause level shown above its slider in the Playback settings. %@ is the level's name, such as Subtle.")
+        // Translators: The punctuation pause level shown above its slider in the Playback settings. %@ is the level's name, such as Subtle.
+        String(localized: "Punctuation pauses: \(levelName)")
     }
     /// The slider's title.
     static var pauseLevelTitle: String {
-        String(localized: "Pause level",
-               comment: "Title of the punctuation pause level slider in the Playback settings.")
+        // Translators: Title of the punctuation pause level slider in the Playback settings.
+        String(localized: "Pause level")
     }
     /// The slider's VoiceOver label.
     static var pauseLevelLabel: String {
-        String(localized: "Punctuation pause level",
-               comment: "VoiceOver label of the punctuation pause level slider in the Playback settings.")
+        // Translators: VoiceOver label of the punctuation pause level slider in the Playback settings.
+        String(localized: "Punctuation pause level")
     }
     /// The text under the slider, naming each level by the name the slider speaks.
     static var punctuationLevelsExplanation: String {
-        String(localized: "0 = \(punctuationLevelName(0)), 1 = \(punctuationLevelName(1)) (periods), 2 = \(punctuationLevelName(2)) (+ commas), 3 = \(punctuationLevelName(3)) (+ paragraph breaks)",
-               comment: "Explanation under the punctuation pause level slider in the Playback settings. %1$@ to %4$@ are the names of levels 0 to 3, as the slider speaks them: Off, Subtle, Moderate, and Heavy. The words in parentheses say what pauses at that level.")
+        // Translators: Explanation under the punctuation pause level slider in the Playback settings. %1$@ to %4$@ are the names of levels 0 to 3, as the slider speaks them: Off, Subtle, Moderate, and Heavy. The words in parentheses say what pauses at that level.
+        String(localized: "0 = \(punctuationLevelName(0)), 1 = \(punctuationLevelName(1)) (periods), 2 = \(punctuationLevelName(2)) (+ commas), 3 = \(punctuationLevelName(3)) (+ paragraph breaks)")
     }
     /// The punctuation group's heading.
     static var punctuationHeader: String {
-        String(localized: "Punctuation Pauses",
-               comment: "Heading of the punctuation pause group in the Playback settings.")
+        // Translators: Heading of the punctuation pause group in the Playback settings.
+        String(localized: "Punctuation Pauses")
     }
 
     // MARK: Playback: Navigation and the End of a Book
 
     /// The auto-play checkbox's title and label.
     static var autoPlayTitle: String {
-        String(localized: "Auto-play after navigation",
-               comment: "Title and VoiceOver label of the checkbox in the Playback settings that starts playing after a jump to a heading, bookmark, or search result.")
+        // Translators: Title and VoiceOver label of the checkbox in the Playback settings that starts playing after a jump to a heading, bookmark, or search result.
+        String(localized: "Auto-play after navigation")
     }
     /// The same checkbox's VoiceOver hint.
     static var autoPlayHint: String {
-        String(localized: "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result",
-               comment: "VoiceOver hint of the Auto-play after navigation checkbox in the Playback settings.")
+        // Translators: VoiceOver hint of the Auto-play after navigation checkbox in the Playback settings.
+        String(localized: "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result")
     }
     /// The text under the checkbox.
     static var autoPlayExplanation: String {
-        String(localized: "Automatically start playing when you navigate to a heading, bookmark, or search result.",
-               comment: "Explanation under the Auto-play after navigation checkbox in the Playback settings.")
+        // Translators: Explanation under the Auto-play after navigation checkbox in the Playback settings.
+        String(localized: "Automatically start playing when you navigate to a heading, bookmark, or search result.")
     }
     /// The navigation group's heading.
     static var navigationHeader: String {
-        String(localized: "Navigation",
-               comment: "Heading of the navigation group in the Playback settings.")
+        // Translators: Heading of the navigation group in the Playback settings.
+        String(localized: "Navigation")
     }
     /// The When book ends pop-up's title.
     static var whenBookEndsTitle: String {
-        String(localized: "When book ends",
-               comment: "Title of the pop-up in the Playback settings that chooses what happens when a book ends.")
+        // Translators: Title of the pop-up in the Playback settings that chooses what happens when a book ends.
+        String(localized: "When book ends")
     }
     /// The same pop-up's VoiceOver label.
     static var endOfBookLabel: String {
-        String(localized: "End of book behavior",
-               comment: "VoiceOver label of the When book ends pop-up in the Playback settings.")
+        // Translators: VoiceOver label of the When book ends pop-up in the Playback settings.
+        String(localized: "End of book behavior")
     }
     /// The same pop-up's VoiceOver hint.
     static var endOfBookHint: String {
-        String(localized: "What happens when a book finishes playing",
-               comment: "VoiceOver hint of the When book ends pop-up in the Playback settings.")
+        // Translators: VoiceOver hint of the When book ends pop-up in the Playback settings.
+        String(localized: "What happens when a book finishes playing")
     }
     /// The text under the pop-up that says what the choice that goes on does.
     static var continueNextExplanation: String {
-        String(localized: "\"\(EndOfBookBehavior.continueNext.title)\" plays the next book in the same folder by sort order.",
-               comment: "Explanation under the When book ends pop-up in the Playback settings. %@ is the title of the pop-up's choice that plays the next book, as the pop-up shows it.")
+        // Translators: Explanation under the When book ends pop-up in the Playback settings. %@ is the title of the pop-up's choice that plays the next book, as the pop-up shows it.
+        String(localized: "\"\(EndOfBookBehavior.continueNext.title)\" plays the next book in the same folder by sort order.")
     }
     /// The end of book group's heading.
     static var endOfBookHeader: String {
-        String(localized: "End of Book",
-               comment: "Heading of the end of book group in the Playback settings.")
+        // Translators: Heading of the end of book group in the Playback settings.
+        String(localized: "End of Book")
     }
 
     // MARK: Playback: The Sleep Timer
 
     /// The fade as the screen shows it, above its stepper.
     static func fadeOutLine(_ fade: String) -> String {
-        String(localized: "Fade out: \(fade)",
-               comment: "The sleep timer's fade out shown above its stepper in the Playback settings. %@ is the fade as a length of time, such as 3 seconds, or Off.")
+        // Translators: The sleep timer's fade out shown above its stepper in the Playback settings. %@ is the fade as a length of time, such as 3 seconds, or Off.
+        String(localized: "Fade out: \(fade)")
     }
     /// The stepper's VoiceOver label.
     static var fadeOutLabel: String {
-        String(localized: "Fade out duration",
-               comment: "VoiceOver label of the sleep timer's fade out stepper in the Playback settings.")
+        // Translators: VoiceOver label of the sleep timer's fade out stepper in the Playback settings.
+        String(localized: "Fade out duration")
     }
     /// The text under the stepper.
     static var fadeOutExplanation: String {
-        String(localized: "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
-               comment: "Explanation under the sleep timer's fade out stepper in the Playback settings.")
+        // Translators: Explanation under the sleep timer's fade out stepper in the Playback settings.
+        String(localized: "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.")
     }
     /// The auto close checkbox's title.
     static var autoCloseTitle: String {
-        String(localized: "Close sheet after setting timer",
-               comment: "Title of the checkbox in the Playback settings that closes the sleep timer sheet once a timer is set.")
+        // Translators: Title of the checkbox in the Playback settings that closes the sleep timer sheet once a timer is set.
+        String(localized: "Close sheet after setting timer")
     }
     /// The same checkbox's VoiceOver label.
     static var autoCloseLabel: String {
-        String(localized: "Close sleep timer sheet after setting a timer",
-               comment: "VoiceOver label of the Close sheet after setting timer checkbox in the Playback settings.")
+        // Translators: VoiceOver label of the Close sheet after setting timer checkbox in the Playback settings.
+        String(localized: "Close sleep timer sheet after setting a timer")
     }
     /// The same checkbox's VoiceOver hint.
     static var autoCloseHint: String {
-        String(localized: "When off, the sheet stays open showing the remaining time and a reset button",
-               comment: "VoiceOver hint of the Close sheet after setting timer checkbox in the Playback settings.")
+        // Translators: VoiceOver hint of the Close sheet after setting timer checkbox in the Playback settings.
+        String(localized: "When off, the sheet stays open showing the remaining time and a reset button")
     }
     /// The sleep timer group's heading.
     static var sleepTimerHeader: String {
-        String(localized: "Sleep Timer",
-               comment: "Heading of the sleep timer group in the Playback settings.")
+        // Translators: Heading of the sleep timer group in the Playback settings.
+        String(localized: "Sleep Timer")
     }
 
     // MARK: Playback: Controls
 
     /// The navigation unit controls pop-up's title.
     static var navigationUnitControlsTitle: String {
-        String(localized: "Navigation unit controls",
-               comment: "Title of the pop-up in the Playback settings that chooses which navigation unit menus the playback bar shows.")
+        // Translators: Title of the pop-up in the Playback settings that chooses which navigation unit menus the playback bar shows.
+        String(localized: "Navigation unit controls")
     }
     /// The same pop-up's VoiceOver label.
     static var navigationUnitControlsLabel: String {
-        String(localized: "Navigation unit controls in playback bar",
-               comment: "VoiceOver label of the Navigation unit controls pop-up in the Playback settings.")
+        // Translators: VoiceOver label of the Navigation unit controls pop-up in the Playback settings.
+        String(localized: "Navigation unit controls in playback bar")
     }
     /// The same pop-up's VoiceOver hint.
     static var navigationUnitControlsHint: String {
-        String(localized: "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
-               comment: "VoiceOver hint of the Navigation unit controls pop-up in the Playback settings.")
+        // Translators: VoiceOver hint of the Navigation unit controls pop-up in the Playback settings.
+        String(localized: "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers")
     }
     /// The bookmark button checkbox's title.
     static var showBookmarkTitle: String {
-        String(localized: "Show bookmark button",
-               comment: "Title of the checkbox in the Playback settings that adds a bookmark button to the playback controls.")
+        // Translators: Title of the checkbox in the Playback settings that adds a bookmark button to the playback controls.
+        String(localized: "Show bookmark button")
     }
     /// The same checkbox's VoiceOver label.
     static var showBookmarkLabel: String {
-        String(localized: "Show bookmark button in playback controls",
-               comment: "VoiceOver label of the Show bookmark button checkbox in the Playback settings.")
+        // Translators: VoiceOver label of the Show bookmark button checkbox in the Playback settings.
+        String(localized: "Show bookmark button in playback controls")
     }
     /// The same checkbox's VoiceOver hint.
     static var showBookmarkHint: String {
-        String(localized: "Adds or removes a bookmark at the current position",
-               comment: "VoiceOver hint of the Show bookmark button checkbox in the Playback settings.")
+        // Translators: VoiceOver hint of the Show bookmark button checkbox in the Playback settings.
+        String(localized: "Adds or removes a bookmark at the current position")
     }
     /// The speed controls checkbox's title.
     static var showSpeedTitle: String {
-        String(localized: "Show speed controls",
-               comment: "Title of the checkbox in the Playback settings that adds speed buttons to the playback controls.")
+        // Translators: Title of the checkbox in the Playback settings that adds speed buttons to the playback controls.
+        String(localized: "Show speed controls")
     }
     /// The same checkbox's VoiceOver label.
     static var showSpeedLabel: String {
-        String(localized: "Show speed controls in playback controls",
-               comment: "VoiceOver label of the Show speed controls checkbox in the Playback settings.")
+        // Translators: VoiceOver label of the Show speed controls checkbox in the Playback settings.
+        String(localized: "Show speed controls in playback controls")
     }
     /// The same checkbox's VoiceOver hint.
     static var showSpeedHint: String {
-        String(localized: "Adds speed buttons and the current speed",
-               comment: "VoiceOver hint of the Show speed controls checkbox in the Playback settings.")
+        // Translators: VoiceOver hint of the Show speed controls checkbox in the Playback settings.
+        String(localized: "Adds speed buttons and the current speed")
     }
     /// The text under the playback control choices.
     static var navigationMenuExplanation: String {
-        String(localized: "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept.",
-               comment: "Explanation under the playback controls group's choices in the Playback settings.")
+        // Translators: Explanation under the playback controls group's choices in the Playback settings.
+        String(localized: "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept.")
     }
     /// The playback controls group's heading.
     static var playbackControlsHeader: String {
-        String(localized: "Playback Controls",
-               comment: "Heading of the playback controls group in the Playback settings.")
+        // Translators: Heading of the playback controls group in the Playback settings.
+        String(localized: "Playback Controls")
     }
 }

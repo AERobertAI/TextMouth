@@ -291,20 +291,20 @@ enum FeedSubscribeError: Error, Equatable, Sendable {
     var message: String {
         switch self {
         case .invalidAddress:
-            return String(localized: "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
-                          comment: "Why Subscribe refused: the address typed is not a web address.")
+            // Translators: Why Subscribe refused: the address typed is not a web address.
+            return String(localized: "That isn't a web address. Enter a feed's address, or the address of a page that names one.")
         case .folderMissing:
-            return String(localized: "The folder chosen for this feed is no longer in the library. Choose another folder.",
-                          comment: "Why Subscribe refused: the folder chosen for the feed was removed from the library.")
+            // Translators: Why Subscribe refused: the folder chosen for the feed was removed from the library.
+            return String(localized: "The folder chosen for this feed is no longer in the library. Choose another folder.")
         case .alreadySubscribed(let title):
-            return String(localized: "You're already subscribed to \(title).",
-                          comment: "Why Subscribe refused: the feed is already in the library. %@ is the feed's title.")
+            // Translators: Why Subscribe refused: the feed is already in the library. %@ is the feed's title.
+            return String(localized: "You're already subscribed to \(title).")
         case .unsubscribedAlready(let title):
-            return String(localized: "\(title) is in your library, unsubscribed. Choose \(FeedWording.resubscribeTitle) on its row, or in its \(FeedWording.feedInfoName), to check it again.",
-                          comment: "Why Subscribe refused: the feed is in the library but unsubscribed. The first %@ is the feed's title; the second is the name of the Resubscribe command; the third is the name of the Feed Info sheet.")
+            // Translators: Why Subscribe refused: the feed is in the library but unsubscribed. The first %@ is the feed's title; the second is the name of the Resubscribe command; the third is the name of the Feed Info sheet.
+            return String(localized: "\(title) is in your library, unsubscribed. Choose \(FeedWording.resubscribeTitle) on its row, or in its \(FeedWording.feedInfoName), to check it again.")
         case .pageNamesNoFeed:
-            return String(localized: "That page doesn't name a feed.",
-                          comment: "Why Subscribe refused: the web page names no feed.")
+            // Translators: Why Subscribe refused: the web page names no feed.
+            return String(localized: "That page doesn't name a feed.")
         case let .refreshFailed(error, host):
             return error.message(about: host, host: host)
         case .folderNotMade(let error):

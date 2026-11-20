@@ -67,16 +67,16 @@ enum PageImageWording {
     static func noText(in subject: Subject, pageCount: Int) -> String {
         guard pageCount > 1 else {
             return subject == .archive
-                ? String(localized: "No text was found in the one picture of this comic book archive.",
-                         comment: "Why a comic book archive of one picture was refused at import: text recognition found no text in it.")
-                : String(localized: "No text was found in this picture.",
-                         comment: "Why a picture was refused at import: text recognition found no text in it.")
+                // Translators: Why a comic book archive of one picture was refused at import: text recognition found no text in it.
+                ? String(localized: "No text was found in the one picture of this comic book archive.")
+                // Translators: Why a picture was refused at import: text recognition found no text in it.
+                : String(localized: "No text was found in this picture.")
         }
         return subject == .archive
-            ? String(localized: "No text was found on any of the \(pageCount) pages of this comic book archive.",
-                     comment: "Why a comic book archive of several pictures was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.")
-            : String(localized: "No text was found on any of the \(pageCount) pages of this picture.",
-                     comment: "Why a picture of several pages, such as a TIFF, was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.")
+            // Translators: Why a comic book archive of several pictures was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.
+            ? String(localized: "No text was found on any of the \(pageCount) pages of this comic book archive.")
+            // Translators: Why a picture of several pages, such as a TIFF, was refused at import: text recognition found no text on any page. %lld is the number of pages, always more than one.
+            : String(localized: "No text was found on any of the \(pageCount) pages of this picture.")
     }
 
     /// Text recognition could not run at all, so nothing could be read, as a
@@ -86,10 +86,10 @@ enum PageImageWording {
     static func recognitionUnavailable(in subject: Subject, reason: String) -> String {
         // The reason is a parser's English (question 3).
         subject == .archive
-            ? String(localized: "No text could be read from this comic book archive: OCR could not run (\(reason)).",
-                     comment: "Why a comic book archive was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English.")
-            : String(localized: "No text could be read from this picture: OCR could not run (\(reason)).",
-                     comment: "Why a picture was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English.")
+            // Translators: Why a comic book archive was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English.
+            ? String(localized: "No text could be read from this comic book archive: OCR could not run (\(reason)).")
+            // Translators: Why a picture was refused at import: text recognition (OCR) could not run. %@ is the reason, a phrase in English.
+            : String(localized: "No text could be read from this picture: OCR could not run (\(reason)).")
     }
 
     /// Bytes in which ImageIO finds no picture at all, in the words the other
@@ -97,8 +97,8 @@ enum PageImageWording {
     /// could not be read as a picture. It may be damaged, or another kind of
     /// file."
     static var notAPicture: String {
-        String(localized: "This file could not be read as a picture. It may be damaged, or another kind of file.",
-               comment: "Why a file was refused at import: its bytes are no picture at all. Two sentences.")
+        // Translators: Why a file was refused at import: its bytes are no picture at all. Two sentences.
+        String(localized: "This file could not be read as a picture. It may be damaged, or another kind of file.")
     }
 
     /// A picture of a kind ImageIO knows but TextMouth does not decode,
@@ -106,37 +106,37 @@ enum PageImageWording {
     /// this kind of picture (DNG image). Save it as a PNG or JPEG picture,
     /// then import that copy."
     static func unreadableKind(_ kind: String) -> String {
-        String(localized: "TextMouth can't read this kind of picture (\(kind)). Save it as a PNG or JPEG, then import that copy.",
-               comment: "Why a picture was refused at import: a kind of picture the system knows but TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\".")
+        // Translators: Why a picture was refused at import: a kind of picture the system knows but TextMouth does not decode. %@ is the system's description of the kind, such as "DNG image".
+        String(localized: "TextMouth can't read this kind of picture (\(kind)). Save it as a PNG or JPEG, then import that copy.")
     }
 
     /// What `unreadableKind(_:)` names a kind by when the system has no
     /// description of it.
     static var unnamedKind: String {
-        String(localized: "a kind the system does not name",
-               comment: "Stands for the system's description of a kind of picture it has no description for, inside parentheses: \"TextMouth can't read this kind of picture (a kind the system does not name).\"")
+        // Translators: Stands for the system's description of a kind of picture it has no description for, inside parentheses: "TextMouth can't read this kind of picture (a kind the system does not name)."
+        String(localized: "a kind the system does not name")
     }
 
     /// A picture that says it holds more pixels than TextMouth decodes: "This
     /// picture is 30,000 by 30,000 pixels, larger than the 100 megapixels
     /// TextMouth reads in one picture."
     static func tooLarge(width: Int, height: Int) -> String {
-        String(localized: "This picture is \(dimensions(width: width, height: height)), larger than the \(maximumMegapixels) megapixels TextMouth reads.",
-               comment: "Why a picture was refused at import: it says it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels.")
+        // Translators: Why a picture was refused at import: it says it holds more pixels than TextMouth decodes. %1$@ is its size, such as "30,000 by 30,000 pixels", and %2$lld the limit in megapixels.
+        String(localized: "This picture is \(dimensions(width: width, height: height)), larger than the \(maximumMegapixels) megapixels TextMouth reads.")
     }
 
     /// A picture ImageIO knows but could not decode: "This picture could not
     /// be decoded. It may be damaged."
     static var cannotDecode: String {
-        String(localized: "This picture could not be decoded. It may be damaged.",
-               comment: "Why a picture was refused at import: the system could not decode it. Two sentences.")
+        // Translators: Why a picture was refused at import: the system could not decode it. Two sentences.
+        String(localized: "This picture could not be decoded. It may be damaged.")
     }
 
     /// A TIFF of more pages than TextMouth reads, by its count: "This picture
     /// holds 3,000 pages, more than the 2,000 TextMouth reads in one book."
     static func tooManyPages(_ count: Int) -> String {
-        String(localized: "This picture holds \(count) pages, more than the \(ArchiveFigures.count(maximumPages)) TextMouth reads.",
-               comment: "Why a picture of many pages, such as a TIFF, was refused at import. %1$lld is the number of pages it holds and %2$@ the limit, already formatted.")
+        // Translators: Why a picture of many pages, such as a TIFF, was refused at import. %1$lld is the number of pages it holds and %2$@ the limit, already formatted.
+        String(localized: "This picture holds \(count) pages, more than the \(ArchiveFigures.count(maximumPages)) TextMouth reads.")
     }
 
     /// A comic book archive of more pictures than TextMouth reads, refused at
@@ -144,23 +144,23 @@ enum PageImageWording {
     /// comic book archive holds more than the 2,000 pictures TextMouth reads
     /// in one book."
     static var tooManyPictures: String {
-        String(localized: "This comic book archive holds more than the \(ArchiveFigures.count(maximumPages)) pictures TextMouth reads.",
-               comment: "Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted.")
+        // Translators: Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted.
+        String(localized: "This comic book archive holds more than the \(ArchiveFigures.count(maximumPages)) pictures TextMouth reads.")
     }
 
     /// A comic book archive that is no ZIP archive, in the words the other
     /// formats use: "This file could not be read as a comic book archive. It
     /// may be damaged, or another kind of file."
     static var notAnArchive: String {
-        String(localized: "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
-               comment: "Why a file was refused at import: it is no ZIP archive, so it cannot be a comic book archive. Two sentences.")
+        // Translators: Why a file was refused at import: it is no ZIP archive, so it cannot be a comic book archive. Two sentences.
+        String(localized: "This file could not be read as a comic book archive. It may be damaged, or another kind of file.")
     }
 
     /// A comic book archive that holds no picture TextMouth reads: "This
     /// comic book archive holds no pictures TextMouth can read."
     static var noPictures: String {
-        String(localized: "This comic book archive holds no pictures TextMouth can read.",
-               comment: "Why a comic book archive was refused at import: it holds no picture TextMouth reads.")
+        // Translators: Why a comic book archive was refused at import: it holds no picture TextMouth reads.
+        String(localized: "This comic book archive holds no pictures TextMouth can read.")
     }
 
     /// The pages of a book of pictures that text recognition could not
@@ -173,13 +173,13 @@ enum PageImageWording {
     static func pagesNotRead(_ failed: Int, of total: Int, pages: String) -> String {
         if failed >= total {
             return total == 1
-                ? String(localized: "Text recognition could not read the only page: \(pages).",
-                         comment: "Why a book of one page of a picture was refused at import: text recognition could not read its only page. %@ names the page and why, such as \"page 1 (its picture could not be decoded)\".")
-                : String(localized: "Text recognition could not read any of the \(total) pages: \(pages).",
-                         comment: "Why a book of several pages of pictures was refused at import: text recognition could not read any page. %1$lld is the number of pages and %2$@ names the pages and why, such as \"pages 1 and 2 (its picture could not be decoded)\".")
+                // Translators: Why a book of one page of a picture was refused at import: text recognition could not read its only page. %@ names the page and why, such as "page 1 (its picture could not be decoded)".
+                ? String(localized: "Text recognition could not read the only page: \(pages).")
+                // Translators: Why a book of several pages of pictures was refused at import: text recognition could not read any page. %1$lld is the number of pages and %2$@ names the pages and why, such as "pages 1 and 2 (its picture could not be decoded)".
+                : String(localized: "Text recognition could not read any of the \(total) pages: \(pages).")
         }
-        return String(localized: "Text recognition could not read \(ImportProgressWording.pages(done: failed, of: total)): \(pages).",
-                      comment: "Warning after a book of pictures was imported: text recognition could not read some pages. %1$@ is how many of how many, such as \"1 of 12 pages\", and %2$@ names the pages and why, such as \"page 3 (its picture could not be decoded)\".")
+        // Translators: Warning after a book of pictures was imported: text recognition could not read some pages. %1$@ is how many of how many, such as "1 of 12 pages", and %2$@ names the pages and why, such as "page 3 (its picture could not be decoded)".
+        return String(localized: "Text recognition could not read \(ImportProgressWording.pages(done: failed, of: total)): \(pages).")
     }
 
     // MARK: - Why One Page Could Not Be Read
@@ -190,37 +190,37 @@ enum PageImageWording {
 
     /// The page's file in the archive is no picture.
     static var pageNotAPicture: String {
-        String(localized: "its file could not be read as a picture",
-               comment: "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is no picture. Starts with a lowercase letter, with no full stop.")
+        // Translators: Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is no picture. Starts with a lowercase letter, with no full stop.
+        String(localized: "its file could not be read as a picture")
     }
 
     /// The page is a kind of picture TextMouth does not decode, named by the
     /// system's description of its kind: "it is a kind of picture TextMouth
     /// can't read (DNG image)".
     static func pageOfUnreadableKind(_ kind: String) -> String {
-        String(localized: "it is a kind of picture TextMouth can't read (\(kind))",
-               comment: "Why one page of a comic book archive could not be read, inside parentheses after the page's number: a kind of picture TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\". Starts with a lowercase letter, with no full stop.")
+        // Translators: Why one page of a comic book archive could not be read, inside parentheses after the page's number: a kind of picture TextMouth does not decode. %@ is the system's description of the kind, such as "DNG image". Starts with a lowercase letter, with no full stop.
+        String(localized: "it is a kind of picture TextMouth can't read (\(kind))")
     }
 
     /// The page says it holds more pixels than TextMouth decodes: "it is
     /// 30,000 by 30,000 pixels, larger than 100 megapixels".
     static func pageTooLarge(width: Int, height: Int) -> String {
-        String(localized: "it is \(dimensions(width: width, height: height)), larger than \(maximumMegapixels) megapixels",
-               comment: "Why one page of a comic book archive could not be read, inside parentheses after the page's number: it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels. Starts with a lowercase letter, with no full stop.")
+        // Translators: Why one page of a comic book archive could not be read, inside parentheses after the page's number: it holds more pixels than TextMouth decodes. %1$@ is its size, such as "30,000 by 30,000 pixels", and %2$lld the limit in megapixels. Starts with a lowercase letter, with no full stop.
+        String(localized: "it is \(dimensions(width: width, height: height)), larger than \(maximumMegapixels) megapixels")
     }
 
     /// The page's picture could not be decoded.
     static var pageCannotDecode: String {
-        String(localized: "its picture could not be decoded",
-               comment: "Why one page of a comic book archive could not be read, inside parentheses after the page's number: the system could not decode its picture. Starts with a lowercase letter, with no full stop.")
+        // Translators: Why one page of a comic book archive could not be read, inside parentheses after the page's number: the system could not decode its picture. Starts with a lowercase letter, with no full stop.
+        String(localized: "its picture could not be decoded")
     }
 
     /// Why a page's file is damaged when its bytes do not match the checksum
     /// the archive stores for them, in the words an EPUB's damaged member
     /// gets; it completes "… is damaged or incomplete: …".
     static var failsChecksum: String {
-        String(localized: "its contents do not match the checksum stored with them",
-               comment: "Why a page's file in a comic book archive is damaged, after \"its file is damaged or incomplete:\": its bytes do not match the checksum the archive stores for them. Starts with a lowercase letter, with no full stop.")
+        // Translators: Why a page's file in a comic book archive is damaged, after "its file is damaged or incomplete:": its bytes do not match the checksum the archive stores for them. Starts with a lowercase letter, with no full stop.
+        String(localized: "its contents do not match the checksum stored with them")
     }
 
     /// The page's file in the archive is damaged, for `reason`, which an
@@ -228,16 +228,16 @@ enum PageImageWording {
     /// file is damaged or incomplete: its compressed data could not be
     /// decoded".
     static func pageFileDamaged(_ reason: String) -> String {
-        String(localized: "its file is damaged or incomplete: \(reason)",
-               comment: "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is damaged. %@ is the reason, which the archive reader gives in English or `failsChecksum`. Starts with a lowercase letter, with no full stop.")
+        // Translators: Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is damaged. %@ is the reason, which the archive reader gives in English or `failsChecksum`. Starts with a lowercase letter, with no full stop.
+        String(localized: "its file is damaged or incomplete: \(reason)")
     }
 
     // MARK: - Chapter Titles
 
     /// The title of a page's chapter in a book of several pages: "Page 3".
     static func pageTitle(_ number: Int) -> String {
-        String(localized: "Page \(String(number))",
-               comment: "Title of the chapter of one page of a book of pictures, made at import. %@ is the page's number, an identifier written without digit grouping.")
+        // Translators: Title of the chapter of one page of a book of pictures, made at import. %@ is the page's number, an identifier written without digit grouping.
+        String(localized: "Page \(String(number))")
     }
 
     /// The title of a comic book archive's page that its ComicInfo.xml calls
@@ -245,9 +245,12 @@ enum PageImageWording {
     /// `BackCover`); nil for any other value.
     static func coverTitle(forPageType type: String) -> String? {
         switch type {
-        case "FrontCover": return String(localized: "Front Cover", comment: "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the front cover, made at import. Title case.")
-        case "InnerCover": return String(localized: "Inner Cover", comment: "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls an inner cover, made at import. Title case.")
-        case "BackCover": return String(localized: "Back Cover", comment: "Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the back cover, made at import. Title case.")
+        // Translators: Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the front cover, made at import. Title case.
+        case "FrontCover": return String(localized: "Front Cover")
+        // Translators: Title of the chapter of a comic book archive's page that its ComicInfo.xml calls an inner cover, made at import. Title case.
+        case "InnerCover": return String(localized: "Inner Cover")
+        // Translators: Title of the chapter of a comic book archive's page that its ComicInfo.xml calls the back cover, made at import. Title case.
+        case "BackCover": return String(localized: "Back Cover")
         default: return nil
         }
     }
@@ -264,7 +267,7 @@ enum PageImageWording {
 
     /// A picture's size in words: "1,224 by 1,584 pixels".
     private static func dimensions(width: Int, height: Int) -> String {
-        String(localized: "\(width) by \(height) pixels",
-               comment: "A picture's size. %1$lld is its width and %2$lld its height, both in pixels, such as \"1,224 by 1,584 pixels\".")
+        // Translators: A picture's size. %1$lld is its width and %2$lld its height, both in pixels, such as "1,224 by 1,584 pixels".
+        String(localized: "\(width) by \(height) pixels")
     }
 }

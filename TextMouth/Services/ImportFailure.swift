@@ -50,47 +50,47 @@ enum ImportStep: Equatable, Sendable {
     var phrase: String {
         switch self {
         case .checkingFormat:
-            return String(localized: "checking its format",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking its format\") and, capitalized by the app, starts a failure (\"Checking its format failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, checking its format") and, capitalized by the app, starts a failure ("Checking its format failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "checking its format")
         case .readingSource:
-            return String(localized: "reading the file",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading the file\") and, capitalized by the app, starts a failure (\"Reading the file failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, reading the file") and, capitalized by the app, starts a failure ("Reading the file failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "reading the file")
         case .preparingPackage:
-            return String(localized: "creating its package",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, creating its package\") and, capitalized by the app, starts a failure (\"Creating its package failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, creating its package") and, capitalized by the app, starts a failure ("Creating its package failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "creating its package")
         case .copying:
-            return String(localized: "copying it into the library",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, copying it into the library\") and, capitalized by the app, starts a failure (\"Copying it into the library failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, copying it into the library") and, capitalized by the app, starts a failure ("Copying it into the library failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "copying it into the library")
         case .extractingArchive:
-            return String(localized: "extracting the archive",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, extracting the archive\") and, capitalized by the app, starts a failure (\"Extracting the archive failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, extracting the archive") and, capitalized by the app, starts a failure ("Extracting the archive failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "extracting the archive")
         case .readingManifest:
-            return String(localized: "reading its manifest",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its manifest\") and, capitalized by the app, starts a failure (\"Reading its manifest failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, reading its manifest") and, capitalized by the app, starts a failure ("Reading its manifest failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "reading its manifest")
         case .convertingAudio:
-            return String(localized: "converting its DAISY audio",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its DAISY audio\") and, capitalized by the app, starts a failure (\"Converting its DAISY audio failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, converting its DAISY audio") and, capitalized by the app, starts a failure ("Converting its DAISY audio failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "converting its DAISY audio")
         case .convertingImportedAudio:
-            return String(localized: "converting its audio",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its audio\") and, capitalized by the app, starts a failure (\"Converting its audio failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, converting its audio") and, capitalized by the app, starts a failure ("Converting its audio failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "converting its audio")
         case .checkingPackage:
-            return String(localized: "checking the package",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking the package\") and, capitalized by the app, starts a failure (\"Checking the package failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, checking the package") and, capitalized by the app, starts a failure ("Checking the package failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "checking the package")
         case .readingText, .readingPages:
-            return String(localized: "reading its text",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its text\") and, capitalized by the app, starts a failure (\"Reading its text failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, reading its text") and, capitalized by the app, starts a failure ("Reading its text failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "reading its text")
         case .readingAudio:
-            return String(localized: "reading its audio",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its audio\") and, capitalized by the app, starts a failure (\"Reading its audio failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, reading its audio") and, capitalized by the app, starts a failure ("Reading its audio failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "reading its audio")
         case .savingRecord:
-            return String(localized: "saving its bookInfo.json file",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, saving its bookInfo.json file\") and, capitalized by the app, starts a failure (\"Saving its bookInfo.json file failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, saving its bookInfo.json file") and, capitalized by the app, starts a failure ("Saving its bookInfo.json file failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "saving its bookInfo.json file")
         case .publishing:
-            return String(localized: "adding it to the library folder",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, adding it to the library folder\") and, capitalized by the app, starts a failure (\"Adding it to the library folder failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, adding it to the library folder") and, capitalized by the app, starts a failure ("Adding it to the library folder failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "adding it to the library folder")
         case .reinstating:
-            return String(localized: "returning it to the library",
-                          comment: "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, returning it to the library\") and, capitalized by the app, starts a failure (\"Returning it to the library failed: ...\"). Starts with a lowercase letter and has no full stop.")
+            // Translators: What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay ("“Moby Dick.epub”, returning it to the library") and, capitalized by the app, starts a failure ("Returning it to the library failed: ..."). Starts with a lowercase letter and has no full stop.
+            return String(localized: "returning it to the library")
         }
     }
 
@@ -153,8 +153,8 @@ struct ImportFailure: LocalizedError {
     /// "Reading its text failed: <why>": the step, then why it failed, as one
     /// localized sentence.
     private static func failedSentence(step: ImportStep, because why: String) -> String {
-        String(localized: "\(step.activity) failed: \(why)",
-               comment: "Why an import failed: the step it was at, then the reason. %1$@ is the step starting a sentence, such as \"Reading its text\" or \"Copying it into the library\", and %2$@ the reason, a sentence of the system's or the app's.")
+        // Translators: Why an import failed: the step it was at, then the reason. %1$@ is the step starting a sentence, such as "Reading its text" or "Copying it into the library", and %2$@ the reason, a sentence of the system's or the app's.
+        String(localized: "\(step.activity) failed: \(why)")
     }
 
     /// The same reason in English, for the debug log, which stays English
@@ -200,8 +200,8 @@ struct ImportFailure: LocalizedError {
     /// sentence names the hidden staged package (".import-<id>.tmb"), an
     /// internal name the listener never chose and VoiceOver would read out.
     static var outOfSpaceDescription: String {
-        String(localized: "There isn’t enough free space on the disk.",
-               comment: "Why an import failed when the disk is full. Said instead of the system's own sentence, which names a hidden internal file.")
+        // Translators: Why an import failed when the disk is full. Said instead of the system's own sentence, which names a hidden internal file.
+        String(localized: "There isn’t enough free space on the disk.")
     }
 
     /// Whether `error`, or an error it wraps under `NSUnderlyingErrorKey` at

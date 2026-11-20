@@ -15,19 +15,19 @@ enum BookExportDeepChapterWording {
     /// Deep Notes" for a text with no chapter markers.
     static func subject(of question: ExportDeepChapterQuestion) -> String {
         guard let chapter = question.chapter else {
-            return String(localized: "The text of \(question.bookTitle)",
-                          comment: "Names what the export's deep-nesting question is about: a book's whole text, which has no chapter markers. %@ is the book's title.")
+            // Translators: Names what the export's deep-nesting question is about: a book's whole text, which has no chapter markers. %@ is the book's title.
+            return String(localized: "The text of \(question.bookTitle)")
         }
         // The chapter's number names it, so it is written without grouping.
-        return String(localized: "Chapter \(String(chapter)) of \(question.bookTitle)",
-                      comment: "Names what the export's deep-nesting question is about: one chapter of a book. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ the book's title.")
+        // Translators: Names what the export's deep-nesting question is about: one chapter of a book. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ the book's title.
+        return String(localized: "Chapter \(String(chapter)) of \(question.bookTitle)")
     }
 
     /// The alert's title, which VoiceOver reads first: "Chapter 2 of Deep
     /// Notes nests too deeply".
     static func title(for question: ExportDeepChapterQuestion) -> String {
-        String(localized: "\(subject(of: question)) nests too deeply",
-               comment: "The title of the alert an export shows when a chapter nests quotes, lists, or emphasis too deeply. %@ names what nests, such as \"Chapter 2 of Deep Notes\".")
+        // Translators: The title of the alert an export shows when a chapter nests quotes, lists, or emphasis too deeply. %@ names what nests, such as "Chapter 2 of Deep Notes".
+        String(localized: "\(subject(of: question)) nests too deeply")
     }
 
     /// The alert's message: what is wrong, what each button does, and that
@@ -36,22 +36,22 @@ enum BookExportDeepChapterWording {
     static func message(for question: ExportDeepChapterQuestion) -> String {
         let nests = MarkdownNestingWording.nestsTooDeeply(limit: question.limit)
         var sentences = [
-            String(localized: "\(subject(of: question)) \(nests), which TextMouth can't export with its structure.",
-                   comment: "The first sentence of the alert an export shows when a chapter nests too deeply. %1$@ names what nests, such as \"Chapter 2 of Deep Notes\", and %2$@ is the clause that says how deep, such as \"nests quotes, lists, or emphasis more than 128 levels deep\"."),
+            // Translators: The first sentence of the alert an export shows when a chapter nests too deeply. %1$@ names what nests, such as "Chapter 2 of Deep Notes", and %2$@ is the clause that says how deep, such as "nests quotes, lists, or emphasis more than 128 levels deep".
+            String(localized: "\(subject(of: question)) \(nests), which TextMouth can't export with its structure."),
             question.chapter == nil
-                ? String(localized: "\(exportAsWrittenTitle) writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
-                         comment: "The second sentence of the alert an export shows when a book's text, which has no chapter markers, nests too deeply. %@ is the name of the Export as Written button.")
-                : String(localized: "\(exportAsWrittenTitle) writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
-                         comment: "The second sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Export as Written button.")
+                // Translators: The second sentence of the alert an export shows when a book's text, which has no chapter markers, nests too deeply. %@ is the name of the Export as Written button.
+                ? String(localized: "\(exportAsWrittenTitle) writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.")
+                // Translators: The second sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Export as Written button.
+                : String(localized: "\(exportAsWrittenTitle) writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.")
         ]
         if question.offersEveryOne {
             sentences.append(
-                String(localized: "\(exportEveryOneAsWrittenTitle) does the same for every such chapter of this export, without asking again.",
-                       comment: "The third sentence of the alert an export shows when a chapter nests too deeply and others may too. %@ is the name of the Export Every Such Chapter as Written button.")
+                // Translators: The third sentence of the alert an export shows when a chapter nests too deeply and others may too. %@ is the name of the Export Every Such Chapter as Written button.
+                String(localized: "\(exportEveryOneAsWrittenTitle) does the same for every such chapter of this export, without asking again.")
             )
         }
-        sentences.append(String(localized: "\(cancelTitle) stops the whole export. Files already written stay.",
-                                comment: "The last sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Cancel Export button."))
+        // Translators: The last sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Cancel Export button.
+        sentences.append(String(localized: "\(cancelTitle) stops the whole export. Files already written stay."))
         return SentenceWording.joined(sentences)
     }
 
@@ -60,37 +60,37 @@ enum BookExportDeepChapterWording {
     /// The default button, which Return presses: writes the chapter as it is
     /// written.
     static var exportAsWrittenTitle: String {
-        String(localized: "Export as Written",
-               comment: "The default button of the alert an export shows when a chapter nests too deeply: it writes the chapter as plain paragraphs.")
+        // Translators: The default button of the alert an export shows when a chapter nests too deeply: it writes the chapter as plain paragraphs.
+        String(localized: "Export as Written")
     }
 
     /// The button that does the same for every such chapter of the export.
     static var exportEveryOneAsWrittenTitle: String {
-        String(localized: "Export Every Such Chapter as Written",
-               comment: "A button of the alert an export shows when a chapter nests too deeply: it writes every such chapter of the export as plain paragraphs, without asking again.")
+        // Translators: A button of the alert an export shows when a chapter nests too deeply: it writes every such chapter of the export as plain paragraphs, without asking again.
+        String(localized: "Export Every Such Chapter as Written")
     }
 
     /// The button Escape presses: stops the whole export.
     static var cancelTitle: String {
-        String(localized: "Cancel Export",
-               comment: "The button of the alert an export shows when a chapter nests too deeply: it stops the whole export.")
+        // Translators: The button of the alert an export shows when a chapter nests too deeply: it stops the whole export.
+        String(localized: "Cancel Export")
     }
 
     /// What Export as Written does, as its hint.
     static var exportAsWrittenHint: String {
-        String(localized: "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual.",
-               comment: "The hint of the Export as Written button in the alert an export shows when a chapter nests too deeply.")
+        // Translators: The hint of the Export as Written button in the alert an export shows when a chapter nests too deeply.
+        String(localized: "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual.")
     }
 
     /// What Export Every Such Chapter as Written does, as its hint.
     static var exportEveryOneAsWrittenHint: String {
-        String(localized: "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
-               comment: "The hint of the Export Every Such Chapter as Written button in the alert an export shows when a chapter nests too deeply.")
+        // Translators: The hint of the Export Every Such Chapter as Written button in the alert an export shows when a chapter nests too deeply.
+        String(localized: "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.")
     }
 
     /// What Cancel Export does, as its hint.
     static var cancelHint: String {
-        String(localized: "Stops the whole export. Files already written stay.",
-               comment: "The hint of the Cancel Export button in the alert an export shows when a chapter nests too deeply.")
+        // Translators: The hint of the Cancel Export button in the alert an export shows when a chapter nests too deeply.
+        String(localized: "Stops the whole export. Files already written stay.")
     }
 }

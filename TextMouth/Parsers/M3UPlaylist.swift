@@ -18,8 +18,8 @@ enum M3UPlaylistError: LocalizedError, LogDescribing, Equatable {
     var errorDescription: String? {
         switch self {
         case let .tooLarge(fileName):
-            return String(localized: "The playlist “\(fileName)” is too large to read.",
-                          comment: "Why a playlist file could not be imported: it is larger than the most TextMouth reads. %@ is the playlist's file name.")
+            // Translators: Why a playlist file could not be imported: it is larger than the most TextMouth reads. %@ is the playlist's file name.
+            return String(localized: "The playlist “\(fileName)” is too large to read.")
         case let .notReadable(fileName):
             return PlaylistImportWording.notReadable(fileName: fileName)
         case let .declaresEntities(fileName):

@@ -11,8 +11,8 @@ import Foundation
 enum ImportProgressWording {
     /// The import overlay's title, which VoiceOver reads first.
     static var title: String {
-        String(localized: "Importing Books",
-               comment: "Title of the overlay that shows the imports under way. VoiceOver reads it first.")
+        // Translators: Title of the overlay that shows the imports under way. VoiceOver reads it first.
+        String(localized: "Importing Books")
     }
 
     /// What the overlay's count counts, after the books done of the total,
@@ -26,8 +26,8 @@ enum ImportProgressWording {
     /// What the overlay says as a ZIP import starts, before its archive is
     /// opened.
     static var startingArchive: String {
-        String(localized: "Extracting archive...",
-               comment: "Line of the import overlay as a ZIP import starts, before its archive is opened. Ends with an ellipsis written as three full stops, which says the work goes on.")
+        // Translators: Line of the import overlay as a ZIP import starts, before its archive is opened. Ends with an ellipsis written as three full stops, which says the work goes on.
+        String(localized: "Extracting archive...")
     }
 
     // MARK: - The Overlay's Lines
@@ -36,16 +36,16 @@ enum ImportProgressWording {
     /// processed". The total is a whole phrase with its own plural forms,
     /// so each language agrees the noun with it.
     static func part(_ done: Int, of total: String) -> String {
-        String(localized: "\(done) of \(total)",
-               comment: "A count done, then \"of\", then a phrase that names the total and what is counted, such as \"3 of 10 books processed\" or \"12 of 176 tracks\". %lld is the number done and %@ the total's phrase, which has its own plural forms.")
+        // Translators: A count done, then "of", then a phrase that names the total and what is counted, such as "3 of 10 books processed" or "12 of 176 tracks". %lld is the number done and %@ the total's phrase, which has its own plural forms.
+        String(localized: "\(done) of \(total)")
     }
 
     /// The books done of the total, as the overlay's count says it:
     /// "3 of 10 books processed", and for one book "0 of 1 book processed"
     /// (REV13; it said "0 of 1 books processed").
     static func count(done: Int, of total: Int) -> String {
-        part(done, of: String(localized: "\(total) books processed",
-                              comment: "The total of the import overlay's count: how many books are being imported, whether each is done, skipped as a duplicate, or failed. %lld is the number of books. Follows \"3 of\"."))
+        // Translators: The total of the import overlay's count: how many books are being imported, whether each is done, skipped as a duplicate, or failed. %lld is the number of books. Follows "3 of".
+        part(done, of: String(localized: "\(total) books processed"))
     }
 
     /// How far the extraction of the archive named `archive`, the archive
@@ -53,8 +53,8 @@ enum ImportProgressWording {
     /// bytes they declare: "Extracting “Library Export.zip”: 120 of 300
     /// items, 1.2 GB of 3.4 GB...".
     static func extracting(archive: String, progress: ArchiveExtractionProgress) -> String {
-        String(localized: "Extracting “\(archive)”: \(extracted(progress))...",
-               comment: "Line of the import overlay while an archive is extracted. %1$@ is the archive's name and %2$@ how far the extraction has got, such as \"120 of 300 items, 1.2 GB of 3.4 GB\". Ends with an ellipsis written as three full stops.")
+        // Translators: Line of the import overlay while an archive is extracted. %1$@ is the archive's name and %2$@ how far the extraction has got, such as "120 of 300 items, 1.2 GB of 3.4 GB". Ends with an ellipsis written as three full stops.
+        String(localized: "Extracting “\(archive)”: \(extracted(progress))...")
     }
 
     /// How far an extraction has got, by its items and by the bytes they
@@ -62,11 +62,11 @@ enum ImportProgressWording {
     /// no bytes, folders and empty files alone, is counted by its items
     /// alone.
     static func extracted(_ progress: ArchiveExtractionProgress) -> String {
-        let items = part(progress.entriesDone, of: String(localized: "\(progress.entries) items",
-                                                          comment: "The total of an archive extraction's count: how many items (files and folders) the archive holds. %lld is the number of items. Follows \"120 of\"."))
+        // Translators: The total of an archive extraction's count: how many items (files and folders) the archive holds. %lld is the number of items. Follows "120 of".
+        let items = part(progress.entriesDone, of: String(localized: "\(progress.entries) items"))
         guard progress.bytes > 0 else { return items }
-        let bytes = String(localized: "\(size(progress.bytesDone)) of \(size(progress.bytes))",
-                           comment: "How many bytes of an archive's declared total have been extracted. %1$@ is the size done and %2$@ the total size, each with its unit, such as \"1.2 GB of 3.4 GB\".")
+        // Translators: How many bytes of an archive's declared total have been extracted. %1$@ is the size done and %2$@ the total size, each with its unit, such as "1.2 GB of 3.4 GB".
+        let bytes = String(localized: "\(size(progress.bytesDone)) of \(size(progress.bytes))")
         return SentenceWording.commaJoined([items, bytes])
     }
 
@@ -87,8 +87,8 @@ enum ImportProgressWording {
     /// 100: “Moby Dick.epub”, reading its text". `name` is the book's file,
     /// or a DAISY book's folder, as the archive names it.
     static func book(_ name: String, number: Int, of total: Int, step: ImportStep) -> String {
-        String(localized: "Book \(number) of \(total): “\(name)”, \(self.step(step))",
-               comment: "Line of the import overlay for one book of a ZIP batch. %1$lld is the book's place in the batch, %2$lld the number of books, %3$@ the book's file name, and %4$@ what is being done to it, such as \"reading its text\".")
+        // Translators: Line of the import overlay for one book of a ZIP batch. %1$lld is the book's place in the batch, %2$lld the number of books, %3$@ the book's file name, and %4$@ what is being done to it, such as "reading its text".
+        String(localized: "Book \(number) of \(total): “\(name)”, \(self.step(step))")
     }
 
     /// The one book an import is bringing in, a file or an archive holding
@@ -98,11 +98,11 @@ enum ImportProgressWording {
     /// archive: 12 of 30 items, 120 MB of 340 MB" (FR10).
     static func book(_ name: String, step: ImportStep, extraction: ArchiveExtractionProgress? = nil) -> String {
         guard let extraction else {
-            return String(localized: "“\(name)”, \(self.step(step))",
-                          comment: "Line of the import overlay for the one book being imported. %1$@ is the book's file name and %2$@ what is being done to it, such as \"reading its text\".")
+            // Translators: Line of the import overlay for the one book being imported. %1$@ is the book's file name and %2$@ what is being done to it, such as "reading its text".
+            return String(localized: "“\(name)”, \(self.step(step))")
         }
-        return String(localized: "“\(name)”, \(self.step(step)): \(extracted(extraction))",
-                      comment: "Line of the import overlay for an archive holding one audiobook, while it is extracted. %1$@ is the archive's file name, %2$@ the step, such as \"extracting the archive\", and %3$@ how far the extraction has got, such as \"12 of 30 items, 120 MB of 340 MB\".")
+        // Translators: Line of the import overlay for an archive holding one audiobook, while it is extracted. %1$@ is the archive's file name, %2$@ the step, such as "extracting the archive", and %3$@ how far the extraction has got, such as "12 of 30 items, 120 MB of 340 MB".
+        return String(localized: "“\(name)”, \(self.step(step)): \(extracted(extraction))")
     }
 
     /// How long a book must have been under way before the overlay says how
@@ -121,8 +121,8 @@ enum ImportProgressWording {
     static func timeOnBook(_ seconds: TimeInterval) -> String? {
         guard seconds.isFinite, seconds >= timeOnBookShownAfter else { return nil }
         let stepped = (seconds / timeOnBookStep).rounded(.down) * timeOnBookStep
-        return String(localized: "\(TimeFormatting.spoken(stepped)) on this book",
-                      comment: "Line of the import overlay: how long the book under way has taken. %@ is the time in words, such as \"1 minute, 5 seconds\".")
+        // Translators: Line of the import overlay: how long the book under way has taken. %@ is the time in words, such as "1 minute, 5 seconds".
+        return String(localized: "\(TimeFormatting.spoken(stepped)) on this book")
     }
 
     /// `step` as the phrase that follows a book's name: the words a failure
@@ -148,15 +148,15 @@ enum ImportProgressWording {
     /// The tracks converted of a book's total: "12 of 176 tracks", or "0 of
     /// 1 track", as an import's line and the library's conversion say it.
     static func tracks(done: Int, of total: Int) -> String {
-        part(done, of: String(localized: "\(total) tracks",
-                              comment: "The total of a count of audio tracks, such as the tracks of a book converted at import. %lld is the number of tracks. Follows \"12 of\"."))
+        // Translators: The total of a count of audio tracks, such as the tracks of a book converted at import. %lld is the number of tracks. Follows "12 of".
+        part(done, of: String(localized: "\(total) tracks"))
     }
 
     /// The pages read of a book's total: "3 of 12 pages", as an import's line
     /// says it.
     static func pages(done: Int, of total: Int) -> String {
-        part(done, of: String(localized: "\(total) pages",
-                              comment: "The total of a count of pages of a book of pictures read by text recognition at import. %lld is the number of pages. Follows \"3 of\"."))
+        // Translators: The total of a count of pages of a book of pictures read by text recognition at import. %lld is the number of pages. Follows "3 of".
+        part(done, of: String(localized: "\(total) pages"))
     }
 
     /// `words` with their first letter in lowercase, to follow other words
@@ -172,11 +172,11 @@ enum ImportProgressWording {
     static func timeLeft(_ seconds: TimeInterval) -> String {
         let rounded = TimeLeftEstimate.rounded(seconds)
         guard rounded > 0 else {
-            return String(localized: "Less than a minute left",
-                          comment: "Line of the import overlay and the feed downloads: the time left is under a minute.")
+            // Translators: Line of the import overlay and the feed downloads: the time left is under a minute.
+            return String(localized: "Less than a minute left")
         }
-        return String(localized: "About \(TimeFormatting.spoken(rounded)) left",
-                      comment: "Line of the import overlay and the feed downloads: the estimated time left. %@ is the time in words, such as \"4 minutes\".")
+        // Translators: Line of the import overlay and the feed downloads: the estimated time left. %@ is the time in words, such as "4 minutes".
+        return String(localized: "About \(TimeFormatting.spoken(rounded)) left")
     }
 
     /// What the overlay says once Cancel is pressed, in place of the time
@@ -184,16 +184,16 @@ enum ImportProgressWording {
     /// at its next step (`cancellingLine`).
     static func cancelling(afterBook: Bool) -> String {
         afterBook
-            ? String(localized: "Cancelling after this book...",
-                     comment: "Line of the import overlay once Cancel is pressed while a book is under way: the import stops after that book. Ends with an ellipsis written as three full stops.")
+            // Translators: Line of the import overlay once Cancel is pressed while a book is under way: the import stops after that book. Ends with an ellipsis written as three full stops.
+            ? String(localized: "Cancelling after this book...")
             : cancellingLine
     }
 
     /// What VoiceOver calls the import overlay's Cancel button, on the Mac
     /// and the iPhone: the name says what it cancels.
     static var cancelButtonLabel: String {
-        String(localized: "Cancel Import",
-               comment: "VoiceOver label of the import overlay's Cancel button. Title case.")
+        // Translators: VoiceOver label of the import overlay's Cancel button. Title case.
+        String(localized: "Cancel Import")
     }
 
     /// What VoiceOver says the import overlay's Cancel button does
@@ -203,8 +203,8 @@ enum ImportProgressWording {
     /// imports waiting behind it never start, and every book already
     /// imported stays.
     static var cancelButtonHint: String {
-        String(localized: "Stops the import under way and those waiting. Books already imported stay.",
-               comment: "VoiceOver hint of the import overlay's Cancel button.")
+        // Translators: VoiceOver hint of the import overlay's Cancel button.
+        String(localized: "Stops the import under way and those waiting. Books already imported stay.")
     }
 
     /// What a progress display says once Cancel is pressed while what it
@@ -212,8 +212,8 @@ enum ImportProgressWording {
     /// and the feed downloads section while a download already being added
     /// to the library finishes (`FeedDownloadProgressWording.cancelling`).
     static var cancellingLine: String {
-        String(localized: "Cancelling...",
-               comment: "Line of a progress display once Cancel is pressed: the work stops at its next step. Ends with an ellipsis written as three full stops.")
+        // Translators: Line of a progress display once Cancel is pressed: the work stops at its next step. Ends with an ellipsis written as three full stops.
+        String(localized: "Cancelling...")
     }
 
     /// How many imports wait their turn behind the one the overlay shows:
@@ -221,8 +221,8 @@ enum ImportProgressWording {
     /// or opened, each archive, each text made with New from Text, and each
     /// recording saved is an import of its own on the import queue.
     static func waiting(_ count: Int) -> String {
-        String(localized: "\(count) more imports waiting",
-               comment: "Line of the import overlay: how many imports wait their turn behind the one shown. %lld is the number of imports waiting.")
+        // Translators: Line of the import overlay: how many imports wait their turn behind the one shown. %lld is the number of imports waiting.
+        String(localized: "\(count) more imports waiting")
     }
 
     // MARK: - What VoiceOver Reads
@@ -251,8 +251,8 @@ enum ImportProgressWording {
     /// in one, or in the ellipsis of a line still under way.
     private static func sentence(_ line: String) -> String {
         guard !line.hasSuffix(".") else { return line }
-        return String(localized: "\(line).",
-                      comment: "Ends a line of a progress display with its full stop, so VoiceOver reads the lines as sentences. %@ is the line.")
+        // Translators: Ends a line of a progress display with its full stop, so VoiceOver reads the lines as sentences. %@ is the line.
+        return String(localized: "\(line).")
     }
 
     // MARK: - What VoiceOver Hears Unasked
@@ -264,11 +264,11 @@ enum ImportProgressWording {
     static func quarter(of subject: String, done: Int, total: Int, secondsLeft: TimeInterval?) -> String {
         let progress = count(done: done, of: total)
         guard let secondsLeft else {
-            return String(localized: "Importing “\(subject)”: \(progress).",
-                          comment: "VoiceOver announcement as a ZIP batch that has run long passes a quarter of its books, with no estimate of the time left. %1$@ is the archive's name and %2$@ how far it has got, such as \"25 of 100 books processed\".")
+            // Translators: VoiceOver announcement as a ZIP batch that has run long passes a quarter of its books, with no estimate of the time left. %1$@ is the archive's name and %2$@ how far it has got, such as "25 of 100 books processed".
+            return String(localized: "Importing “\(subject)”: \(progress).")
         }
-        return String(localized: "Importing “\(subject)”: \(progress), \(lowercasedFirst(timeLeft(secondsLeft))).",
-                      comment: "VoiceOver announcement as a ZIP batch that has run long passes a quarter of its books. %1$@ is the archive's name, %2$@ how far it has got, such as \"25 of 100 books processed\", and %3$@ the time left, such as \"about 4 minutes left\", starting with a lowercase letter.")
+        // Translators: VoiceOver announcement as a ZIP batch that has run long passes a quarter of its books. %1$@ is the archive's name, %2$@ how far it has got, such as "25 of 100 books processed", and %3$@ the time left, such as "about 4 minutes left", starting with a lowercase letter.
+        return String(localized: "Importing “\(subject)”: \(progress), \(lowercasedFirst(timeLeft(secondsLeft))).")
     }
 
     /// Announced as a ZIP batch that ran long ends: "Finished importing
@@ -281,18 +281,18 @@ enum ImportProgressWording {
         guard imported + failed > 0 else {
             return noNewBooks(in: subject, alreadyInLibrary: skippedDuplicates)
         }
-        var counts = [String(localized: "\(imported) books imported",
-                             comment: "Part of the announcement that a ZIP batch ended: how many books were imported. %lld is the number of books.")]
+        // Translators: Part of the announcement that a ZIP batch ended: how many books were imported. %lld is the number of books.
+        var counts = [String(localized: "\(imported) books imported")]
         if skippedDuplicates > 0 {
-            counts.append(String(localized: "\(skippedDuplicates) skipped as duplicates",
-                                 comment: "Part of the announcement that a ZIP batch ended: how many books were skipped because the library already held them. %lld is the number of books."))
+            // Translators: Part of the announcement that a ZIP batch ended: how many books were skipped because the library already held them. %lld is the number of books.
+            counts.append(String(localized: "\(skippedDuplicates) skipped as duplicates"))
         }
         if failed > 0 {
-            counts.append(String(localized: "\(failed) failed",
-                                 comment: "Part of the announcement that a ZIP batch ended: how many books failed to import. %lld is the number of books."))
+            // Translators: Part of the announcement that a ZIP batch ended: how many books failed to import. %lld is the number of books.
+            counts.append(String(localized: "\(failed) failed"))
         }
-        return String(localized: "Finished importing “\(subject)”: \(counts.formatted(.list(type: .and, width: .narrow))).",
-                      comment: "VoiceOver announcement as a ZIP batch that ran long ends. %1$@ is the archive's name and %2$@ the counts, such as \"97 books imported, 2 skipped as duplicates, 1 failed\".")
+        // Translators: VoiceOver announcement as a ZIP batch that ran long ends. %1$@ is the archive's name and %2$@ the counts, such as "97 books imported, 2 skipped as duplicates, 1 failed".
+        return String(localized: "Finished importing “\(subject)”: \(counts.formatted(.list(type: .and, width: .narrow))).")
     }
 
     /// What a ZIP batch that brought no new book into the library, and in
@@ -306,17 +306,17 @@ enum ImportProgressWording {
     static func noNewBooks(in subject: String, alreadyInLibrary duplicates: Int) -> String {
         switch duplicates {
         case ...0:
-            return String(localized: "No books were found in “\(subject)”.",
-                          comment: "What the library says as an archive holds no book TextMouth reads. %@ is the archive's name. A sentence about what it holds may follow.")
+            // Translators: What the library says as an archive holds no book TextMouth reads. %@ is the archive's name. A sentence about what it holds may follow.
+            return String(localized: "No books were found in “\(subject)”.")
         case 1:
-            return String(localized: "No new books in “\(subject)”: its one book was already in your library.",
-                          comment: "What the library says as an archive holds one book, which the library already has. %@ is the archive's name.")
+            // Translators: What the library says as an archive holds one book, which the library already has. %@ is the archive's name.
+            return String(localized: "No new books in “\(subject)”: its one book was already in your library.")
         case 2:
-            return String(localized: "No new books in “\(subject)”: both were already in your library.",
-                          comment: "What the library says as an archive holds two books, both of which the library already has. %@ is the archive's name.")
+            // Translators: What the library says as an archive holds two books, both of which the library already has. %@ is the archive's name.
+            return String(localized: "No new books in “\(subject)”: both were already in your library.")
         default:
-            return String(localized: "No new books in “\(subject)”: all \(duplicates) were already in your library.",
-                          comment: "What the library says as an archive holds three or more books, all of which the library already has. %1$@ is the archive's name and %2$lld the number of books.")
+            // Translators: What the library says as an archive holds three or more books, all of which the library already has. %1$@ is the archive's name and %2$lld the number of books.
+            return String(localized: "No new books in “\(subject)”: all \(duplicates) were already in your library.")
         }
     }
 
@@ -327,8 +327,8 @@ enum ImportProgressWording {
     /// kept, or the entries a playlist skipped. The book is in the library,
     /// so it is no error.
     static var bookImportedTitle: String {
-        String(localized: "Book Imported",
-               comment: "Title of the library's alert as an import that added its book ends with something to tell, such as chapters left out. The book is in the library, so it is no error. Title case.")
+        // Translators: Title of the library's alert as an import that added its book ends with something to tell, such as chapters left out. The book is in the library, so it is no error. Title case.
+        String(localized: "Book Imported")
     }
 
     // MARK: - A Batch That Imported Nothing
@@ -336,8 +336,8 @@ enum ImportProgressWording {
     /// The title of the library's alert as a ZIP batch that brought no new
     /// book ends: nothing failed, so it is no error.
     static var nothingImportedTitle: String {
-        String(localized: "Nothing Imported",
-               comment: "Title of the library's alert as a ZIP batch that brought no new book ends. Nothing failed, so it is no error. Title case.")
+        // Translators: Title of the library's alert as a ZIP batch that brought no new book ends. Nothing failed, so it is no error. Title case.
+        String(localized: "Nothing Imported")
     }
 
     /// The title of the library's alert as a ZIP batch that added at least
@@ -345,8 +345,8 @@ enum ImportProgressWording {
     /// cancelled it. The books that came in are in the library, so it is no
     /// error, and the title says some files are not.
     static var someFilesNotImportedTitle: String {
-        String(localized: "Some Files Not Imported",
-               comment: "Title of the library's alert as a ZIP batch that added at least one book ends having left some files out: a file failed or the batch was cancelled. Title case.")
+        // Translators: Title of the library's alert as a ZIP batch that added at least one book ends having left some files out: a file failed or the batch was cancelled. Title case.
+        String(localized: "Some Files Not Imported")
     }
 
     /// The title of the library's alert as a ZIP batch that added several
@@ -354,8 +354,8 @@ enum ImportProgressWording {
     /// pages left out): the plural of `bookImportedTitle`, since its message
     /// opens "Imported 3 books, but ...".
     static var booksImportedTitle: String {
-        String(localized: "Books Imported",
-               comment: "Title of the library's alert as a ZIP batch that added several books ends with something to tell about some of them, such as chapters left out. Title case.")
+        // Translators: Title of the library's alert as a ZIP batch that added several books ends with something to tell about some of them, such as chapters left out. Title case.
+        String(localized: "Books Imported")
     }
 
     /// The title of the library's alert as a ZIP batch that found books but
@@ -363,8 +363,8 @@ enum ImportProgressWording {
     /// every one of them, so "Nothing Imported" would be no truer than
     /// "Book Imported".
     static var alreadyInLibraryTitle: String {
-        String(localized: "Already in Library",
-               comment: "Title of the library's alert as a ZIP batch that found books but added none, because the library already held every one. Title case.")
+        // Translators: Title of the library's alert as a ZIP batch that found books but added none, because the library already held every one. Title case.
+        String(localized: "Already in Library")
     }
 
     /// The title of the library's alert as a ZIP batch ends with something
@@ -420,15 +420,15 @@ enum ImportProgressWording {
         guard files.total > 0 else {
             return SentenceWording.joined([opening, holdsNoFiles])
         }
-        let holds = String(localized: "It holds \(kindsHeld(files)), which TextMouth does not import.",
-                           comment: "Sentence of the alert about an archive that holds no book: what it holds instead. %@ is the kinds of files it holds with their counts, such as \"176 .ogg files\" or \"10 .jpg files, 3 .png files, and 4 other files\".")
+        // Translators: Sentence of the alert about an archive that holds no book: what it holds instead. %@ is the kinds of files it holds with their counts, such as "176 .ogg files" or "10 .jpg files, 3 .png files, and 4 other files".
+        let holds = String(localized: "It holds \(kindsHeld(files)), which TextMouth does not import.")
         return SentenceWording.joined([opening, holds] + adviceSentences(for: files))
     }
 
     /// The sentence that a place of files holds none.
     private static var holdsNoFiles: String {
-        String(localized: "It holds no files.",
-               comment: "Sentence of the alert about an archive or folder that holds no book: it holds no files at all.")
+        // Translators: Sentence of the alert about an archive or folder that holds no book: it holds no files at all.
+        String(localized: "It holds no files.")
     }
 
     /// The advice for the kinds of `files` that have some
@@ -444,13 +444,13 @@ enum ImportProgressWording {
     /// Notes” holds no DAISY book and no audio tracks to import as one book.
     /// It holds 1 .txt file."
     static func noBookInFolder(named name: String, holding files: NonBookFiles) -> String {
-        let opening = String(localized: "“\(name)” holds no DAISY book and no audio tracks to import as one book.",
-                             comment: "What the library says as a folder chosen to import holds no DAISY book and no audio tracks. %@ is the folder's name. A sentence about what it holds follows.")
+        // Translators: What the library says as a folder chosen to import holds no DAISY book and no audio tracks. %@ is the folder's name. A sentence about what it holds follows.
+        let opening = String(localized: "“\(name)” holds no DAISY book and no audio tracks to import as one book.")
         guard files.total > 0 else {
             return SentenceWording.joined([opening, holdsNoFiles])
         }
-        let holds = String(localized: "It holds \(kindsHeld(files)).",
-                           comment: "Sentence of the alert about a folder that holds no book: what it holds instead. %@ is the kinds of files it holds with their counts, such as \"1 .txt file\" or \"10 .jpg files, 3 .png files, and 4 other files\".")
+        // Translators: Sentence of the alert about a folder that holds no book: what it holds instead. %@ is the kinds of files it holds with their counts, such as "1 .txt file" or "10 .jpg files, 3 .png files, and 4 other files".
+        let holds = String(localized: "It holds \(kindsHeld(files)).")
         return SentenceWording.joined([opening, holds] + adviceSentences(for: files))
     }
 
@@ -460,15 +460,15 @@ enum ImportProgressWording {
         let kinds = files.kinds
         var phrases = kinds.prefix(namedFileKinds).map { kind in
             kind.fileExtension.isEmpty
-                ? String(localized: "\(kind.count) files without an extension",
-                         comment: "Part of a list of the kinds of file a place holds: how many files have no extension. %lld is the number of files.")
-                : String(localized: "\(kind.count) .\(kind.fileExtension) files",
-                         comment: "Part of a list of the kinds of file a place holds: how many files have one extension. %1$lld is the number of files and %2$@ the extension without its dot, such as \"ogg\". The dot before the extension is part of the text.")
+                // Translators: Part of a list of the kinds of file a place holds: how many files have no extension. %lld is the number of files.
+                ? String(localized: "\(kind.count) files without an extension")
+                // Translators: Part of a list of the kinds of file a place holds: how many files have one extension. %1$lld is the number of files and %2$@ the extension without its dot, such as "ogg". The dot before the extension is part of the text.
+                : String(localized: "\(kind.count) .\(kind.fileExtension) files")
         }
         let others = kinds.dropFirst(namedFileKinds).reduce(0) { $0 + $1.count }
         if others > 0 {
-            phrases.append(String(localized: "\(others) other files",
-                                  comment: "Last part of a list of the kinds of file a place holds: how many files of the kinds not named. %lld is the number of files."))
+            // Translators: Last part of a list of the kinds of file a place holds: how many files of the kinds not named. %lld is the number of files.
+            phrases.append(String(localized: "\(others) other files"))
         }
         return CountWording.list(phrases)
     }
@@ -476,15 +476,15 @@ enum ImportProgressWording {
     /// Announced as the import of one book that ran long ends: "Finished
     /// importing “Moby Dick.epub”."
     static func finished(book subject: String) -> String {
-        String(localized: "Finished importing “\(subject)”.",
-               comment: "VoiceOver announcement as the import of one book that ran long ends. %@ is the book's file name.")
+        // Translators: VoiceOver announcement as the import of one book that ran long ends. %@ is the book's file name.
+        String(localized: "Finished importing “\(subject)”.")
     }
 
     /// Announced as an import that ran long fails; the library's alert says
     /// why, in the same opening words (`ImportFailure.errorDescription`).
     static func failed(_ subject: String) -> String {
-        String(localized: "Could not import “\(subject)”.",
-               comment: "VoiceOver announcement as an import that ran long fails. %@ is the file's name. The library's alert says why.")
+        // Translators: VoiceOver announcement as an import that ran long fails. %@ is the file's name. The library's alert says why.
+        String(localized: "Could not import “\(subject)”.")
     }
 
     // MARK: - What VoiceOver Hears on Request
@@ -492,7 +492,7 @@ enum ImportProgressWording {
     /// What Speak Import Progress says with no import under way; with one,
     /// it says what VoiceOver reads for the overlay.
     static var noImportUnderWay: String {
-        String(localized: "No import is under way.",
-               comment: "What the Speak Import Progress command says when no import is under way.")
+        // Translators: What the Speak Import Progress command says when no import is under way.
+        String(localized: "No import is under way.")
     }
 }

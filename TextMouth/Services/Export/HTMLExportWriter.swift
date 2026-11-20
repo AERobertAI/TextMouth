@@ -19,8 +19,8 @@ struct HTMLExportWriter: TextExportWriter {
     let name = "HTML"
     let fileExtension = "html"
     var hint: String {
-        String(localized: "A web page of the book's text, with a contents list linking each heading.",
-               comment: "The hint of the Convert to picker in the Export dialog while HTML is chosen.")
+        // Translators: The hint of the Convert to picker in the Export dialog while HTML is chosen.
+        String(localized: "A web page of the book's text, with a contents list linking each heading.")
     }
 
     /// Writes the page of `document` as UTF-8 to a new file at `url`; a file

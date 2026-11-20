@@ -458,75 +458,75 @@ extension BookmarkPanelView {
 extension BookmarkPanelView {
     /// The panel's title, read as its heading, and the name of its rotor.
     nonisolated static var title: String {
-        String(localized: "Bookmarks",
-               comment: "The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.")
+        // Translators: The name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.
+        String(localized: "Bookmarks")
     }
 
     /// The Add Bookmark button's visible words, and the Add panel's heading.
     nonisolated static var addBookmarkTitle: String {
-        String(localized: "Add Bookmark",
-               comment: "Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written.")
+        // Translators: Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written.
+        String(localized: "Add Bookmark")
     }
 
     /// What VoiceOver says the Add Bookmark button does: where the bookmark
     /// goes, which its title does not say.
     nonisolated static var addBookmarkHint: String {
-        String(localized: "Asks for an optional note, then marks the reading position.",
-               comment: "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.")
+        // Translators: VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.
+        String(localized: "Asks for an optional note, then marks the reading position.")
     }
 
     /// The button that closes the panel.
     nonisolated static var doneTitle: String {
-        String(localized: "Done",
-               comment: "Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.")
+        // Translators: Button that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.
+        String(localized: "Done")
     }
 
     /// What the panel says while the book has no bookmark.
     nonisolated static var emptyList: String {
-        String(localized: "No bookmarks yet.",
-               comment: "Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.")
+        // Translators: Shown and read in the Bookmarks list of a book with no bookmark. A sentence saying how to add one follows it.
+        String(localized: "No bookmarks yet.")
     }
 
     /// The Add panel's note field, as it shows while empty.
     nonisolated static var addNoteField: String {
-        String(localized: "Note (optional)",
-               comment: "Placeholder of the note field when adding a bookmark.")
+        // Translators: Placeholder of the note field when adding a bookmark.
+        String(localized: "Note (optional)")
     }
 
     /// The Edit panel's note field, as it shows while empty.
     nonisolated static var editNoteField: String {
-        String(localized: "Note",
-               comment: "Placeholder of the note field when editing a bookmark's note.")
+        // Translators: Placeholder of the note field when editing a bookmark's note.
+        String(localized: "Note")
     }
 
     /// What VoiceOver calls either panel's note field.
     nonisolated static var noteLabel: String {
-        String(localized: "Bookmark note",
-               comment: "VoiceOver label of the note field when adding a bookmark or editing its note.")
+        // Translators: VoiceOver label of the note field when adding a bookmark or editing its note.
+        String(localized: "Bookmark note")
     }
 
     /// The button that leaves the Add or Edit panel without a change.
     nonisolated static var cancelTitle: String {
-        String(localized: "Cancel",
-               comment: "Button that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.")
+        // Translators: Button that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.
+        String(localized: "Cancel")
     }
 
     /// The Add panel's button that adds the bookmark.
     nonisolated static var addTitle: String {
-        String(localized: "Add",
-               comment: "Button of the panel for adding a bookmark: adds it, with the note written.")
+        // Translators: Button of the panel for adding a bookmark: adds it, with the note written.
+        String(localized: "Add")
     }
 
     /// The Edit panel's button that keeps the note.
     nonisolated static var saveTitle: String {
-        String(localized: "Save",
-               comment: "Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.")
+        // Translators: Button that keeps what was typed or changed in a sheet and closes it, such as a bookmark's note, a book's information, or a library view's name.
+        String(localized: "Save")
     }
 
     /// The Edit panel's heading, as in "Edit Bookmark 3".
     nonisolated static func editTitle(number: Int) -> String {
-        String(localized: "Edit Bookmark \(String(number))",
-               comment: "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.")
+        // Translators: Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.
+        String(localized: "Edit Bookmark \(String(number))")
     }
 }
 
@@ -542,11 +542,11 @@ extension BookmarkPanelView {
     /// key was (TODO A10).
     nonisolated static func emptyListHelp(keys: [KeyBinding]) -> String {
         guard !keys.isEmpty else {
-            return String(localized: "\(addBookmarkTitle) adds one at the current position.",
-                          comment: "Help under \"No bookmarks yet.\" in the Bookmarks list, when the add command has no keyboard shortcut. %@ is the name of the Add Bookmark button above the list.")
+            // Translators: Help under "No bookmarks yet." in the Bookmarks list, when the add command has no keyboard shortcut. %@ is the name of the Add Bookmark button above the list.
+            return String(localized: "\(addBookmarkTitle) adds one at the current position.")
         }
-        return String(localized: "\(KeyBinding.accessibleDisplayString(for: keys)) adds a bookmark at the current position.",
-                      comment: "Help under \"No bookmarks yet.\" in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B.")
+        // Translators: Help under "No bookmarks yet." in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B.
+        return String(localized: "\(KeyBinding.accessibleDisplayString(for: keys)) adds a bookmark at the current position.")
     }
 
     /// The keys in force for adding a bookmark (the Bookmarks menu's Toggle
@@ -742,14 +742,14 @@ enum BookmarkCommand: CaseIterable {
     var title: String {
         switch self {
         case .goTo:
-            return String(localized: "Go To",
-                          comment: "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.")
+            // Translators: A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.
+            return String(localized: "Go To")
         case .editNote:
-            return String(localized: "Edit Note",
-                          comment: "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note.")
+            // Translators: A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note.
+            return String(localized: "Edit Note")
         case .delete:
-            return String(localized: "Delete",
-                          comment: "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.")
+            // Translators: A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.
+            return String(localized: "Delete")
         }
     }
 
@@ -777,14 +777,14 @@ enum BookmarkCommand: CaseIterable {
     func buttonLabel(forBookmarkNumber number: Int) -> String {
         switch self {
         case .goTo:
-            return String(localized: "Go to bookmark \(String(number))",
-                          comment: "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.")
+            // Translators: VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.
+            return String(localized: "Go to bookmark \(String(number))")
         case .editNote:
-            return String(localized: "Edit note for bookmark \(String(number))",
-                          comment: "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.")
+            // Translators: VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.
+            return String(localized: "Edit note for bookmark \(String(number))")
         case .delete:
-            return String(localized: "Delete bookmark \(String(number))",
-                          comment: "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.")
+            // Translators: VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.
+            return String(localized: "Delete bookmark \(String(number))")
         }
     }
 }
@@ -838,8 +838,8 @@ struct BookmarkRow: View {
 
     /// The row's hint, localized (FR35); the phone's rows say the same.
     nonisolated static var hint: String {
-        String(localized: "Goes to this bookmark and closes the list.",
-               comment: "VoiceOver hint of a bookmark's row in the Bookmarks list.")
+        // Translators: VoiceOver hint of a bookmark's row in the Bookmarks list.
+        String(localized: "Goes to this bookmark and closes the list.")
     }
 
     /// Spoken label shared with the Bookmarks rotor.

@@ -129,8 +129,8 @@ enum AudioFilterRunner {
         guard frequency < sampleRate / 2 else {
             throw AudioFilterError.badValue(
                 filter: filterName(parameters.kind), option: "frequency", value: String(frequency),
-                expected: String(localized: "give a frequency below half the audio's sample rate, \(String(Int(sampleRate / 2))) Hz",
-                                 comment: "What a frequency option of a filter accepts, said at the end of a refusal such as \"The highpass filter's frequency can't be “x”: <this>.\" Written without its full stop. %@ is half the audio's sample rate, in hertz, written without digit grouping.")
+                // Translators: What a frequency option of a filter accepts, said at the end of a refusal such as "The highpass filter's frequency can't be “x”: <this>." Written without its full stop. %@ is half the audio's sample rate, in hertz, written without digit grouping.
+                expected: String(localized: "give a frequency below half the audio's sample rate, \(String(Int(sampleRate / 2))) Hz")
             )
         }
         let w0 = 2 * Double.pi * frequency / sampleRate
@@ -170,8 +170,8 @@ enum AudioFilterRunner {
         guard normalized.isFinite else {
             throw AudioFilterError.badValue(
                 filter: filterName(parameters.kind), option: "width", value: AudioBuiltInFilter.written(parameters.width),
-                expected: String(localized: "give a narrower width, since this one makes no usable filter at \(AudioBuiltInFilter.written(frequency)) Hz",
-                                 comment: "What a width option of a filter accepts, said at the end of a refusal such as \"The equalizer filter's width can't be “x”: <this>.\" Written without its full stop. %@ is the filter's frequency in hertz, already written.")
+                // Translators: What a width option of a filter accepts, said at the end of a refusal such as "The equalizer filter's width can't be “x”: <this>." Written without its full stop. %@ is the filter's frequency in hertz, already written.
+                expected: String(localized: "give a narrower width, since this one makes no usable filter at \(AudioBuiltInFilter.written(frequency)) Hz")
             )
         }
         return normalized

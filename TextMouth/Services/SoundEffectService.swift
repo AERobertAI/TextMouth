@@ -23,23 +23,23 @@ enum SoundEvent: String, CaseIterable, Codable, Identifiable {
     var title: String {
         switch self {
         case .play:
-            return String(localized: "Play",
-                          comment: "Name of the playback event whose sound is chosen in Settings, Sound Effects: playing starts.")
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: playing starts.
+            return String(localized: "Play")
         case .pause:
-            return String(localized: "Pause",
-                          comment: "Name of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.")
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: playing pauses.
+            return String(localized: "Pause")
         case .skipForward:
-            return String(localized: "Skip Forward",
-                          comment: "Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping forward.")
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping forward.
+            return String(localized: "Skip Forward")
         case .skipBackward:
-            return String(localized: "Skip Backward",
-                          comment: "Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping backward.")
+            // Translators: Name of the playback event whose sound is chosen in Settings, Sound Effects: skipping backward.
+            return String(localized: "Skip Backward")
         case .whereAmIStart:
-            return String(localized: "Where Am I (Start)",
-                          comment: "Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement starts. Where Am I is the name of a command.")
+            // Translators: Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement starts. Where Am I is the name of a command.
+            return String(localized: "Where Am I (Start)")
         case .whereAmIEnd:
-            return String(localized: "Where Am I (End)",
-                          comment: "Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement ends. Where Am I is the name of a command.")
+            // Translators: Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement ends. Where Am I is the name of a command.
+            return String(localized: "Where Am I (End)")
         }
     }
 }
@@ -281,8 +281,8 @@ class SoundEffectService: ObservableObject {
     /// sound's own name, or "None" in the interface language for no sound.
     static func title(ofSound name: String) -> String {
         guard name == noSound else { return name }
-        return String(localized: "None",
-                      comment: "Choice in a Sound Effects pop-up button of Settings: no sound plays for the event.")
+        // Translators: Choice in a Sound Effects pop-up button of Settings: no sound plays for the event.
+        return String(localized: "None")
     }
 
     static var defaultAssignments: [SoundEvent: String] {

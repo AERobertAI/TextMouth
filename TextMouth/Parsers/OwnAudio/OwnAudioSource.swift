@@ -45,20 +45,20 @@ enum OwnAudioWording {
     static func sentence(for error: OwnAudioError, fileName: String) -> String {
         switch error {
         case .notThisFormat:
-            return String(localized: "The audio file \(fileName) is not the kind of file its name says.",
-                          comment: "Why an audio file could not be converted at import: its bytes are not of the format its extension names. %@ is the file's name.")
+            // Translators: Why an audio file could not be converted at import: its bytes are not of the format its extension names. %@ is the file's name.
+            return String(localized: "The audio file \(fileName) is not the kind of file its name says.")
         case let .unsupported(reason):
-            return String(localized: "TextMouth can't read the audio file \(fileName) because \(reason).",
-                          comment: "Why an audio file could not be converted at import: it is of a format TextMouth reads, in a form it refuses. %1$@ is the file's name and %2$@ the reason, a clause in English that follows \"because\" and has no full stop.")
+            // Translators: Why an audio file could not be converted at import: it is of a format TextMouth reads, in a form it refuses. %1$@ is the file's name and %2$@ the reason, a clause in English that follows "because" and has no full stop.
+            return String(localized: "TextMouth can't read the audio file \(fileName) because \(reason).")
         case .truncated:
-            return String(localized: "The audio file \(fileName) ends before its audio does, so it could not be converted.",
-                          comment: "Why an audio file could not be converted at import: the file stops before the audio its header promises. %@ is the file's name.")
+            // Translators: Why an audio file could not be converted at import: the file stops before the audio its header promises. %@ is the file's name.
+            return String(localized: "The audio file \(fileName) ends before its audio does, so it could not be converted.")
         case .damaged:
-            return String(localized: "The audio file \(fileName) is damaged, so it could not be converted.",
-                          comment: "Why an audio file could not be converted at import: a checksum failed or a field holds a value no encoder writes. %@ is the file's name.")
+            // Translators: Why an audio file could not be converted at import: a checksum failed or a field holds a value no encoder writes. %@ is the file's name.
+            return String(localized: "The audio file \(fileName) is damaged, so it could not be converted.")
         case .companionDamaged:
-            return String(localized: "The correction file \(companionName(of: fileName)) is damaged or belongs to another recording, so \(fileName) could not be converted.",
-                          comment: "Why a hybrid WavPack file could not be converted at import: the correction file beside it (the same name ending in .wvc) is damaged or belongs to another recording. %1$@ is the correction file's name and %2$@ the WavPack file's name.")
+            // Translators: Why a hybrid WavPack file could not be converted at import: the correction file beside it (the same name ending in .wvc) is damaged or belongs to another recording. %1$@ is the correction file's name and %2$@ the WavPack file's name.
+            return String(localized: "The correction file \(companionName(of: fileName)) is damaged or belongs to another recording, so \(fileName) could not be converted.")
         }
     }
 

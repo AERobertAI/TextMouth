@@ -41,35 +41,35 @@ struct OPMLImportSummary: Equatable {
     var sentence: String {
         var parts: [String] = []
         parts.append(subscribed.isEmpty
-            ? String(localized: "No feed was subscribed to.",
-                     comment: "What the Import OPML sheet says once the import ended and no feed was subscribed to.")
-            : String(localized: "Subscribed to \(subscribed.count) feeds.",
-                     comment: "What the Import OPML sheet says once the import ended: how many feeds were subscribed to. %lld is how many."))
+            // Translators: What the Import OPML sheet says once the import ended and no feed was subscribed to.
+            ? String(localized: "No feed was subscribed to.")
+            // Translators: What the Import OPML sheet says once the import ended: how many feeds were subscribed to. %lld is how many.
+            : String(localized: "Subscribed to \(subscribed.count) feeds."))
         if !alreadySubscribed.isEmpty {
-            parts.append(String(localized: "\(alreadySubscribed.count) were subscribed already.",
-                                comment: "What the Import OPML sheet says of the feeds the file lists that were already subscribed to, left as they were. %lld is how many."))
+            // Translators: What the Import OPML sheet says of the feeds the file lists that were already subscribed to, left as they were. %lld is how many.
+            parts.append(String(localized: "\(alreadySubscribed.count) were subscribed already."))
         }
         if !unsubscribed.isEmpty {
             parts.append(FeedWording.importFoundUnsubscribed(unsubscribed))
         }
         if !failed.isEmpty {
             let named = failed.map {
-                String(localized: "\($0.title) (\($0.reason))",
-                       comment: "A feed that could not be subscribed to, with the reason in parentheses. The first %@ is the feed's title; the second is the reason, in the engine's words.")
+                // Translators: A feed that could not be subscribed to, with the reason in parentheses. The first %@ is the feed's title; the second is the reason, in the engine's words.
+                String(localized: "\($0.title) (\($0.reason))")
             }
-            parts.append(String(localized: "Couldn't subscribe to \(CountWording.list(named)).",
-                                comment: "What the Import OPML sheet says of the feeds that could not be subscribed to. %@ is a list of them, each with its reason."))
+            // Translators: What the Import OPML sheet says of the feeds that could not be subscribed to. %@ is a list of them, each with its reason.
+            parts.append(String(localized: "Couldn't subscribe to \(CountWording.list(named))."))
         }
         if !insecure.isEmpty {
             parts.append(insecure.count == 1
-                ? String(localized: "\(insecure.first ?? "") uses plain http, so others can read or change what it sends; TextMouth still loads it.",
-                         comment: "What the Import OPML sheet says of one new feed whose address uses plain http, which is not encrypted. %@ is the feed's title.")
-                : String(localized: "\(CountWording.list(insecure)) use plain http, so others can read or change what they send; TextMouth still loads it.",
-                         comment: "What the Import OPML sheet says of several new feeds whose addresses use plain http, which is not encrypted. %@ is a list of their titles."))
+                // Translators: What the Import OPML sheet says of one new feed whose address uses plain http, which is not encrypted. %@ is the feed's title.
+                ? String(localized: "\(insecure.first ?? "") uses plain http, so others can read or change what it sends; TextMouth still loads it.")
+                // Translators: What the Import OPML sheet says of several new feeds whose addresses use plain http, which is not encrypted. %@ is a list of their titles.
+                : String(localized: "\(CountWording.list(insecure)) use plain http, so others can read or change what they send; TextMouth still loads it."))
         }
         if stopped {
-            parts.append(String(localized: "The import was stopped before its end.",
-                                comment: "What the Import OPML sheet says once the listener stopped the import before its end."))
+            // Translators: What the Import OPML sheet says once the listener stopped the import before its end.
+            parts.append(String(localized: "The import was stopped before its end."))
         }
         return SentenceWording.joined(parts)
     }
@@ -446,69 +446,69 @@ extension LibraryFeedsPresenter {
 extension FeedWording {
     /// Library > Import OPML….
     static var importCommand: String {
-        String(localized: "Import OPML…",
-               comment: "Title of the Library menu's command that imports an OPML file of subscriptions. The ellipsis says a panel follows. OPML is a file format; keep it.")
+        // Translators: Title of the Library menu's command that imports an OPML file of subscriptions. The ellipsis says a panel follows. OPML is a file format; keep it.
+        String(localized: "Import OPML…")
     }
     /// Library > Export OPML….
     static var exportCommand: String {
-        String(localized: "Export OPML…",
-               comment: "Title of the Library menu's command that exports the subscriptions as an OPML file. The ellipsis says a panel follows. OPML is a file format; keep it.")
+        // Translators: Title of the Library menu's command that exports the subscriptions as an OPML file. The ellipsis says a panel follows. OPML is a file format; keep it.
+        String(localized: "Export OPML…")
     }
     /// The Import OPML sheet's heading.
     static var importTitle: String {
-        String(localized: "Import Subscriptions",
-               comment: "Heading of the sheet that imports an OPML file of subscriptions. Title case.")
+        // Translators: Heading of the sheet that imports an OPML file of subscriptions. Title case.
+        String(localized: "Import Subscriptions")
     }
     /// The Open panel's message.
     static var importPanelMessage: String {
-        String(localized: "Choose an OPML file of subscriptions, as another feed reader exports them.",
-               comment: "The message of the Open panel that chooses an OPML file of subscriptions.")
+        // Translators: The message of the Open panel that chooses an OPML file of subscriptions.
+        String(localized: "Choose an OPML file of subscriptions, as another feed reader exports them.")
     }
     /// The line naming the file and how many feeds it lists.
     static func importLists(fileName: String, count: Int) -> String {
-        String(localized: "\(fileName) lists \(count) feeds. Each gets its own folder, named after it.",
-               comment: "The line of the Import OPML sheet that names the file and how many feeds it lists. %@ is the file's name; %lld is how many feeds.")
+        // Translators: The line of the Import OPML sheet that names the file and how many feeds it lists. %@ is the file's name; %lld is how many feeds.
+        String(localized: "\(fileName) lists \(count) feeds. Each gets its own folder, named after it.")
     }
     /// The folder picker's caption.
     static var importFolderCaption: String {
-        String(localized: "Put the feeds' folders in",
-               comment: "Caption of the folder picker of the Import OPML sheet: the library folder that will hold each feed's own folder.")
+        // Translators: Caption of the folder picker of the Import OPML sheet: the library folder that will hold each feed's own folder.
+        String(localized: "Put the feeds' folders in")
     }
     /// The folder picker's spoken label.
     static var importFolderLabel: String {
-        String(localized: "Folder to hold the imported feeds' folders",
-               comment: "VoiceOver label of the folder picker of the Import OPML sheet.")
+        // Translators: VoiceOver label of the folder picker of the Import OPML sheet.
+        String(localized: "Folder to hold the imported feeds' folders")
     }
     /// The Import button.
     static var importButton: String {
-        String(localized: "Import",
-               comment: "Title of the button that starts an import, such as an OPML file of subscriptions.")
+        // Translators: Title of the button that starts an import, such as an OPML file of subscriptions.
+        String(localized: "Import")
     }
     /// What the sheet shows, and VoiceOver can read, while it subscribes.
     static func importProgress(_ progress: OPMLImportModel.Progress) -> String {
-        String(localized: "Subscribing to \(progress.current), \(progress.done + 1) of \(progress.total)…",
-               comment: "What the Import OPML sheet shows while it subscribes to the feeds. The first %@ is the title of the feed being subscribed to; the first %lld is its number in the file; the second %lld is how many feeds the file lists.")
+        // Translators: What the Import OPML sheet shows while it subscribes to the feeds. The first %@ is the title of the feed being subscribed to; the first %lld is its number in the file; the second %lld is how many feeds the file lists.
+        String(localized: "Subscribing to \(progress.current), \(progress.done + 1) of \(progress.total)…")
     }
     /// The title of the alert saying why an OPML file can't be read.
     static var importFailedTitle: String {
-        String(localized: "Couldn't Import Subscriptions",
-               comment: "Title of the alert that says why an OPML file could not be read. Title case.")
+        // Translators: Title of the alert that says why an OPML file could not be read. Title case.
+        String(localized: "Couldn't Import Subscriptions")
     }
     /// The title of the alert saying why the subscriptions can't be exported.
     static var exportFailedTitle: String {
-        String(localized: "Couldn't Export Subscriptions",
-               comment: "Title of the alert that says why the subscriptions could not be exported. Title case.")
+        // Translators: Title of the alert that says why the subscriptions could not be exported. Title case.
+        String(localized: "Couldn't Export Subscriptions")
     }
     /// What Export OPML says with no subscription.
     static var nothingToExport: String {
-        String(localized: "There are no subscriptions to export.",
-               comment: "What Export OPML says when the library has no feed.")
+        // Translators: What Export OPML says when the library has no feed.
+        String(localized: "There are no subscriptions to export.")
     }
     /// What Export OPML says when every feed in the library is one the
     /// listener unsubscribed from, which an export leaves out (REV11).
     static var nothingSubscribedToExport: String {
-        String(localized: "There are no subscriptions to export: every feed in your library is unsubscribed.",
-               comment: "What Export OPML says when every feed in the library is unsubscribed, which an export leaves out.")
+        // Translators: What Export OPML says when every feed in the library is unsubscribed, which an export leaves out.
+        String(localized: "There are no subscriptions to export: every feed in your library is unsubscribed.")
     }
     /// What an import's summary says of the feeds it lists that are in the
     /// library already, unsubscribed from (FR11, branch D), named by their
@@ -519,35 +519,35 @@ extension FeedWording {
         guard titles.count != 1, !titles.isEmpty else {
             return FeedSubscribeError.unsubscribedAlready(title: titles.first ?? "").message
         }
-        return String(localized: "\(CountWording.list(titles)) are in your library, unsubscribed. Choose \(resubscribeTitle) on a feed's row, or in its \(feedInfoName), to check it again.",
-                      comment: "What the Import OPML sheet says of several feeds the file lists that are in the library already, unsubscribed. The first %@ is a list of their titles; the second is the name of the Resubscribe command; the third is the name of the Feed Info sheet.")
+        // Translators: What the Import OPML sheet says of several feeds the file lists that are in the library already, unsubscribed. The first %@ is a list of their titles; the second is the name of the Resubscribe command; the third is the name of the Feed Info sheet.
+        return String(localized: "\(CountWording.list(titles)) are in your library, unsubscribed. Choose \(resubscribeTitle) on a feed's row, or in its \(feedInfoName), to check it again.")
     }
     /// The Save panel's suggested file name.
     static let exportFileName = "TextMouth Subscriptions.opml" // l10n: no (a suggested file name, which other apps and scripts may look for)
     /// The Save panel's message.
     static var exportPanelMessage: String {
-        String(localized: "Save your subscriptions as an OPML file, which other feed readers import.",
-               comment: "The message of the Save panel that saves the subscriptions as an OPML file.")
+        // Translators: The message of the Save panel that saves the subscriptions as an OPML file.
+        String(localized: "Save your subscriptions as an OPML file, which other feed readers import.")
     }
     /// The exported document's title.
     static var exportDocumentTitle: String {
-        String(localized: "TextMouth Subscriptions",
-               comment: "The title written into an exported OPML file of subscriptions. Title case.")
+        // Translators: The title written into an exported OPML file of subscriptions. Title case.
+        String(localized: "TextMouth Subscriptions")
     }
     /// What VoiceOver hears once the subscriptions are exported, with how
     /// many feeds the listener unsubscribed from were left out (REV11):
     /// "Exported 2 subscriptions to Mine.opml. 1 feed you unsubscribed from
     /// was left out."
     static func exported(count: Int, fileName: String, unsubscribedCount: Int = 0) -> String {
-        let exported = String(localized: "Exported \(count) subscriptions to \(fileName).",
-                              comment: "What VoiceOver says once the subscriptions are exported. %lld is how many; %@ is the file's name.")
+        // Translators: What VoiceOver says once the subscriptions are exported. %lld is how many; %@ is the file's name.
+        let exported = String(localized: "Exported \(count) subscriptions to \(fileName).")
         guard unsubscribedCount > 0 else { return exported }
-        return SentenceWording.joined([exported, String(localized: "\(unsubscribedCount) feeds you unsubscribed from were left out.",
-            comment: "The end of what VoiceOver says once the subscriptions are exported: feeds the listener unsubscribed from are left out. %lld is how many.")])
+        // Translators: The end of what VoiceOver says once the subscriptions are exported: feeds the listener unsubscribed from are left out. %lld is how many.
+        return SentenceWording.joined([exported, String(localized: "\(unsubscribedCount) feeds you unsubscribed from were left out.")])
     }
     /// Why the subscriptions couldn't be written.
     static func exportFailed(_ reason: String) -> String {
-        String(localized: "The subscriptions couldn't be saved: \(reason)",
-               comment: "Why the subscriptions could not be exported. %@ is the reason, from the system.")
+        // Translators: Why the subscriptions could not be exported. %@ is the reason, from the system.
+        String(localized: "The subscriptions couldn't be saved: \(reason)")
     }
 }

@@ -4,28 +4,28 @@ import SwiftUI
 /// two always describe the state the same way.
 enum LibraryIndexRecoveryText {
     static var title: String {
-        String(localized: "Library Index Could Not Be Read",
-               comment: "Heading of the sheet shown when the library index file can't be read.")
+        // Translators: Heading of the sheet shown when the library index file can't be read.
+        String(localized: "Library Index Could Not Be Read")
     }
 
     /// What the sheet says happened, in five sentences.
     static var summary: String {
         SentenceWording.joined([
-            String(localized: "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
-                   comment: "First sentence of the library index recovery sheet: what the unreadable file holds."),
-            String(localized: "The library now shows a temporary list rebuilt from the books on disk.",
-                   comment: "Second sentence of the library index recovery sheet."),
-            String(localized: "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below.",
-                   comment: "Last sentence of the library index recovery sheet: what still works, and what does not until an option is chosen."),
+            // Translators: First sentence of the library index recovery sheet: what the unreadable file holds.
+            String(localized: "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books."),
+            // Translators: Second sentence of the library index recovery sheet.
+            String(localized: "The library now shows a temporary list rebuilt from the books on disk."),
+            // Translators: Last sentence of the library index recovery sheet: what still works, and what does not until an option is chosen.
+            String(localized: "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below."),
         ])
     }
 
     static var noCopy: String {
         SentenceWording.joined([
-            String(localized: "TextMouth could not save a copy of the unreadable file.",
-                   comment: "First sentence of the library index recovery sheet when no copy of the unreadable file was saved."),
-            String(localized: "The file itself has not been changed.",
-                   comment: "Last sentence of the library index recovery sheet when no copy of the unreadable file was saved."),
+            // Translators: First sentence of the library index recovery sheet when no copy of the unreadable file was saved.
+            String(localized: "TextMouth could not save a copy of the unreadable file."),
+            // Translators: Last sentence of the library index recovery sheet when no copy of the unreadable file was saved.
+            String(localized: "The file itself has not been changed."),
         ])
     }
 
@@ -33,73 +33,73 @@ enum LibraryIndexRecoveryText {
 
     /// Try Again's title, as the sheet's button shows it and sentences name it.
     static var tryAgainTitle: String {
-        String(localized: "Try Again",
-               comment: "Button of the library index recovery sheet that reads the index file again. Also the name sentences use for it.")
+        // Translators: Button of the library index recovery sheet that reads the index file again. Also the name sentences use for it.
+        String(localized: "Try Again")
     }
 
     /// Rebuild Library Index's title, as the sheet's button shows it and sentences name it.
     static var rebuildTitle: String {
-        String(localized: "Rebuild Library Index",
-               comment: "Button of the library index recovery sheet that saves the temporary library as the new index. Also the name sentences use for it.")
+        // Translators: Button of the library index recovery sheet that saves the temporary library as the new index. Also the name sentences use for it.
+        String(localized: "Rebuild Library Index")
     }
 
     /// Continue Reading's title.
     static var continueReadingTitle: String {
-        String(localized: "Continue Reading",
-               comment: "Button of the library index recovery sheet that closes it so the listener can keep reading.")
+        // Translators: Button of the library index recovery sheet that closes it so the listener can keep reading.
+        String(localized: "Continue Reading")
     }
 
     /// Quit TextMouth's title.
     static var quitTitle: String {
-        String(localized: "Quit TextMouth",
-               comment: "Button of the library index recovery sheet that quits TextMouth.")
+        // Translators: Button of the library index recovery sheet that quits TextMouth.
+        String(localized: "Quit TextMouth")
     }
 
     /// The banner's button that brings the sheet back, as sentences name it.
     static var recoveryOptionsName: String {
-        String(localized: "Recovery Options",
-               comment: "The name sentences use for the button at the top of the library that shows the library index recovery choices again.")
+        // Translators: The name sentences use for the button at the top of the library that shows the library index recovery choices again.
+        String(localized: "Recovery Options")
     }
 
     /// The banner's button that brings the sheet back.
     static var recoveryOptionsTitle: String {
-        String(localized: "Recovery Options...",
-               comment: "Button at the top of the library that shows the library index recovery choices again. The three dots show that a sheet opens.")
+        // Translators: Button at the top of the library that shows the library index recovery choices again. The three dots show that a sheet opens.
+        String(localized: "Recovery Options...")
     }
 
     static var showSavedCopyTitle: String {
-        String(localized: "Show Saved Copy in Finder",
-               comment: "Button of the library index recovery sheet that shows the saved copy of the unreadable file in the Finder.")
+        // Translators: Button of the library index recovery sheet that shows the saved copy of the unreadable file in the Finder.
+        String(localized: "Show Saved Copy in Finder")
     }
 
     // MARK: The Sheet's Labels
 
     static var reasonLabel: String {
-        String(localized: "Reason",
-               comment: "Label of why the library index could not be read, on the library index recovery sheet.")
+        // Translators: Label of why the library index could not be read, on the library index recovery sheet.
+        String(localized: "Reason")
     }
 
     static var unreadableFileLabel: String {
-        String(localized: "Unreadable file",
-               comment: "Label of the path of the unreadable library index file, on the library index recovery sheet.")
+        // Translators: Label of the path of the unreadable library index file, on the library index recovery sheet.
+        String(localized: "Unreadable file")
     }
 
     static var savedCopyLabel: String {
-        String(localized: "Saved copy",
-               comment: "Label of the path of the saved copy of the unreadable library index file, on the library index recovery sheet.")
+        // Translators: Label of the path of the saved copy of the unreadable library index file, on the library index recovery sheet.
+        String(localized: "Saved copy")
     }
 
     static var lastAttemptLabel: String {
-        String(localized: "Last attempt",
-               comment: "Label of the outcome of the last Try Again or Rebuild Library Index, on the library index recovery sheet.")
+        // Translators: Label of the outcome of the last Try Again or Rebuild Library Index, on the library index recovery sheet.
+        String(localized: "Last attempt")
     }
 
     static var tryAgain: String {
         SentenceWording.joined([
-            String(localized: "Reads the file again.",
-                   comment: "First sentence of what Try Again does on the library index recovery sheet."),
-            String(localized: "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it.",
-                   comment: "Last sentence of what Try Again does on the library index recovery sheet: when to use it."),
+            // Translators: First sentence of what Try Again does on the library index recovery sheet.
+            String(localized: "Reads the file again."),
+            // Translators: Last sentence of what Try Again does on the library index recovery sheet: when to use it.
+            String(localized: "Use this after restoring the file from a backup, fixing its permissions, or updating TextMouth to the version that saved it."),
         ])
     }
 
@@ -109,74 +109,74 @@ enum LibraryIndexRecoveryText {
     /// could not be read in the unreadable index.
     static func rebuild(savedCopy: URL?, notKept: LibraryIndexArrangement = []) -> String {
         var sentences = [
-            String(localized: "Saves the temporary library as the new index, with the reading list and the sort settings TextMouth could read.",
-                   comment: "First sentence of what Rebuild Library Index does on the library index recovery sheet."),
-            String(localized: "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
-                   comment: "Second sentence of what Rebuild Library Index does: what is lost."),
+            // Translators: First sentence of what Rebuild Library Index does on the library index recovery sheet.
+            String(localized: "Saves the temporary library as the new index, with the reading list and the sort settings TextMouth could read."),
+            // Translators: Second sentence of what Rebuild Library Index does: what is lost.
+            String(localized: "Folder placement and manual order that were stored only in the unreadable index are lost from the library."),
         ]
         if let notRead = notKept.notReadSentence(in: .unreadable) {
             sentences.append(notRead)
         }
         if let savedCopy {
-            sentences.append(String(localized: "The saved copy at \(savedCopy.path) keeps the old data.",
-                                    comment: "Last sentence of what Rebuild Library Index does: where the old data stays. %@ is the saved copy's path."))
+            // Translators: Last sentence of what Rebuild Library Index does: where the old data stays. %@ is the saved copy's path.
+            sentences.append(String(localized: "The saved copy at \(savedCopy.path) keeps the old data."))
         } else {
-            sentences.append(String(localized: "TextMouth first saves a copy of the old file, and does not rebuild if it cannot.",
-                                    comment: "Last sentence of what Rebuild Library Index does when no copy has been saved yet: it saves one first."))
+            // Translators: Last sentence of what Rebuild Library Index does when no copy has been saved yet: it saves one first.
+            sentences.append(String(localized: "TextMouth first saves a copy of the old file, and does not rebuild if it cannot."))
         }
         return SentenceWording.joined(sentences)
     }
 
     static var continueReading: String {
         SentenceWording.joined([
-            String(localized: "Closes these options so you can keep reading.",
-                   comment: "First sentence of what Continue Reading does on the library index recovery sheet."),
-            String(localized: "The index is not changed until you choose \(tryAgainTitle) or \(rebuildTitle), which stay available from \(recoveryOptionsName) at the top of the library.",
-                   comment: "Last sentence of what Continue Reading does. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button."),
+            // Translators: First sentence of what Continue Reading does on the library index recovery sheet.
+            String(localized: "Closes these options so you can keep reading."),
+            // Translators: Last sentence of what Continue Reading does. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button.
+            String(localized: "The index is not changed until you choose \(tryAgainTitle) or \(rebuildTitle), which stay available from \(recoveryOptionsName) at the top of the library."),
         ])
     }
 
     static var quit: String {
-        String(localized: "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.",
-               comment: "What Quit TextMouth does on the library index recovery sheet.")
+        // Translators: What Quit TextMouth does on the library index recovery sheet.
+        String(localized: "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.")
     }
 
     static var banner: String {
         SentenceWording.joined([
-            String(localized: "The library index could not be read.",
-                   comment: "First sentence of the banner shown at the top of the library while the library index is unreadable."),
-            String(localized: "This is a temporary library, and library changes are not being saved.",
-                   comment: "Last sentence of the banner shown at the top of the library while the library index is unreadable."),
+            // Translators: First sentence of the banner shown at the top of the library while the library index is unreadable.
+            String(localized: "The library index could not be read."),
+            // Translators: Last sentence of the banner shown at the top of the library while the library index is unreadable.
+            String(localized: "This is a temporary library, and library changes are not being saved."),
         ])
     }
 
     /// The Storage settings status while recovering.
     static var settingsStatus: String {
-        String(localized: "Library index unreadable",
-               comment: "Storage settings status line while the library index can't be read.")
+        // Translators: Storage settings status line while the library index can't be read.
+        String(localized: "Library index unreadable")
     }
 
     static var settingsExplanation: String {
         SentenceWording.joined([
-            String(localized: "The library index could not be read, so library changes are not being saved.",
-                   comment: "First sentence of the Storage settings explanation while the library index can't be read."),
-            String(localized: "Choose \(tryAgainTitle) or \(rebuildTitle) from \(recoveryOptionsName) at the top of the Library window.",
-                   comment: "Second sentence of the Storage settings explanation while the library index can't be read. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button."),
-            String(localized: "Until then, changing the location and rebuilding the directory are unavailable.",
-                   comment: "Last sentence of the Storage settings explanation while the library index can't be read."),
+            // Translators: First sentence of the Storage settings explanation while the library index can't be read.
+            String(localized: "The library index could not be read, so library changes are not being saved."),
+            // Translators: Second sentence of the Storage settings explanation while the library index can't be read. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button.
+            String(localized: "Choose \(tryAgainTitle) or \(rebuildTitle) from \(recoveryOptionsName) at the top of the Library window."),
+            // Translators: Last sentence of the Storage settings explanation while the library index can't be read.
+            String(localized: "Until then, changing the location and rebuilding the directory are unavailable."),
         ])
     }
 
     // MARK: The Banner
 
     static var bannerHint: String {
-        String(localized: "Shows the choices for recovering the library index",
-               comment: "VoiceOver hint of the Recovery Options button at the top of the library.")
+        // Translators: VoiceOver hint of the Recovery Options button at the top of the library.
+        String(localized: "Shows the choices for recovering the library index")
     }
 
     static var bannerLabel: String {
-        String(localized: "Library index recovery",
-               comment: "VoiceOver label of the banner at the top of the library while the library index is unreadable.")
+        // Translators: VoiceOver label of the banner at the top of the library while the library index is unreadable.
+        String(localized: "Library index recovery")
     }
 }
 

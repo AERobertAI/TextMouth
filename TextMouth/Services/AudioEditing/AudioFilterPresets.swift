@@ -54,38 +54,41 @@ enum PremadeFilterPreset: CaseIterable, Sendable {
     var title: String {
         switch self {
         case .removeRumble:
-            return String(localized: "Remove Rumble",
-                          comment: "Title of a premade audio filter preset: cuts the lowest rumble from a recording.")
+            // Translators: Title of a premade audio filter preset: cuts the lowest rumble from a recording.
+            return String(localized: "Remove Rumble")
         case .clearerVoice:
-            return String(localized: "Clearer Voice",
-                          comment: "Title of a premade audio filter preset: cuts the rumble and lifts the voice's presence.")
+            // Translators: Title of a premade audio filter preset: cuts the rumble and lifts the voice's presence.
+            return String(localized: "Clearer Voice")
         case .evenOutTheLevel:
-            return String(localized: "Even Out the Level",
-                          comment: "Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume.")
+            // Translators: Title of a premade audio filter preset: compresses the audio so loud and quiet parts are closer in volume.
+            return String(localized: "Even Out the Level")
         case .audiobookLoudness:
-            return String(localized: "Audiobook Loudness",
-                          comment: "Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks.")
+            // Translators: Title of a premade audio filter preset: sets the whole audio's loudness to a level for audiobooks.
+            return String(localized: "Audiobook Loudness")
         case .shortenLongPauses:
-            return String(localized: "Shorten Long Pauses",
-                          comment: "Title of a premade audio filter preset: makes every pause longer than a second one second long.")
+            // Translators: Title of a premade audio filter preset: makes every pause longer than a second one second long.
+            return String(localized: "Shorten Long Pauses")
         case .trimSilenceAtBothEnds:
-            return String(localized: "Trim Silence at Both Ends",
-                          comment: "Title of a premade audio filter preset: removes the silence at the start and at the end of the audio.")
+            // Translators: Title of a premade audio filter preset: removes the silence at the start and at the end of the audio.
+            return String(localized: "Trim Silence at Both Ends")
         case .fadeIn:
-            return String(localized: "Fade In",
-                          comment: "Title of a premade audio filter preset: fades the audio in over one second.")
+            // Translators: Title of a premade audio filter preset: fades the audio in over one second.
+            return String(localized: "Fade In")
         case .fadeOut:
-            return String(localized: "Fade Out (Select the Last Second)",
-                          comment: "Title of a premade audio filter preset: fades out over one second, so it is used on a selection of the last second.")
+            // Translators: Title of a premade audio filter preset: fades out over one second, so it is used on a selection of the last second.
+            return String(localized: "Fade Out (Select the Last Second)")
         case .aLittleFaster:
-            return String(localized: "A Little Faster",
-                          comment: "Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch.")
+            // Translators: Title of a premade audio filter preset: plays the audio a quarter faster without raising its pitch.
+            return String(localized: "A Little Faster")
         case .louder:
-            return String(localized: "Louder", comment: "Title of a premade audio filter preset: raises the volume by 6 decibels.")
+            // Translators: Title of a premade audio filter preset: raises the volume by 6 decibels.
+            return String(localized: "Louder")
         case .quieter:
-            return String(localized: "Quieter", comment: "Title of a premade audio filter preset: lowers the volume by 6 decibels.")
+            // Translators: Title of a premade audio filter preset: lowers the volume by 6 decibels.
+            return String(localized: "Quieter")
         case .reverse:
-            return String(localized: "Reverse", comment: "Title of a premade audio filter preset: plays the audio backwards.")
+            // Translators: Title of a premade audio filter preset: plays the audio backwards.
+            return String(localized: "Reverse")
         }
     }
 
@@ -398,14 +401,14 @@ enum AudioFilterPresetError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .blankName:
-            return String(localized: "A filter preset needs a name.",
-                          comment: "Said when a filter preset is saved with a blank name.")
+            // Translators: Said when a filter preset is saved with a blank name.
+            return String(localized: "A filter preset needs a name.")
         case .libraryUnavailable:
-            return String(localized: "The library isn't available, so the filter presets can't be saved.",
-                          comment: "Said when the filter presets can't be saved because the library's data folder can't be used.")
+            // Translators: Said when the filter presets can't be saved because the library's data folder can't be used.
+            return String(localized: "The library isn't available, so the filter presets can't be saved.")
         case .fileArrived:
-            return String(localized: "Presets from another Mac just arrived and replaced these. Make the change again.",
-                          comment: "Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it.")
+            // Translators: Said when a filter preset change is not made because the presets file synced in from another Mac while the premade presets stood in for it.
+            return String(localized: "Presets from another Mac just arrived and replaced these. Make the change again.")
         }
     }
 }

@@ -855,17 +855,17 @@ extension LibraryViewModel {
     nonisolated static func textReextractionOutcome(skippedInCloud: Int, heldByEdits: Int = 0) -> OperationOutcome {
         var sentences: [String] = []
         if skippedInCloud > 0 {
-            sentences.append(String(localized: "\(skippedInCloud) books in the cloud were skipped.",
-                                    comment: "Part of the message after Redo Text Extraction finished: books whose files are only in the cloud were left out. %lld is how many books."))
+            // Translators: Part of the message after Redo Text Extraction finished: books whose files are only in the cloud were left out. %lld is how many books.
+            sentences.append(String(localized: "\(skippedInCloud) books in the cloud were skipped."))
         }
         if heldByEdits > 0 {
-            sentences.append(String(localized: "\(heldByEdits) books whose edited text can't be used yet were skipped.",
-                                    comment: "Part of the message after Redo Text Extraction finished: books whose edited text is not taken yet were left out. %lld is how many books."))
+            // Translators: Part of the message after Redo Text Extraction finished: books whose edited text is not taken yet were left out. %lld is how many books.
+            sentences.append(String(localized: "\(heldByEdits) books whose edited text can't be used yet were skipped."))
         }
         guard !sentences.isEmpty else { return .success(nil) }
         return .success(SentenceWording.joined([
-            String(localized: "Done.",
-                   comment: "First sentence of the message after Redo Text Extraction finished with some books skipped."),
+            // Translators: First sentence of the message after Redo Text Extraction finished with some books skipped.
+            String(localized: "Done."),
         ] + sentences))
     }
 
@@ -896,10 +896,10 @@ extension LibraryViewModel {
 
         textExtraction.begin(
             force
-                ? String(localized: "Re-extracting text",
-                         comment: "Title of the progress shown while Redo Text Extraction reads every book's text again.")
-                : String(localized: "Updating text cache",
-                         comment: "Title of the progress shown while TextMouth brings every book's text cache up to date."),
+                // Translators: Title of the progress shown while Redo Text Extraction reads every book's text again.
+                ? String(localized: "Re-extracting text")
+                // Translators: Title of the progress shown while TextMouth brings every book's text cache up to date.
+                : String(localized: "Updating text cache"),
             total: books.count
         )
 
@@ -1526,12 +1526,12 @@ extension LibraryViewModel {
 
     /// Words that begin each maintenance failure, before the reason.
     private static var rebuildFailureContext: String {
-        String(localized: "Failed to rebuild directory",
-               comment: "Begins the message when Rebuild Directory failed; the reason follows after a colon.")
+        // Translators: Begins the message when Rebuild Directory failed; the reason follows after a colon.
+        String(localized: "Failed to rebuild directory")
     }
     private static var resetFailureContext: String {
-        String(localized: "Failed to rebuild to default",
-               comment: "Begins the message when Reset to Default failed; the reason follows after a colon.")
+        // Translators: Begins the message when Reset to Default failed; the reason follows after a colon.
+        String(localized: "Failed to rebuild to default")
     }
     private static var moveFailureContext: String {
         StorageSettingsWording.moveFailureContext
@@ -1573,8 +1573,8 @@ extension LibraryViewModel {
     /// library.", counting the library's own books, never a feed's items
     /// (FR11), which the rebuild leaves where they are.
     nonisolated static func rebuildDirectoryDoneMessage(_ library: Library) -> String {
-        String(localized: "Done. \(CountWording.books(library.libraryBookCount)) in library.",
-               comment: "Message after Rebuild Directory finished. %@ is a count of the library's books, such as \"743 books\".")
+        // Translators: Message after Rebuild Directory finished. %@ is a count of the library's books, such as "743 books".
+        String(localized: "Done. \(CountWording.books(library.libraryBookCount)) in library.")
     }
 
     /// The work of Rebuild Directory: the legacy migration report, or the
@@ -2058,8 +2058,8 @@ extension LibraryViewModel {
 
     /// Words that begin each Use This Library failure, before the reason.
     private static var switchFailureContext: String {
-        String(localized: "Failed to switch libraries",
-               comment: "Begins the message when Use This Library failed; the reason follows after a colon.")
+        // Translators: Begins the message when Use This Library failed; the reason follows after a colon.
+        String(localized: "Failed to switch libraries")
     }
 
     /// Use This Library, and Start New Library while the library isn't
@@ -2105,10 +2105,10 @@ extension LibraryViewModel {
         let unsaved = failureCenter.unsavedFailures()
         if dataDirectoryUnavailability == nil, !unsaved.isEmpty {
             let reasons = PersistenceBannerRow.rows(for: unsaved).map(\.text)
-            let message = [String(localized: "\(Self.switchFailureContext): Some changes are not saved, and switching libraries would lose them.",
-                                  comment: "First sentence of why Use This Library was refused: changes could not be saved yet. %@ is the failure's lead-in, \"Failed to switch libraries\".")]
-                + reasons + [String(localized: "Choose Retry Saving, then try again.",
-                                    comment: "Last sentence of why Use This Library was refused. Retry Saving is the name of a button on the failure banner.")]
+            // Translators: First sentence of why Use This Library was refused: changes could not be saved yet. %@ is the failure's lead-in, "Failed to switch libraries".
+            let message = [String(localized: "\(Self.switchFailureContext): Some changes are not saved, and switching libraries would lose them.")]
+                // Translators: Last sentence of why Use This Library was refused. Retry Saving is the name of a button on the failure banner.
+                + reasons + [String(localized: "Choose Retry Saving, then try again.")]
             return .failure(SentenceWording.joined(message))
         }
 
@@ -2134,10 +2134,10 @@ extension LibraryViewModel {
                 recheckAfterDroppedLibraryFetch()
             }
             return .failure(SentenceWording.joined([
-                String(localized: "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again by itself: \(error.localizedDescription)",
-                       comment: "First part of the message when Use This Library could not open TextMouth again. %1$@ is the library's folder; %2$@ is the system's reason, a sentence."),
-                String(localized: "Quit TextMouth and open it again.",
-                       comment: "Last sentence of the message when Use This Library could not open TextMouth again: what to do."),
+                // Translators: First part of the message when Use This Library could not open TextMouth again. %1$@ is the library's folder; %2$@ is the system's reason, a sentence.
+                String(localized: "TextMouth will open the library in \(folder.path) the next time it opens, but it couldn't open again by itself: \(error.localizedDescription)"),
+                // Translators: Last sentence of the message when Use This Library could not open TextMouth again: what to do.
+                String(localized: "Quit TextMouth and open it again."),
             ]))
         }
         // The changes a library that isn't available couldn't take are given
@@ -2146,8 +2146,8 @@ extension LibraryViewModel {
             failureCenter.withdraw(failure.key)
         }
         relauncher.quit()
-        return .success(String(localized: "Opening the library in \(folder.path)…",
-                               comment: "Message after Use This Library succeeded: TextMouth opens again on the library. %@ is the library's folder."))
+        // Translators: Message after Use This Library succeeded: TextMouth opens again on the library. %@ is the library's folder.
+        return .success(String(localized: "Opening the library in \(folder.path)…"))
     }
 
     // MARK: - Finished Books at Their Ends (TODO P07)

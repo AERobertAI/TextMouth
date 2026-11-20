@@ -161,27 +161,27 @@ struct ReadingStatsTileRow: View {
 enum ReadingStatsViewWording {
     /// The heading of the tiles of listening time.
     static var listeningTimeHeader: String {
-        String(localized: "Listening Time",
-               comment: "Heading of the section of Settings, Stats that shows the listening time of today, this week, and all time.")
+        // Translators: Heading of the section of Settings, Stats that shows the listening time of today, this week, and all time.
+        String(localized: "Listening Time")
     }
 
     /// The heading of the tiles of progress.
     static var progressHeader: String {
-        String(localized: "Progress",
-               comment: "Heading of the section of Settings, Stats that shows the listening streak and the number of books finished.")
+        // Translators: Heading of the section of Settings, Stats that shows the listening streak and the number of books finished.
+        String(localized: "Progress")
     }
 
     /// The heading of the list of the books finished most recently.
     static var recentlyFinishedHeader: String {
-        String(localized: "Recently Finished",
-               comment: "Heading of the section of Settings, Stats that lists the books finished most recently, each with the date.")
+        // Translators: Heading of the section of Settings, Stats that lists the books finished most recently, each with the date.
+        String(localized: "Recently Finished")
     }
 
     /// What VoiceOver reads for a row of Recently Finished: "Moby Dick,
     /// finished November 18, 2026".
     static func finishedRowLabel(title: String, date: Date) -> String {
         let when = date.formatted(date: .long, time: .omitted)
-        return String(localized: "\(title), finished \(when)",
-                      comment: "VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.")
+        // Translators: VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.
+        return String(localized: "\(title), finished \(when)")
     }
 }

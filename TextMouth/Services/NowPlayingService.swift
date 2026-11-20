@@ -100,8 +100,8 @@ enum MediaControlsWording {
     /// hands them back to the system, and so the AirPods and the media keys
     /// to other apps.
     static var released: String {
-        String(localized: "Media controls released",
-               comment: "Announcement after Release Media Controls handed the media keys and AirPods back to the system.")
+        // Translators: Announcement after Release Media Controls handed the media keys and AirPods back to the system.
+        String(localized: "Media controls released")
     }
 
     /// Said when Release Media Controls is chosen, by a key mapped to it, in
@@ -111,8 +111,8 @@ enum MediaControlsWording {
     /// changes; the sentence begins as `released` does, so the two are told
     /// apart from their first words, on a braille display too.
     static var notHeld: String {
-        String(localized: "Media controls not released: this book does not hold them.",
-               comment: "Announcement when Release Media Controls is chosen in a window whose book does not hold the media controls, so nothing changed. It begins like the announcement Media controls released, so the two are told apart from their first words.")
+        // Translators: Announcement when Release Media Controls is chosen in a window whose book does not hold the media controls, so nothing changed. It begins like the announcement Media controls released, so the two are told apart from their first words.
+        String(localized: "Media controls not released: this book does not hold them.")
     }
 }
 

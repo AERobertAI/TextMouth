@@ -81,38 +81,38 @@ enum JumpInputValidator {
 
     /// What Go to Percent says to an empty field.
     static var emptyPercent: String {
-        String(localized: "Enter a percent.",
-               comment: "Message when Go to Percent is chosen with nothing typed in its field.")
+        // Translators: Message when Go to Percent is chosen with nothing typed in its field.
+        String(localized: "Enter a percent.")
     }
 
     /// What Go to Percent says to text that is no number. `typed` is what was typed.
     static func notANumber(_ typed: String) -> String {
-        String(localized: "\"\(typed)\" is not a number.",
-               comment: "Message when the text typed in Go to Percent is no number. %@ is what the user typed, shown in quotation marks.")
+        // Translators: Message when the text typed in Go to Percent is no number. %@ is what the user typed, shown in quotation marks.
+        String(localized: "\"\(typed)\" is not a number.")
     }
 
     /// What Go to Percent says to a number outside 0 to 100.
     static var percentOutOfRange: String {
-        String(localized: "Percent must be between 0 and 100.",
-               comment: "Message when the number typed in Go to Percent is below 0 or above 100.")
+        // Translators: Message when the number typed in Go to Percent is below 0 or above 100.
+        String(localized: "Percent must be between 0 and 100.")
     }
 
     /// The jump button's title.
     static var jumpTitle: String {
-        String(localized: "Jump",
-               comment: "Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed.")
+        // Translators: Button of a jump panel (Go to Percent, Time or Page) that jumps to what was typed.
+        String(localized: "Jump")
     }
 
     /// The cancel button's title.
     static var cancelTitle: String {
-        String(localized: "Cancel",
-               comment: "Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.")
+        // Translators: Button of a jump panel (Go to Percent, Time or Page) that closes it without jumping.
+        String(localized: "Cancel")
     }
 
     /// What VoiceOver says for a refusal shown under a jump field.
     static func errorSpoken(_ message: String) -> String {
-        String(localized: "Error: \(message)",
-               comment: "What VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence.")
+        // Translators: What VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence.
+        String(localized: "Error: \(message)")
     }
 
     /// How far past the end of a book's clock a typed time still names its

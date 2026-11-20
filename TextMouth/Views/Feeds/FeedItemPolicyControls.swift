@@ -98,8 +98,8 @@ extension FeedWording {
     /// The pop-up menu's label, as Settings and Feed Info show it and
     /// VoiceOver speaks it.
     static var listAndDownloadLabel: String {
-        String(localized: "List and download",
-               comment: "Label of the pop-up menu that chooses how many of a feed's items are listed and downloaded, in Settings and Feed Info. Sentences name it.")
+        // Translators: Label of the pop-up menu that chooses how many of a feed's items are listed and downloaded, in Settings and Feed Info. Sentences name it.
+        String(localized: "List and download")
     }
 
     /// The title of `choice` counting `count` of the newest, as the pop-up
@@ -113,23 +113,23 @@ extension FeedWording {
         switch choice {
         case .everyListedNewestDownloaded:
             return kind.choose(
-                episode: String(localized: "Every episode listed, newest \(count) downloaded",
-                                comment: "A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the newest ones downloaded. %lld is how many of the newest."),
-                article: String(localized: "Every article listed, newest \(count) downloaded",
-                                comment: "A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the newest ones downloaded. %lld is how many of the newest."),
-                item: String(localized: "Every item listed, newest \(count) downloaded",
-                             comment: "A choice of the List and download pop-up menu, in Settings or for a feed of both kinds: every item is listed and the newest ones downloaded. %lld is how many of the newest."))
+                // Translators: A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the newest ones downloaded. %lld is how many of the newest.
+                episode: String(localized: "Every episode listed, newest \(count) downloaded"),
+                // Translators: A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the newest ones downloaded. %lld is how many of the newest.
+                article: String(localized: "Every article listed, newest \(count) downloaded"),
+                // Translators: A choice of the List and download pop-up menu, in Settings or for a feed of both kinds: every item is listed and the newest ones downloaded. %lld is how many of the newest.
+                item: String(localized: "Every item listed, newest \(count) downloaded"))
         case .everyListedDownloadsByHand:
             return kind.choose(
-                episode: String(localized: "Every episode listed, downloads by hand",
-                                comment: "A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the listener downloads by hand."),
-                article: String(localized: "Every article listed, downloads by hand",
-                                comment: "A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the listener downloads by hand."),
-                item: String(localized: "Every item listed, downloads by hand",
-                             comment: "A choice of the List and download pop-up menu, in Settings or for a feed of both kinds: every item is listed and the listener downloads by hand."))
+                // Translators: A choice of the List and download pop-up menu, in Feed Info, for a feed of episodes: every episode is listed and the listener downloads by hand.
+                episode: String(localized: "Every episode listed, downloads by hand"),
+                // Translators: A choice of the List and download pop-up menu, in Feed Info, for a feed of articles: every article is listed and the listener downloads by hand.
+                article: String(localized: "Every article listed, downloads by hand"),
+                // Translators: A choice of the List and download pop-up menu, in Settings or for a feed of both kinds: every item is listed and the listener downloads by hand.
+                item: String(localized: "Every item listed, downloads by hand"))
         case .onlyNewestListed:
-            return String(localized: "Only the newest \(count) listed",
-                          comment: "A choice of the List and download pop-up menu: only the newest items are listed. %lld is how many.")
+            // Translators: A choice of the List and download pop-up menu: only the newest items are listed. %lld is how many.
+            return String(localized: "Only the newest \(count) listed")
         }
     }
 
@@ -149,20 +149,20 @@ extension FeedWording {
         switch choice {
         case .everyListedNewestDownloaded:
             return kind.choose(
-                episode: String(localized: "Lists every episode, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
-                                comment: "VoiceOver hint of the List and download choice for a feed of episodes: every episode is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."),
-                article: String(localized: "Lists every article, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
-                                comment: "VoiceOver hint of the List and download choice for a feed of articles: every article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."),
-                item: String(localized: "Lists every episode and article, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
-                             comment: "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds: every episode and article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest."))
+                // Translators: VoiceOver hint of the List and download choice for a feed of episodes: every episode is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.
+                episode: String(localized: "Lists every episode, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."),
+                // Translators: VoiceOver hint of the List and download choice for a feed of articles: every article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.
+                article: String(localized: "Lists every article, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."),
+                // Translators: VoiceOver hint of the List and download choice in Settings or for a feed of both kinds: every episode and article is listed, the newest are downloaded, older downloads TextMouth made are removed. %lld is how many of the newest.
+                item: String(localized: "Lists every episode and article, keeps the newest \(count) downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."))
         case .everyListedDownloadsByHand:
             return kind.choose(
-                episode: String(localized: "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
-                                comment: "VoiceOver hint of the List and download choice for a feed of episodes when the listener downloads by hand."),
-                article: String(localized: "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
-                                comment: "VoiceOver hint of the List and download choice for a feed of articles when the listener downloads by hand."),
-                item: String(localized: "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
-                             comment: "VoiceOver hint of the List and download choice in Settings or for a feed of both kinds when the listener downloads by hand."))
+                // Translators: VoiceOver hint of the List and download choice for a feed of episodes when the listener downloads by hand.
+                episode: String(localized: "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass."),
+                // Translators: VoiceOver hint of the List and download choice for a feed of articles when the listener downloads by hand.
+                article: String(localized: "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass."),
+                // Translators: VoiceOver hint of the List and download choice in Settings or for a feed of both kinds when the listener downloads by hand.
+                item: String(localized: "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass."))
         case .onlyNewestListed:
             // Those of the newest `count` not yet played, so fewer than
             // `count` once some are played, never the newest `count`
@@ -170,10 +170,10 @@ extension FeedWording {
             // stays listed, as every download does
             // (`FeedRecord.listedItems(under:hasFile:)`).
             return noun == .article
-                ? String(localized: "Lists the newest \(count) you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
-                         comment: "VoiceOver hint of the List and download choice for a feed of articles when only the newest are listed. %lld is how many of the newest.")
-                : String(localized: "Lists the newest \(count) you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
-                         comment: "VoiceOver hint of the List and download choice for a feed of episodes, in Settings, or for a feed of both kinds when only the newest are listed. %lld is how many of the newest.")
+                // Translators: VoiceOver hint of the List and download choice for a feed of articles when only the newest are listed. %lld is how many of the newest.
+                ? String(localized: "Lists the newest \(count) you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.")
+                // Translators: VoiceOver hint of the List and download choice for a feed of episodes, in Settings, or for a feed of both kinds when only the newest are listed. %lld is how many of the newest.
+                : String(localized: "Lists the newest \(count) you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.")
         }
     }
 
@@ -181,8 +181,8 @@ extension FeedWording {
 
     /// The number's label: the field's and the stepper's spoken label.
     static var newestCountLabel: String {
-        String(localized: "How many of the newest",
-               comment: "Label of the number field and stepper that say how many of a feed's newest items are listed or downloaded.")
+        // Translators: Label of the number field and stepper that say how many of a feed's newest items are listed or downloaded.
+        String(localized: "How many of the newest")
     }
 
     /// The number as the stepper speaks it, with the items' noun: "5 items",
@@ -201,17 +201,17 @@ extension FeedWording {
     static func newestCountHint(noun: ItemNoun?) -> String {
         switch noun {
         case .episode?:
-            return String(localized: "Newest episodes kept downloaded or listed, from 1 to 2,000",
-                          comment: "VoiceOver hint of the number of the newest items, for a feed of episodes. The range is the limits of the number.")
+            // Translators: VoiceOver hint of the number of the newest items, for a feed of episodes. The range is the limits of the number.
+            return String(localized: "Newest episodes kept downloaded or listed, from 1 to 2,000")
         case .article?:
-            return String(localized: "Newest articles kept downloaded or listed, from 1 to 2,000",
-                          comment: "VoiceOver hint of the number of the newest items, for a feed of articles. The range is the limits of the number.")
+            // Translators: VoiceOver hint of the number of the newest items, for a feed of articles. The range is the limits of the number.
+            return String(localized: "Newest articles kept downloaded or listed, from 1 to 2,000")
         case .item?:
-            return String(localized: "Newest items kept downloaded or listed, from 1 to 2,000",
-                          comment: "VoiceOver hint of the number of the newest items, for a feed of both episodes and articles. The range is the limits of the number.")
+            // Translators: VoiceOver hint of the number of the newest items, for a feed of both episodes and articles. The range is the limits of the number.
+            return String(localized: "Newest items kept downloaded or listed, from 1 to 2,000")
         case nil:
-            return String(localized: "Newest episodes and articles kept downloaded or listed, from 1 to 2,000",
-                          comment: "VoiceOver hint of the number of the newest items, in Settings, for every feed. The range is the limits of the number.")
+            // Translators: VoiceOver hint of the number of the newest items, in Settings, for every feed. The range is the limits of the number.
+            return String(localized: "Newest episodes and articles kept downloaded or listed, from 1 to 2,000")
         }
     }
 
@@ -221,8 +221,8 @@ extension FeedWording {
     /// `FeedCenter.itemPolicyQuietTime`, so typing 15 never passes through
     /// 1, and VoiceOver hears it then.
     static var itemPolicyQuietNote: String {
-        String(localized: "The list follows a change of \(listAndDownloadLabel) at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
-               comment: "The note under the List and download controls: when a change takes effect. %@ is the name of the List and download choice.")
+        // Translators: The note under the List and download controls: when a change takes effect. %@ is the name of the List and download choice.
+        String(localized: "The list follows a change of \(listAndDownloadLabel) at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.")
     }
 
     // MARK: Taking Effect
@@ -231,8 +231,8 @@ extension FeedWording {
     /// number takes effect: "List and download is now in effect: Every item
     /// listed, newest 3 downloaded."
     static func itemPolicyApplied(global: FeedItemPolicy) -> String {
-        String(localized: "\(listAndDownloadLabel) is now in effect: \(itemPolicyTitle(global, noun: nil)).",
-               comment: "What VoiceOver says once a change of the global List and download choice takes effect. The first %@ is the name of the choice; the second is the choice now in force, such as \"Every item listed, newest 3 downloaded\".")
+        // Translators: What VoiceOver says once a change of the global List and download choice takes effect. The first %@ is the name of the choice; the second is the choice now in force, such as "Every item listed, newest 3 downloaded".
+        String(localized: "\(listAndDownloadLabel) is now in effect: \(itemPolicyTitle(global, noun: nil)).")
     }
 
     /// What VoiceOver hears once a change of the feed titled `feedTitle`
@@ -243,11 +243,11 @@ extension FeedWording {
     /// global setting: Every item listed, newest 5 downloaded."
     static func itemPolicyApplied(feedTitle: String, own: FeedItemPolicy?, global: FeedItemPolicy, noun: ItemNoun) -> String {
         guard let own else {
-            return String(localized: "\(listAndDownloadLabel) for \(feedTitle) now follows the global setting: \(itemPolicyTitle(global, noun: nil)).",
-                          comment: "What VoiceOver says once a feed uses the global List and download choice again. The first %@ is the name of the choice; the second is the feed's title; the third is the global choice now in force.")
+            // Translators: What VoiceOver says once a feed uses the global List and download choice again. The first %@ is the name of the choice; the second is the feed's title; the third is the global choice now in force.
+            return String(localized: "\(listAndDownloadLabel) for \(feedTitle) now follows the global setting: \(itemPolicyTitle(global, noun: nil)).")
         }
-        return String(localized: "\(listAndDownloadLabel) for \(feedTitle) is now in effect: \(itemPolicyTitle(own, noun: noun)).",
-                      comment: "What VoiceOver says once a change of a feed's own List and download choice takes effect. The first %@ is the name of the choice; the second is the feed's title; the third is the choice now in force.")
+        // Translators: What VoiceOver says once a change of a feed's own List and download choice takes effect. The first %@ is the name of the choice; the second is the feed's title; the third is the choice now in force.
+        return String(localized: "\(listAndDownloadLabel) for \(feedTitle) is now in effect: \(itemPolicyTitle(own, noun: noun)).")
     }
 
     /// What VoiceOver hears once changes take effect in `center`

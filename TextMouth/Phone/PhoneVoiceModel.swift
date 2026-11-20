@@ -53,8 +53,8 @@ enum PhoneVoiceWording {
     /// What the voice list says once the voices have loaded and none is
     /// installed. **Unverified:** the path's wording on an iPhone.
     static var noVoices: String {
-        String(localized: "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
-               comment: "What the iPhone's voice list says once the voices have loaded and none is installed. \"Settings, Accessibility, Read & Speak\" is the path in iOS's own Settings app, so keep those names as iOS shows them in the language.")
+        // Translators: What the iPhone's voice list says once the voices have loaded and none is installed. "Settings, Accessibility, Read & Speak" is the path in iOS's own Settings app, so keep those names as iOS shows them in the language.
+        String(localized: "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.")
     }
 }
 

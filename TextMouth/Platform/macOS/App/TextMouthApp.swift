@@ -88,6 +88,7 @@ enum SceneWording {
     /// The title of a book reader's window group, before the window names its
     /// own book.
     static var bookReaderTitle: String {
-        String(localized: "Book Reader", comment: "Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group.")
+        // Translators: Title of a window in which a book is read, before the window shows its own book's title. Also the name of the window group.
+        String(localized: "Book Reader")
     }
 }

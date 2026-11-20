@@ -26,8 +26,8 @@ enum PhoneHeadingsVocabulary {
     /// A heading row's hint: what choosing it does, never a gesture.
     static var rowHint: String {
         // The Mac's row says the same words from its own view, so the key is shared.
-        String(localized: "Goes to this heading and closes the list.",
-               comment: "Hint of a heading's row in the headings list: what choosing it does.")
+        // Translators: Hint of a heading's row in the headings list: what choosing it does.
+        String(localized: "Goes to this heading and closes the list.")
     }
 }
 

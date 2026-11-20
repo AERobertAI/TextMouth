@@ -26,14 +26,14 @@ enum AudioExportFormat: String, CaseIterable, Sendable {
     var title: String {
         switch self {
         case .m4a:
-            return String(localized: "M4A (AAC)",
-                          comment: "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding AAC audio.")
+            // Translators: Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding AAC audio.
+            return String(localized: "M4A (AAC)")
         case .m4b:
-            return String(localized: "M4B Audiobook (AAC)",
-                          comment: "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4B audiobook files holding AAC audio.")
+            // Translators: Name of an audio file format in the audio editor's Export format list and in messages about a save: M4B audiobook files holding AAC audio.
+            return String(localized: "M4B Audiobook (AAC)")
         case .appleLossless:
-            return String(localized: "Apple Lossless (M4A)",
-                          comment: "Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding Apple Lossless audio. Apple Lossless is Apple's name for the codec.")
+            // Translators: Name of an audio file format in the audio editor's Export format list and in messages about a save: M4A files holding Apple Lossless audio. Apple Lossless is Apple's name for the codec.
+            return String(localized: "Apple Lossless (M4A)")
         case .wav: return "WAV"
         case .aiff: return "AIFF"
         case .caf: return "CAF"
