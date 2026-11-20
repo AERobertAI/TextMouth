@@ -30140,7 +30140,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annullamento dopo questo libro..."
+            "value" : "Annullamento dopo questo libro…"
           }
         },
         "pt-BR" : {
@@ -30227,7 +30227,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annullamento..."
+            "value" : "Annullamento…"
           }
         },
         "pt-BR" : {
@@ -39304,7 +39304,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elimina cartella..."
+            "value" : "Elimina cartella…"
           }
         },
         "pt-BR" : {
@@ -47835,7 +47835,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Estrazione dell’archivio..."
+            "value" : "Estrazione dell’archivio…"
           }
         },
         "pt-BR" : {
@@ -47870,7 +47870,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Estrazione di “%1$@”: %2$@..."
+            "value" : "Estrazione di “%1$@”: %2$@…"
           }
         },
         "pt-BR" : {
@@ -66024,19 +66024,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Sposta %lld di libri in cartella..."
+                  "value" : "Sposta %lld di libri in cartella…"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Sposta %lld libro in cartella..."
+                  "value" : "Sposta %lld libro in cartella…"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Sposta %lld libri in cartella..."
+                  "value" : "Sposta %lld libri in cartella…"
                 }
               }
             }
@@ -66646,7 +66646,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sposta cartella..."
+            "value" : "Sposta cartella…"
           }
         },
         "pt-BR" : {
@@ -66965,7 +66965,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sposta in cartella..."
+            "value" : "Sposta in cartella…"
           }
         },
         "pt-BR" : {
@@ -68959,19 +68959,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostamento di %lld di libri..."
+                  "value" : "Spostamento di %lld di libri…"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostamento di %lld libro..."
+                  "value" : "Spostamento di %lld libro…"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Spostamento di %lld libri..."
+                  "value" : "Spostamento di %lld libri…"
                 }
               }
             }
@@ -69108,7 +69108,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spostamento del contenuto della cartella..."
+            "value" : "Spostamento del contenuto della cartella…"
           }
         },
         "pt-BR" : {
@@ -69137,7 +69137,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spostamento della cartella..."
+            "value" : "Spostamento della cartella…"
           }
         },
         "pt-BR" : {
@@ -70064,7 +70064,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nuova cartella..."
+            "value" : "Nuova cartella…"
           }
         },
         "pt-BR" : {
@@ -82964,7 +82964,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rilettura del libro..."
+            "value" : "Rilettura del libro…"
           }
         },
         "pt-BR" : {
@@ -84768,19 +84768,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Rimuovi %lld di libri dalla libreria..."
+                  "value" : "Rimuovi %lld di libri dalla libreria…"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Rimuovi %lld libro dalla libreria..."
+                  "value" : "Rimuovi %lld libro dalla libreria…"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Rimuovi %lld libri dalla libreria..."
+                  "value" : "Rimuovi %lld libri dalla libreria…"
                 }
               }
             }
@@ -85476,7 +85476,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rimuovi dalla libreria..."
+            "value" : "Rimuovi dalla libreria…"
           }
         },
         "pt-BR" : {
@@ -85627,7 +85627,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rimuovi..."
+            "value" : "Rimuovi…"
           }
         },
         "pt-BR" : {
@@ -85864,7 +85864,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rinomina cartella..."
+            "value" : "Rinomina cartella…"
           }
         },
         "pt-BR" : {
@@ -85893,7 +85893,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rinominazione della cartella..."
+            "value" : "Rinominazione della cartella…"
           }
         },
         "pt-BR" : {
@@ -128316,7 +128316,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "In attesa del completamento dello spostamento della cartella dei dati..."
+            "value" : "In attesa del completamento dello spostamento della cartella dei dati…"
           }
         },
         "pt-BR" : {
