@@ -41557,7 +41557,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salva le tue iscrizioni come file OPML, che altri lettori di feed importano."
+            "value" : "Salva le tue iscrizioni come file OPML, che un altro lettore di feed può importare."
           }
         }
       }
