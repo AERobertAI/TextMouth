@@ -119,6 +119,89 @@ class StringsFormTests(PackCase):
         self.assertEqual(compact_packs.apple_parse(path.read_bytes()), {"k": "a\x1bz", "j": "b"})
 
 
+class StringsSmallerFormTests(PackCase):
+    """A `.strings` is written in whichever of its two forms, text or binary, is smaller (TL18)."""
+
+    # About 40 words of Japanese, so that a table of a few hundred of them is mostly CJK.
+    JAPANESE = "ブックマークを追加して、あとで続きから読み上げを再開できます。"
+
+    def table(self, value, count=300):
+        """`count` entries with English keys, ASCII for the key and `value` for the text."""
+        return {f"Key number {number} of the table": value for number in range(count)}
+
+    def test_japanese_becomes_binary_because_utf16_is_smaller(self):
+        """Three bytes a character in UTF-8, two in a binary list: a mostly Japanese table is binary."""
+        resources = self.folder()
+        path = self.write_xml(resources, "ja", "strings", self.table(self.JAPANESE))
+        self.assertTrue(compact_packs.compact_file(path))
+        self.assertTrue(path.read_bytes().startswith(b"bplist00"))
+        text_size = len(compact_packs.render_strings(plistlib.loads(path.read_bytes())))
+        self.assertLess(path.stat().st_size, text_size)
+
+    def test_spanish_stays_text_because_utf8_is_smaller(self):
+        """Accents cost two bytes in UTF-8 and the same in UTF-16, and the list adds its own overhead."""
+        resources = self.folder()
+        path = self.write_xml(resources, "es", "strings", {f"Key {n}": f"Texto número {n} con acentos: áéíóú" for n in range(300)})
+        compact_packs.compact_file(path)
+        self.assertEqual(path.read_bytes()[:1], b'"')
+
+    def test_a_tie_goes_to_the_text_form(self):
+        """When both forms have the same size the text form is written, since it is the one a person can read."""
+        table = {"a": "b"}
+        text = compact_packs.render_strings(table)
+        with mock.patch.object(compact_packs, "render_strings_binary", return_value=b"x" * len(text)):
+            self.assertEqual(compact_packs.render_smaller_strings(table), text)
+
+    def test_the_binary_form_is_deterministic_and_sorted(self):
+        """The same table in any order gives the same bytes (make check is a reproducibility gate)."""
+        one = {"b": "ブ", "a": "ク", "c": "マ"}
+        two = {"c": "マ", "a": "ク", "b": "ブ"}
+        self.assertEqual(compact_packs.render_strings_binary(one), compact_packs.render_strings_binary(two))
+
+    def test_the_binary_form_reads_back_through_apples_parser(self):
+        """The self-check for a binary `.strings`: Apple's parser reads every character back, controls and astral ones too."""
+        table = {"quote \" and \\": "「引用」\n改行\t\u0001 and 😀", "empty": ""}
+        self.assertEqual(compact_packs.apple_parse(compact_packs.render_strings_binary(table)), table)
+
+    def test_a_changed_lookup_in_the_binary_form_leaves_the_file_and_names_the_key(self):
+        """The self-check holds for the binary form: a parser that disagrees fails the build with the file untouched."""
+        resources = self.folder()
+        table = self.table(self.JAPANESE)
+        path = self.write_xml(resources, "ja", "strings", table)
+        before = path.read_bytes()
+        wrong = {**table, "Key number 7 of the table": "別の"}
+        real_parse = compact_packs.apple_parse
+        # The original is read by plistlib (an XML list), so only the read-back of the new bytes reaches here.
+        with mock.patch.object(compact_packs, "apple_parse", side_effect=lambda data: wrong if data.startswith(b"bplist") else real_parse(data)):
+            with self.assertRaises(compact_packs.CompactError) as raised:
+                compact_packs.compact_file(path)
+        self.assertIn("Key number 7 of the table", str(raised.exception))
+        self.assertEqual(path.read_bytes(), before)
+
+    def test_running_twice_changes_nothing_for_either_form(self):
+        """A binary `.strings` already chosen is not rewritten (nor a text one)."""
+        resources = self.folder()
+        self.write_xml(resources, "ja", "strings", self.table(self.JAPANESE))
+        self.write_xml(resources, "es", "strings", {"a": "ácido"})
+        self.assertEqual(compact_packs.compact_folder(resources), (2, []))
+        self.assertEqual(compact_packs.compact_folder(resources), (0, []))
+
+    def test_a_binary_strings_with_a_smaller_text_form_is_rewritten_as_text(self):
+        """A file left in the larger form is rewritten into the smaller, so the choice does not depend on history."""
+        resources = self.folder()
+        lproj = resources / "es.lproj"
+        lproj.mkdir()
+        path = lproj / "Localizable.strings"
+        path.write_bytes(plistlib.dumps({"a": "b"}, fmt=plistlib.FMT_BINARY))
+        self.assertTrue(compact_packs.compact_file(path))
+        self.assertEqual(path.read_bytes(), b'"a"="b";')
+
+    def test_a_non_string_entry_is_refused_in_either_form(self):
+        """The binary form would hold a number, so the table is checked before either is rendered."""
+        with self.assertRaises(compact_packs.CompactError):
+            compact_packs.render_strings_binary({"a": 1})
+
+
 class StringsdictFormTests(PackCase):
     """The `.stringsdict`: a binary property list holding the same plural rules."""
 
@@ -346,7 +429,7 @@ class VerifyTests(PackCase):
         self.write_xml(resources, "es", "strings", {"a": "b"})
         status, _, err = self.run_main("--verify", resources)
         self.assertEqual(status, 1)
-        self.assertIn("es.lproj/Localizable.strings is xml, not text", err)
+        self.assertIn("es.lproj/Localizable.strings is xml, not text or binary", err)
 
     def test_a_stringsdict_left_in_xml_fails(self):
         """The same for a plural table."""
@@ -356,15 +439,15 @@ class VerifyTests(PackCase):
         self.assertEqual(status, 1)
         self.assertIn("es.lproj/Localizable.stringsdict is xml, not binary", err)
 
-    def test_a_binary_strings_file_fails(self):
-        """A `.strings` as a binary list is bigger for accents, so it is not accepted either."""
+    def test_a_binary_strings_file_passes(self):
+        """A `.strings` as a binary list is a compact form (TL18): accepted, and its form is reported."""
         resources = self.folder()
-        lproj = resources / "es.lproj"
+        lproj = resources / "ja.lproj"
         lproj.mkdir()
-        (lproj / "Localizable.strings").write_bytes(plistlib.dumps({"a": "é"}, fmt=plistlib.FMT_BINARY))
-        status, _, err = self.run_main("--verify", resources)
-        self.assertEqual(status, 1)
-        self.assertIn("is binary, not text", err)
+        (lproj / "Localizable.strings").write_bytes(plistlib.dumps({"a": "日本語"}, fmt=plistlib.FMT_BINARY))
+        status, out, err = self.run_main("--verify", resources)
+        self.assertEqual((status, err), (0, ""))
+        self.assertIn("binary ja.lproj/Localizable.strings", out)
 
     def test_no_language_files_fails(self):
         """A folder with none cannot be told from a build that lost them."""

@@ -228,9 +228,10 @@ final class LanguagePackTests: XCTestCase {
         return try handle.read(upToCount: 8) ?? Data()
     }
 
-    /// Every `.strings` the app carries is UTF-8 text (not an XML or binary property list) and every `.stringsdict` is a
-    /// binary property list: the compact forms the build phase writes. A phase that stopped running shows here.
-    func testTheAppsStringsAreTextAndItsStringsdictsAreBinary() throws {
+    /// Every `.strings` the app carries is UTF-8 text or a binary property list (whichever is smaller for its language,
+    /// TL18; never XML) and every `.stringsdict` is a binary property list: the compact forms the build phase writes.
+    /// A phase that stopped running shows here.
+    func testTheAppsStringsAreCompactAndItsStringsdictsAreBinary() throws {
         let (_, languages) = try load()
         var checked = 0
         for language in languages {
@@ -242,9 +243,11 @@ final class LanguagePackTests: XCTestCase {
                     XCTAssertEqual(bytes, Data("bplist00".utf8), "\(language).lproj/\(name) is not a binary property list")
                     checked += 1
                 } else if name.hasSuffix(".strings") {
-                    let isPropertyList = bytes.starts(with: Data("bplist".utf8)) || bytes.starts(with: Data("<?xml".utf8))
-                    XCTAssertFalse(isPropertyList, "\(language).lproj/\(name) is a property list, not the text form")
-                    XCTAssertEqual(bytes.first, UInt8(ascii: "\""), "\(language).lproj/\(name) does not start with a key")
+                    // The text form starts with a quoted key; the binary form with its magic; XML with its prolog.
+                    let isBinary = bytes == Data("bplist00".utf8)
+                    let isXML = bytes.starts(with: Data("<?xml".utf8)) || bytes.starts(with: Data("<plist".utf8))
+                    XCTAssertFalse(isXML, "\(language).lproj/\(name) is an XML property list, not a compact form")
+                    XCTAssertTrue(isBinary || bytes.first == UInt8(ascii: "\""), "\(language).lproj/\(name) is neither text starting with a key nor a binary list")
                     checked += 1
                 }
             }
@@ -252,8 +255,9 @@ final class LanguagePackTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(checked, 3, "English's plurals and Spanish's strings and plurals: \(languages)")
     }
 
-    /// Every simple string of every language the app carries reads back the catalog's text, and a string the catalog
-    /// has no compiled text for is absent from that language's table.
+    /// Every simple string of every language the app carries reads back the catalog's text (a string whose text is its
+    /// key may be absent from the table, which reads as the key), and a string the catalog has no compiled text for is
+    /// absent from that language's table.
     func testEverySimpleLookupEqualsTheCatalog() throws {
         let (catalog, languages) = try load()
         var verified = 0
@@ -263,8 +267,9 @@ final class LanguagePackTests: XCTestCase {
             for (key, byLanguage) in catalog.texts.sorted(by: { $0.key < $1.key }) {
                 guard case .simple(let want)? = byLanguage[language] else { continue }
                 verified += 1
-                let got = LanguagePackLookups.simpleText(bundle, key: key)
-                if got != want { wrong.append("\(language) \(key.debugDescription): \(String(describing: got)), not \(want.debugDescription)") }
+                // The app shows the key when no table holds it, so an entry equal to its key may be left out (TL18).
+                let got = LanguagePackLookups.effectiveText(bundle, key: key)
+                if got != want { wrong.append("\(language) \(key.debugDescription): \(got.debugDescription), not \(want.debugDescription)") }
             }
         }
         XCTAssertGreaterThan(verified, 3000, "Too few simple strings were checked; the languages: \(languages)")

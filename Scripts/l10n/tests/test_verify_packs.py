@@ -55,8 +55,9 @@ class VerifyPacksCase(unittest.TestCase):
         cls.languages = verify_packs.catalog_languages(cls.catalog)
         for pack in (cls.xcode, cls.compact):
             verify_packs.write_app_info(pack, cls.languages)
-        # The probe is built into a folder of the test's own, so a run never touches build/.
-        cls.probe = verify_packs.build_probe(root / "probe-build")
+        # One compiled probe serves every class (it is rebuilt only when a source is newer); it copies itself
+        # into each folder it reads, so no two tests share a copy.
+        cls.probe = verify_packs.build_probe()
 
     def run_probe(self, compact):
         """Run the probe on the compiled folder and `compact`; returns (exit status, its output)."""
@@ -131,13 +132,27 @@ class SqueezeCatalogTests(VerifyPacksCase):
     def test_the_catalog_holds_the_four_languages(self):
         self.assertEqual(self.languages, ["en", "fr", "ja", "ru"])
 
+    def test_a_binary_strings_file_reads_back_identically_through_the_bundle(self):
+        """Item 1: the same Japanese, French, and Russian tables as binary property lists give every lookup unchanged."""
+        pack = self.changed_copy()
+        for language in ("fr", "ja", "ru"):
+            path = pack / f"{language}.lproj" / "Localizable.strings"
+            table = compact_packs.apple_parse(path.read_bytes())
+            path.write_bytes(compact_packs.render_strings_binary(table))
+            self.assertTrue(path.read_bytes().startswith(b"bplist00"))
+        status, output = self.run_probe(pack)
+        self.assertEqual(status, 0, output)
+        self.assertIn("0 different", output)
+
     def test_a_changed_japanese_string_is_reported(self):
         """The probe reads Japanese through its own language, so a changed kana string is named."""
         pack = self.changed_copy()
         path = pack / "ja.lproj" / "Localizable.strings"
-        text = path.read_bytes().decode("utf-8")
-        self.assertIn('"Bookmarks"="ブックマーク";', text)
-        path.write_bytes(text.replace("ブックマーク", "しおり").encode("utf-8"))
+        # The file may be either compact form, so it is read and written back through the tool's own helpers.
+        table = compact_packs.apple_parse(path.read_bytes())
+        self.assertEqual(table["Bookmarks"], "ブックマーク")
+        table["Bookmarks"] = "しおり"
+        path.write_bytes(compact_packs.render_strings(table))
         status, output = self.run_probe(pack)
         self.assertEqual(status, 1)
         self.assertIn('DIFFERENT: ja "Bookmarks"', output)

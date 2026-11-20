@@ -7,13 +7,15 @@ per language, and writes both as XML property lists: every entry costs about
 80 bytes of markup beyond its text. The catalog stays the wordy, editable
 source; what ships is rewritten here, in the build, before the app is signed:
 
-  * each `.strings` becomes Apple's text form, UTF-8, `"key"="value";` with no
-    whitespace, entries in code-point order of their keys so that the same
-    catalog gives the same bytes in every build (`make check` is a
-    reproducibility gate);
+  * each `.strings` becomes whichever of two forms is smaller (TL18): Apple's
+    text form, UTF-8, `"key"="value";` with no whitespace, or a binary property
+    list, which stores a non-ASCII string in two bytes a character where UTF-8
+    needs three for Chinese, Japanese, and Korean, and is larger for any
+    language that is mostly ASCII or Latin. Entries are in code-point order of
+    their keys so that the same catalog gives the same bytes in every build
+    (`make check` is a reproducibility gate), and a tie goes to the text form;
   * each `.stringsdict` becomes a binary property list (the text form would be
-    larger for plurals, and a binary `.strings` larger for any language with
-    accents, since a binary list stores such a string as UTF-16).
+    larger for plurals).
 
 Nothing may change what a lookup returns, so every file is read back with
 Apple's own parser (`plutil`) after it is rendered, and the dictionary that
@@ -52,6 +54,10 @@ PLUTIL = "/usr/bin/plutil"
 # The two kinds of language file Xcode compiles a catalog into.
 STRINGS_SUFFIX = ".strings"
 STRINGSDICT_SUFFIX = ".stringsdict"
+
+# The forms each kind of language file may be written in once compact (TL18).
+STRINGS_FORMS = ("text", "binary")
+STRINGSDICT_FORMS = ("binary",)
 
 # How a binary property list begins, and an XML one (possibly after a BOM).
 BINARY_MAGIC = b"bplist00"
@@ -102,6 +108,33 @@ def render_strings(table: dict[str, str]) -> bytes:
         return "".join(parts).encode("utf-8")
     except UnicodeEncodeError as error:
         raise CompactError(f"text that UTF-8 cannot hold: {error}") from error
+
+
+def render_strings_binary(table: dict[str, str]) -> bytes:
+    """A binary property list of a string table, keys sorted: the other form a `.strings` may take (TL18).
+
+    plistlib writes a string of ASCII as one byte a character and any other as UTF-16 (two bytes for each
+    character of Chinese, Japanese, and Korean), and keeps one copy of a string that appears twice.
+    Raises CompactError for an entry that is not a string pair, as `render_strings` does.
+    """
+    for key, value in table.items():
+        if not isinstance(key, str) or not isinstance(value, str):
+            raise CompactError(f"entry {key!r} is not a string pair, so it is not a plain .strings table")
+    try:
+        return plistlib.dumps(table, fmt=plistlib.FMT_BINARY, sort_keys=True)
+    except UnicodeEncodeError as error:
+        raise CompactError(f"text that UTF-16 cannot hold: {error}") from error
+
+
+def render_smaller_strings(table: dict[str, str]) -> bytes:
+    """The smaller of a string table's two forms, text or binary; the text form when they are the same size.
+
+    A form that cannot be written (a lone surrogate defeats both, a non-string entry too) raises CompactError
+    from `render_strings`, which is tried first, so the error is the text form's.
+    """
+    text = render_strings(table)
+    binary = render_strings_binary(table)
+    return binary if len(binary) < len(text) else text
 
 
 def render_stringsdict(table: dict[str, Any]) -> bytes:
@@ -185,7 +218,7 @@ def compact_file(path: Path) -> bool:
             raise CompactError("it is not a dictionary")
         if not original:
             return False  # An empty table has no text form Apple's parser reads, and nothing to save.
-        render = render_strings if path.suffix == STRINGS_SUFFIX else render_stringsdict
+        render = render_smaller_strings if path.suffix == STRINGS_SUFFIX else render_stringsdict
         compact = render(original)
         if compact == original_bytes:
             return False  # Already compact: left alone, not even touched.
@@ -239,8 +272,10 @@ def file_form(path: Path) -> str:
 def verify_folder(resources: Path) -> tuple[list[str], list[str]]:
     """The report lines for `resources` (one per file: size, form, name) and the problems found.
 
-    A `.strings` that is not the text form, or a `.stringsdict` that is not
-    binary, is a problem: the build phase did not run, or did not finish.
+    A `.strings` that is XML, or a `.stringsdict` that is not binary, is a
+    problem: the build phase did not run, or did not finish. A `.strings` in
+    either compact form, text or binary, is accepted: the build phase writes
+    whichever is smaller for the language (TL18).
     """
     lines: list[str] = []
     problems: list[str] = []
@@ -248,9 +283,9 @@ def verify_folder(resources: Path) -> tuple[list[str], list[str]]:
         form = file_form(path)
         name = f"{path.parent.name}/{path.name}"
         lines.append(f"{path.stat().st_size:>9,} bytes  {form:<6} {name}")
-        wanted = "text" if path.suffix == STRINGS_SUFFIX else "binary"
-        if form != wanted:
-            problems.append(f"{name} is {form}, not {wanted}")
+        accepted = STRINGS_FORMS if path.suffix == STRINGS_SUFFIX else STRINGSDICT_FORMS
+        if form not in accepted:
+            problems.append(f"{name} is {form}, not {' or '.join(accepted)}")
     return lines, problems
 
 
