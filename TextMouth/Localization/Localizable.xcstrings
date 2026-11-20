@@ -31939,7 +31939,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verifica del modello vocale…"
+            "value" : "Controllo del modello vocale…"
           }
         },
         "pt-BR" : {
@@ -41507,7 +41507,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scaricamento annullato, quindi la riproduzione si è interrotta."
+            "value" : "Download annullato, quindi la riproduzione si è interrotta."
           }
         }
       }
@@ -42572,19 +42572,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Scaricamento del modello %@: %lld per cento."
+                  "value" : "Download del modello %@: %lld per cento."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Scaricamento del modello %@: %lld per cento."
+                  "value" : "Download del modello %@: %lld per cento."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Scaricamento del modello %@: %lld per cento."
+                  "value" : "Download del modello %@: %lld per cento."
                 }
               }
             }
@@ -42634,7 +42634,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scaricamento del modello %@…"
+            "value" : "Download del modello %@…"
           }
         },
         "pt-BR" : {
@@ -42657,7 +42657,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scaricamento dell’articolo successivo: %@"
+            "value" : "Download dell’articolo successivo: %@"
           }
         }
       }
@@ -42674,7 +42674,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scaricamento dell’episodio successivo: %@"
+            "value" : "Download dell’episodio successivo: %@"
           }
         }
       }
@@ -42778,7 +42778,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scaricamento di “%@”"
+            "value" : "Download di “%@” in corso"
           }
         }
       }
@@ -48740,7 +48740,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impostazioni del feed %@"
+            "value" : "Impostazioni del feed per %@"
           }
         },
         "pt-BR" : {
@@ -49807,7 +49807,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impostazioni cartella"
+            "value" : "Impostazioni della cartella"
           }
         },
         "pt-BR" : {
@@ -49923,7 +49923,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impostazioni di cartella o feed"
+            "value" : "Impostazioni della cartella o del feed"
           }
         },
         "pt-BR" : {
@@ -49981,7 +49981,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impostazioni cartella per %@"
+            "value" : "Impostazioni della cartella per %@"
           }
         },
         "pt-BR" : {
@@ -59283,7 +59283,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tieni questi libri su questo Mac"
+            "value" : "Mantieni questi libri su questo Mac"
           }
         }
       }
@@ -59404,7 +59404,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mantiene l’ordine impostato con Sposta libro su, Sposta libro giù o trascinando."
+            "value" : "Mantiene l’ordine impostato con Sposta libro in alto, Sposta libro in basso o trascinando."
           }
         }
       }
@@ -97748,7 +97748,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Interrompe lo scaricamento. Non viene installato nulla."
+            "value" : "Interrompe il download. Non viene installato nulla."
           }
         },
         "pt-BR" : {
@@ -105953,7 +105953,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lo scaricamento del modello %@ è stato annullato."
+            "value" : "Il download del modello %@ è stato annullato."
           }
         },
         "pt-BR" : {
@@ -125408,7 +125408,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scrivi il titolo o l’editore di un podcast, poi premi Invio per cercare nella directory di Apple."
+            "value" : "Digita il titolo o l’editore di un podcast, poi premi Invio per cercare nella directory di Apple."
           }
         },
         "pt-BR" : {
@@ -125495,7 +125495,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scrivi o incolla l’indirizzo di un feed o di una pagina web, poi premi Invio."
+            "value" : "Digita o incolla l’indirizzo di un feed o di una pagina web, poi premi Invio."
           }
         },
         "pt-BR" : {
