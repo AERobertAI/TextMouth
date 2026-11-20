@@ -238,6 +238,12 @@
     "%@ Ascending" : {
       "comment" : "The sort in a Library window's title: a sort field and its direction, ascending. %@ is the sort field's name, such as Title or Date Added.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ aufsteigend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255,6 +261,12 @@
     "%@ Copy" : {
       "comment" : "Name Duplicate gives a copy of a Library view. %@ is the name of the view that was copied, such as \"Unopened\"; the copy is \"Unopened Copy\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ Kopie"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272,6 +284,12 @@
     "%@ Copy %@" : {
       "comment" : "Name Duplicate gives a second or later copy of a Library view, the first copy's name being taken. %1$@ is the name of the view that was copied. %2$@ is the copy's number, 2 or more, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ Kopie %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -295,6 +313,12 @@
     "%@ Descending" : {
       "comment" : "The sort in a Library window's title: a sort field and its direction, descending. %@ is the sort field's name, such as Title or Date Added.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ absteigend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346,6 +370,24 @@
     "%@ also holds %lld books a newer TextMouth added, which are kept." : {
       "comment" : "Last sentence of the dialog that asks how to delete a folder, when the folder holds books that a newer TextMouth added. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ enthält außerdem %2$lld Buch, das ein neueres TextMouth hinzugefügt hat; es bleibt erhalten."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ enthält außerdem %2$lld Bücher, die ein neueres TextMouth hinzugefügt hat; sie bleiben erhalten."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -417,6 +459,12 @@
     "%@ and any subfolders will be removed from the library." : {
       "comment" : "First sentence of the second confirmation that deletes an empty folder. %@ is the folder's name in quotation marks.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ und alle Unterordner werden aus der Bibliothek entfernt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -508,6 +556,12 @@
     "%@ by %@" : {
       "comment" : "A book named in a row of Compare Libraries. %1$@ is its title and %2$@ its author.\nThe shared title and author of a group of duplicate books that match by both, in the group's heading. %1$@ is the title and %2$@ is the author.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ von %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -554,6 +608,12 @@
     "%@ can't be read as %@: it holds bytes that are not valid in that encoding." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Why a file chosen to be read in the encoding named encoding was not read: some of its bytes are not valid in it. subject names the file or the book, as the sentence begins: \"“Ledger” can't be read as Shift JIS (Japanese): it holds bytes that are not valid in that encoding.\" The decoder's error (TextEncodingError.invalidForChosenEncoding) and Book Information's refusal both say it from here. Placeholders in order: subject, encoding.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ kann nicht als %2$@ gelesen werden: Die Datei enthält Bytes, die in dieser Codierung nicht gültig sind."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -577,6 +637,12 @@
     "%@ can't move down." : {
       "comment" : "VoiceOver announcement when a book is at the bottom of a manual order and cannot move down. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ lässt sich nicht weiter nach unten bewegen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -594,6 +660,12 @@
     "%@ can't move up." : {
       "comment" : "VoiceOver announcement when a book is at the top of a manual order and cannot move up. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ lässt sich nicht weiter nach oben bewegen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -634,6 +706,24 @@
     "%@ contains %lld books and may have subfolders." : {
       "comment" : "First sentence of the dialog that asks how to delete a folder. %1$@ is the folder's name in quotation marks and %2$lld is how many books the folder and its subfolders hold, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ enthält %2$lld Buch und kann Unterordner haben."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ enthält %2$lld Bücher und kann Unterordner haben."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -722,6 +812,12 @@
     "%@ couldn't be read: %@" : {
       "comment" : "Why a file could not be read, in Use This Library's account. %1$@ names the file and %2$@ is the reason in English, as the file's reader worded it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ konnte nicht gelesen werden: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1136,6 +1232,24 @@
     "%@ hadn't arrived from the cloud after %lld seconds" : {
       "comment" : "Why a file could not be read, in Use This Library's account. %1$@ names the file and %2$lld is how many seconds TextMouth waited, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ war nach %2$lld Sekunde nicht aus der Cloud eingetroffen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ war nach %2$lld Sekunden nicht aus der Cloud eingetroffen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -1207,6 +1321,12 @@
     "%@ has %@." : {
       "comment" : "Second sentence of a position difference found by Compare Libraries. %1$@ is a copy of the library, capitalized, and %2$@ is the place it has saved, such as \"chapter 3, 41%\".\nSentence of Use This Library's account when neither copy is newer. %1$@ is a copy of the library, capitalized, and %2$@ lists what only it has, such as \"newer places in 3 books and 2 books the other lacks\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ hat %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1230,6 +1350,12 @@
     "%@ has %@; %@ has %@." : {
       "comment" : "Second sentence of a difference found by Compare Libraries. %1$@ is this copy of the library, capitalized, %2$@ is what it holds, %3$@ is the other copy, and %4$@ is what it holds.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ hat %2$@; %3$@ hat %4$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1276,6 +1402,12 @@
     "%@ has no place saved." : {
       "comment" : "Second sentence of a position difference found by Compare Libraries. %@ is a copy of the library, capitalized, that has no place saved for the book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ hat keine gesicherte Leseposition."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1293,6 +1425,12 @@
     "%@ has no transcript text to search now, because %@" : {
       "comment" : "Said instead of opening Search in Book when the book's audio changed after its transcript was made. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ hat jetzt keinen Transkripttext zum Durchsuchen, weil %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1316,6 +1454,12 @@
     "%@ has no transcript text to search now, because its edited text can't be used: %@" : {
       "comment" : "Said instead of opening Search in Book when the book's edited transcript text was held back. %1$@ is the book's title and %2$@ is the reason, a whole sentence that ends with its own full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ hat jetzt keinen Transkripttext zum Durchsuchen, weil der bearbeitete Text nicht verwendet werden kann: %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1339,6 +1483,12 @@
     "%@ has no transcript text to search now." : {
       "comment" : "Said instead of opening Search in Book when a book's transcript text cannot be searched and no reason is known. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ hat jetzt keinen Transkripttext zum Durchsuchen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1373,6 +1523,12 @@
     "%@ has no transcript to search." : {
       "comment" : "Said instead of opening Search in Book for an audiobook that has no transcript, where TextMouth cannot make one. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ hat kein Transkript zum Durchsuchen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1390,6 +1546,12 @@
     "%@ has no transcript to search. Transcribe it first, with Transcribe Audio." : {
       "comment" : "Said instead of opening Search in Book for an audiobook that has no transcript yet. %@ is the book's title. Transcribe Audio is the name of a command in the Book menu.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ hat kein Transkript zum Durchsuchen. Transkribiere es zuerst mit „Audio transkribieren“."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1792,6 +1954,12 @@
     "%@ is an item of a feed, and a feed's items can't be moved." : {
       "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used on an episode or article of a feed in a folder. %@ is its title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ist ein Element eines Feeds, und die Elemente eines Feeds lassen sich nicht bewegen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1860,6 +2028,12 @@
     "%@ is filed %@ in %@ and %@ in %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is a book's title, %2$@ says where this copy files it (at the top of the library, or in a folder), %3$@ is this copy, %4$@ says where the other copy files it, %5$@ is the other copy.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ist abgelegt: %3$@ %2$@, %5$@ %4$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -1963,6 +2137,12 @@
     "%@ is no longer in the library." : {
       "comment" : "Announcement when the book of a search match has left the library since the search. %@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ist nicht mehr in der Bibliothek."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1980,6 +2160,12 @@
     "%@ is not a valid library folder location." : {
       "comment" : "Error shown when a folder edit is refused because its location is not a safe library path. %@ is the location, in straight double quotes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ist kein gültiger Ort für einen Bibliotheksordner."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2048,6 +2234,12 @@
     "%@ is set to be read as “%@”, a text encoding this version of TextMouth can't read." : {
       "comment" : "First sentence of why a book set to an unknown text encoding cannot be read. %1$@ names the book, as in “Ledger”, and %2$@ is the encoding's stored identifier.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ soll als „%2$@“ gelesen werden, eine Textcodierung, die diese Version von TextMouth nicht lesen kann."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -2071,6 +2263,12 @@
     "%@ is that folder or one of its subfolders." : {
       "comment" : "Second sentence of the error shown when a folder is moved into itself. %@ is the chosen destination's location, in straight double quotes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ist dieser Ordner oder einer seiner Unterordner."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2088,6 +2286,12 @@
     "%@ is the newer. It has %@." : {
       "comment" : "Sentence of Use This Library's account of which copy is newer. %1$@ is a copy of the library, capitalized, and %2$@ lists what only it has, such as \"newer places in 3 books and 2 books the other lacks\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ist die neuere. Sie hat %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -2230,6 +2434,12 @@
     "%@ left" : {
       "comment" : "A book's time left to read, as its row shows it. %@ is a time, such as 16:00.\nTime left in the book as the reader's status row shows it. %@ is a clock time such as 3:44:01.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ übrig"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2622,6 +2832,12 @@
     "%@ percent" : {
       "comment" : "A book's reading progress as VoiceOver says it. %@ is a whole number, such as 42.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ Prozent"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2656,6 +2872,12 @@
     "%@ read" : {
       "comment" : "A book's reading progress as VoiceOver says it when the row also says a download's percentage. %@ is the progress, such as 42 percent.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ gelesen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2724,6 +2946,12 @@
     "%@ remaining in total" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The time left in all of a folder's books, or nil when none is known. Example: \"14 hours, 3 minutes remaining in total\". Placeholders in order: TimeFormatting.spoken(remaining).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ insgesamt noch übrig"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2996,6 +3224,12 @@
     "%@ total remaining at current speed" : {
       "comment" : "Part of the time bar's spoken label: the time left for the listed books at the reading speed now set. %@ is a spoken time, such as 3 hours 20 minutes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ insgesamt übrig bei aktueller Geschwindigkeit"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3217,6 +3451,12 @@
     "%@ wasn't asked for again, because the drive hasn't answered an earlier read" : {
       "comment" : "Why a file could not be read, in Use This Library's account. %@ names the file.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wurde nicht erneut angefordert, weil das Laufwerk auf ein früheres Lesen nicht geantwortet hat"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3251,6 +3491,24 @@
     "%@ wasn't read within %lld seconds" : {
       "comment" : "Why a file could not be read, in Use This Library's account. %1$@ names the file and %2$lld is how many seconds TextMouth waited, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ wurde nicht innerhalb von %2$lld Sekunde gelesen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ wurde nicht innerhalb von %2$lld Sekunden gelesen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -3345,6 +3603,12 @@
     "%@ will be removed from the library." : {
       "comment" : "First sentence of a removal confirmation. %@ is what is removed, such as \"“Notes”\" or \"3 books\". A sentence about the files follows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wird aus der Bibliothek entfernt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3442,6 +3706,12 @@
     "%@, %@" : {
       "comment" : "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).\nA heading's description followed by a detail such as its duration. %1$@ is the description, such as \"Chapter One - level 1\"; %2$@ is the detail, such as \"4 minutes\".\nA language's menu item in the transcription language pop-up, with its speech model's status. %1$@ is the language's name, such as \"English (United States)\"; %2$@ is the status: installed, needs download, or not supported.\nJoins a name and a note about it with a comma, such as an encoding or braille code and \"guessed\". %1$@ is the name and %2$@ the note.\nJoins two parts of a label with a comma. %1$@ is the text so far and %2$@ the next part. English puts a comma and a space between them.\nText of the Library window's View pop-up and Go to View. What a window says on going to the view name by Go to View's key or menu item: the name, then counts, what the view lists there (CountWording.listItems(of:feeds:)), as \"All Items, 743 books, 2 feeds\". Placeholders in order: name, counts.\nThe microphone level spoken in the Record window. %1$@ is the level in decibels in words, such as \"minus 12 decibels\", and %2$@ is a word for how loud that is, such as \"good\".\nThe right side of a row in the Library views settings: whether the view is built in or custom, then when it shows. %1$@ is built in or custom and %2$@ is its visibility, such as \"always\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3488,6 +3758,12 @@
     "%@, %@, %@, %lld of %lld" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A view's row as VoiceOver reads it and a braille display shows it, in one element: \"Reading List, built in, always, 5 of 6\". %1$@ is the view's name, %2$@ is the word built in or custom, %3$@ is its visibility in lower case (always, when applicable, hidden), %4$lld is its place in the list and %5$lld the number of views.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@, %3$@, %4$lld von %5$lld"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3534,6 +3810,12 @@
     "%@, %@, in %@" : {
       "comment" : "VoiceOver label of a search match: the match in its text, where it is in the book, then the book. %1$@ is the match in its surrounding text, %2$@ is its place, such as a chapter's title, and %3$@ is the book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@, aus %3$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3557,6 +3839,12 @@
     "%@, %lld of %lld" : {
       "comment" : "A question's title, a comma, then its place among the questions waiting. %1$@ is the title, %2$lld the question's place and %3$lld the number of questions, such as \"Duplicate Book Found, 2 of 3\".\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a move: the view and its new place, \"Reading List, 4 of 6\", short enough to hear after each of many moves. Placeholders in order: name, number, count.\nVoiceOver announcement after a book moved one place in an order the user arranges. %1$@ is the book's title. %2$lld is its new place, counted from 1. %3$lld is how many books the order holds.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$lld von %3$lld"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3580,6 +3868,24 @@
     "%@, %lld unopened" : {
       "comment" : "Speak Info and Folder Settings: how many books a folder holds and how many of them were never opened. %1$@ is the count of books, such as \"12 books\", and %2$lld is how many are unopened, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@, %2$lld ungeöffnet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@, %2$lld ungeöffnet"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -3651,6 +3957,24 @@
     "%@, and %lld in all" : {
       "comment" : "Note on a finished search's status: the list also stops after this many matches in all. %1$@ is the note \"showing up to 20 in each book\", and %2$lld is the number of matches shown in all.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@, und insgesamt höchstens %2$lld"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@, und insgesamt höchstens %2$lld"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -3722,6 +4046,24 @@
     "%@, and %lld more" : {
       "comment" : "The first three titles of the feed items that were left where they are, then how many others there were. %1$@ is the three titles, in quotes, separated by commas. %2$lld is how many more.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ und %2$lld weiteres"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ und %2$lld weitere"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -3793,6 +4135,24 @@
     "%@, any subfolders, and the %lld books inside will be removed from the library." : {
       "comment" : "First sentence of the second confirmation that deletes a folder holding several books. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@, alle Unterordner und %2$lld Buch darin werden aus der Bibliothek entfernt."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@, alle Unterordner und die %2$lld Bücher darin werden aus der Bibliothek entfernt."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -3864,6 +4224,12 @@
     "%@, any subfolders, and the book inside will be removed from the library." : {
       "comment" : "First sentence of the second confirmation that deletes a folder holding one book. %@ is the folder's name in quotation marks.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, alle Unterordner und das Buch darin werden aus der Bibliothek entfernt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3881,6 +4247,12 @@
     "%@, ascending" : {
       "comment" : "A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, aufsteigend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3898,6 +4270,12 @@
     "%@, at %@" : {
       "comment" : "VoiceOver label and rotor entry of a search result in a transcribed audiobook. %1$@ is the match with its context and place, and %2$@ is the time it is heard, spoken.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, bei %2$@"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3921,6 +4299,12 @@
     "%@, at %@ into book" : {
       "comment" : "VoiceOver label of a search result placed by an estimated time. %1$@ is the match with its context and place, and %2$@ is the time into the book, spoken.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, bei %2$@ im Buch"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -3944,6 +4328,12 @@
     "%@, at %@ percent of book" : {
       "comment" : "VoiceOver label of a search result placed by percentage. %1$@ is the match with its context and place, and %2$@ is the percentage through the book with one decimal digit, such as 12.5.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, bei %2$@ Prozent des Buchs"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -4030,6 +4420,12 @@
     "%@, descending" : {
       "comment" : "A sort, spoken: a sort field and its direction. %@ is the sort field's name, such as Title or Date Added. Used inside announcements and labels about the sort.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, absteigend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4087,6 +4483,12 @@
     "%@, hidden" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .hidden. Placeholders in order: name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, ausgeblendet"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4127,6 +4529,12 @@
     "%@, nothing matches this view now." : {
       "comment" : "VoiceOver announcement on going, by Go to View, to a filter view that lists nothing now. %@ is the view's name. It says the words of the empty row such a view shows (\"Nothing matches this view now.\"), in lower case after the name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: Zurzeit passt nichts zu dieser Ansicht."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4167,6 +4575,12 @@
     "%@, shown always" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .always. Placeholders in order: name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, immer angezeigt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4184,6 +4598,12 @@
     "%@, shown when applicable" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says after a row's action or the context menu gives the view name a visibility (finding 12): \"Feeds, hidden\", \"Feeds, shown always\", \"Feeds, shown when applicable\". The pop-up says its own new value. This is the case .whenApplicable. Placeholders in order: name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, angezeigt, wenn zutreffend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4321,6 +4741,12 @@
     "%@." : {
       "comment" : "A spoken clause of an announcement ended with a full stop. %@ is the clause. English adds a full stop; change only the mark.\nEnds a line about waiting downloads as a sentence of its own. %@ is the line, such as \"2 waiting for room on this Mac\".\nEnds a line of a progress display with its full stop, so VoiceOver reads the lines as sentences. %@ is the line.\nEnds a sentence with its full stop. %@ is the sentence without it. Chinese and Japanese use their own full stop here.\nEnds a title with a full stop so it reads as a sentence before the question that follows. %@ is the title.\nEnds the notifications setting's hint with a full stop, before the sentence that says notifications are refused. %@ is the hint, without its full stop.\nLibrary view editor: ends a filter's description with a full stop. %@ is the whole description.\nLibrary view editor: the note shown in place of the sort choice while the view lists feeds alone. %@ is a sentence without its full stop, saying feeds are always listed by title; this adds the full stop.\nMakes a clause into a whole sentence by adding its full stop. %@ is the clause, already starting with a capital letter.\nVoiceOver announcement of Next in Folder or Previous in Folder when no item lies that way. %@ is a sentence without its full stop, such as \"No more books in folder\"; this adds the full stop.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -4493,6 +4919,24 @@
     "%@: %lld matches" : {
       "comment" : "A book's heading over its search matches. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: %2$lld Treffer"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: %2$lld Treffer"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -4810,6 +5254,24 @@
     "%@: more than %lld matches" : {
       "comment" : "A book's heading over its search matches when the count stopped at its limit. %1$@ is the book's title, with its author when known, and %2$lld is the number of matches.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: mehr als %2$lld Treffer"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: mehr als %2$lld Treffer"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -5130,6 +5592,12 @@
     "%@?" : {
       "comment" : "Makes a title into a question, such as the title of a removal confirmation: \"Move Book to Trash?\". %@ is the title without its question mark.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5164,6 +5632,12 @@
     "%@…" : {
       "comment" : "Adds an ellipsis to the title of a command, which says a question follows the command: \"Delete Download…\". %@ is the title without the ellipsis.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5228,6 +5702,24 @@
     "%lld Books" : {
       "comment" : "The object of a removal button's title, in title case, as in \"Move 3 Books to Trash\". %lld is how many books, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -5299,6 +5791,24 @@
     "%lld Selected" : {
       "comment" : "The object of a removal button's title, in title case, as in \"Move 3 Selected to Trash\". %lld is how many books are selected, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Ausgewähltes"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Ausgewählte"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -5654,6 +6164,24 @@
     "%lld bookmarks the other lacks" : {
       "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many bookmarks only this copy has, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Lesezeichen, das in der anderen Kopie fehlt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Lesezeichen, die in der anderen Kopie fehlen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -5725,6 +6253,24 @@
     "%lld books" : {
       "comment" : "A count of books standing alone, such as a library summary. %lld is the number of books.\nWhat a removal sentence calls the books it removes when none is named: a count of books, as in \"Moved 3 books to the Trash.\" %lld is how many.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -5796,6 +6342,24 @@
     "%lld books are in the cloud" : {
       "comment" : "Part of the time bar's spoken label: how many listed books are only in the cloud. %lld is the number of books.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch ist in der Cloud"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher sind in der Cloud"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -5867,6 +6431,24 @@
     "%lld books are kept on this Mac" : {
       "comment" : "Part of the time bar's spoken label: how many listed books are kept downloaded on this Mac. %lld is the number of books.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch ist auf diesem Mac heruntergeladen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher sind auf diesem Mac heruntergeladen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -6056,6 +6638,24 @@
     "%lld books couldn't be read" : {
       "comment" : "Note on a finished search's status: the text of some books could not be read. %lld is the number of those books. Starts with a number and follows a semicolon.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch konnte nicht gelesen werden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher konnten nicht gelesen werden"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -6340,6 +6940,24 @@
     "%lld books have not been opened yet" : {
       "comment" : "Part of the time bar's spoken label: how many listed books have not been opened. %lld is the number of books.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch wurde noch nicht geöffnet"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher wurden noch nicht geöffnet"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -6505,6 +7123,24 @@
     "%lld books in the cloud" : {
       "comment" : "Text of the time bar: how many listed books are only in the cloud, not downloaded. %lld is the number of books.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch in der Cloud"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher in der Cloud"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -6647,6 +7283,24 @@
     "%lld books in the cloud weren't searched" : {
       "comment" : "Note on a finished search's status: some books are only in the cloud, and a search never downloads them. %lld is the number of those books. Starts with a number and follows a semicolon.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch in der Cloud wurde nicht durchsucht"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher in der Cloud wurden nicht durchsucht"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -6735,6 +7389,24 @@
     "%lld books kept on this Mac" : {
       "comment" : "Text of the time bar: how many listed books are kept downloaded on this Mac. %lld is the number of books.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch auf diesem Mac heruntergeladen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher auf diesem Mac heruntergeladen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -6924,6 +7596,24 @@
     "%lld books the other lacks" : {
       "comment" : "Part of a list in Use This Library's account of which copy is newer. %lld is how many books only this copy has, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Buch, das in der anderen Kopie fehlt"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Bücher, die in der anderen Kopie fehlen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -7556,6 +8246,24 @@
     "%lld characters" : {
       "comment" : "Spoken value of the text area of the New Book from Text sheet: how many characters it holds. %lld is the number of characters.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Zeichen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Zeichen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -7911,6 +8619,24 @@
     "%lld differences between this library and the copy in %@." : {
       "comment" : "First sentence of the results of Compare Libraries. %1$lld is how many differences there are, a count; %2$@ is the other copy's folder path.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld Unterschied zwischen dieser Bibliothek und der Kopie in %2$@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld Unterschiede zwischen dieser Bibliothek und der Kopie in %2$@."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -8076,6 +8802,24 @@
     "%lld downloads" : {
       "comment" : "What a sentence calls several feed items' downloaded files, inside a sentence, as in \"Deleted 3 downloads permanently.\" %lld is how many, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Download"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Downloads"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -8147,6 +8891,24 @@
     "%lld downloads will be deleted." : {
       "comment" : "First sentence of the confirmation that deletes several feed items' downloads. %lld is how many, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Download wird gelöscht."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Downloads werden gelöscht."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -8951,6 +9713,24 @@
     "%lld files couldn't be read, so the comparison may be missing differences." : {
       "comment" : "Sentence of the results of Compare Libraries: some files could not be read. %lld is how many files, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Datei konnte nicht gelesen werden, daher fehlen im Vergleich möglicherweise Unterschiede."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Dateien konnten nicht gelesen werden, daher fehlen im Vergleich möglicherweise Unterschiede."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -9447,6 +10227,24 @@
     "%lld matches" : {
       "comment" : "Status line of Search in Book when a search finished and lists every match. %lld is the number of matches.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Treffer"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Treffer"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -9518,6 +10316,24 @@
     "%lld matches in %@" : {
       "comment" : "Status line of a finished search. %1$lld is the number of matches found, and %2$@ is the count of books that hold them with its noun, such as \"31 books\".",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld Treffer in %2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld Treffer in %2$@"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -10374,6 +11190,12 @@
     "%lld of %lld selected" : {
       "comment" : "Text of the edit bar in the Library list: how many of the listed books are selected. %1$lld is the number selected. %2$lld is how many books are listed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$lld von %2$lld ausgewählt"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -11265,6 +12087,24 @@
     "%lld selected books" : {
       "comment" : "What a removal button's VoiceOver label calls the books selected in a list, as in \"Move 3 selected books to the Trash\". %lld is how many are selected, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ausgewähltes Buch"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ausgewählte Bücher"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -11454,6 +12294,24 @@
     "%lld subfolders" : {
       "comment" : "Speak Info and Folder Settings: how many subfolders a folder has. %lld is the number of subfolders, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Unterordner"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Unterordner"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -11950,6 +12808,24 @@
     "%lld views need a newer TextMouth. They are kept as they are, and not offered." : {
       "comment" : "Caption in the Library tab of Settings about views a later TextMouth wrote that this one cannot read. %lld is how many such views there are, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Ansicht braucht ein neueres TextMouth. Sie bleibt unverändert und wird nicht angeboten."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Ansichten brauchen ein neueres TextMouth. Sie bleiben unverändert und werden nicht angeboten."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -12533,6 +13409,24 @@
     "(%lld books not yet opened)" : {
       "comment" : "Text of the time bar: how many listed books have not been opened, so their time is unknown. The parentheses are part of the text. %lld is the number of books.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "(%lld Buch noch nicht geöffnet)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "(%lld Bücher noch nicht geöffnet)"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -12796,6 +13690,12 @@
     "A built-in view can be hidden, not deleted." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Delete…'s hint for a built-in view, when it is dimmed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine integrierte Ansicht lässt sich ausblenden, aber nicht löschen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12847,6 +13747,12 @@
     "A destination folder path is invalid." : {
       "comment" : "Error shown when books or folders cannot be moved because the destination folder's path is not a valid place in the library.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Pfad des Zielordners ist ungültig."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12909,6 +13815,12 @@
     "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth." : {
       "comment" : "Error shown when a folder's new name is refused: the name is empty, is a single or double dot, ends in .tmb, or is one TextMouth keeps for itself. The quoted pieces are literal text.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein Ordnername darf nicht leer, „.“ oder „..“ sein, nicht auf „.tmb“ enden und nicht von TextMouth reserviert sein."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12926,6 +13838,12 @@
     "A folder named %@ already exists in %@." : {
       "comment" : "Error shown when a folder's new name or place is taken. %1$@ is the existing folder's name, in straight double quotes. %2$@ is where it is: its folder's location in straight double quotes, or the name of the library's top level.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein Ordner namens %1$@ ist bereits in %2$@ vorhanden."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -12949,6 +13867,12 @@
     "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read." : {
       "comment" : "Sentence of what the Compare Libraries sheet says while it works: a library kept in a cloud drive is slow because files that are only in the cloud are downloaded first.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Bibliothek in der Cloud kann eine Weile dauern: Ihre nur in der Cloud liegenden Dateien werden zum Lesen auf diesen Mac geladen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12966,6 +13890,12 @@
     "A limit chooses among books, episodes, and articles, never feeds." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Show at Most's hint while the view lists feeds alone, when it is dimmed (finding 6).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ein Limit wählt unter Büchern, Folgen und Artikeln aus, nie unter Feeds."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12994,6 +13924,12 @@
     "A move shifts one book at a time, and several are selected. Select one book, then try again." : {
       "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used with several books selected.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Verschoben wird jeweils nur ein Buch, und es sind mehrere ausgewählt. Wähle ein Buch aus und versuche es erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13141,6 +14077,24 @@
     "A view holds at most %lld conditions." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint at the limit, when it is dimmed. Placeholders in order: LibraryViewFilter.conditionLimit.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Eine Ansicht kann höchstens %lld Bedingung enthalten."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Eine Ansicht kann höchstens %lld Bedingungen enthalten."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -13212,6 +14166,12 @@
     "A view you made has no default to restore." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Restore Default…'s hint for a view the listener made, when it is dimmed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Für eine selbst erstellte Ansicht gibt es keinen Standard zum Wiederherstellen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13229,6 +14189,24 @@
     "A view's name can be at most %lld characters." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a name too long. Placeholders in order: LibraryViewDefinition.nameLimit.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Der Name einer Ansicht darf höchstens %lld Zeichen lang sein."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Der Name einer Ansicht darf höchstens %lld Zeichen lang sein."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -13390,6 +14368,12 @@
     "Activate to navigate to this result" : {
       "comment" : "VoiceOver hint of a result's row in Search in Book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geht zu diesem Ergebnis."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13600,6 +14584,12 @@
     "Add Condition" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that adds a condition.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung hinzufügen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13894,6 +14884,12 @@
     "Added" : {
       "comment" : "Name of the book information sheet's row that shows the date the book was added to the library.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hinzugefügt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13928,6 +14924,12 @@
     "Added %@, %lld of %lld." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What VoiceOver says once a new view is added, with its place. Placeholders in order: name, number, count.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hinzugefügt: %1$@, %2$lld von %3$lld."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -14039,6 +15041,12 @@
     "Added Last" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A limit's order as its pop-up names it. This is the case .dateAdded.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zuletzt hinzugefügt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14084,6 +15092,12 @@
     "Address %@" : {
       "comment" : "Speak Info: the part of a feed's full summary that gives its web address. %@ is the address.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adresse %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14449,6 +15463,12 @@
     "All Conditions" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the first case of the condition.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Bedingungen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14466,6 +15486,12 @@
     "All Folders" : {
       "comment" : "Name of the library's top level in the Folders view, where the window title and the folder announcements call it that. It holds every folder.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Ordner"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14545,6 +15571,12 @@
     "All subfolders now sorted by %@" : {
       "comment" : "VoiceOver announcement after the sort is applied to every subfolder. %@ is the sort, such as \"Title, ascending\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alle Unterordner sind jetzt sortiert nach %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14641,6 +15673,12 @@
     "Always" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). A visibility as the Visibility pop-up names it: \"Always\", \"When Applicable\", or \"Hidden\". This is the case .always.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Immer"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14658,6 +15696,12 @@
     "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What the three visibilities do, and that a window keeps its view.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„Immer“ bietet eine Ansicht dauerhaft an. „Wenn zutreffend“ bietet sie nur an, solange sie etwas auflistet: die Leseliste, solange sie ein Buch, eine Folge oder einen Artikel enthält, und Feeds, solange es einen Feed gibt. „Ausgeblendet“ lässt sie weg. Ein Fenster behält seine Ansicht, bis du eine andere wählst."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14737,6 +15781,12 @@
     "An edit of its text is kept beside the new reading, as a copy in the book's package." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to text TextMouth did not write, said only for a book whose content.md holds such text: an edit made with Edit Text, or a save no edit took, either kept as Replace Existing keeps it (ImportDecisionWording.replacingKeepsTextSentence).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine Bearbeitung seines Texts bleibt neben dem neu eingelesenen Text erhalten, als Kopie im Paket des Buchs."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14887,6 +15937,24 @@
     "And %lld more files couldn't be read." : {
       "comment" : "Last line of the list of unread files in Compare Libraries when the list is cut short. %lld is how many more files could not be read, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Und %lld weitere Datei konnte nicht gelesen werden."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Und %lld weitere Dateien konnten nicht gelesen werden."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -15029,6 +16097,12 @@
     "Another view is already named %@. Choose another name." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a name another view has. Placeholders in order: name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine andere Ansicht heißt bereits %@. Wähle einen anderen Namen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15046,6 +16120,12 @@
     "Another view is named %@. Rename it first, then restore this view." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What Restore Default says, changing nothing, when another view has the shipped name name (finding 5). Placeholders in order: name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eine andere Ansicht heißt %@. Benenne sie zuerst um und stelle dann diese Ansicht wieder her."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15080,6 +16160,12 @@
     "Any Condition" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A match as its pop-up names it. This is the form for the other case of the condition.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beliebige Bedingung"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15205,6 +16291,12 @@
     "Applies only to a view that lists episodes or articles." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint while the view lists no episodes or articles, when it is dimmed (review of October 31, 2026, finding 6).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gilt nur für eine Ansicht, die Folgen oder Artikel auflistet."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15409,6 +16501,12 @@
     "Apply Sort to All Subfolders" : {
       "comment" : "Item of the Sort menu that gives every subfolder of the folder shown the sort chosen here.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sortierung auf alle Unterordner anwenden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15616,6 +16714,12 @@
     "Ascending" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the first case of the condition.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aufsteigend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15667,6 +16771,12 @@
     "Asks before deleting." : {
       "comment" : "First sentence of the VoiceOver hint of a delete command that asks before it deletes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fragt vor dem Löschen nach."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15791,6 +16901,12 @@
     "Asks whether to %@ or keep them in the TextMouth library folder." : {
       "comment" : "VoiceOver hint of the Remove button when it asks first. %@ is what deleting the files does, such as \"move the files to the Trash\" or \"delete the files permanently\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fragt, ob du %@ oder sie im Bibliotheksordner von TextMouth behalten möchtest."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16368,6 +17484,12 @@
     "Author" : {
       "comment" : "Name of a way to sort the books: by the author. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nName of the book information sheet's field for a book's author; VoiceOver reads it as the field's label.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Autor"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16385,6 +17507,12 @@
     "Author:" : {
       "comment" : "Caption beside the author field of the New Book from Text sheet. VoiceOver skips it; the field has its own label.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Autor:"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16832,6 +17960,12 @@
     "Book" : {
       "comment" : "The object of a removal confirmation's title for one book, in title case, as in \"Move Book to Trash?\".\nThe word that begins the title of a reader window for a book, before its title and author: \"Book: <title> by <author>\".\nTitle of the Book menu in the menu bar, which holds the commands about the open book, such as exporting or editing it. Only a reader window shows it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buch"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16877,6 +18011,12 @@
     "Book Info" : {
       "comment" : "Menu item of a book's row that opens the sheet with the book's information.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name.\nTitle of the reader toolbar's button that opens the book's information sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buchinfo"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16922,6 +18062,12 @@
     "Book author" : {
       "comment" : "What VoiceOver says for the book information sheet's field for the book's author.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Autor des Buchs"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16956,6 +18102,12 @@
     "Book only in %@: %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is a copy of the library (this copy or the other copy), %2$@ is a book's title and, when known, its author.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Buch nur in %1$@: %2$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -17070,6 +18222,12 @@
     "Bookmark %@ in %@: differs." : {
       "comment" : "First sentence of a bookmark difference found by Compare Libraries. %1$@ is the bookmark's number, an identifier written without digit grouping, and %2$@ is a book's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lesezeichen %1$@ in %2$@: unterschiedlich."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -17093,6 +18251,12 @@
     "Bookmark %@ in %@: only in %@, %@." : {
       "comment" : "A difference found by Compare Libraries. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ is a book's title; %3$@ is the copy of the library that has it; %4$@ is the bookmark's place and note, such as \"chapter 3, with no note\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lesezeichen %1$@ in %2$@: nur in %3$@, %4$@."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -17259,6 +18423,12 @@
     "Books" : {
       "comment" : "Name of the VoiceOver rotor in the Search Library window that moves between the books that hold matches.\nName of the VoiceOver rotor that moves between the books of the Library list.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the books in the folder and every folder below it.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of row as its checkbox names it: \"Books\", \"Episodes\", \"Articles\", or \"Feeds\". This is the case .books.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17368,6 +18538,12 @@
     "Books can be moved only in a folder sorted by %@, and this folder is not." : {
       "comment" : "First sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher lassen sich nur in einem Ordner bewegen, der nach %@ sortiert ist, und dieser Ordner ist es nicht."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17419,6 +18595,12 @@
     "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again." : {
       "comment" : "VoiceOver announcement when Move Book Up or Move Book Down is used in a view that mixes books from many folders. Folders and Reading List are names of views in the View menu.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher lassen sich in dieser Ansicht nicht bewegen. Gehe in „Ordner“ zu einem Ordner oder zur Leseliste und versuche es erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17521,6 +18703,12 @@
     "Braille Code" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's row that names a braille book's code, and of its pop-up, which reads the book again with another.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Braille-Code"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17538,6 +18726,12 @@
     "Braille File Characters" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The label of Book Information's pop-up that names the braille file characters a BRF or BRL book's file is read with, in title case, as the sheet's \"Braille Code\" and \"Text Encoding\" are; the Settings and Export pop-ups say \"Braille file characters\", in their own sentence case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zeichen der Braille-Datei"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17572,6 +18766,12 @@
     "Braille characters: %@" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. Speak Info's sentence for braille file characters described as description (Book.brailleFileCodeDescription), said right after the braille code's: \"Braille characters: North American Braille ASCII\". Placeholders in order: description.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Braille-Zeichen: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17606,6 +18806,12 @@
     "Braille code: %@" : {
       "comment" : "Speak Info: the part of a braille book's full summary that names its braille code. %@ is the code's description, such as \"Unified English Braille, contracted (Grade 2)\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Braille-Code: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17691,6 +18897,24 @@
     "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one." : {
       "comment" : "Last sentence of the second confirmation that deletes a folder, when the folder holds books that a newer TextMouth added. %1$@ is the folder's name in quotation marks and %2$lld is how many books, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Aber %1$@ enthält auch %2$lld Buch, das ein neueres TextMouth hinzugefügt hat: Es bleibt, wo es ist, ebenso jeder Ordner, der es enthält."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Aber %1$@ enthält auch %2$lld Bücher, die ein neueres TextMouth hinzugefügt hat: Sie bleiben, wo sie sind, ebenso jeder Ordner, der eines enthält."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -17762,6 +18986,12 @@
     "By %@" : {
       "comment" : "Speak Info: the part of a book's summary that names its author. %@ is the author's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Von %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17948,6 +19178,12 @@
     "Cancel New Folder" : {
       "comment" : "Title of the button, in a folder chooser, that closes the new folder's fields without making a folder. It is not named Cancel, so VoiceOver tells it apart from the sheet's own Cancel.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Neuen Ordner abbrechen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18404,6 +19640,12 @@
     "Changes the view's name, what it lists, its conditions, its sort, and its limit." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Its hint.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ändert Name, Inhalt, Bedingungen, Sortierung und Limit der Ansicht."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19020,6 +20262,12 @@
     "Check the text, or save the file in the editor as UTF-8 and choose %@ again." : {
       "comment" : "Second sentence of the note after Reload from Editor read a file whose text encoding nothing in it tells: what to do. UTF-8 is the name of a text encoding. %@ is the name of the Reload from Editor button.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Prüfe den Text oder sichere die Datei im Editor als UTF-8 und wähle erneut %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19109,6 +20357,12 @@
     "Checking the file" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's value while the book's file is read to learn what it says of its encoding.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Datei wird geprüft"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19227,6 +20481,12 @@
     "Choose %@ in the Sort menu, then try again." : {
       "comment" : "Second sentence of the announcement when Move Book Up or Move Book Down is used in a folder that is not in manual order. %@ is the name of the Manual Order sort, a choice in the Sort menu.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle %@ im Menü „Sortieren“ und versuche es erneut."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19471,6 +20731,12 @@
     "Choose a destination outside %@." : {
       "comment" : "First sentence of the error shown when a folder is moved into itself. %@ is the folder's location, in straight double quotes.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle ein Ziel außerhalb von %@."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19731,6 +20997,12 @@
     "Choose another braille code to read the book's file again with it." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle einen anderen Braille-Code, um die Datei des Buchs erneut damit zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19748,6 +21020,12 @@
     "Choose another encoding to read the book's file again in it." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle eine andere Codierung, um die Datei des Buchs erneut darin zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19782,6 +21060,12 @@
     "Choose another in Book Information." : {
       "comment" : "Last sentence of why a book set to an unknown text encoding cannot be read. \"Book Information\" is the name of the sheet with the encoding pop-up.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle in den Buchinformationen eine andere."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19833,6 +21117,12 @@
     "Choose at least one kind of item for the view to list." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with no kind listed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle mindestens eine Art von Objekten, die die Ansicht auflisten soll."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19861,6 +21151,12 @@
     "Choose how to remove %@ from the library." : {
       "comment" : "First sentence of the confirmation that asks how to remove books. %@ is what is removed, such as \"“Notes”\" or \"3 books\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle aus, wie %@ aus der Bibliothek entfernt werden soll."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19895,6 +21191,12 @@
     "Choose other characters to read the book's file again with them." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. The pop-up's hint, which VoiceOver says after its label and value.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle andere Zeichen, um die Datei des Buchs erneut damit zu lesen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19929,6 +21231,12 @@
     "Choose the Copy to Compare" : {
       "comment" : "Title of the folder panel in which the listener chooses the other copy of the library to compare.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopie zum Vergleichen wählen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19980,6 +21288,12 @@
     "Choose the folder that holds another copy of this library. Nothing in it is changed." : {
       "comment" : "Message of the folder panel in which the listener chooses the other copy of the library to compare.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle den Ordner mit einer weiteren Kopie dieser Bibliothek. Nichts darin wird geändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20031,6 +21345,12 @@
     "Choose where to move the books and subfolders before deleting \"%@\"." : {
       "comment" : "Explanation in the sheet that chooses where a folder's contents go before the folder is deleted. %@ is the folder's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wähle, wohin die Bücher und Unterordner verschoben werden sollen, bevor „%@“ gelöscht wird."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20048,6 +21368,12 @@
     "Chooses a folder with another copy of this library and lists what differs. Neither copy changes." : {
       "comment" : "VoiceOver hint of the Compare Libraries button in Storage settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wählt einen Ordner mit einer weiteren Kopie dieser Bibliothek und listet die Unterschiede auf. Keine der Kopien wird geändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20365,6 +21691,12 @@
     "Chosen By" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The pop-up of which rows a limit keeps.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auswahl nach"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20609,6 +21941,12 @@
     "Close search and return to the book" : {
       "comment" : "VoiceOver hint of the Back to Book button of Search in Book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schließt die Suche und kehrt zum Buch zurück."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20694,6 +22032,12 @@
     "Closes Search Library; results stay for next time" : {
       "comment" : "VoiceOver hint of the Close button of the Search Library window. Search Library is the window's name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schließt „Bibliothek durchsuchen“; die Ergebnisse bleiben für das nächste Mal erhalten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20711,6 +22055,12 @@
     "Closes the new folder's fields and keeps the folder chosen." : {
       "comment" : "Hint of the button, in a folder chooser, that closes the new folder's fields: the folder chosen in the pop-up stays chosen.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schließt die Felder des neuen Ordners und behält den gewählten Ordner."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20762,6 +22112,12 @@
     "Closes this view without making a book" : {
       "comment" : "Hint of the Cancel button of the New Book from Text sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schließt diese Ansicht, ohne ein Buch zu erstellen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20887,6 +22243,12 @@
     "Comic Book Archive (CBZ)" : {
       "comment" : "Name of the book format of a comic book archive (.cbz), a ZIP of pictures (CBZ is a format name), shown in a book's information, the format column, and the duplicate finder.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Comic-Archiv (CBZ)"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20938,6 +22300,12 @@
     "Compare" : {
       "comment" : "Button of the folder panel that starts comparing the library with the chosen copy.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vergleichen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20955,6 +22323,12 @@
     "Compare Libraries" : {
       "comment" : "Title of the Compare Libraries sheet, and the name of the command in Storage settings that opens it. The sheet lists what differs between this library and another copy of it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bibliotheken vergleichen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20972,6 +22346,12 @@
     "Compare Libraries in Storage settings lists every difference." : {
       "comment" : "Last sentence of Use This Library's account of which copy is newer: it points to the Compare Libraries command in Storage settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„Bibliotheken vergleichen“ in den Speichereinstellungen listet jeden Unterschied auf."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20989,6 +22369,12 @@
     "Compare Libraries, results" : {
       "comment" : "Spoken label of the Compare Libraries sheet when it opens: its title, then the word results.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bibliotheken vergleichen, Ergebnisse"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21006,6 +22392,12 @@
     "Compare Libraries…" : {
       "comment" : "Button in Storage settings that opens the Compare Libraries sheet. The ellipsis shows that a choice follows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bibliotheken vergleichen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21040,6 +22432,12 @@
     "Comparing stopped. Nothing was changed." : {
       "comment" : "What the Compare Libraries sheet says once the listener stopped the comparison.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Vergleich wurde gestoppt. Nichts wurde geändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21057,6 +22455,12 @@
     "Comparing this library with the copy in %@." : {
       "comment" : "First sentence of what the Compare Libraries sheet says while it works. %@ is the other copy's folder path.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Bibliothek wird mit der Kopie in %@ verglichen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21074,6 +22478,12 @@
     "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it." : {
       "comment" : "What Storage settings says while it compares the library in use with a chosen folder's copy before Use This Library. \"Stop Comparing\" is the name of the button that skips it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diese Bibliothek wird mit der Kopie im gewählten Ordner verglichen, um festzustellen, welche neuer ist. Das kann bis zu eine Minute dauern; wähle „Vergleich stoppen“, um es zu überspringen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21091,6 +22501,12 @@
     "Condition %@" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The test pop-up's spoken label: \"Condition 2\". %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21108,6 +22524,12 @@
     "Condition %@ days" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The days field's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@, Tage"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21125,6 +22547,12 @@
     "Condition %@ folder" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The folder pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@, Ordner"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21142,6 +22570,12 @@
     "Condition %@ format" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The format pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@, Format"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21159,6 +22593,12 @@
     "Condition %@ includes subfolders" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The subfolders checkbox's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@ schließt Unterordner ein"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21176,6 +22616,12 @@
     "Condition %@ needs the text to look for." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. Save's problem with a title or author condition looking for nothing. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@ braucht den Suchtext."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21193,6 +22639,12 @@
     "Condition %@ reading state" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The reading state pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@, Lesestatus"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21210,6 +22662,12 @@
     "Condition %@ relation" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The relation pop-up's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@, Vergleich"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21227,6 +22685,12 @@
     "Condition %@ text" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The text field's spoken label. %@ is the condition's number, an identifier written without digit grouping.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingung %@, Text"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21244,6 +22708,12 @@
     "Conditions" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The heading above the conditions.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingungen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21261,6 +22731,12 @@
     "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test." : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. What conditions test, under the kinds.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bedingungen zu Büchern prüfen Bücher, Folgen und Artikel; Bedingungen zu Feeds prüfen Feeds. Eine Bedingung blendet nie eine Zeile aus, die sie nicht prüft."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21346,6 +22822,12 @@
     "Contains" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the other case of the condition.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Enthält"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21414,6 +22896,12 @@
     "Continue listening to %@" : {
       "comment" : "Spoken label of the Continue button at the top of the Library list. %@ is the title of the book last read. The time left may follow it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ weiterhören"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21448,6 +22936,12 @@
     "Continue: %@" : {
       "comment" : "Text of the Continue button at the top of the Library list. %@ is the title of the book last read.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Weiter: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21747,6 +23241,12 @@
     "Copies the count and every difference as text, one to a line." : {
       "comment" : "VoiceOver hint of the Copy Results button of the Compare Libraries sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopiert die Anzahl und jeden Unterschied als Text, einen pro Zeile."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21849,6 +23349,12 @@
     "Copy Results" : {
       "comment" : "Button of the Compare Libraries sheet that copies the results to the clipboard.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ergebnisse kopieren"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21900,6 +23406,12 @@
     "Copy some text, then paste again." : {
       "comment" : "Second sentence of the announcement when Paste from Clipboard finds no text on the clipboard: what to do.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopiere einen Text und füge ihn dann erneut ein."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21934,6 +23446,12 @@
     "Could not create folder" : {
       "comment" : "Start of the error message when a new folder could not be created. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordner konnte nicht erstellt werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21951,6 +23469,12 @@
     "Could not delete \"%@\" and move its contents" : {
       "comment" : "Start of the error message when a folder could not be deleted and its contents moved to its parent. %@ is the folder's name. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„%@“ konnte nicht gelöscht und sein Inhalt nicht verschoben werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -21985,6 +23509,12 @@
     "Could not discard duplicate import" : {
       "comment" : "Start of the error message when the new copy of a duplicate book could not be discarded. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Doppelter Import konnte nicht verworfen werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22024,6 +23554,12 @@
     "Could not move \"%@\"" : {
       "comment" : "Start of the error message when a folder was refused a move. %@ is the folder's name. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„%@“ konnte nicht verschoben werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22041,6 +23577,12 @@
     "Could not move books" : {
       "comment" : "Start of the error message when books could not be moved to a folder. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bücher konnten nicht verschoben werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22058,6 +23600,12 @@
     "Could not move folder" : {
       "comment" : "Start of the error message when moving a folder failed on disk, and everything was put back. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordner konnte nicht verschoben werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22086,6 +23634,12 @@
     "Could not open the text in an editor, because its file could not be written." : {
       "comment" : "First sentence of the announcement when Open in Editor could not write the text to a file for the editor.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text konnte nicht in einem Editor geöffnet werden, weil seine Datei nicht geschrieben werden konnte."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22103,6 +23657,12 @@
     "Could not open the text in an editor, because no app opened its file." : {
       "comment" : "First sentence of the announcement when Open in Editor wrote the file but no app opened it, as when nothing on this Mac opens plain text files.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text konnte nicht in einem Editor geöffnet werden, weil keine App seine Datei geöffnet hat."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22120,6 +23680,12 @@
     "Could not organize imported ZIP books" : {
       "comment" : "Start of the error message when the books of an imported ZIP archive could not be moved into the folder made for them. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Importierte ZIP-Bücher konnten nicht geordnet werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22137,6 +23703,12 @@
     "Could not read the text back from the editor's file, so the text here is unchanged." : {
       "comment" : "First sentence of the announcement when Reload from Editor could not read the editor's file back.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Der Text konnte nicht aus der Datei des Editors zurückgelesen werden, daher bleibt der Text hier unverändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22154,6 +23726,12 @@
     "Could not relocate folder contents" : {
       "comment" : "Start of the error message when the books of a deleted folder could not be moved to their new place. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordnerinhalt konnte nicht an den neuen Ort verschoben werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22171,6 +23749,12 @@
     "Could not remove folder: its library path is invalid or has changed." : {
       "comment" : "Error message when a folder cannot be removed because its place in the library is not valid any more, or it moved.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordner konnte nicht entfernt werden: Sein Bibliothekspfad ist ungültig oder hat sich geändert."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22205,6 +23789,12 @@
     "Could not rename \"%@\"" : {
       "comment" : "Start of the error message when a folder was refused a new name. %@ is the folder's current name. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "„%@“ konnte nicht umbenannt werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22222,6 +23812,12 @@
     "Could not rename folder" : {
       "comment" : "Start of the error message when renaming a folder failed on disk, and everything was put back. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordner konnte nicht umbenannt werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22239,6 +23835,12 @@
     "Could not replace duplicate" : {
       "comment" : "Start of the error message when Replace Existing could not put the new copy in place of the library's copy. The reason follows it after a colon.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Duplikat konnte nicht ersetzt werden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22580,6 +24182,12 @@
     "Create" : {
       "comment" : "Button that makes the new folder.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Erstellen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22630,6 +24238,12 @@
     "Create new folder" : {
       "comment" : "Spoken label of the toolbar button that opens the sheet that makes a new folder.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Neuen Ordner erstellen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22970,6 +24584,12 @@
     "Date Added" : {
       "comment" : "Name of a way to sort the books: by the date the book was added. Shown in the Sort menu, the library view editor, the window title, and in sort announcements.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .addedWithin.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hinzugefügt am"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22987,6 +24607,12 @@
     "Date Opened" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A kind of test as a condition's test pop-up names it. This is the case .openedWithin.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geöffnet am"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23361,6 +24987,12 @@
     "Delete %@" : {
       "comment" : "VoiceOver label of the command that deletes feed items' downloads. %@ is what is deleted, such as \"the download of “Ep. 368”\" or \"3 downloads\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23378,6 +25010,12 @@
     "Delete %@ Permanently" : {
       "comment" : "Title of a button that deletes the named books' files permanently, in title case. %@ is the object, such as \"3 Books\", \"3 Selected\", or \"Everything\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ endgültig löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23395,6 +25033,12 @@
     "Delete %@ permanently" : {
       "comment" : "VoiceOver label of a removal button that deletes files permanently. %@ is what is deleted, such as \"“Notes”\", \"3 selected books\", or \"the original file\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ endgültig löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23412,6 +25056,24 @@
     "Delete %lld Downloads" : {
       "comment" : "Title in title case of the command that deletes several feed items' downloads. %lld is how many, a count.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Download löschen"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld Downloads löschen"
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -23539,6 +25201,12 @@
     "Delete Download" : {
       "comment" : "Title in title case of the command that deletes one feed item's download.\nTitle of the command that deletes a feed item's downloaded book and keeps the item. Title case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23556,6 +25224,12 @@
     "Delete Downloads" : {
       "comment" : "Title in title case of the button that deletes several feed items' downloads. The confirmation's title says how many.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Downloads löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23617,6 +25291,12 @@
     "Delete Folder..." : {
       "comment" : "Item of a folder's menu that deletes the folder. The three dots mean a question follows.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordner löschen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23634,6 +25314,12 @@
     "Delete Folder?" : {
       "comment" : "Title of the question asked before a folder that holds books or folders is deleted.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ordner löschen?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23679,6 +25365,12 @@
     "Delete Permanently" : {
       "comment" : "Title of the button that removes books and deletes their files permanently, in title case.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Endgültig löschen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23808,6 +25500,12 @@
     "Delete the view “%@”?" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question Delete… asks. Placeholders in order: name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Die Ansicht „%@“ löschen?"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23836,6 +25534,12 @@
     "Deleted %@ permanently." : {
       "comment" : "Report that books' files were deleted permanently. %@ is what was deleted, such as \"“Notes”\" or \"3 books\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ endgültig gelöscht."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -23864,6 +25568,12 @@
     "Deleted %@. %@ selected, %lld of %lld." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). What VoiceOver says once a view is deleted, naming the view selected now and its place (finding 13): \"Deleted Mine. Feeds selected, 6 of 6.\". Placeholders in order: name, selected, number, count.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ gelöscht. %2$@ ausgewählt, %3$lld von %4$lld."
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -23971,6 +25681,12 @@
     "Deletes the view. What it lists stays in the library." : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). Delete…'s hint.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Löscht die Ansicht. Was sie auflistet, bleibt in der Bibliothek."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24005,6 +25721,12 @@
     "Delete…" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that deletes a custom view, asking first.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Löschen…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24022,6 +25744,12 @@
     "Descending" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A direction as the pop-up names it. This is the form for the other case of the condition.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Absteigend"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24061,6 +25789,12 @@
     "Deselect All" : {
       "comment" : "Button of the edit bar that deselects every book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gesamte Auswahl aufheben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24078,6 +25812,12 @@
     "Deselect all books" : {
       "comment" : "Spoken label of the edit bar's button that deselects every book.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Auswahl aller Bücher aufheben"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24095,6 +25835,12 @@
     "Deselects this book." : {
       "comment" : "Hint of a book's row in the Library list in edit mode, while the book is selected.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hebt die Auswahl dieses Buchs auf."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24112,6 +25858,12 @@
     "Destination" : {
       "comment" : "Caption of the pop-up that chooses the folder the books move into.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ziel"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24129,6 +25881,12 @@
     "Destination folder" : {
       "comment" : "What VoiceOver says for the pop-up that chooses the folder the books move into.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zielordner"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24146,6 +25904,12 @@
     "Destination for folder contents" : {
       "comment" : "What VoiceOver says for the pop-up that chooses the folder a deleted folder's books and subfolders move into.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ziel für den Ordnerinhalt"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24163,6 +25927,12 @@
     "Destination parent folder" : {
       "comment" : "What VoiceOver says for the pop-up that chooses the folder a moved folder goes into.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Übergeordneter Zielordner"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24469,6 +26239,12 @@
     "Does Not Contain" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Enthält nicht"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24588,6 +26364,24 @@
     "Done. Moved %lld books." : {
       "comment" : "VoiceOver announcement when a move of many books to a folder finishes. %lld is how many books were moved.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Fertig. %lld Buch verschoben."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Fertig. %lld Bücher verschoben."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -24888,6 +26682,12 @@
     "Download of the next article cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the next feed article that Next in Folder started, while a book was playing, so playback was paused.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download des nächsten Artikels abgebrochen, daher wurde die Wiedergabe gestoppt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24905,6 +26705,12 @@
     "Download of the next article cancelled." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the next feed article that Next in Folder started.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download des nächsten Artikels abgebrochen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24922,6 +26728,12 @@
     "Download of the next episode cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the next podcast episode that Next in Folder started, while a book was playing, so playback was paused.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download der nächsten Folge abgebrochen, daher wurde die Wiedergabe gestoppt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24939,6 +26751,12 @@
     "Download of the next episode cancelled." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the next podcast episode that Next in Folder started.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download der nächsten Folge abgebrochen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24956,6 +26774,12 @@
     "Download of the previous article cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the previous feed article that Previous in Folder started, while a book was playing, so playback was paused.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download des vorherigen Artikels abgebrochen, daher wurde die Wiedergabe gestoppt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24973,6 +26797,12 @@
     "Download of the previous article cancelled." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the previous feed article that Previous in Folder started.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download des vorherigen Artikels abgebrochen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24990,6 +26820,12 @@
     "Download of the previous episode cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started, while a book was playing, so playback was paused.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download der vorherigen Folge abgebrochen, daher wurde die Wiedergabe gestoppt."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25007,6 +26843,12 @@
     "Download of the previous episode cancelled." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of the previous podcast episode that Previous in Folder started.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Download der vorherigen Folge abgebrochen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25594,6 +27436,12 @@
     "Downloading the previous article: %@" : {
       "comment" : "VoiceOver announcement of Previous in Folder when the previous item is a feed's article that must be downloaded first. %@ is the article's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorheriger Artikel wird geladen: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25611,6 +27459,12 @@
     "Downloading the previous episode: %@" : {
       "comment" : "VoiceOver announcement of Previous in Folder when the previous item is a podcast episode that must be downloaded first. %@ is the episode's title.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vorherige Folge wird geladen: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -25802,6 +27656,12 @@
     "Duplicate" : {
       "comment" : "Text of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The command that makes a custom copy of a view.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Duplizieren"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26079,6 +27939,12 @@
     "Edit %@" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The sheet's title for a view being changed. Placeholders in order: name.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ bearbeiten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26391,6 +28257,12 @@
     "Edit Text stops for this book; choose Edit Text again to edit the new reading." : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. What a re-read does to Edit Text, said only for a book being edited: the session ends with the re-read, whose new text it never watched (BookTextEditWording.stoppedBookReadAgain(bookTitle:)).",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Das Bearbeiten des Texts endet für dieses Buch; wähle erneut „Text bearbeiten“, um den neu eingelesenen Text zu bearbeiten."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26436,6 +28308,12 @@
     "Edit mode, %lld of %lld book selected" : {
       "comment" : "Spoken label of the edit bar when one book is listed. %1$lld is how many are selected, 0 or 1. %2$lld is how many are listed, 1.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeitungsmodus, %1$lld von %2$lld Buch ausgewählt"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -26459,6 +28337,12 @@
     "Edit mode, %lld of %lld books selected" : {
       "comment" : "Spoken label of the edit bar when several books, or none, are listed. %1$lld is how many are selected. %2$lld is how many are listed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeitungsmodus, %1$lld von %2$lld Büchern ausgewählt"
+          }
+        },
         "en" : {
           "stringUnit" : {
             "state" : "new",
@@ -26629,6 +28513,12 @@
     "Edit…" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The Library tab's button that changes the view selected.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeiten…"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -26680,6 +28570,12 @@
     "Empty" : {
       "comment" : "Spoken value of the text area of the New Book from Text sheet while it holds no text.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Leer"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27054,6 +28950,12 @@
     "Enter a search term above." : {
       "comment" : "Status line of Search in Book before anything is typed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib oben einen Suchbegriff ein."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27071,6 +28973,12 @@
     "Enter edit mode" : {
       "comment" : "Spoken label of the toolbar button that enters edit mode in the Library list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeitungsmodus einschalten"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27088,6 +28996,12 @@
     "Enter or paste the text for the new book" : {
       "comment" : "Hint of the text area of the New Book from Text sheet.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib den Text für das neue Buch ein oder füge ihn ein"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27105,6 +29019,12 @@
     "Enter some text first." : {
       "comment" : "Hint of the Add to Library button of the New Book from Text sheet while the text area is empty and the button is dimmed.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gib zuerst Text ein."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27122,6 +29042,12 @@
     "Enters edit mode, for selecting several books to move or remove." : {
       "comment" : "Hint of the toolbar's edit mode button while edit mode is off.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Schaltet den Bearbeitungsmodus ein, um mehrere Bücher zum Verschieben oder Entfernen auszuwählen."
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27289,6 +29215,12 @@
     "Error: %@" : {
       "comment" : "What VoiceOver reads for the reason an operation failed in a sheet: the word Error, then the reason. %@ is the reason.\nWhat VoiceOver says for the refusal shown under a jump panel's field. %@ is the refusal's sentence.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Fehler: %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27700,6 +29632,12 @@
     "Everything" : {
       "comment" : "The object of the button that deletes a folder with its contents, in title case, as in \"Move Everything to Trash\".",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alles"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27717,6 +29655,12 @@
     "Everything in %@" : {
       "comment" : "The object of the title of the second confirmation that deletes a folder with its contents, in title case, as in \"Move Everything in “Fiction” to Trash?\". %@ is the folder's name in quotation marks.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alles in %@"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27785,6 +29729,12 @@
     "Exit edit mode" : {
       "comment" : "Spoken label of the toolbar button that leaves edit mode in the Library list.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bearbeitungsmodus beenden"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -27802,6 +29752,24 @@
     "Exits edit mode. %lld books selected." : {
       "comment" : "Hint of the toolbar's edit mode button while edit mode is on. %lld is how many books are selected.",
       "localizations" : {
+        "de" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Beendet den Bearbeitungsmodus. %lld Buch ausgewählt."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Beendet den Bearbeitungsmodus. %lld Bücher ausgewählt."
+                }
+              }
+            }
+          }
+        },
         "en" : {
           "variations" : {
             "plural" : {
@@ -28711,6 +30679,12 @@
     "Extracting Text" : {
       "comment" : "Title of the overlay that shows progress while TextMouth reads the text of the library's books, at launch or after a change. A progress count follows it.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text wird extrahiert"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -28998,6 +30972,12 @@
     "Feed Settings" : {
       "comment" : "Title of the Library toolbar button, in the folder of a feed, that opens the feed's settings.",
       "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Feed-Einstellungen"
+          }
+        },
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
