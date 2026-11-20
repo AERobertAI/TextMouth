@@ -4,6 +4,12 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.5 (November 20, 2026)
+
+### Smaller apps
+- The Mac app is about 1 MB smaller and the iPhone app about 0.6 MB.
+- Every word reads the same as before, in English and in Spanish.
+
 ## 0.5.4 (November 19, 2026)
 
 ### Lossless audio on the iPhone
