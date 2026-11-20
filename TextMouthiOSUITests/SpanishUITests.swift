@@ -15,11 +15,17 @@ final class SpanishUITests: TextMouthUITestCase {
     /// The launch arguments that start the app in Spanish, with Spain's formats.
     static let spanish = ["-AppleLanguages", "(es)", "-AppleLocale", "es_ES"]
 
+    /// Launches in Spanish into the reader, which is known by its Play button: "Reproducir" ("Play"), whose value
+    /// reads "Cargando" ("Loading") until the book has loaded (Q17: waiting for the English "Play" timed out).
+    func launchIntoTheSpanishReader() throws -> XCUIApplication {
+        try launchIntoTheReader(arguments: Self.spanish, playLabel: "Reproducir", loadingValue: "Cargando")
+    }
+
     /// The Sleep Timer, with no timer running, in the catalog's Spanish: the reader's Sleep Timer value, then in the
     /// sheet the New Timer heading, each preset's label, the custom minutes field's label, the stepper's label, the
     /// custom Set button's label, and the Stop At heading and buttons.
     func testTheSleepTimerSheetIsInSpanish() throws {
-        let app = try launchIntoTheReader(arguments: Self.spanish)
+        let app = try launchIntoTheSpanishReader()
         // The reader's Sleep Timer button is named "Sleep Timer" in Spanish, and its value is the
         // sleep timer's own: "Off" ("Desactivado") while no timer runs.
         let reader = try elementsInOrder(of: app)
@@ -54,7 +60,7 @@ final class SpanishUITests: TextMouthUITestCase {
     /// The Bookmarks sheet of a book with no bookmark, in the catalog's Spanish: Done, Add Bookmark, and the empty
     /// list's two sentences, the second naming Add Bookmark by its own Spanish title.
     func testTheBookmarksSheetIsInSpanish() throws {
-        let app = try launchIntoTheReader(arguments: Self.spanish)
+        let app = try launchIntoTheSpanishReader()
         // The reader's button and the sheet's title are both "Bookmarks" in Spanish; Done is the sheet's own.
         let elements = try openReaderSheet("Marcadores", titled: "Marcadores", waitingFor: "OK", in: app)
         keepScreenshot(of: app, named: "Bookmarks sheet in Spanish")

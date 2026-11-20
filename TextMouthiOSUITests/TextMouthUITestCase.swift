@@ -97,18 +97,23 @@ class TextMouthUITestCase: XCTestCase {
     /// Launches with the book (Alice, or the book at `path` when it is not
     /// nil) and waits for the reader it opens, with the book loaded: Play is
     /// there, and its value no longer says "Loading". `arguments` are added to
-    /// the launch's (`launch(sendingBookAt:textSize:arguments:)`).
+    /// the launch's (`launch(sendingBookAt:textSize:arguments:)`). An app
+    /// started in another language names its Play button and that value in
+    /// it, so a test that starts one passes the language's `playLabel` and
+    /// `loadingValue` (Q17).
     func launchIntoTheReader(
         sendingBookAt path: String? = nil,
         textSize: String? = nil,
-        arguments: [String] = []
+        arguments: [String] = [],
+        playLabel: String = "Play",
+        loadingValue: String = "Loading"
     ) throws -> XCUIApplication {
         let app = try launch(sendingBookAt: path ?? Self.bookPath(), textSize: textSize, arguments: arguments)
-        let play = app.buttons["Play"]
+        let play = app.buttons[playLabel]
         XCTAssertTrue(play.appears(within: Self.patience), "The reader never opened:\n\(app.debugDescription)")
         // Not the test case's own expectation, so nothing is left unwaited.
         let loaded = XCTNSPredicateExpectation(
-            predicate: NSPredicate(format: "value == nil OR value != %@", "Loading"), object: play
+            predicate: NSPredicate(format: "value == nil OR value != %@", loadingValue), object: play
         )
         XCTAssertEqual(XCTWaiter().wait(for: [loaded], timeout: Self.patience), .completed, "The book never finished loading")
         return app
