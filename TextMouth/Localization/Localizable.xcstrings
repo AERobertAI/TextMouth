@@ -88265,6 +88265,12 @@
             "state" : "machine_translated",
             "value" : "Move o cursor para a marca de capítulo anterior."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "将光标移到上一个章节标记。"
+          }
         }
       }
     },
@@ -88299,6 +88305,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Move o cursor para o início do áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "将光标移到音频开头。"
           }
         }
       }
@@ -89478,6 +89490,12 @@
             "state" : "machine_translated",
             "value" : "Nome"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "名称"
+          }
         }
       }
     },
@@ -90248,6 +90266,12 @@
             "state" : "machine_translated",
             "value" : "Nova predefinição de filtro"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新建滤波器预设"
+          }
         }
       }
     },
@@ -90463,6 +90487,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nova gravação"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新建录音"
           }
         }
       }
@@ -91549,6 +91579,12 @@
             "state" : "machine_translated",
             "value" : "Nenhum arquivo de áudio foi encontrado em %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在“%@”中没有找到音频文件。"
+          }
         }
       }
     },
@@ -91829,6 +91865,12 @@
             "state" : "machine_translated",
             "value" : "Nenhuma marca de capítulo depois do cursor."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "光标之后没有章节标记。"
+          }
         }
       }
     },
@@ -91863,6 +91905,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhuma marca de capítulo antes do cursor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "光标之前没有章节标记。"
           }
         }
       }
@@ -91899,6 +91947,12 @@
             "state" : "machine_translated",
             "value" : "Não há marcas de capítulo nem marcas, então nenhum arquivo de rótulos seria gravado."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有章节标记或标记，因此不会写入标签文件。"
+          }
         }
       }
     },
@@ -91933,6 +91987,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhuma limpeza a desfazer: a transcrição anterior não existe mais."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有可撤销的整理：之前的文字稿已不存在。"
           }
         }
       }
@@ -92144,6 +92204,12 @@
             "state" : "machine_translated",
             "value" : "Nenhuma edição"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有编辑"
+          }
         }
       }
     },
@@ -92178,6 +92244,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhuma edição, não salvo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有编辑，未存储"
           }
         }
       }
@@ -92284,6 +92356,12 @@
             "state" : "machine_translated",
             "value" : "Nenhuma predefinição de filtro. Adicione uma ou restaure os padrões."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有滤波器预设。请添加一个，或恢复为默认设置。"
+          }
         }
       }
     },
@@ -92318,6 +92396,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhuma predefinição de filtro. Adicione algumas nos ajustes de Armazenamento, em Edição de áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有滤波器预设。请在“存储”设置的“音频编辑”下添加。"
           }
         }
       }
@@ -92459,6 +92543,12 @@
             "state" : "machine_translated",
             "value" : "Nenhuma marca ainda. Adicionar marca coloca uma no cursor."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "尚无标记。“添加标记”会在光标处放置一个。"
+          }
         }
       }
     },
@@ -92529,6 +92619,12 @@
             "state" : "machine_translated",
             "value" : "Nenhum microfone"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有麦克风"
+          }
         }
       }
     },
@@ -92564,6 +92660,12 @@
             "state" : "machine_translated",
             "value" : "Nenhum microfone conectado"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未连接麦克风"
+          }
         }
       }
     },
@@ -92598,6 +92700,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhum microfone está conectado. Conecte um para gravar por cima."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未连接麦克风。请连接一个以覆盖录制。"
           }
         }
       }
@@ -93156,6 +93264,12 @@
             "state" : "machine_translated",
             "value" : "Nenhum áudio original é mantido para este livro, então as edições salvas não podem ser desfeitas."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此书没有保留原始音频，因此已存储的编辑无法撤销。"
+          }
         }
       }
     },
@@ -93190,6 +93304,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhum original é mantido, então não é possível reverter. Desfazer retoma as edições feitas desde o último salvamento."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有保留原始音频，因此无法还原。“撤销”可取消上次存储之后的编辑。"
           }
         }
       }
@@ -93226,6 +93346,12 @@
             "state" : "machine_translated",
             "value" : "Nenhum original é mantido: as edições alteram o áudio no próprio arquivo, e as edições salvas não podem ser desfeitas."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有保留原始音频：编辑会直接更改音频，已存储的编辑无法撤销。"
+          }
         }
       }
     },
@@ -93260,6 +93386,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhuma pausa depois do cursor."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "光标之后没有停顿。"
           }
         }
       }
@@ -93296,6 +93428,12 @@
             "state" : "machine_translated",
             "value" : "Nenhuma pausa antes do cursor."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "光标之前没有停顿。"
+          }
         }
       }
     },
@@ -93330,6 +93468,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhuma pausa foi encontrada."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有找到停顿。"
           }
         }
       }
@@ -93786,6 +93930,12 @@
             "state" : "machine_translated",
             "value" : "Nenhuma regra altera esta transcrição."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有规则会更改此文字稿。"
+          }
         }
       }
     },
@@ -93926,6 +94076,12 @@
             "state" : "machine_translated",
             "value" : "Sem atalho."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有快捷键。"
+          }
         }
       }
     },
@@ -93960,6 +94116,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nenhum som de %@. Verifique se o microfone está ligado e não está no mudo."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有从 %@ 收到声音。请检查麦克风是否已打开且未静音。"
           }
         }
       }
@@ -95276,6 +95438,12 @@
             "state" : "machine_translated",
             "value" : "Agora não"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "稍后再说"
+          }
         }
       }
     },
@@ -95728,6 +95896,12 @@
             "state" : "machine_translated",
             "value" : "Ainda não estão no áudio do livro. Descartar as desfaz; na próxima vez que você editar este livro, Refazer as traz de volta até você fazer outra edição."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "尚未写入图书的音频。“放弃”会将其撤销；下次编辑此书时，“重做”可将其恢复，直到你进行另一项编辑。"
+          }
         }
       }
     },
@@ -95762,6 +95936,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não mantido"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未保留"
           }
         }
       }
@@ -95902,6 +96082,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sem gravação"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未在录音"
           }
         }
       }
@@ -96148,6 +96334,12 @@
             "state" : "machine_translated",
             "value" : "Nada foi cortado nem copiado."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "尚未剪切或拷贝任何内容。"
+          }
         }
       }
     },
@@ -96323,6 +96515,12 @@
             "state" : "machine_translated",
             "value" : "Nada está sendo reproduzido."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有正在播放的内容。"
+          }
         }
       }
     },
@@ -96357,6 +96555,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nada está selecionado."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未选择任何内容。"
           }
         }
       }
@@ -96428,6 +96632,12 @@
             "state" : "machine_translated",
             "value" : "Nada a reverter: nenhuma edição pode ser desfeita."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有可还原的内容：没有可撤销的编辑。"
+          }
         }
       }
     },
@@ -96462,6 +96672,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nada a salvar: o áudio do livro já contém todas as edições."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有需要存储的内容：图书的音频已包含所有编辑。"
           }
         }
       }
@@ -96568,6 +96784,12 @@
             "state" : "machine_translated",
             "value" : "Nada foi gravado, então não há nada a salvar."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "没有录到任何内容，因此没有可存储的内容。"
+          }
         }
       }
     },
@@ -96602,6 +96824,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Agora com %@ de duração."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "现在长度为 %@。"
           }
         }
       }
@@ -97052,6 +97280,12 @@
             "state" : "machine_translated",
             "value" : "OK"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "好"
+          }
         }
       }
     },
@@ -97156,6 +97390,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Oferecer transcrição após importar um audiolivro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "导入有声书后提示转录"
           }
         }
       }
@@ -97402,6 +97642,12 @@
             "state" : "machine_translated",
             "value" : "Só o áudio de um audiolivro pode ser editado."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "只能编辑有声书的音频。"
+          }
         }
       }
     },
@@ -97506,6 +97752,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Só audiolivros podem ser transcritos."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "只有有声书可以转录。"
           }
         }
       }
@@ -97854,6 +98106,12 @@
             "state" : "machine_translated",
             "value" : "Abrir ajustes de privacidade"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "打开隐私设置"
+          }
         }
       }
     },
@@ -98028,6 +98286,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abrir no leitor"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在阅读器中打开"
           }
         }
       }
@@ -98589,6 +98853,12 @@
             "state" : "machine_translated",
             "value" : "Abre %@ em uma janela do leitor."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在阅读器窗口中打开“%@”。"
+          }
         }
       }
     },
@@ -98693,6 +98963,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abre Transcrever áudio, que começa na hora se o modelo do idioma estiver neste Mac; senão, baixe-o ali e escolha Transcrever."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "打开“转录音频”；如果此 Mac 上已有该语言的模型，会立即开始，否则请在其中下载，然后选取“转录”。"
           }
         }
       }
@@ -99184,6 +99460,12 @@
             "state" : "machine_translated",
             "value" : "Abre os ajustes de privacidade do Microfone nos Ajustes do Sistema."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在“系统设置”中打开“麦克风”隐私设置。"
+          }
         }
       }
     },
@@ -99358,6 +99640,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abre as predefinições de filtro, para editar, adicionar, reordenar, excluir ou restaurar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "打开滤波器预设，以便编辑、添加、重新排序、删除或重置。"
           }
         }
       }
@@ -99674,6 +99962,12 @@
             "state" : "machine_translated",
             "value" : "Abre sua cópia das regras, transcript-cleanup.json, no seu editor de texto, criada na primeira vez a partir das regras do próprio TextMouth. As alterações valem quando você volta ao TextMouth."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在文本编辑器中打开你的规则副本 transcript-cleanup.json；首次打开时由 TextMouth 自带的规则生成。返回 TextMouth 后更改即会生效。"
+          }
         }
       }
     },
@@ -99779,6 +100073,12 @@
             "state" : "machine_translated",
             "value" : "Áudio original"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "原始音频"
+          }
         }
       }
     },
@@ -99848,6 +100148,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Áudio original deste livro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此书的原始音频"
           }
         }
       }
@@ -100126,6 +100432,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "原始音频会在图书存储或上次编辑后保留 %lld 天，然后删除。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -100161,6 +100479,12 @@
             "state" : "machine_translated",
             "value" : "Os originais são mantidos até o livro ser removido."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "原始音频会一直保留，直到图书被移除。"
+          }
         }
       }
     },
@@ -100195,6 +100519,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fim marcado em %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "出点位于 %@。"
           }
         }
       }
@@ -101109,6 +101439,12 @@
             "state" : "machine_translated",
             "value" : "Colados %@ de volta onde foram cortados."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已将 %@ 粘贴回剪切处。"
+          }
         }
       }
     },
@@ -101150,6 +101486,12 @@
             "state" : "machine_translated",
             "value" : "Colados %1$@ sobre %2$@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已将 %1$@ 粘贴到 %2$@ 之上。"
+          }
         }
       }
     },
@@ -101185,6 +101527,12 @@
             "state" : "machine_translated",
             "value" : "Colados %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已粘贴 %@。"
+          }
         }
       }
     },
@@ -101219,6 +101567,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cola no cursor ou sobre a seleção. Logo depois de cortar, move o áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在光标处粘贴，或粘贴到所选内容之上。剪切后立即粘贴会移动音频。"
           }
         }
       }
@@ -101394,6 +101748,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pausa %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停顿 %@"
           }
         }
       }
@@ -101637,6 +101997,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "已暂停 %lld 本正在播放的图书。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -101671,6 +102043,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pausado em %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已暂停于 %@。"
           }
         }
       }
@@ -101707,6 +102085,12 @@
             "state" : "machine_translated",
             "value" : "Pausado."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已暂停。"
+          }
         }
       }
     },
@@ -101742,6 +102126,12 @@
             "state" : "machine_translated",
             "value" : "Pausas"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停顿"
+          }
         }
       }
     },
@@ -101776,6 +102166,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pausa a gravação; %@ continua a mesma gravação."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "暂停录音；“%@”可继续同一段录音。"
           }
         }
       }
@@ -102336,6 +102732,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reproduzir meio segundo após cada movimento"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "每次移动后播放半秒"
           }
         }
       }
@@ -103002,6 +103404,12 @@
             "state" : "machine_translated",
             "value" : "Reproduzindo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在播放"
+          }
         }
       }
     },
@@ -103037,6 +103445,12 @@
             "state" : "machine_translated",
             "value" : "Reproduzindo desde o início."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从开头播放。"
+          }
         }
       }
     },
@@ -103071,6 +103485,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reproduz uma prévia; escolha Aplicar de novo para aplicar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放预览；再次选取“应用”即可应用。"
           }
         }
       }
@@ -103142,6 +103562,12 @@
             "state" : "machine_translated",
             "value" : "Reproduz a partir do cursor ou pausa."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从光标处播放，或暂停。"
+          }
         }
       }
     },
@@ -103176,6 +103602,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reproduz meio segundo no cursor após cada movimento."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "每次移动后在光标处播放半秒。"
           }
         }
       }
@@ -103421,6 +103853,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reproduz a seleção e para no fim dela."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "播放所选内容，并在其结尾处停止。"
           }
         }
       }
@@ -103874,6 +104312,12 @@
             "state" : "machine_translated",
             "value" : "Posição"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "位置"
+          }
         }
       }
     },
@@ -104131,6 +104575,12 @@
             "state" : "machine_translated",
             "value" : "Predefinições de outro Mac acabaram de chegar e substituíram estas. Faça a alteração de novo."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "另一台 Mac 的预设刚刚到达并替换了这些预设。请重新进行更改。"
+          }
         }
       }
     },
@@ -104271,6 +104721,12 @@
             "state" : "machine_translated",
             "value" : "Prévia"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "预览"
+          }
         }
       }
     },
@@ -104376,6 +104832,12 @@
             "state" : "machine_translated",
             "value" : "Pré-visualizar filtros antes de aplicar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "应用前预览滤波器"
+          }
         }
       }
     },
@@ -104446,6 +104908,12 @@
             "state" : "machine_translated",
             "value" : "Reproduzindo primeiro uma prévia de %@. Escolha Aplicar de novo para aplicá-la."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在先预览 %@。请再次选取“应用”以应用。"
+          }
         }
       }
     },
@@ -104480,6 +104948,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reproduzindo prévia de %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在预览 %@。"
           }
         }
       }
@@ -105006,6 +105480,12 @@
             "state" : "machine_translated",
             "value" : "Problema: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "问题：%@"
+          }
         }
       }
     },
@@ -105040,6 +105520,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Progresso"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "进度"
           }
         }
       }
@@ -105426,6 +105912,12 @@
             "state" : "machine_translated",
             "value" : "Restaura as predefinições prontas do TextMouth e remove as que você adicionou."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "恢复 TextMouth 自带的预设，并移除你添加的预设。"
+          }
         }
       }
     },
@@ -105460,6 +105952,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Recoloca a transcrição como estava antes da última limpeza."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "将文字稿恢复为上次整理之前的样子。"
           }
         }
       }
@@ -105566,6 +106064,12 @@
             "state" : "machine_translated",
             "value" : "Recolocando a transcrição anterior…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在恢复之前的文字稿…"
+          }
         }
       }
     },
@@ -105670,6 +106174,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mais baixo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "更轻"
           }
         }
       }
@@ -107264,6 +107774,12 @@
             "state" : "machine_translated",
             "value" : "Lendo a transcrição e as regras…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在读取文字稿和规则…"
+          }
         }
       }
     },
@@ -107333,6 +107849,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pronto para gravar com %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "准备好用 %@ 录音。"
           }
         }
       }
@@ -107649,6 +108171,12 @@
             "state" : "machine_translated",
             "value" : "Gravar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "录制"
+          }
         }
       }
     },
@@ -107683,6 +108211,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gravação"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "录音"
           }
         }
       }
@@ -107719,6 +108253,12 @@
             "state" : "machine_translated",
             "value" : "Gravação descartada."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已放弃录音。"
+          }
         }
       }
     },
@@ -107753,6 +108293,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gravando com %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在用 %@ 录音。"
           }
         }
       }
@@ -107795,6 +108341,12 @@
             "state" : "machine_translated",
             "value" : "Gravação de %1$@, %2$@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 的录音，%2$@"
+          }
         }
       }
     },
@@ -107829,6 +108381,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gravação de %@, sem som"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 的录音，其中没有声音"
           }
         }
       }
@@ -107870,6 +108428,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gravando por cima de %1$@ em %2$@, com %3$@, após o sinal sonoro. Gravar por cima ou Parar encerra; Desmarcar seleção descarta."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在用 %3$@ 覆盖录制 %2$@ 处的 %1$@，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。"
           }
         }
       }
@@ -107976,6 +108540,12 @@
             "state" : "machine_translated",
             "value" : "A gravação parou porque o microfone indicou um problema. O que foi gravado foi mantido."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "录音已停止，因为麦克风报告了问题。已录制的内容会保留。"
+          }
         }
       }
     },
@@ -108016,6 +108586,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gravação a inserir em %1$@, com %2$@, após o sinal sonoro. Gravar por cima ou Parar encerra; Desmarcar seleção descarta."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在用 %2$@ 录制，将插入到 %1$@ 处，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。"
           }
         }
       }
@@ -108058,6 +108634,12 @@
             "state" : "machine_translated",
             "value" : "Gravando, %1$@, nível %2$@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在录音，%1$@，电平 %2$@"
+          }
         }
       }
     },
@@ -108093,6 +108675,12 @@
             "state" : "machine_translated",
             "value" : "Gravando. Pare ou descarte com Desmarcar seleção e depois feche."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在录音。请先用“取消选择”停止或放弃录音，然后再关闭。"
+          }
         }
       }
     },
@@ -108127,6 +108715,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gravando. Pare a gravação primeiro."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在录音。请先停止录音。"
           }
         }
       }
@@ -108233,6 +108827,12 @@
             "state" : "machine_translated",
             "value" : "Grava sobre a seleção ou no cursor, após um sinal sonoro. De novo, ou Parar, encerra."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在提示音之后，覆盖所选内容或在光标处录制。再次选取它或选取“停止”即可结束。"
+          }
         }
       }
     },
@@ -108267,6 +108867,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gravações recuperadas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已恢复的录音"
           }
         }
       }
@@ -108408,6 +109014,12 @@
             "state" : "machine_translated",
             "value" : "Refeito: %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已重做 %@。"
+          }
         }
       }
     },
@@ -108477,6 +109089,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Refazer %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重做 %@"
           }
         }
       }
@@ -108617,6 +109235,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Refaz a última edição desfeita."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重做最近撤销的编辑。"
           }
         }
       }
@@ -110009,6 +110633,12 @@
             "state" : "machine_translated",
             "value" : "Remover marca de capítulo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移除章节标记"
+          }
         }
       }
     },
@@ -110215,6 +110845,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Remover ruído grave"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "去除低频噪声"
           }
         }
       }
@@ -110852,6 +111488,12 @@
             "state" : "machine_translated",
             "value" : "Renomear"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新命名"
+          }
         }
       }
     },
@@ -111132,6 +111774,12 @@
             "state" : "machine_translated",
             "value" : "Substituir %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "替换 %@"
+          }
         }
       }
     },
@@ -111202,6 +111850,12 @@
             "state" : "machine_translated",
             "value" : "Substituir transcrição"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "替换文字稿"
+          }
         }
       }
     },
@@ -111236,6 +111890,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Substituir a transcrição de %@?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要替换“%@”的文字稿吗？"
           }
         }
       }
@@ -111312,6 +111972,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Substituído: %1$@, por %2$@ de nova gravação, que está selecionada."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已将 %1$@ 替换为 %2$@ 的新录音，并已选中。"
           }
         }
       }
@@ -111628,6 +112294,12 @@
             "state" : "machine_translated",
             "value" : "A substituição manteve a transcrição da cópia existente."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "替换时保留了现有项目自己的文字稿。"
+          }
         }
       }
     },
@@ -111802,6 +112474,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Restaurar todos os padrões"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部重置为默认设置"
           }
         }
       }
@@ -113098,6 +113776,12 @@
             "state" : "machine_translated",
             "value" : "Retomar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "继续"
+          }
         }
       }
     },
@@ -113132,6 +113816,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retomando."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在继续。"
           }
         }
       }
@@ -113168,6 +113858,12 @@
             "state" : "machine_translated",
             "value" : "Transcrever novamente"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新转录"
+          }
         }
       }
     },
@@ -113203,6 +113899,12 @@
             "state" : "machine_translated",
             "value" : "Transcrever %@ novamente"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新转录“%@”"
+          }
         }
       }
     },
@@ -113237,6 +113939,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Transcrever áudio novamente…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新转录音频…"
           }
         }
       }
@@ -113623,6 +114331,12 @@
             "state" : "machine_translated",
             "value" : "Inverter"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "反向"
+          }
         }
       }
     },
@@ -113693,6 +114407,12 @@
             "state" : "machine_translated",
             "value" : "Reverter"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "还原"
+          }
         }
       }
     },
@@ -113762,6 +114482,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reverter ao áudio original?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要还原为原始音频吗？"
           }
         }
       }
@@ -113896,6 +114622,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Revertido ao áudio original. Refazer traz de volta as %lld edições."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "已还原为原始音频。“重做”可恢复这 %lld 项编辑。"
                 }
               }
             }
@@ -114527,6 +115265,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "规则：TextMouth 自带，版本 %1$@（%2$@），共 %3$lld 条规则。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -114664,6 +115414,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "规则：你的副本，版本 %1$@（%2$@），共 %3$lld 条规则。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -114698,6 +115460,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Executa uma predefinição de filtro sobre a seleção ou o arquivo inteiro."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "对所选内容或整个文件运行滤波器预设。"
           }
         }
       }
@@ -114874,6 +115642,12 @@
             "state" : "machine_translated",
             "value" : "Salvar novamente"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再次存储"
+          }
         }
       }
     },
@@ -114908,6 +115682,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Salvar nome"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "存储名称"
           }
         }
       }
@@ -115014,6 +115794,12 @@
             "state" : "machine_translated",
             "value" : "Salvar e exportar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "存储与导出"
+          }
         }
       }
     },
@@ -115048,6 +115834,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Salvar como audiolivro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "存储为有声书"
           }
         }
       }
@@ -115084,6 +115876,12 @@
             "state" : "machine_translated",
             "value" : "Salvar como audiolivro: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "存储为有声书：%@"
+          }
         }
       }
     },
@@ -115118,6 +115916,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Salvar em"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "存储位置"
           }
         }
       }
@@ -115329,6 +116133,12 @@
             "state" : "machine_translated",
             "value" : "Salvar as edições em “%@”?"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要存储对“%@”的编辑吗？"
+          }
         }
       }
     },
@@ -115404,6 +116214,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Salvar a gravação?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要存储此录音吗？"
           }
         }
       }
@@ -115580,6 +116396,12 @@
             "state" : "machine_translated",
             "value" : "%@ salva"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已存储 %@"
+          }
         }
       }
     },
@@ -115650,6 +116472,12 @@
             "state" : "machine_translated",
             "value" : "Gravação salva como %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已将录音存储为 %@"
+          }
         }
       }
     },
@@ -115685,6 +116513,12 @@
             "state" : "machine_translated",
             "value" : "Gravação salva como %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已将录音存储为 %@。"
+          }
         }
       }
     },
@@ -115719,6 +116553,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Salvo como"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "存储为"
           }
         }
       }
@@ -115790,6 +116630,12 @@
             "state" : "machine_translated",
             "value" : "Salvo. O áudio do livro agora tem %@ de duração."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已存储。图书的音频现在长度为 %@。"
+          }
         }
       }
     },
@@ -115824,6 +116670,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Salva as edições no arquivo de áudio do livro, no formato que o livro mantém."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "将编辑存入图书的音频文件，格式与图书所用格式相同。"
           }
         }
       }
@@ -115895,6 +116747,12 @@
             "state" : "machine_translated",
             "value" : "Salva esta gravação como audiolivro na pasta escolhida em %@, com o título baseado em quando foi gravada."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "将此录音存储为有声书，放入“%@”文件夹，标题为录制时间。"
+          }
         }
       }
     },
@@ -115965,6 +116823,12 @@
             "state" : "machine_translated",
             "value" : "Salvando"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在存储"
+          }
         }
       }
     },
@@ -116006,6 +116870,12 @@
             "state" : "machine_translated",
             "value" : "Salvando %1$@ de áudio como %2$@, o formato que este livro mantém."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在将 %1$@ 的音频存储为 %2$@，即此书所用的格式。"
+          }
         }
       }
     },
@@ -116041,6 +116911,12 @@
             "state" : "machine_translated",
             "value" : "Salvando %@ de áudio no livro."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在将 %@ 的音频存入图书。"
+          }
         }
       }
     },
@@ -116075,6 +116951,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Salvando a gravação…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在存储录音…"
           }
         }
       }
@@ -116181,6 +117063,12 @@
             "state" : "machine_translated",
             "value" : "Diz onde o cursor está, em qual capítulo e o que está selecionado."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "朗读光标所在位置、所在章节和所选内容。"
+          }
         }
       }
     },
@@ -116215,6 +117103,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Diz onde a seleção começa e termina e qual é a duração dela."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "朗读所选内容的起止位置和长度。"
           }
         }
       }
@@ -117231,6 +118125,12 @@
             "state" : "machine_translated",
             "value" : "Segundos entre os anúncios de nível"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "电平播报间隔秒数"
+          }
         }
       }
     },
@@ -117265,6 +118165,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Os segundos devem ser menos de 60."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "秒必须小于 60。"
           }
         }
       }
@@ -117405,6 +118311,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Selecionar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选择"
           }
         }
       }
@@ -117683,6 +118595,12 @@
             "state" : "machine_translated",
             "value" : "Selecionar e marcar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选择与标记"
+          }
         }
       }
     },
@@ -117717,6 +118635,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Selecione um audiolivro e escolha Transcrever áudio de novo."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请选择一本有声书，然后再次选取“转录音频”。"
           }
         }
       }
@@ -117928,6 +118852,12 @@
             "state" : "machine_translated",
             "value" : "Selecionado: %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已选择 %@。"
+          }
         }
       }
     },
@@ -117962,6 +118892,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tudo selecionado: %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已全选 %@。"
           }
         }
       }
@@ -118004,6 +118940,12 @@
             "state" : "machine_translated",
             "value" : "Capítulo %1$@ selecionado: %2$@, %3$@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已选择章节 %1$@：%2$@，%3$@。"
+          }
         }
       }
     },
@@ -118038,6 +118980,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Selecionados %@ antes do capítulo 1."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已选择第 1 章之前的 %@。"
           }
         }
       }
@@ -118074,6 +119022,12 @@
             "state" : "machine_translated",
             "value" : "Seleção"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所选内容"
+          }
         }
       }
     },
@@ -118108,6 +119062,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Seleção desmarcada."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已取消选择。"
           }
         }
       }
@@ -118150,6 +119110,12 @@
             "state" : "machine_translated",
             "value" : "Seleção de %1$@ a %2$@; duração de %3$@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所选内容从 %1$@ 到 %2$@；长度 %3$@。"
+          }
         }
       }
     },
@@ -118184,6 +119150,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Seleciona todo o áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选择全部音频。"
           }
         }
       }
@@ -118220,6 +119192,12 @@
             "state" : "machine_translated",
             "value" : "Seleciona do cursor até o fim da próxima pausa."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从光标选择到下一个停顿的结尾。"
+          }
         }
       }
     },
@@ -118255,6 +119233,12 @@
             "state" : "machine_translated",
             "value" : "Seleciona do fim da pausa anterior até o cursor."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "从上一个停顿的结尾选择到光标。"
+          }
         }
       }
     },
@@ -118289,6 +119273,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Seleciona o capítulo em que o cursor está."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选择光标所在的章节。"
           }
         }
       }
@@ -118535,6 +119525,12 @@
             "state" : "machine_translated",
             "value" : "Definir marca de capítulo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "设置章节标记"
+          }
         }
       }
     },
@@ -118748,6 +119744,12 @@
             "state" : "machine_translated",
             "value" : "Define uma marca de capítulo no cursor, com um título que você digitar."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在光标处设置章节标记，标题由你输入。"
+          }
         }
       }
     },
@@ -118782,6 +119784,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Define o idioma da transcrição. Um idioma marcado como “precisa ser baixado” só é baixado na folha Transcrever áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "设置转录语言。标有“需要下载”的语言只能从“转录音频”下载。"
           }
         }
       }
@@ -119343,6 +120351,12 @@
             "state" : "machine_translated",
             "value" : "Atalho: %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "快捷键：%@。"
+          }
         }
       }
     },
@@ -119448,6 +120462,12 @@
             "state" : "machine_translated",
             "value" : "Atalhos: %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "快捷键：%@。"
+          }
         }
       }
     },
@@ -119482,6 +120502,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Encurtar pausas longas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "缩短长停顿"
           }
         }
       }
@@ -120953,6 +121979,12 @@
             "state" : "machine_translated",
             "value" : "Mostra duração, arquivo e edições; define o que acontece com o áudio original."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "显示长度、文件和编辑；设置原始音频的处理方式。"
+          }
         }
       }
     },
@@ -121233,6 +122265,12 @@
             "state" : "machine_translated",
             "value" : "O silêncio pode durar no máximo um dia."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "静音最长只能持续一天。"
+          }
         }
       }
     },
@@ -121268,6 +122306,12 @@
             "state" : "machine_translated",
             "value" : "O silêncio deve ser maior que zero."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "静音长度必须大于零。"
+          }
         }
       }
     },
@@ -121302,6 +122346,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Em silêncio"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无声"
           }
         }
       }
@@ -124331,6 +125381,12 @@
             "state" : "machine_translated",
             "value" : "Recomeçar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重新开始"
+          }
         }
       }
     },
@@ -124400,6 +125456,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Início do áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频开头。"
           }
         }
       }
@@ -124611,6 +125673,12 @@
             "state" : "machine_translated",
             "value" : "Iniciando…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在开始…"
+          }
         }
       }
     },
@@ -124646,6 +125714,12 @@
             "state" : "machine_translated",
             "value" : "Começa a gravar com %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "开始用 %@ 录音。"
+          }
         }
       }
     },
@@ -124680,6 +125754,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Começa a gravar quando um microfone for conectado."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "连接麦克风后开始录音。"
           }
         }
       }
@@ -124785,6 +125865,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Estado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "状态"
           }
         }
       }
@@ -125063,6 +126149,12 @@
             "state" : "machine_translated",
             "value" : "Ainda localizando as pausas. Tente de novo em instantes."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "仍在查找停顿。请稍后再试。"
+          }
         }
       }
     },
@@ -125133,6 +126225,12 @@
             "state" : "machine_translated",
             "value" : "Ainda processando a última alteração."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "仍在处理上一项更改。"
+          }
         }
       }
     },
@@ -125167,6 +126265,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ainda processando. Feche quando a alteração terminar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "仍在处理。请在更改完成后再关闭。"
           }
         }
       }
@@ -125480,6 +126584,12 @@
             "state" : "machine_translated",
             "value" : "Parar prévia"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止预览"
+          }
         }
       }
     },
@@ -125514,6 +126624,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Parar gravação"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止录制"
           }
         }
       }
@@ -125585,6 +126701,12 @@
             "state" : "machine_translated",
             "value" : "Parar e salvar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止并存储"
+          }
         }
       }
     },
@@ -125619,6 +126741,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Parar e salvar a gravação?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要停止并存储录音吗？"
           }
         }
       }
@@ -126008,6 +127136,12 @@
             "state" : "machine_translated",
             "value" : "Parado. De volta a %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已停止。回到 %@。"
+          }
         }
       }
     },
@@ -126253,6 +127387,12 @@
             "state" : "machine_translated",
             "value" : "Para a reprodução e volta ao ponto onde ela começou."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止播放，并回到开始播放的位置。"
+          }
         }
       }
     },
@@ -126287,6 +127427,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Para a gravação e a salva na sua biblioteca como audiolivro."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止录音，并将其作为有声书存入你的资料库。"
           }
         }
       }
@@ -126357,6 +127503,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Interrompe o download. Nada é instalado."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止下载。不会安装任何内容。"
           }
         }
       }
@@ -126567,6 +127719,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Interrompe a transcrição. O livro continua como estava."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "停止转录。图书保持原样。"
           }
         }
       }
@@ -129346,6 +130504,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth anexa arquivos WebVTT (.vtt) e SubRip (.srt)."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 可附加 WebVTT (.vtt) 和 SubRip (.srt) 文件。"
+          }
         }
       }
     },
@@ -131398,6 +132562,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não conseguiu iniciar a gravação com %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 无法开始用 %@ 录音。"
+          }
         }
       }
     },
@@ -131671,6 +132841,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "O TextMouth não relê marcas de capítulo de arquivos %@, então este livro não listará as %lld marcas de capítulo depois de salvo."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth 不会从 %@ 文件读回章节标记，因此存储后此书不会列出其 %lld 个章节标记。"
                 }
               }
             }
@@ -132057,6 +133239,12 @@
             "state" : "machine_translated",
             "value" : "O TextMouth não tem regras próprias: nenhuma serviu em todos os livros testados. Editar regras… abre sua cópia, onde você pode adicionar regras, como um nome que o reconhecedor sempre escreve de outro jeito."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 没有自带规则：没有一条规则适用于所有测试过的图书。“编辑规则…”会打开你的副本，你可以在其中添加规则，例如识别器总是拼错的名字。"
+          }
         }
       }
     },
@@ -132231,6 +133419,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth já está transcrevendo %@. Tente de novo quando terminar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 已在转录“%@”。请在其完成后再试。"
           }
         }
       }
@@ -132683,6 +133877,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth está sendo encerrado e o áudio do livro ainda não contém estas edições. Descartar as desfaz; na próxima vez que você editar este livro, Refazer as traz de volta até você fazer outra edição. Cancelar mantém o TextMouth aberto."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 正在退出，图书的音频尚未包含这些编辑。“放弃”会将其撤销；下次编辑此书时，“重做”可将其恢复，直到你进行另一项编辑。“取消”会让 TextMouth 保持打开。"
           }
         }
       }
@@ -133173,6 +134373,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O TextMouth não tem permissão para usar o microfone. Ative em Ajustes do Sistema, Privacidade e Segurança, Microfone."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 无权使用麦克风。请在“系统设置”的“隐私与安全性”下的“麦克风”中打开。"
           }
         }
       }
@@ -135252,6 +136458,12 @@
             "state" : "machine_translated",
             "value" : "Os filtros do próprio TextMouth não incluem “%1$@”. São eles: %2$@; com o ffmpeg instalado, todos os filtros dele funcionam."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 自带的滤波器不包括“%1$@”。它们是 %2$@；安装 ffmpeg 后，其所有滤波器都可使用。"
+          }
         }
       }
     },
@@ -135286,6 +136498,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Os filtros do próprio TextMouth executam esta cadeia."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 自带的滤波器会运行此滤波器链。"
           }
         }
       }
@@ -135322,6 +136540,12 @@
             "state" : "machine_translated",
             "value" : "o loudnorm do próprio TextMouth normaliza com um único ganho, então aceita apenas true"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 自带的 loudnorm 以单一增益进行归一化，因此只接受 true"
+          }
         }
       }
     },
@@ -135356,6 +136580,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "As regras do próprio TextMouth são mais recentes, versão %@. Para usá-las, exclua sua cópia ou copie as regras delas para ela."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 自带的规则更新，版本为 %@。要使用它们，请删除你的副本，或将其规则拷贝到你的副本中。"
           }
         }
       }
@@ -135642,6 +136872,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Esse item não é um arquivo comum que o TextMouth consiga ler."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "该项目不是 TextMouth 可读取的普通文件。"
           }
         }
       }
@@ -136057,6 +137293,12 @@
             "state" : "machine_translated",
             "value" : "Isso está depois do fim do áudio, em %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "该时间已超出音频结尾 %@。"
+          }
         }
       }
     },
@@ -136133,6 +137375,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo %@ não contém texto cronometrado que o TextMouth possa usar."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此 %@ 文件中没有 TextMouth 可用的带时间文本。"
+          }
         }
       }
     },
@@ -136173,6 +137421,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O filtro %1$@ não tem a opção “%2$@” aqui. As opções são %3$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 滤波器在此处没有“%2$@”选项。其选项有 %3$@。"
           }
         }
       }
@@ -136215,6 +137469,12 @@
             "state" : "machine_translated",
             "value" : "O filtro %1$@ precisa da opção %2$@: %3$@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 滤波器需要其 %2$@：%3$@。"
+          }
         }
       }
     },
@@ -136249,6 +137509,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O filtro %@ recebeu mais valores do que opções; informe-os como key=value."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 滤波器收到的值多于其选项；请以 key=value 的形式给出。"
           }
         }
       }
@@ -136290,6 +137556,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A opção %2$@ do filtro %1$@ não pode ser “%3$@”: %4$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 滤波器的 %2$@ 不能为“%3$@”：%4$@。"
           }
         }
       }
@@ -136647,6 +137919,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível baixar o modelo de %1$@: %2$@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法下载 %1$@ 模型：%2$@"
+          }
         }
       }
     },
@@ -136682,6 +137960,12 @@
             "state" : "machine_translated",
             "value" : "O modelo de %@ foi baixado. O livro já pode ser transcrito."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 模型已下载。现在可以转录这本书了。"
+          }
         }
       }
     },
@@ -136716,6 +138000,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O download do modelo de %@ foi cancelado."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已取消 %@ 模型的下载。"
           }
         }
       }
@@ -137114,6 +138404,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "将删除这 %lld 个标记，且“重做”无法将其恢复。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -137247,6 +138549,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "As %lld marcas foram excluídas."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "已删除 %lld 个标记。"
                 }
               }
             }
@@ -139051,6 +140365,12 @@
             "state" : "machine_translated",
             "value" : "Não é possível editar o áudio"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法编辑此音频"
+          }
         }
       }
     },
@@ -139203,6 +140523,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível exportar o áudio."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法导出音频。"
+          }
         }
       }
     },
@@ -139237,6 +140563,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível ler o áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法读取音频。"
           }
         }
       }
@@ -139307,6 +140639,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O editor de áudio de %@ já está aberto."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”的音频编辑器已经打开。"
           }
         }
       }
@@ -139620,6 +140958,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo de áudio “%@”, necessário para as edições, está ausente do livro."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "编辑所需的音频文件“%@”不在图书中。"
+          }
         }
       }
     },
@@ -139654,6 +140998,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O áudio está apenas na nuvem, ainda não neste Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频仅在云端，尚未下载到这台 Mac。"
           }
         }
       }
@@ -139690,6 +141040,12 @@
             "state" : "machine_translated",
             "value" : "O áudio ainda não está pronto para reprodução."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频尚未准备好播放。"
+          }
         }
       }
     },
@@ -139724,6 +141080,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível abrir o áudio de %@ para edição."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法打开“%@”的音频进行编辑。"
           }
         }
       }
@@ -139801,6 +141163,12 @@
             "state" : "machine_translated",
             "value" : "O áudio do audiolivro, sua posição e seus marcadores permanecem como estão."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "有声书的音频、你的位置和你的书签保持不变。"
+          }
         }
       }
     },
@@ -139835,6 +141203,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O título do audiolivro na sua biblioteca."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "有声书在你资料库中的标题。"
           }
         }
       }
@@ -139947,6 +141321,12 @@
             "state" : "machine_translated",
             "value" : "O livro pode ser transcrito novamente."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本书可以再次转录。"
+          }
         }
       }
     },
@@ -139981,6 +141361,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O livro já tem uma transcrição, então o TextMouth a manteve."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本书已有文字稿，因此 TextMouth 保留了它。"
           }
         }
       }
@@ -140086,6 +141472,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O livro está sendo transcrito novamente. Limpe a transcrição quando terminar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本书正在重新转录。请在其完成后整理其文字稿。"
           }
         }
       }
@@ -140262,6 +141654,12 @@
             "state" : "machine_translated",
             "value" : "O livro não está mais na biblioteca."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本书已不在资料库中。"
+          }
         }
       }
     },
@@ -140332,6 +141730,12 @@
             "state" : "machine_translated",
             "value" : "O livro está aberto em um leitor. Feche-o e salve de novo."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "这本书已在阅读器中打开。请将其关闭，然后再次存储。"
+          }
         }
       }
     },
@@ -140401,6 +141805,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O livro saiu da biblioteca durante a transcrição, então a transcrição não foi salva."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "转录期间这本书已离开资料库，因此未存储其文字稿。"
           }
         }
       }
@@ -140542,6 +141952,12 @@
             "state" : "machine_translated",
             "value" : "O áudio do livro mudou desde que foi transcrito (%@), então a transcrição não se encaixa mais. Transcreva de novo."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "自转录以来图书的音频已更改（%@），因此文字稿已不再适用。请重新转录。"
+          }
         }
       }
     },
@@ -140577,6 +141993,12 @@
             "state" : "machine_translated",
             "value" : "O áudio do livro mudou durante a transcrição: %@. Transcreva-o de novo."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "转录期间图书的音频已更改：%@。请重新转录。"
+          }
         }
       }
     },
@@ -140611,6 +142033,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O áudio do livro contém edições que o histórico perdeu, então elas permanecem, para salvar ou desfazer na próxima vez que você editar este livro."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书的音频中有其历史记录已丢失的编辑，因此它们会保留，供你下次编辑此书时存储或撤销。"
           }
         }
       }
@@ -140962,6 +142390,12 @@
             "state" : "machine_translated",
             "value" : "O texto do livro tem alterações que o TextMouth não conseguiu copiar, então ele deixa o texto como está."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书的文本有 TextMouth 无法拷贝的更改，因此保持文本不变。"
+          }
         }
       }
     },
@@ -140996,6 +142430,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O texto do livro está apenas no iCloud, então o TextMouth o deixa como está. Baixe o livro e tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书的文本仅在 iCloud 中，因此 TextMouth 不会处理它。请下载此书，然后重试。"
           }
         }
       }
@@ -141066,6 +142506,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A transcrição do livro não pôde ser lida, então não foi exportada."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法读取这本书的文字稿，因此未导出。"
           }
         }
       }
@@ -142059,6 +143505,12 @@
             "state" : "machine_translated",
             "value" : "O disco está quase cheio, então a gravação parou. O que foi gravado foi mantido."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "磁盘几乎已满，因此录音已停止。已录制的内容会保留。"
+          }
         }
       }
     },
@@ -142093,6 +143545,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O disco está cheio demais para guardar este áudio para colar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "磁盘太满，无法保留此音频以供粘贴。"
           }
         }
       }
@@ -142351,6 +143809,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível ler o histórico de edições. Uma cópia foi mantida no pacote do livro."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法读取编辑历史记录。副本已保留在图书的包中。"
+          }
         }
       }
     },
@@ -142385,6 +143849,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O histórico de edições está apenas na nuvem, ainda não neste Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "编辑历史记录仅在云端，尚未下载到这台 Mac。"
           }
         }
       }
@@ -142421,6 +143891,12 @@
             "state" : "machine_translated",
             "value" : "O histórico de edições cita um arquivo fora do livro, então não é usado."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "编辑历史记录指向图书之外的文件，因此不使用它。"
+          }
         }
       }
     },
@@ -142455,6 +143931,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível ler o histórico de edições de %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法读取“%@”的编辑历史记录。"
           }
         }
       }
@@ -142491,6 +143973,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível gravar o áudio editado."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法写入编辑后的音频。"
+          }
         }
       }
     },
@@ -142525,6 +144013,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível salvar as edições."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法存储编辑。"
           }
         }
       }
@@ -143556,6 +145050,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo é uma transcrição %1$@ da versão %2$@, que o TextMouth não lê."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此文件是 TextMouth 无法读取的 %1$@ 文字稿，版本为 %2$@。"
+          }
         }
       }
     },
@@ -143591,6 +145091,12 @@
             "state" : "machine_translated",
             "value" : "O arquivo ultrapassa o limite de %lld MB para uma transcrição."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此文件超过了文字稿 %lld MB 的上限。"
+          }
         }
       }
     },
@@ -143625,6 +145131,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O arquivo não é uma transcrição %@ que o TextMouth consiga ler."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此文件不是 TextMouth 可读取的 %@ 文字稿。"
           }
         }
       }
@@ -144123,6 +145635,12 @@
             "state" : "machine_translated",
             "value" : "A cadeia de filtros está vazia."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "滤波器链为空。"
+          }
         }
       }
     },
@@ -144157,6 +145675,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "As predefinições de filtro foram restauradas aos padrões."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "滤波器预设已重置为默认设置。"
           }
         }
       }
@@ -145576,6 +147100,12 @@
             "state" : "machine_translated",
             "value" : "A pasta da biblioteca em que a gravação é salva."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "录音所存入的资料库文件夹。"
+          }
         }
       }
     },
@@ -146031,6 +147561,12 @@
             "state" : "machine_translated",
             "value" : "A biblioteca não está disponível, então as predefinições de filtro não podem ser salvas."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "资料库不可用，因此无法存储滤波器预设。"
+          }
         }
       }
     },
@@ -146065,6 +147601,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "A biblioteca não está disponível, então as regras não podem ser abertas agora."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "资料库不可用，因此现在无法打开规则。"
           }
         }
       }
@@ -146328,6 +147870,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "O microfone de onde Gravar por cima grava. O TextMouth o memoriza, separado da entrada do macOS."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "覆盖录制所用的麦克风。TextMouth 会记住它，与 macOS 的输入设备无关。"
           }
         }
       }
