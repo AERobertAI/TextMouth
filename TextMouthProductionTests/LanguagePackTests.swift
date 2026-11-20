@@ -386,8 +386,10 @@ final class LanguagePackTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: root) }
 
-        // Every category CLDR has, each form's text being the category's own name.
-        let everyCategory = ["zero", "one", "two", "few", "many", "other"]
+        // Every category the nine languages use, each form's text being the category's own name. `zero` is left out
+        // on purpose: Foundation reads an explicit `zero` form as "the count is 0" in every language, which is not
+        // a language's own rule (the first run of this test, on GitHub, showed German at 0 choosing `zero`).
+        let everyCategory = ["one", "two", "few", "many", "other"]
         var forms: [String: Any] = ["NSStringFormatSpecTypeKey": "NSStringPluralRuleType", "NSStringFormatValueTypeKey": "lld"]
         for category in everyCategory { forms[category] = "\(category) %lld" }
         let key = "%lld probe"
