@@ -992,8 +992,8 @@ extension ReaderViewModel {
     /// What the listener hears when this reader's sleep timer runs out on
     /// its own clock and pauses playback: one counting minutes.
     nonisolated static var sleepTimerExpiredAnnouncement: String {
-        String(localized: "Sleep timer expired. Playback paused.",
-               comment: "VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book.")
+        // Translators: VoiceOver announcement as a sleep timer of so many minutes runs out and pauses the book.
+        String(localized: "Sleep timer expired. Playback paused.")
     }
 
     /// What the listener hears when this reader's sleep timer stops playback
@@ -1006,8 +1006,8 @@ extension ReaderViewModel {
     /// listener hears instead that the book finished and why nothing follows
     /// (`handleEndOfBook()`).
     nonisolated static var sleepTimerStoppedAtHeadingEndAnnouncement: String {
-        String(localized: "Sleep timer expired at the end of the heading. Playback paused.",
-               comment: "VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends.")
+        // Translators: VoiceOver announcement as a sleep timer set to End of heading pauses the book where the heading ends.
+        String(localized: "Sleep timer expired at the end of the heading. Playback paused.")
     }
 
     /// Stop where the chapter just played ended, because this reader's sleep
@@ -2740,8 +2740,8 @@ extension ReaderViewModel {
     /// chapter is at fault, but the system's audio, which a fresh player may
     /// get past and a fresh launch of TextMouth will.
     nonisolated static var audioStoppedRespondingMessage: String {
-        String(localized: "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
-               comment: "Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name.")
+        // Translators: Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name.
+        String(localized: "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.")
     }
 
     /// What the listener is told when the memory guard stopped playback,
@@ -2751,11 +2751,11 @@ extension ReaderViewModel {
     nonisolated static func memoryRunawayMessage(footprint: UInt64) -> String {
         #if os(iOS)
         // The spec's "Words that say Mac": the phone's audio is the system's.
-        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in the system's audio.",
-               comment: "Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes).")
+        // Translators: Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before "GB" (gigabytes).
+        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in the system's audio.")
         #else
-        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in macOS's audio.",
-               comment: "Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes); macOS is the name of the Mac's system.")
+        // Translators: Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before "GB" (gigabytes); macOS is the name of the Mac's system.
+        String(localized: "Playback stopped because TextMouth's memory grew to \(MemoryFootprint.gigabytes(footprint)) GB while the audio played, a fault in macOS's audio.")
         #endif
     }
 
@@ -2823,23 +2823,23 @@ extension ReaderViewModel {
             return memoryRunawayMessage(footprint: footprint)
         case .fileMissing:
             head = bookHasPackage
-                ? String(localized: "Chapter \(number) could not be played: \(problem) from the book's package.",
-                         comment: "First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file chapter3.mp3 is missing\".")
+                // Translators: First sentence of the message when a chapter's audio file is missing from the book's package. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as "the file chapter3.mp3 is missing".
+                ? String(localized: "Chapter \(number) could not be played: \(problem) from the book's package.")
                 : chapterCouldNotBePlayed(number: number, problem: problem)
-            remedy = String(localized: "Re-import the book to restore it.",
-                            comment: "Second sentence of the message when a chapter's audio file is missing: what to do.")
+            // Translators: Second sentence of the message when a chapter's audio file is missing: what to do.
+            remedy = String(localized: "Re-import the book to restore it.")
         case .fileUnreadable:
             head = chapterCouldNotBePlayed(number: number, problem: problem)
-            remedy = String(localized: "Re-import the book to replace it.",
-                            comment: "Second sentence of the message when a chapter's audio file is unreadable: what to do.")
+            // Translators: Second sentence of the message when a chapter's audio file is unreadable: what to do.
+            remedy = String(localized: "Re-import the book to replace it.")
         case .failedDuringPlayback:
             head = chapterCouldNotBePlayed(number: number, problem: problem)
-            remedy = String(localized: "Choose Retry to try again, or re-import the book if it keeps failing.",
-                            comment: "Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button.")
+            // Translators: Second sentence of the message when a chapter failed while playing: what to do. Retry is the name of a button.
+            remedy = String(localized: "Choose Retry to try again, or re-import the book if it keeps failing.")
         case .stalled:
             head = chapterCouldNotBePlayed(number: number, problem: problem)
-            remedy = String(localized: "Check that the disk holding your library is connected, then choose Retry.",
-                            comment: "Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button.")
+            // Translators: Second sentence of the message when a chapter's playback stalled: what to do. Retry is the name of a button.
+            remedy = String(localized: "Check that the disk holding your library is connected, then choose Retry.")
         }
         return SentenceWording.joined([head, remedy])
     }
@@ -2847,8 +2847,8 @@ extension ReaderViewModel {
     /// The first sentence of a chapter's playback failure that says nothing
     /// of the book's package: "Chapter 3 could not be played: <what went wrong>."
     private nonisolated static func chapterCouldNotBePlayed(number: String, problem: String) -> String {
-        String(localized: "Chapter \(number) could not be played: \(problem).",
-               comment: "First sentence of the message when a chapter's audio could not be played. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as \"the file is damaged\".")
+        // Translators: First sentence of the message when a chapter's audio could not be played. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is what went wrong, such as "the file is damaged".
+        String(localized: "Chapter \(number) could not be played: \(problem).")
     }
 
     /// The error alert's Retry: close the alert and play the failed chapter
@@ -3671,8 +3671,8 @@ extension ReaderViewModel {
                 "RESTART_ACTION book=\(bookToken) result=reset-active remainingBefore=\(running.remainingSeconds)"
             )
             restartSleepTimer(startPlaybackIfNeeded: true)
-            announceToVoiceOver(String(localized: "Timer reset.",
-                                       comment: "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again."))
+            // Translators: VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.
+            announceToVoiceOver(String(localized: "Timer reset."))
         } else if let last = sleepTimerService.lastUsedDuration {
             // Previous timer ended — re-arm with that duration.
             SleepTimerService.log(
@@ -3680,16 +3680,16 @@ extension ReaderViewModel {
                 "RESTART_ACTION book=\(bookToken) result=rearm-last duration=\(last.logName)"
             )
             startSleepTimer(duration: last, startPlaybackIfNeeded: true)
-            announceToVoiceOver(String(localized: "Timer restarted: \(last.displayName).",
-                                       comment: "VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading."))
+            // Translators: VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading.
+            announceToVoiceOver(String(localized: "Timer restarted: \(last.displayName)."))
         } else {
             // First-ever press — nothing to repeat.
             SleepTimerService.log(
                 .event,
                 "RESTART_ACTION book=\(bookToken) result=no-previous-duration"
             )
-            announceToVoiceOver(String(localized: "No previous sleep timer to restart.",
-                                       comment: "VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set."))
+            // Translators: VoiceOver announcement when the Restart Sleep Timer command finds no timer was ever set.
+            announceToVoiceOver(String(localized: "No previous sleep timer to restart."))
         }
     }
 

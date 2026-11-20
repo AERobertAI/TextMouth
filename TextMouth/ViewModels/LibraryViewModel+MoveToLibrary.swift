@@ -20,17 +20,17 @@ enum MoveToLibraryError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .nothingToMove:
-            return String(localized: "Only an episode or article downloaded in its feed can move into the library.",
-                          comment: "Why Move to Library did nothing: none of the chosen items is an episode or article downloaded in its feed. Follows \"Could not move to the library: \".")
+            // Translators: Why Move to Library did nothing: none of the chosen items is an episode or article downloaded in its feed. Follows "Could not move to the library: ".
+            return String(localized: "Only an episode or article downloaded in its feed can move into the library.")
         case .folderMissing:
-            return String(localized: "The folder chosen is no longer in the library. Choose another folder.",
-                          comment: "Why Move to Library did nothing: the folder chosen was removed from the library. Follows \"Could not move to the library: \".")
+            // Translators: Why Move to Library did nothing: the folder chosen was removed from the library. Follows "Could not move to the library: ".
+            return String(localized: "The folder chosen is no longer in the library. Choose another folder.")
         case .libraryUnavailable:
-            return String(localized: "The library can't move books now. Try again once it is available.",
-                          comment: "Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows \"Could not move to the library: \".")
+            // Translators: Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows "Could not move to the library: ".
+            return String(localized: "The library can't move books now. Try again once it is available.")
         case .recordNotSaved:
-            return String(localized: "TextMouth couldn't save the feed's list of its items, so nothing moved.",
-                          comment: "Why Move to Library did nothing: the feed's record could not be saved. Follows \"Could not move to the library: \".")
+            // Translators: Why Move to Library did nothing: the feed's record could not be saved. Follows "Could not move to the library: ".
+            return String(localized: "TextMouth couldn't save the feed's list of its items, so nothing moved.")
         }
     }
 }
@@ -51,8 +51,8 @@ extension LibraryViewModel {
     /// The context of every failure's words: "Could not move to the
     /// library: …".
     static var moveToLibraryFailureContext: String {
-        String(localized: "Could not move to the library",
-               comment: "Starts every failure of Move to Library, followed by a colon and the reason. Has no full stop.")
+        // Translators: Starts every failure of Move to Library, followed by a colon and the reason. Has no full stop.
+        String(localized: "Could not move to the library")
     }
 
     /// The books of `books` Move to Library… can move, each once, in their

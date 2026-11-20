@@ -2270,32 +2270,32 @@ final class ReaderViewModel: ObservableObject {
 
         /// The retry button's title for audio that could not be played.
         static var retryWording: String {
-            String(localized: "Retry",
-                   comment: "Button of the reader's error alert that tries to play the audio again.")
+            // Translators: Button of the reader's error alert that tries to play the audio again.
+            String(localized: "Retry")
         }
 
         /// The retry button's title for a chapter that could not be fetched from the cloud.
         static var tryAgainWording: String {
-            String(localized: "Try Again",
-                   comment: "Button of the reader's alert about a chapter that could not be downloaded; it tries the download again.")
+            // Translators: Button of the reader's alert about a chapter that could not be downloaded; it tries the download again.
+            String(localized: "Try Again")
         }
 
         /// The title of the alert about a chapter that could not be fetched from the cloud.
         static var chapterNotDownloadedTitle: String {
-            String(localized: "Chapter Not Downloaded",
-                   comment: "Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud.")
+            // Translators: Title of the reader's alert shown when a chapter of an audiobook could not be downloaded from the cloud.
+            String(localized: "Chapter Not Downloaded")
         }
 
         /// The title of the alert about an error that is not an audio failure.
         static var errorTitle: String {
-            String(localized: "Error",
-                   comment: "Title of the reader's alert about a problem that is not an audio failure.")
+            // Translators: Title of the reader's alert about a problem that is not an audio failure.
+            String(localized: "Error")
         }
 
         /// The title of the alert about audio that could not be played.
         static var playbackProblemTitle: String {
-            String(localized: "Playback Problem",
-                   comment: "Title of the reader's alert shown when the audio could not be played.")
+            // Translators: Title of the reader's alert shown when the audio could not be played.
+            String(localized: "Playback Problem")
         }
     }
 

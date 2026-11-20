@@ -325,54 +325,54 @@ enum VoiceAndSpeedWording {
     /// per minute".
     static func speedStepLabel(forward: Bool, wordsPerMinute: Int) -> String {
         if forward {
-            return String(localized: "Increase speed by \(wordsPerMinute) words per minute",
-                          comment: "VoiceOver label of the playback bar's button that raises a text book's speed. %lld is the size of one step in words per minute.")
+            // Translators: VoiceOver label of the playback bar's button that raises a text book's speed. %lld is the size of one step in words per minute.
+            return String(localized: "Increase speed by \(wordsPerMinute) words per minute")
         }
-        return String(localized: "Decrease speed by \(wordsPerMinute) words per minute",
-                      comment: "VoiceOver label of the playback bar's button that lowers a text book's speed. %lld is the size of one step in words per minute.")
+        // Translators: VoiceOver label of the playback bar's button that lowers a text book's speed. %lld is the size of one step in words per minute.
+        return String(localized: "Decrease speed by \(wordsPerMinute) words per minute")
     }
 
     /// Said after a text book's speed changes: "200 words per minute".
     static func speedAnnouncement(wordsPerMinute: Int) -> String {
-        String(localized: "\(wordsPerMinute) words per minute",
-               comment: "Announcement of a text book's new speed after it changed. %lld is the speed in words per minute.")
+        // Translators: Announcement of a text book's new speed after it changed. %lld is the speed in words per minute.
+        String(localized: "\(wordsPerMinute) words per minute")
     }
 
     /// Said after the pitch changes: "Pitch 1.2". `pitch` is the multiplier
     /// with one decimal.
     static func pitchAnnouncement(_ pitch: String) -> String {
-        String(localized: "Pitch \(pitch)",
-               comment: "Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2.")
+        // Translators: Announcement of the voice's new pitch after it changed. %@ is the pitch multiplier with one decimal, such as 1.2.
+        String(localized: "Pitch \(pitch)")
     }
 
     /// Said after a voice is chosen for the book alone.
     static func voiceChanged(to name: String) -> String {
-        String(localized: "Voice changed to \(name)",
-               comment: "Announcement after a voice was chosen for the open book. %@ is the voice's name.")
+        // Translators: Announcement after a voice was chosen for the open book. %@ is the voice's name.
+        String(localized: "Voice changed to \(name)")
     }
 
     /// Said after the book's own voice, speed, and pitch are applied to the global settings.
     static var appliedAsGlobalDefaults: String {
-        String(localized: "Settings applied as global defaults",
-               comment: "Announcement after the open book's own voice, speed, and pitch were applied as the global settings.")
+        // Translators: Announcement after the open book's own voice, speed, and pitch were applied as the global settings.
+        String(localized: "Settings applied as global defaults")
     }
 
     /// Said after an audiobook's speed goes back to the normal one: "Audio
     /// speed reset to 1.0 times speed".
     static func audioSpeedReset(to speed: String) -> String {
-        String(localized: "Audio speed reset to \(speed)",
-               comment: "Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as \"1.0 times speed\".")
+        // Translators: Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as "1.0 times speed".
+        String(localized: "Audio speed reset to \(speed)")
     }
 
     /// Said after a skipped section is included again.
     static func sectionIncluded(_ heading: String) -> String {
-        String(localized: "Section included: \(heading)",
-               comment: "Announcement after a heading's section that was skipped is read again. %@ is the heading's text.")
+        // Translators: Announcement after a heading's section that was skipped is read again. %@ is the heading's text.
+        String(localized: "Section included: \(heading)")
     }
 
     /// Said after a section is set to be skipped.
     static func sectionSkipped(_ heading: String) -> String {
-        String(localized: "Section skipped: \(heading)",
-               comment: "Announcement after a heading's section is set to be skipped. %@ is the heading's text.")
+        // Translators: Announcement after a heading's section is set to be skipped. %@ is the heading's text.
+        String(localized: "Section skipped: \(heading)")
     }
 }

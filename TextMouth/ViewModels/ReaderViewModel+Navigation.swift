@@ -338,46 +338,46 @@ extension ReaderViewModel {
     nonisolated static func headingAnnouncement(arrivingAt heading: Heading, in headings: [Heading]) -> String {
         let words = headingsSharingPlace(with: heading, in: headings).compactMap(\.text.nonBlank)
         let shown = words.isEmpty ? heading.text : words.joined(separator: ", ")
-        return String(localized: "Heading: \(shown)",
-                      comment: "Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas.")
+        // Translators: Announcement on arriving at a heading while reading. %@ is the heading's text; where several headings begin at the same place, their texts joined with commas.
+        return String(localized: "Heading: \(shown)")
     }
 
     /// What VoiceOver hears after a move to the next sentence.
     nonisolated static var nextSentenceAnnouncement: String {
-        String(localized: "Next sentence",
-               comment: "Announcement after the reader moved to the next sentence.")
+        // Translators: Announcement after the reader moved to the next sentence.
+        String(localized: "Next sentence")
     }
 
     /// What VoiceOver hears after a move to the previous sentence.
     nonisolated static var previousSentenceAnnouncement: String {
-        String(localized: "Previous sentence",
-               comment: "Announcement after the reader moved to the previous sentence.")
+        // Translators: Announcement after the reader moved to the previous sentence.
+        String(localized: "Previous sentence")
     }
 
     /// What VoiceOver hears after a move to the next paragraph.
     nonisolated static var nextParagraphAnnouncement: String {
-        String(localized: "Next paragraph",
-               comment: "Announcement after the reader moved to the next paragraph.")
+        // Translators: Announcement after the reader moved to the next paragraph.
+        String(localized: "Next paragraph")
     }
 
     /// What VoiceOver hears after a move to the previous paragraph.
     nonisolated static var previousParagraphAnnouncement: String {
-        String(localized: "Previous paragraph",
-               comment: "Announcement after the reader moved to the previous paragraph.")
+        // Translators: Announcement after the reader moved to the previous paragraph.
+        String(localized: "Previous paragraph")
     }
 
     /// What VoiceOver hears after a move into the next section, when no
     /// heading names it.
     nonisolated static var nextSectionAnnouncement: String {
-        String(localized: "Next section",
-               comment: "Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it.")
+        // Translators: Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it.
+        String(localized: "Next section")
     }
 
     /// What VoiceOver hears after a move into the previous section, when no
     /// heading names it.
     nonisolated static var previousSectionAnnouncement: String {
-        String(localized: "Previous section",
-               comment: "Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it.")
+        // Translators: Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it.
+        String(localized: "Previous section")
     }
 
     /// The headings of `headings` that begin where `heading` begins, itself
