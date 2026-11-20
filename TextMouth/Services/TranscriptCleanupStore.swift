@@ -30,32 +30,32 @@ enum TranscriptCleanupError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .transcriptUnavailable:
-            return String(localized: "The transcript can't be read. If the book is only in the cloud, download it and try again.",
-                          comment: "Error shown when Clean Up Transcript cannot read the transcript.")
+            // Translators: Error shown when Clean Up Transcript cannot read the transcript.
+            return String(localized: "The transcript can't be read. If the book is only in the cloud, download it and try again.")
         case .transcriptChanged:
-            return String(localized: "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
-                          comment: "Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name.")
+            // Translators: Error shown when the transcript changed after the Clean Up Transcript sheet showed its changes. Clean Up Transcript is the command's name.
+            return String(localized: "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.")
         case .nothingToChange:
-            return String(localized: "No rule changes this transcript.",
-                          comment: "Error shown when Apply is pressed in the Clean Up Transcript sheet but no rule changes the transcript.")
+            // Translators: Error shown when Apply is pressed in the Clean Up Transcript sheet but no rule changes the transcript.
+            return String(localized: "No rule changes this transcript.")
         case .nothingToUndo:
-            return String(localized: "No cleanup to undo: the earlier transcript is gone.",
-                          comment: "Error shown when Undo Cleanup is pressed but the transcript from before the cleanup is gone.")
+            // Translators: Error shown when Undo Cleanup is pressed but the transcript from before the cleanup is gone.
+            return String(localized: "No cleanup to undo: the earlier transcript is gone.")
         case .previousInCloud:
-            return String(localized: "The pre-cleanup transcript is only in the cloud. Download the book and try again.",
-                          comment: "Error shown when Undo Cleanup is pressed and the transcript from before the cleanup has not been downloaded from the cloud drive.")
+            // Translators: Error shown when Undo Cleanup is pressed and the transcript from before the cleanup has not been downloaded from the cloud drive.
+            return String(localized: "The pre-cleanup transcript is only in the cloud. Download the book and try again.")
         case .previousUnusable(let reason):
-            return String(localized: "The transcript from before the cleanup can't be used: \(reason).",
-                          comment: "Error shown when Undo Cleanup is pressed and the transcript from before the cleanup is damaged. %@ is the reason, a technical phrase in English.")
+            // Translators: Error shown when Undo Cleanup is pressed and the transcript from before the cleanup is damaged. %@ is the reason, a technical phrase in English.
+            return String(localized: "The transcript from before the cleanup can't be used: \(reason).")
         case .audioChanged(let reason):
-            return String(localized: "The book's audio changed since it was transcribed (\(reason)), so the transcript no longer fits. Transcribe again.",
-                          comment: "Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English.")
+            // Translators: Error shown when the book's audio files changed since the transcription. %@ is the reason, a short phrase in English.
+            return String(localized: "The book's audio changed since it was transcribed (\(reason)), so the transcript no longer fits. Transcribe again.")
         case .busyTranscribing:
-            return String(localized: "The book is being transcribed again. Clean up its transcript once that finishes.",
-                          comment: "Error shown when a cleanup is tried while the book is being transcribed.")
+            // Translators: Error shown when a cleanup is tried while the book is being transcribed.
+            return String(localized: "The book is being transcribed again. Clean up its transcript once that finishes.")
         case .libraryUnavailable:
-            return String(localized: "The library isn't available, so the rules can't be opened now.",
-                          comment: "Error shown when Edit Rules is pressed while the library's data folder cannot be used.")
+            // Translators: Error shown when Edit Rules is pressed while the library's data folder cannot be used.
+            return String(localized: "The library isn't available, so the rules can't be opened now.")
         }
     }
 }

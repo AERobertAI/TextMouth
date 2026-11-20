@@ -401,8 +401,8 @@ enum FeedEpisodeImporter {
             body,
         ]
         if let link = item.link {
-            let readOnTheWeb = String(localized: "Read on the web:",
-                                      comment: "The line that starts the link to an article's web page, at the end of the article's text as TextMouth saves it as a book. The article's address follows as a link.")
+            // Translators: The line that starts the link to an article's web page, at the end of the article's text as TextMouth saves it as a book. The article's address follows as a link.
+            let readOnTheWeb = String(localized: "Read on the web:")
             parts.append("<p>\(escaped(readOnTheWeb)) <a href=\"\(escaped(link.absoluteString))\">\(escaped(FeedHost.of(link)))</a></p>")
         }
         parts += ["</body>", "</html>", ""]

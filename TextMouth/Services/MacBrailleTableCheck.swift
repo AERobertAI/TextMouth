@@ -66,20 +66,20 @@ enum MacBrailleTableCheck {
         var reason: String {
             switch self {
             case .gone:
-                return String(localized: "this Mac no longer has it",
-                              comment: "Why a braille table of this Mac was refused, ending a sentence such as \"TextMouth can't use this Mac's table X: this Mac no longer has it.\".")
+                // Translators: Why a braille table of this Mac was refused, ending a sentence such as "TextMouth can't use this Mac's table X: this Mac no longer has it.".
+                return String(localized: "this Mac no longer has it")
             case .doesNotLoad:
-                return String(localized: "it does not load in TextMouth's liblouis \(BrailleTableCatalog.bundledLiblouisVersion)",
-                              comment: "Why a braille table of this Mac was refused, ending a sentence. %@ is the version of liblouis, the braille library, written as a version number.")
+                // Translators: Why a braille table of this Mac was refused, ending a sentence. %@ is the version of liblouis, the braille library, written as a version number.
+                return String(localized: "it does not load in TextMouth's liblouis \(BrailleTableCatalog.bundledLiblouisVersion)")
             case .writesEightDots:
-                return String(localized: "it writes eight-dot braille, and TextMouth uses six-dot braille only",
-                              comment: "Why a braille table of this Mac was refused, ending a sentence.")
+                // Translators: Why a braille table of this Mac was refused, ending a sentence.
+                return String(localized: "it writes eight-dot braille, and TextMouth uses six-dot braille only")
             case .needsTooMuchMemory:
-                return String(localized: "it needs more than \(Int(memoryCeilingBytes / 1_048_576)) MB of memory",
-                              comment: "Why a braille table of this Mac was refused, ending a sentence. %lld is the most memory a table may need, in megabytes.")
+                // Translators: Why a braille table of this Mac was refused, ending a sentence. %lld is the most memory a table may need, in megabytes.
+                return String(localized: "it needs more than \(Int(memoryCeilingBytes / 1_048_576)) MB of memory")
             case .tooSlow:
-                return String(localized: "it translates too slowly, under \(Int(1_000 / secondsPerMBCeiling)) KB a second",
-                              comment: "Why a braille table of this Mac was refused, ending a sentence. %lld is the least speed a table may have, in kilobytes of text a second.")
+                // Translators: Why a braille table of this Mac was refused, ending a sentence. %lld is the least speed a table may have, in kilobytes of text a second.
+                return String(localized: "it translates too slowly, under \(Int(1_000 / secondsPerMBCeiling)) KB a second")
             case let .couldNotCheck(why):
                 return why
             }
@@ -107,13 +107,13 @@ enum MacBrailleTableCheck {
 
         /// Why a check could not be made when the helper failed.
         static var helperFailed: Refusal {
-            couldNotCheck(why: String(localized: "the braille helper failed",
-                                      comment: "Why the check of a braille table of this Mac could not be made, ending a sentence. The braille helper is a program TextMouth runs."))
+            // Translators: Why the check of a braille table of this Mac could not be made, ending a sentence. The braille helper is a program TextMouth runs.
+            couldNotCheck(why: String(localized: "the braille helper failed"))
         }
         /// Why a check could not be made when no working folder could be made.
         static var noWorkingFolder: Refusal {
-            couldNotCheck(why: String(localized: "TextMouth could not make a folder to check it in",
-                                      comment: "Why the check of a braille table of this Mac could not be made, ending a sentence."))
+            // Translators: Why the check of a braille table of this Mac could not be made, ending a sentence.
+            couldNotCheck(why: String(localized: "TextMouth could not make a folder to check it in"))
         }
 
         /// Why a check could not be made when the watchdog stopped the
@@ -121,8 +121,8 @@ enum MacBrailleTableCheck {
         /// "it ran longer than 10 seconds".
         static func helperStopped(because reason: String) -> Refusal {
             // `reason` is `WatchedProcess.KillReason`'s English clause until that area converts.
-            couldNotCheck(why: String(localized: "the braille helper was stopped because \(reason)",
-                                      comment: "Why the check of a braille table of this Mac could not be made, ending a sentence. %@ is a clause saying why the program was stopped, such as \"it ran longer than 10 seconds\". The braille helper is a program TextMouth runs."))
+            // Translators: Why the check of a braille table of this Mac could not be made, ending a sentence. %@ is a clause saying why the program was stopped, such as "it ran longer than 10 seconds". The braille helper is a program TextMouth runs.
+            couldNotCheck(why: String(localized: "the braille helper was stopped because \(reason)"))
         }
 
         /// Whether the check itself could not be made.

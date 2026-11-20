@@ -298,8 +298,8 @@ enum TranscriptExportError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .unusable:
-            return String(localized: "The book's transcript couldn't be read, so it wasn't exported.",
-                          comment: "Error in an export's summary: the audiobook's transcript could not be read, so no captions file was written.")
+            // Translators: Error in an export's summary: the audiobook's transcript could not be read, so no captions file was written.
+            return String(localized: "The book's transcript couldn't be read, so it wasn't exported.")
         }
     }
 }

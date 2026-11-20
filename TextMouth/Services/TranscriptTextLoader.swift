@@ -587,14 +587,14 @@ enum TranscriptTextError: LocalizedError {
             // transcription begins.
             return TranscriptionWording.textInCloud
         case .textNotKept:
-            return String(localized: "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.",
-                          comment: "Error shown when a transcript could not replace a book's text because the text's unsaved changes could not be copied first.")
+            // Translators: Error shown when a transcript could not replace a book's text because the text's unsaved changes could not be copied first.
+            return String(localized: "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.")
         case .chaptersNotReadBack:
-            return String(localized: "The transcript's text didn't read back as one chapter per chapter of the book.",
-                          comment: "Error shown when the text written from a transcript did not have one chapter for each chapter of the audiobook.")
+            // Translators: Error shown when the text written from a transcript did not have one chapter for each chapter of the audiobook.
+            return String(localized: "The transcript's text didn't read back as one chapter per chapter of the book.")
         case .notFingerprinted:
-            return String(localized: "The transcript's files could not be examined once they were written.",
-                          comment: "Error shown when TextMouth could not check the audio files after writing a transcript for them.")
+            // Translators: Error shown when TextMouth could not check the audio files after writing a transcript for them.
+            return String(localized: "The transcript's files could not be examined once they were written.")
         }
     }
 }

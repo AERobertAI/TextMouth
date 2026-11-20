@@ -103,10 +103,10 @@ enum SavedFile {
 
         var errorDescription: String? {
             SentenceWording.joined([
-                String(localized: "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it.",
-                       comment: "First sentence of why a file was not saved: it is only in the cloud. %@ is the file's name, which stays as written."),
-                String(localized: "Try again in a moment.",
-                       comment: "Last sentence of why a cloud operation was refused for now: wait and try again."),
+                // Translators: First sentence of why a file was not saved: it is only in the cloud. %@ is the file's name, which stays as written.
+                String(localized: "\(fileName) is only in the cloud and isn't on this Mac yet, so nothing was written over it."),
+                // Translators: Last sentence of why a cloud operation was refused for now: wait and try again.
+                String(localized: "Try again in a moment."),
             ])
         }
     }

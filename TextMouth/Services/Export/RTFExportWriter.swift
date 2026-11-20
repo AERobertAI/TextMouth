@@ -24,8 +24,8 @@ struct RTFExportWriter: TextExportWriter {
     let name = "RTF"
     let fileExtension = "rtf"
     var hint: String {
-        String(localized: "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
-               comment: "The hint of the Convert to picker in the Export dialog while RTF is chosen. Word, Pages, and TextEdit are apps' names.")
+        // Translators: The hint of the Convert to picker in the Export dialog while RTF is chosen. Word, Pages, and TextEdit are apps' names.
+        String(localized: "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.")
     }
 
     /// Writes the RTF of `document` as a new file at `url`; a file already

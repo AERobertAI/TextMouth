@@ -55,14 +55,14 @@ struct LibraryIndexReadFailure {
         }
         switch (error as? CocoaError)?.code {
         case .fileReadNoPermission?:
-            return String(localized: "TextMouth does not have permission to read the file.",
-                          comment: "Why the library index could not be loaded: macOS refused TextMouth permission to read it.")
+            // Translators: Why the library index could not be loaded: macOS refused TextMouth permission to read it.
+            return String(localized: "TextMouth does not have permission to read the file.")
         case .fileReadNoSuchFile?:
-            return String(localized: "The file disappeared while TextMouth was reading it.",
-                          comment: "Why the library index could not be loaded: the file vanished during the read.")
+            // Translators: Why the library index could not be loaded: the file vanished during the read.
+            return String(localized: "The file disappeared while TextMouth was reading it.")
         default:
-            return String(localized: "The file could not be read. \(error.localizedDescription)",
-                          comment: "Why the library index could not be loaded: a read error. %@ is the system's own description of the error.")
+            // Translators: Why the library index could not be loaded: a read error. %@ is the system's own description of the error.
+            return String(localized: "The file could not be read. \(error.localizedDescription)")
         }
     }
 
@@ -110,20 +110,20 @@ enum LibraryIndexRecoveryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .indexUnreadable:
-            return String(localized: "The library index can't be read. Choose Try Again or Rebuild Library Index in the Library window first.",
-                          comment: "Why a command that acts on the library index was refused: the index can't be read yet. Try Again and Rebuild Library Index are button names in the Library window.")
+            // Translators: Why a command that acts on the library index was refused: the index can't be read yet. Try Again and Rebuild Library Index are button names in the Library window.
+            return String(localized: "The library index can't be read. Choose Try Again or Rebuild Library Index in the Library window first.")
         case .couldNotPreserve(let url):
             return SentenceWording.joined([
-                String(localized: "TextMouth could not save a copy of \(url.path), so it left that file unchanged.",
-                       comment: "First sentence of why Rebuild Library Index replaced nothing. %@ is the file's path."),
-                String(localized: "Make sure its folder can be written to, then try again.",
-                       comment: "Last sentence of why Rebuild Library Index replaced nothing: what to do."),
+                // Translators: First sentence of why Rebuild Library Index replaced nothing. %@ is the file's path.
+                String(localized: "TextMouth could not save a copy of \(url.path), so it left that file unchanged."),
+                // Translators: Last sentence of why Rebuild Library Index replaced nothing: what to do.
+                String(localized: "Make sure its folder can be written to, then try again."),
             ])
         case .indexReadableAgain:
             // Said after "The library index was not rebuilt." (the recovery
             // sheet's outcome), so it names the index once.
-            return String(localized: "It can be read again now. Choose Try Again to use it.",
-                          comment: "Why Rebuild Library Index replaced nothing: the library index can be read again. It follows the sentence \"The library index was not rebuilt.\", so \"It\" is the index. Try Again is a button name.")
+            // Translators: Why Rebuild Library Index replaced nothing: the library index can be read again. It follows the sentence "The library index was not rebuilt.", so "It" is the index. Try Again is a button name.
+            return String(localized: "It can be read again now. Choose Try Again to use it.")
         }
     }
 }

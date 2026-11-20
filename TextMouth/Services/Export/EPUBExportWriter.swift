@@ -37,8 +37,8 @@ struct EPUBExportWriter: TextExportWriter {
     let fileExtension = "epub"
     /// What the picker's hint says while this writer is chosen.
     var hint: String {
-        String(localized: "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures.",
-               comment: "The hint of the Convert to picker in the Export dialog while EPUB is chosen. Apple Books is an app's name.")
+        // Translators: The hint of the Convert to picker in the Export dialog while EPUB is chosen. Apple Books is an app's name.
+        String(localized: "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures.")
     }
 
     /// The book's chapters and pages are kept as well as its words.
@@ -114,18 +114,18 @@ struct EPUBExportWriter: TextExportWriter {
     static func writeFailureSentence(errno code: Int32) -> String {
         switch code {
         case EIO, EROFS, EACCES, EPERM, ESTALE, ENXIO, ENODEV, ETIMEDOUT:
-            return String(localized: "The EPUB file could not be written: \(String(cString: strerror(code))).",
-                          comment: "Why an EPUB export failed: the system gave a reason. %@ is the system's own words, such as \"Read-only file system\".")
+            // Translators: Why an EPUB export failed: the system gave a reason. %@ is the system's own words, such as "Read-only file system".
+            return String(localized: "The EPUB file could not be written: \(String(cString: strerror(code))).")
         default:
-            return String(localized: "The EPUB file could not be written, because the disk may be full.",
-                          comment: "Why an EPUB export failed: the write failed and the disk may be full.")
+            // Translators: Why an EPUB export failed: the write failed and the disk may be full.
+            return String(localized: "The EPUB file could not be written, because the disk may be full.")
         }
     }
 
     /// Why an EPUB export failed when its file did not read back whole.
     static var couldNotBeWritten: String {
-        String(localized: "The EPUB file could not be written.",
-               comment: "Why an EPUB export failed: the file was not written whole.")
+        // Translators: Why an EPUB export failed: the file was not written whole.
+        String(localized: "The EPUB file could not be written.")
     }
 
     /// Writes the package of `document` into a new archive at `url` and

@@ -41,43 +41,43 @@ enum FileImportError: LocalizedError, LogDescribing {
             // (FMT02, `RefusedFormatAdvice`).
             let hint: String
             if TimedTextFormat.cueFileFormat(forExtension: ext) != nil {
-                hint = String(localized: "A .\(ext) file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu.",
-                              comment: "Advice after the refusal of a transcript file chosen as a book. %@ is the file's extension without its dot. \"Attach Transcript…\" is a command of the Book menu: keep its name the same as that command's and the menu's.")
+                // Translators: Advice after the refusal of a transcript file chosen as a book. %@ is the file's extension without its dot. "Attach Transcript…" is a command of the Book menu: keep its name the same as that command's and the menu's.
+                hint = String(localized: "A .\(ext) file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu.")
             } else if let advice = RefusedFormatAdvice.advice(forExtension: ext) {
                 hint = advice
             } else {
                 // No advice: the refusal stands alone, with no full stop.
-                return String(localized: "Unsupported file format: .\(ext)",
-                              comment: "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows.")
+                // Translators: Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows.
+                return String(localized: "Unsupported file format: .\(ext)")
             }
-            let refusal = String(localized: "Unsupported file format: .\(ext).",
-                                 comment: "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows.")
+            // Translators: Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows.
+            let refusal = String(localized: "Unsupported file format: .\(ext).")
             return SentenceWording.joined([refusal, hint])
         case .hashingFailed:
-            return String(localized: "Failed to compute file hash.",
-                          comment: "Why an import failed: the file's checksum could not be computed.")
+            // Translators: Why an import failed: the file's checksum could not be computed.
+            return String(localized: "Failed to compute file hash.")
         case .importFailed(let msg):
-            return String(localized: "Import failed: \(msg)",
-                          comment: "Why an import failed. %@ is the reason, a sentence.")
+            // Translators: Why an import failed. %@ is the reason, a sentence.
+            return String(localized: "Import failed: \(msg)")
         case .recordNotReadBack:
-            return String(localized: "The bookInfo.json file did not read back as it was written.",
-                          comment: "Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written.")
+            // Translators: Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written.
+            return String(localized: "The bookInfo.json file did not read back as it was written.")
         case .unplayableAudio(let failure): return failure.message
         case .unreadableArchive:
-            return String(localized: "The archive is damaged, incomplete, or not a ZIP archive.",
-                          comment: "Why an archive was refused at import: it could not be read as a ZIP archive.")
+            // Translators: Why an archive was refused at import: it could not be read as a ZIP archive.
+            return String(localized: "The archive is damaged, incomplete, or not a ZIP archive.")
         case .archiveLinksOutside:
-            return String(localized: "The archive holds a link to a file outside it, which is never extracted.",
-                          comment: "Why an archive was refused at import: it holds a symbolic link to a file outside it.")
+            // Translators: Why an archive was refused at import: it holds a symbolic link to a file outside it.
+            return String(localized: "The archive holds a link to a file outside it, which is never extracted.")
         case .archivePathOutside:
-            return String(localized: "The archive holds a file whose path leads outside it, which is never extracted.",
-                          comment: "Why an archive was refused at import: it holds a file whose path climbs out of the folder it is extracted into.")
+            // Translators: Why an archive was refused at import: it holds a file whose path climbs out of the folder it is extracted into.
+            return String(localized: "The archive holds a file whose path leads outside it, which is never extracted.")
         case .noTextToRead:
-            return String(localized: "This file has no text to read.",
-                          comment: "Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup.")
+            // Translators: Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup.
+            return String(localized: "This file has no text to read.")
         case .unsupportedXML:
-            return String(localized: "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
-                          comment: "Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names.")
+            // Translators: Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names.
+            return String(localized: "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.")
         }
     }
 
@@ -107,11 +107,11 @@ enum TMBPackageImportError: LocalizedError, LogDescribing {
         switch self {
         case .invalidPackage(let reason):
             // The reason is an internal phrase in English.
-            return String(localized: "Invalid TextMouth package: \(reason)",
-                          comment: "Why a TextMouth package (.tmb) was refused at import. %@ is the reason, a phrase in English.")
+            // Translators: Why a TextMouth package (.tmb) was refused at import. %@ is the reason, a phrase in English.
+            return String(localized: "Invalid TextMouth package: \(reason)")
         case .destinationExists(let name):
-            return String(localized: "A managed package named \(name) already exists.",
-                          comment: "Why a TextMouth package could not be imported: the library already holds a package of that name. %@ is the package's name.")
+            // Translators: Why a TextMouth package could not be imported: the library already holds a package of that name. %@ is the package's name.
+            return String(localized: "A managed package named \(name) already exists.")
         }
     }
 
@@ -193,8 +193,8 @@ struct ImportedBook {
             return DAISYArchiveWording.originalKept(bookTitle: book.title, leftovers: leftovers)
         }
         if isFromFolder, book.format == .rtfd {
-            return String(localized: "The original file was kept: it is a folder, and an import never deletes a folder.",
-                          comment: "Notice after a book was imported from a folder, such as an RTFD: the original was kept because an import never deletes a folder.")
+            // Translators: Notice after a book was imported from a folder, such as an RTFD: the original was kept because an import never deletes a folder.
+            return String(localized: "The original file was kept: it is a folder, and an import never deletes a folder.")
         }
         return nil
     }
@@ -593,20 +593,20 @@ struct ZipImportResult {
         // Each section is a heading that counts its entries, then one line
         // for each of them.
         if !failures.isEmpty {
-            let heading = String(localized: "\(failures.count) files failed:",
-                                 comment: "Heading in the alert about a ZIP batch: how many files failed to import. One line for each file follows. %lld is the number of files.")
+            // Translators: Heading in the alert about a ZIP batch: how many files failed to import. One line for each file follows. %lld is the number of files.
+            let heading = String(localized: "\(failures.count) files failed:")
             sections.append(heading + "\n" + Self.lines(failures))
         }
         let missingChapters = incompleteBooks.filter { $0.missing == .chapters }
         if !missingChapters.isEmpty {
-            let heading = String(localized: "\(missingChapters.count) books are missing chapters:",
-                                 comment: "Heading in the alert about a ZIP batch: how many books were imported without some of their chapters. One line for each book follows. %lld is the number of books.")
+            // Translators: Heading in the alert about a ZIP batch: how many books were imported without some of their chapters. One line for each book follows. %lld is the number of books.
+            let heading = String(localized: "\(missingChapters.count) books are missing chapters:")
             sections.append(heading + "\n" + Self.lines(missingChapters))
         }
         let missingPages = incompleteBooks.filter { $0.missing == .pages }
         if !missingPages.isEmpty {
-            let heading = String(localized: "\(missingPages.count) books have pages that could not be read:",
-                                 comment: "Heading in the alert about a ZIP batch: how many books have pages that text recognition could not read. One line for each book follows. %lld is the number of books.")
+            // Translators: Heading in the alert about a ZIP batch: how many books have pages that text recognition could not read. One line for each book follows. %lld is the number of books.
+            let heading = String(localized: "\(missingPages.count) books have pages that could not be read:")
             sections.append(heading + "\n" + Self.lines(missingPages))
         }
         guard !sections.isEmpty || cancellation != nil else { return nil }
@@ -616,12 +616,12 @@ struct ZipImportResult {
             sentences.append(cancellation.sentence)
         }
         if !sections.isEmpty {
-            sentences.append(String(localized: "Imported \(books.count) books, but \(sections.joined(separator: "\n"))",
-                                    comment: "Sentence of the alert about a ZIP batch that left something out. %1$lld is the number of books imported and %2$@ the sections that say what failed or is missing, each a heading and a line for each entry."))
+            // Translators: Sentence of the alert about a ZIP batch that left something out. %1$lld is the number of books imported and %2$@ the sections that say what failed or is missing, each a heading and a line for each entry.
+            sentences.append(String(localized: "Imported \(books.count) books, but \(sections.joined(separator: "\n"))"))
         } else if cancellation != .whileExtracting {
             // A cancellation alone: say what came of the books before it.
-            sentences.append(String(localized: "Imported \(books.count) books.",
-                                    comment: "Sentence of the alert about a ZIP batch that was cancelled after it imported some books. %lld is the number of books imported."))
+            // Translators: Sentence of the alert about a ZIP batch that was cancelled after it imported some books. %lld is the number of books imported.
+            sentences.append(String(localized: "Imported \(books.count) books."))
         }
         let text = SentenceWording.joined(sentences)
         // The original's notice is a paragraph of its own.
@@ -630,8 +630,8 @@ struct ZipImportResult {
 
     /// The sentence that says an import kept the original file.
     static var originalKeptSentence: String {
-        String(localized: "The original file was kept.",
-               comment: "Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch.")
+        // Translators: Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch.
+        String(localized: "The original file was kept.")
     }
 
     /// One "file: message" line per entry.
@@ -699,11 +699,11 @@ enum ZipImportCancellation: Equatable, Sendable {
     var sentence: String {
         switch self {
         case .whileExtracting:
-            return String(localized: "Import cancelled while extracting the archive, before any book was imported.",
-                          comment: "Sentence of the alert about a ZIP batch the reader cancelled while its archive was still being extracted.")
+            // Translators: Sentence of the alert about a ZIP batch the reader cancelled while its archive was still being extracted.
+            return String(localized: "Import cancelled while extracting the archive, before any book was imported.")
         case let .afterBooks(completed, total):
-            return String(localized: "Import cancelled after \(ImportProgressWording.part(completed, of: CountWording.books(total))).",
-                          comment: "Sentence of the alert about a ZIP batch the reader cancelled partway. %@ is how many of how many books were done, such as \"3 of 10 books\".")
+            // Translators: Sentence of the alert about a ZIP batch the reader cancelled partway. %@ is how many of how many books were done, such as "3 of 10 books".
+            return String(localized: "Import cancelled after \(ImportProgressWording.part(completed, of: CountWording.books(total))).")
         }
     }
 
@@ -814,8 +814,8 @@ struct NestedArchiveUnpacking {
 
     /// Why an archive lying deeper than `maximumDepth` levels is not searched.
     static func tooDeep(_ maximumDepth: Int) -> String {
-        String(localized: "Not extracted: TextMouth extracts archives within an archive only \(maximumDepth) levels deep.",
-               comment: "Why an archive found inside an archive was not extracted: it lies deeper than TextMouth searches. %lld is the number of levels TextMouth goes into.")
+        // Translators: Why an archive found inside an archive was not extracted: it lies deeper than TextMouth searches. %lld is the number of levels TextMouth goes into.
+        String(localized: "Not extracted: TextMouth extracts archives within an archive only \(maximumDepth) levels deep.")
     }
 }
 
@@ -2065,8 +2065,8 @@ enum FileImportService {
             guard let written = reading else {
                 // Only a book without a package gets no cache, and every
                 // import gives its book one before reading it.
-                throw FileImportError.importFailed(String(localized: "The book has no package to hold its text.",
-                                                          comment: "Why an import failed: the book has no package folder to hold its text. Follows \"Import failed: \"."))
+                // Translators: Why an import failed: the book has no package folder to hold its text. Follows "Import failed: ".
+                throw FileImportError.importFailed(String(localized: "The book has no package to hold its text."))
             }
             generated = written
         } catch is EditedTextKept {
@@ -2634,8 +2634,8 @@ enum FileImportService {
         let name = book.tmbDirectoryName
         guard namesManagedPackage(book) else {
             throw FileImportError.importFailed(
-                String(localized: "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
-                       comment: "Why a book's files were not deleted: it has no package inside the library. Follows \"Import failed: \". \"Remove it from the library only\" is a choice of the removal commands.")
+                // Translators: Why a book's files were not deleted: it has no package inside the library. Follows "Import failed: ". "Remove it from the library only" is a choice of the removal commands.
+                String(localized: "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.")
             )
         }
         let libraryRoot = libraryDirectory.standardizedFileURL.resolvingSymlinksInPath()
@@ -2645,16 +2645,16 @@ enum FileImportService {
         // Deleting a package alias must not delete the other book it points
         // to, even when both happen to live inside the managed library.
         guard !isSymbolicLink(requestedPackage) else {
-            throw FileImportError.importFailed(String(localized: "A symbolic link cannot be deleted as a managed book package.",
-                                                          comment: "Why a book's files were not deleted: its package is a symbolic link, and deleting it could delete another book. Follows \"Import failed: \"."))
+            // Translators: Why a book's files were not deleted: its package is a symbolic link, and deleting it could delete another book. Follows "Import failed: ".
+            throw FileImportError.importFailed(String(localized: "A symbolic link cannot be deleted as a managed book package."))
         }
         let package = requestedPackage.resolvingSymlinksInPath()
         guard package.path.hasPrefix(libraryRoot.path + "/"),
               !book.filePath.isEmpty,
               URL(fileURLWithPath: book.filePath).standardizedFileURL.resolvingSymlinksInPath()
                 .path.hasPrefix(package.path + "/") else {
-            throw FileImportError.importFailed(String(localized: "The book's package and content paths do not match a managed library location.",
-                                                          comment: "Why a book's files were not deleted: its paths do not lie inside the library. Follows \"Import failed: \"."))
+            // Translators: Why a book's files were not deleted: its paths do not lie inside the library. Follows "Import failed: ".
+            throw FileImportError.importFailed(String(localized: "The book's package and content paths do not match a managed library location."))
         }
         return package
     }

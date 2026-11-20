@@ -157,19 +157,19 @@ enum AsyncBridge {
             let seconds = limit.seconds
             if seconds >= 60, seconds.truncatingRemainder(dividingBy: 60) == 0 {
                 let minutes = Int(seconds / 60)
-                return String(localized: "Reading the audio took longer than \(minutes) minutes; TextMouth stopped waiting.",
-                              comment: "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole minutes.")
+                // Translators: Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole minutes.
+                return String(localized: "Reading the audio took longer than \(minutes) minutes; TextMouth stopped waiting.")
             }
             if seconds.truncatingRemainder(dividingBy: 1) == 0 {
                 let wholeSeconds = Int(seconds)
-                return String(localized: "Reading the audio took longer than \(wholeSeconds) seconds; TextMouth stopped waiting.",
-                              comment: "Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole seconds.")
+                // Translators: Error shown when reading an audio file took too long and TextMouth gave up waiting. %lld is the limit in whole seconds.
+                return String(localized: "Reading the audio took longer than \(wholeSeconds) seconds; TextMouth stopped waiting.")
             }
             // A limit with a fraction has no plural form that varies with it,
             // so it is a string of its own around the formatted number.
             let decimal = seconds.formatted(.number)
-            return String(localized: "Reading the audio took longer than \(decimal) seconds; TextMouth stopped waiting.",
-                          comment: "Error shown when reading an audio file took too long and TextMouth gave up waiting. %@ is the limit in seconds with a fraction, already formatted, such as 0.2.")
+            // Translators: Error shown when reading an audio file took too long and TextMouth gave up waiting. %@ is the limit in seconds with a fraction, already formatted, such as 0.2.
+            return String(localized: "Reading the audio took longer than \(decimal) seconds; TextMouth stopped waiting.")
         }
     }
 
