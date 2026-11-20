@@ -125,13 +125,19 @@ enum LanguagePackLookups {
         return text == absent ? nil : text
     }
 
-    /// The text of the plural string `key` for `count` in `language`, as the bundle's plural rules pick it; nil when
-    /// the bundle lacks the key or the key has a specifier the lookups cannot feed.
+    /// The text the app shows for `key`: the bundle's table text, or the key itself when no table holds it, as
+    /// `String(localized:)` does. A squeezed table (TL18) leaves out an entry whose text is its key, so a lookup that
+    /// compares texts compares these, not `simpleText`'s.
+    static func effectiveText(_ bundle: Bundle, key: String) -> String {
+        bundle.localizedString(forKey: key, value: nil, table: nil)
+    }
+
+    /// The text of the plural string `key` for `count` in `language`, as the bundle's plural rules pick it (or, in a
+    /// language whose forms are all one text, the plain entry that holds it); nil when the key has a specifier the
+    /// lookups cannot feed.
     static func pluralText(_ bundle: Bundle, key: String, language: String, count: Int) -> String? {
-        guard let format = simpleText(bundle, key: key), let arguments = arguments(forKey: key, count: count) else {
-            return nil
-        }
-        return String(format: format, locale: Locale(identifier: language), arguments: arguments)
+        guard let arguments = arguments(forKey: key, count: count) else { return nil }
+        return String(format: effectiveText(bundle, key: key), locale: Locale(identifier: language), arguments: arguments)
     }
 }
 
