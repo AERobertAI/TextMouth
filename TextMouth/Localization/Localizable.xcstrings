@@ -31254,7 +31254,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Capitolo %1$@ di %2$@ (chapter=%3$@ nei log)"
+            "value" : "Capitolo %1$@ di %2$@ (chapter=%3$@ nei registri)"
           }
         }
       }
@@ -55138,7 +55138,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nel testo letto, di cui il log della voce indica le posizioni: la lettura si è interrotta al carattere %1$@; il testo rifiutato va dal carattere %2$@ al %3$@."
+            "value" : "Nel testo letto, di cui il registro della voce indica le posizioni: la lettura si è interrotta al carattere %1$@; il testo rifiutato va dal carattere %2$@ al %3$@."
           }
         }
       }
@@ -92284,7 +92284,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Condividi log…"
+            "value" : "Condividi registri…"
           }
         }
       }
@@ -92301,7 +92301,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Condivide i log recenti come file di testo. Non contengono testo dei libri."
+            "value" : "Condivide i registri recenti come file di testo. Non contengono testo dei libri."
           }
         }
       }
@@ -92324,7 +92324,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Maiuscole"
+            "value" : "Maiusc"
           }
         },
         "pt-BR" : {
@@ -93826,7 +93826,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mostrare i log nel Finder non è ancora disponibile su iPhone."
+            "value" : "Mostrare i registri nel Finder non è ancora disponibile su iPhone."
           }
         }
       }
@@ -95719,19 +95719,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Log della voce, ultime %lld di righe, solo posizioni e lunghezze:"
+                  "value" : "Registro della voce, ultime %lld di righe, solo posizioni e lunghezze:"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Log della voce, ultima %lld riga, solo posizioni e lunghezze:"
+                  "value" : "Registro della voce, ultima %lld riga, solo posizioni e lunghezze:"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Log della voce, ultime %lld righe, solo posizioni e lunghezze:"
+                  "value" : "Registro della voce, ultime %lld righe, solo posizioni e lunghezze:"
                 }
               }
             }
@@ -95751,7 +95751,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Log della voce: nessuna riga."
+            "value" : "Registro della voce: nessuna riga."
           }
         }
       }
@@ -118926,7 +118926,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Questi file di trascrizione accanto all’audio non sono stati allegati: %@. Il log di debug ne spiega il motivo."
+            "value" : "Questi file di trascrizione accanto all’audio non sono stati allegati: %@. Il registro di debug ne spiega il motivo."
           }
         },
         "pt-BR" : {
