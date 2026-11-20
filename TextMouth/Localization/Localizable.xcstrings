@@ -19926,7 +19926,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Prüfe, ob %@ ausgeführt wird und dieser Mac online ist, und wähle dann „Erneut versuchen“."
+            "value" : "Prüfe, ob bei %@ alles läuft und dieser Mac online ist, und wähle dann „Erneut versuchen“."
           }
         },
         "es" : {
