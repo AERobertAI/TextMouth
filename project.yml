@@ -214,15 +214,6 @@ targetTemplates:
         # Its headers are found by their paths, never through the project's header map.
         USE_HEADERMAP: NO
 
-  # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
-  # (see its README.md): the release's own source with attributes changed
-  # and nothing else, written by Scripts/vendor/swiftsoup/make_vendor.py. A
-  # static library the apps link, compiled as one module (every file, so the
-  # compiler can drop what the app never reaches) and, in Release, for size
-  # (-Osize, the smallest build, which the Makefile asks of every target).
-  # The module is named SwiftSoup, as the package was. Its warnings are
-  # SwiftSoup's own and are not shown; the gate counts Swift warnings only.
-  # SwiftSoupCorpusTests checks that it builds the trees the package built.
   # The compact language files (TL16, FR34), for both apps. Xcode compiles the String
   # Catalog into XML property lists, about 80 bytes of markup an entry. This phase, the
   # last of the target (so after the Resources phase has put the compiled files in the
@@ -255,6 +246,15 @@ targetTemplates:
       base:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
 
+  # SwiftSoup 2.13.9, the HTML and XML parser, vendored in Vendor/SwiftSoup
+  # (see its README.md): the release's own source with attributes changed
+  # and nothing else, written by Scripts/vendor/swiftsoup/make_vendor.py. A
+  # static library the apps link, compiled as one module (every file, so the
+  # compiler can drop what the app never reaches) and, in Release, for size
+  # (-Osize, the smallest build, which the Makefile asks of every target).
+  # The module is named SwiftSoup, as the package was. Its warnings are
+  # SwiftSoup's own and are not shown; the gate counts Swift warnings only.
+  # SwiftSoupCorpusTests checks that it builds the trees the package built.
   SwiftSoupLibrary:
     type: library.static
     # Swift alone: no Objective-C class or category for the linker to keep.
