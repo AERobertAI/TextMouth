@@ -8,7 +8,9 @@ Run from anywhere inside the repository or one of its worktrees:
 Commands (`--help` after each says more):
   sync     Type-check both apps with the compiler's string extraction on, then merge what it found into the String
            Catalog (TextMouth/Localization/Localizable.xcstrings) with `xcstringstool sync`, and write
-           build/l10n/locations.json (each key's files and lines, for the translators). Takes the heavy-work lock
+           build/l10n/locations.json (each key's files and lines, for the translators). It also writes each key's
+           translator's note, the `// Translators: ...` line directly above its literal in the code, into the catalog as
+           the key's comment (TL15: a `comment:` argument would be compiled into the app). Takes the heavy-work lock
            through Scripts/ios/typecheck.py, twice, about two minutes each.
   status   Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the
            English bytes.
@@ -97,6 +99,12 @@ DEFAULT_CONFIG = {"languages": [], "budgetBytes": 150000, "budgetFails": False}
 DEFAULT_LIMIT = 100
 # The longest a key is shown in a line.
 KEY_WIDTH = 60
+# A translator's note in the code (TL15): a line comment that starts with this marker, on the line directly above the line
+# that holds the key's literal. `sync` writes it into the catalog; nothing of it is compiled into the apps, which a
+# `comment:` argument is (Foundation keeps every one as a constant string).
+NOTE_MARKER = "// Translators:"
+# How many of the sentences about unreadable notes a sync prints: a wrong copy of the sources gives one for every key.
+NOTE_PROBLEMS_SHOWN = 20
 
 
 class Refused(Exception):
@@ -368,6 +376,112 @@ def collect(manifests, keep=lambda path: True):
     return places, by_platform, everything, kept_files
 
 
+def note_above(lines, line):
+    """The translator's note on the line directly above the 1-based `line` of a source file (`lines` is its lines), or None:
+    that line, less its indentation, must start with NOTE_MARKER. The note is the text after the marker, stripped; a marker
+    with no text after it gives no note."""
+    if line < 2 or line > len(lines):
+        return None
+    above = lines[line - 2].strip()
+    if not above.startswith(NOTE_MARKER):
+        return None
+    return above[len(NOTE_MARKER):].strip() or None
+
+
+def literal_opens_at(lines, location):
+    """Whether the 1-based `location` ({"startingLine", "startingColumn"}) of a .stringsdata entry is a quote of the source
+    `lines`: the compiler gives the place of the key's string literal, and the column counts UTF-8 bytes. A source that is not
+    the one the compiler read (another run wrote the copy since) fails this, so that a note is never read from the wrong line."""
+    line, column = location.get("startingLine", 0), location.get("startingColumn", 0)
+    if not 1 <= line <= len(lines) or column < 1:
+        return False
+    encoded = lines[line - 1].encode("utf-8")
+    return column <= len(encoded) and encoded[column - 1:column] in (b'"', b"#")
+
+
+def read_source_lines(root, relative):
+    """The lines of the source file `relative` under the type-check's copy `root`, or None when it cannot be read."""
+    try:
+        return (Path(root) / relative).read_text(encoding="utf-8").splitlines()
+    except (OSError, ValueError):
+        return None
+
+
+def collect_notes(manifests, keep=lambda path: True):
+    """The translators' notes the code holds, with what went wrong reading them:
+    ({table: {key: set of notes}}, the sentences about the sources that could not be trusted).
+    A site (an entry of a .stringsdata file) gives its note from the `// Translators:` line above its literal, and also the
+    `comment:` the compiler recorded for it, so a tree that holds both forms (TL15's steps) syncs. Both apps compile the same
+    files, so a site is read once. A source that cannot be read, or that the entry's place does not match, gives a sentence and
+    no note (the catalog's own comment stays)."""
+    notes, problems, seen, line_notes = {}, [], set(), []
+    for manifest in manifests:
+        root = Path(manifest["sourceRoot"])
+        cache = {}
+        for name in manifest["files"]:
+            data = read_stringsdata(manifest["folder"] / name)
+            relative = relative_source(data, root)
+            if not keep(relative):
+                continue
+            for table, entries in data.get("tables", {}).items():
+                for entry in entries:
+                    location = entry.get("location", {})
+                    site = (relative, location.get("startingLine", 0), location.get("startingColumn", 0), table, entry["key"])
+                    if site in seen:
+                        continue
+                    seen.add(site)
+                    found = notes.setdefault(table, {}).setdefault(entry["key"], set())
+                    if entry.get("comment", "").strip():
+                        found.add(entry["comment"].strip())
+                    if relative not in cache:
+                        cache[relative] = read_source_lines(root, relative)
+                    lines = cache[relative]
+                    if lines is None:
+                        problems.append(f"{relative}: the source cannot be read under {root}, so its notes were not read")
+                    elif not literal_opens_at(lines, location):
+                        problems.append(f"{relative} line {location.get('startingLine', 0)}: the source does not match the compiler's "
+                                        f"place for {quote(entry['key'])} (another run wrote the copy?), so its note was not read")
+                    else:
+                        note = note_above(lines, location["startingLine"])
+                        if note:
+                            line_notes.append((relative, location["startingLine"], table, entry["key"], note))
+    # One note belongs to one key: a line that holds the literals of two keys gives its note to neither.
+    keys_on_line = {}
+    for relative, line, table, key, _note in line_notes:
+        keys_on_line.setdefault((relative, line), set()).add((table, key))
+    for relative, line, table, key, note in line_notes:
+        if len(keys_on_line[(relative, line)]) > 1:
+            problems.append(f"{relative} line {line}: the literals of more than one key are on this line, and a note belongs to one "
+                            f"key ({quote(key)} is one): start each key on a line of its own")
+        else:
+            notes[table][key].add(note)
+    return notes, sorted(set(problems))
+
+
+def joined_notes(found):
+    """A key's comment from its sites' notes: the distinct notes in code-point order, one to a line (the order
+    `xcstringstool sync` writes a key that several places give different comments, so that merges agree)."""
+    return "\n".join(sorted(found))
+
+
+def apply_notes(path, notes):
+    """Sets, in the catalog file `path`, the comment of each key of `notes` ({key: set of notes}) that has any note to the
+    notes joined (joined_notes); a key with no note keeps the comment it has. Returns the keys whose comment changed."""
+    cat = catalog.Catalog.load(path)
+    changed = []
+    for key, found in sorted(notes.items()):
+        entry = cat.strings.get(key)
+        if entry is None or not found:
+            continue
+        comment = joined_notes(found)
+        if entry.get("comment") != comment:
+            entry["comment"] = comment
+            changed.append(key)
+    if changed:
+        cat.save(path)
+    return changed
+
+
 class SyncReport:
     """What a sync did to one catalog: the keys it added, those that became stale, those that are no longer stale, and
     the English bytes before and after."""
@@ -425,7 +539,10 @@ def sync_manifests(args, manifests, say, output=None):
     them, writes the locations, and prints what changed. Returns the exit status."""
     check_manifests(manifests)
     config = load_config(args.config, ROOT)
-    places, by_platform, everything, files = collect(sorted(manifests, key=lambda m: m["platform"]), path_matcher(config["syncPaths"]))
+    in_sync_paths = path_matcher(config["syncPaths"])
+    places, by_platform, everything, files = collect(sorted(manifests, key=lambda m: m["platform"]), in_sync_paths)
+    # The translators' notes of the code (TL15): read now, written into each catalog after the tool has synced it.
+    notes, note_problems = collect_notes(sorted(manifests, key=lambda m: m["platform"]), in_sync_paths)
     # A sync with nothing kept would give xcstringstool no file; an empty one makes it drop every string it can.
     nothing = manifests[0]["folder"] / "filtered" / "none.stringsdata"
     nothing.parent.mkdir(parents=True, exist_ok=True)
@@ -433,8 +550,14 @@ def sync_manifests(args, manifests, say, output=None):
     files = [nothing] + files
     # A catalog takes the strings of the table it is named for, and no other: report a table nobody made a catalog for.
     problems = 0
+    # A note that could not be read is a problem (the catalog keeps the comment it has, so nothing is lost, but it may be stale).
+    for sentence in note_problems[:NOTE_PROBLEMS_SHOWN]:
+        say(f"notes: {sentence}")
+    if len(note_problems) > NOTE_PROBLEMS_SHOWN:
+        say(f"notes: and {number(len(note_problems) - NOTE_PROBLEMS_SHOWN)} more (a copy of the sources that is not the one the compiler read gives one for each key)")
+    problems += bool(note_problems)
     tables = set(places) | {TABLE} | catalogs_present()
-    reports = {}
+    reports, set_by_notes = {}, {}
     # Every catalog's name is checked before any is written, so that a refusal leaves them all as they were.
     for table in sorted(tables):
         if catalog_path(args, table).exists():
@@ -449,6 +572,7 @@ def sync_manifests(args, manifests, say, output=None):
             problems += 1
             continue
         reports[table] = sync_catalog(path, files, table)
+        set_by_notes[table] = apply_notes(path, notes.get(table, {}))
     found = {table: len(keys) for table, keys in places.items()}
     left_out = {table: sorted(everything[table] - set(places.get(table, {}))) for table in everything}
     say_left_out(say, config, found, left_out)
@@ -458,6 +582,7 @@ def sync_manifests(args, manifests, say, output=None):
         say(f"{table}: {number(len(report.added))} added, {number(len(report.stale))} became stale, "
             f"{number(len(report.revived))} no longer stale, {number(len(report.removed))} removed")
         say(f"{table}: the English text went from {number(report.bytes_before)} to {number(report.bytes_after)} bytes")
+        say(f"{table}: {number(len(set_by_notes[table]))} comments written from the code's \"{NOTE_MARKER}\" lines")
         for label, keys in (("added", report.added), ("became stale", report.stale), ("removed", report.removed)):
             if keys and args.verbose:
                 say(f"  {label}: {describe(keys, len(keys))}")
@@ -721,7 +846,7 @@ def check_catalog(cat, config):
         problems += check_language(cat, language)
     for key in cat.translatable():
         if not str(cat.strings[key].get("comment", "")).strip():
-            problems.append(f"{quote(key)}: no comment for the translators")
+            problems.append(f"{quote(key)}: no comment for the translators (write a \"{NOTE_MARKER} ...\" line above its literal in the code, then sync)")
         for sentence in catalog.placeholder_problems(key):
             problems.append(f"{quote(key)}: the English key's placeholders cannot be read: {sentence}")
     for key, entry in sorted(cat.strings.items()):

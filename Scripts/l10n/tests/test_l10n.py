@@ -47,6 +47,13 @@ def entry(comment="Context", **localizations):
     return {"comment": comment, "localizations": localizations} if localizations else {"comment": comment}
 
 
+# What `check` says of "Play" when it has no comment: it names the line that gives one.
+NO_COMMENT_PLAY = '"Play": no comment for the translators (write a "// Translators: ..." line above its literal in the code, then sync)'
+# The indentation of a note line in the generated sources: a note takes its literal's line's indentation, but the
+# generated lines start at the literal's column, so the tests only need a margin.
+NOTE_INDENT = "    "
+
+
 def args_for(command, catalog_file=None, **extra):
     """The parsed arguments of `command` as the command line would give them."""
     argv = [command]
@@ -95,6 +102,52 @@ class SyncCase(TemporaryCase):
         self.lines = []
         self.config = self.folder / "sync-config.json"
         self.set_sync_paths("TextMouth/**")
+        # The recorded runs name made-up folders for the compiler's copy of the sources; point each at a folder of this test,
+        # where `write_sources` writes the sources the entries describe (the sync reads the translators' notes from them).
+        self.source_roots = {}
+        for platform in l10n.PLATFORMS:
+            self.relocate_sources(platform)
+
+    def relocate_sources(self, platform):
+        """Makes the run of `platform` say its sources are under a folder of this test's own, in its manifest and in each
+        .stringsdata file's `source` path."""
+        manifest_path = self.runs[platform] / l10n.STRINGS_MANIFEST
+        manifest = json.loads(manifest_path.read_text())
+        old_root = manifest["sourceRoot"]
+        self.source_roots[platform] = self.folder / "src" / platform
+        manifest["sourceRoot"] = str(self.source_roots[platform])
+        manifest_path.write_text(json.dumps(manifest))
+        for name in manifest["files"]:
+            path = self.runs[platform] / name
+            data = json.loads(path.read_text())
+            data["source"] = data["source"].replace(old_root, str(self.source_roots[platform]))
+            path.write_text(json.dumps(data))
+
+    def write_sources(self, notes=None):
+        """Writes, for each run, the source file of each .stringsdata file: empty lines, with a quote at the byte column of
+        each entry's line (the opening quote of its literal), and, for each (repository path, line) of `notes`, the line
+        above that line made `// Translators: <text>`. Files that `notes` or the entries do not need are not written."""
+        notes = notes or {}
+        self.custom_sources = getattr(self, "custom_sources", {})
+        for platform in l10n.PLATFORMS:
+            for name in l10n.read_manifest(self.runs[platform])["files"]:
+                data = json.loads((self.runs[platform] / name).read_text())
+                relative = l10n.relative_source(data, self.source_roots[platform])
+                lines = {}
+                for entries in data["tables"].values():
+                    for found in entries:
+                        where = found["location"]
+                        lines[where["startingLine"]] = " " * (where["startingColumn"] - 1) + '"' + found["key"] + '"'
+                for (path, line), text in notes.items():
+                    if path == relative:
+                        lines[line - 1] = f"{NOTE_INDENT}{l10n.NOTE_MARKER} {text}"
+                if not lines:
+                    continue
+                target = self.source_roots[platform] / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                # A test may give a file's whole text (`custom_sources`, by repository path) when it needs a layout of its own.
+                text = self.custom_sources.get(relative) or "\n".join(lines.get(number, "") for number in range(1, max(lines) + 1)) + "\n"
+                target.write_text(text, encoding="utf-8")
 
     def set_sync_paths(self, *globs):
         """Writes the sync's configuration (without `syncPaths`, which the file beside it holds) and that file with these
@@ -106,8 +159,10 @@ class SyncCase(TemporaryCase):
         """The two runs' manifests, as the sync reads them."""
         return [l10n.read_manifest(self.runs[platform]) for platform in l10n.PLATFORMS]
 
-    def sync(self):
-        """Runs the sync on the copies; returns its exit status (its lines are in `self.lines`)."""
+    def sync(self, notes=None):
+        """Runs the sync on the copies, with the sources written (see write_sources); returns its exit status (its lines are
+        in `self.lines`)."""
+        self.write_sources(notes)
         args = args_for("sync", self.catalog, verbose=False, config=self.config)
         return l10n.sync_manifests(args, self.manifests(), self.lines.append, self.locations)
 
@@ -197,6 +252,7 @@ class SyncTests(SyncCase):
         menus = self.write_catalog({}, "Menus.xcstrings")
         self.catalog = self.folder / "Localizable.xcstrings"
         args = args_for("sync", self.catalog, config=self.config)
+        self.write_sources()
         with mock.patch.object(l10n, "catalog_path", lambda _args, table=l10n.TABLE: self.folder / f"{table}.xcstrings"):
             status = l10n.sync_manifests(args, self.manifests(), self.lines.append, self.locations)
         self.assertEqual(status, 0)
@@ -286,6 +342,186 @@ class SyncPathsTests(SyncCase):
                 function(args_for(command, self.catalog, config=self.config))
             self.assertIn("Strings left out by syncPaths: 3 found by the compiler in files not yet converted (the last sync kept 2",
                           out.getvalue(), command)
+
+
+@unittest.skipUnless(HAS_TOOL, "xcstringstool is not installed")
+class NoteTests(SyncCase):
+    """The translators' notes written in the code as `// Translators:` lines (TL15): `sync` reads each, from the line
+    directly above the key's literal, and writes it into the catalog as the key's comment."""
+
+    VIEW = "TextMouth/Views/LibraryView.swift"       # holds "Play" at line 12 and "%lld books" at line 31
+    MAC = "TextMouth/Platform/macOS/MacOnly.swift"   # holds "Reveal in Finder" at line 8
+
+    def setUp(self):
+        super().setUp()
+        # The recorded entries carry the compiler's `comment:`, the old form: these tests start from the new form.
+        for platform in l10n.PLATFORMS:
+            for name in l10n.read_manifest(self.runs[platform])["files"]:
+                self.rewrite_entries(platform, name, lambda entry: entry.pop("comment", None))
+
+    def rewrite_entries(self, platform, name, change):
+        """Applies `change(entry)` to each entry of a .stringsdata file of a run, and saves the file."""
+        path = self.runs[platform] / name
+        data = json.loads(path.read_text())
+        for entries in data["tables"].values():
+            for found in entries:
+                change(found)
+        path.write_text(json.dumps(data))
+
+    def add_site(self, platform, name, key, line, column=5, comment=None):
+        """Adds another place (an entry) for `key` to a .stringsdata file of a run."""
+        path = self.runs[platform] / name
+        data = json.loads(path.read_text())
+        found = {"key": key, "location": {"startingColumn": column, "startingLine": line}}
+        if comment is not None:
+            found["comment"] = comment
+        data["tables"].setdefault("Localizable", []).append(found)
+        path.write_text(json.dumps(data))
+
+    def comment_of(self, key):
+        """The comment the catalog holds for `key` after the sync."""
+        return catalog.Catalog.load(self.catalog).strings[key].get("comment")
+
+    def test_a_note_above_the_literal_becomes_the_keys_comment(self):
+        self.sync({(self.VIEW, 12): "The button that plays the book"})
+        self.assertEqual(self.comment_of("Play"), "The button that plays the book")
+        self.assertIn("comments written from the code's \"// Translators:\" lines", "\n".join(self.lines))
+
+    def test_a_key_with_no_note_and_no_catalog_comment_gets_none(self):
+        self.sync({(self.VIEW, 12): "The button that plays the book"})
+        self.assertIsNone(self.comment_of("%lld books"))
+        self.assertIn('"%lld books": no comment for the translators', "\n".join(
+            l10n.check_catalog(catalog.Catalog.load(self.catalog), {"languages": [], "budgetBytes": 10**6, "budgetFails": False})[0]))
+
+    def test_a_key_with_no_note_at_any_site_keeps_the_comment_the_catalog_has(self):
+        self.write_catalog({"Play": entry("Kept for the translators")})
+        self.sync()
+        self.assertEqual(self.comment_of("Play"), "Kept for the translators")
+
+    def test_a_note_replaces_the_comment_the_catalog_has(self):
+        self.write_catalog({"Play": entry("Old comment")})
+        self.sync({(self.VIEW, 12): "New note"})
+        self.assertEqual(self.comment_of("Play"), "New note")
+
+    def test_sites_with_the_same_note_give_it_once(self):
+        self.add_site("macos", "MacOnly.stringsdata", "Play", 30)
+        self.sync({(self.VIEW, 12): "The play button", (self.MAC, 30): "The play button"})
+        self.assertEqual(self.comment_of("Play"), "The play button")
+
+    def test_sites_with_different_notes_give_them_in_code_point_order_one_to_a_line(self):
+        self.add_site("macos", "MacOnly.stringsdata", "Play", 30)
+        self.add_site("ios", "PhoneOnly.stringsdata", "Play", 40)
+        self.sync({(self.VIEW, 12): "b: the button", (self.MAC, 30): "a: the menu item",
+                   ("TextMouth/Platform/iOS/PhoneOnly.swift", 40): "B: the phone's button"})
+        self.assertEqual(self.comment_of("Play"), "B: the phone's button\na: the menu item\nb: the button",
+                         "capitals sort before lowercase letters, as `xcstringstool sync` sorts")
+
+    def test_a_site_without_a_note_adds_nothing_beside_the_sites_that_have_one(self):
+        self.add_site("macos", "MacOnly.stringsdata", "Play", 30)
+        self.sync({(self.VIEW, 12): "The play button"})
+        self.assertEqual(self.comment_of("Play"), "The play button")
+
+    def test_the_note_is_above_the_literals_line_not_the_calls_first_line(self):
+        # The call starts on line 10 and its literal is on line 12: the note sits directly above line 12.
+        self.custom_sources = {self.VIEW: "\n".join([
+            "", "", "", "", "", "", "", "", "",
+            "        return String(",                               # line 10
+            "            // Translators: Plays the book",           # line 11
+            '            localized: "Play")',                       # line 12
+            "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "",
+            '                   "%lld books"',                       # line 31
+        ]) + "\n"}
+        self.edit_columns("Play", 24)
+        self.edit_columns("%lld books", 20)
+        self.sync()
+        self.assertEqual(self.comment_of("Play"), "Plays the book")
+        self.assertIsNone(self.comment_of("%lld books"))
+
+    def edit_columns(self, key, column):
+        """Sets the column of every entry of `key` in both runs."""
+        for platform in l10n.PLATFORMS:
+            for name in l10n.read_manifest(self.runs[platform])["files"]:
+                self.rewrite_entries(platform, name, lambda found: found["location"].update(startingColumn=column) if found["key"] == key else None)
+
+    def test_a_note_keeps_its_quotes_backslashes_and_accents_as_written(self):
+        note = 'Says "Undo" before a \\ path: la acción, 3 × 4 \u2026 %1$@ and %2$lld'
+        self.sync({(self.VIEW, 12): note})
+        self.assertEqual(self.comment_of("Play"), note)
+
+    def test_the_column_counts_utf8_bytes_so_a_literal_after_accents_is_found(self):
+        # "é…" is two characters and five bytes, so the literal's quote is at a byte column that is three past its character column.
+        lines = [""] * 11 + ["// Translators: After accents", 'let é… = String(localized: "Play")']
+        self.custom_sources = {self.VIEW: "\n".join(lines) + "\n"}
+        self.edit_columns("Play", len('let é… = String(localized: '.encode("utf-8")) + 1)
+        for platform in l10n.PLATFORMS:
+            for name in l10n.read_manifest(self.runs[platform])["files"]:
+                self.rewrite_entries(platform, name, lambda found: found["location"].update(startingLine=13) if found["key"] == "Play" else None)
+        self.sync()
+        self.assertEqual(self.comment_of("Play"), "After accents")
+
+    def test_a_source_that_is_not_the_one_the_compiler_read_gives_a_problem_and_no_note(self):
+        # The literal's quote is not at the entry's column: another run wrote the copy since.
+        self.custom_sources = {self.VIEW: "\n".join(["// Translators: Wrong"] * 40) + "\n"}
+        status = self.sync()
+        self.assertEqual(status, l10n.EXIT_PROBLEMS)
+        self.assertIn("does not match the compiler's place", "\n".join(self.lines))
+        self.assertIsNone(self.comment_of("Play"))
+
+    def test_a_source_that_cannot_be_read_gives_a_problem_and_the_catalogs_comment_stays(self):
+        self.write_catalog({"Play": entry("Kept")})
+        self.write_sources()
+        shutil.rmtree(self.source_roots["macos"] / "TextMouth" / "Views")
+        shutil.rmtree(self.source_roots["ios"] / "TextMouth" / "Views")
+        args = args_for("sync", self.catalog, verbose=False, config=self.config)
+        status = l10n.sync_manifests(args, self.manifests(), self.lines.append, self.locations)
+        self.assertEqual(status, l10n.EXIT_PROBLEMS)
+        self.assertIn("cannot be read", "\n".join(self.lines))
+        self.assertEqual(self.comment_of("Play"), "Kept")
+
+    def test_a_wrong_copy_of_the_sources_prints_a_few_sentences_and_the_count_of_the_rest(self):
+        # 40 more entries, each with no quote at its column, besides the file's own two: the sync says 20 and counts the other 22.
+        for number in range(40):
+            self.add_site("macos", "MacOnly.stringsdata", f"Key {number}", 100 + number, column=3)
+        self.custom_sources = {self.MAC: "\n".join(["no quotes here"] * 150) + "\n"}
+        self.assertEqual(self.sync(), l10n.EXIT_PROBLEMS)
+        said = [line for line in self.lines if line.startswith("notes:")]
+        self.assertEqual(len(said), l10n.NOTE_PROBLEMS_SHOWN + 1)
+        self.assertIn("and 22 more", said[-1])
+
+    def test_the_old_form_comment_of_the_compiler_still_gives_the_comment(self):
+        self.rewrite_entries("macos", "LibraryView.stringsdata", lambda found: found.update(comment="From comment:"))
+        self.rewrite_entries("ios", "LibraryView.stringsdata", lambda found: found.update(comment="From comment:"))
+        self.sync()
+        self.assertEqual(self.comment_of("Play"), "From comment:")
+
+    def test_both_forms_in_one_tree_give_both_notes(self):
+        self.add_site("macos", "MacOnly.stringsdata", "Play", 30, comment="From comment:")
+        self.sync({(self.VIEW, 12): "From the line"})
+        self.assertEqual(self.comment_of("Play"), "From comment:\nFrom the line")
+
+    def test_two_keys_on_one_line_get_no_note_and_a_problem(self):
+        # "Play" and "Share" both have their literal on line 12 of one file: one note cannot be for both.
+        self.add_site("macos", "LibraryView.stringsdata", "Share", 12, column=40)
+        status = self.sync({(self.VIEW, 12): "For one of them"})
+        self.assertEqual(status, l10n.EXIT_PROBLEMS)
+        self.assertIn("more than one key are on this line", "\n".join(self.lines))
+        self.assertIsNone(self.comment_of("Play"))
+
+    def test_a_second_sync_changes_nothing(self):
+        self.sync({(self.VIEW, 12): "The play button"})
+        first = catalog.read_text(self.catalog)
+        self.sync({(self.VIEW, 12): "The play button"})
+        self.assertEqual(catalog.read_text(self.catalog), first)
+
+    def test_a_marker_with_no_text_gives_no_note_and_only_the_line_directly_above_counts(self):
+        lines = ["", "", "", "// Translators:", "// Translators: Too far above", "", 'let a = "Play"']
+        self.assertIsNone(l10n.note_above(lines, 7), "the line above is empty")
+        self.assertIsNone(l10n.note_above(lines, 5), "a marker with no text")
+        self.assertEqual(l10n.note_above(lines, 6), "Too far above")
+        self.assertEqual(l10n.note_above(["    //   Translators:  spaced   ", "x"], 2), None, "the marker is written once, in one form")
+        self.assertEqual(l10n.note_above(["        // Translators:  spaced   ", "x"], 2), "spaced", "indentation and spaces are not the note")
+        self.assertIsNone(l10n.note_above(["let x = 1 // Translators: not a line of its own", "y"], 2))
+        self.assertIsNone(l10n.note_above(["// Translators: first line"], 1), "nothing is above line 1")
 
 
 class GlobTests(unittest.TestCase):
@@ -764,9 +1000,9 @@ class CheckTests(TemporaryCase):
         self.assertTrue(any("missing substitution books" in p for p in self.problems({"%lld books": entry(en=english, es=missing)})))
 
     def test_a_string_without_a_comment_is_a_problem(self):
-        self.assertEqual(self.problems({"Play": {"localizations": {"es": unit("Reproducir")}}}), ['"Play": no comment for the translators'])
-        self.assertEqual(self.problems({"Play": {"comment": "  ", "localizations": {"es": unit("Reproducir")}}}),
-                         ['"Play": no comment for the translators'])
+        self.assertEqual(self.problems({"Play": {"localizations": {"es": unit("Reproducir")}}}), [NO_COMMENT_PLAY])
+        self.assertEqual(self.problems({"Play": {"comment": "  ", "localizations": {"es": unit("Reproducir")}}}), [NO_COMMENT_PLAY])
+        self.assertIn("// Translators:", NO_COMMENT_PLAY, "the problem says how to fix it")
 
     def test_a_string_that_is_not_translated_needs_no_comment(self):
         self.assertEqual(self.problems({"Pop": {"shouldTranslate": False}}), [])
