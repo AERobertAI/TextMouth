@@ -1275,7 +1275,14 @@ final class BookManifestEditTests: XCTestCase {
         let second = await launch(world, editor: editor, preferences: preferences)
 
         XCTAssertNil(second, "The one-time pass was made again")
-        XCTAssertEqual(world.library.bookByID(edited.id)?.title, "Harbour Pilots, Second Edition", "The later manifest edit was not taken")
+        // The manifest's title says whether something wrote over the later
+        // edit (Q16) or the look did not take what the manifest holds.
+        let manifestTitleNow = (try? AudioManifest.decoded(from: Data(contentsOf: editedManifest)).title) ?? "none, or unreadable"
+        XCTAssertEqual(
+            world.library.bookByID(edited.id)?.title,
+            "Harbour Pilots, Second Edition",
+            "The later manifest edit was not taken; the manifest's title is \(manifestTitleNow)"
+        )
     }
 
     /// Makes the launch's one-time pass and then its look at every book of
