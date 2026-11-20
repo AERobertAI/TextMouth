@@ -33,6 +33,12 @@
             "state" : "machine_translated",
             "value" : "“%@” não é um número."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@”不是数字。"
+          }
         }
       }
     },
@@ -314,6 +320,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ (cabeçalho atual) - nível %2$lld"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@（当前章节标题），级别 %2$lld"
+          }
         }
       }
     },
@@ -465,6 +477,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ - nível %2$lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@，级别 %2$lld"
           }
         }
       }
@@ -1329,6 +1347,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não é possível abrir %1$@ enquanto o texto editado não puder ser usado: %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 无法打开，因为其编辑后的文本无法使用：%2$@"
           }
         }
       }
@@ -2432,6 +2456,12 @@
             "state" : "machine_translated",
             "value" : "%@ para este livro"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@（此图书）"
+          }
         }
       }
     },
@@ -2733,6 +2763,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ tem como padrão %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 已使用其默认键 %2$@"
           }
         }
       }
@@ -3067,6 +3103,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ não tem palavras, então o cursor está %2$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 没有文字，因此光标%2$@。"
           }
         }
       }
@@ -3766,6 +3808,12 @@
             "state" : "machine_translated",
             "value" : "%@ é um audiolivro sem transcrição, portanto não tem texto para editar."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 是没有文字稿的有声书，因此没有可编辑的文本。"
+          }
         }
       }
     },
@@ -4040,6 +4088,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ está em uma seção ignorada, então o cursor está %2$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 位于已跳过的部分，因此光标%2$@。"
           }
         }
       }
@@ -4520,6 +4574,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ não é um audiolivro de faixas, portanto não tem manifesto para editar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 不是由音轨组成的有声书，因此没有可编辑的清单。"
           }
         }
       }
@@ -5143,6 +5203,12 @@
             "state" : "machine_translated",
             "value" : "Atalho %1$@ não registrado para %2$@: %3$@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 未录入为 %2$@ 的快捷键：%3$@"
+          }
         }
       }
     },
@@ -5218,6 +5284,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ agora espera antes de %2$@, caso seja pressionada duas vezes."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 现在会在 %2$@ 之前稍等片刻，以防被按两次。"
           }
         }
       }
@@ -5438,6 +5510,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "有 %1$@ 章（共 %2$lld 章）无法读取"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -5513,6 +5597,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ ou %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 或 %2$@"
           }
         }
       }
@@ -5701,6 +5791,12 @@
             "state" : "machine_translated",
             "value" : "%@ restantes na velocidade atual"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "按当前速度还剩 %@"
+          }
         }
       }
     },
@@ -5817,6 +5913,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Padrão restaurado para %1$@: %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 已恢复默认键：%2$@"
           }
         }
       }
@@ -6186,6 +6288,12 @@
             "state" : "machine_translated",
             "value" : "%@ do livro"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全书进度 %@"
+          }
         }
       }
     },
@@ -6414,6 +6522,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ tenta de novo, %2$@ sai sem salvar, %3$@ mantém o TextMouth aberto."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 重试，%2$@ 不存储并退出，%3$@ 保持 TextMouth 打开。"
+          }
         }
       }
     },
@@ -6448,6 +6562,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ duas vezes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 两次"
           }
         }
       }
@@ -6518,6 +6638,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ usa essa tecla nos menus"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 已在菜单中使用"
           }
         }
       }
@@ -6810,6 +6936,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível adicionar %@ de volta: antes, nenhuma cópia do texto contido no pacote pôde ser guardada, então o TextMouth deixou o texto como estava."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 未添加回来：无法先保留其包内的文本副本，因此 TextMouth 保持文本不变。"
           }
         }
       }
@@ -7177,6 +7309,12 @@
             "state" : "machine_translated",
             "value" : "%1$@ funciona em %2$@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 适用于 %2$@。"
+          }
         }
       }
     },
@@ -7375,6 +7513,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@, qualidade %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@，%2$@ 品质"
           }
         }
       }
@@ -8648,6 +8792,12 @@
             "state" : "machine_translated",
             "value" : "%@, com edição manual"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@，已手动编辑"
+          }
         }
       }
     },
@@ -8852,6 +9002,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Atalho %1$@ registrado para %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ 已录入为 %2$@ 的快捷键"
           }
         }
       }
@@ -9286,6 +9442,12 @@
             "state" : "machine_translated",
             "value" : "%@:"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@："
+          }
         }
       }
     },
@@ -9327,6 +9489,12 @@
             "state" : "machine_translated",
             "value" : "%1$@: %2$@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@：%2$@"
+          }
         }
       }
     },
@@ -9367,6 +9535,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@: %2$@ de %3$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@：%2$@，作者 %3$@"
           }
         }
       }
@@ -9490,6 +9664,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@: %2$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@：%2$@。"
           }
         }
       }
@@ -11689,6 +11869,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld PPM"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 字/分钟"
                 }
               }
             }
@@ -16179,6 +16371,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld 个章节"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -16312,6 +16516,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Não foi possível ler %lld capítulos"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "有 %lld 个章节无法读取"
                 }
               }
             }
@@ -27178,6 +27394,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "每分钟 %lld 字"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -27452,6 +27680,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "每分钟 %lld 字，此图书专属速度"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -27664,6 +27904,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "(%@)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "（%@）"
           }
         }
       }
@@ -30163,6 +30409,12 @@
             "state" : "machine_translated",
             "value" : "Adicionar feed…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "添加订阅源…"
+          }
         }
       }
     },
@@ -30197,6 +30449,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Adicionar marca"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "添加标记"
           }
         }
       }
@@ -30373,6 +30631,12 @@
             "state" : "machine_translated",
             "value" : "Adicionar marcador"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "添加书签"
+          }
         }
       }
     },
@@ -30548,6 +30812,12 @@
             "state" : "machine_translated",
             "value" : "Adicionar atalho"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "添加快捷键"
+          }
         }
       }
     },
@@ -30687,6 +30957,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Adicionar à lista de leitura"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "添加到阅读列表"
           }
         }
       }
@@ -31345,6 +31621,12 @@
             "state" : "machine_translated",
             "value" : "Adiciona a página, como Página 12 de 300, aos resumos de Onde estou?, para livros com mais de uma página."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "将页码（如第 12 页，共 300 页）添加到“我在哪里”的摘要中，适用于多页图书。"
+          }
         }
       }
     },
@@ -31414,6 +31696,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Adiciona a velocidade em que são contados, como 2,0x para um audiolivro que não está em 1x, ou 500 palavras por minuto para um livro de texto, no leitor, em Onde estou?, em Copiar posição de leitura e nas durações da folha Cabeçalhos."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "添加计数所依据的速度，例如不是 1 倍速的有声书的 2.0x，或文本图书的每分钟 500 字，用于阅读器、“我在哪里”、拷贝阅读位置以及章节标题表单的时长。"
           }
         }
       }
@@ -31666,6 +31954,12 @@
             "state" : "machine_translated",
             "value" : "Álbum"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "专辑"
+          }
         }
       }
     },
@@ -31701,6 +31995,12 @@
             "state" : "machine_translated",
             "value" : "Nome do álbum"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "专辑名称"
+          }
         }
       }
     },
@@ -31735,6 +32035,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Todos"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部"
           }
         }
       }
@@ -32095,6 +32401,12 @@
             "state" : "machine_translated",
             "value" : "Todos os níveis"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有级别"
+          }
         }
       }
     },
@@ -32311,6 +32623,12 @@
             "state" : "machine_translated",
             "value" : "Escrever também na cópia do arquivo EPUB da biblioteca"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "同时写入资料库中该 EPUB 文件的副本"
+          }
         }
       }
     },
@@ -32428,6 +32746,12 @@
             "state" : "machine_translated",
             "value" : "E comercial"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "和号"
+          }
         }
       }
     },
@@ -32497,6 +32821,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Uma seção de áudio se refere a um arquivo ausente ou a um intervalo de tempo inválido."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "某个音频部分引用了缺失的文件或无效的时间范围。"
           }
         }
       }
@@ -33383,6 +33713,12 @@
             "state" : "machine_translated",
             "value" : "Apóstrofo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "撇号"
+          }
         }
       }
     },
@@ -33955,6 +34291,12 @@
             "state" : "machine_translated",
             "value" : "Aplicar filtro…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "应用滤镜…"
+          }
         }
       }
     },
@@ -34410,6 +34752,12 @@
             "state" : "machine_translated",
             "value" : "Artista"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "艺术家"
+          }
         }
       }
     },
@@ -34444,6 +34792,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Artista ou narrador"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "艺术家或讲述者"
           }
         }
       }
@@ -34953,6 +35307,12 @@
             "state" : "machine_translated",
             "value" : "Asterisco"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "星号"
+          }
         }
       }
     },
@@ -34987,6 +35347,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Arroba"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "At 符号"
           }
         }
       }
@@ -35686,6 +36052,12 @@
             "state" : "machine_translated",
             "value" : "Editor de áudio"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频编辑器"
+          }
         }
       }
     },
@@ -35756,6 +36128,12 @@
             "state" : "machine_translated",
             "value" : "Informações do áudio…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频信息…"
+          }
         }
       }
     },
@@ -35790,6 +36168,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ajustes de áudio"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频设置"
           }
         }
       }
@@ -35826,6 +36210,12 @@
             "state" : "machine_translated",
             "value" : "Velocidade do áudio"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频速度"
+          }
         }
       }
     },
@@ -35860,6 +36250,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Velocidade do áudio"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音频速度"
           }
         }
       }
@@ -36188,6 +36584,12 @@
             "state" : "machine_translated",
             "value" : "Automático"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "自动"
+          }
         }
       }
     },
@@ -36433,6 +36835,12 @@
             "state" : "machine_translated",
             "value" : "Retroceder 10 segundos"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "后退 10 秒"
+          }
         }
       }
     },
@@ -36503,6 +36911,12 @@
             "state" : "machine_translated",
             "value" : "Retroceder um segundo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "后退 1 秒"
+          }
         }
       }
     },
@@ -36537,6 +36951,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retroceder um décimo de segundo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "后退十分之一秒"
           }
         }
       }
@@ -36573,6 +36993,12 @@
             "state" : "machine_translated",
             "value" : "Voltar ao livro"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "返回图书"
+          }
         }
       }
     },
@@ -36608,6 +37034,12 @@
             "state" : "machine_translated",
             "value" : "Barra invertida"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "反斜杠"
+          }
         }
       }
     },
@@ -36642,6 +37074,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Unidade de navegação para trás"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向后导航单位"
           }
         }
       }
@@ -36748,6 +37186,12 @@
             "state" : "machine_translated",
             "value" : "Antes da página %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第 %@ 页之前"
+          }
         }
       }
     },
@@ -36823,6 +37267,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Início"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "开头"
           }
         }
       }
@@ -36928,6 +37378,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Big5 (chinês tradicional)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Big5（繁体中文）"
           }
         }
       }
@@ -37262,6 +37718,12 @@
             "state" : "machine_translated",
             "value" : "Leitor de livros"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书阅读器"
+          }
         }
       }
     },
@@ -37337,6 +37799,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Conteúdo do livro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书内容"
           }
         }
       }
@@ -37419,6 +37887,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Título do livro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "书名"
           }
         }
       }
@@ -38878,6 +39352,12 @@
             "state" : "machine_translated",
             "value" : "Pausa"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Break"
+          }
         }
       }
     },
@@ -39156,6 +39636,12 @@
             "state" : "machine_translated",
             "value" : "CP437 (DOS dos EUA)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP437（美国 DOS）"
+          }
         }
       }
     },
@@ -39191,6 +39677,12 @@
             "state" : "machine_translated",
             "value" : "CP850 (DOS da Europa Ocidental)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP850（西欧 DOS）"
+          }
         }
       }
     },
@@ -39225,6 +39717,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "CP866 (DOS russo)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP866（俄语 DOS）"
           }
         }
       }
@@ -39868,6 +40366,12 @@
             "state" : "machine_translated",
             "value" : "Circunflexo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "插入符"
+          }
         }
       }
     },
@@ -40113,6 +40617,12 @@
             "state" : "machine_translated",
             "value" : "Altera a unidade de navegação deste livro para frente e para trás"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "更改此图书的前进和后退导航单位"
+          }
         }
       }
     },
@@ -40148,6 +40658,12 @@
             "state" : "machine_translated",
             "value" : "Altera as unidades de navegação deste livro para frente e para trás"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "更改此图书的前进和后退导航单位"
+          }
         }
       }
     },
@@ -40182,6 +40698,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Alterar a voz deste livro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "更改此图书的语音"
           }
         }
       }
@@ -40968,6 +41490,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível reproduzir o capítulo %1$@: %2$@ do pacote do livro."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法播放第 %1$@ 章：图书包中%2$@。"
+          }
         }
       }
     },
@@ -41008,6 +41536,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível reproduzir o capítulo %1$@: %2$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法播放第 %1$@ 章：%2$@。"
           }
         }
       }
@@ -41401,6 +41935,12 @@
             "state" : "machine_translated",
             "value" : "Capítulo não baixado"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "章节未下载"
+          }
         }
       }
     },
@@ -41616,6 +42156,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Verifique se o disco que contém sua biblioteca está conectado e escolha Tentar novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请检查存放资料库的磁盘是否已连接，然后选取“重试”。"
           }
         }
       }
@@ -42376,6 +42922,12 @@
             "state" : "machine_translated",
             "value" : "Escolha Editar texto novamente para editar o texto da nova cópia."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再次选取“编辑文本”以编辑新副本的文本。"
+          }
         }
       }
     },
@@ -42410,6 +42962,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Escolha Editar texto novamente para editar o novo texto."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再次选取“编辑文本”以编辑新文本。"
           }
         }
       }
@@ -42551,6 +43109,12 @@
             "state" : "machine_translated",
             "value" : "Escolha Refazer extração de texto para ler o arquivo do livro novamente."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取“重新提取文本”以再次读取图书的文件。"
+          }
         }
       }
     },
@@ -42620,6 +43184,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Escolha Tentar novamente ou importe o livro de novo se continuar falhando."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取“重试”再试一次；若持续失败，请重新导入图书。"
           }
         }
       }
@@ -43713,6 +44283,12 @@
             "state" : "machine_translated",
             "value" : "Escolhe unidades de navegação separadas para frente e para trás neste livro"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "为此图书分别选取前进和后退导航单位"
+          }
         }
       }
     },
@@ -43789,6 +44365,12 @@
             "state" : "machine_translated",
             "value" : "Escolha o app para editar o manifesto de %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取用于编辑 %@ 清单的 App。"
+          }
         }
       }
     },
@@ -43823,6 +44405,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Escolha o app para editar o texto de %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取用于编辑 %@ 文本的 App。"
           }
         }
       }
@@ -44647,6 +45235,12 @@
             "state" : "machine_translated",
             "value" : "Escolher torna o atalho seu; Restaurar padrão restaura onde ele funciona por padrão."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取后该快捷键即归你所有；“还原为默认”会恢复其默认适用范围。"
+          }
         }
       }
     },
@@ -44910,6 +45504,12 @@
             "state" : "machine_translated",
             "value" : "Limpar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "清除"
+          }
         }
       }
     },
@@ -44945,6 +45545,12 @@
             "state" : "machine_translated",
             "value" : "Limpar tela"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "清除显示"
+          }
         }
       }
     },
@@ -44979,6 +45585,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Desmarcar seleção"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取消选择"
           }
         }
       }
@@ -45119,6 +45731,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fechar tudo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全部关闭"
           }
         }
       }
@@ -45300,6 +45918,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fecha a folha de cabeçalhos e volta ao livro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "关闭章节标题表单并返回图书"
           }
         }
       }
@@ -45487,6 +46111,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fecha a janela deste livro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "关闭此图书的窗口"
           }
         }
       }
@@ -45745,6 +46375,12 @@
             "state" : "machine_translated",
             "value" : "Dois-pontos"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "冒号"
+          }
         }
       }
     },
@@ -45821,6 +46457,12 @@
             "state" : "machine_translated",
             "value" : "Vírgula"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "逗号"
+          }
         }
       }
     },
@@ -45855,6 +46497,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Comando"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Command"
           }
         }
       }
@@ -46921,6 +47569,12 @@
             "state" : "machine_translated",
             "value" : "Continuar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "继续"
+          }
         }
       }
     },
@@ -47247,6 +47901,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Controle"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Control"
           }
         }
       }
@@ -47867,6 +48527,12 @@
             "state" : "machine_translated",
             "value" : "Copiar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "拷贝"
+          }
         }
       }
     },
@@ -47936,6 +48602,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Copiar posição de leitura"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "拷贝阅读位置"
           }
         }
       }
@@ -48240,6 +48912,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível determinar a duração do áudio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法确定音频时长。"
           }
         }
       }
@@ -48949,6 +49627,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível salvar os metadados na cópia de “%@” da biblioteca, porque esse arquivo não está na biblioteca."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法将元数据存储到资料库中“%@”的副本，因为该文件已从资料库中缺失。"
+          }
         }
       }
     },
@@ -48990,6 +49674,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível salvar os metadados na cópia de “%1$@” da biblioteca: %2$@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法将元数据存储到资料库中“%1$@”的副本：%2$@"
+          }
         }
       }
     },
@@ -49025,6 +49715,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível salvar os metadados: “%@” não está mais na biblioteca."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法存储元数据：“%@”已不在资料库中。"
+          }
         }
       }
     },
@@ -49059,6 +49755,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível salvar: o título do livro está vazio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法存储：图书的书名为空。"
           }
         }
       }
@@ -49405,6 +50107,12 @@
             "state" : "machine_translated",
             "value" : "Não foi possível abrir o manifesto de %1$@: %2$@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法打开 %1$@ 的清单：%2$@"
+          }
         }
       }
     },
@@ -49480,6 +50188,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Não foi possível abrir o texto de %1$@: %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法打开 %1$@ 的文本：%2$@"
           }
         }
       }
@@ -49954,6 +50668,12 @@
             "state" : "machine_translated",
             "value" : "Lendo agora"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在阅读"
+          }
         }
       }
     },
@@ -50093,6 +50813,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cortar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "剪切"
           }
         }
       }
@@ -50234,6 +50960,12 @@
             "state" : "machine_translated",
             "value" : "Alternar unidade de navegação para trás"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "循环切换向后导航单位"
+          }
         }
       }
     },
@@ -50268,6 +51000,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Alternar unidade de navegação para frente"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "循环切换向前导航单位"
           }
         }
       }
@@ -50304,6 +51042,12 @@
             "state" : "machine_translated",
             "value" : "Arquivo DAISY não encontrado em: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "找不到 DAISY 文件：%@"
+          }
         }
       }
     },
@@ -50339,6 +51083,12 @@
             "state" : "machine_translated",
             "value" : "Erro de análise do DAISY: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY 解析错误：%@"
+          }
         }
       }
     },
@@ -50373,6 +51123,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Arquivo DOCX não encontrado em: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "找不到 DOCX 文件：%@"
           }
         }
       }
@@ -50630,6 +51386,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Diminuir velocidade"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "降低速度"
           }
         }
       }
@@ -51685,6 +52447,12 @@
             "state" : "machine_translated",
             "value" : "Apagar caractere"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "删除字符"
+          }
         }
       }
     },
@@ -52023,6 +52791,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Apagar linha"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "删除行"
           }
         }
       }
@@ -53870,6 +54644,12 @@
             "state" : "machine_translated",
             "value" : "Exibição"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "显示"
+          }
         }
       }
     },
@@ -53904,6 +54684,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Divida o documento em arquivos menores e importe-os."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请将文档拆分为较小的文件，然后再导入。"
           }
         }
       }
@@ -53980,6 +54766,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cifrão"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "美元符号"
           }
         }
       }
@@ -54358,6 +55150,12 @@
             "state" : "machine_translated",
             "value" : "Tempo do pressionamento duplo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "连按两次的间隔"
+          }
         }
       }
     },
@@ -54393,6 +55191,12 @@
             "state" : "machine_translated",
             "value" : "Pressionamento duplo."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "连按两次。"
+          }
         }
       }
     },
@@ -54427,6 +55231,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Seta para baixo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向下箭头"
           }
         }
       }
@@ -56734,6 +57544,12 @@
             "state" : "machine_translated",
             "value" : "Baixa o livro novamente"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再次下载图书"
+          }
         }
       }
     },
@@ -56950,6 +57766,12 @@
             "state" : "machine_translated",
             "value" : "Duração"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "时长"
+          }
         }
       }
     },
@@ -56985,6 +57807,12 @@
             "state" : "machine_translated",
             "value" : "Duração: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "时长：%@"
+          }
         }
       }
     },
@@ -57019,6 +57847,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Versão do EPUB"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB 版本"
           }
         }
       }
@@ -57090,6 +57924,12 @@
             "state" : "machine_translated",
             "value" : "Versão do EPUB: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB 版本：%@"
+          }
         }
       }
     },
@@ -57124,6 +57964,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "EUC-JP (japonês)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EUC-JP（日语）"
           }
         }
       }
@@ -57160,6 +58006,12 @@
             "state" : "machine_translated",
             "value" : "EUC-KR (coreano)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EUC-KR（韩语）"
+          }
         }
       }
     },
@@ -57194,6 +58046,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cada <!-- page: … --> marca onde uma página começa."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "每个 <!-- page: … --> 标示一页的开始。"
           }
         }
       }
@@ -57369,6 +58227,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cada linha que começa com <!-- chapter: inicia um capítulo; mantenha essas linhas."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "每行以 <!-- chapter: 开头的内容开始一个章节；请保留这些行。"
           }
         }
       }
@@ -57662,6 +58526,12 @@
             "state" : "machine_translated",
             "value" : "Editar manifesto com"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取编辑清单所用的 App"
+          }
         }
       }
     },
@@ -57696,6 +58566,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Editar manifesto com…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取编辑清单所用的 App…"
           }
         }
       }
@@ -57732,6 +58608,12 @@
             "state" : "machine_translated",
             "value" : "Editar manifesto no editor padrão"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "用默认编辑器编辑清单"
+          }
         }
       }
     },
@@ -57766,6 +58648,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Modo de edição"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "编辑模式"
           }
         }
       }
@@ -57907,6 +58795,12 @@
             "state" : "machine_translated",
             "value" : "Editar texto com"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取编辑文本所用的 App"
+          }
         }
       }
     },
@@ -57941,6 +58835,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Editar texto com…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "选取编辑文本所用的 App…"
           }
         }
       }
@@ -57977,6 +58877,12 @@
             "state" : "machine_translated",
             "value" : "A edição do texto de %@ foi interrompida, pois uma nova cópia tomou seu lugar."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 的“编辑文本”已停止，因为新副本已将其替换。"
+          }
         }
       }
     },
@@ -58012,6 +58918,12 @@
             "state" : "machine_translated",
             "value" : "A edição do texto de %@ foi interrompida, pois o arquivo foi lido novamente."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 的“编辑文本”已停止，因为其文件已重新读取。"
+          }
         }
       }
     },
@@ -58046,6 +58958,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Editar texto no editor padrão"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "用默认编辑器编辑文本"
           }
         }
       }
@@ -58122,6 +59040,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Editar com"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "用此 App 编辑"
           }
         }
       }
@@ -58322,6 +59246,12 @@
             "state" : "machine_translated",
             "value" : "Editar o manifesto de %@?"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要编辑 %@ 的清单吗？"
+          }
         }
       }
     },
@@ -58356,6 +59286,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Editar o texto de %@?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要编辑 %@ 的文本吗？"
           }
         }
       }
@@ -58392,6 +59328,12 @@
             "state" : "machine_translated",
             "value" : "Editável"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "可编辑"
+          }
         }
       }
     },
@@ -58426,6 +59368,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Editado"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已编辑"
           }
         }
       }
@@ -59034,6 +59982,12 @@
             "state" : "machine_translated",
             "value" : "Fim do livro"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "图书结束时"
+          }
         }
       }
     },
@@ -59138,6 +60092,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Comportamento ao fim deste livro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "此图书结束时的行为"
           }
         }
       }
@@ -59384,6 +60344,12 @@
             "state" : "machine_translated",
             "value" : "Aprimorada"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "增强"
+          }
         }
       }
     },
@@ -59415,6 +60381,12 @@
           }
         },
         "pt-BR" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Enter"
+          }
+        },
+        "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Enter"
@@ -59453,6 +60425,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Digite uma porcentagem."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请输入百分比。"
           }
         }
       }
@@ -60038,6 +61016,12 @@
             "state" : "machine_translated",
             "value" : "Igual"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "等号"
+          }
         }
       }
     },
@@ -60148,6 +61132,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Esc"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escape"
           }
         }
       }
@@ -60565,6 +61555,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Todos os capítulos foram lidos."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已读取每一章。"
           }
         }
       }
@@ -61056,6 +62052,12 @@
             "state" : "machine_translated",
             "value" : "Todas as páginas foram lidas."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已读取每一页。"
+          }
         }
       }
     },
@@ -61091,6 +62093,12 @@
             "state" : "machine_translated",
             "value" : "Todos os atalhos e os locais onde funcionam voltam aos padrões. Suas teclas personalizadas serão perdidas."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有快捷键及其适用范围都会恢复为默认设置。你自己设置的键将会丢失。"
+          }
         }
       }
     },
@@ -61125,6 +62133,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Todas as janelas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所有窗口"
           }
         }
       }
@@ -61278,6 +62292,12 @@
             "state" : "machine_translated",
             "value" : "Ponto de exclamação"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "感叹号"
+          }
         }
       }
     },
@@ -61312,6 +62332,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Executar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Execute"
           }
         }
       }
@@ -63645,6 +64671,12 @@
             "state" : "machine_translated",
             "value" : "Falha ao carregar o livro"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法载入图书"
+          }
         }
       }
     },
@@ -63819,6 +64851,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Falha ao escrever os metadados do EPUB: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "无法写入 EPUB 元数据：%@"
           }
         }
       }
@@ -64848,6 +65886,12 @@
             "state" : "machine_translated",
             "value" : "Formato do arquivo: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文件格式：%@"
+          }
         }
       }
     },
@@ -65139,6 +66183,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Buscar"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "查找"
           }
         }
       }
@@ -65993,6 +67043,12 @@
             "state" : "machine_translated",
             "value" : "Ajustes da pasta ou do feed"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文件夹或订阅源设置"
+          }
         }
       }
     },
@@ -66502,6 +67558,12 @@
             "state" : "machine_translated",
             "value" : "Por cinco segundos, os próximos dois pressionamentos de tecla não são atalhos; o TextMouth diz se formam um pressionamento duplo."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "接下来五秒内，按下的两个键不会触发快捷键；TextMouth 会告诉你它们是否构成连按两次。"
+          }
         }
       }
     },
@@ -66607,6 +67669,12 @@
             "state" : "machine_translated",
             "value" : "Avançar 10 segundos"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前进 10 秒"
+          }
         }
       }
     },
@@ -66641,6 +67709,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Apagar para frente"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向前删除"
           }
         }
       }
@@ -66677,6 +67751,12 @@
             "state" : "machine_translated",
             "value" : "Avançar um segundo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前进 1 秒"
+          }
         }
       }
     },
@@ -66712,6 +67792,12 @@
             "state" : "machine_translated",
             "value" : "Avançar um décimo de segundo"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前进十分之一秒"
+          }
         }
       }
     },
@@ -66746,6 +67832,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Unidade de navegação para frente"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向前导航单位"
           }
         }
       }
@@ -66822,6 +67914,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Unidade de navegação para frente: %1$@; unidade de navegação para trás: %2$@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向前导航单位：%1$@；向后导航单位：%2$@"
           }
         }
       }
@@ -67205,6 +68303,12 @@
             "state" : "machine_translated",
             "value" : "GB 18030 (chinês simplificado)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GB 18030（简体中文）"
+          }
         }
       }
     },
@@ -67240,6 +68344,12 @@
             "state" : "machine_translated",
             "value" : "GB 2312 (chinês simplificado)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GB 2312（简体中文）"
+          }
         }
       }
     },
@@ -67274,6 +68384,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "GBK (chinês simplificado)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GBK（简体中文）"
           }
         }
       }
@@ -67344,6 +68460,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Gênero"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "流派"
           }
         }
       }
@@ -67485,6 +68607,12 @@
             "state" : "machine_translated",
             "value" : "Obtenha uma cópia nova do livro e importe-o novamente."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请获取图书的新副本，然后再次导入。"
+          }
         }
       }
     },
@@ -67520,6 +68648,12 @@
             "state" : "machine_translated",
             "value" : "Obtenha uma cópia nova do arquivo e importe-o novamente."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请获取文件的新副本，然后再次导入。"
+          }
         }
       }
     },
@@ -67554,6 +68688,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Obtenha outra cópia do arquivo, ou salve-o em outro formato, e importe-o novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请获取文件的另一个副本，或将其存储为其他格式，然后再次导入。"
           }
         }
       }
@@ -67952,6 +69092,12 @@
             "state" : "machine_translated",
             "value" : "Voltar"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "返回"
+          }
         }
       }
     },
@@ -67986,6 +69132,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para frente"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前进"
           }
         }
       }
@@ -68057,6 +69209,12 @@
             "state" : "machine_translated",
             "value" : "Volta para onde você estava antes de navegar pelos cabeçalhos ou marcadores"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "返回到浏览章节标题或书签之前所在的位置"
+          }
         }
       }
     },
@@ -68091,6 +69249,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para o fim"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往结尾"
           }
         }
       }
@@ -68127,6 +69291,12 @@
             "state" : "machine_translated",
             "value" : "Ir para a biblioteca"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往资料库"
+          }
         }
       }
     },
@@ -68162,6 +69332,12 @@
             "state" : "machine_translated",
             "value" : "Ir para a página…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往页面…"
+          }
         }
       }
     },
@@ -68196,6 +69372,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para o início"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往开头"
           }
         }
       }
@@ -68266,6 +69448,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para o tempo…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往时间…"
           }
         }
       }
@@ -68343,6 +69531,12 @@
             "state" : "machine_translated",
             "value" : "Ir para a visualização 1"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 1"
+          }
         }
       }
     },
@@ -68377,6 +69571,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para a visualização 2"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 2"
           }
         }
       }
@@ -68413,6 +69613,12 @@
             "state" : "machine_translated",
             "value" : "Ir para a visualização 3"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 3"
+          }
         }
       }
     },
@@ -68447,6 +69653,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para a visualização 4"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 4"
           }
         }
       }
@@ -68483,6 +69695,12 @@
             "state" : "machine_translated",
             "value" : "Ir para a visualização 5"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 5"
+          }
         }
       }
     },
@@ -68517,6 +69735,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para a visualização 6"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 6"
           }
         }
       }
@@ -68553,6 +69777,12 @@
             "state" : "machine_translated",
             "value" : "Ir para a visualização 7"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 7"
+          }
         }
       }
     },
@@ -68588,6 +69818,12 @@
             "state" : "machine_translated",
             "value" : "Ir para a visualização 8"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 8"
+          }
         }
       }
     },
@@ -68622,6 +69858,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ir para a visualização 9"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往视图 9"
           }
         }
       }
@@ -68944,6 +70186,12 @@
             "state" : "machine_translated",
             "value" : "Acento grave"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "重音符"
+          }
         }
       }
     },
@@ -68978,6 +70226,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Maior que"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "大于号"
           }
         }
       }
@@ -69248,6 +70502,12 @@
             "state" : "machine_translated",
             "value" : "Níveis de cabeçalho"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "章节标题级别"
+          }
         }
       }
     },
@@ -69282,6 +70542,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Modo de informação do cabeçalho"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "章节标题信息显示方式"
           }
         }
       }
@@ -69318,6 +70584,12 @@
             "state" : "machine_translated",
             "value" : "Cabeçalho: %@"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "章节标题：%@"
+          }
         }
       }
     },
@@ -69352,6 +70624,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cabeçalhos"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "章节标题"
           }
         }
       }
@@ -69490,6 +70768,18 @@
               }
             }
           }
+        },
+        "zh-Hans" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "章节标题，%lld 个章节标题"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -69524,6 +70814,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cabeçalhos: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "章节标题：%@"
           }
         }
       }
@@ -69594,6 +70890,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ajuda"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Help"
           }
         }
       }
@@ -69712,6 +71014,12 @@
             "state" : "machine_translated",
             "value" : "Ocultar outros"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "隐藏其他"
+          }
         }
       }
     },
@@ -69746,6 +71054,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ocultar TextMouth"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "隐藏 TextMouth"
           }
         }
       }
@@ -69782,6 +71096,12 @@
             "state" : "machine_translated",
             "value" : "Oculta os controles de ir para a página"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "隐藏跳转到页面的控制"
+          }
         }
       }
     },
@@ -69817,6 +71137,12 @@
             "state" : "machine_translated",
             "value" : "Oculta os controles de ir para a porcentagem"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "隐藏跳转到百分比的控制"
+          }
         }
       }
     },
@@ -69851,6 +71177,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Oculta os controles de ir para o tempo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "隐藏跳转到时间的控制"
           }
         }
       }
@@ -69956,6 +71288,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Início"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Home"
           }
         }
       }
@@ -70272,6 +71610,12 @@
             "state" : "machine_translated",
             "value" : "Quão rápido um segundo pressionamento deve seguir o primeiro. Uma tecla com ações diferentes para um e dois pressionamentos espera esse tempo antes de agir no pressionamento simples."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第二次按键必须在多久内跟上第一次。单按和连按有不同操作的键，会等待这么久后才执行单按的操作。"
+          }
         }
       }
     },
@@ -70377,6 +71721,12 @@
             "state" : "machine_translated",
             "value" : "ISBN"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISBN"
+          }
         }
       }
     },
@@ -70411,6 +71761,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISBN: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISBN：%@"
           }
         }
       }
@@ -70447,6 +71803,12 @@
             "state" : "machine_translated",
             "value" : "ISO 2022-JP (japonês)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 2022-JP（日语）"
+          }
         }
       }
     },
@@ -70481,6 +71843,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-13 (báltico)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-13（波罗的海语）"
           }
         }
       }
@@ -70517,6 +71885,12 @@
             "state" : "machine_translated",
             "value" : "ISO 8859-15 (europeu ocidental)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-15（西欧语）"
+          }
         }
       }
     },
@@ -70551,6 +71925,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-2 (europeu central)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-2（中欧语）"
           }
         }
       }
@@ -70587,6 +71967,12 @@
             "state" : "machine_translated",
             "value" : "ISO 8859-5 (cirílico)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-5（西里尔文）"
+          }
         }
       }
     },
@@ -70621,6 +72007,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-6 (árabe)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-6（阿拉伯语）"
           }
         }
       }
@@ -70657,6 +72049,12 @@
             "state" : "machine_translated",
             "value" : "ISO 8859-7 (grego)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-7（希腊语）"
+          }
         }
       }
     },
@@ -70692,6 +72090,12 @@
             "state" : "machine_translated",
             "value" : "ISO 8859-8 (hebraico)"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-8（希伯来语）"
+          }
         }
       }
     },
@@ -70726,6 +72130,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-9 (turco)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-9（土耳其语）"
           }
         }
       }
@@ -70797,6 +72207,12 @@
             "state" : "machine_translated",
             "value" : "Identificador"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "标识符"
+          }
         }
       }
     },
@@ -70831,6 +72247,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Identificador: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "标识符：%@"
           }
         }
       }
@@ -71270,6 +72692,12 @@
             "state" : "machine_translated",
             "value" : "Importar pasta…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "导入文件夹…"
+          }
         }
       }
     },
@@ -71479,6 +72907,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Importe o arquivo .opf de cada livro separadamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "请单独导入每本书的 .opf 文件。"
           }
         }
       }
@@ -72577,6 +74011,12 @@
             "state" : "machine_translated",
             "value" : "Nas janelas da biblioteca, uma letra sozinha vai para o primeiro livro ou pasta que começa com ela; por isso, um atalho que é uma letra sozinha, como W, só funciona em outras janelas."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在资料库窗口中，单独按一个字母会移到以该字母开头的第一本图书或第一个文件夹，因此只由一个字母（如 W）构成的快捷键只在其他窗口中有效。"
+          }
         }
       }
     },
@@ -72922,6 +74362,12 @@
             "state" : "machine_translated",
             "value" : "Incluir seção"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "包含此部分"
+          }
         }
       }
     },
@@ -72956,6 +74402,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Incluir a velocidade com o tempo restante e o tempo total"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在剩余时间和总时间旁加上速度"
           }
         }
       }
@@ -73032,6 +74484,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aumentar velocidade"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "提高速度"
           }
         }
       }
@@ -73275,6 +74733,12 @@
             "state" : "machine_translated",
             "value" : "Informações"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "信息"
+          }
         }
       }
     },
@@ -73485,6 +74949,12 @@
             "state" : "machine_translated",
             "value" : "Inserir marca de capítulo…"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "插入章节标记…"
+          }
         }
       }
     },
@@ -73520,6 +74990,12 @@
             "state" : "machine_translated",
             "value" : "Inserir caractere"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "插入字符"
+          }
         }
       }
     },
@@ -73554,6 +75030,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Inserir linha"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "插入行"
           }
         }
       }
@@ -73624,6 +75106,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Inserir silêncio…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "插入静音…"
           }
         }
       }
@@ -75491,6 +76979,12 @@
             "state" : "machine_translated",
             "value" : "Ele lista as faixas do livro na ordem de reprodução, cada uma com o título do seu cabeçalho. Você pode reordená-las, renomeá-las e agrupá-las sob cabeçalhos próprios, além de definir as pausas entre elas."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "清单按播放顺序列出图书的音轨，每条音轨都附有对应章节标题的名称。你可以重新排序、重新命名音轨，把它们归入自己的章节标题下，并设置音轨之间的停顿。"
+          }
         }
       }
     },
@@ -76675,6 +78169,12 @@
             "state" : "machine_translated",
             "value" : "O texto anterior foi guardado como %@, no pacote do livro."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "其先前的文本已保留为图书包中的 %@。"
+          }
         }
       }
     },
@@ -76961,6 +78461,12 @@
             "state" : "machine_translated",
             "value" : "A única página é %@."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "唯一的页是 %@。"
+          }
         }
       }
     },
@@ -77106,6 +78612,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "As páginas vão de %1$@ a %2$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "页码范围为 %1$@ 至 %2$@。"
           }
         }
       }
@@ -77364,6 +78876,12 @@
             "state" : "machine_translated",
             "value" : "Ir"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "跳转"
+          }
         }
       }
     },
@@ -77504,6 +79022,12 @@
             "state" : "machine_translated",
             "value" : "Foi para %@ na gravação."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已跳转到录音中的 %@。"
+          }
         }
       }
     },
@@ -77539,6 +79063,12 @@
             "state" : "machine_translated",
             "value" : "Foi para %@ por cento."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已跳转到百分之 %@。"
+          }
         }
       }
     },
@@ -77573,6 +79103,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Foi para %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已跳转到 %@。"
           }
         }
       }
@@ -77614,6 +79150,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Foi para a página %1$@, a %2$@ página com o rótulo %3$@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已跳转到页 %1$@，即标注为 %3$@ 的页面中的%2$@个。"
           }
         }
       }
