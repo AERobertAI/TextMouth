@@ -22258,7 +22258,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Un numero da 2 a 99"
+            "value" : "Un numero da 2 a 99."
           }
         }
       }
@@ -22831,7 +22831,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Passa a questo risultato"
+            "value" : "Passa a questo risultato."
           }
         },
         "pt-BR" : {
@@ -23905,7 +23905,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aggiunge le voci del lessico dopo le tue regole; le voci con la sola ortografia fonetica vengono messe da parte"
+            "value" : "Aggiunge le voci del lessico dopo le tue regole; le voci con la sola ortografia fonetica vengono messe da parte."
           }
         }
       }
@@ -24165,7 +24165,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Poi Riproduci riprova il passaggio"
+            "value" : "Poi Riproduci riprova il passaggio."
           }
         }
       }
@@ -24469,7 +24469,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tutti i libri dello stesso autore"
+            "value" : "Tutti i libri dello stesso autore."
           }
         },
         "pt-BR" : {
@@ -25759,7 +25759,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vale quando l’ascolto prosegue con un altro articolo"
+            "value" : "Vale quando l’ascolto prosegue con un altro articolo."
           }
         }
       }
@@ -25776,7 +25776,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vale quando l’ascolto prosegue con un altro libro"
+            "value" : "Vale quando l’ascolto prosegue con un altro libro."
           }
         }
       }
@@ -25793,7 +25793,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vale quando l’ascolto prosegue con un altro episodio"
+            "value" : "Vale quando l’ascolto prosegue con un altro episodio."
           }
         }
       }
@@ -25810,7 +25810,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vale quando l’ascolto prosegue con un altro elemento"
+            "value" : "Vale quando l’ascolto prosegue con un altro elemento."
           }
         }
       }
@@ -27748,7 +27748,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Disponibile solo quando gli articoli di questo feed passano a un altro articolo al termine di uno"
+            "value" : "Disponibile solo quando gli articoli di questo feed passano a un altro articolo al termine di uno."
           }
         }
       }
@@ -27765,7 +27765,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Disponibile solo quando gli episodi di questo feed passano a un altro episodio al termine di uno"
+            "value" : "Disponibile solo quando gli episodi di questo feed passano a un altro episodio al termine di uno."
           }
         }
       }
@@ -27782,7 +27782,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Disponibile solo quando gli elementi di questo feed passano a un altro elemento al termine di uno"
+            "value" : "Disponibile solo quando gli elementi di questo feed passano a un altro elemento al termine di uno."
           }
         }
       }
@@ -27799,7 +27799,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Disponibile solo quando i libri di questa cartella passano a un altro libro al termine di uno"
+            "value" : "Disponibile solo quando i libri di questa cartella passano a un altro libro al termine di uno."
           }
         }
       }
@@ -29370,7 +29370,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Libri con lo stesso titolo, indipendentemente dall’autore"
+            "value" : "Libri con lo stesso titolo, indipendentemente dall’autore."
           }
         },
         "pt-BR" : {
@@ -30626,7 +30626,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cambia il numero di uno, da 2 a 99"
+            "value" : "Cambia il numero di uno, da 2 a 99."
           }
         }
       }
@@ -30643,7 +30643,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cambia la velocità a passi di %@ volte"
+            "value" : "Cambia la velocità a passi di %@ volte."
           }
         }
       }
@@ -33629,7 +33629,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sceglie cosa succede quando termina uno degli articoli di questo feed"
+            "value" : "Sceglie cosa succede quando termina uno degli articoli di questo feed."
           }
         }
       }
@@ -33646,7 +33646,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sceglie cosa succede quando termina uno degli episodi di questo feed"
+            "value" : "Sceglie cosa succede quando termina uno degli episodi di questo feed."
           }
         }
       }
@@ -33663,7 +33663,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sceglie cosa succede quando termina uno degli elementi di questo feed"
+            "value" : "Sceglie cosa succede quando termina uno degli elementi di questo feed."
           }
         }
       }
@@ -33680,7 +33680,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sceglie cosa succede quando termina uno dei libri di questa cartella"
+            "value" : "Sceglie cosa succede quando termina uno dei libri di questa cartella."
           }
         }
       }
@@ -34298,7 +34298,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chiude la ricerca e torna al libro"
+            "value" : "Chiude la ricerca e torna al libro."
           }
         },
         "pt-BR" : {
@@ -34443,7 +34443,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chiude Cerca nella libreria; i risultati restano per la prossima volta"
+            "value" : "Chiude Cerca nella libreria; i risultati restano per la prossima volta."
           }
         },
         "pt-BR" : {
@@ -34559,7 +34559,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chiude questa vista senza creare un libro"
+            "value" : "Chiude questa vista senza creare un libro."
           }
         },
         "pt-BR" : {
@@ -36238,7 +36238,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Copia l’intero rapporto come testo semplice"
+            "value" : "Copia l’intero rapporto come testo semplice."
           }
         }
       }
@@ -43265,7 +43265,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Libri EPUB con lo stesso identificatore ISBN"
+            "value" : "Libri EPUB con lo stesso identificatore ISBN."
           }
         },
         "pt-BR" : {
@@ -45121,7 +45121,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inserisci o incolla il testo del nuovo libro"
+            "value" : "Inserisci o incolla il testo del nuovo libro."
           }
         },
         "pt-BR" : {
@@ -46445,7 +46445,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Corrispondenza esatta del contenuto del file: l’indicatore più affidabile"
+            "value" : "Corrispondenza esatta del contenuto del file: l’indicatore più affidabile."
           }
         },
         "pt-BR" : {
@@ -48827,7 +48827,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "I feed sono sempre elencati per titolo"
+            "value" : "I feed sono sempre elencati per titolo."
           }
         },
         "pt-BR" : {
@@ -53240,7 +53240,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Come la voce legge un simbolo scritto più volte di seguito"
+            "value" : "Come la voce legge un simbolo scritto più volte di seguito."
           }
         }
       }
@@ -55161,7 +55161,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nella cartella Registri di questo Mac"
+            "value" : "Nella cartella Registri di questo Mac."
           }
         },
         "pt-BR" : {
@@ -62526,7 +62526,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elenca qui fino a 500 corrispondenze di questo libro"
+            "value" : "Elenca qui fino a 500 corrispondenze di questo libro."
           }
         },
         "pt-BR" : {
@@ -63396,7 +63396,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’ordine manuale non ha direzione"
+            "value" : "L’ordine manuale non ha direzione."
           }
         },
         "pt-BR" : {
@@ -67960,7 +67960,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La sposta in basso di una posizione"
+            "value" : "La sposta in basso di una posizione."
           }
         },
         "pt-BR" : {
@@ -67989,7 +67989,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La sposta in alto di una posizione"
+            "value" : "La sposta in alto di una posizione."
           }
         },
         "pt-BR" : {
@@ -76879,7 +76879,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apre il libro a questa corrispondenza"
+            "value" : "Apre il libro a questa corrispondenza."
           }
         },
         "pt-BR" : {
@@ -76966,7 +76966,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apre le impostazioni del feed: dove vanno i suoi download, che cosa elenca e scarica, e che cosa succede quando finisce un episodio"
+            "value" : "Apre le impostazioni del feed: dove vanno i suoi download, che cosa elenca e scarica, e che cosa succede quando finisce un episodio."
           }
         },
         "pt-BR" : {
@@ -77024,7 +77024,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apre le impostazioni della cartella: che cosa contiene e che cosa succede quando finisce uno dei suoi libri"
+            "value" : "Apre le impostazioni della cartella: che cosa contiene e che cosa succede quando finisce uno dei suoi libri."
           }
         },
         "pt-BR" : {
@@ -77082,7 +77082,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apre l’ultimo libro che stavi leggendo"
+            "value" : "Apre l’ultimo libro che stavi leggendo."
           }
         },
         "pt-BR" : {
@@ -77191,7 +77191,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apre il testo in un editor esterno"
+            "value" : "Apre il testo in un editor esterno."
           }
         },
         "pt-BR" : {
@@ -77645,7 +77645,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Prevale sullo stile"
+            "value" : "Prevale sullo stile."
           }
         }
       }
@@ -79888,7 +79888,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Riproduce brevi suoni per le azioni di riproduzione"
+            "value" : "Riproduce brevi suoni per le azioni di riproduzione."
           }
         }
       }
@@ -80019,7 +80019,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si attiva quando Dove sono? finisce di parlare"
+            "value" : "Si attiva quando Dove sono? finisce di parlare."
           }
         }
       }
@@ -80036,7 +80036,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si attiva quando Dove sono? inizia a parlare"
+            "value" : "Si attiva quando Dove sono? inizia a parlare."
           }
         }
       }
@@ -80053,7 +80053,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si attiva quando metti in pausa la lettura"
+            "value" : "Si attiva quando metti in pausa la lettura."
           }
         }
       }
@@ -80070,7 +80070,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si attiva quando salti indietro"
+            "value" : "Si attiva quando salti indietro."
           }
         }
       }
@@ -80087,7 +80087,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si attiva quando salti avanti"
+            "value" : "Si attiva quando salti avanti."
           }
         }
       }
@@ -80104,7 +80104,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Si attiva quando avvii la lettura"
+            "value" : "Si attiva quando avvii la lettura."
           }
         }
       }
@@ -84549,7 +84549,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ricarica il testo dal file dell’editor"
+            "value" : "Ricarica il testo dal file dell’editor."
           }
         },
         "pt-BR" : {
@@ -86269,7 +86269,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sostituisce il testo con quello degli appunti"
+            "value" : "Sostituisce il testo con quello degli appunti."
           }
         },
         "pt-BR" : {
@@ -87363,7 +87363,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ripristina l’elenco standard: simboli ASCII, punti elenco, trattini, puntini di sospensione e linee di riquadro"
+            "value" : "Ripristina l’elenco standard: simboli ASCII, punti elenco, trattini, puntini di sospensione e linee di riquadro."
           }
         }
       }
@@ -88000,7 +88000,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inverte l’ordine dei libri"
+            "value" : "Inverte l’ordine dei libri."
           }
         },
         "pt-BR" : {
@@ -89834,7 +89834,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salva le tue regole di testo semplice attive; le regole con espressioni regolari vengono escluse"
+            "value" : "Salva le tue regole di testo semplice attive; le regole con espressioni regolari vengono escluse."
           }
         }
       }
@@ -92140,7 +92140,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Imposta quando il menu Vista propone questa vista"
+            "value" : "Imposta quando il menu Vista propone questa vista."
           }
         },
         "pt-BR" : {
@@ -93878,7 +93878,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mostra una cartella alla volta"
+            "value" : "Mostra una cartella alla volta."
           }
         },
         "pt-BR" : {
@@ -93936,7 +93936,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mostra i libri nell’ordine che stabilisci"
+            "value" : "Mostra i libri nell’ordine che stabilisci."
           }
         },
         "pt-BR" : {
@@ -97840,7 +97840,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Interrompe la ricerca, mantenendo le corrispondenze trovate finora"
+            "value" : "Interrompe la ricerca, mantenendo le corrispondenze trovate finora."
           }
         },
         "pt-BR" : {
@@ -125582,7 +125582,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Digita per cercare nella trascrizione del libro"
+            "value" : "Digita per cercare nella trascrizione del libro."
           }
         },
         "pt-BR" : {
@@ -125611,7 +125611,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Digita per cercare nel testo di ogni libro della libreria"
+            "value" : "Digita per cercare nel testo di ogni libro della libreria."
           }
         },
         "pt-BR" : {
@@ -125640,7 +125640,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Digita per cercare all’interno del libro"
+            "value" : "Digita per cercare all’interno del libro."
           }
         },
         "pt-BR" : {
@@ -128879,19 +128879,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld di minuti o meno, scarica l’articolo successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld di minuti o meno, scarica l’articolo successivo se non è ancora su questo Mac."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando resta %lld minuto o meno, scarica l’articolo successivo se non è ancora su questo Mac"
+                  "value" : "Quando resta %lld minuto o meno, scarica l’articolo successivo se non è ancora su questo Mac."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld minuti o meno, scarica l’articolo successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld minuti o meno, scarica l’articolo successivo se non è ancora su questo Mac."
                 }
               }
             }
@@ -128950,19 +128950,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld di minuti o meno, scarica il libro successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld di minuti o meno, scarica il libro successivo se non è ancora su questo Mac."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando resta %lld minuto o meno, scarica il libro successivo se non è ancora su questo Mac"
+                  "value" : "Quando resta %lld minuto o meno, scarica il libro successivo se non è ancora su questo Mac."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld minuti o meno, scarica il libro successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld minuti o meno, scarica il libro successivo se non è ancora su questo Mac."
                 }
               }
             }
@@ -129021,19 +129021,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld di minuti o meno, scarica l’episodio successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld di minuti o meno, scarica l’episodio successivo se non è ancora su questo Mac."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando resta %lld minuto o meno, scarica l’episodio successivo se non è ancora su questo Mac"
+                  "value" : "Quando resta %lld minuto o meno, scarica l’episodio successivo se non è ancora su questo Mac."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld minuti o meno, scarica l’episodio successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld minuti o meno, scarica l’episodio successivo se non è ancora su questo Mac."
                 }
               }
             }
@@ -129092,19 +129092,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld di minuti o meno, scarica l’elemento successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld di minuti o meno, scarica l’elemento successivo se non è ancora su questo Mac."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando resta %lld minuto o meno, scarica l’elemento successivo se non è ancora su questo Mac"
+                  "value" : "Quando resta %lld minuto o meno, scarica l’elemento successivo se non è ancora su questo Mac."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quando restano %lld minuti o meno, scarica l’elemento successivo se non è ancora su questo Mac"
+                  "value" : "Quando restano %lld minuti o meno, scarica l’elemento successivo se non è ancora su questo Mac."
                 }
               }
             }
@@ -129343,7 +129343,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se selezionata, le corrispondenze devono usare le stesse maiuscole e minuscole"
+            "value" : "Se selezionata, le corrispondenze devono usare le stesse maiuscole e minuscole."
           }
         },
         "pt-BR" : {
@@ -129372,7 +129372,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se selezionata, il testo da cercare è un’espressione regolare ICU"
+            "value" : "Se selezionata, il testo da cercare è un’espressione regolare ICU."
           }
         },
         "pt-BR" : {
@@ -129459,7 +129459,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se attivo, il testo da cercare viene trattato come un’espressione regolare"
+            "value" : "Se attivo, il testo da cercare viene trattato come un’espressione regolare."
           }
         },
         "pt-BR" : {
