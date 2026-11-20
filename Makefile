@@ -134,7 +134,7 @@ help:
 	@echo "  make l10n-sync  - Type-check both apps with the string extraction on and merge what it finds into the String Catalog (REF=commit, or WORKTREE=1 for uncommitted work; takes the heavy-work lock, about four minutes)"
 	@echo "  make l10n-status - Per language: the strings translated, machine translated, new, needing review, stale, and missing, and the English bytes (LANG_CODE=es for one language)"
 	@echo "  make l10n-size  - The English bytes against the 150,000-byte budget, and each language's shipped size in each format"
-	@echo "  make l10n-check - Check the String Catalog: shipped languages translated, placeholders and plural forms agreeing, a comment on every string, nothing stale (run by make check)"
+	@echo "  make l10n-check - Check the String Catalog: shipped languages translated, placeholders and plural forms agreeing, a comment on every string, nothing stale, and every lookup of the compact language files equal to Xcode's (run by make check)"
 	@echo "  make typecheck-ios - Compile and link the app's sources for iOS with SwiftPM, no iOS platform needed (CENSUS=1 counts every AppKit use left)"
 	@echo "  make typecheck-mac - The same for the Mac, in about two minutes, without xcodebuild"
 	@echo "  make typecheck-tests - The same for the Mac's hosted test target too, before a train request (REF=commit checks that commit)"
@@ -408,6 +408,7 @@ l10n-size:
 
 l10n-check:
 	@python3 -I -B Scripts/l10n/l10n.py check
+	@python3 -I -B Scripts/l10n/verify_packs.py
 
 ## Compile and link the app's sources for iOS with SwiftPM, which needs only
 ## the iOS SDK Xcode includes, not the iOS platform xcodebuild asks for
