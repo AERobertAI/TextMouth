@@ -45,6 +45,14 @@ FULL_SUITE_BASE = ["xcodebuild", "test", "-project", "TextMouth.xcodeproj", "-sc
 RETRY_ARGUMENTS = ["-retry-tests-on-failure", "-test-iterations", "3"]
 
 
+def retry_arguments(extra):
+    """Xcode's retry on failure, unless `extra` already says how many times to run each test
+    (`-test-iterations N`, a request's "test_iterations"): a run hunting a flaky test repeats every
+    test and counts each failure, where the retry would hide it behind a second try, and xcodebuild
+    refuses an option given twice."""
+    return [] if "-test-iterations" in extra else list(RETRY_ARGUMENTS)
+
+
 def full_suite_command(derived_data, result_bundle=None, extra=()):
     """The argv of the full suite, built in `derived_data`. With `result_bundle`
     (a path), xcodebuild also writes its result bundle there; `extra` is more
@@ -54,7 +62,7 @@ def full_suite_command(derived_data, result_bundle=None, extra=()):
         # xcodebuild refuses an option given twice: an extra one takes the place of the base's `NO`.
         at = base.index("-parallel-testing-enabled")
         del base[at:at + 2]
-    command = [*base, "-derivedDataPath", str(derived_data), *RETRY_ARGUMENTS, *extra]
+    command = [*base, "-derivedDataPath", str(derived_data), *retry_arguments(extra), *extra]
     if result_bundle:
         command += ["-resultBundlePath", str(result_bundle)]
     return command
@@ -82,7 +90,7 @@ def area_command(areas, classes, derived_data, log, jobs=2, slot=False, extra=()
         command += ["--no-slot"]
     command += ["--derived-data", str(derived_data), "--log", str(log)]
     # run-area.py takes each as --xcodebuild-arg=ARG (the equals sign, since ARG starts with a hyphen).
-    command += [f"--xcodebuild-arg={argument}" for argument in [*RETRY_ARGUMENTS, *extra]]
+    command += [f"--xcodebuild-arg={argument}" for argument in [*retry_arguments(extra), *extra]]
     return command
 
 
