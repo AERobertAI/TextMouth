@@ -13,20 +13,20 @@ enum TimeEntry: Equatable {
 
     /// What a field holding nothing, or something that isn't a time, says.
     static var howToType: String {
-        String(localized: "Type a time, such as 12:04.3, 1:02:03, or 75.5.",
-               comment: "Shown or spoken when a time field holds nothing, or something that is not a time (Go to Time, Insert Silence, the reader's Go to Time). The examples are clock times and seconds.")
+        // Translators: Shown or spoken when a time field holds nothing, or something that is not a time (Go to Time, Insert Silence, the reader's Go to Time). The examples are clock times and seconds.
+        String(localized: "Type a time, such as 12:04.3, 1:02:03, or 75.5.")
     }
 
     /// What a time whose seconds, after minutes or hours, reach 60 says.
     static var secondsTooLarge: String {
-        String(localized: "Seconds must be less than 60.",
-               comment: "Problem said of a typed time whose seconds, after minutes or hours, reach 60.")
+        // Translators: Problem said of a typed time whose seconds, after minutes or hours, reach 60.
+        String(localized: "Seconds must be less than 60.")
     }
 
     /// What a time whose minutes, after hours, reach 60 says.
     static var minutesTooLarge: String {
-        String(localized: "Minutes must be less than 60.",
-               comment: "Problem said of a typed time whose minutes, after hours, reach 60.")
+        // Translators: Problem said of a typed time whose minutes, after hours, reach 60.
+        String(localized: "Minutes must be less than 60.")
     }
 
     /// The time `text` names: seconds alone ("75.5", "3723"), minutes and

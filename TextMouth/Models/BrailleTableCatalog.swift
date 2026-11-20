@@ -168,23 +168,23 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
     var contractionLabel: String {
         switch (contraction, grade) {
         case (.no, let grade?):
-            return String(localized: "Uncontracted (Grade \(grade))",
-                          comment: "How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1.")
+            // Translators: How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1.
+            return String(localized: "Uncontracted (Grade \(grade))")
         case (.no, nil):
-            return String(localized: "Uncontracted",
-                          comment: "How a braille table contracts, for a table with no grade that writes every letter out.")
+            // Translators: How a braille table contracts, for a table with no grade that writes every letter out.
+            return String(localized: "Uncontracted")
         case (.full, let grade?):
-            return String(localized: "Contracted (Grade \(grade))",
-                          comment: "How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2.")
+            // Translators: How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2.
+            return String(localized: "Contracted (Grade \(grade))")
         case (.full, nil):
-            return String(localized: "Contracted",
-                          comment: "How a braille table contracts, for a table with no grade that shortens words with contractions.")
+            // Translators: How a braille table contracts, for a table with no grade that shortens words with contractions.
+            return String(localized: "Contracted")
         case (.partial, _):
-            return String(localized: "Partly contracted",
-                          comment: "How a braille table contracts: it shortens some words, not all.")
+            // Translators: How a braille table contracts: it shortens some words, not all.
+            return String(localized: "Partly contracted")
         case (.unstated, _):
-            return String(localized: "As the table defines",
-                          comment: "How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define.")
+            // Translators: How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define.
+            return String(localized: "As the table defines")
         }
     }
 }
@@ -823,12 +823,12 @@ enum BrailleTableCatalog {
         var words = codeName(of: table)
         if table.contraction != .unstated {
             let contraction = label.prefix(1).lowercased() + label.dropFirst()
-            words = String(localized: "\(words), \(contraction)",
-                           comment: "A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).")
+            // Translators: A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).
+            words = String(localized: "\(words), \(contraction)")
         }
         return language.map {
-            String(localized: "\(words), in \($0)",
-                   comment: "A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.")
+            // Translators: A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.
+            String(localized: "\(words), in \($0)")
         } ?? words
     }
 }

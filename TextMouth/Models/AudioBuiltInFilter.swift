@@ -202,8 +202,8 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             guard try reader.flag("linear", default: true) else {
                 throw AudioFilterError.badValue(
                     filter: "loudnorm", option: "linear", value: values["linear"] ?? "false",
-                    expected: String(localized: "TextMouth's own loudnorm normalizes with one gain, so it takes only true",
-                                     comment: "What the loudnorm filter's linear option accepts, said at the end of a refusal such as \"The loudnorm filter's linear can't be “false”: <this>.\" Written without its full stop.")
+                    // Translators: What the loudnorm filter's linear option accepts, said at the end of a refusal such as "The loudnorm filter's linear can't be “false”: <this>." Written without its full stop.
+                    expected: String(localized: "TextMouth's own loudnorm normalizes with one gain, so it takes only true")
                 )
             }
             // LRA is taken as ffmpeg takes it, and has nothing to do in
@@ -398,10 +398,10 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             let low = AudioBuiltInFilter.written(range.lowerBound)
             let high = AudioBuiltInFilter.written(range.upperBound)
             return whole
-                ? String(localized: "give a whole number from \(low) to \(high)",
-                         comment: "What a whole-number option of a filter accepts, said at the end of a refusal such as \"The afade filter's duration can't be “x”: <this>.\" Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.")
-                : String(localized: "give a number from \(low) to \(high)",
-                         comment: "What a number option of a filter accepts, said at the end of a refusal such as \"The volume filter's volume can't be “x”: <this>.\" Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.")
+                // Translators: What a whole-number option of a filter accepts, said at the end of a refusal such as "The afade filter's duration can't be “x”: <this>." Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.
+                ? String(localized: "give a whole number from \(low) to \(high)")
+                // Translators: What a number option of a filter accepts, said at the end of a refusal such as "The volume filter's volume can't be “x”: <this>." Written without its full stop. %1$@ is the lowest number allowed and %2$@ the highest, already written.
+                : String(localized: "give a number from \(low) to \(high)")
         }
 
         /// The option `name` as a linear amplitude within `range`: a plain
@@ -416,8 +416,8 @@ enum AudioBuiltInFilter: Equatable, Sendable {
                 value = Double(trimmed)
             }
             guard let value, value.isFinite, range.contains(value) else {
-                throw bad(name, text, expected: String(localized: "give a number, such as 0.5, or decibels, such as -6dB",
-                                     comment: "What a volume option of a filter accepts, said at the end of a refusal such as \"The volume filter's volume can't be “x”: <this>.\" Written without its full stop. The examples are filter syntax."))
+                // Translators: What a volume option of a filter accepts, said at the end of a refusal such as "The volume filter's volume can't be “x”: <this>." Written without its full stop. The examples are filter syntax.
+                throw bad(name, text, expected: String(localized: "give a number, such as 0.5, or decibels, such as -6dB"))
             }
             return value
         }
@@ -432,8 +432,8 @@ enum AudioBuiltInFilter: Equatable, Sendable {
         func optionalSeconds(_ name: String, range: ClosedRange<Double> = 0...86_400) throws -> TimeInterval? {
             guard let text = values[name] else { return nil }
             guard let seconds = Self.duration(text.trimmingCharacters(in: .whitespaces)), range.contains(seconds) else {
-                throw bad(name, text, expected: String(localized: "give a time such as 2.5, 250ms, or 0:01:30",
-                                     comment: "What a time option of a filter accepts, said at the end of a refusal such as \"The afade filter's duration can't be “x”: <this>.\" Written without its full stop. The examples are filter syntax."))
+                // Translators: What a time option of a filter accepts, said at the end of a refusal such as "The afade filter's duration can't be “x”: <this>." Written without its full stop. The examples are filter syntax.
+                throw bad(name, text, expected: String(localized: "give a time such as 2.5, 250ms, or 0:01:30"))
             }
             return seconds
         }
@@ -443,8 +443,8 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             where Choice.RawValue == String {
             guard let text = values[name] else { return fallback }
             guard let choice = Choice(rawValue: text.trimmingCharacters(in: .whitespaces)) else {
-                throw bad(name, text, expected: String(localized: "give one of \(Choice.allCases.map(\.rawValue).formatted(.list(type: .and, width: .narrow)))",
-                                     comment: "What a choice option of a filter accepts, said at the end of a refusal such as \"The afade filter's type can't be “x”: <this>.\" Written without its full stop. %@ is the allowed values, filter syntax, as a list such as \"in, out\"."))
+                // Translators: What a choice option of a filter accepts, said at the end of a refusal such as "The afade filter's type can't be “x”: <this>." Written without its full stop. %@ is the allowed values, filter syntax, as a list such as "in, out".
+                throw bad(name, text, expected: String(localized: "give one of \(Choice.allCases.map(\.rawValue).formatted(.list(type: .and, width: .narrow)))"))
             }
             return choice
         }
@@ -455,8 +455,8 @@ enum AudioBuiltInFilter: Equatable, Sendable {
             switch text.trimmingCharacters(in: .whitespaces).lowercased() {
             case "1", "true", "yes", "on": return true
             case "0", "false", "no", "off": return false
-            default: throw bad(name, text, expected: String(localized: "give true or false",
-                                     comment: "What an on-or-off option of a filter accepts, said at the end of a refusal such as \"The loudnorm filter's dual_mono can't be “x”: <this>.\" Written without its full stop."))
+            // Translators: What an on-or-off option of a filter accepts, said at the end of a refusal such as "The loudnorm filter's dual_mono can't be “x”: <this>." Written without its full stop.
+            default: throw bad(name, text, expected: String(localized: "give true or false"))
             }
         }
 

@@ -16,8 +16,8 @@ enum ReadingListWording {
     /// row's label, right after its title and author, in every view but the
     /// Reading List itself, where every row's book is in the list.
     static var inReadingListNote: String {
-        String(localized: "In reading list",
-               comment: "Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.")
+        // Translators: Part of a library row's VoiceOver label, after the book's title and author: the book is on the reading list.
+        String(localized: "In reading list")
     }
 
     // MARK: - The Order
@@ -26,29 +26,29 @@ enum ReadingListWording {
     /// order the user arranges, which its Sort menu names, checked, and the
     /// only item it offers.
     static var orderName: String {
-        String(localized: "Reading List Order",
-               comment: "Name of the order the Reading List shows its books in, the one the listener arranges: the only item of its Sort menu.")
+        // Translators: Name of the order the Reading List shows its books in, the one the listener arranges: the only item of its Sort menu.
+        String(localized: "Reading List Order")
     }
 
     /// The Sort button's spoken label at the Reading List, as the Sort
     /// button elsewhere names the sort it shows ("Sort books by Title,
     /// ascending").
     static var sortMenuLabel: String {
-        String(localized: "Sort books by \(orderName)",
-               comment: "VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.")
+        // Translators: VoiceOver label of the Library's Sort button while the Reading List shows. %@ is the name of the Reading List's order, Reading List Order.
+        String(localized: "Sort books by \(orderName)")
     }
 
     /// What VoiceOver says when the user chooses the Reading List's order,
     /// as choosing a sort elsewhere says the sort now shown.
     static var orderAnnouncement: String {
-        String(localized: "Sorted by \(orderName)",
-               comment: "VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order.")
+        // Translators: VoiceOver announcement after the Reading List's order was chosen in its Sort menu. %@ is the order's name, Reading List Order.
+        String(localized: "Sorted by \(orderName)")
     }
 
     /// The hint of the Reading List's one sort item: how its order changes.
     static var orderHint: String {
-        String(localized: "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
-               comment: "VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu.")
+        // Translators: VoiceOver hint of the Reading List Order item of the Reading List's Sort menu. Move Book Up and Move Book Down are commands of the Library menu.
+        String(localized: "Keeps the order you set with Move Book Up, Move Book Down, or dragging.")
     }
 
     // MARK: - The Options Bar
@@ -57,57 +57,57 @@ enum ReadingListWording {
     /// reading list does when it ends, whose options are
     /// `ReadingList.Continuation.title`.
     static var continuationLabel: String {
-        String(localized: "When a book ends",
-               comment: "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.")
+        // Translators: Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.
+        String(localized: "When a book ends")
     }
 
     /// The picker's hint: which books it applies to, and what each option
     /// does.
     static var continuationHint: String {
-        String(localized: "Chooses what a book opened from the list does when it ends.",
-               comment: "VoiceOver hint of the Reading List's When a book ends pop-up button.")
+        // Translators: VoiceOver hint of the Reading List's When a book ends pop-up button.
+        String(localized: "Chooses what a book opened from the list does when it ends.")
     }
 
     /// The label of the options bar's checkbox for passing over finished
     /// books.
     static var skipFinishedLabel: String {
-        String(localized: "Skip finished books",
-               comment: "Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.")
+        // Translators: Checkbox of the Reading List's options bar: when a book opened from the list ends, pass over the finished books.
+        String(localized: "Skip finished books")
     }
 
     /// The checkbox's hint: when it applies, and what it does.
     static var skipFinishedHint: String {
-        String(localized: "Passes over finished books when a book from the list ends.",
-               comment: "VoiceOver hint of the Reading List's Skip finished books checkbox.")
+        // Translators: VoiceOver hint of the Reading List's Skip finished books checkbox.
+        String(localized: "Passes over finished books when a book from the list ends.")
     }
 
     /// The label of the options bar's checkbox for taking books off the list
     /// as they are finished.
     static var removeFinishedLabel: String {
-        String(localized: "Remove books when finished",
-               comment: "Checkbox of the Reading List's options bar: take each book off the list once it is finished.")
+        // Translators: Checkbox of the Reading List's options bar: take each book off the list once it is finished.
+        String(localized: "Remove books when finished")
     }
 
     /// The checkbox's hint: when it applies, and what it does. It says that
     /// only books finished from then on leave the list, so no one expects
     /// the books already finished to go at once.
     static var removeFinishedHint: String {
-        String(localized: "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
-               comment: "VoiceOver hint of the Reading List's Remove books when finished checkbox.")
+        // Translators: VoiceOver hint of the Reading List's Remove books when finished checkbox.
+        String(localized: "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.")
     }
 
     /// The label of the options bar's checkbox for keeping the list's books
     /// downloaded on this Mac, shown only while the library is in the cloud.
     static var keepBooksLabel: String {
-        String(localized: "Keep these books on this Mac",
-               comment: "Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.")
+        // Translators: Checkbox of the Reading List's options bar, shown while the library is in iCloud: keep the list's books downloaded on this Mac.
+        String(localized: "Keep these books on this Mac")
     }
 
     /// The checkbox's hint: what it does, and that the choice is this Mac's
     /// own. Nothing is removed from this Mac by clearing it.
     static var keepBooksHint: String {
-        String(localized: "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
-               comment: "VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.")
+        // Translators: VoiceOver hint of the Reading List's Keep these books on this Mac checkbox: a choice of this Mac's alone.
+        String(localized: "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.")
     }
 
     // MARK: - The Empty List
@@ -115,8 +115,8 @@ enum ReadingListWording {
     /// What the Reading List shows, as a row VoiceOver reads, while the
     /// list holds no book: that it is empty, and how a book joins it.
     static var emptyList: String {
-        String(localized: "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
-               comment: "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.")
+        // Translators: Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.
+        String(localized: "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.")
     }
 
     // MARK: - The Commands
@@ -127,8 +127,8 @@ enum ReadingListWording {
     /// Reading List".
     static func addTitle(count: Int, forSelection: Bool) -> String {
         guard forSelection else { return ShortcutAction.addToReadingList.title }
-        return String(localized: "Add \(count) Books to Reading List",
-                      comment: "Context menu item for the books selected in the Library: adds them to the reading list. Title case. %lld is the number of books selected.")
+        // Translators: Context menu item for the books selected in the Library: adds them to the reading list. Title case. %lld is the number of books selected.
+        return String(localized: "Add \(count) Books to Reading List")
     }
 
     /// The title of Remove from Reading List for `count` books: its plain
@@ -136,8 +136,8 @@ enum ReadingListWording {
     /// selection.
     static func removeTitle(count: Int, forSelection: Bool) -> String {
         guard forSelection else { return ShortcutAction.removeFromReadingList.title }
-        return String(localized: "Remove \(count) Books from Reading List",
-                      comment: "Context menu item for the books selected in the Library: takes them off the reading list. Title case. %lld is the number of books selected.")
+        // Translators: Context menu item for the books selected in the Library: takes them off the reading list. Title case. %lld is the number of books selected.
+        return String(localized: "Remove \(count) Books from Reading List")
     }
 
     // MARK: - The Edit-Mode Bar
@@ -162,11 +162,11 @@ enum ReadingListWording {
         guard count > 0 else { return editBarTitle(kind) }
         switch kind {
         case .add:
-            return String(localized: "Add \(count) books to the reading list",
-                          comment: "VoiceOver label of the Library's edit-mode bar button that adds the selected books to the reading list. %lld is the number of books selected.")
+            // Translators: VoiceOver label of the Library's edit-mode bar button that adds the selected books to the reading list. %lld is the number of books selected.
+            return String(localized: "Add \(count) books to the reading list")
         case .remove:
-            return String(localized: "Remove \(count) books from the reading list",
-                          comment: "VoiceOver label of the Library's edit-mode bar button that takes the selected books off the reading list. %lld is the number of books selected.")
+            // Translators: VoiceOver label of the Library's edit-mode bar button that takes the selected books off the reading list. %lld is the number of books selected.
+            return String(localized: "Remove \(count) books from the reading list")
         }
     }
 
@@ -175,11 +175,11 @@ enum ReadingListWording {
     static func editBarHint(_ kind: ReadingListCommand.Kind) -> String {
         switch kind {
         case .add:
-            return String(localized: "Adds the selected books to the end of the reading list.",
-                          comment: "VoiceOver hint of the Library's edit-mode bar button Add to Reading List.")
+            // Translators: VoiceOver hint of the Library's edit-mode bar button Add to Reading List.
+            return String(localized: "Adds the selected books to the end of the reading list.")
         case .remove:
-            return String(localized: "Takes the selected books off the reading list. They stay in the library.",
-                          comment: "VoiceOver hint of the Library's edit-mode bar button Remove from Reading List.")
+            // Translators: VoiceOver hint of the Library's edit-mode bar button Remove from Reading List.
+            return String(localized: "Takes the selected books off the reading list. They stay in the library.")
         }
     }
 
@@ -192,13 +192,13 @@ enum ReadingListWording {
     /// already, how many, as in "1 book was already in it."
     static func addedAnnouncement(added titles: [String], alreadyIn: Int) -> String {
         let done = titles.count == 1
-            ? String(localized: "Added to reading list: \(titles.first ?? "")",
-                     comment: "VoiceOver announcement after one book was added to the reading list. %@ is the book's title.")
-            : String(localized: "Added \(titles.count) books to the reading list.",
-                     comment: "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added.")
+            // Translators: VoiceOver announcement after one book was added to the reading list. %@ is the book's title.
+            ? String(localized: "Added to reading list: \(titles.first ?? "")")
+            // Translators: VoiceOver announcement after several books were added to the reading list. %lld is the number of books added.
+            : String(localized: "Added \(titles.count) books to the reading list.")
         guard alreadyIn > 0 else { return done }
-        return sentences(done, String(localized: "\(alreadyIn) books were already in it.",
-                                      comment: "Second sentence of the announcement after books were added to the reading list: some chosen were on it already. %lld is how many."))
+        // Translators: Second sentence of the announcement after books were added to the reading list: some chosen were on it already. %lld is how many.
+        return sentences(done, String(localized: "\(alreadyIn) books were already in it."))
     }
 
     /// What VoiceOver hears after Remove from Reading List took off
@@ -209,13 +209,13 @@ enum ReadingListWording {
     /// it."
     static func removedAnnouncement(removed titles: [String], notIn: Int) -> String {
         let done = titles.count == 1
-            ? String(localized: "Removed from reading list: \(titles.first ?? "")",
-                     comment: "VoiceOver announcement after one book was taken off the reading list. %@ is the book's title.")
-            : String(localized: "Removed \(titles.count) books from the reading list.",
-                     comment: "VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.")
+            // Translators: VoiceOver announcement after one book was taken off the reading list. %@ is the book's title.
+            ? String(localized: "Removed from reading list: \(titles.first ?? "")")
+            // Translators: VoiceOver announcement after several books were taken off the reading list. %lld is the number of books taken off.
+            : String(localized: "Removed \(titles.count) books from the reading list.")
         guard notIn > 0 else { return done }
-        return sentences(done, String(localized: "\(notIn) books were not in it.",
-                                      comment: "Second sentence of the announcement after books were taken off the reading list: some chosen were not on it. %lld is how many."))
+        // Translators: Second sentence of the announcement after books were taken off the reading list: some chosen were not on it. %lld is how many.
+        return sentences(done, String(localized: "\(notIn) books were not in it."))
     }
 
     /// What VoiceOver hears after an import made at the Reading List added
@@ -229,10 +229,10 @@ enum ReadingListWording {
     static func importedAnnouncement(added titles: [String], folderPath: String) -> String {
         let folder = folderPath.isEmpty ? LibraryFolderOption.rootLabel : folderPath
         let place = titles.count == 1
-            ? String(localized: "The book is in \(folder).",
-                     comment: "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.")
-            : String(localized: "The books are in \(folder).",
-                     comment: "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.")
+            // Translators: Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.
+            ? String(localized: "The book is in \(folder).")
+            // Translators: Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.
+            : String(localized: "The books are in \(folder).")
         return sentences(addedAnnouncement(added: titles, alreadyIn: 0), place)
     }
 
@@ -242,11 +242,11 @@ enum ReadingListWording {
     static func addRefusal(selected titles: [String]) -> String {
         guard !titles.isEmpty else { return LibraryCloudWording.noBooksSelected }
         if titles.count == 1, let title = titles.first {
-            return String(localized: "\(title) is already in the reading list.",
-                          comment: "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.")
+            // Translators: VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.
+            return String(localized: "\(title) is already in the reading list.")
         }
-        return String(localized: "The \(titles.count) selected books are already in the reading list.",
-                      comment: "VoiceOver announcement when Add to Reading List added nothing: every book selected is on the list already. %lld is the number of books selected (two or more).")
+        // Translators: VoiceOver announcement when Add to Reading List added nothing: every book selected is on the list already. %lld is the number of books selected (two or more).
+        return String(localized: "The \(titles.count) selected books are already in the reading list.")
     }
 
     /// Why Remove from Reading List from the Library menu took nothing off,
@@ -255,11 +255,11 @@ enum ReadingListWording {
     static func removeRefusal(selected titles: [String]) -> String {
         guard !titles.isEmpty else { return LibraryCloudWording.noBooksSelected }
         if titles.count == 1, let title = titles.first {
-            return String(localized: "\(title) isn't in the reading list.",
-                          comment: "VoiceOver announcement when Remove from Reading List took nothing off: the one book selected is not on the list. %@ is the book's title.")
+            // Translators: VoiceOver announcement when Remove from Reading List took nothing off: the one book selected is not on the list. %@ is the book's title.
+            return String(localized: "\(title) isn't in the reading list.")
         }
-        return String(localized: "None of the \(titles.count) selected books is in the reading list.",
-                      comment: "VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more).")
+        // Translators: VoiceOver announcement when Remove from Reading List took nothing off: no book selected is on the list. %lld is the number of books selected (two or more).
+        return String(localized: "None of the \(titles.count) selected books is in the reading list.")
     }
 
     /// `first` followed by `second` as two sentences: `first` ends with a

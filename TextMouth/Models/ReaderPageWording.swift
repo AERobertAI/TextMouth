@@ -12,15 +12,15 @@ enum ReaderPageWording {
     /// What a move by page says on reaching a page: "Page 13".
     /// `label` is the page's label as the book names it ("13", "xii").
     static func arrived(at label: String) -> String {
-        String(localized: "Page \(label)",
-               comment: "Announcement on reaching a page of a book that has pages, and the start of a sentence naming a page. %@ is the page's label as the book names it, such as 13 or xii, an identifier written without digit grouping.")
+        // Translators: Announcement on reaching a page of a book that has pages, and the start of a sentence naming a page. %@ is the page's label as the book names it, such as 13 or xii, an identifier written without digit grouping.
+        String(localized: "Page \(label)")
     }
 
     /// What a page command says in a book that has no pages, and moves
     /// nothing.
     static var noPages: String {
-        String(localized: "This book has no pages.",
-               comment: "Announcement when a page command is used in a book that has no pages.")
+        // Translators: Announcement when a page command is used in a book that has no pages.
+        String(localized: "This book has no pages.")
     }
 
     /// What a page command says in a book of one page, which has no other
@@ -28,22 +28,22 @@ enum ReaderPageWording {
     /// 2026: such a command "should just warn the user and not do
     /// anything").
     static var onlyOnePage: String {
-        String(localized: "This book has only one page.",
-               comment: "Announcement when a page command is used in a book that has one page, so there is no other page to go to.")
+        // Translators: Announcement when a page command is used in a book that has one page, so there is no other page to go to.
+        String(localized: "This book has only one page.")
     }
 
     // MARK: - Go to Page
 
     /// Go to Page's field name, shown before it and spoken as its label.
     static var fieldLabel: String {
-        String(localized: "Page",
-               comment: "Label of the Go to Page field, where the user types a page of the book.")
+        // Translators: Label of the Go to Page field, where the user types a page of the book.
+        String(localized: "Page")
     }
 
     /// How Go to Page's field is filled in, the last sentence of its hint.
     static var typingHint: String {
-        String(localized: "Type a page as the book numbers it, such as 12 or xii.",
-               comment: "Last sentence of the Go to Page field's hint: what the user may type. 12 and xii are examples of page labels, a number and a roman numeral.")
+        // Translators: Last sentence of the Go to Page field's hint: what the user may type. 12 and xii are examples of page labels, a number and a roman numeral.
+        String(localized: "Type a page as the book numbers it, such as 12 or xii.")
     }
 
     /// What Go to Page's field takes, spoken as its hint: how many pages the
@@ -57,17 +57,17 @@ enum ReaderPageWording {
             return noPages
         }
         let size = pages.count == 1
-            ? String(localized: "This book's only page is \(first).",
-                     comment: "First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping.")
-            : String(localized: "This book has \(pages.total) pages, from \(first) to \(last).",
-                     comment: "First sentence of the Go to Page field's hint. %1$lld is the number of pages in the book; %2$@ is the first page's label and %3$@ the last page's label, identifiers such as i or 300 written without digit grouping.")
+            // Translators: First sentence of the Go to Page field's hint for a book of one page. %@ is that page's label, an identifier written without digit grouping.
+            ? String(localized: "This book's only page is \(first).")
+            // Translators: First sentence of the Go to Page field's hint. %1$lld is the number of pages in the book; %2$@ is the first page's label and %3$@ the last page's label, identifiers such as i or 300 written without digit grouping.
+            : String(localized: "This book has \(pages.total) pages, from \(first) to \(last).")
         return SentenceWording.joined([size, typingHint])
     }
 
     /// What Go to Page says to an empty field.
     static var emptyField: String {
-        String(localized: "Type a page number.",
-               comment: "Message when Go to Page is chosen with nothing typed in its field.")
+        // Translators: Message when Go to Page is chosen with nothing typed in its field.
+        String(localized: "Type a page number.")
     }
 
     /// What Go to Page says to a page the book does not have: "There is no
@@ -76,13 +76,13 @@ enum ReaderPageWording {
     /// `typed` is what was typed, trimmed; `first` and `last` are the first
     /// and last pages' labels; `count` is the number of pages.
     static func noSuchPage(_ typed: String, first: String, last: String, count: Int) -> String {
-        let prefix = String(localized: "There is no page \(typed) in this book.",
-                            comment: "First sentence of the message when Go to Page is given a page the book does not have. %@ is what the user typed.")
+        // Translators: First sentence of the message when Go to Page is given a page the book does not have. %@ is what the user typed.
+        let prefix = String(localized: "There is no page \(typed) in this book.")
         let range = count == 1
-            ? String(localized: "Its only page is \(first).",
-                     comment: "Second sentence of that message for a book of one page. %@ is that page's label, an identifier written without digit grouping.")
-            : String(localized: "Its pages run from \(first) to \(last).",
-                     comment: "Second sentence of that message. %1$@ is the first page's label and %2$@ the last page's label, identifiers such as i or 300 written without digit grouping.")
+            // Translators: Second sentence of that message for a book of one page. %@ is that page's label, an identifier written without digit grouping.
+            ? String(localized: "Its only page is \(first).")
+            // Translators: Second sentence of that message. %1$@ is the first page's label and %2$@ the last page's label, identifiers such as i or 300 written without digit grouping.
+            : String(localized: "Its pages run from \(first) to \(last).")
         return SentenceWording.joined([prefix, range])
     }
 
@@ -98,11 +98,11 @@ enum ReaderPageWording {
     /// Nil, for a label of one page, leaves the sentence as it was.
     static func jumped(to label: String, occurrence: Int? = nil) -> String {
         guard let occurrence else {
-            return String(localized: "Jumped to page \(label).",
-                          comment: "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping.")
+            // Translators: Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping.
+            return String(localized: "Jumped to page \(label).")
         }
-        return String(localized: "Jumped to page \(label), the \(ordinal(occurrence)) page labelled \(label).",
-                      comment: "Announcement after Go to Page jumped to one of several pages that carry the same label. %1$@ is the page's label, an identifier; %2$@ is which of them it is, as an ordinal word such as \"second\" or \"11th\".")
+        // Translators: Announcement after Go to Page jumped to one of several pages that carry the same label. %1$@ is the page's label, an identifier; %2$@ is which of them it is, as an ordinal word such as "second" or "11th".
+        return String(localized: "Jumped to page \(label), the \(ordinal(occurrence)) page labelled \(label).")
     }
 
     // MARK: - When Go to Page Leaves the Cursor Elsewhere
@@ -126,8 +126,8 @@ enum ReaderPageWording {
     /// page 3 the cursor was on.
     static func hasNoWords(_ label: String, occurrence: Int? = nil, cursor: String) -> String {
         let subject = namedAtStart(label, occurrence: occurrence)
-        return String(localized: "\(subject) has no words, so the cursor is \(cursor).",
-                      comment: "Announcement after Go to Page when the page typed has no words of its own. %1$@ names the page, such as \"Page 7\" or \"The first page labelled 3\"; %2$@ says where the cursor is, such as \"on page 8\" or \"before page 1\".")
+        // Translators: Announcement after Go to Page when the page typed has no words of its own. %1$@ names the page, such as "Page 7" or "The first page labelled 3"; %2$@ says where the cursor is, such as "on page 8" or "before page 1".
+        return String(localized: "\(subject) has no words, so the cursor is \(cursor).")
     }
 
     /// What Go to Page says when every word of the page typed is in a
@@ -139,8 +139,8 @@ enum ReaderPageWording {
     /// `hasNoWords(_:occurrence:cursor:)`.
     static func isInSkippedSection(_ label: String, occurrence: Int? = nil, cursor: String) -> String {
         let subject = namedAtStart(label, occurrence: occurrence)
-        return String(localized: "\(subject) is in a skipped section, so the cursor is \(cursor).",
-                      comment: "Announcement after Go to Page when every word of the page typed is in a skipped section. %1$@ names the page, such as \"Page 40\" or \"The first page labelled 3\"; %2$@ says where the cursor is, such as \"on page 52\" or \"before page 1\".")
+        // Translators: Announcement after Go to Page when every word of the page typed is in a skipped section. %1$@ names the page, such as "Page 40" or "The first page labelled 3"; %2$@ says where the cursor is, such as "on page 52" or "before page 1".
+        return String(localized: "\(subject) is in a skipped section, so the cursor is \(cursor).")
     }
 
     /// What Go to Page says when the cursor is not on the page typed and the
@@ -148,8 +148,8 @@ enum ReaderPageWording {
     /// word of the page: only where the cursor is, the page the status row
     /// names. "The cursor is on page 52."
     static func cursorIs(_ cursor: String) -> String {
-        String(localized: "The cursor is \(cursor).",
-               comment: "Announcement after Go to Page when the cursor is not on the page typed and there is no known reason. %@ says where the cursor is, such as \"on page 52\" or \"before page 1\".")
+        // Translators: Announcement after Go to Page when the cursor is not on the page typed and there is no known reason. %@ says where the cursor is, such as "on page 52" or "before page 1".
+        String(localized: "The cursor is \(cursor).")
     }
 
     /// Where the cursor is, as Go to Page's sentences say it after "the
@@ -161,15 +161,15 @@ enum ReaderPageWording {
         guard let reached = position.page else {
             // Before the first page; a book without pages has nothing to say.
             guard let firstLabel = position.firstLabel else { return "" }
-            return String(localized: "before page \(firstLabel)",
-                          comment: "Where the cursor is, said after \"the cursor is\": before the book's first page. %@ is the first page's label, an identifier written without digit grouping.")
+            // Translators: Where the cursor is, said after "the cursor is": before the book's first page. %@ is the first page's label, an identifier written without digit grouping.
+            return String(localized: "before page \(firstLabel)")
         }
         guard let occurrence else {
-            return String(localized: "on page \(reached.label)",
-                          comment: "Where the cursor is, said after \"the cursor is\": on a page. %@ is the page's label, an identifier written without digit grouping.")
+            // Translators: Where the cursor is, said after "the cursor is": on a page. %@ is the page's label, an identifier written without digit grouping.
+            return String(localized: "on page \(reached.label)")
         }
-        return String(localized: "on the \(ordinal(occurrence)) page labelled \(reached.label)",
-                      comment: "Where the cursor is, said after \"the cursor is\": on one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as \"second\" or \"11th\"; %2$@ is the label, an identifier written without digit grouping.")
+        // Translators: Where the cursor is, said after "the cursor is": on one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as "second" or "11th"; %2$@ is the label, an identifier written without digit grouping.
+        return String(localized: "on the \(ordinal(occurrence)) page labelled \(reached.label)")
     }
 
     // MARK: - Naming a Page
@@ -181,8 +181,8 @@ enum ReaderPageWording {
     /// long.
     private static func namedAtStart(_ label: String, occurrence: Int?) -> String {
         guard let occurrence else { return arrived(at: label) }
-        return String(localized: "The \(ordinal(occurrence)) page labelled \(label)",
-                      comment: "The start of a sentence naming one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as \"first\" or \"11th\"; %2$@ is the label, an identifier written without digit grouping.")
+        // Translators: The start of a sentence naming one of several pages that carry the same label. %1$@ is which of them it is, as an ordinal word such as "first" or "11th"; %2$@ is the label, an identifier written without digit grouping.
+        return String(localized: "The \(ordinal(occurrence)) page labelled \(label)")
     }
 
     /// `number` as an ordinal: in words up to the tenth, and after that in
@@ -190,16 +190,26 @@ enum ReaderPageWording {
     /// VoiceOver says them too.
     private static func ordinal(_ number: Int) -> String {
         switch number {
-        case 1: return String(localized: "first", comment: "Ordinal word 1st, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 2: return String(localized: "second", comment: "Ordinal word 2nd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 3: return String(localized: "third", comment: "Ordinal word 3rd, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 4: return String(localized: "fourth", comment: "Ordinal word 4th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 5: return String(localized: "fifth", comment: "Ordinal word 5th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 6: return String(localized: "sixth", comment: "Ordinal word 6th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 7: return String(localized: "seventh", comment: "Ordinal word 7th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 8: return String(localized: "eighth", comment: "Ordinal word 8th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 9: return String(localized: "ninth", comment: "Ordinal word 9th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
-        case 10: return String(localized: "tenth", comment: "Ordinal word 10th, naming which of several pages that carry the same label a page is. Lower case, as it follows \"the\".")
+        // Translators: Ordinal word 1st, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 1: return String(localized: "first")
+        // Translators: Ordinal word 2nd, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 2: return String(localized: "second")
+        // Translators: Ordinal word 3rd, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 3: return String(localized: "third")
+        // Translators: Ordinal word 4th, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 4: return String(localized: "fourth")
+        // Translators: Ordinal word 5th, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 5: return String(localized: "fifth")
+        // Translators: Ordinal word 6th, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 6: return String(localized: "sixth")
+        // Translators: Ordinal word 7th, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 7: return String(localized: "seventh")
+        // Translators: Ordinal word 8th, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 8: return String(localized: "eighth")
+        // Translators: Ordinal word 9th, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 9: return String(localized: "ninth")
+        // Translators: Ordinal word 10th, naming which of several pages that carry the same label a page is. Lower case, as it follows "the".
+        case 10: return String(localized: "tenth")
         default:
             // Past the tenth, the region's own ordinal figures ("11th",
             // "21st", "112th" in English), as the number formatter writes them.
@@ -213,53 +223,53 @@ enum ReaderPageWording {
 
     /// The page button's hint while no panel is open.
     static var openHint: String {
-        String(localized: "Opens jump to page controls",
-               comment: "Hint of the status row's page button while no jump panel is open.")
+        // Translators: Hint of the status row's page button while no jump panel is open.
+        String(localized: "Opens jump to page controls")
     }
 
     /// The page button's hint while the page panel is open.
     static var hideHint: String {
-        String(localized: "Hides jump to page controls",
-               comment: "Hint of the status row's page button while the jump to page panel is open.")
+        // Translators: Hint of the status row's page button while the jump to page panel is open.
+        String(localized: "Hides jump to page controls")
     }
 
     /// The page button's hint while the percent or time panel is open.
     static var switchHint: String {
-        String(localized: "Switches to jump to page controls",
-               comment: "Hint of the status row's page button while the jump to percent or time panel is open.")
+        // Translators: Hint of the status row's page button while the jump to percent or time panel is open.
+        String(localized: "Switches to jump to page controls")
     }
 
     // MARK: - Settings
 
     /// The setting group in Playback settings.
     static var settingSection: String {
-        String(localized: "Pages",
-               comment: "Heading of the group in Playback settings that holds the settings about pages.")
+        // Translators: Heading of the group in Playback settings that holds the settings about pages.
+        String(localized: "Pages")
     }
 
     /// The setting that shows the page on the reader screen.
     static var showInReaderTitle: String {
-        String(localized: "Show the page on the reader screen",
-               comment: "Label of the Playback setting's checkbox that shows the page being read on the reader screen.")
+        // Translators: Label of the Playback setting's checkbox that shows the page being read on the reader screen.
+        String(localized: "Show the page on the reader screen")
     }
 
     /// What showing the page does, as its checkbox's hint says and its
     /// caption shows.
     static var showInReaderHint: String {
-        String(localized: "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
-               comment: "Hint and caption of the Playback setting that shows the page on the reader screen. \"Page 12 of 300\" is an example of how the page is shown.")
+        // Translators: Hint and caption of the Playback setting that shows the page on the reader screen. "Page 12 of 300" is an example of how the page is shown.
+        String(localized: "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.")
     }
 
     /// The setting that adds the page to Where Am I?.
     static var sayInWhereAmITitle: String {
-        String(localized: "Say the page in Where Am I?",
-               comment: "Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is.")
+        // Translators: Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is.
+        String(localized: "Say the page in Where Am I?")
     }
 
     /// What saying the page does, as its checkbox's hint says and its
     /// caption shows.
     static var sayInWhereAmIHint: String {
-        String(localized: "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
-               comment: "Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. \"Page 12 of 300\" is an example of how the page is said.")
+        // Translators: Hint and caption of the Playback setting that adds the page to Where Am I?, a command that says where the reader is. "Page 12 of 300" is an example of how the page is said.
+        String(localized: "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.")
     }
 }

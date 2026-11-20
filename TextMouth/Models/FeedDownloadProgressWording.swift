@@ -45,8 +45,8 @@ struct FeedCancelReturn: Equatable, Sendable {
 enum FeedDownloadProgressWording {
     /// The section's title, which VoiceOver reads first.
     static var title: String {
-        String(localized: "Feed Downloads",
-               comment: "Title of the Library window's section that shows the feed downloads under way, which VoiceOver reads first. Title case.")
+        // Translators: Title of the Library window's section that shows the feed downloads under way, which VoiceOver reads first. Title case.
+        String(localized: "Feed Downloads")
     }
     /// How often the section shows its downloads' progress anew, in
     /// seconds: the bytes of the download under way come many times a
@@ -61,11 +61,11 @@ enum FeedDownloadProgressWording {
     /// with those that failed: "3 of 9 done", "3 of 9 done, 1 failed".
     static func count(done: Int, of total: Int, failed: Int) -> String {
         // A download that failed is done too.
-        let count = String(localized: "\(done) of \(total) done",
-                           comment: "The feed downloads section's count: how many downloads are done of the run's total. A download that failed is done too. The first %lld is the number done, the second the total.")
+        // Translators: The feed downloads section's count: how many downloads are done of the run's total. A download that failed is done too. The first %lld is the number done, the second the total.
+        let count = String(localized: "\(done) of \(total) done")
         guard failed > 0 else { return count }
-        let failedCount = String(localized: "\(failed) failed",
-                                 comment: "How many of the feed downloads of a run failed, after the count of those done: \"3 of 9 done, 1 failed\". %lld is the number that failed.")
+        // Translators: How many of the feed downloads of a run failed, after the count of those done: "3 of 9 done, 1 failed". %lld is the number that failed.
+        let failedCount = String(localized: "\(failed) failed")
         return SentenceWording.commaJoined([count, failedCount])
     }
 
@@ -73,8 +73,8 @@ enum FeedDownloadProgressWording {
     /// feed, and what it is doing, when there is something to say: "Download
     /// 3 of 9: “Ep. 368” from Finish It!, 40% of 63 MB".
     static func item(_ title: String, feed feedTitle: String, number: Int, of total: Int, doing activity: String?) -> String {
-        let item = String(localized: "Download \(number) of \(total): “\(title)” from \(feedTitle)",
-                          comment: "The feed download under way, in the feed downloads section: its number among the run's downloads, its title, and its feed. The first %lld is its number; the second is the run's total; the first %@ is the episode's or article's title; the second is the feed's title.")
+        // Translators: The feed download under way, in the feed downloads section: its number among the run's downloads, its title, and its feed. The first %lld is its number; the second is the run's total; the first %@ is the episode's or article's title; the second is the feed's title.
+        let item = String(localized: "Download \(number) of \(total): “\(title)” from \(feedTitle)")
         guard let activity else { return item }
         return SentenceWording.commaJoined([item, activity])
     }
@@ -86,12 +86,12 @@ enum FeedDownloadProgressWording {
     /// as 40 percent.
     static func transfer(_ progress: BookDownloadProgress) -> String? {
         if progress.totalBytes > 0 {
-            return String(localized: "\(progress.percent)% of \(ImportProgressWording.size(progress.totalBytes))",
-                          comment: "How far a feed download's file has come, when its size is known. %lld is the percent done; %@ is the file's size with its unit, such as 63 MB.")
+            // Translators: How far a feed download's file has come, when its size is known. %lld is the percent done; %@ is the file's size with its unit, such as 63 MB.
+            return String(localized: "\(progress.percent)% of \(ImportProgressWording.size(progress.totalBytes))")
         }
         if progress.completedBytes > 0 {
-            return String(localized: "\(ImportProgressWording.size(progress.completedBytes)) so far",
-                          comment: "How far a feed download's file has come, when its size is not known. %@ is the bytes received so far with their unit, such as 12 MB.")
+            // Translators: How far a feed download's file has come, when its size is not known. %@ is the bytes received so far with their unit, such as 12 MB.
+            return String(localized: "\(ImportProgressWording.size(progress.completedBytes)) so far")
         }
         return nil
     }
@@ -99,8 +99,8 @@ enum FeedDownloadProgressWording {
     /// What a download is doing once its file has come, or its article's
     /// page has been read: its book is being imported.
     static var addingToLibrary: String {
-        String(localized: "adding it to the library",
-               comment: "What a feed download is doing once its file has come: it is being imported as a book. Follows the download's progress line after a comma. Lower case, without a full stop.")
+        // Translators: What a feed download is doing once its file has come: it is being imported as a book. Follows the download's progress line after a comma. Lower case, without a full stop.
+        String(localized: "adding it to the library")
     }
 
     /// What the section says once Cancel is pressed, in place of the time
@@ -115,12 +115,12 @@ enum FeedDownloadProgressWording {
     static func waits(_ waits: FeedDownloadWaits) -> [String] {
         var lines: [String] = []
         if waits.network > 0 {
-            lines.append(String(localized: "\(waits.network) waiting until this Mac is on a network without data limits",
-                                comment: "A line of the feed downloads section: how many downloads wait for a network without data limits, which includes a Mac that is offline. %lld is the number waiting."))
+            // Translators: A line of the feed downloads section: how many downloads wait for a network without data limits, which includes a Mac that is offline. %lld is the number waiting.
+            lines.append(String(localized: "\(waits.network) waiting until this Mac is on a network without data limits"))
         }
         if waits.room > 0 {
-            lines.append(String(localized: "\(waits.room) waiting for room on this Mac",
-                                comment: "A line of the feed downloads section: how many downloads wait for room on this Mac's disk. %lld is the number waiting."))
+            // Translators: A line of the feed downloads section: how many downloads wait for room on this Mac's disk. %lld is the number waiting.
+            lines.append(String(localized: "\(waits.room) waiting for room on this Mac"))
         }
         return lines
     }
@@ -128,8 +128,8 @@ enum FeedDownloadProgressWording {
     /// The waiting downloads' lines as sentences, to follow another.
     private static func waitSentences(_ waits: FeedDownloadWaits) -> [String] {
         Self.waits(waits).map {
-            String(localized: "\($0).",
-                   comment: "Ends a line about waiting downloads as a sentence of its own. %@ is the line, such as \"2 waiting for room on this Mac\".")
+            // Translators: Ends a line about waiting downloads as a sentence of its own. %@ is the line, such as "2 waiting for room on this Mac".
+            String(localized: "\($0).")
         }
     }
 
@@ -153,8 +153,8 @@ enum FeedDownloadProgressWording {
     /// The first sentence of what Speak Download Progress says while no
     /// download runs.
     static var noDownloadUnderWay: String {
-        String(localized: "No feed download is under way.",
-               comment: "What Speak Download Progress says while no feed download runs.")
+        // Translators: What Speak Download Progress says while no feed download runs.
+        String(localized: "No feed download is under way.")
     }
 
     // MARK: What VoiceOver Hears Unasked
@@ -165,11 +165,11 @@ enum FeedDownloadProgressWording {
     static func quarter(done: Int, of total: Int, failed: Int, secondsLeft: TimeInterval?) -> String {
         let counted = count(done: done, of: total, failed: failed)
         guard let timeLeft = timeLeftPhrase(secondsLeft) else {
-            return String(localized: "Feed downloads: \(counted).",
-                          comment: "Announced as a long run of feed downloads passes a quarter of its downloads. %@ is the count, such as \"3 of 12 done\".")
+            // Translators: Announced as a long run of feed downloads passes a quarter of its downloads. %@ is the count, such as "3 of 12 done".
+            return String(localized: "Feed downloads: \(counted).")
         }
-        return String(localized: "Feed downloads: \(counted), \(timeLeft).",
-                      comment: "Announced as a long run of feed downloads passes a quarter of its downloads. The first %@ is the count, such as \"3 of 12 done\"; the second is the time left, begun in lower case, such as \"about 4 minutes left\".")
+        // Translators: Announced as a long run of feed downloads passes a quarter of its downloads. The first %@ is the count, such as "3 of 12 done"; the second is the time left, begun in lower case, such as "about 4 minutes left".
+        return String(localized: "Feed downloads: \(counted), \(timeLeft).")
     }
 
     /// Announced once as a run TextMouth started by itself, which nobody
@@ -179,11 +179,11 @@ enum FeedDownloadProgressWording {
     /// them; the time left is said when there is an estimate.
     static func underWay(_ count: Int, secondsLeft: TimeInterval?) -> String {
         guard let timeLeft = timeLeftPhrase(secondsLeft) else {
-            return String(localized: "Feed downloads: \(count) under way.",
-                          comment: "Announced once as a long run of feed downloads that TextMouth started itself is under way. %lld is how many downloads are not yet done.")
+            // Translators: Announced once as a long run of feed downloads that TextMouth started itself is under way. %lld is how many downloads are not yet done.
+            return String(localized: "Feed downloads: \(count) under way.")
         }
-        return String(localized: "Feed downloads: \(count) under way, \(timeLeft).",
-                      comment: "Announced once as a long run of feed downloads that TextMouth started itself is under way. %lld is how many downloads are not yet done; %@ is the time left, begun in lower case, such as \"about 4 minutes left\".")
+        // Translators: Announced once as a long run of feed downloads that TextMouth started itself is under way. %lld is how many downloads are not yet done; %@ is the time left, begun in lower case, such as "about 4 minutes left".
+        return String(localized: "Feed downloads: \(count) under way, \(timeLeft).")
     }
 
     /// "about 4 minutes left" for an estimate of `secondsLeft`, and nil
@@ -199,18 +199,19 @@ enum FeedDownloadProgressWording {
     static func finished(downloaded: Int, failed: Int, waits: FeedDownloadWaits) -> String {
         var counts: [String] = []
         if downloaded > 0 {
-            counts.append(String(localized: "\(downloaded) downloaded",
-                                 comment: "How many feed downloads of a run finished, in the announcement that the run ended. %lld is the number downloaded."))
+            // Translators: How many feed downloads of a run finished, in the announcement that the run ended. %lld is the number downloaded.
+            counts.append(String(localized: "\(downloaded) downloaded"))
         }
         if failed > 0 {
-            counts.append(String(localized: "\(failed) failed",
-                                 comment: "How many of the feed downloads of a run failed, after the count of those done: \"3 of 9 done, 1 failed\". %lld is the number that failed."))
+            // Translators: How many of the feed downloads of a run failed, after the count of those done: "3 of 9 done, 1 failed". %lld is the number that failed.
+            counts.append(String(localized: "\(failed) failed"))
         }
         let what = counts.isEmpty
-            ? String(localized: "none downloaded", comment: "What the announcement that a run of feed downloads ended says when no download finished. Lower case.")
+            // Translators: What the announcement that a run of feed downloads ended says when no download finished. Lower case.
+            ? String(localized: "none downloaded")
             : SentenceWording.commaJoined(counts)
-        let finished = String(localized: "Feed downloads finished: \(what).",
-                              comment: "Announced as a long run of feed downloads ends. %@ is the counts, such as \"8 downloaded, 1 failed\", or \"none downloaded\".")
+        // Translators: Announced as a long run of feed downloads ends. %@ is the counts, such as "8 downloaded, 1 failed", or "none downloaded".
+        let finished = String(localized: "Feed downloads finished: \(what).")
         return SentenceWording.joined([finished] + waitSentences(waits))
     }
 
@@ -219,10 +220,10 @@ enum FeedDownloadProgressWording {
     /// “Ep. 368”.", whose row says why; the downloads left waiting follow.
     static func finished(download title: String, failed: Bool, waits: FeedDownloadWaits) -> String {
         let ending = failed
-            ? String(localized: "Could not download “\(title)”.",
-                     comment: "Announced as a long run of one feed download ends in failure. %@ is the episode's or article's title. Its row says why.")
-            : String(localized: "Finished downloading “\(title)”.",
-                     comment: "Announced as a long run of one feed download ends. %@ is the episode's or article's title.")
+            // Translators: Announced as a long run of one feed download ends in failure. %@ is the episode's or article's title. Its row says why.
+            ? String(localized: "Could not download “\(title)”.")
+            // Translators: Announced as a long run of one feed download ends. %@ is the episode's or article's title.
+            : String(localized: "Finished downloading “\(title)”.")
         return SentenceWording.joined([ending] + waitSentences(waits))
     }
 
@@ -245,8 +246,8 @@ enum FeedDownloadProgressWording {
         case 1:
             sentences.append(FeedWording.downloadCancelled(title: titles[0]))
         default:
-            sentences.append(String(localized: "Stopped \(titles.count) feed downloads.",
-                                    comment: "Announced as Cancel stops several feed downloads. %lld is how many, the rule's waiting downloads among them."))
+            // Translators: Announced as Cancel stops several feed downloads. %lld is how many, the rule's waiting downloads among them.
+            sentences.append(String(localized: "Stopped \(titles.count) feed downloads."))
         }
         if let finishing {
             // As Cancel Download says it when it comes too late.
@@ -274,21 +275,21 @@ enum FeedDownloadProgressWording {
             return retryAfterCancel
         case (0, let byDownload):
             return byDownload == 1
-                ? String(localized: "To download it again, choose \(downloadName) on its row.",
-                         comment: "After Cancel stops one feed download that only the listener's Download brings back. %@ is the name of the Download command.")
-                : String(localized: "To download them again, choose \(downloadName) on their rows.",
-                         comment: "After Cancel stops several feed downloads that only the listener's Download brings back. %@ is the name of the Download command.")
+                // Translators: After Cancel stops one feed download that only the listener's Download brings back. %@ is the name of the Download command.
+                ? String(localized: "To download it again, choose \(downloadName) on its row.")
+                // Translators: After Cancel stops several feed downloads that only the listener's Download brings back. %@ is the name of the Download command.
+                : String(localized: "To download them again, choose \(downloadName) on their rows.")
         case let (byItself, byDownload):
             let again = byItself == 1
-                ? String(localized: "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
-                         comment: "After Cancel stops feed downloads, exactly one of which TextMouth downloads again by itself.")
-                : String(localized: "TextMouth downloads \(byItself) of them again at their feeds' next checks, or the next time it opens.",
-                         comment: "After Cancel stops feed downloads, several of which TextMouth downloads again by itself. %lld is how many of them it downloads again.")
+                // Translators: After Cancel stops feed downloads, exactly one of which TextMouth downloads again by itself.
+                ? String(localized: "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.")
+                // Translators: After Cancel stops feed downloads, several of which TextMouth downloads again by itself. %lld is how many of them it downloads again.
+                : String(localized: "TextMouth downloads \(byItself) of them again at their feeds' next checks, or the next time it opens.")
             let others = byDownload == 1
-                ? String(localized: "To download the other one again, choose \(downloadName) on its row.",
-                         comment: "After Cancel stops feed downloads, the one other of which only the listener's Download brings back. %@ is the name of the Download command.")
-                : String(localized: "To download the other \(byDownload) again, choose \(downloadName) on their rows.",
-                         comment: "After Cancel stops feed downloads, the rest of which only the listener's Download brings back. The first %lld is how many; %@ is the name of the Download command.")
+                // Translators: After Cancel stops feed downloads, the one other of which only the listener's Download brings back. %@ is the name of the Download command.
+                ? String(localized: "To download the other one again, choose \(downloadName) on its row.")
+                // Translators: After Cancel stops feed downloads, the rest of which only the listener's Download brings back. The first %lld is how many; %@ is the name of the Download command.
+                : String(localized: "To download the other \(byDownload) again, choose \(downloadName) on their rows.")
             return SentenceWording.joined([again, others])
         }
     }
@@ -298,22 +299,22 @@ enum FeedDownloadProgressWording {
     /// rule's next pass after each feed's next check, never sooner, or the
     /// first pass when TextMouth next opens.
     static var retryAfterCancel: String {
-        String(localized: "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
-               comment: "After Cancel stops feed downloads that the newest-N rule downloads again by itself.")
+        // Translators: After Cancel stops feed downloads that the newest-N rule downloads again by itself.
+        String(localized: "TextMouth downloads each feed's newest again at its next check, or the next time it opens.")
     }
 
     // MARK: The Section's Controls
 
     /// The Cancel button's title, beside the section's title.
     static var cancelButtonTitle: String {
-        String(localized: "Cancel",
-               comment: "Title of the feed downloads section's button that stops the feed downloads.")
+        // Translators: Title of the feed downloads section's button that stops the feed downloads.
+        String(localized: "Cancel")
     }
     /// What VoiceOver calls the Cancel button: the import overlay has a
     /// Cancel too, so the name says what it cancels.
     static var cancelButtonLabel: String {
-        String(localized: "Cancel Feed Downloads",
-               comment: "What VoiceOver calls the Cancel button of the feed downloads section; the import overlay has a Cancel too, so the name says what it cancels. Title case.")
+        // Translators: What VoiceOver calls the Cancel button of the feed downloads section; the import overlay has a Cancel too, so the name says what it cancels. Title case.
+        String(localized: "Cancel Feed Downloads")
     }
 
     /// What VoiceOver says the Cancel button does (FR14): it stops every
@@ -322,8 +323,8 @@ enum FeedDownloadProgressWording {
     /// it would stop now comes back, as `comingBack` counts it and Cancel
     /// would say it (`comingBack(_:)`, REV14 feeds 5).
     static func cancelButtonHint(_ comingBack: FeedCancelReturn) -> String {
-        let stops = String(localized: "Stops every feed download, including those waiting, and deletes what they had downloaded.",
-                           comment: "What VoiceOver says the feed downloads section's Cancel button does: it stops every feed download and deletes what they had downloaded.")
+        // Translators: What VoiceOver says the feed downloads section's Cancel button does: it stops every feed download and deletes what they had downloaded.
+        let stops = String(localized: "Stops every feed download, including those waiting, and deletes what they had downloaded.")
         guard let back = Self.comingBack(comingBack) else { return stops }
         return SentenceWording.joined([stops, back])
     }
@@ -331,7 +332,7 @@ enum FeedDownloadProgressWording {
     /// What VoiceOver calls the section's bar, which counts every download
     /// of the run, the one under way by its bytes.
     static var overallBarLabel: String {
-        String(localized: "All feed downloads",
-               comment: "What VoiceOver calls the feed downloads section's bar, which counts every download of the run.")
+        // Translators: What VoiceOver calls the feed downloads section's bar, which counts every download of the run.
+        String(localized: "All feed downloads")
     }
 }

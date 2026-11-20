@@ -8,8 +8,8 @@ enum CueSheetWording {
     /// The heading of a track the sheet gives no title: "Track 3", by the
     /// number the sheet gives the track.
     static func untitledTrack(number: Int) -> String {
-        String(localized: "Track \(String(number))",
-               comment: "Heading of a track that a cue sheet gives no title, made at import. %@ is the track's number from the sheet, an identifier written without digit grouping.")
+        // Translators: Heading of a track that a cue sheet gives no title, made at import. %@ is the track's number from the sheet, an identifier written without digit grouping.
+        String(localized: "Track \(String(number))")
     }
 
     /// The heading of a track whose own performer is not the book's author:
@@ -17,36 +17,36 @@ enum CueSheetWording {
     /// as a compilation's tracks name their singers. A comma before "by" makes
     /// VoiceOver pause there, and braille shows it as written.
     static func trackHeading(title: String, performer: String) -> String {
-        String(localized: "\(title), by \(performer)",
-               comment: "Heading of a track whose performer is not the book's author, made at import: the title, a comma, then \"by\" and the performer. %1$@ is the track's title and %2$@ the performer. The comma makes VoiceOver pause.")
+        // Translators: Heading of a track whose performer is not the book's author, made at import: the title, a comma, then "by" and the performer. %1$@ is the track's title and %2$@ the performer. The comma makes VoiceOver pause.
+        String(localized: "\(title), by \(performer)")
     }
 
     /// The refusal of a cue sheet larger than TextMouth reads
     /// (`CueSheet.maximumByteCount`).
     static func tooLarge(fileName: String) -> String {
-        String(localized: "The cue sheet “\(fileName)” is too large to read.",
-               comment: "Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name.")
+        // Translators: Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name.
+        String(localized: "The cue sheet “\(fileName)” is too large to read.")
     }
 
     /// The refusal of a cue sheet chosen on its own that places no track: no
     /// audio track of it has a start (an INDEX 01 line) in a file it names.
     static var noTracks: String {
-        String(localized: "It lists no audio track with a start that TextMouth can read.",
-               comment: "Refusal of a cue sheet chosen on its own that places no track. \"It\" is the cue sheet. Follows the sentence naming the file.")
+        // Translators: Refusal of a cue sheet chosen on its own that places no track. "It" is the cue sheet. Follows the sentence naming the file.
+        String(localized: "It lists no audio track with a start that TextMouth can read.")
     }
 
     /// The refusal of a cue sheet chosen on its own whose tracks begin, or
     /// end, past the end of the audio it names.
     static var timesPastAudio: String {
-        String(localized: "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
-               comment: "Refusal of a cue sheet chosen on its own whose tracks begin or end past the end of the audio it names. \"Its\" and \"it\" are the cue sheet.")
+        // Translators: Refusal of a cue sheet chosen on its own whose tracks begin or end past the end of the audio it names. "Its" and "it" are the cue sheet.
+        String(localized: "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.")
     }
 
     /// The heading of an Audacity label with no text (FMT06): "Label 4", by
     /// its place among the file's labels, from 1.
     static func untitledLabel(number: Int) -> String {
-        String(localized: "Label \(String(number))",
-               comment: "Heading made at import for an Audacity label that has no text. %@ is the label's place among the file's labels, from 1, an identifier written without digit grouping.")
+        // Translators: Heading made at import for an Audacity label that has no text. %@ is the label's place among the file's labels, from 1, an identifier written without digit grouping.
+        String(localized: "Label \(String(number))")
     }
 
     /// The kinds of file that give a folder's audio its headings.
@@ -85,8 +85,8 @@ enum CueSheetWording {
     /// than its source, or one the import could not measure first).
     static func headingsDidNotFit(_ names: [String]) -> String {
         let listed = CountWording.list(names.map { "“\($0)”" })
-        return String(localized: "The headings from \(listed) run past the end of the audio, so the tracks were imported without them.",
-                      comment: "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them.")
+        // Translators: Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them.
+        return String(localized: "The headings from \(listed) run past the end of the audio, so the tracks were imported without them.")
     }
 
     /// The notice of a folder's or archive's cue sheet or label file that
@@ -95,23 +95,23 @@ enum CueSheetWording {
     static func sheetUnused(_ name: String, kind: ListKind = .cueSheet, because reason: UnusedReason) -> String {
         switch (kind, reason) {
         case (.labelFile, .namesNoAudio):
-            return String(localized: "The label file “\(name)” matches no audio file beside it by name, so its headings were not used.",
-                          comment: "Notice that an Audacity label file of an imported folder or archive was not used, because no audio file beside it has its name. %@ is the label file's name.")
+            // Translators: Notice that an Audacity label file of an imported folder or archive was not used, because no audio file beside it has its name. %@ is the label file's name.
+            return String(localized: "The label file “\(name)” matches no audio file beside it by name, so its headings were not used.")
         case (.cueSheet, .namesNoAudio):
-            return String(localized: "The cue sheet “\(name)” names none of the audio beside it, so its headings were not used.",
-                          comment: "Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name.")
+            // Translators: Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name.
+            return String(localized: "The cue sheet “\(name)” names none of the audio beside it, so its headings were not used.")
         case (.labelFile, .unreadable):
-            return String(localized: "TextMouth could not read the label file “\(name)”, so its headings were not used.",
-                          comment: "Notice that an Audacity label file of an imported folder or archive was not used, because it could not be read. %@ is the label file's name.")
+            // Translators: Notice that an Audacity label file of an imported folder or archive was not used, because it could not be read. %@ is the label file's name.
+            return String(localized: "TextMouth could not read the label file “\(name)”, so its headings were not used.")
         case (.cueSheet, .unreadable):
-            return String(localized: "TextMouth could not read the cue sheet “\(name)”, so its headings were not used.",
-                          comment: "Notice that a cue sheet of an imported folder or archive was not used, because it could not be read. %@ is the cue sheet's name.")
+            // Translators: Notice that a cue sheet of an imported folder or archive was not used, because it could not be read. %@ is the cue sheet's name.
+            return String(localized: "TextMouth could not read the cue sheet “\(name)”, so its headings were not used.")
         case (.labelFile, .timesPastAudio):
-            return String(localized: "The labels of the label file “\(name)” run past the end of its audio, so its headings were not used.",
-                          comment: "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name.")
+            // Translators: Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name.
+            return String(localized: "The labels of the label file “\(name)” run past the end of its audio, so its headings were not used.")
         case (.cueSheet, .timesPastAudio):
-            return String(localized: "The tracks of the cue sheet “\(name)” run past the end of its audio, so its headings were not used.",
-                          comment: "Notice that a cue sheet of an imported folder or archive was not used, because its tracks lie past the end of its audio. %@ is the cue sheet's name.")
+            // Translators: Notice that a cue sheet of an imported folder or archive was not used, because its tracks lie past the end of its audio. %@ is the cue sheet's name.
+            return String(localized: "The tracks of the cue sheet “\(name)” run past the end of its audio, so its headings were not used.")
         }
     }
 }

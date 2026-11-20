@@ -12,58 +12,58 @@ enum FolderSettingsWording {
 
     /// The sheet's navigation title (the window's title while it is open).
     static var title: String {
-        String(localized: "Folder Settings",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open).")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open).
+        String(localized: "Folder Settings")
     }
 
     /// The label of the folder's place: the folder that holds it.
     static var locationLabel: String {
-        String(localized: "Location",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's place: the folder that holds it.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's place: the folder that holds it.
+        String(localized: "Location")
     }
 
     /// The label of the books in the folder and every folder below it.
     static var booksLabel: String {
-        String(localized: "Books",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the books in the folder and every folder below it.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the books in the folder and every folder below it.
+        String(localized: "Books")
     }
 
     /// The label of the folder's own subfolders, shown only when it has any.
     static var subfoldersLabel: String {
-        String(localized: "Subfolders",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's own subfolders, shown only when it has any.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's own subfolders, shown only when it has any.
+        String(localized: "Subfolders")
     }
 
     /// The label of the feeds inside the folder, shown only when it has any.
     static var feedsLabel: String {
-        String(localized: "Feeds",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the feeds inside the folder, shown only when it has any.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the feeds inside the folder, shown only when it has any.
+        String(localized: "Feeds")
     }
 
     /// The label of the time left in all the folder's books, shown only
     /// when it is known.
     static var timeRemainingLabel: String {
-        String(localized: "Time remaining",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the time left in all the folder's books, shown only when it is known.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the time left in all the folder's books, shown only when it is known.
+        String(localized: "Time remaining")
     }
 
     /// The heading over the listening options.
     static var listeningHeading: String {
-        String(localized: "Listening",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options.
+        String(localized: "Listening")
     }
 
     /// The title of the button that closes the sheet.
     static var done: String {
-        String(localized: "Done",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.
+        String(localized: "Done")
     }
 
     /// What the sheet says in place of the folder, when the folder was
     /// deleted in another window while the sheet was open.
     static var folderGone: String {
-        String(localized: "This folder is no longer in the library.",
-               comment: "Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. What the sheet says in place of the folder, when the folder was deleted in another window while the sheet was open.")
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. What the sheet says in place of the folder, when the folder was deleted in another window while the sheet was open.
+        String(localized: "This folder is no longer in the library.")
     }
 
     /// One labelled fact of a folder: what it is and its value.

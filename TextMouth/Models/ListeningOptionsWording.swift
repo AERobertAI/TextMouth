@@ -39,17 +39,17 @@ enum ListeningOptionsWording {
     static func continuationLabel(_ noun: Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "When an episode ends",
-                          comment: "Label of the pop-up button in a podcast feed's Feed Info choosing what happens when one of its episodes ends.")
+            // Translators: Label of the pop-up button in a podcast feed's Feed Info choosing what happens when one of its episodes ends.
+            return String(localized: "When an episode ends")
         case .article:
-            return String(localized: "When an article ends",
-                          comment: "Label of the pop-up button in a news feed's Feed Info choosing what happens when one of its articles ends.")
+            // Translators: Label of the pop-up button in a news feed's Feed Info choosing what happens when one of its articles ends.
+            return String(localized: "When an article ends")
         case .item:
-            return String(localized: "When an item ends",
-                          comment: "Label of the pop-up button in a feed's Feed Info choosing what happens when one of its items ends.")
+            // Translators: Label of the pop-up button in a feed's Feed Info choosing what happens when one of its items ends.
+            return String(localized: "When an item ends")
         case .book:
-            return String(localized: "When a book ends",
-                          comment: "Label of the pop-up button in a folder's settings choosing what happens when one of its books ends.")
+            // Translators: Label of the pop-up button in a folder's settings choosing what happens when one of its books ends.
+            return String(localized: "When a book ends")
         }
     }
 
@@ -64,13 +64,13 @@ enum ListeningOptionsWording {
     ) -> String {
         switch choice {
         case nil:
-            return String(localized: "Use the global setting (\(global.title))",
-                          comment: "A choice of the pop-up button that sets what happens when an item ends, in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as Continue to Next Book.")
+            // Translators: A choice of the pop-up button that sets what happens when an item ends, in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as Continue to Next Book.
+            return String(localized: "Use the global setting (\(global.title))")
         case .playBookBelow: return playBelow(noun)
         case .playBookAbove: return playAbove(noun)
         case .stop:
-            return String(localized: "Stop",
-                          comment: "A choice of the pop-up button that sets what happens when an item ends: stop when it ends.")
+            // Translators: A choice of the pop-up button that sets what happens when an item ends: stop when it ends.
+            return String(localized: "Stop")
         }
     }
 
@@ -78,17 +78,17 @@ enum ListeningOptionsWording {
     private static func playBelow(_ noun: Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "Play the episode below",
-                          comment: "A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode below it in the list.")
+            // Translators: A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode below it in the list.
+            return String(localized: "Play the episode below")
         case .article:
-            return String(localized: "Play the article below",
-                          comment: "A choice of the pop-up button that sets what happens when a news article ends: play the article below it in the list.")
+            // Translators: A choice of the pop-up button that sets what happens when a news article ends: play the article below it in the list.
+            return String(localized: "Play the article below")
         case .item:
-            return String(localized: "Play the item below",
-                          comment: "A choice of the pop-up button that sets what happens when a feed's item ends: play the item below it in the list.")
+            // Translators: A choice of the pop-up button that sets what happens when a feed's item ends: play the item below it in the list.
+            return String(localized: "Play the item below")
         case .book:
-            return String(localized: "Play the book below",
-                          comment: "A choice of the pop-up button that sets what happens when a book ends: play the book below it in the folder.")
+            // Translators: A choice of the pop-up button that sets what happens when a book ends: play the book below it in the folder.
+            return String(localized: "Play the book below")
         }
     }
 
@@ -96,17 +96,17 @@ enum ListeningOptionsWording {
     private static func playAbove(_ noun: Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "Play the episode above",
-                          comment: "A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode above it in the list.")
+            // Translators: A choice of the pop-up button that sets what happens when a podcast episode ends: play the episode above it in the list.
+            return String(localized: "Play the episode above")
         case .article:
-            return String(localized: "Play the article above",
-                          comment: "A choice of the pop-up button that sets what happens when a news article ends: play the article above it in the list.")
+            // Translators: A choice of the pop-up button that sets what happens when a news article ends: play the article above it in the list.
+            return String(localized: "Play the article above")
         case .item:
-            return String(localized: "Play the item above",
-                          comment: "A choice of the pop-up button that sets what happens when a feed's item ends: play the item above it in the list.")
+            // Translators: A choice of the pop-up button that sets what happens when a feed's item ends: play the item above it in the list.
+            return String(localized: "Play the item above")
         case .book:
-            return String(localized: "Play the book above",
-                          comment: "A choice of the pop-up button that sets what happens when a book ends: play the book above it in the folder.")
+            // Translators: A choice of the pop-up button that sets what happens when a book ends: play the book above it in the folder.
+            return String(localized: "Play the book above")
         }
     }
 
@@ -114,17 +114,17 @@ enum ListeningOptionsWording {
     static func continuationHint(_ noun: Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "Chooses what happens when one of this feed's episodes ends",
-                          comment: "VoiceOver hint of the pop-up button in a podcast feed's Feed Info that sets what happens when one of its episodes ends.")
+            // Translators: VoiceOver hint of the pop-up button in a podcast feed's Feed Info that sets what happens when one of its episodes ends.
+            return String(localized: "Chooses what happens when one of this feed's episodes ends")
         case .article:
-            return String(localized: "Chooses what happens when one of this feed's articles ends",
-                          comment: "VoiceOver hint of the pop-up button in a news feed's Feed Info that sets what happens when one of its articles ends.")
+            // Translators: VoiceOver hint of the pop-up button in a news feed's Feed Info that sets what happens when one of its articles ends.
+            return String(localized: "Chooses what happens when one of this feed's articles ends")
         case .item:
-            return String(localized: "Chooses what happens when one of this feed's items ends",
-                          comment: "VoiceOver hint of the pop-up button in a feed's Feed Info that sets what happens when one of its items ends.")
+            // Translators: VoiceOver hint of the pop-up button in a feed's Feed Info that sets what happens when one of its items ends.
+            return String(localized: "Chooses what happens when one of this feed's items ends")
         case .book:
-            return String(localized: "Chooses what happens when one of this folder's books ends",
-                          comment: "VoiceOver hint of the pop-up button in a folder's settings that sets what happens when one of its books ends.")
+            // Translators: VoiceOver hint of the pop-up button in a folder's settings that sets what happens when one of its books ends.
+            return String(localized: "Chooses what happens when one of this folder's books ends")
         }
     }
 
@@ -135,17 +135,17 @@ enum ListeningOptionsWording {
     static func skipFinishedLabel(_ noun: Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "Skip finished episodes",
-                          comment: "Label of the switch in a podcast feed's Feed Info that passes over episodes already finished.")
+            // Translators: Label of the switch in a podcast feed's Feed Info that passes over episodes already finished.
+            return String(localized: "Skip finished episodes")
         case .article:
-            return String(localized: "Skip finished articles",
-                          comment: "Label of the switch in a news feed's Feed Info that passes over articles already finished.")
+            // Translators: Label of the switch in a news feed's Feed Info that passes over articles already finished.
+            return String(localized: "Skip finished articles")
         case .item:
-            return String(localized: "Skip finished items",
-                          comment: "Label of the switch in a feed's Feed Info that passes over items already finished.")
+            // Translators: Label of the switch in a feed's Feed Info that passes over items already finished.
+            return String(localized: "Skip finished items")
         case .book:
-            return String(localized: "Skip finished books",
-                          comment: "Label of the switch in a folder's settings that passes over books already finished.")
+            // Translators: Label of the switch in a folder's settings that passes over books already finished.
+            return String(localized: "Skip finished books")
         }
     }
 
@@ -153,17 +153,17 @@ enum ListeningOptionsWording {
     static func skipFinishedHint(_ noun: Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "Applies when listening goes on to another episode",
-                          comment: "VoiceOver hint of the Skip finished episodes switch in a podcast feed's Feed Info.")
+            // Translators: VoiceOver hint of the Skip finished episodes switch in a podcast feed's Feed Info.
+            return String(localized: "Applies when listening goes on to another episode")
         case .article:
-            return String(localized: "Applies when listening goes on to another article",
-                          comment: "VoiceOver hint of the Skip finished articles switch in a news feed's Feed Info.")
+            // Translators: VoiceOver hint of the Skip finished articles switch in a news feed's Feed Info.
+            return String(localized: "Applies when listening goes on to another article")
         case .item:
-            return String(localized: "Applies when listening goes on to another item",
-                          comment: "VoiceOver hint of the Skip finished items switch in a feed's Feed Info.")
+            // Translators: VoiceOver hint of the Skip finished items switch in a feed's Feed Info.
+            return String(localized: "Applies when listening goes on to another item")
         case .book:
-            return String(localized: "Applies when listening goes on to another book",
-                          comment: "VoiceOver hint of the Skip finished books switch in a folder's settings.")
+            // Translators: VoiceOver hint of the Skip finished books switch in a folder's settings.
+            return String(localized: "Applies when listening goes on to another book")
         }
     }
 
@@ -174,17 +174,17 @@ enum ListeningOptionsWording {
     static func predownloadLabel(_ noun: Noun) -> String {
         switch noun {
         case .episode:
-            return String(localized: "Download the next episode before this one ends",
-                          comment: "Label of the switch in a podcast feed's Feed Info that downloads the next episode before the playing one ends.")
+            // Translators: Label of the switch in a podcast feed's Feed Info that downloads the next episode before the playing one ends.
+            return String(localized: "Download the next episode before this one ends")
         case .article:
-            return String(localized: "Download the next article before this one ends",
-                          comment: "Label of the switch in a news feed's Feed Info that downloads the next article before the playing one ends.")
+            // Translators: Label of the switch in a news feed's Feed Info that downloads the next article before the playing one ends.
+            return String(localized: "Download the next article before this one ends")
         case .item:
-            return String(localized: "Download the next item before this one ends",
-                          comment: "Label of the switch in a feed's Feed Info that downloads the next item before the playing one ends.")
+            // Translators: Label of the switch in a feed's Feed Info that downloads the next item before the playing one ends.
+            return String(localized: "Download the next item before this one ends")
         case .book:
-            return String(localized: "Download the next book before this one ends",
-                          comment: "Label of a switch that downloads the next book before the playing one ends (a folder's settings do not show it today).")
+            // Translators: Label of a switch that downloads the next book before the playing one ends (a folder's settings do not show it today).
+            return String(localized: "Download the next book before this one ends")
         }
     }
 
@@ -200,17 +200,17 @@ enum ListeningOptionsWording {
         let lead = Int(ListeningOptions.predownloadLeadTime / 60)
         switch noun {
         case .episode:
-            return String(localized: "When \(lead) minutes or less are left, downloads the next episode if it is not on this Mac yet",
-                          comment: "VoiceOver hint of the Download the next episode switch in a podcast feed's Feed Info. %lld is the number of minutes left that start the download.")
+            // Translators: VoiceOver hint of the Download the next episode switch in a podcast feed's Feed Info. %lld is the number of minutes left that start the download.
+            return String(localized: "When \(lead) minutes or less are left, downloads the next episode if it is not on this Mac yet")
         case .article:
-            return String(localized: "When \(lead) minutes or less are left, downloads the next article if it is not on this Mac yet",
-                          comment: "VoiceOver hint of the Download the next article switch in a news feed's Feed Info. %lld is the number of minutes left that start the download.")
+            // Translators: VoiceOver hint of the Download the next article switch in a news feed's Feed Info. %lld is the number of minutes left that start the download.
+            return String(localized: "When \(lead) minutes or less are left, downloads the next article if it is not on this Mac yet")
         case .item:
-            return String(localized: "When \(lead) minutes or less are left, downloads the next item if it is not on this Mac yet",
-                          comment: "VoiceOver hint of the Download the next item switch in a feed's Feed Info. %lld is the number of minutes left that start the download.")
+            // Translators: VoiceOver hint of the Download the next item switch in a feed's Feed Info. %lld is the number of minutes left that start the download.
+            return String(localized: "When \(lead) minutes or less are left, downloads the next item if it is not on this Mac yet")
         case .book:
-            return String(localized: "When \(lead) minutes or less are left, downloads the next book if it is not on this Mac yet",
-                          comment: "VoiceOver hint of a switch that downloads the next book (a folder's settings do not show it today). %lld is the number of minutes left that start the download.")
+            // Translators: VoiceOver hint of a switch that downloads the next book (a folder's settings do not show it today). %lld is the number of minutes left that start the download.
+            return String(localized: "When \(lead) minutes or less are left, downloads the next book if it is not on this Mac yet")
         }
     }
 }

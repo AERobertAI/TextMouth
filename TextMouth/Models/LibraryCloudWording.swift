@@ -14,11 +14,11 @@ enum LibraryCloudWording {
     /// or "Download 3 Books" for `count` books of a selection.
     static func downloadTitle(count: Int, forSelection: Bool) -> String {
         guard forSelection else {
-            return String(localized: "Download Now",
-                          comment: "Library menu command that downloads the one book a row's menu is for, or the selected book.")
+            // Translators: Library menu command that downloads the one book a row's menu is for, or the selected book.
+            return String(localized: "Download Now")
         }
-        return String(localized: "Download \(count) Books",
-                      comment: "Library menu command that downloads the selected books. %lld is the number of books selected.")
+        // Translators: Library menu command that downloads the selected books. %lld is the number of books selected.
+        return String(localized: "Download \(count) Books")
     }
 
     /// Remove Download's title: "Remove Download" for the one book a menu is
@@ -26,25 +26,25 @@ enum LibraryCloudWording {
     /// selection ("Remove Download of 1 Book" for one).
     static func removeDownloadTitle(count: Int, forSelection: Bool) -> String {
         guard forSelection else {
-            return String(localized: "Remove Download",
-                          comment: "Library menu command that removes the downloaded files of the one book a row's menu is for; the book stays in the cloud.")
+            // Translators: Library menu command that removes the downloaded files of the one book a row's menu is for; the book stays in the cloud.
+            return String(localized: "Remove Download")
         }
-        return String(localized: "Remove Downloads of \(count) Books",
-                      comment: "Library menu command that removes the downloaded files of the selected books; they stay in the cloud. %lld is the number of books selected.")
+        // Translators: Library menu command that removes the downloaded files of the selected books; they stay in the cloud. %lld is the number of books selected.
+        return String(localized: "Remove Downloads of \(count) Books")
     }
 
     /// Keep on This Mac's name: its title in the Library menu, and for the
     /// one book a row's menu is for.
     static var keepName: String {
-        String(localized: "Keep on This Mac",
-               comment: "Library menu command that keeps a book's files downloaded on this Mac. Also the name other sentences use for the command.")
+        // Translators: Library menu command that keeps a book's files downloaded on this Mac. Also the name other sentences use for the command.
+        String(localized: "Keep on This Mac")
     }
 
     /// Stop Keeping on This Mac's name: its title in the Library menu, and
     /// for the one book a row's menu is for.
     static var stopKeepingName: String {
-        String(localized: "Stop Keeping on This Mac",
-               comment: "Library menu command that stops keeping a book's files downloaded on this Mac. Also the name other sentences use for the command.")
+        // Translators: Library menu command that stops keeping a book's files downloaded on this Mac. Also the name other sentences use for the command.
+        String(localized: "Stop Keeping on This Mac")
     }
 
     /// Keep on This Mac's title: "Keep on This Mac" for the one book a menu
@@ -52,8 +52,8 @@ enum LibraryCloudWording {
     /// selection.
     static func keepTitle(count: Int, forSelection: Bool) -> String {
         guard forSelection else { return keepName }
-        return String(localized: "Keep \(count) Books on This Mac",
-                      comment: "Library menu command that keeps the selected books' files downloaded on this Mac. %lld is the number of books selected.")
+        // Translators: Library menu command that keeps the selected books' files downloaded on this Mac. %lld is the number of books selected.
+        return String(localized: "Keep \(count) Books on This Mac")
     }
 
     /// Stop Keeping on This Mac's title: "Stop Keeping on This Mac" for the
@@ -61,19 +61,19 @@ enum LibraryCloudWording {
     /// `count` books of a selection.
     static func stopKeepingTitle(count: Int, forSelection: Bool) -> String {
         guard forSelection else { return stopKeepingName }
-        return String(localized: "Stop Keeping \(count) Books on This Mac",
-                      comment: "Library menu command that stops keeping the selected books' files downloaded on this Mac. %lld is the number of books selected.")
+        // Translators: Library menu command that stops keeping the selected books' files downloaded on this Mac. %lld is the number of books selected.
+        return String(localized: "Stop Keeping \(count) Books on This Mac")
     }
 
     /// Show in Finder's title: "Show in Finder" for the one book a menu is
     /// for, or "Show 3 Books in Finder" for `count` books of a selection.
     static func showInFinderTitle(count: Int, forSelection: Bool) -> String {
         guard forSelection else {
-            return String(localized: "Show in Finder",
-                          comment: "Library menu command that shows the one book's files in the Finder.")
+            // Translators: Library menu command that shows the one book's files in the Finder.
+            return String(localized: "Show in Finder")
         }
-        return String(localized: "Show \(count) Books in Finder",
-                      comment: "Library menu command that shows the selected books' files in the Finder. %lld is the number of books selected.")
+        // Translators: Library menu command that shows the selected books' files in the Finder. %lld is the number of books selected.
+        return String(localized: "Show \(count) Books in Finder")
     }
 
     // MARK: - Download Now
@@ -81,8 +81,8 @@ enum LibraryCloudWording {
     /// What Download Now announces as it starts: "Downloading Moby-Dick"
     /// for one book, "Downloading 3 books" for several.
     static func downloadStarted(titles: [String]) -> String {
-        String(localized: "Downloading \(subject(titles))",
-               comment: "Announcement when Download Now starts. %@ is the book's title, or a count of books such as \"3 books\".")
+        // Translators: Announcement when Download Now starts. %@ is the book's title, or a count of books such as "3 books".
+        String(localized: "Downloading \(subject(titles))")
     }
 
     // MARK: - Keep on This Mac
@@ -93,20 +93,20 @@ enum LibraryCloudWording {
     /// cloud, "Downloading it now", "Downloading them now", or "Downloading
     /// 2 of them now".
     static func keepStarted(titles: [String], downloading: Int) -> String {
-        let keeping = String(localized: "Keeping \(subject(titles)) on this Mac",
-                             comment: "Announcement when Keep on This Mac starts. %@ is the book's title, or a count of books such as \"3 books\".")
+        // Translators: Announcement when Keep on This Mac starts. %@ is the book's title, or a count of books such as "3 books".
+        let keeping = String(localized: "Keeping \(subject(titles)) on this Mac")
         guard downloading > 0 else { return keeping }
         // Which of the books start downloading now, said whole.
         let downloadingNow: String
         if titles.count == 1 {
-            downloadingNow = String(localized: "Downloading it now",
-                                    comment: "Second part of the Keep on This Mac announcement for one book that is only in the cloud: it starts downloading.")
+            // Translators: Second part of the Keep on This Mac announcement for one book that is only in the cloud: it starts downloading.
+            downloadingNow = String(localized: "Downloading it now")
         } else if downloading == titles.count {
-            downloadingNow = String(localized: "Downloading them now",
-                                    comment: "Second part of the Keep on This Mac announcement when every kept book is only in the cloud: they start downloading.")
+            // Translators: Second part of the Keep on This Mac announcement when every kept book is only in the cloud: they start downloading.
+            downloadingNow = String(localized: "Downloading them now")
         } else {
-            downloadingNow = String(localized: "Downloading \(downloading) of them now",
-                                    comment: "Second part of the Keep on This Mac announcement when some kept books are only in the cloud. %lld is how many start downloading.")
+            // Translators: Second part of the Keep on This Mac announcement when some kept books are only in the cloud. %lld is how many start downloading.
+            downloadingNow = String(localized: "Downloading \(downloading) of them now")
         }
         return clausesJoined([keeping, downloadingNow])
     }
@@ -135,23 +135,23 @@ enum LibraryCloudWording {
     static func readingListDownloadsStarted(titles: [String], short: Int, quietly: Bool) -> String {
         var sentences: [String] = []
         if titles.count == 1, let title = titles.first {
-            sentences.append(String(localized: "Downloading \(title), a reading list book",
-                                    comment: "Announcement when the reading list's book starts downloading. %@ is the book's title."))
+            // Translators: Announcement when the reading list's book starts downloading. %@ is the book's title.
+            sentences.append(String(localized: "Downloading \(title), a reading list book"))
         } else if !titles.isEmpty {
             // Quietly, no command of the listener's started them, so the sentence names the list.
             sentences.append(quietly
-                ? String(localized: "Downloading \(titles.count) reading list books",
-                         comment: "Announcement when the reading list's books start downloading with no command of the listener's. %lld is the number of books.")
-                : String(localized: "Downloading \(CountWording.books(titles.count))",
-                         comment: "Announcement when the reading list's books start downloading after a command of the listener's. %@ is a count of books, such as \"3 books\"."))
+                // Translators: Announcement when the reading list's books start downloading with no command of the listener's. %lld is the number of books.
+                ? String(localized: "Downloading \(titles.count) reading list books")
+                // Translators: Announcement when the reading list's books start downloading after a command of the listener's. %@ is a count of books, such as "3 books".
+                : String(localized: "Downloading \(CountWording.books(titles.count))"))
         }
         if short > 0 {
             if titles.isEmpty {
-                sentences.append(String(localized: "There isn't enough free space to download \(short) reading list books",
-                                        comment: "Announcement when no reading list book can start downloading for want of space. %lld is the number of books left out."))
+                // Translators: Announcement when no reading list book can start downloading for want of space. %lld is the number of books left out.
+                sentences.append(String(localized: "There isn't enough free space to download \(short) reading list books"))
             } else {
-                sentences.append(String(localized: "There isn't enough free space for \(short) more books",
-                                        comment: "Announcement when some reading list books start downloading and others are left out for want of space. %lld is the number of books left out."))
+                // Translators: Announcement when some reading list books start downloading and others are left out for want of space. %lld is the number of books left out.
+                sentences.append(String(localized: "There isn't enough free space for \(short) more books"))
             }
         }
         return Self.clausesJoined(sentences)
@@ -165,20 +165,20 @@ enum LibraryCloudWording {
     /// The listener's choice is let go, but the list's keep is not theirs to
     /// stop here.
     static func stoppedKeeping(titles: [String], stillKept: Int = 0) -> String {
-        let stopped = String(localized: "Stopped keeping \(subject(titles)) on this Mac",
-                             comment: "Announcement when Stop Keeping on This Mac ran. %@ is the book's title, or a count of books such as \"3 books\".")
+        // Translators: Announcement when Stop Keeping on This Mac ran. %@ is the book's title, or a count of books such as "3 books".
+        let stopped = String(localized: "Stopped keeping \(subject(titles)) on this Mac")
         guard stillKept > 0 else { return stopped }
         // Which of the books the reading list still keeps, said whole.
         let stillKeeps: String
         if titles.count == 1 {
-            stillKeeps = String(localized: "The reading list still keeps it downloaded",
-                                comment: "Second part of the Stop Keeping on This Mac announcement for one book that the reading list keeps downloaded.")
+            // Translators: Second part of the Stop Keeping on This Mac announcement for one book that the reading list keeps downloaded.
+            stillKeeps = String(localized: "The reading list still keeps it downloaded")
         } else if stillKept >= titles.count {
-            stillKeeps = String(localized: "The reading list still keeps them downloaded",
-                                comment: "Second part of the Stop Keeping on This Mac announcement when the reading list keeps every one of the books downloaded.")
+            // Translators: Second part of the Stop Keeping on This Mac announcement when the reading list keeps every one of the books downloaded.
+            stillKeeps = String(localized: "The reading list still keeps them downloaded")
         } else {
-            stillKeeps = String(localized: "The reading list still keeps \(stillKept) of them downloaded",
-                                comment: "Second part of the Stop Keeping on This Mac announcement when the reading list keeps some of the books downloaded. %lld is how many.")
+            // Translators: Second part of the Stop Keeping on This Mac announcement when the reading list keeps some of the books downloaded. %lld is how many.
+            stillKeeps = String(localized: "The reading list still keeps \(stillKept) of them downloaded")
         }
         return clausesJoined([stopped, stillKeeps])
     }
@@ -199,8 +199,8 @@ enum LibraryCloudWording {
         keptOnlyForReadingList: Int = 0
     ) -> String {
         guard inCloudLibrary else {
-            return String(localized: "The library isn't in a cloud folder, so its books are always on this Mac.",
-                          comment: "Why Keep on This Mac or Stop Keeping on This Mac changed nothing: the library is not in a cloud folder.")
+            // Translators: Why Keep on This Mac or Stop Keeping on This Mac changed nothing: the library is not in a cloud folder.
+            return String(localized: "The library isn't in a cloud folder, so its books are always on this Mac.")
         }
         guard !titles.isEmpty else { return noBooksSelected }
         if !keeping, keptOnlyForReadingList > 0 {
@@ -211,16 +211,16 @@ enum LibraryCloudWording {
         }
         if titles.count == 1, let title = titles.first {
             return keeping
-                ? String(localized: "\(title) is already kept on this Mac.",
-                         comment: "Why Keep on This Mac changed nothing: the selected book is already kept. %@ is the book's title.")
-                : String(localized: "\(title) isn't kept on this Mac.",
-                         comment: "Why Stop Keeping on This Mac changed nothing: the selected book is not kept. %@ is the book's title.")
+                // Translators: Why Keep on This Mac changed nothing: the selected book is already kept. %@ is the book's title.
+                ? String(localized: "\(title) is already kept on this Mac.")
+                // Translators: Why Stop Keeping on This Mac changed nothing: the selected book is not kept. %@ is the book's title.
+                : String(localized: "\(title) isn't kept on this Mac.")
         }
         return keeping
-            ? String(localized: "The \(titles.count) selected books are already kept on this Mac.",
-                     comment: "Why Keep on This Mac changed nothing: every selected book is already kept. %lld is the number of books selected.")
-            : String(localized: "None of the \(titles.count) selected books is kept on this Mac.",
-                     comment: "Why Stop Keeping on This Mac changed nothing: none of the selected books is kept. %lld is the number of books selected.")
+            // Translators: Why Keep on This Mac changed nothing: every selected book is already kept. %lld is the number of books selected.
+            ? String(localized: "The \(titles.count) selected books are already kept on this Mac.")
+            // Translators: Why Stop Keeping on This Mac changed nothing: none of the selected books is kept. %lld is the number of books selected.
+            : String(localized: "None of the \(titles.count) selected books is kept on this Mac.")
     }
 
     // MARK: - Letting the Reading List's Books Go
@@ -228,24 +228,24 @@ enum LibraryCloudWording {
     /// The sentence that tells what lets one book kept for the reading list
     /// go, ending with "first": the cloud refusals begin with it.
     static var letGoOfOneBookFirst: String {
-        String(localized: "Take it off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options first.",
-               comment: "Last sentence of why Remove Download was refused for a book the reading list keeps downloaded: what to do first. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.")
+        // Translators: Last sentence of why Remove Download was refused for a book the reading list keeps downloaded: what to do first. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.
+        String(localized: "Take it off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options first.")
     }
 
     /// The sentence that tells what to do next, after the listener chose
     /// Stop Keeping on This Mac: it follows another sentence's "first".
     static var thenLetGoOfOneBook: String {
-        String(localized: "Then take it off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options.",
-               comment: "Last sentence of why Remove Download was refused for a book the listener keeps and the reading list keeps too: what to do after choosing Stop Keeping on This Mac. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.")
+        // Translators: Last sentence of why Remove Download was refused for a book the listener keeps and the reading list keeps too: what to do after choosing Stop Keeping on This Mac. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.
+        String(localized: "Then take it off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options.")
     }
 
     /// How to let `plural` books, or one book, go from the reading list's keep.
     private static func howToLetGo(plural: Bool) -> String {
         plural
-            ? String(localized: "To let them go, take them off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options.",
-                     comment: "Last sentence of why Stop Keeping on This Mac cannot let several books go: the reading list keeps them. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.")
-            : String(localized: "To let it go, take it off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options.",
-                     comment: "Last sentence of why Stop Keeping on This Mac cannot let a book go: the reading list keeps it. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.")
+            // Translators: Last sentence of why Stop Keeping on This Mac cannot let several books go: the reading list keeps them. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.
+            ? String(localized: "To let them go, take them off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options.")
+            // Translators: Last sentence of why Stop Keeping on This Mac cannot let a book go: the reading list keeps it. %@ is the name of the Reading List's option that keeps its books downloaded, as the option shows it.
+            : String(localized: "To let it go, take it off the reading list, or clear \(ReadingListWording.keepBooksLabel) in the Reading List's options.")
     }
 
     /// Why Stop Keeping on This Mac changed nothing when the reading list
@@ -261,22 +261,22 @@ enum LibraryCloudWording {
         let plural = all ? titles.count > 1 : keptOnlyForReadingList > 1
         if titles.count == 1, let title = titles.first {
             return SentenceWording.joined([
-                String(localized: "\(title) is kept on this Mac for the reading list.",
-                       comment: "First sentence of why Stop Keeping on This Mac changed nothing for one book: the reading list keeps it. %@ is the book's title."),
+                // Translators: First sentence of why Stop Keeping on This Mac changed nothing for one book: the reading list keeps it. %@ is the book's title.
+                String(localized: "\(title) is kept on this Mac for the reading list."),
                 howToLetGo(plural: false),
             ])
         }
         if all {
             return SentenceWording.joined([
-                String(localized: "The \(titles.count) selected books are kept on this Mac for the reading list.",
-                       comment: "First sentence of why Stop Keeping on This Mac changed nothing: the reading list keeps every selected book. %lld is the number of books selected."),
+                // Translators: First sentence of why Stop Keeping on This Mac changed nothing: the reading list keeps every selected book. %lld is the number of books selected.
+                String(localized: "The \(titles.count) selected books are kept on this Mac for the reading list."),
                 howToLetGo(plural: plural),
             ])
         }
         // The selection has several books, so only the count kept for the list varies its noun.
         return SentenceWording.joined([
-            String(localized: "None of the \(titles.count.formatted()) selected books is kept on this Mac by your choice, and \(keptOnlyForReadingList) is kept for the reading list.",
-                   comment: "First sentence of why Stop Keeping on This Mac changed nothing: none of the selected books is kept by the listener's choice, and some are kept for the reading list. %1$@ is the number of books selected, already formatted; %2$lld is how many are kept for the reading list."),
+            // Translators: First sentence of why Stop Keeping on This Mac changed nothing: none of the selected books is kept by the listener's choice, and some are kept for the reading list. %1$@ is the number of books selected, already formatted; %2$lld is how many are kept for the reading list.
+            String(localized: "None of the \(titles.count.formatted()) selected books is kept on this Mac by your choice, and \(keptOnlyForReadingList) is kept for the reading list."),
             howToLetGo(plural: plural),
         ])
     }
@@ -292,18 +292,18 @@ enum LibraryCloudWording {
     static func downloadFinished(downloaded: [String], failed: [(title: String, explanation: String)]) -> String? {
         var sentences: [String] = []
         if downloaded.count == 1, let title = downloaded.first {
-            sentences.append(String(localized: "\(title) downloaded",
-                                    comment: "Announcement that Download Now brought one book to this Mac. %@ is the book's title."))
+            // Translators: Announcement that Download Now brought one book to this Mac. %@ is the book's title.
+            sentences.append(String(localized: "\(title) downloaded"))
         } else if downloaded.count > 1 {
-            sentences.append(String(localized: "Downloaded \(CountWording.books(downloaded.count))",
-                                    comment: "Announcement that Download Now brought several books to this Mac. %@ is a count of books, such as \"3 books\"."))
+            // Translators: Announcement that Download Now brought several books to this Mac. %@ is a count of books, such as "3 books".
+            sentences.append(String(localized: "Downloaded \(CountWording.books(downloaded.count))"))
         }
         if failed.count == 1, let failure = failed.first {
-            sentences.append(String(localized: "\(failure.title) wasn't downloaded",
-                                    comment: "Announcement that Download Now could not bring one book to this Mac. %@ is the book's title."))
+            // Translators: Announcement that Download Now could not bring one book to this Mac. %@ is the book's title.
+            sentences.append(String(localized: "\(failure.title) wasn't downloaded"))
         } else if failed.count > 1 {
-            sentences.append(String(localized: "\(failed.count) books weren't downloaded: \(CountWording.list(failed.map(\.title)))",
-                                    comment: "Announcement that Download Now could not bring several books to this Mac. %1$lld is how many; %2$@ is their titles as a list."))
+            // Translators: Announcement that Download Now could not bring several books to this Mac. %1$lld is how many; %2$@ is their titles as a list.
+            sentences.append(String(localized: "\(failed.count) books weren't downloaded: \(CountWording.list(failed.map(\.title)))"))
         }
         return summary(sentences, explanations: failed.map(\.explanation))
     }
@@ -330,22 +330,22 @@ enum LibraryCloudWording {
         let service = DataDirectoryUnavailability.service(provider)
         var sentences: [String] = []
         if removed.count == 1, let title = removed.first {
-            sentences.append(String(localized: "Removed the download of \(title)",
-                                    comment: "Announcement that Remove Download removed one book's downloaded files. %@ is the book's title."))
-            sentences.append(String(localized: "It stays in \(service)",
-                                    comment: "Announcement after Remove Download removed one book's files from this Mac: the book is still in the cloud. %@ is the cloud service's name, or \"the cloud\" when it is unknown."))
+            // Translators: Announcement that Remove Download removed one book's downloaded files. %@ is the book's title.
+            sentences.append(String(localized: "Removed the download of \(title)"))
+            // Translators: Announcement after Remove Download removed one book's files from this Mac: the book is still in the cloud. %@ is the cloud service's name, or "the cloud" when it is unknown.
+            sentences.append(String(localized: "It stays in \(service)"))
         } else if removed.count > 1 {
-            sentences.append(String(localized: "Removed the downloads of \(CountWording.books(removed.count))",
-                                    comment: "Announcement that Remove Download removed several books' downloaded files. %@ is a count of books, such as \"3 books\"."))
-            sentences.append(String(localized: "They stay in \(service)",
-                                    comment: "Announcement after Remove Download removed several books' files from this Mac: the books are still in the cloud. %@ is the cloud service's name, or \"the cloud\" when it is unknown."))
+            // Translators: Announcement that Remove Download removed several books' downloaded files. %@ is a count of books, such as "3 books".
+            sentences.append(String(localized: "Removed the downloads of \(CountWording.books(removed.count))"))
+            // Translators: Announcement after Remove Download removed several books' files from this Mac: the books are still in the cloud. %@ is the cloud service's name, or "the cloud" when it is unknown.
+            sentences.append(String(localized: "They stay in \(service)"))
         }
         if refused.count == 1, let refusal = refused.first {
-            sentences.append(String(localized: "The download of \(refusal.title) wasn't removed",
-                                    comment: "Announcement that Remove Download did not remove one book's files. %@ is the book's title."))
+            // Translators: Announcement that Remove Download did not remove one book's files. %@ is the book's title.
+            sentences.append(String(localized: "The download of \(refusal.title) wasn't removed"))
         } else if refused.count > 1 {
-            sentences.append(String(localized: "The downloads of \(CountWording.books(refused.count)) weren't removed: \(CountWording.list(refused.map(\.title)))",
-                                    comment: "Announcement that Remove Download did not remove several books' files. %1$@ is a count of books, such as \"3 books\"; %2$@ is their titles as a list."))
+            // Translators: Announcement that Remove Download did not remove several books' files. %1$@ is a count of books, such as "3 books"; %2$@ is their titles as a list.
+            sentences.append(String(localized: "The downloads of \(CountWording.books(refused.count)) weren't removed: \(CountWording.list(refused.map(\.title)))"))
         }
         // A removal alone ends with a full stop, as a full sentence about where
         // the book stays.
@@ -357,10 +357,10 @@ enum LibraryCloudWording {
     /// `refusedCount` books.
     static func removalRefusedTitle(refusedCount: Int) -> String {
         refusedCount == 1
-            ? String(localized: "Download Not Removed",
-                     comment: "Title of the alert that says Remove Download did not remove one book's files.")
-            : String(localized: "Downloads Not Removed",
-                     comment: "Title of the alert that says Remove Download did not remove several books' files.")
+            // Translators: Title of the alert that says Remove Download did not remove one book's files.
+            ? String(localized: "Download Not Removed")
+            // Translators: Title of the alert that says Remove Download did not remove several books' files.
+            : String(localized: "Downloads Not Removed")
     }
 
     // MARK: - No Selection
@@ -368,8 +368,8 @@ enum LibraryCloudWording {
     /// Why a Library menu command acting on the selected books did nothing:
     /// none is selected. Keep on This Mac and Export (FR05) say it.
     static var noBooksSelected: String {
-        String(localized: "No books are selected.",
-               comment: "Why a Library menu command did nothing: no book is selected.")
+        // Translators: Why a Library menu command did nothing: no book is selected.
+        String(localized: "No books are selected.")
     }
 
     // MARK: - Books Not Downloaded
@@ -383,10 +383,10 @@ enum LibraryCloudWording {
     static func downloadFirst(count: Int) -> String {
         let command = downloadTitle(count: count, forSelection: false)
         return count == 1
-            ? String(localized: "Download it first: select it in the library, then choose \(command).",
-                     comment: "What to do about a book only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now.")
-            : String(localized: "Download them first: select them in the library, then choose \(command).",
-                     comment: "What to do about several books only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now.")
+            // Translators: What to do about a book only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now.
+            ? String(localized: "Download it first: select it in the library, then choose \(command).")
+            // Translators: What to do about several books only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now.
+            : String(localized: "Download them first: select them in the library, then choose \(command).")
     }
 
     /// Why the books `titles` were left as they are by an operation that
@@ -399,14 +399,14 @@ enum LibraryCloudWording {
         let state: String
         switch titles.count {
         case 1:
-            state = String(localized: "\(titles[0]) isn't downloaded.",
-                           comment: "Why an operation left one book as it is: its files are only in the cloud. %@ is the book's title.")
+            // Translators: Why an operation left one book as it is: its files are only in the cloud. %@ is the book's title.
+            state = String(localized: "\(titles[0]) isn't downloaded.")
         case 2...3:
-            state = String(localized: "\(CountWording.list(titles)) aren't downloaded.",
-                           comment: "Why an operation left two or three books as it is: their files are only in the cloud. %@ is the books' titles as a list.")
+            // Translators: Why an operation left two or three books as it is: their files are only in the cloud. %@ is the books' titles as a list.
+            state = String(localized: "\(CountWording.list(titles)) aren't downloaded.")
         default:
-            state = String(localized: "\(CountWording.books(titles.count)) aren't downloaded.",
-                           comment: "Why an operation left several books as it is: their files are only in the cloud. %@ is a count of books, such as \"5 books\".")
+            // Translators: Why an operation left several books as it is: their files are only in the cloud. %@ is a count of books, such as "5 books".
+            state = String(localized: "\(CountWording.books(titles.count)) aren't downloaded.")
         }
         return SentenceWording.joined([state, downloadFirst(count: titles.count)])
     }
@@ -432,16 +432,16 @@ enum LibraryCloudWording {
     /// and a space, and leaves the last without one.
     private static func clausesJoined(_ clauses: [String]) -> String {
         clauses.dropFirst().reduce(clauses.first ?? "") { text, next in
-            String(localized: "\(text). \(next)",
-                   comment: "Joins two spoken clauses of an announcement. %1$@ is the clauses so far and %2$@ the next one. English ends the first with a full stop and a space; a language that writes no full stop, or another mark, changes only that.")
+            // Translators: Joins two spoken clauses of an announcement. %1$@ is the clauses so far and %2$@ the next one. English ends the first with a full stop and a space; a language that writes no full stop, or another mark, changes only that.
+            String(localized: "\(text). \(next)")
         }
     }
 
     /// `clause` ended the way an announcement's last clause is ended when a
     /// whole sentence follows it or when it stands alone as a sentence.
     private static func fullStopped(_ clause: String) -> String {
-        String(localized: "\(clause).",
-               comment: "A spoken clause of an announcement ended with a full stop. %@ is the clause. English adds a full stop; change only the mark.")
+        // Translators: A spoken clause of an announcement ended with a full stop. %@ is the clause. English adds a full stop; change only the mark.
+        String(localized: "\(clause).")
     }
 
     /// The books an announcement is about, named by `titles`: the one

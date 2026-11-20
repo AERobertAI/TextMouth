@@ -309,16 +309,16 @@ struct SpeechRefusalReport: Equatable, Sendable {
 enum SpeechRefusalWording {
     /// The sheet's heading, and the report's first line.
     static var heading: String {
-        String(localized: "Speech Stopped",
-               comment: "Heading of the sheet that reports speech stopped because the speech engine refused a passage, and the first line of its report.")
+        // Translators: Heading of the sheet that reports speech stopped because the speech engine refused a passage, and the first line of its report.
+        String(localized: "Speech Stopped")
     }
 
     /// What happened, in one plain sentence, and what Play does now. It names
     /// no device, so one sentence serves the Mac and the iPhone: the report's
     /// own device heading says which ("This Mac", "This iPhone").
     static var summary: String {
-        String(localized: "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
-               comment: "Summary under the heading of the report of a refusal, on the Mac and the iPhone: what happened, and that Play tries again.")
+        // Translators: Summary under the heading of the report of a refusal, on the Mac and the iPhone: what happened, and that Play tries again.
+        String(localized: "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.")
     }
 
     /// Whether this build is the iPhone app, which words the report's device
@@ -335,11 +335,11 @@ enum SpeechRefusalWording {
     /// The heading of the report's lines about the device it ran on.
     static func deviceHeading(onPhone: Bool) -> String {
         if onPhone {
-            return String(localized: "This iPhone",
-                          comment: "Heading of the report's lines about the device it ran on, on the iPhone.")
+            // Translators: Heading of the report's lines about the device it ran on, on the iPhone.
+            return String(localized: "This iPhone")
         }
-        return String(localized: "This Mac",
-                      comment: "Heading of the report's lines about the device it ran on, on the Mac.")
+        // Translators: Heading of the report's lines about the device it ran on, on the Mac.
+        return String(localized: "This Mac")
     }
 
     /// The report's line naming the system and its version: "macOS: ..." on
@@ -354,67 +354,68 @@ enum SpeechRefusalWording {
     /// app is, or another sheet is over the book, or the report is already
     /// open there.
     static var announcement: String {
-        String(localized: "Speech stopped: the speech engine refused this passage. Details are in the book's window.",
-               comment: "Announcement when speech stopped because the speech engine refused a passage and the book's window is not in front, so its report sheet cannot speak.")
+        // Translators: Announcement when speech stopped because the speech engine refused a passage and the book's window is not in front, so its report sheet cannot speak.
+        String(localized: "Speech stopped: the speech engine refused this passage. Details are in the book's window.")
     }
 
     /// The spoken label of the text area holding the whole report.
     static var detailsLabel: String {
-        String(localized: "Details",
-               comment: "VoiceOver label of the text area holding the whole report of a speech refusal.")
+        // Translators: VoiceOver label of the text area holding the whole report of a speech refusal.
+        String(localized: "Details")
     }
 
     /// The button that copies the whole report, and what it does.
     static var copyTitle: String {
-        String(localized: "Copy Details",
-               comment: "Title of the button of the speech refusal report that copies the whole report.")
+        // Translators: Title of the button of the speech refusal report that copies the whole report.
+        String(localized: "Copy Details")
     }
     static var copyHint: String {
-        String(localized: "Copies the whole report as plain text",
-               comment: "VoiceOver hint of the Copy Details button of the speech refusal report.")
+        // Translators: VoiceOver hint of the Copy Details button of the speech refusal report.
+        String(localized: "Copies the whole report as plain text")
     }
 
     /// What VoiceOver hears once Copy Details has copied the report, and
     /// should the pasteboard refuse it.
     static var copiedAnnouncement: String {
-        String(localized: "Details copied",
-               comment: "Announcement after Copy Details copied the report of a speech refusal.")
+        // Translators: Announcement after Copy Details copied the report of a speech refusal.
+        String(localized: "Details copied")
     }
     static var notCopiedAnnouncement: String {
-        String(localized: "The details could not be copied",
-               comment: "Announcement when Copy Details could not copy the report of a speech refusal to the pasteboard.")
+        // Translators: Announcement when Copy Details could not copy the report of a speech refusal to the pasteboard.
+        String(localized: "The details could not be copied")
     }
 
     /// The button that closes the sheet, which Return and Escape press, and
     /// what it does.
     static var closeTitle: String {
-        String(localized: "Close",
-               comment: "Title of the button that closes a sheet, such as the speech refusal report.")
+        // Translators: Title of the button that closes a sheet, such as the speech refusal report.
+        String(localized: "Close")
     }
     static var closeHint: String {
-        String(localized: "Afterwards, Play tries the passage again",
-               comment: "VoiceOver hint of the Close button of the speech refusal report.")
+        // Translators: VoiceOver hint of the Close button of the speech refusal report.
+        String(localized: "Afterwards, Play tries the passage again")
     }
 
     // MARK: Where
 
     /// The heading of the report's lines about where speech stopped.
     static var whereHeading: String {
-        String(localized: "Where",
-               comment: "Heading of the lines of a speech refusal report that say where in the book speech stopped.")
+        // Translators: Heading of the lines of a speech refusal report that say where in the book speech stopped.
+        String(localized: "Where")
     }
 
     /// The book's line: "Book: Moby Dick (EPUB)".
     static func book(title: String, format: String) -> String {
-        String(localized: "Book: \(title) (\(format))",
-               comment: "A line of the speech refusal report naming the book. %1$@ is its title and %2$@ its format, such as EPUB.")
+        // Translators: A line of the speech refusal report naming the book. %1$@ is its title and %2$@ its format, such as EPUB.
+        String(localized: "Book: \(title) (\(format))")
     }
 
     /// The reader's position in the book, as the book's own position text
     /// says it: "Position: Page 12".
     static func position(_ position: String) -> String {
         SentenceWording.labelled(
-            String(localized: "Position", comment: "Label before the reader's position in the book, in a line of the speech refusal report."),
+            // Translators: Label before the reader's position in the book, in a line of the speech refusal report.
+            String(localized: "Position"),
             position)
     }
 
@@ -422,8 +423,8 @@ enum SpeechRefusalWording {
     /// "Chapter 3 of 12 (chapter=2 in the logs): The Battle". The logs count
     /// chapters from 0, the listener from 1.
     static func chapter(index: Int, of count: Int, title: String?) -> String {
-        let place = String(localized: "Chapter \(String(index + 1)) of \(String(count)) (chapter=\(String(index)) in the logs)",
-                           comment: "A line of the speech refusal report naming the chapter speech stopped in. %1$@ is the chapter's number counting from 1, %2$@ the number of chapters, and %3$@ the chapter's number counting from 0 as the debug log writes it, each written without digit grouping. Keep \"chapter=\" as it is: it is the log's own tag.")
+        // Translators: A line of the speech refusal report naming the chapter speech stopped in. %1$@ is the chapter's number counting from 1, %2$@ the number of chapters, and %3$@ the chapter's number counting from 0 as the debug log writes it, each written without digit grouping. Keep "chapter=" as it is: it is the log's own tag.
+        let place = String(localized: "Chapter \(String(index + 1)) of \(String(count)) (chapter=\(String(index)) in the logs)")
         guard let title, !title.isEmpty else { return place }
         return SentenceWording.labelled(place, title)
     }
@@ -431,21 +432,21 @@ enum SpeechRefusalWording {
     /// Where speech stopped, in the chapter's text as the book has it: "Speech
     /// stopped at character 1204 of 5000 in the chapter."
     static func stoppedInChapter(offset: Int, of length: Int) -> String {
-        String(localized: "Speech stopped at character \(String(offset)) of \(String(length)) in the chapter.",
-               comment: "A line of the speech refusal report. %1$@ is the character offset where speech stopped and %2$@ the chapter's length in characters, each written without digit grouping like the speech log's offsets.")
+        // Translators: A line of the speech refusal report. %1$@ is the character offset where speech stopped and %2$@ the chapter's length in characters, each written without digit grouping like the speech log's offsets.
+        String(localized: "Speech stopped at character \(String(offset)) of \(String(length)) in the chapter.")
     }
 
     /// Where speech stopped in the spoken text, and what range of it the
     /// engine refused.
     static func stoppedInSpokenText(offset: Int, refused: Range<Int>) -> String {
-        String(localized: "In the spoken text, whose offsets the speech log gives: speech stopped at character \(String(offset)); the refused text runs from character \(String(refused.lowerBound)) to \(String(refused.upperBound)).",
-               comment: "A line of the speech refusal report. %1$@ is the character offset in the spoken text where speech stopped; %2$@ and %3$@ are where the refused text begins and ends, each written without digit grouping like the speech log's offsets.")
+        // Translators: A line of the speech refusal report. %1$@ is the character offset in the spoken text where speech stopped; %2$@ and %3$@ are where the refused text begins and ends, each written without digit grouping like the speech log's offsets.
+        String(localized: "In the spoken text, whose offsets the speech log gives: speech stopped at character \(String(offset)); the refused text runs from character \(String(refused.lowerBound)) to \(String(refused.upperBound)).")
     }
 
     /// How many times the engine refused text since the window opened.
     static func refusedHere(times: Int) -> String {
-        String(localized: "Refused here: \(times) times while this window has been open.",
-               comment: "A line of the speech refusal report. %lld is how many times the speech engine refused text while the book's window has been open.")
+        // Translators: A line of the speech refusal report. %lld is how many times the speech engine refused text while the book's window has been open.
+        String(localized: "Refused here: \(times) times while this window has been open.")
     }
 
     /// A time, as the log files write theirs, so that the report's time and
@@ -457,7 +458,8 @@ enum SpeechRefusalWording {
     /// The report's time line: "Time: 2026-10-09 22:42:05 +0000".
     static func timeLine(_ date: Date) -> String {
         SentenceWording.labelled(
-            String(localized: "Time", comment: "Label before the time of the refusal, in a line of the speech refusal report; the time is written as the log files write it."),
+            // Translators: Label before the time of the refusal, in a line of the speech refusal report; the time is written as the log files write it.
+            String(localized: "Time"),
             time(date))
     }
 
@@ -465,20 +467,20 @@ enum SpeechRefusalWording {
 
     /// The heading above the passage as the book has it.
     static func bookPassageHeading(range: Range<Int>, chapterNumber: Int) -> String {
-        String(localized: "The passage as the book has it, characters \(String(range.lowerBound)) to \(String(range.upperBound)) of chapter \(String(chapterNumber)):",
-               comment: "A line of the speech refusal report that introduces the passage as the book has it. %1$@ and %2$@ are the first and last character offsets of the passage, and %3$@ is the chapter's number, each written without digit grouping.")
+        // Translators: A line of the speech refusal report that introduces the passage as the book has it. %1$@ and %2$@ are the first and last character offsets of the passage, and %3$@ is the chapter's number, each written without digit grouping.
+        String(localized: "The passage as the book has it, characters \(String(range.lowerBound)) to \(String(range.upperBound)) of chapter \(String(chapterNumber)):")
     }
 
     /// The heading above the passage as the speech engine was handed it.
     static func spokenPassageHeading(range: Range<Int>) -> String {
-        String(localized: "The text handed to the speech engine, after the substitutions and the markup guard, characters \(String(range.lowerBound)) to \(String(range.upperBound)) of the spoken text:",
-               comment: "A line of the speech refusal report that introduces the text the speech engine was handed, after the user's substitution rules and the markup guard. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.")
+        // Translators: A line of the speech refusal report that introduces the text the speech engine was handed, after the user's substitution rules and the markup guard. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.
+        String(localized: "The text handed to the speech engine, after the substitutions and the markup guard, characters \(String(range.lowerBound)) to \(String(range.upperBound)) of the spoken text:")
     }
 
     /// The heading of the lines about the voice and its speed.
     static var voiceAndSpeedHeading: String {
-        String(localized: "Voice and speed",
-               comment: "Heading of the lines of a speech refusal report about the voice and the speaking speed.")
+        // Translators: Heading of the lines of a speech refusal report about the voice and the speaking speed.
+        String(localized: "Voice and speed")
     }
 
     /// A passage's lines: its text, with where the refused text begins and
@@ -489,24 +491,24 @@ enum SpeechRefusalWording {
         var lines: [String] = []
         let refused = passage.refusedRange
         if refused.lowerBound < passage.range.lowerBound {
-            lines.append(String(localized: "The refused text began before this passage, at character \(String(refused.lowerBound)).",
-                                comment: "A line of the speech refusal report: the refused text began before the passage shown. %@ is the character offset where it began, written without digit grouping."))
+            // Translators: A line of the speech refusal report: the refused text began before the passage shown. %@ is the character offset where it began, written without digit grouping.
+            lines.append(String(localized: "The refused text began before this passage, at character \(String(refused.lowerBound))."))
         } else {
             if !passage.before.isEmpty {
                 lines.append(passage.before)
             }
-            lines.append(String(localized: "The refused text begins here, at character \(String(refused.lowerBound)).",
-                                comment: "A line of the speech refusal report, just before the refused text. %@ is the character offset where it begins, written without digit grouping."))
+            // Translators: A line of the speech refusal report, just before the refused text. %@ is the character offset where it begins, written without digit grouping.
+            lines.append(String(localized: "The refused text begins here, at character \(String(refused.lowerBound))."))
         }
         if !passage.refused.isEmpty {
             lines.append(passage.refused)
         }
         if refused.upperBound > passage.range.upperBound {
-            lines.append(String(localized: "The refused text goes on past this passage, to character \(String(refused.upperBound)).",
-                                comment: "A line of the speech refusal report: the refused text goes on past the passage shown. %@ is the character offset where it ends, written without digit grouping."))
+            // Translators: A line of the speech refusal report: the refused text goes on past the passage shown. %@ is the character offset where it ends, written without digit grouping.
+            lines.append(String(localized: "The refused text goes on past this passage, to character \(String(refused.upperBound))."))
         } else {
-            lines.append(String(localized: "The refused text ends here, at character \(String(refused.upperBound)).",
-                                comment: "A line of the speech refusal report, just after the refused text. %@ is the character offset where it ends, written without digit grouping."))
+            // Translators: A line of the speech refusal report, just after the refused text. %@ is the character offset where it ends, written without digit grouping.
+            lines.append(String(localized: "The refused text ends here, at character \(String(refused.upperBound))."))
             if !passage.after.isEmpty {
                 lines.append(passage.after)
             }
@@ -519,11 +521,11 @@ enum SpeechRefusalWording {
     /// refused once, or else only the brackets of tag-shaped text.
     static func markupGuard(strictlyWithin strict: Range<Int>?) -> String {
         guard let strict else {
-            return String(localized: "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
-                          comment: "A line of the speech refusal report: the markup guard that was used silences only the angle brackets that make tags.")
+            // Translators: A line of the speech refusal report: the markup guard that was used silences only the angle brackets that make tags.
+            return String(localized: "Markup guard: the usual one, which silences only the brackets of tag-shaped text.")
         }
-        return String(localized: "Markup guard: strict, every angle bracket silent, from character \(String(strict.lowerBound)) to \(String(strict.upperBound)) of the spoken text.",
-                      comment: "A line of the speech refusal report: the markup guard silenced every angle bracket between two characters. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.")
+        // Translators: A line of the speech refusal report: the markup guard silenced every angle bracket between two characters. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.
+        return String(localized: "Markup guard: strict, every angle bracket silent, from character \(String(strict.lowerBound)) to \(String(strict.upperBound)) of the spoken text.")
     }
 
     // MARK: Voice, Speed, and Build
@@ -532,11 +534,11 @@ enum SpeechRefusalWording {
     /// en-US, Standard quality".
     static func voice(_ voice: SpeechRefusal.Voice?) -> String {
         guard let voice else {
-            return String(localized: "Voice: the system's default voice",
-                          comment: "A line of the speech refusal report: no voice was chosen, so the system's default voice spoke.")
+            // Translators: A line of the speech refusal report: no voice was chosen, so the system's default voice spoke.
+            return String(localized: "Voice: the system's default voice")
         }
-        return String(localized: "Voice: \(voice.name) (\(voice.identifier)), \(voice.language), \(voice.quality) quality",
-                      comment: "A line of the speech refusal report naming the voice. %1$@ is its name, %2$@ its system identifier, %3$@ its language code such as en-US, and %4$@ its quality such as Standard, Enhanced, or Premium.")
+        // Translators: A line of the speech refusal report naming the voice. %1$@ is its name, %2$@ its system identifier, %3$@ its language code such as en-US, and %4$@ its quality such as Standard, Enhanced, or Premium.
+        return String(localized: "Voice: \(voice.name) (\(voice.identifier)), \(voice.language), \(voice.quality) quality")
     }
 
     /// The speed, and the rate, pitch, and volume the refused utterance was
@@ -547,8 +549,8 @@ enum SpeechRefusalWording {
         let rate = twoDecimals(refusal.rate)
         let pitch = twoDecimals(refusal.pitchMultiplier)
         let volume = twoDecimals(refusal.volume)
-        return String(localized: "Speed: \(wordsPerMinute) words per minute; rate \(rate), pitch \(pitch), volume \(volume)",
-                      comment: "A line of the speech refusal report. %1$lld is the speaking speed in words per minute; %2$@, %3$@, and %4$@ are the engine's rate, pitch multiplier, and volume, each written with two decimals.")
+        // Translators: A line of the speech refusal report. %1$lld is the speaking speed in words per minute; %2$@, %3$@, and %4$@ are the engine's rate, pitch multiplier, and volume, each written with two decimals.
+        return String(localized: "Speed: \(wordsPerMinute) words per minute; rate \(rate), pitch \(pitch), volume \(volume)")
     }
 
     /// `value` with two decimals in the interface language: "0.43".
@@ -563,25 +565,25 @@ enum SpeechRefusalWording {
         let known = { (value: String) in value != "unknown" && !value.isEmpty } // l10n: no (the build record's own marker for a missing detail)
         var details: [String] = []
         if known(build.version) {
-            details.append(String(localized: "version \(build.version)",
-                                  comment: "A detail of the build line of the speech refusal report. %@ is the app's version, such as 0.5.3."))
+            // Translators: A detail of the build line of the speech refusal report. %@ is the app's version, such as 0.5.3.
+            details.append(String(localized: "version \(build.version)"))
         }
         if known(build.buildNumber) {
-            details.append(String(localized: "build \(build.buildNumber)",
-                                  comment: "A detail of the build line of the speech refusal report. %@ is the app's build number."))
+            // Translators: A detail of the build line of the speech refusal report. %@ is the app's build number.
+            details.append(String(localized: "build \(build.buildNumber)"))
         }
         if known(build.configuration) { details.append(build.configuration) } // l10n: no (a build configuration's own name, such as Debug)
         if known(build.gitCommit) {
-            details.append(String(localized: "commit \(build.gitCommit)",
-                                  comment: "A detail of the build line of the speech refusal report. %@ is the abbreviated identifier of the source commit the app was built from."))
+            // Translators: A detail of the build line of the speech refusal report. %@ is the abbreviated identifier of the source commit the app was built from.
+            details.append(String(localized: "commit \(build.gitCommit)"))
         }
         if known(build.buildDate) {
-            details.append(String(localized: "built \(build.buildDate)",
-                                  comment: "A detail of the build line of the speech refusal report. %@ is the date and time the app was built, as written in its Info.plist."))
+            // Translators: A detail of the build line of the speech refusal report. %@ is the date and time the app was built, as written in its Info.plist.
+            details.append(String(localized: "built \(build.buildDate)"))
         }
         guard !details.isEmpty else {
-            return String(localized: "TextMouth: no build details recorded",
-                          comment: "A line of the speech refusal report: the app recorded nothing about how it was built.")
+            // Translators: A line of the speech refusal report: the app recorded nothing about how it was built.
+            return String(localized: "TextMouth: no build details recorded")
         }
         return SentenceWording.labelled("TextMouth", SentenceWording.commaJoined(details)) // l10n: no (the app's name)
     }
@@ -590,11 +592,11 @@ enum SpeechRefusalWording {
     /// saying how many there are and that they hold no words of the book.
     static func logLines(_ lines: [RecentTransitionLines.Line]) -> [String] {
         guard !lines.isEmpty else {
-            return [String(localized: "Speech log: no lines.",
-                           comment: "A line of the speech refusal report: the speech log has no lines to show.")]
+            // Translators: A line of the speech refusal report: the speech log has no lines to show.
+            return [String(localized: "Speech log: no lines.")]
         }
-        let heading = String(localized: "Speech log, its last \(lines.count) lines, offsets and lengths only:",
-                             comment: "A line of the speech refusal report, above the speech log's own lines (which stay English, as the log wrote them). %lld is how many lines follow.")
+        // Translators: A line of the speech refusal report, above the speech log's own lines (which stay English, as the log wrote them). %lld is how many lines follow.
+        let heading = String(localized: "Speech log, its last \(lines.count) lines, offsets and lengths only:")
         return [heading] + lines.map(\.logged)
     }
 }

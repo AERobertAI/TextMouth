@@ -105,8 +105,8 @@ struct EPUBMetadataSaveWording {
     /// After the file and the library both took the metadata: "Metadata
     /// saved to the library's copy of “alice.epub”."
     var savedToFile: String {
-        String(localized: "Metadata saved to the library's copy of “\(fileName)”.",
-               comment: "Announcement after the metadata was saved to the library and to the library's copy of the book's EPUB file. %@ is the EPUB file's name.")
+        // Translators: Announcement after the metadata was saved to the library and to the library's copy of the book's EPUB file. %@ is the EPUB file's name.
+        String(localized: "Metadata saved to the library's copy of “\(fileName)”.")
     }
 
     /// After writing the file failed, so nothing was saved: "Could not save
@@ -115,10 +115,10 @@ struct EPUBMetadataSaveWording {
     /// made to end as a sentence ends.
     func writeFailed(reason: String) -> String {
         SentenceWording.joined([
-            String(localized: "Could not save metadata to the library's copy of “\(fileName)”: \(PersistenceFailure.sentence(reason))",
-                   comment: "First part of the message when writing the metadata into the library's copy of an EPUB file failed. %1$@ is the EPUB file's name; %2$@ is the reason from the system, written as a sentence."),
-            String(localized: "Nothing was changed.",
-                   comment: "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere."),
+            // Translators: First part of the message when writing the metadata into the library's copy of an EPUB file failed. %1$@ is the EPUB file's name; %2$@ is the reason from the system, written as a sentence.
+            String(localized: "Could not save metadata to the library's copy of “\(fileName)”: \(PersistenceFailure.sentence(reason))"),
+            // Translators: Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.
+            String(localized: "Nothing was changed."),
         ])
     }
 
@@ -128,19 +128,19 @@ struct EPUBMetadataSaveWording {
     /// which is the way to keep the edit.
     var fileMissing: String {
         SentenceWording.joined([
-            String(localized: "Could not save metadata to the library's copy of “\(fileName)”, because that file is missing from the library.",
-                   comment: "First sentence of the message when the library's copy of an EPUB file is missing, so the metadata could not be written into it. %@ is the EPUB file's name."),
-            String(localized: "Turn off “\(Self.writeBackToggleTitle)” to save the metadata to the library only.",
-                   comment: "Second sentence of that message. %@ is the shown name of the editor's switch that also writes the file, quoted."),
-            String(localized: "Nothing was changed.",
-                   comment: "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere."),
+            // Translators: First sentence of the message when the library's copy of an EPUB file is missing, so the metadata could not be written into it. %@ is the EPUB file's name.
+            String(localized: "Could not save metadata to the library's copy of “\(fileName)”, because that file is missing from the library."),
+            // Translators: Second sentence of that message. %@ is the shown name of the editor's switch that also writes the file, quoted.
+            String(localized: "Turn off “\(Self.writeBackToggleTitle)” to save the metadata to the library only."),
+            // Translators: Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.
+            String(localized: "Nothing was changed."),
         ])
     }
 
     /// After the library alone took the metadata, as asked.
     static var savedToLibraryOnly: String {
-        String(localized: "Metadata saved to the library only; the EPUB file is unchanged.",
-               comment: "Announcement after the metadata was saved to the library only, as the user chose; the book's EPUB file was not rewritten.")
+        // Translators: Announcement after the metadata was saved to the library only, as the user chose; the book's EPUB file was not rewritten.
+        String(localized: "Metadata saved to the library only; the EPUB file is unchanged.")
     }
 }
 
@@ -150,28 +150,28 @@ extension EPUBMetadataSaveWording {
     /// The metadata editor's choice to write the file too, which VoiceOver
     /// also reads as the choice's label.
     nonisolated static var writeBackToggleTitle: String {
-        String(localized: "Also write to the library's copy of the EPUB file",
-               comment: "Label of the metadata editor's switch that also writes the edited title, author, publisher and date into the library's own copy of the book's EPUB file.")
+        // Translators: Label of the metadata editor's switch that also writes the edited title, author, publisher and date into the library's own copy of the book's EPUB file.
+        String(localized: "Also write to the library's copy of the EPUB file")
     }
 
     /// VoiceOver's hint for that choice: which file is written, and that the
     /// file the user imported is not.
     nonisolated static var writeBackToggleHint: String {
         SentenceWording.joined([
-            String(localized: "Writes the title, author, publisher, and date into the library's copy of this book.",
-                   comment: "First sentence of the hint of the metadata editor's switch that also writes the EPUB file."),
-            String(localized: "The original file you imported is not touched.",
-                   comment: "Last sentence of the hint of the metadata editor's switch that also writes the EPUB file: the file the user first imported stays as it was."),
+            // Translators: First sentence of the hint of the metadata editor's switch that also writes the EPUB file.
+            String(localized: "Writes the title, author, publisher, and date into the library's copy of this book."),
+            // Translators: Last sentence of the hint of the metadata editor's switch that also writes the EPUB file: the file the user first imported stays as it was.
+            String(localized: "The original file you imported is not touched."),
         ])
     }
 
     /// Shown under the choice while it is on.
     nonisolated static var writeBackNote: String {
         SentenceWording.joined([
-            String(localized: "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash.",
-                   comment: "First sentence of the warning shown under the metadata editor's switch while it is on. MD5 is the name of a checksum and stays as written."),
-            String(localized: "The original file you imported is not changed.",
-                   comment: "Last sentence of the warning shown under the metadata editor's switch while it is on: the file the user first imported stays as it was."),
+            // Translators: First sentence of the warning shown under the metadata editor's switch while it is on. MD5 is the name of a checksum and stays as written.
+            String(localized: "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash."),
+            // Translators: Last sentence of the warning shown under the metadata editor's switch while it is on: the file the user first imported stays as it was.
+            String(localized: "The original file you imported is not changed."),
         ])
     }
 
@@ -180,9 +180,9 @@ extension EPUBMetadataSaveWording {
     /// library's copy of the EPUB file.
     static func saveButtonLabel(writesToFile: Bool) -> String {
         writesToFile
-            ? String(localized: "Save metadata to the library and to the library's copy of the EPUB file",
-                     comment: "Label of the metadata editor's Save button while the switch that also writes the EPUB file is on.")
-            : String(localized: "Save metadata to the library only",
-                     comment: "Label of the metadata editor's Save button while the switch that also writes the EPUB file is off.")
+            // Translators: Label of the metadata editor's Save button while the switch that also writes the EPUB file is on.
+            ? String(localized: "Save metadata to the library and to the library's copy of the EPUB file")
+            // Translators: Label of the metadata editor's Save button while the switch that also writes the EPUB file is off.
+            : String(localized: "Save metadata to the library only")
     }
 }

@@ -235,112 +235,218 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// window (`fullTitle` keeps it). The raw value stays the stored id.
     var title: String {
         switch self {
-        case .togglePlayback: return String(localized: "Play / Pause", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Starts or pauses reading aloud or playing the book. Also the title of the menu command of the same name.")
-        case .releaseMediaControls: return String(localized: "Release Media Controls", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name.")
-        case .skipForward: return String(localized: "Skip Forward", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves forward by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.")
-        case .skipBackward: return String(localized: "Skip Backward", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves back by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.")
-        case .cycleForwardNavigationUnit: return String(localized: "Cycle Forward Navigation Unit", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the next one. Also the title of the menu command of the same name.")
-        case .cycleBackwardNavigationUnit: return String(localized: "Cycle Backward Navigation Unit", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the previous one. Also the title of the menu command of the same name.")
-        case .increaseSpeed: return String(localized: "Increase Speed", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed faster. Also the title of the menu command of the same name.")
-        case .decreaseSpeed: return String(localized: "Decrease Speed", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed slower. Also the title of the menu command of the same name.")
-        case .copyReadingPosition: return String(localized: "Copy Reading Position", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Copies a link to the current reading position. Also the title of the menu command of the same name.")
-        case .searchInBook: return String(localized: "Search in Book", comment: "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Searches the text of the open book. Also the title of the menu command of the same name.")
-        case .goToLibrary: return String(localized: "Go to Library", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Brings the Library window forward from a book. Also the title of the menu command of the same name.")
-        case .goBack: return String(localized: "Go Back", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Returns to the place the reader jumped from, like a browser's Back. Also the title of the menu command of the same name.")
-        case .goForward: return String(localized: "Go Forward", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes forward again after Go Back. Also the title of the menu command of the same name.")
-        case .nextHeading: return String(localized: "Next Heading", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the next heading in the book. Also the title of the menu command of the same name.")
-        case .previousHeading: return String(localized: "Previous Heading", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the previous heading in the book. Also the title of the menu command of the same name.")
-        case .goToPage: return String(localized: "Go to Page…", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens a field to type a page number as the book numbers its pages. Also the title of the menu command of the same name.")
-        case .nextInReadingList: return String(localized: "Next in Reading List", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the next book in the reading list. Also the title of the menu command of the same name.")
-        case .previousInReadingList: return String(localized: "Previous in Reading List", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the previous book in the reading list. Also the title of the menu command of the same name.")
-        case .nextInFolder: return String(localized: "Next in Folder", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the next book in the same folder or feed. Also the title of the menu command of the same name.")
-        case .previousInFolder: return String(localized: "Previous in Folder", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the previous book in the same folder or feed. Also the title of the menu command of the same name.")
-        case .navigateUpLevel: return String(localized: "Up One Level", comment: "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes up one level, to the folder that holds the current one.")
-        case .addBookmark: return String(localized: "Toggle Bookmark", comment: "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Adds a bookmark at the reading position, or removes the one there. Also the title of the menu command of the same name.")
-        case .nextBookmark: return String(localized: "Next Bookmark", comment: "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the next bookmark. Also the title of the menu command of the same name.")
-        case .previousBookmark: return String(localized: "Previous Bookmark", comment: "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the previous bookmark. Also the title of the menu command of the same name.")
-        case .showBookmarkList: return String(localized: "Show Bookmarks", comment: "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Opens the list of the book's bookmarks. Also the title of the menu command of the same name.")
-        case .showHeadingList: return String(localized: "Show Headings", comment: "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the list of the book's headings. Also the title of the menu command of the same name.")
-        case .showSleepTimer: return String(localized: "Show Sleep Timer", comment: "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the sleep timer, which stops playback after a time. Also the title of the menu command of the same name.")
-        case .restartSleepTimer: return String(localized: "Restart Sleep Timer", comment: "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Starts the sleep timer again with its last length.")
-        case .whereAmI: return String(localized: "Where Am I?", comment: "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the reading position. Also the title of the menu command of the same name.")
-        case .whereAmIFull: return String(localized: "Where Am I? Full Summary", comment: "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the reading position. Also the title of the menu command of the same name.")
-        case .speakInfo: return String(localized: "Speak Info", comment: "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the selected book, folder or feed. Also the title of the menu command of the same name.")
-        case .speakFullInfo: return String(localized: "Speak Full Info", comment: "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the selected book, folder or feed. Also the title of the menu command of the same name.")
-        case .speakImportProgress: return String(localized: "Speak Import Progress", comment: "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the imports under way have got. Also the title of the menu command of the same name.")
-        case .speakDownloadProgress: return String(localized: "Speak Download Progress", comment: "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the feed downloads under way have got. Also the title of the menu command of the same name.")
-        case .openSelectedBook: return String(localized: "Open Selected Book", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book in a reader.")
-        case .showBookInfo: return String(localized: "Book Info", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name.")
-        case .removeFromLibrary: return String(localized: "Remove from Library", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Removes the selected books from the library.")
-        case .newFolder: return String(localized: "New Folder", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Makes a new folder in the library. Also the title of the menu command of the same name.")
-        case .moveToFolder: return String(localized: "Move to Folder", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder.")
-        case .moveToLibrary: return String(localized: "Move to Library…", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves feed episodes or articles into a library folder as books of their own. Also the title of the menu command of the same name.")
-        case .selectAll: return String(localized: "Select All", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.")
-        case .toggleEditMode: return String(localized: "Edit Mode", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Turns the library list's edit mode on or off. Also the title of the menu command of the same name.")
-        case .moveBookUp: return String(localized: "Move Book Up", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name.")
-        case .moveBookDown: return String(localized: "Move Book Down", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place down in its folder. Also the title of the menu command of the same name.")
-        case .addToReadingList: return String(localized: "Add to Reading List", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name.")
-        case .removeFromReadingList: return String(localized: "Remove from Reading List", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Takes the selected books off the reading list. Also the title of the menu command of the same name.")
-        case .folderOrFeedSettings: return String(localized: "Folder or Feed Settings", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the settings of the folder or feed the Library window shows. Also the title of the menu command of the same name.")
-        case .goToView1: return String(localized: "Go to View 1", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the first view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView2: return String(localized: "Go to View 2", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the second view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView3: return String(localized: "Go to View 3", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the third view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView4: return String(localized: "Go to View 4", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fourth view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView5: return String(localized: "Go to View 5", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fifth view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView6: return String(localized: "Go to View 6", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the sixth view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView7: return String(localized: "Go to View 7", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the seventh view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView8: return String(localized: "Go to View 8", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the eighth view of the Library window's View pop-up; the number is part of the name.")
-        case .goToView9: return String(localized: "Go to View 9", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the ninth view of the Library window's View pop-up; the number is part of the name.")
-        case .importDAISYFolder: return String(localized: "Import Folder…", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Imports a DAISY book, or a folder of audio tracks, as a book. Also the title of the menu command of the same name.")
-        case .addFeed: return String(localized: "Add Feed…", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Subscribes to a podcast or news feed. Also the title of the menu command of the same name.")
-        case .searchLibrary: return String(localized: "Search Library…", comment: "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the window that searches the text of every book. Also the title of the menu command of the same name.")
-        case .openBook: return String(localized: "Open Book…", comment: "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name.")
-        case .newFromText: return String(localized: "New from Text…", comment: "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name.")
-        case .newRecording: return String(localized: "New Recording…", comment: "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens the window that records a new book from the microphone. Also the title of the menu command of the same name.")
-        case .recordingRecord: return String(localized: "Record", comment: "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Starts recording in the Record window.")
-        case .recordingPauseOrResume: return String(localized: "Pause or Resume", comment: "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Pauses the recording, or resumes a paused one.")
-        case .recordingStop: return String(localized: "Stop", comment: "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.")
-        case .editorPlayPause: return String(localized: "Play / Pause", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts or pauses playback in the audio editor.")
-        case .editorStop: return String(localized: "Stop", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.")
-        case .editorSkipBack: return String(localized: "Back One Second", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back one second.")
-        case .editorSkipForward: return String(localized: "Forward One Second", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward one second.")
-        case .editorSkipBackLong: return String(localized: "Back 10 Seconds", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back ten seconds.")
-        case .editorSkipForwardLong: return String(localized: "Forward 10 Seconds", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward ten seconds.")
-        case .editorSkipBackShort: return String(localized: "Back a Tenth of a Second", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back a tenth of a second.")
-        case .editorSkipForwardShort: return String(localized: "Forward a Tenth of a Second", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward a tenth of a second.")
-        case .editorGoToStart: return String(localized: "Go to Start", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the start of the audio.")
-        case .editorGoToEnd: return String(localized: "Go to End", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the end of the audio.")
-        case .editorGoToTime: return String(localized: "Go to Time…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a time to move to.")
-        case .editorPreviousChapter: return String(localized: "Previous Chapter Marker", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous chapter marker.")
-        case .editorNextChapter: return String(localized: "Next Chapter Marker", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next chapter marker.")
-        case .editorPreviousPause: return String(localized: "Previous Pause", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous silent pause found in the audio.")
-        case .editorNextPause: return String(localized: "Next Pause", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next silent pause found in the audio.")
-        case .editorWhereAmI: return String(localized: "Where Am I?", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks the position and the selection.")
-        case .editorMarkIn: return String(localized: "Mark In", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts a selection at the current position.")
-        case .editorMarkOut: return String(localized: "Mark Out", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position.")
-        case .editorSelectToPreviousPause: return String(localized: "Select to Previous Pause", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection back to the previous silent pause.")
-        case .editorSelectToNextPause: return String(localized: "Select to Next Pause", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause.")
-        case .editorSelectChapter: return String(localized: "Select Chapter", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position.")
-        case .editorSelectAll: return String(localized: "Select All", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.")
-        case .editorClearSelection: return String(localized: "Clear Selection", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selection.")
-        case .editorSpeakSelection: return String(localized: "Speak Selection", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length.")
-        case .editorPlaySelection: return String(localized: "Play Selection", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Plays only the selection.")
-        case .editorAddMarker: return String(localized: "Add Marker", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Adds a marker at the current position.")
-        case .editorShowMarkers: return String(localized: "Markers and Pauses…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses.")
-        case .editorUndo: return String(localized: "Undo", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Undoes the last edit.")
-        case .editorRedo: return String(localized: "Redo", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Does the last undone edit again.")
-        case .editorCut: return String(localized: "Cut", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selected audio and keeps it for pasting.")
-        case .editorCopy: return String(localized: "Copy", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Copies the selected audio.")
-        case .editorPaste: return String(localized: "Paste", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.")
-        case .editorTrimToSelection: return String(localized: "Trim to Selection", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Deletes all audio outside the selection.")
-        case .editorInsertSilence: return String(localized: "Insert Silence…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a length of silence to insert.")
-        case .editorInsertChapter: return String(localized: "Insert Chapter Marker…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to name and insert a chapter marker.")
-        case .editorApplyFilter: return String(localized: "Apply Filter…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the choice of audio filters to apply to the selection.")
-        case .editorPunchIn: return String(localized: "Punch In", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Records new audio over the selection.")
-        case .editorSave: return String(localized: "Save", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Saves the edited audio.")
-        case .editorExport: return String(localized: "Export…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file.")
-        case .editorRevert: return String(localized: "Revert to Original…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Throws away all edits and goes back to the original audio.")
-        case .editorInfo: return String(localized: "Audio Info…", comment: "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Shows information about the audio, such as its format and length.")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Starts or pauses reading aloud or playing the book. Also the title of the menu command of the same name.
+        case .togglePlayback: return String(localized: "Play / Pause")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name.
+        case .releaseMediaControls: return String(localized: "Release Media Controls")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves forward by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.
+        case .skipForward: return String(localized: "Skip Forward")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Moves back by the current navigation unit, such as a sentence or a paragraph. Also the title of the menu command of the same name.
+        case .skipBackward: return String(localized: "Skip Backward")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the next one. Also the title of the menu command of the same name.
+        case .cycleForwardNavigationUnit: return String(localized: "Cycle Forward Navigation Unit")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Changes the navigation unit (sentence, paragraph, and so on) to the previous one. Also the title of the menu command of the same name.
+        case .cycleBackwardNavigationUnit: return String(localized: "Cycle Backward Navigation Unit")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed faster. Also the title of the menu command of the same name.
+        case .increaseSpeed: return String(localized: "Increase Speed")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Makes the reading speed slower. Also the title of the menu command of the same name.
+        case .decreaseSpeed: return String(localized: "Decrease Speed")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Copies a link to the current reading position. Also the title of the menu command of the same name.
+        case .copyReadingPosition: return String(localized: "Copy Reading Position")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Searches the text of the open book. Also the title of the menu command of the same name.
+        case .searchInBook: return String(localized: "Search in Book")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Brings the Library window forward from a book. Also the title of the menu command of the same name.
+        case .goToLibrary: return String(localized: "Go to Library")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Returns to the place the reader jumped from, like a browser's Back. Also the title of the menu command of the same name.
+        case .goBack: return String(localized: "Go Back")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes forward again after Go Back. Also the title of the menu command of the same name.
+        case .goForward: return String(localized: "Go Forward")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the next heading in the book. Also the title of the menu command of the same name.
+        case .nextHeading: return String(localized: "Next Heading")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the previous heading in the book. Also the title of the menu command of the same name.
+        case .previousHeading: return String(localized: "Previous Heading")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens a field to type a page number as the book numbers its pages. Also the title of the menu command of the same name.
+        case .goToPage: return String(localized: "Go to Page…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the next book in the reading list. Also the title of the menu command of the same name.
+        case .nextInReadingList: return String(localized: "Next in Reading List")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the previous book in the reading list. Also the title of the menu command of the same name.
+        case .previousInReadingList: return String(localized: "Previous in Reading List")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the next book in the same folder or feed. Also the title of the menu command of the same name.
+        case .nextInFolder: return String(localized: "Next in Folder")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the previous book in the same folder or feed. Also the title of the menu command of the same name.
+        case .previousInFolder: return String(localized: "Previous in Folder")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes up one level, to the folder that holds the current one.
+        case .navigateUpLevel: return String(localized: "Up One Level")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Adds a bookmark at the reading position, or removes the one there. Also the title of the menu command of the same name.
+        case .addBookmark: return String(localized: "Toggle Bookmark")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the next bookmark. Also the title of the menu command of the same name.
+        case .nextBookmark: return String(localized: "Next Bookmark")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the previous bookmark. Also the title of the menu command of the same name.
+        case .previousBookmark: return String(localized: "Previous Bookmark")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Opens the list of the book's bookmarks. Also the title of the menu command of the same name.
+        case .showBookmarkList: return String(localized: "Show Bookmarks")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the list of the book's headings. Also the title of the menu command of the same name.
+        case .showHeadingList: return String(localized: "Show Headings")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the sleep timer, which stops playback after a time. Also the title of the menu command of the same name.
+        case .showSleepTimer: return String(localized: "Show Sleep Timer")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Starts the sleep timer again with its last length.
+        case .restartSleepTimer: return String(localized: "Restart Sleep Timer")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the reading position. Also the title of the menu command of the same name.
+        case .whereAmI: return String(localized: "Where Am I?")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the reading position. Also the title of the menu command of the same name.
+        case .whereAmIFull: return String(localized: "Where Am I? Full Summary")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the selected book, folder or feed. Also the title of the menu command of the same name.
+        case .speakInfo: return String(localized: "Speak Info")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the selected book, folder or feed. Also the title of the menu command of the same name.
+        case .speakFullInfo: return String(localized: "Speak Full Info")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the imports under way have got. Also the title of the menu command of the same name.
+        case .speakImportProgress: return String(localized: "Speak Import Progress")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the feed downloads under way have got. Also the title of the menu command of the same name.
+        case .speakDownloadProgress: return String(localized: "Speak Download Progress")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book in a reader.
+        case .openSelectedBook: return String(localized: "Open Selected Book")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book's information, such as title and author. Also the title of the menu command of the same name.
+        case .showBookInfo: return String(localized: "Book Info")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Removes the selected books from the library.
+        case .removeFromLibrary: return String(localized: "Remove from Library")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Makes a new folder in the library. Also the title of the menu command of the same name.
+        case .newFolder: return String(localized: "New Folder")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder.
+        case .moveToFolder: return String(localized: "Move to Folder")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves feed episodes or articles into a library folder as books of their own. Also the title of the menu command of the same name.
+        case .moveToLibrary: return String(localized: "Move to Library…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.
+        case .selectAll: return String(localized: "Select All")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Turns the library list's edit mode on or off. Also the title of the menu command of the same name.
+        case .toggleEditMode: return String(localized: "Edit Mode")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name.
+        case .moveBookUp: return String(localized: "Move Book Up")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place down in its folder. Also the title of the menu command of the same name.
+        case .moveBookDown: return String(localized: "Move Book Down")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Adds the selected books to the end of the reading list. Also the title of the menu command of the same name.
+        case .addToReadingList: return String(localized: "Add to Reading List")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Takes the selected books off the reading list. Also the title of the menu command of the same name.
+        case .removeFromReadingList: return String(localized: "Remove from Reading List")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the settings of the folder or feed the Library window shows. Also the title of the menu command of the same name.
+        case .folderOrFeedSettings: return String(localized: "Folder or Feed Settings")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the first view of the Library window's View pop-up; the number is part of the name.
+        case .goToView1: return String(localized: "Go to View 1")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the second view of the Library window's View pop-up; the number is part of the name.
+        case .goToView2: return String(localized: "Go to View 2")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the third view of the Library window's View pop-up; the number is part of the name.
+        case .goToView3: return String(localized: "Go to View 3")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fourth view of the Library window's View pop-up; the number is part of the name.
+        case .goToView4: return String(localized: "Go to View 4")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the fifth view of the Library window's View pop-up; the number is part of the name.
+        case .goToView5: return String(localized: "Go to View 5")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the sixth view of the Library window's View pop-up; the number is part of the name.
+        case .goToView6: return String(localized: "Go to View 6")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the seventh view of the Library window's View pop-up; the number is part of the name.
+        case .goToView7: return String(localized: "Go to View 7")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the eighth view of the Library window's View pop-up; the number is part of the name.
+        case .goToView8: return String(localized: "Go to View 8")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Shows the ninth view of the Library window's View pop-up; the number is part of the name.
+        case .goToView9: return String(localized: "Go to View 9")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Imports a DAISY book, or a folder of audio tracks, as a book. Also the title of the menu command of the same name.
+        case .importDAISYFolder: return String(localized: "Import Folder…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Subscribes to a podcast or news feed. Also the title of the menu command of the same name.
+        case .addFeed: return String(localized: "Add Feed…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the window that searches the text of every book. Also the title of the menu command of the same name.
+        case .searchLibrary: return String(localized: "Search Library…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name.
+        case .openBook: return String(localized: "Open Book…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name.
+        case .newFromText: return String(localized: "New from Text…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens the window that records a new book from the microphone. Also the title of the menu command of the same name.
+        case .newRecording: return String(localized: "New Recording…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Starts recording in the Record window.
+        case .recordingRecord: return String(localized: "Record")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Pauses the recording, or resumes a paused one.
+        case .recordingPauseOrResume: return String(localized: "Pause or Resume")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Stops the recording.
+        case .recordingStop: return String(localized: "Stop")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts or pauses playback in the audio editor.
+        case .editorPlayPause: return String(localized: "Play / Pause")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Stops playback in the audio editor.
+        case .editorStop: return String(localized: "Stop")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back one second.
+        case .editorSkipBack: return String(localized: "Back One Second")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward one second.
+        case .editorSkipForward: return String(localized: "Forward One Second")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back ten seconds.
+        case .editorSkipBackLong: return String(localized: "Back 10 Seconds")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward ten seconds.
+        case .editorSkipForwardLong: return String(localized: "Forward 10 Seconds")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves back a tenth of a second.
+        case .editorSkipBackShort: return String(localized: "Back a Tenth of a Second")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves forward a tenth of a second.
+        case .editorSkipForwardShort: return String(localized: "Forward a Tenth of a Second")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the start of the audio.
+        case .editorGoToStart: return String(localized: "Go to Start")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the end of the audio.
+        case .editorGoToEnd: return String(localized: "Go to End")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a time to move to.
+        case .editorGoToTime: return String(localized: "Go to Time…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous chapter marker.
+        case .editorPreviousChapter: return String(localized: "Previous Chapter Marker")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next chapter marker.
+        case .editorNextChapter: return String(localized: "Next Chapter Marker")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous silent pause found in the audio.
+        case .editorPreviousPause: return String(localized: "Previous Pause")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next silent pause found in the audio.
+        case .editorNextPause: return String(localized: "Next Pause")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks the position and the selection.
+        case .editorWhereAmI: return String(localized: "Where Am I?")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts a selection at the current position.
+        case .editorMarkIn: return String(localized: "Mark In")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position.
+        case .editorMarkOut: return String(localized: "Mark Out")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection back to the previous silent pause.
+        case .editorSelectToPreviousPause: return String(localized: "Select to Previous Pause")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause.
+        case .editorSelectToNextPause: return String(localized: "Select to Next Pause")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position.
+        case .editorSelectChapter: return String(localized: "Select Chapter")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.
+        case .editorSelectAll: return String(localized: "Select All")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selection.
+        case .editorClearSelection: return String(localized: "Clear Selection")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length.
+        case .editorSpeakSelection: return String(localized: "Speak Selection")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Plays only the selection.
+        case .editorPlaySelection: return String(localized: "Play Selection")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Adds a marker at the current position.
+        case .editorAddMarker: return String(localized: "Add Marker")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses.
+        case .editorShowMarkers: return String(localized: "Markers and Pauses…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Undoes the last edit.
+        case .editorUndo: return String(localized: "Undo")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Does the last undone edit again.
+        case .editorRedo: return String(localized: "Redo")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Removes the selected audio and keeps it for pasting.
+        case .editorCut: return String(localized: "Cut")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Copies the selected audio.
+        case .editorCopy: return String(localized: "Copy")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.
+        case .editorPaste: return String(localized: "Paste")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Deletes all audio outside the selection.
+        case .editorTrimToSelection: return String(localized: "Trim to Selection")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to type a length of silence to insert.
+        case .editorInsertSilence: return String(localized: "Insert Silence…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens a field to name and insert a chapter marker.
+        case .editorInsertChapter: return String(localized: "Insert Chapter Marker…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the choice of audio filters to apply to the selection.
+        case .editorApplyFilter: return String(localized: "Apply Filter…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Records new audio over the selection.
+        case .editorPunchIn: return String(localized: "Punch In")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Saves the edited audio.
+        case .editorSave: return String(localized: "Save")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Exports the audio to a file.
+        case .editorExport: return String(localized: "Export…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Throws away all edits and goes back to the original audio.
+        case .editorRevert: return String(localized: "Revert to Original…")
+        // Translators: Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Shows information about the audio, such as its format and length.
+        case .editorInfo: return String(localized: "Audio Info…")
         }
     }
 
@@ -349,8 +455,8 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// "Audio Editor: Stop"; every other action's is its `title`.
     var fullTitle: String {
         for group in Self.groupsNamingTheirActions where rawValue.hasPrefix(group + ": ") { // l10n: no (the stored id's prefix)
-            return String(localized: "\(Self.title(ofCategory: group)): \(title)",
-                          comment: "The name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.")
+            // Translators: The name of a keyboard shortcut action with the name of its group before it, such as an audio editor action. %1$@ is the group's name and %2$@ the action's own name.
+            return String(localized: "\(Self.title(ofCategory: group)): \(title)")
         }
         return title
     }
@@ -359,15 +465,24 @@ enum ShortcutAction: String, CaseIterable, Codable, Identifiable {
     /// category's English id otherwise.
     static func title(ofCategory category: String) -> String {
         switch category {
-        case "Playback": return String(localized: "Playback", comment: "Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.") // l10n: no (group id)
-        case "Navigation": return String(localized: "Navigation", comment: "Heading of the group of navigation keyboard shortcuts in Settings.") // l10n: no (group id)
-        case "Bookmarks": return String(localized: "Bookmarks", comment: "Heading of the group of bookmark keyboard shortcuts in Settings, and the title of the Bookmarks menu.") // l10n: no (group id)
-        case "Panels": return String(localized: "Panels", comment: "Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings.") // l10n: no (group id)
-        case "Information": return String(localized: "Information", comment: "Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings.") // l10n: no (group id)
-        case "Library": return String(localized: "Library", comment: "Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.") // l10n: no (group id)
-        case fileCategory: return String(localized: "File", comment: "Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.")
-        case recordingWindowCategory: return String(localized: "New Recording", comment: "Heading of the group of the Record window's keyboard shortcuts in Settings, and the title of the Record window.")
-        case audioEditorCategory: return String(localized: "Audio Editor", comment: "Heading of the group of the audio editor's keyboard shortcuts in Settings.")
+        // Translators: Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.
+        case "Playback": return String(localized: "Playback") // l10n: no (group id)
+        // Translators: Heading of the group of navigation keyboard shortcuts in Settings.
+        case "Navigation": return String(localized: "Navigation") // l10n: no (group id)
+        // Translators: Heading of the group of bookmark keyboard shortcuts in Settings, and the title of the Bookmarks menu.
+        case "Bookmarks": return String(localized: "Bookmarks") // l10n: no (group id)
+        // Translators: Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings.
+        case "Panels": return String(localized: "Panels") // l10n: no (group id)
+        // Translators: Heading of the group of keyboard shortcuts that speak information, such as Where Am I, in Settings.
+        case "Information": return String(localized: "Information") // l10n: no (group id)
+        // Translators: Heading of the group of Library window keyboard shortcuts in Settings, and the title of the Library menu.
+        case "Library": return String(localized: "Library") // l10n: no (group id)
+        // Translators: Heading of the group of keyboard shortcuts of the File menu's commands in Settings, and the title of the File menu.
+        case fileCategory: return String(localized: "File")
+        // Translators: Heading of the group of the Record window's keyboard shortcuts in Settings, and the title of the Record window.
+        case recordingWindowCategory: return String(localized: "New Recording")
+        // Translators: Heading of the group of the audio editor's keyboard shortcuts in Settings.
+        case audioEditorCategory: return String(localized: "Audio Editor")
         default: return category
         }
     }
@@ -621,11 +736,16 @@ enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
     /// windows", "The audio editor", or "The recording window".
     var title: String {
         switch self {
-        case .app: return String(localized: "Every window", comment: "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in every window.")
-        case .library: return String(localized: "Library windows", comment: "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.")
-        case .reader: return String(localized: "Reader windows", comment: "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read.")
-        case .audioEditor: return String(localized: "The audio editor", comment: "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the audio editor's windows.")
-        case .recording: return String(localized: "The recording window", comment: "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the Record window.")
+        // Translators: Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in every window.
+        case .app: return String(localized: "Every window")
+        // Translators: Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.
+        case .library: return String(localized: "Library windows")
+        // Translators: Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read.
+        case .reader: return String(localized: "Reader windows")
+        // Translators: Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the audio editor's windows.
+        case .audioEditor: return String(localized: "The audio editor")
+        // Translators: Choice of the Works in pop-up of a keyboard shortcut: the shortcut works only in the Record window.
+        case .recording: return String(localized: "The recording window")
         }
     }
 
@@ -635,11 +755,16 @@ enum ShortcutScope: String, CaseIterable, Hashable, Sendable {
     /// decides its own capitals.
     var inSentence: String {
         switch self {
-        case .app: return String(localized: "every window", comment: "Names where a keyboard shortcut works, inside a sentence such as \"Works in every window.\": all windows. Lower case in English, since it is in the middle of a sentence.")
-        case .library: return String(localized: "Library windows", comment: "Names where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed.")
-        case .reader: return String(localized: "reader windows", comment: "Names where a keyboard shortcut works, inside a sentence such as \"Works in reader windows.\": the windows where a book is read. Lower case in English, since it is in the middle of a sentence.")
-        case .audioEditor: return String(localized: "the audio editor", comment: "Names where a keyboard shortcut works, inside a sentence such as \"Works in the audio editor.\": the audio editor's windows. Lower case in English, since it is in the middle of a sentence.")
-        case .recording: return String(localized: "the recording window", comment: "Names where a keyboard shortcut works, inside a sentence such as \"Works in the recording window.\": the Record window. Lower case in English, since it is in the middle of a sentence.")
+        // Translators: Names where a keyboard shortcut works, inside a sentence such as "Works in every window.": all windows. Lower case in English, since it is in the middle of a sentence.
+        case .app: return String(localized: "every window")
+        // Translators: Names where a keyboard shortcut works, inside a sentence such as "Works in Library windows.": the Library windows, where the library's books are listed.
+        case .library: return String(localized: "Library windows")
+        // Translators: Names where a keyboard shortcut works, inside a sentence such as "Works in reader windows.": the windows where a book is read. Lower case in English, since it is in the middle of a sentence.
+        case .reader: return String(localized: "reader windows")
+        // Translators: Names where a keyboard shortcut works, inside a sentence such as "Works in the audio editor.": the audio editor's windows. Lower case in English, since it is in the middle of a sentence.
+        case .audioEditor: return String(localized: "the audio editor")
+        // Translators: Names where a keyboard shortcut works, inside a sentence such as "Works in the recording window.": the Record window. Lower case in English, since it is in the middle of a sentence.
+        case .recording: return String(localized: "the recording window")
         }
     }
 
@@ -880,17 +1005,17 @@ enum ShortcutRefusal: Equatable, Sendable {
     var reason: String {
         switch self {
         case .notOnePressWithCommandOrControl:
-            return String(localized: "a menu command's shortcut is one press of a key with Command or Control",
-                          comment: "The reason, said after \"not recorded\", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon.")
+            // Translators: The reason, said after "not recorded", why a keyboard shortcut cannot be a menu command's or a button's: it must be one press of a key held with Command or Control. Lower case, since it follows a colon.
+            return String(localized: "a menu command's shortcut is one press of a key with Command or Control")
         case .editsText:
-            return String(localized: "text fields use it for editing",
-                          comment: "The reason, said after \"not recorded\", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon.")
+            // Translators: The reason, said after "not recorded", why a key cannot be a menu command's shortcut: text fields use that key to edit text. Lower case, since it follows a colon.
+            return String(localized: "text fields use it for editing")
         case .secondKeyEquivalent:
-            return String(localized: "a menu command has one shortcut",
-                          comment: "The reason, said after \"not recorded\", why a second key cannot be added to a menu command's shortcut. Lower case, since it follows a colon.")
+            // Translators: The reason, said after "not recorded", why a second key cannot be added to a menu command's shortcut. Lower case, since it follows a colon.
+            return String(localized: "a menu command has one shortcut")
         case .systemCommand(_, let command):
-            return String(localized: "\(KeyBinding.localizedSystemCommand(command)) uses it in the menus",
-                          comment: "The reason, said after \"not recorded\", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon.")
+            // Translators: The reason, said after "not recorded", why a key cannot be a shortcut: a command of the Mac's own menus uses it. %@ is that command's name, such as Quit TextMouth or Copy. Lower case in English, since it follows a colon.
+            return String(localized: "\(KeyBinding.localizedSystemCommand(command)) uses it in the menus")
         }
     }
 
@@ -956,21 +1081,36 @@ extension KeyBinding {
     /// any other text as it is.
     static func localizedSystemCommand(_ command: String) -> String {
         switch command {
-        case "Undo": return String(localized: "Undo", comment: "Name of the Edit menu's Undo command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Redo": return String(localized: "Redo", comment: "Name of the Edit menu's Redo command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Cut": return String(localized: "Cut", comment: "Name of the Edit menu's Cut command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Copy": return String(localized: "Copy", comment: "Name of the Edit menu's Copy command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Paste": return String(localized: "Paste", comment: "Name of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Select All": return String(localized: "Select All", comment: "Name of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Quit TextMouth": return String(localized: "Quit TextMouth", comment: "Name of the application menu's Quit command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Close": return String(localized: "Close", comment: "Name of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Close All": return String(localized: "Close All", comment: "Name of the File menu's Close All command, which closes every window, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Settings": return String(localized: "Settings", comment: "Name of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Hide TextMouth": return String(localized: "Hide TextMouth", comment: "Name of the application menu's Hide command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Hide Others": return String(localized: "Hide Others", comment: "Name of the application menu's Hide Others command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Minimize": return String(localized: "Minimize", comment: "Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Minimize All": return String(localized: "Minimize All", comment: "Name of the Window menu's Minimize All command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
-        case "Paste and Match Style": return String(localized: "Paste and Match Style", comment: "Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key.") // l10n: no (English id)
+        // Translators: Name of the Edit menu's Undo command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Undo": return String(localized: "Undo") // l10n: no (English id)
+        // Translators: Name of the Edit menu's Redo command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Redo": return String(localized: "Redo") // l10n: no (English id)
+        // Translators: Name of the Edit menu's Cut command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Cut": return String(localized: "Cut") // l10n: no (English id)
+        // Translators: Name of the Edit menu's Copy command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Copy": return String(localized: "Copy") // l10n: no (English id)
+        // Translators: Name of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Paste": return String(localized: "Paste") // l10n: no (English id)
+        // Translators: Name of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Select All": return String(localized: "Select All") // l10n: no (English id)
+        // Translators: Name of the application menu's Quit command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Quit TextMouth": return String(localized: "Quit TextMouth") // l10n: no (English id)
+        // Translators: Name of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Close": return String(localized: "Close") // l10n: no (English id)
+        // Translators: Name of the File menu's Close All command, which closes every window, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Close All": return String(localized: "Close All") // l10n: no (English id)
+        // Translators: Name of the application menu's Settings command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Settings": return String(localized: "Settings") // l10n: no (English id)
+        // Translators: Name of the application menu's Hide command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Hide TextMouth": return String(localized: "Hide TextMouth") // l10n: no (English id)
+        // Translators: Name of the application menu's Hide Others command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Hide Others": return String(localized: "Hide Others") // l10n: no (English id)
+        // Translators: Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Minimize": return String(localized: "Minimize") // l10n: no (English id)
+        // Translators: Name of the Window menu's Minimize All command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Minimize All": return String(localized: "Minimize All") // l10n: no (English id)
+        // Translators: Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key.
+        case "Paste and Match Style": return String(localized: "Paste and Match Style") // l10n: no (English id)
         default: return command
         }
     }
@@ -1071,15 +1211,20 @@ struct KeyBinding: Codable, Equatable, Hashable {
 
     /// The modifier keys' names in words, as the Mac's own keyboard and
     /// VoiceOver name them, in the interface language.
-    static var controlWord: String { String(localized: "Control", comment: "Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as \"Control + Shift + R\".") }
-    static var optionWord: String { String(localized: "Option", comment: "Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as \"Option + Command + G\".") }
-    static var shiftWord: String { String(localized: "Shift", comment: "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\".") }
-    static var commandWord: String { String(localized: "Command", comment: "Name of the Command modifier key, spoken or brailled in a keyboard shortcut such as \"Command + I\".") }
+    // Translators: Name of the Control modifier key, spoken or brailled in a keyboard shortcut such as "Control + Shift + R".
+    static var controlWord: String { String(localized: "Control") }
+    // Translators: Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as "Option + Command + G".
+    static var optionWord: String { String(localized: "Option") }
+    // Translators: Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as "Shift + Command + B".
+    static var shiftWord: String { String(localized: "Shift") }
+    // Translators: Name of the Command modifier key, spoken or brailled in a keyboard shortcut such as "Command + I".
+    static var commandWord: String { String(localized: "Command") }
 
     /// `shortcut`, a key pressed twice, as the screen and VoiceOver say it:
     /// "W twice", "Command + I twice".
     static func twice(_ shortcut: String) -> String {
-        String(localized: "\(shortcut) twice", comment: "A keyboard shortcut that is its key pressed twice quickly, as spoken or shown. %@ is the shortcut, such as \"W\" or \"Command + I\".")
+        // Translators: A keyboard shortcut that is its key pressed twice quickly, as spoken or shown. %@ is the shortcut, such as "W" or "Command + I".
+        String(localized: "\(shortcut) twice")
     }
 
     /// The key press the binding is made of: the binding as a single press,
@@ -1151,14 +1296,15 @@ struct KeyBinding: Codable, Equatable, Hashable {
         guard let first = keys.first else { return noShortcut }
         // Folded pairwise, so each pair is joined by the language's own "or".
         return keys.dropFirst().reduce(first.accessibleDisplayString) { text, key in
-            String(localized: "\(text) or \(key.accessibleDisplayString)",
-                   comment: "Joins two keyboard shortcuts of one action with \"or\", as in \"Space or K\". %1$@ is the shortcuts so far and %2$@ the next one.")
+            // Translators: Joins two keyboard shortcuts of one action with "or", as in "Space or K". %1$@ is the shortcuts so far and %2$@ the next one.
+            String(localized: "\(text) or \(key.accessibleDisplayString)")
         }
     }
 
     /// What is said of an action that has no key.
     static var noShortcut: String {
-        String(localized: "No shortcut", comment: "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\".")
+        // Translators: Said of an action that has no keyboard shortcut, in place of its keys, such as "Release Media Controls: No shortcut".
+        String(localized: "No shortcut")
     }
 
     /// The key in words (`KeyName.words`): a named key's name, such as
@@ -1362,81 +1508,156 @@ extension KeyBinding {
     /// such as a function key's "F5", is the same in every language.
     static func localizedKeyWords(forEnglish english: String) -> String {
         switch english {
-        case "Space": return String(localized: "Space", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Space\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Tab": return String(localized: "Tab", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tab\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Return": return String(localized: "Return", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Delete": return String(localized: "Delete", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Escape": return String(localized: "Escape", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Escape\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Left Arrow": return String(localized: "Left Arrow", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Right Arrow": return String(localized: "Right Arrow", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Arrow\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Up Arrow": return String(localized: "Up Arrow", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Up Arrow\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Down Arrow": return String(localized: "Down Arrow", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Down Arrow\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Forward Delete": return String(localized: "Forward Delete", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Forward Delete\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Home": return String(localized: "Home", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Home\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "End": return String(localized: "End", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Page Up": return String(localized: "Page Up", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Up\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Page Down": return String(localized: "Page Down", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Down\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Help": return String(localized: "Help", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Help\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Clear": return String(localized: "Clear", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Insert": return String(localized: "Insert", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Begin": return String(localized: "Begin", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Begin\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Print Screen": return String(localized: "Print Screen", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print Screen\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Scroll Lock": return String(localized: "Scroll Lock", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Scroll Lock\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Pause": return String(localized: "Pause", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Pause\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "System Request": return String(localized: "System Request", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System Request\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Break": return String(localized: "Break", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Break\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Reset": return String(localized: "Reset", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Stop": return String(localized: "Stop", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Stop\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Menu": return String(localized: "Menu", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Menu\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "User": return String(localized: "User", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + User\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "System": return String(localized: "System", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Print": return String(localized: "Print", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Clear Display": return String(localized: "Clear Display", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Clear Display\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Insert Line": return String(localized: "Insert Line", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Line\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Delete Line": return String(localized: "Delete Line", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Line\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Insert Character": return String(localized: "Insert Character", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Insert Character\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Delete Character": return String(localized: "Delete Character", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete Character\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Previous": return String(localized: "Previous", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Previous\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Next": return String(localized: "Next", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Next\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Select": return String(localized: "Select", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Select\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Execute": return String(localized: "Execute", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Execute\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Undo": return String(localized: "Undo", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Undo\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Redo": return String(localized: "Redo", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Redo\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Find": return String(localized: "Find", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Find\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Mode Switch": return String(localized: "Mode Switch", comment: "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Mode Switch\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Enter": return String(localized: "Enter", comment: "Name of the keypad's Enter key, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Enter\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Comma": return String(localized: "Comma", comment: "Name of the punctuation key \",\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Comma\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Period": return String(localized: "Period", comment: "Name of the punctuation key \".\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Period\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Less Than": return String(localized: "Less Than", comment: "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Greater Than": return String(localized: "Greater Than", comment: "Name of the punctuation key \">\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Greater Than\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Slash": return String(localized: "Slash", comment: "Name of the punctuation key \"/\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Slash\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Backslash": return String(localized: "Backslash", comment: "Name of the punctuation key \"\\\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Backslash\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Semicolon": return String(localized: "Semicolon", comment: "Name of the punctuation key \";\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Semicolon\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Apostrophe": return String(localized: "Apostrophe", comment: "Name of the punctuation key \"'\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Apostrophe\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Grave Accent": return String(localized: "Grave Accent", comment: "Name of the punctuation key \"`\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Grave Accent\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Left Bracket": return String(localized: "Left Bracket", comment: "Name of the punctuation key \"[\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Bracket\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Right Bracket": return String(localized: "Right Bracket", comment: "Name of the punctuation key \"]\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Bracket\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Minus": return String(localized: "Minus", comment: "Name of the punctuation key \"-\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Minus\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Equals": return String(localized: "Equals", comment: "Name of the punctuation key \"=\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Equals\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Plus": return String(localized: "Plus", comment: "Name of the punctuation key \"+\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Plus\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Colon": return String(localized: "Colon", comment: "Name of the punctuation key \":\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Colon\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Quotation Mark": return String(localized: "Quotation Mark", comment: "Name of the punctuation key \"\"\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Quotation Mark\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Question Mark": return String(localized: "Question Mark", comment: "Name of the punctuation key \"?\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Question Mark\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Left Brace": return String(localized: "Left Brace", comment: "Name of the punctuation key \"{\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Brace\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Right Brace": return String(localized: "Right Brace", comment: "Name of the punctuation key \"}\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Brace\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Vertical Bar": return String(localized: "Vertical Bar", comment: "Name of the punctuation key \"|\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Vertical Bar\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Underscore": return String(localized: "Underscore", comment: "Name of the punctuation key \"_\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Underscore\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Tilde": return String(localized: "Tilde", comment: "Name of the punctuation key \"~\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tilde\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Exclamation Mark": return String(localized: "Exclamation Mark", comment: "Name of the punctuation key \"!\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Exclamation Mark\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "At Sign": return String(localized: "At Sign", comment: "Name of the punctuation key \"@\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + At Sign\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Number Sign": return String(localized: "Number Sign", comment: "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Dollar Sign": return String(localized: "Dollar Sign", comment: "Name of the punctuation key \"$\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Dollar Sign\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Percent Sign": return String(localized: "Percent Sign", comment: "Name of the punctuation key \"%\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Percent Sign\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Caret": return String(localized: "Caret", comment: "Name of the punctuation key \"^\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Caret\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Ampersand": return String(localized: "Ampersand", comment: "Name of the punctuation key \"&\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Ampersand\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Asterisk": return String(localized: "Asterisk", comment: "Name of the punctuation key \"*\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Asterisk\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Left Parenthesis": return String(localized: "Left Parenthesis", comment: "Name of the punctuation key \"(\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Parenthesis\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
-        case "Right Parenthesis": return String(localized: "Right Parenthesis", comment: "Name of the punctuation key \")\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Parenthesis\".") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Space".
+        case "Space": return String(localized: "Space") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Tab".
+        case "Tab": return String(localized: "Tab") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Return".
+        case "Return": return String(localized: "Return") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Delete".
+        case "Delete": return String(localized: "Delete") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Escape".
+        case "Escape": return String(localized: "Escape") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Left Arrow".
+        case "Left Arrow": return String(localized: "Left Arrow") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Right Arrow".
+        case "Right Arrow": return String(localized: "Right Arrow") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Up Arrow".
+        case "Up Arrow": return String(localized: "Up Arrow") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Down Arrow".
+        case "Down Arrow": return String(localized: "Down Arrow") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Forward Delete".
+        case "Forward Delete": return String(localized: "Forward Delete") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Home".
+        case "Home": return String(localized: "Home") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + End".
+        case "End": return String(localized: "End") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Page Up".
+        case "Page Up": return String(localized: "Page Up") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Page Down".
+        case "Page Down": return String(localized: "Page Down") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Help".
+        case "Help": return String(localized: "Help") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Clear".
+        case "Clear": return String(localized: "Clear") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Insert".
+        case "Insert": return String(localized: "Insert") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Begin".
+        case "Begin": return String(localized: "Begin") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Print Screen".
+        case "Print Screen": return String(localized: "Print Screen") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Scroll Lock".
+        case "Scroll Lock": return String(localized: "Scroll Lock") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Pause".
+        case "Pause": return String(localized: "Pause") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + System Request".
+        case "System Request": return String(localized: "System Request") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Break".
+        case "Break": return String(localized: "Break") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Reset".
+        case "Reset": return String(localized: "Reset") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Stop".
+        case "Stop": return String(localized: "Stop") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Menu".
+        case "Menu": return String(localized: "Menu") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + User".
+        case "User": return String(localized: "User") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + System".
+        case "System": return String(localized: "System") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Print".
+        case "Print": return String(localized: "Print") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Clear Display".
+        case "Clear Display": return String(localized: "Clear Display") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Insert Line".
+        case "Insert Line": return String(localized: "Insert Line") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Delete Line".
+        case "Delete Line": return String(localized: "Delete Line") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Insert Character".
+        case "Insert Character": return String(localized: "Insert Character") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Delete Character".
+        case "Delete Character": return String(localized: "Delete Character") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Previous".
+        case "Previous": return String(localized: "Previous") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Next".
+        case "Next": return String(localized: "Next") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Select".
+        case "Select": return String(localized: "Select") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Execute".
+        case "Execute": return String(localized: "Execute") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Undo".
+        case "Undo": return String(localized: "Undo") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Redo".
+        case "Redo": return String(localized: "Redo") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Find".
+        case "Find": return String(localized: "Find") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Mode Switch".
+        case "Mode Switch": return String(localized: "Mode Switch") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the keypad's Enter key, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Enter".
+        case "Enter": return String(localized: "Enter") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key ",", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Comma".
+        case "Comma": return String(localized: "Comma") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key ".", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Period".
+        case "Period": return String(localized: "Period") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "<", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Less Than".
+        case "Less Than": return String(localized: "Less Than") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key ">", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Greater Than".
+        case "Greater Than": return String(localized: "Greater Than") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "/", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Slash".
+        case "Slash": return String(localized: "Slash") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Backslash".
+        case "Backslash": return String(localized: "Backslash") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key ";", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Semicolon".
+        case "Semicolon": return String(localized: "Semicolon") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "'", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Apostrophe".
+        case "Apostrophe": return String(localized: "Apostrophe") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "`", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Grave Accent".
+        case "Grave Accent": return String(localized: "Grave Accent") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "[", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Left Bracket".
+        case "Left Bracket": return String(localized: "Left Bracket") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "]", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Right Bracket".
+        case "Right Bracket": return String(localized: "Right Bracket") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "-", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Minus".
+        case "Minus": return String(localized: "Minus") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "=", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Equals".
+        case "Equals": return String(localized: "Equals") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "+", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Plus".
+        case "Plus": return String(localized: "Plus") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key ":", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Colon".
+        case "Colon": return String(localized: "Colon") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key """, spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Quotation Mark".
+        case "Quotation Mark": return String(localized: "Quotation Mark") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "?", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Question Mark".
+        case "Question Mark": return String(localized: "Question Mark") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "{", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Left Brace".
+        case "Left Brace": return String(localized: "Left Brace") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "}", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Right Brace".
+        case "Right Brace": return String(localized: "Right Brace") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "|", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Vertical Bar".
+        case "Vertical Bar": return String(localized: "Vertical Bar") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "_", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Underscore".
+        case "Underscore": return String(localized: "Underscore") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "~", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Tilde".
+        case "Tilde": return String(localized: "Tilde") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "!", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Exclamation Mark".
+        case "Exclamation Mark": return String(localized: "Exclamation Mark") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "@", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + At Sign".
+        case "At Sign": return String(localized: "At Sign") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "#", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Number Sign".
+        case "Number Sign": return String(localized: "Number Sign") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "$", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Dollar Sign".
+        case "Dollar Sign": return String(localized: "Dollar Sign") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "%", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Percent Sign".
+        case "Percent Sign": return String(localized: "Percent Sign") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "^", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Caret".
+        case "Caret": return String(localized: "Caret") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "&", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Ampersand".
+        case "Ampersand": return String(localized: "Ampersand") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "*", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Asterisk".
+        case "Asterisk": return String(localized: "Asterisk") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key "(", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Left Parenthesis".
+        case "Left Parenthesis": return String(localized: "Left Parenthesis") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
+        // Translators: Name of the punctuation key ")", spoken by VoiceOver and shown in braille in a keyboard shortcut such as "Command + Right Parenthesis".
+        case "Right Parenthesis": return String(localized: "Right Parenthesis") // l10n: no (English id of the key's name: `KeyName.words` is spoken)
         default: return english
         }
     }
@@ -2137,7 +2358,8 @@ extension ShortcutAction {
     /// What `KeyboardShortcutManager.primaryDisplayString(for:)` shows for an
     /// action with no key.
     static var noneName: String {
-        String(localized: "None", comment: "Shown in place of a keyboard shortcut when an action has none.")
+        // Translators: Shown in place of a keyboard shortcut when an action has none.
+        String(localized: "None")
     }
 
     /// The audio editor's default bindings (FR04): single keys wherever one

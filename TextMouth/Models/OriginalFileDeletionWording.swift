@@ -27,11 +27,11 @@ struct OriginalFileDeletionWording: Equatable {
     /// Original File Permanently?"
     var confirmationTitle: String {
         if mode == .moveToTrash {
-            return String(localized: "Move Original File to Trash?",
-                          comment: "Title of the confirmation that asks whether to move the original file of a book just imported to the Trash. Title case.")
+            // Translators: Title of the confirmation that asks whether to move the original file of a book just imported to the Trash. Title case.
+            return String(localized: "Move Original File to Trash?")
         }
-        return String(localized: "Delete Original File Permanently?",
-                      comment: "Title of the confirmation that asks whether to delete the original file of a book just imported permanently. Title case.")
+        // Translators: Title of the confirmation that asks whether to delete the original file of a book just imported permanently. Title case.
+        return String(localized: "Delete Original File Permanently?")
     }
 
     /// The confirmation's deleting button: "Move to Trash" or "Delete
@@ -44,8 +44,8 @@ struct OriginalFileDeletionWording: Equatable {
     /// Move the original file “Notes.epub” to the Trash? You can recover it
     /// from the Trash until the Trash is emptied."
     var confirmationMessage: String {
-        let imported = String(localized: "The book was imported.",
-                              comment: "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it.")
+        // Translators: First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it.
+        let imported = String(localized: "The book was imported.")
         return SentenceWording.joined([imported, question, consequence])
     }
 
@@ -55,27 +55,27 @@ struct OriginalFileDeletionWording: Equatable {
     private var question: String {
         switch (mode == .moveToTrash, fileName) {
         case (true, let name?):
-            return String(localized: "Move the original file “\(name)” to the Trash?",
-                          comment: "Question of the confirmation about the original file of a book just imported. %@ is the file's name.")
+            // Translators: Question of the confirmation about the original file of a book just imported. %@ is the file's name.
+            return String(localized: "Move the original file “\(name)” to the Trash?")
         case (true, nil):
-            return String(localized: "Move the original file to the Trash?",
-                          comment: "Question of the confirmation about the original file of a book just imported, when the file's name is not known.")
+            // Translators: Question of the confirmation about the original file of a book just imported, when the file's name is not known.
+            return String(localized: "Move the original file to the Trash?")
         case (false, let name?):
-            return String(localized: "Delete the original file “\(name)” permanently?",
-                          comment: "Question of the confirmation about the original file of a book just imported. %@ is the file's name.")
+            // Translators: Question of the confirmation about the original file of a book just imported. %@ is the file's name.
+            return String(localized: "Delete the original file “\(name)” permanently?")
         case (false, nil):
-            return String(localized: "Delete the original file permanently?",
-                          comment: "Question of the confirmation about the original file of a book just imported, when the file's name is not known.")
+            // Translators: Question of the confirmation about the original file of a book just imported, when the file's name is not known.
+            return String(localized: "Delete the original file permanently?")
         }
     }
 
     /// What becomes of the file once it is removed this way.
     var consequence: String {
         mode == .moveToTrash
-            ? String(localized: "You can recover it from the Trash until the Trash is emptied.",
-                     comment: "Sentence of the confirmation about the original file of a book just imported, and the hint of its Move to Trash button: the file can be recovered from the Trash.")
-            : String(localized: "It cannot be recovered.",
-                     comment: "Sentence of the confirmation about the original file of a book just imported, and the hint of its Delete Permanently button: the file is gone for good.")
+            // Translators: Sentence of the confirmation about the original file of a book just imported, and the hint of its Move to Trash button: the file can be recovered from the Trash.
+            ? String(localized: "You can recover it from the Trash until the Trash is emptied.")
+            // Translators: Sentence of the confirmation about the original file of a book just imported, and the hint of its Delete Permanently button: the file is gone for good.
+            : String(localized: "It cannot be recovered.")
     }
 
     // MARK: Storage Settings
@@ -85,10 +85,10 @@ struct OriginalFileDeletionWording: Equatable {
     /// import."
     var automaticDeletionExplanation: String {
         mode == .moveToTrash
-            ? String(localized: "The original file will be moved to the Trash after a successful import.",
-                     comment: "Caption in Storage settings under the choice that deletes the original file after an import, while files go to the Trash.")
-            : String(localized: "The original file will be permanently deleted after a successful import.",
-                     comment: "Caption in Storage settings under the choice that deletes the original file after an import, while files are deleted permanently.")
+            // Translators: Caption in Storage settings under the choice that deletes the original file after an import, while files go to the Trash.
+            ? String(localized: "The original file will be moved to the Trash after a successful import.")
+            // Translators: Caption in Storage settings under the choice that deletes the original file after an import, while files are deleted permanently.
+            : String(localized: "The original file will be permanently deleted after a successful import.")
     }
 
     /// What "Ask Each Time" does, as Storage settings explain it: "You will
@@ -96,10 +96,10 @@ struct OriginalFileDeletionWording: Equatable {
     /// import."
     var askingExplanation: String {
         mode == .moveToTrash
-            ? String(localized: "You will be asked whether to move the original file to the Trash after each import.",
-                     comment: "Caption in Storage settings under the choice that asks about the original file after each import, while files go to the Trash.")
-            : String(localized: "You will be asked whether to delete the original file permanently after each import.",
-                     comment: "Caption in Storage settings under the choice that asks about the original file after each import, while files are deleted permanently.")
+            // Translators: Caption in Storage settings under the choice that asks about the original file after each import, while files go to the Trash.
+            ? String(localized: "You will be asked whether to move the original file to the Trash after each import.")
+            // Translators: Caption in Storage settings under the choice that asks about the original file after each import, while files are deleted permanently.
+            : String(localized: "You will be asked whether to delete the original file permanently after each import.")
     }
 
     // MARK: Failure
@@ -109,17 +109,17 @@ struct OriginalFileDeletionWording: Equatable {
     func failureSentence(reason: String) -> String {
         switch (mode == .moveToTrash, fileName) {
         case (true, let name?):
-            return String(localized: "The original file “\(name)” could not be moved to the Trash: \(reason)",
-                          comment: "Alert about the original file of an imported book that could not be moved to the Trash. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.")
+            // Translators: Alert about the original file of an imported book that could not be moved to the Trash. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.
+            return String(localized: "The original file “\(name)” could not be moved to the Trash: \(reason)")
         case (true, nil):
-            return String(localized: "The original file could not be moved to the Trash: \(reason)",
-                          comment: "Alert about the original file of an imported book that could not be moved to the Trash, its name not known. %@ is the reason, a sentence of the system's.")
+            // Translators: Alert about the original file of an imported book that could not be moved to the Trash, its name not known. %@ is the reason, a sentence of the system's.
+            return String(localized: "The original file could not be moved to the Trash: \(reason)")
         case (false, let name?):
-            return String(localized: "The original file “\(name)” could not be deleted: \(reason)",
-                          comment: "Alert about the original file of an imported book that could not be deleted. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.")
+            // Translators: Alert about the original file of an imported book that could not be deleted. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.
+            return String(localized: "The original file “\(name)” could not be deleted: \(reason)")
         case (false, nil):
-            return String(localized: "The original file could not be deleted: \(reason)",
-                          comment: "Alert about the original file of an imported book that could not be deleted, its name not known. %@ is the reason, a sentence of the system's.")
+            // Translators: Alert about the original file of an imported book that could not be deleted, its name not known. %@ is the reason, a sentence of the system's.
+            return String(localized: "The original file could not be deleted: \(reason)")
         }
     }
 }
