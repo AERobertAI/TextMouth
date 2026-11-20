@@ -153,8 +153,8 @@ enum PhoneImportRefusal: LocalizedError, Equatable, Sendable {
         case "mp2", "mpa": return "MP2"
         default:
             return ext.isEmpty
-                ? String(localized: "this format",
-                         comment: "Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in \"TextMouth can't read “Clip” as this format.\"")
+                // Translators: Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in "TextMouth can't read “Clip” as this format."
+                ? String(localized: "this format")
                 : ext.uppercased()
         }
     }

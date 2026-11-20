@@ -60,8 +60,8 @@ enum PhoneBookmarksWording {
     static func removeQuestion(number: Int) -> String {
         // The number is the bookmark's identifier, not a count: `String(number)` keeps it ungrouped ("1234"), where
         // a localized Int would read "1,234" (FR35 review, finding 5).
-        String(localized: "Remove Bookmark \(String(number))?",
-               comment: "Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.")
+        // Translators: Title of the iPhone's question before a bookmark with a note is removed; the note is shown under it. %@ is the bookmark's number, an identifier written without digit grouping.
+        String(localized: "Remove Bookmark \(String(number))?")
     }
 
     /// The question's button that removes the bookmark. Removing a bookmark
@@ -69,8 +69,8 @@ enum PhoneBookmarksWording {
     /// bookmark" does. The reader's own question shows it too
     /// (`PhoneReaderWording.remove`).
     static var removeButton: String {
-        String(localized: "Remove",
-               comment: "Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.")
+        // Translators: Button of the iPhone's question before a bookmark is removed: removes the bookmark, which deletes it.
+        String(localized: "Remove")
     }
 
     /// What VoiceOver says once the sheet has closed on a bookmark chosen in
