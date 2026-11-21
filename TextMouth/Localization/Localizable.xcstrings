@@ -258,7 +258,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” phát sách kế tiếp trong cùng thư mục theo thứ tự sắp xếp."
+            "value" : "“%@” phát sách tiếp theo trong cùng thư mục theo thứ tự sắp xếp."
           }
         },
         "zh-Hans" : {
@@ -93358,7 +93358,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "1 sách trong thư viện này cần phiên bản TextMouth mới hơn. Sách được giữ nguyên nhưng không hiển thị."
+            "value" : "1 cuốn sách trong thư viện này cần phiên bản TextMouth mới hơn. Cuốn sách này được giữ nguyên nhưng không hiển thị."
           }
         },
         "zh-Hans" : {
@@ -163586,7 +163586,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tiếp tục sang sách kế tiếp"
+            "value" : "Tiếp tục sang sách tiếp theo"
           }
         },
         "zh-Hans" : {
@@ -609655,7 +609655,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiển thị của %@"
+            "value" : "Chế độ hiển thị của %@"
           }
         },
         "zh-Hans" : {
@@ -617476,7 +617476,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Khi áp dụng"
+            "value" : "Khi thích hợp"
           }
         },
         "zh-Hans" : {
@@ -620079,7 +620079,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Khi bật, tệp của sách đã xóa được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống."
+            "value" : "Khi bật, tệp của sách đã xóa được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch."
           }
         },
         "zh-Hans" : {
@@ -621866,7 +621866,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Khi không còn từ nào của chúng, %@, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà hai cách đọc cùng có."
+            "value" : "Khi không còn từ nào của chúng, %@, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà cả hai bản văn bản đều có."
           }
         },
         "zh-Hans" : {
@@ -622003,7 +622003,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Khi không còn từ nào của chúng, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà hai cách đọc cùng có."
+            "value" : "Khi không còn từ nào của chúng, mỗi mục chuyển đến khoảng cùng điểm trong chương của nó, hoặc đến đoạn gần nhất mà cả hai bản văn bản đều có."
           }
         },
         "zh-Hans" : {
@@ -625502,7 +625502,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với %1$@, %2$@."
+            "value" : "Nếu chọn %1$@, %2$@."
           }
         },
         "zh-Hans" : {
@@ -625639,7 +625639,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với %@, nguồn cấp và các bản tải về của nó vẫn còn, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho nó thư mục khác; Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp."
+            "value" : "Nếu chọn %@, nguồn cấp và các bản tải về của nó vẫn còn, không thuộc thư mục nào cho đến khi bạn gán cho nó thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của nó sẽ xóa nguồn cấp."
           }
         },
         "zh-Hans" : {
@@ -625776,7 +625776,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với %@, các nguồn cấp và bản tải về của chúng vẫn còn, không thuộc thư mục nào cho đến khi Thông tin nguồn cấp gán cho mỗi nguồn cấp một thư mục khác; Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nó."
+            "value" : "Nếu chọn %@, các nguồn cấp và bản tải về của chúng vẫn còn, không thuộc thư mục nào cho đến khi bạn gán cho mỗi nguồn cấp một thư mục khác trong Thông tin nguồn cấp; lệnh Xóa nguồn cấp… trên hàng của một nguồn cấp sẽ xóa nguồn cấp đó."
           }
         },
         "zh-Hans" : {
@@ -625919,7 +625919,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với %1$@, thư mục và mọi thứ trong đó rời khỏi thư viện, và %2$@."
+            "value" : "Nếu chọn %1$@, thư mục và mọi thứ trong đó rời khỏi thư viện, và %2$@."
           }
         },
         "zh-Hans" : {
@@ -626056,7 +626056,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với Chuyển nội dung ra ngoài, thư mục của nguồn cấp được chuyển cùng phần còn lại."
+            "value" : "Nếu chọn Di chuyển nội dung ra ngoài, thư mục của nguồn cấp được di chuyển cùng phần còn lại."
           }
         },
         "zh-Hans" : {
@@ -626193,7 +626193,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với Chuyển nội dung ra ngoài, các thư mục của chúng được chuyển cùng phần còn lại."
+            "value" : "Nếu chọn Di chuyển nội dung ra ngoài, các thư mục của chúng được di chuyển cùng phần còn lại."
           }
         },
         "zh-Hans" : {
@@ -626330,7 +626330,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với Chuyển nội dung ra ngoài, chúng vẫn ở trong thư viện và chỉ thư mục bị xóa."
+            "value" : "Nếu chọn Di chuyển nội dung ra ngoài, chúng vẫn ở trong thư viện và chỉ thư mục bị xóa."
           }
         },
         "zh-Hans" : {
@@ -637905,7 +637905,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "chương %1$@, với ghi chú “%2$@”"
+            "value" : "chương %1$@, có ghi chú “%2$@”"
           }
         },
         "zh-Hans" : {
@@ -653353,7 +653353,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "tệp của nó được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống"
+            "value" : "tệp của nó được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch"
           }
         },
         "zh-Hans" : {
@@ -660956,7 +660956,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "mở gần nhất"
+            "value" : "mở sau cùng"
           }
         },
         "zh-Hans" : {
@@ -666336,7 +666336,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nên vị trí và dấu trang của nó ở đó được lấy chỉ từ chỉ mục thư viện."
+            "value" : "nên vị trí và dấu trang của nó ở đó chỉ được lấy từ chỉ mục thư viện."
           }
         },
         "zh-Hans" : {
@@ -673441,7 +673441,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "tệp của chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được làm trống"
+            "value" : "tệp của chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi Thùng rác được dọn sạch"
           }
         },
         "zh-Hans" : {
@@ -676511,7 +676511,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "khi áp dụng"
+            "value" : "khi thích hợp"
           }
         },
         "zh-Hans" : {
