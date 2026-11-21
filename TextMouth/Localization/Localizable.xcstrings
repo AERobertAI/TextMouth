@@ -283600,7 +283600,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lascia l’audiolibro non trascritto; Trascrivi audio lo fa più tardi."
+            "value" : "Lascia l’audiolibro non trascritto; potrai trascriverlo più tardi con Trascrivi audio."
           }
         },
         "ja" : {
@@ -297641,7 +297641,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Applica queste correzioni. La trascrizione precedente viene conservata, così Annulla pulizia può ripristinarla."
+            "value" : "Applica queste correzioni. La trascrizione precedente viene conservata, così il comando Annulla pulizia può ripristinarla."
           }
         },
         "ja" : {
@@ -315430,7 +315430,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spostati %1$@ a %2$@."
+            "value" : "Spostato: %1$@ a %2$@."
           }
         },
         "ja" : {
@@ -337131,7 +337131,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ancora nessun marcatore. Aggiungi marcatore ne inserisce uno nella posizione del cursore."
+            "value" : "Ancora nessun marcatore. Il comando Aggiungi marcatore ne inserisce uno nella posizione del cursore."
           }
         },
         "ja" : {
@@ -349442,7 +349442,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Non sono ancora nell’audio del libro. Scarta le annulla; la prossima volta che modifichi questo libro, Ripeti le riporta indietro finché non fai un’altra modifica."
+            "value" : "Non sono ancora nell’audio del libro. Con Scarta vengono annullate; la prossima volta che modifichi questo libro, con Ripeti tornano finché non fai un’altra modifica."
           }
         },
         "ja" : {
@@ -370141,7 +370141,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Incollati %@ dove erano stati tagliati."
+            "value" : "Incollato di nuovo dove era stato tagliato: %@."
           }
         },
         "ja" : {
@@ -370284,7 +370284,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Incollati %1$@ sopra %2$@."
+            "value" : "Incollato: %1$@ sopra %2$@."
           }
         },
         "ja" : {
@@ -370421,7 +370421,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Incollati %@."
+            "value" : "Incollato: %@."
           }
         },
         "ja" : {
@@ -372669,7 +372669,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mette in pausa la registrazione; %@ continua la stessa registrazione."
+            "value" : "Mette in pausa la registrazione; con %@ continua la stessa registrazione."
           }
         },
         "ja" : {
@@ -381779,7 +381779,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sono appena arrivati preset da un altro Mac, che hanno sostituito questi. Ripeti la modifica."
+            "value" : "Sono appena arrivati preset da un altro Mac, che hanno sostituito questi. Rifai la modifica."
           }
         },
         "ja" : {
@@ -396175,7 +396175,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Registrazione sopra %1$@ a %2$@, da %3$@, dopo il segnale acustico. Registra sopra o Interrompi la termina; Deseleziona la scarta."
+            "value" : "Registrazione sopra %1$@ a %2$@, da %3$@, dopo il segnale acustico. Per terminarla scegli Registra sopra o Interrompi; per scartarla, Deseleziona."
           }
         },
         "ja" : {
@@ -396729,7 +396729,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Registrazione da inserire a %1$@, da %2$@, dopo il segnale acustico. Registra sopra o Interrompi la termina; Deseleziona la scarta."
+            "value" : "Registrazione da inserire a %1$@, da %2$@, dopo il segnale acustico. Per terminarla scegli Registra sopra o Interrompi; per scartarla, Deseleziona."
           }
         },
         "ja" : {
@@ -397557,7 +397557,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Registra sopra la selezione, o nella posizione del cursore, dopo un segnale acustico. Una seconda volta, oppure Interrompi, la termina."
+            "value" : "Registra sopra la selezione, o nella posizione del cursore, dopo un segnale acustico. Per terminare, sceglilo di nuovo o scegli Interrompi."
           }
         },
         "ja" : {
@@ -409145,7 +409145,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sostituiti %1$@ con %2$@ di nuova registrazione, selezionata."
+            "value" : "Sostituito: %1$@ con %2$@ di nuova registrazione, selezionata."
           }
         },
         "ja" : {
@@ -410378,7 +410378,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sostituendo, è rimasta la trascrizione della copia esistente."
+            "value" : "Con la sostituzione è stata mantenuta la trascrizione della copia esistente."
           }
         },
         "ja" : {
@@ -416269,7 +416269,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ripresa."
+            "value" : "Ripresa della registrazione."
           }
         },
         "ja" : {
@@ -416680,7 +416680,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trascrivi di nuovo audio…"
+            "value" : "Trascrivi di nuovo l’audio…"
           }
         },
         "ja" : {
@@ -419025,19 +419025,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audio originale ripristinato. Ripeti riapplica %lld di modifiche."
+                  "value" : "Audio originale ripristinato. Il comando Ripeti riapplica %lld di modifiche."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audio originale ripristinato. Ripeti riapplica %lld modifica."
+                  "value" : "Audio originale ripristinato. Il comando Ripeti riapplica %lld modifica."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audio originale ripristinato. Ripeti riapplica %lld modifiche."
+                  "value" : "Audio originale ripristinato. Il comando Ripeti riapplica %lld modifiche."
                 }
               }
             }
@@ -434570,7 +434570,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Selezionati %@."
+            "value" : "Selezionato: %@."
           }
         },
         "ja" : {
@@ -434987,7 +434987,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Selezionati %@ prima del capitolo 1."
+            "value" : "Selezionato: %@ prima del capitolo 1."
           }
         },
         "ja" : {
@@ -435261,7 +435261,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Selezione rimossa."
+            "value" : "Selezione annullata."
           }
         },
         "ja" : {
@@ -461631,7 +461631,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sto ancora cercando le pause. Riprova tra un momento."
+            "value" : "Ricerca delle pause ancora in corso. Riprova tra un momento."
           }
         },
         "ja" : {
@@ -461905,7 +461905,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sto ancora elaborando l’ultima modifica."
+            "value" : "Elaborazione dell’ultima modifica ancora in corso."
           }
         },
         "ja" : {
@@ -488173,7 +488173,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non ha regole proprie: nessuna andava bene in ogni libro provato. Modifica regole… apre la tua copia, dove puoi aggiungere regole, come un nome che il riconoscimento scrive sempre in un altro modo."
+            "value" : "TextMouth non ha regole proprie: nessuna andava bene in ogni libro provato. Il comando Modifica regole… apre la tua copia, dove puoi aggiungere regole, come un nome che il riconoscimento scrive sempre in un altro modo."
           }
         },
         "ja" : {
@@ -490558,7 +490558,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sta per chiudersi e l’audio del libro non contiene ancora queste modifiche. Scarta le annulla; la prossima volta che modifichi questo libro, Ripeti le riporta indietro finché non fai un’altra modifica. Annulla mantiene TextMouth aperto."
+            "value" : "TextMouth sta per chiudersi e l’audio del libro non contiene ancora queste modifiche. Con Scarta vengono annullate; la prossima volta che modifichi questo libro, con Ripeti tornano finché non fai un’altra modifica. Con Annulla TextMouth resta aperto."
           }
         },
         "ja" : {
@@ -506835,19 +506835,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "I %lld di marcatori vengono eliminati e Ripeti non li riporta indietro."
+                  "value" : "I %lld di marcatori vengono eliminati e il comando Ripeti non li riporta indietro."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Il marcatore viene eliminato e Ripeti non lo riporta indietro."
+                  "value" : "Il marcatore viene eliminato e il comando Ripeti non lo riporta indietro."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "I %lld marcatori vengono eliminati e Ripeti non li riporta indietro."
+                  "value" : "I %lld marcatori vengono eliminati e il comando Ripeti non li riporta indietro."
                 }
               }
             }
@@ -541865,7 +541865,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il microfono da cui registra Registra sopra. TextMouth lo ricorda, a prescindere dall’ingresso di macOS."
+            "value" : "Il microfono usato dal comando Registra sopra. TextMouth lo ricorda, a prescindere dall’ingresso di macOS."
           }
         },
         "ja" : {
@@ -560785,7 +560785,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il testo della trascrizione non è tornato come un capitolo per ogni capitolo del libro."
+            "value" : "Alla rilettura, il testo della trascrizione non aveva un capitolo per ogni capitolo del libro."
           }
         },
         "ja" : {
@@ -561196,7 +561196,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La trascrizione, con le tue modifiche, resta con l’episodio nel suo feed, anche dopo che il suo download è stato eliminato. Eliminando l’episodio o il feed viene eliminata; Sposta nella libreria la conserva come libro."
+            "value" : "La trascrizione, con le tue modifiche, resta con l’episodio nel suo feed, anche dopo che il suo download è stato eliminato. Viene eliminata se elimini l’episodio o il feed; il comando Sposta nella libreria la conserva come libro."
           }
         },
         "ja" : {
@@ -582367,7 +582367,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Questa registrazione non è salvata. %1$@ riprova, %2$@ la elimina e %3$@ lascia aperta la finestra."
+            "value" : "Questa registrazione non è salvata. Scegli %1$@ per riprovare, %2$@ per eliminarla o %3$@ per lasciare aperta la finestra."
           }
         },
         "ja" : {
@@ -596414,7 +596414,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ritagliato sulla selezione: restano %@."
+            "value" : "Ritagliato sulla selezione, che dura %@."
           }
         },
         "ja" : {
@@ -601906,7 +601906,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annulla pulizia ripristina la trascrizione precedente."
+            "value" : "Il comando Annulla pulizia ripristina la trascrizione precedente."
           }
         },
         "ja" : {
@@ -602043,7 +602043,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annulla o ripeti fino all’audio come salvato l’ultima volta."
+            "value" : "Annulla o ripeti fino a tornare all’audio salvato l’ultima volta."
           }
         },
         "ja" : {
@@ -602180,7 +602180,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annulla ogni modifica, fino all’originale; Ripeti le riporta indietro."
+            "value" : "Annulla ogni modifica, fino all’originale; il comando Ripeti le riporta indietro."
           }
         },
         "ja" : {
@@ -629278,7 +629278,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hai modificato la trascrizione il %@, dopo la pulizia. Annulla pulizia annulla anche quelle modifiche."
+            "value" : "Hai modificato la trascrizione il %@, dopo la pulizia. Il comando Annulla pulizia annulla anche quelle modifiche."
           }
         },
         "ja" : {
@@ -630237,7 +630237,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La tua copia delle regole è vuota. Modifica regole… la apre per aggiungerne."
+            "value" : "La tua copia delle regole è vuota. Il comando Modifica regole… la apre per aggiungerne."
           }
         },
         "ja" : {
@@ -640579,7 +640579,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "in scaricamento"
+            "value" : "download in corso"
           }
         },
         "ja" : {
