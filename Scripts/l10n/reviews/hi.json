@@ -2,6 +2,430 @@
  "language": "hi",
  "reviews": [
   {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ %lld of %lld",
+     "english": "%1$@ %2$lld of %3$lld",
+     "before": "%1$@ — %2$lld में से %3$lld",
+     "after": "%1$@ — %3$lld में से %2$lld",
+     "why": "meaning: \"X में से Y\" is Y out of X, so the place and the total were swapped (it read \"3 of 2\")"
+    },
+    {
+     "key": "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file.",
+     "english": {
+      "one": "%@ files can't hold chapter markers, so its chapter marker is left out of this file.",
+      "other": "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file."
+     },
+     "before": {
+      "one": "%@ फ़ाइलों में अध्याय मार्कर नहीं रखे जा सकते, इसलिए इसके %lld अध्याय मार्कर इस फ़ाइल में शामिल नहीं किए गए।",
+      "other": "%@ फ़ाइलों में अध्याय मार्कर नहीं रखे जा सकते, इसलिए इसके %lld अध्याय मार्कर इस फ़ाइल में शामिल नहीं किए गए।"
+     },
+     "after": {
+      "one": "%@ फ़ाइलों में अध्याय मार्कर नहीं रखे जा सकते, इसलिए इसका %lld अध्याय मार्कर इस फ़ाइल में शामिल नहीं किया गया।",
+      "other": "%@ फ़ाइलों में अध्याय मार्कर नहीं रखे जा सकते, इसलिए इसके %lld अध्याय मार्कर इस फ़ाइल में शामिल नहीं किए गए।"
+     },
+     "why": "grammar: the one form (1 marker) used the plural \"इसके … किए गए\""
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "one": "%lld संपादन पूर्ववत किए गए हैं। जब तक आप कोई दूसरा संपादन नहीं करते, “फिर से करें” उन्हें वापस ले आता है।",
+      "other": "%lld संपादन पूर्ववत किए गए हैं। जब तक आप कोई दूसरा संपादन नहीं करते, “फिर से करें” उन्हें वापस ले आता है।"
+     },
+     "after": {
+      "one": "%lld संपादन पूर्ववत किया गया है। जब तक आप कोई दूसरा संपादन नहीं करते, “फिर से करें” उसे वापस ले आता है।",
+      "other": "%lld संपादन पूर्ववत किए गए हैं। जब तक आप कोई दूसरा संपादन नहीं करते, “फिर से करें” उन्हें वापस ले आता है।"
+     },
+     "why": "grammar: the one form (1 edit) used the plural verb and pronoun"
+    },
+    {
+     "key": "%lld timed passages were too long and cut short.",
+     "english": {
+      "one": "%lld timed passage was too long and cut short.",
+      "other": "%lld timed passages were too long and cut short."
+     },
+     "before": {
+      "one": "%lld समयबद्ध अंश बहुत लंबे थे और छोटे कर दिए गए।",
+      "other": "%lld समयबद्ध अंश बहुत लंबे थे और छोटे कर दिए गए।"
+     },
+     "after": {
+      "one": "%lld समयबद्ध अंश बहुत लंबा था और छोटा कर दिया गया।",
+      "other": "%lld समयबद्ध अंश बहुत लंबे थे और छोटे कर दिए गए।"
+     },
+     "why": "grammar: the one form (1 passage) used the plural adjectives and verbs"
+    },
+    {
+     "key": "%lld timed passages were unreadable and left out.",
+     "english": {
+      "one": "%lld timed passage was unreadable and left out.",
+      "other": "%lld timed passages were unreadable and left out."
+     },
+     "before": {
+      "one": "%lld समयबद्ध अंश पढ़े नहीं जा सके और छोड़ दिए गए।",
+      "other": "%lld समयबद्ध अंश पढ़े नहीं जा सके और छोड़ दिए गए।"
+     },
+     "after": {
+      "one": "%lld समयबद्ध अंश पढ़ा नहीं जा सका और छोड़ दिया गया।",
+      "other": "%lld समयबद्ध अंश पढ़े नहीं जा सके और छोड़ दिए गए।"
+     },
+     "why": "grammar: the one form (1 passage) used the plural verbs"
+    },
+    {
+     "key": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "english": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "before": "फ़ीड का पता, जैसे .rss या .xml पर समाप्त होने वाला लिंक, या ऐसा वेब पृष्ठ जो अपने फ़ीड का नाम बताता हो।",
+     "after": "फ़ीड का पता, जैसे .rss या .xml पर समाप्त होने वाला लिंक, या ऐसा वेब पृष्ठ जो अपने फ़ीड का पता बताता हो।",
+     "why": "meaning: \"names its feed\" means the page points to its feed, not that it tells the feed's name"
+    },
+    {
+     "key": "All %lld files",
+     "english": {
+      "one": "All %lld file",
+      "other": "All %lld files"
+     },
+     "before": {
+      "one": "सभी %lld फ़ाइलें",
+      "other": "सभी %lld फ़ाइलें"
+     },
+     "after": {
+      "one": "सभी %lld फ़ाइल",
+      "other": "सभी %lld फ़ाइलें"
+     },
+     "why": "grammar: the one form used the plural noun \"फ़ाइलें\", where the English one form is singular"
+    },
+    {
+     "key": "Couldn't refresh %@.",
+     "english": "Couldn't refresh %@.",
+     "before": "%@ रीफ़्रेश नहीं हो सके।",
+     "after": "%@ को रीफ़्रेश नहीं किया जा सका।",
+     "why": "grammar: %@ is a list that may hold one title; the plural verb \"हो सके\" did not fit one, the impersonal passive fits both"
+    },
+    {
+     "key": "Deleted %@.",
+     "english": "Deleted %@.",
+     "before": "%@ मिटाया गया।",
+     "after": "%@ को मिटा दिया गया।",
+     "why": "grammar: %@ is a view's name or a list (the feed, its downloads, and more); the singular masculine verb did not fit the list, the impersonal passive fits both"
+    },
+    {
+     "key": "Every article listed, newest %lld downloaded",
+     "english": {
+      "one": "Every article listed, newest %lld downloaded",
+      "other": "Every article listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "हर लेख सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए",
+      "other": "हर लेख सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए"
+     },
+     "after": {
+      "one": "हर लेख सूचीबद्ध, सबसे नया %lld डाउनलोड किया गया",
+      "other": "हर लेख सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए"
+     },
+     "why": "grammar: the one form (1) used the plural adjective and verb"
+    },
+    {
+     "key": "Every episode listed, newest %lld downloaded",
+     "english": {
+      "one": "Every episode listed, newest %lld downloaded",
+      "other": "Every episode listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "हर एपिसोड सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए",
+      "other": "हर एपिसोड सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए"
+     },
+     "after": {
+      "one": "हर एपिसोड सूचीबद्ध, सबसे नया %lld डाउनलोड किया गया",
+      "other": "हर एपिसोड सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए"
+     },
+     "why": "grammar: the one form (1) used the plural adjective and verb"
+    },
+    {
+     "key": "Every item listed, newest %lld downloaded",
+     "english": {
+      "one": "Every item listed, newest %lld downloaded",
+      "other": "Every item listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "हर आइटम सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए",
+      "other": "हर आइटम सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए"
+     },
+     "after": {
+      "one": "हर आइटम सूचीबद्ध, सबसे नया %lld डाउनलोड किया गया",
+      "other": "हर आइटम सूचीबद्ध, सबसे नए %lld डाउनलोड किए गए"
+     },
+     "why": "grammar: the one form (1) used the plural adjective and verb"
+    },
+    {
+     "key": "Import cancelled after %@.",
+     "english": "Import cancelled after %@.",
+     "before": "%@ के बाद आयात रद्द किया गया।",
+     "after": "%@ पूरी होने के बाद आयात रद्द किया गया।",
+     "why": "grammar: %@ is a phrase such as \"3, कुल 10 पुस्तकें\" in the direct case, so \"%@ के बाद\" read \"पुस्तकें के बाद\"; as the subject of \"पूरी होने के बाद\" it stays direct"
+    },
+    {
+     "key": "It holds %@, which TextMouth does not import.",
+     "english": "It holds %@, which TextMouth does not import.",
+     "before": "इसमें %@ हैं, जिन्हें TextMouth आयात नहीं करता।",
+     "after": "इसमें ऐसी फ़ाइलें हैं जिन्हें TextMouth आयात नहीं करता: %@।",
+     "why": "grammar: %@ may be one file (\"1 .jpg file\"), which the plural \"हैं, जिन्हें\" did not fit; the list now follows a colon"
+    },
+    {
+     "key": "Its %lld chapter markers couldn't be written into the file, so it has none.",
+     "english": {
+      "one": "Its chapter marker couldn't be written into the file, so it has none.",
+      "other": "Its %lld chapter markers couldn't be written into the file, so it has none."
+     },
+     "before": {
+      "one": "इसके %lld अध्याय मार्कर फ़ाइल में नहीं लिखे जा सके, इसलिए इसमें कोई नहीं है।",
+      "other": "इसके %lld अध्याय मार्कर फ़ाइल में नहीं लिखे जा सके, इसलिए इसमें कोई नहीं है।"
+     },
+     "after": {
+      "one": "इसका %lld अध्याय मार्कर फ़ाइल में नहीं लिखा जा सका, इसलिए इसमें कोई नहीं है।",
+      "other": "इसके %lld अध्याय मार्कर फ़ाइल में नहीं लिखे जा सके, इसलिए इसमें कोई नहीं है।"
+     },
+     "why": "grammar: the one form (1 marker) used the plural \"इसके … लिखे जा सके\""
+    },
+    {
+     "key": "Only the newest %lld listed",
+     "english": {
+      "one": "Only the newest %lld listed",
+      "other": "Only the newest %lld listed"
+     },
+     "before": {
+      "one": "केवल सबसे नए %lld सूचीबद्ध",
+      "other": "केवल सबसे नए %lld सूचीबद्ध"
+     },
+     "after": {
+      "one": "केवल सबसे नया %lld सूचीबद्ध",
+      "other": "केवल सबसे नए %lld सूचीबद्ध"
+     },
+     "why": "grammar: the one form (1) used the plural adjective"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "one": "%1$lld फ़ाइल, %2$@, का एक हिस्सा डीकोड नहीं हो सका और मौन के रूप में रखा गया है।",
+      "other": "%1$lld फ़ाइलों, %2$@, के कुछ हिस्से डीकोड नहीं हो सके और मौन के रूप में रखे गए हैं।"
+     },
+     "after": {
+      "one": "%1$lld फ़ाइल (%2$@) का एक हिस्सा डीकोड नहीं हो सका और मौन के रूप में रखा गया है।",
+      "other": "%1$lld फ़ाइलों (%2$@) के कुछ हिस्से डीकोड नहीं हो सके और मौन के रूप में रखे गए हैं।"
+     },
+     "why": "natural: the postposition stood alone after a comma (\"…, का\"), which VoiceOver reads with a break; the names go in parentheses so का/के joins the count"
+    },
+    {
+     "key": "Recovered recordings",
+     "english": "Recovered recordings",
+     "before": "बरामद रिकॉर्डिंग",
+     "after": "पुनर्प्राप्त रिकॉर्डिंग",
+     "why": "term: \"बरामद\" is said of goods the police recover; recovered files are \"पुनर्प्राप्त\""
+    },
+    {
+     "key": "Refreshed %@: %@",
+     "english": "Refreshed %1$@: %2$@",
+     "before": "%1$@ रीफ़्रेश किए गए: %2$@",
+     "after": "%1$@ को रीफ़्रेश किया गया: %2$@",
+     "why": "grammar: %1$@ may be \"1 फ़ीड\", which the plural verb \"किए गए\" did not fit; the impersonal passive fits every count"
+    },
+    {
+     "key": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "english": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "before": "WordPerfect दस्तावेज़ों को ऐसे प्रोग्राम में, जो उन्हें पढ़ सके, जैसे LibreOffice, Word या HTML फ़ाइलों के रूप में सहेजें, फिर उन्हें आयात करें।",
+     "after": "WordPerfect दस्तावेज़ों को उन्हें पढ़ने वाले किसी प्रोग्राम (जैसे LibreOffice) में Word या HTML फ़ाइलों के रूप में सहेजें, फिर उन्हें आयात करें।",
+     "why": "natural: the clause order made LibreOffice read as one of the file formats (\"जैसे LibreOffice, Word या HTML फ़ाइलों\")"
+    },
+    {
+     "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
+     "before": "TextMouth “%1$@” को %2$@ के रूप में नहीं पढ़ सकता। यह क्षतिग्रस्त हो सकती है, या इसका नाम किसी दूसरे फ़ॉर्मैट के लिए रखा गया है।",
+     "after": "TextMouth “%1$@” को %2$@ के रूप में नहीं पढ़ सकता। हो सकता है कि यह क्षतिग्रस्त हो, या इसका नाम किसी दूसरे फ़ॉर्मैट का हो।",
+     "why": "meaning: the second cause was stated as a fact (\"नाम … रखा गया है\"), not as a possibility like the English \"may\""
+    },
+    {
+     "key": "TextMouth does not open RAR archives. Unpack them, then import what they hold.",
+     "english": "TextMouth does not open RAR archives. Unpack them, then import what they hold.",
+     "before": "TextMouth RAR आर्काइव नहीं खोलता। उन्हें खोलें, फिर जो उनमें है उसे आयात करें।",
+     "after": "TextMouth RAR आर्काइव नहीं खोलता। उनकी फ़ाइलें निकालें, फिर उन्हें आयात करें।",
+     "why": "meaning: \"Unpack them\" was \"उन्हें खोलें\" (open them), which contradicted the sentence before it; it now says to extract their files"
+    },
+    {
+     "key": "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its %lld chapter markers once saved.",
+     "english": {
+      "one": "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its chapter marker once saved.",
+      "other": "TextMouth doesn't read chapter markers back from %@ files, so this book won't list its %lld chapter markers once saved."
+     },
+     "before": {
+      "one": "TextMouth %@ फ़ाइलों से अध्याय मार्कर वापस नहीं पढ़ता, इसलिए सहेजने के बाद यह पुस्तक अपने %lld अध्याय मार्कर सूचीबद्ध नहीं करेगी।",
+      "other": "TextMouth %@ फ़ाइलों से अध्याय मार्कर वापस नहीं पढ़ता, इसलिए सहेजने के बाद यह पुस्तक अपने %lld अध्याय मार्कर सूचीबद्ध नहीं करेगी।"
+     },
+     "after": {
+      "one": "TextMouth %@ फ़ाइलों से अध्याय मार्कर वापस नहीं पढ़ता, इसलिए सहेजने के बाद यह पुस्तक अपना %lld अध्याय मार्कर सूचीबद्ध नहीं करेगी।",
+      "other": "TextMouth %@ फ़ाइलों से अध्याय मार्कर वापस नहीं पढ़ता, इसलिए सहेजने के बाद यह पुस्तक अपने %lld अध्याय मार्कर सूचीबद्ध नहीं करेगी।"
+     },
+     "why": "grammar: the one form (1 marker) used the plural \"अपने\" for its object"
+    },
+    {
+     "key": "TextMouth left out %@, which hold no sound it can read.",
+     "english": "TextMouth left out %@, which hold no sound it can read.",
+     "before": "TextMouth ने %@ छोड़ दिए, जिनमें कोई ऐसी ध्वनि नहीं है जिसे वह पढ़ सके।",
+     "after": "TextMouth ने %@ छोड़ दीं, जिनमें कोई ऐसी ध्वनि नहीं है जिसे वह पढ़ सके।",
+     "why": "grammar: %@ is \"2 फ़ाइलें, …\" (feminine plural), so the verb is \"छोड़ दीं\", not \"छोड़ दिए\""
+    },
+    {
+     "key": "TextMouth left out %@, which need TextMouth's converter, missing from the app.",
+     "english": "TextMouth left out %@, which need TextMouth's converter, missing from the app.",
+     "before": "TextMouth ने %@ छोड़ दिए, जिन्हें TextMouth का कनवर्टर चाहिए, जो ऐप से गायब है।",
+     "after": "TextMouth ने %@ छोड़ दीं, जिन्हें TextMouth का कनवर्टर चाहिए, जो ऐप से गायब है।",
+     "why": "grammar: %@ is \"2 फ़ाइलें, …\" (feminine plural), so the verb is \"छोड़ दीं\", not \"छोड़ दिए\""
+    },
+    {
+     "key": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "english": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "before": "वह वेब पता नहीं है। फ़ीड का पता, या ऐसे पृष्ठ का पता दर्ज करें जो किसी फ़ीड का नाम बताता हो।",
+     "after": "वह वेब पता नहीं है। फ़ीड का पता, या ऐसे पृष्ठ का पता दर्ज करें जो किसी फ़ीड का पता बताता हो।",
+     "why": "meaning: a page that \"names\" a feed points to it; \"नाम बताता\" said it tells the feed's name"
+    },
+    {
+     "key": "That page doesn't name a feed.",
+     "english": "That page doesn't name a feed.",
+     "before": "वह पृष्ठ किसी फ़ीड का नाम नहीं बताता।",
+     "after": "वह पृष्ठ किसी फ़ीड का पता नहीं बताता।",
+     "why": "meaning: a page that \"names\" a feed points to it; \"नाम बताता\" said it tells the feed's name"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "one": "वह पृष्ठ %lld फ़ीड का नाम बताता है। एक चुनें, फिर “सदस्यता लें” चुनें।",
+      "other": "वह पृष्ठ %lld फ़ीड का नाम बताता है। एक चुनें, फिर “सदस्यता लें” चुनें।"
+     },
+     "after": {
+      "one": "वह पृष्ठ %lld फ़ीड का पता बताता है। एक चुनें, फिर “सदस्यता लें” चुनें।",
+      "other": "वह पृष्ठ %lld फ़ीड के पते बताता है। एक चुनें, फिर “सदस्यता लें” चुनें।"
+     },
+     "why": "meaning: a page that \"names\" feeds points to them; \"नाम बताता\" said it tells their names"
+    },
+    {
+     "key": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "english": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "before": "%@ का पता ऐसा फ़ीड नहीं रखता जिसे TextMouth पढ़ सके।",
+     "after": "%@ के पते पर ऐसा कोई फ़ीड नहीं है जिसे TextMouth पढ़ सके।",
+     "why": "natural: \"पता … फ़ीड नहीं रखता\" copied \"the address doesn't hold\"; Hindi says there is no feed at the address"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "लेख हमेशा के लिए सूची से हट जाता है; वह जो पुस्तक बन गया था, आपकी लाइब्रेरी में बनी रहती है।",
+     "after": "लेख हमेशा के लिए सूची से हट जाता है; उससे बनी पुस्तक आपकी लाइब्रेरी में बनी रहती है।",
+     "why": "grammar: the clause \"वह जो पुस्तक बन गया था, … बनी रहती है\" mixed the article and the book as subject"
+    },
+    {
+     "key": "The disk is too full to keep this audio for pasting.",
+     "english": "The disk is too full to keep this audio for pasting.",
+     "before": "इस ऑडियो को पेस्ट करने के लिए रखने हेतु डिस्क बहुत भरी है।",
+     "after": "डिस्क इतनी भरी है कि इस ऑडियो को पेस्ट के लिए रखा नहीं जा सकता।",
+     "why": "natural: \"पेस्ट करने के लिए रखने हेतु\" stacked two purpose markers; Hindi says the disk is so full it can't be kept"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "एपिसोड हमेशा के लिए सूची से हट जाता है; वह जो पुस्तक बन गया था, आपकी लाइब्रेरी में बनी रहती है।",
+     "after": "एपिसोड हमेशा के लिए सूची से हट जाता है; उससे बनी पुस्तक आपकी लाइब्रेरी में बनी रहती है।",
+     "why": "grammar: the clause \"वह जो पुस्तक बन गया था, … बनी रहती है\" mixed the episode and the book as subject"
+    },
+    {
+     "key": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "english": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "before": "पेस्ट के लिए रखने हेतु बहुत लंबा है। इसे ले जाने के लिए, काटने के तुरंत बाद पेस्ट करें।",
+     "after": "यह इतना लंबा है कि पेस्ट के लिए रखा नहीं जा सकता। इसे ले जाने के लिए, काटने के तुरंत बाद पेस्ट करें।",
+     "why": "natural: \"पेस्ट के लिए रखने हेतु बहुत लंबा\" stacked two purpose markers; Hindi says it is so long it can't be kept"
+    },
+    {
+     "key": "Transcribing %@, %@.",
+     "english": "Transcribing %1$@, %2$@.",
+     "before": "%1$@ को ट्रांसक्राइब किया जा रहा है; इसमें %2$@ लगेंगे।",
+     "after": "%1$@ को ट्रांसक्राइब किया जा रहा है; इसमें %2$@ का समय लगेगा।",
+     "why": "grammar: %2$@ may be \"about 1 minute\", which the plural \"लगेंगे\" did not fit; \"का समय लगेगा\" fits every length"
+    },
+    {
+     "key": "Transcribing it takes %@.",
+     "english": "Transcribing it takes %@.",
+     "before": "इसे ट्रांसक्राइब करने में %@ लगेंगे।",
+     "after": "इसे ट्रांसक्राइब करने में %@ का समय लगेगा।",
+     "why": "grammar: %@ may be \"less than a minute\" or \"about 1 minute\", which the plural \"लगेंगे\" did not fit; \"का समय लगेगा\" fits every length"
+    },
+    {
+     "key": "all %lld files",
+     "english": {
+      "one": "all %lld file",
+      "other": "all %lld files"
+     },
+     "before": {
+      "one": "सभी %lld फ़ाइलें",
+      "other": "सभी %lld फ़ाइलें"
+     },
+     "after": {
+      "one": "सभी %lld फ़ाइल",
+      "other": "सभी %lld फ़ाइलें"
+     },
+     "why": "grammar: the one form used the plural noun \"फ़ाइलें\", where the English one form is singular"
+    },
+    {
+     "key": "the top of your library",
+     "english": "the top of your library",
+     "before": "आपकी लाइब्रेरी का शीर्ष स्तर",
+     "after": "आपकी लाइब्रेरी के शीर्ष स्तर",
+     "why": "grammar: the phrase fills \"… में ले जाया गया\", so it must be oblique; \"का शीर्ष स्तर में\" was the wrong case"
+    },
+    {
+     "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "before": "“%@” बदले जाने के दौरान बदल गई, इसलिए TextMouth ने दोनों प्रतियाँ जैसी थीं वैसी ही रहने दीं। “मौजूदा को बदलें” फिर से चुनें।",
+     "after": "“%@” की जगह नई प्रति रखते समय उसमें बदलाव हो गया, इसलिए TextMouth ने दोनों प्रतियाँ जैसी थीं वैसी ही रहने दीं। “मौजूदा को बदलें” फिर से चुनें।",
+     "why": "meaning: \"बदले जाने के दौरान बदल गई\" used बदलना for both replace and change, so it read \"changed while being changed\""
+    },
+    {
+     "key": "“%@” is a pronunciation lexicon, not a playlist.",
+     "english": "“%@” is a pronunciation lexicon, not a playlist.",
+     "before": "“%@” उच्चारण लेक्सिकॉन है, प्लेलिस्ट नहीं।",
+     "after": "“%@” उच्चारण लेक्सिकन है, प्लेलिस्ट नहीं।",
+     "why": "term: the glossary spells Lexicon \"लेक्सिकन\", not \"लेक्सिकॉन\""
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "“%@” में रिकॉर्डिंग हो रही है। “रोकें” से रोकें या “चयन हटाएँ” से त्याग दें, फिर छोड़ें।",
+     "after": "“%@” में रिकॉर्डिंग हो रही है। “रोकें” से रोकें या “चयन हटाएँ” से त्याग दें, फिर TextMouth छोड़ें।",
+     "why": "meaning: \"फिर छोड़ें\" alone reads as \"then leave it\"; naming TextMouth makes it the Quit command"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "“%@” में अभी काम चल रहा है। बदलाव पूरा होने पर छोड़ें।",
+     "after": "“%@” में अभी काम चल रहा है। बदलाव पूरा होने पर TextMouth छोड़ें।",
+     "why": "meaning: \"छोड़ें\" alone reads as \"leave it\"; naming TextMouth makes it the Quit command"
+    }
+   ]
+  },
+  {
    "part": 3,
    "areas": [
     "reader, formats, and menus",
