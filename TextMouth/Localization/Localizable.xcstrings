@@ -299921,25 +299921,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld artykuły z %@ jako przeczytane."
+                  "value" : "Oznaczono %lld artykuły kanału %@ jako przeczytane."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld artykułów z %@ jako przeczytane."
+                  "value" : "Oznaczono %lld artykułów kanału %@ jako przeczytane."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld artykuł z %@ jako przeczytany."
+                  "value" : "Oznaczono %lld artykuł kanału %@ jako przeczytany."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld artykułu z %@ jako przeczytane."
+                  "value" : "Oznaczono %lld artykułu kanału %@ jako przeczytane."
                 }
               }
             }
@@ -300388,25 +300388,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld odcinki z %@ jako odtworzone."
+                  "value" : "Oznaczono %lld odcinki kanału %@ jako odtworzone."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld odcinków z %@ jako odtworzone."
+                  "value" : "Oznaczono %lld odcinków kanału %@ jako odtworzone."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld odcinek z %@ jako odtworzony."
+                  "value" : "Oznaczono %lld odcinek kanału %@ jako odtworzony."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld odcinka z %@ jako odtworzone."
+                  "value" : "Oznaczono %lld odcinka kanału %@ jako odtworzone."
                 }
               }
             }
@@ -300855,25 +300855,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld pozycje z %@ jako odtworzone."
+                  "value" : "Oznaczono %lld pozycje kanału %@ jako odtworzone."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld pozycji z %@ jako odtworzone."
+                  "value" : "Oznaczono %lld pozycji kanału %@ jako odtworzone."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld pozycję z %@ jako odtworzoną."
+                  "value" : "Oznaczono %lld pozycję kanału %@ jako odtworzoną."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Oznaczono %lld pozycji z %@ jako odtworzone."
+                  "value" : "Oznaczono %lld pozycji kanału %@ jako odtworzone."
                 }
               }
             }
@@ -338178,7 +338178,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Brak nowych książek w „%1$@”: wszystkie %2$lld książek były już w Twojej bibliotece."
+                  "value" : "Brak nowych książek w „%1$@”: każda z %2$lld książek była już w Twojej bibliotece."
                 }
               },
               "one" : {
@@ -344405,7 +344405,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+                  "value" : "Nie znaleziono tekstu na jedynej stronie tego archiwum komiksu."
                 }
               },
               "other" : {
@@ -344872,7 +344872,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+                  "value" : "Nie znaleziono tekstu na jedynej stronie tego obrazu."
                 }
               },
               "other" : {
@@ -368465,7 +368465,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Część pliku %@ nie mogła zostać zdekodowana i jest zachowana jako cisza."
+            "value" : "Część pliku %@ nie mogła zostać zdekodowana i została zastąpiona ciszą."
           }
         },
         "pt-BR" : {
@@ -368934,25 +368934,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+                  "value" : "Część %lld plików, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+                  "value" : "Część %lld plików, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+                  "value" : "Część %lld pliku, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+                  "value" : "Część %lld pliku, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą."
                 }
               }
             }
@@ -415608,7 +415608,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ponownie zasubskrybowano %@. Sprawdzanie teraz…"
+            "value" : "Ponownie zasubskrybowano kanał %@. Trwa sprawdzanie…"
           }
         },
         "pt-BR" : {
@@ -468897,7 +468897,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zasubskrybowano %@. Ten kanał używa zwykłego http, więc inne osoby mogą odczytać lub zmienić to, co wysyła; TextMouth mimo to go wczytuje."
+            "value" : "Zasubskrybowano kanał %@. Ten kanał używa zwykłego http, więc inne osoby mogą odczytać lub zmienić to, co wysyła; TextMouth mimo to go wczytuje."
           }
         },
         "pt-BR" : {
@@ -469040,7 +469040,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zasubskrybowano %1$@: %2$@."
+            "value" : "Zasubskrybowano kanał %1$@: %2$@."
           }
         },
         "pt-BR" : {
@@ -469787,7 +469787,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Subskrybowanie %1$@, %2$lld z %3$lld…"
+            "value" : "Subskrybowanie kanału %1$@, %2$lld z %3$lld…"
           }
         },
         "pt-BR" : {
@@ -476475,7 +476475,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+                  "value" : "Rozpoznawanie tekstu nie mogło odczytać %lld strony: %@."
                 }
               },
               "other" : {
@@ -478242,7 +478242,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth nie może przekonwertować dźwięku „%@”: jest w rodzaju dźwięku, którego nie odczytuje."
+            "value" : "TextMouth nie może przekonwertować dźwięku „%@”: to rodzaj dźwięku, którego nie odczytuje."
           }
         },
         "pt-BR" : {
@@ -491678,7 +491678,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wciąż wykonuje Twoją ostatnią odpowiedź. Zaczekaj, aż skończy."
+            "value" : "TextMouth wciąż przetwarza Twoją ostatnią odpowiedź. Zaczekaj, aż skończy."
           }
         },
         "pt-BR" : {
@@ -499784,7 +499784,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Konwerter TextMouth nie mógł się zabezpieczyć przed odczytaniem „%@”, więc nie odczytał pliku."
+            "value" : "Konwerter TextMouth nie zdołał ograniczyć swoich uprawnień przed odczytaniem „%@”, więc nie odczytał pliku."
           }
         },
         "pt-BR" : {
@@ -511974,7 +511974,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Adres %@ nie zawiera kanału, który TextMouth może odczytać."
+            "value" : "%@: pod tym adresem nie ma kanału, który TextMouth może odczytać."
           }
         },
         "pt-BR" : {
@@ -522141,7 +522141,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plik bookInfo.json nie odczytał się tak, jak został zapisany."
+            "value" : "Odczytana zawartość pliku bookInfo.json różni się od zapisanej."
           }
         },
         "pt-BR" : {
@@ -537481,7 +537481,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plik etykiet „%@” nie pasuje z nazwy do żadnego sąsiedniego pliku audio, więc jego nagłówki nie zostały użyte."
+            "value" : "Plik etykiet „%@” nie pasuje nazwą do żadnego sąsiedniego pliku audio, więc jego nagłówki nie zostały użyte."
           }
         },
         "pt-BR" : {
@@ -554906,7 +554906,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odświeżanie %@ zostało zatrzymane."
+            "value" : "Odświeżanie kanału %@ zostało zatrzymane."
           }
         },
         "pt-BR" : {
@@ -556550,7 +556550,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Serwer mówi, że pliku już nie ma."
+            "value" : "Serwer zgłasza, że pliku już nie ma."
           }
         },
         "pt-BR" : {
@@ -569757,7 +569757,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten komputer Mac jest offline, więc nie można odświeżyć %@. Połącz się z internetem i spróbuj ponownie."
+            "value" : "Ten komputer Mac jest offline, więc nie można odświeżyć kanału %@. Połącz się z internetem i spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -573387,7 +573387,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta książka nie ma prawidłowego zarządzanego pakietu. Usuń ją tylko z biblioteki albo napraw jej pamięć przed usunięciem."
+            "value" : "Ta książka nie ma prawidłowego zarządzanego pakietu. Usuń ją tylko z biblioteki albo napraw jej pliki przed usunięciem."
           }
         },
         "pt-BR" : {
