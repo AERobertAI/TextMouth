@@ -4478,7 +4478,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ nie może zostać otwarta, bo nie można użyć jej edytowanego tekstu: %2$@"
+            "value" : "Nie można otworzyć książki %1$@, bo nie można użyć jej edytowanego tekstu: %2$@"
           }
         },
         "pt-BR" : {
@@ -9164,7 +9164,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Domyślny skrót, %2$@, ma teraz działanie %1$@"
+            "value" : "Domyślny skrót, %2$@, należy teraz do działania %1$@"
           }
         },
         "pt-BR" : {
@@ -17759,7 +17759,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ nie został zapisany dla działania %2$@: %3$@"
+            "value" : "Skrót %1$@ nie został zapisany dla działania %2$@: %3$@"
           }
         },
         "pt-BR" : {
@@ -18039,7 +18039,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ czeka teraz chwilę przed wykonaniem działania %2$@, na wypadek gdyby został naciśnięty dwukrotnie."
+            "value" : "Skrót %1$@ czeka teraz chwilę przed wykonaniem działania %2$@, na wypadek gdyby został naciśnięty dwukrotnie."
           }
         },
         "pt-BR" : {
@@ -18669,13 +18669,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziałów"
+                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziału"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziałów"
+                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziału"
                 }
               }
             }
@@ -23915,7 +23915,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie dodano ponownie %@: nie udało się najpierw zachować kopii tekstu zapisanego w jego pakiecie, więc TextMouth pozostawił tekst bez zmian."
+            "value" : "Nie dodano ponownie książki %@: nie udało się najpierw zachować kopii tekstu zapisanego w jej pakiecie, więc TextMouth pozostawił tekst bez zmian."
           }
         },
         "pt-BR" : {
@@ -29628,7 +29628,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@, edytowane ręcznie"
+            "value" : "%@, edytowano ręcznie"
           }
         },
         "pt-BR" : {
@@ -30331,7 +30331,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ zapisany dla działania %2$@"
+            "value" : "Skrót %1$@ zapisany dla działania %2$@"
           }
         },
         "pt-BR" : {
@@ -105807,7 +105807,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dodaje prędkość, z jaką liczony jest czas, na przykład 2,0x dla audiobooka niesłuchanego w prędkości 1x lub 500 słów na minutę dla książki tekstowej, w czytniku, w poleceniach Gdzie jestem? i Kopiuj pozycję czytania oraz w czasach trwania na arkuszu Nagłówki."
+            "value" : "Dodaje prędkość, z jaką liczony jest czas, na przykład 2,0x dla audiobooka odtwarzanego z prędkością inną niż 1x lub 500 słów na minutę dla książki tekstowej, w czytniku, w poleceniach Gdzie jestem? i Kopiuj pozycję czytania oraz w czasach trwania na arkuszu Nagłówki."
           }
         },
         "pt-BR" : {
@@ -203961,7 +203961,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edycja tekstu dla %@ została zatrzymana, ponieważ zastąpiła ją nowa kopia."
+            "value" : "Edycja tekstu książki %@ została przerwana, ponieważ książkę zastąpiła nowa kopia."
           }
         },
         "pt-BR" : {
@@ -204098,7 +204098,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edycja tekstu dla %@ została zatrzymana, ponieważ plik został odczytany ponownie."
+            "value" : "Edycja tekstu książki %@ została przerwana, ponieważ jej plik został ponownie odczytany."
           }
         },
         "pt-BR" : {
@@ -247734,7 +247734,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ukrywa elementy sterujące przechodzenia do strony."
+            "value" : "Ukrywa panel przechodzenia do strony."
           }
         },
         "pt-BR" : {
@@ -247871,7 +247871,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ukrywa elementy sterujące przechodzenia do wartości procentowej."
+            "value" : "Ukrywa panel przechodzenia do wartości procentowej."
           }
         },
         "pt-BR" : {
@@ -248008,7 +248008,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ukrywa elementy sterujące przechodzenia do czasu."
+            "value" : "Ukrywa panel przechodzenia do czasu."
           }
         },
         "pt-BR" : {
@@ -275087,7 +275087,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Strony przebiegają od %1$@ do %2$@."
+            "value" : "Strony są numerowane od %1$@ do %2$@."
           }
         },
         "pt-BR" : {
@@ -276594,7 +276594,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeskoczono do %@ w nagraniu."
+            "value" : "Przeskoczono w nagraniu do pozycji: %@."
           }
         },
         "pt-BR" : {
@@ -276868,7 +276868,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeskoczono do %@."
+            "value" : "Przeskoczono do pozycji: %@."
           }
         },
         "pt-BR" : {
