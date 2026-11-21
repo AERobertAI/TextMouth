@@ -81808,7 +81808,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Видалити папку…"
+            "value" : "Видалити папку..."
           }
         },
         "zh-Hans" : {
@@ -138408,25 +138408,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Перемістити %lld книги до папки…"
+                  "value" : "Перемістити %lld книги до папки..."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Перемістити %lld книг до папки…"
+                  "value" : "Перемістити %lld книг до папки..."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Перемістити %lld книгу до папки…"
+                  "value" : "Перемістити %lld книгу до папки..."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Перемістити %lld книги до папки…"
+                  "value" : "Перемістити %lld книги до папки..."
                 }
               }
             }
@@ -139570,7 +139570,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Перемістити папку…"
+            "value" : "Перемістити папку..."
           }
         },
         "zh-Hans" : {
@@ -140219,7 +140219,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Перемістити до папки…"
+            "value" : "Перемістити до папки..."
           }
         },
         "zh-Hans" : {
@@ -144409,25 +144409,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Переміщення %lld книг…"
+                  "value" : "Переміщення %lld книг..."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Переміщення %lld книг…"
+                  "value" : "Переміщення %lld книг..."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Переміщення %lld книги…"
+                  "value" : "Переміщення %lld книги..."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Переміщення %lld книг…"
+                  "value" : "Переміщення %lld книг..."
                 }
               }
             }
@@ -144672,7 +144672,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Переміщення вмісту папки…"
+            "value" : "Переміщення вмісту папки..."
           }
         },
         "zh-Hans" : {
@@ -144731,7 +144731,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Переміщення папки…"
+            "value" : "Переміщення папки..."
           }
         },
         "zh-Hans" : {
@@ -146684,7 +146684,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Нова папка…"
+            "value" : "Нова папка..."
           }
         },
         "zh-Hans" : {
@@ -174812,7 +174812,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Повторне читання книги…"
+            "value" : "Повторне читання книги..."
           }
         },
         "zh-Hans" : {
@@ -178620,25 +178620,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Вилучити %lld книги з бібліотеки…"
+                  "value" : "Вилучити %lld книги з бібліотеки..."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Вилучити %lld книг з бібліотеки…"
+                  "value" : "Вилучити %lld книг з бібліотеки..."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Вилучити %lld книгу з бібліотеки…"
+                  "value" : "Вилучити %lld книгу з бібліотеки..."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Вилучити %lld книги з бібліотеки…"
+                  "value" : "Вилучити %lld книги з бібліотеки..."
                 }
               }
             }
@@ -180180,7 +180180,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Вилучити з бібліотеки…"
+            "value" : "Вилучити з бібліотеки..."
           }
         },
         "zh-Hans" : {
@@ -180481,7 +180481,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Вилучити…"
+            "value" : "Вилучити..."
           }
         },
         "zh-Hans" : {
@@ -181012,7 +181012,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Перейменувати папку…"
+            "value" : "Перейменувати папку..."
           }
         },
         "zh-Hans" : {
@@ -181071,7 +181071,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Перейменування папки…"
+            "value" : "Перейменування папки..."
           }
         },
         "zh-Hans" : {
