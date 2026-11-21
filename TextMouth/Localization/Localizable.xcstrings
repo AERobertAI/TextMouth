@@ -270696,6 +270696,12 @@
             "value" : "Перемещает курсор к предыдущей метке главы."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar markören till föregående kapitelmärke."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270807,6 +270813,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перемещает курсор в начало аудио."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar markören till ljudets början."
           }
         },
         "th" : {
@@ -274483,6 +274495,12 @@
             "value" : "Имя"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Namn"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277017,6 +277035,12 @@
             "value" : "Новый пресет фильтра"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ny filterförinställning"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277723,6 +277747,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Новая запись"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ny inspelning"
           }
         },
         "th" : {
@@ -281240,6 +281270,12 @@
             "value" : "В «%@» не найдено аудиофайлов."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga ljudfiler hittades i %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282150,6 +282186,12 @@
             "value" : "После курсора нет метки главы."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget kapitelmärke efter markören."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282261,6 +282303,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перед курсором нет метки главы."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget kapitelmärke före markören."
           }
         },
         "th" : {
@@ -282376,6 +282424,12 @@
             "value" : "Нет ни меток глав, ни меток, поэтому файл меток не будет записан."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga kapitelmärken eller ljudmärken, så ingen etikettfil skulle skrivas."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282487,6 +282541,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Нет исправления для отмены: прежняя расшифровка утрачена."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen uppstädning att ångra: den tidigare transkriptionen finns inte kvar."
           }
         },
         "th" : {
@@ -283191,6 +283251,12 @@
             "value" : "Нет правок"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga redigeringar"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283302,6 +283368,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Нет правок, не сохранено"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga redigeringar, inte sparat"
           }
         },
         "th" : {
@@ -283643,6 +283715,12 @@
             "value" : "Нет пресетов фильтров. Добавьте пресет или сбросьте настройки по умолчанию."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga filterförinställningar. Lägg till en eller återställ till standard."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283754,6 +283832,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Нет пресетов фильтров. Добавьте их в настройках хранилища, в разделе «Редактирование аудио»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga filterförinställningar. Lägg till några i inställningarna för Lagring, under Ljudredigering."
           }
         },
         "th" : {
@@ -284208,6 +284292,12 @@
             "value" : "Меток пока нет. Команда «Добавить метку» ставит метку в позиции курсора."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga ljudmärken än. Lägg till ljudmärke sätter ett vid markören."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284440,6 +284530,12 @@
             "value" : "Нет микрофона"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen mikrofon"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284553,6 +284649,12 @@
             "value" : "Микрофон не подключён"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen mikrofon ansluten"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284664,6 +284766,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Микрофон не подключён. Подключите его, чтобы записывать поверх."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen mikrofon är ansluten. Anslut en för att spela in över."
           }
         },
         "th" : {
@@ -286363,6 +286471,12 @@
             "value" : "Для этой книги не хранится исходное аудио, поэтому сохранённые правки нельзя отменить."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget original behålls för den här boken, så sparade redigeringar kan inte ångras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286474,6 +286588,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Оригинал не хранится, поэтому вернуть его нельзя. Команда «Отменить» отменяет правки, сделанные после последнего сохранения."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget original behålls, så det går inte att återgå. Ångra tar tillbaka redigeringar sedan den senaste sparningen."
           }
         },
         "th" : {
@@ -286589,6 +286709,12 @@
             "value" : "Оригинал не хранится: правки изменяют аудио на месте, а сохранённые правки нельзя отменить."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget original behålls: redigeringar ändrar ljudet direkt, och sparade redigeringar kan inte ångras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286700,6 +286826,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "После курсора нет паузы."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen paus efter markören."
           }
         },
         "th" : {
@@ -286815,6 +286947,12 @@
             "value" : "Перед курсором нет паузы."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen paus före markören."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286926,6 +287064,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Паузы не найдены."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga pauser hittades."
           }
         },
         "th" : {
@@ -288355,6 +288499,12 @@
             "value" : "Ни одно правило не изменяет эту расшифровку."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen regel ändrar den här transkriptionen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288795,6 +288945,12 @@
             "value" : "Сочетания клавиш нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen genväg."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288906,6 +289062,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Нет звука от микрофона «%@». Проверьте, что микрофон включён и звук не отключён."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget ljud från %@. Kontrollera att mikrofonen är på och inte avstängd."
           }
         },
         "th" : {
@@ -292941,6 +293103,12 @@
             "value" : "Не сейчас"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inte nu"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294371,6 +294539,12 @@
             "value" : "Этих правок ещё нет в аудио книги. «Отбросить» отменяет их; при следующем изменении этой книги «Повторить» вернёт их, пока вы не сделаете другую правку."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Finns inte i bokens ljud än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294482,6 +294656,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не хранится"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Behålls inte"
           }
         },
         "th" : {
@@ -294952,6 +295132,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Запись не идёт"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen inspelning"
           }
         },
         "th" : {
@@ -295739,6 +295925,12 @@
             "value" : "Ничего не вырезано и не скопировано."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget har klippts ut eller kopierats."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296328,6 +296520,12 @@
             "value" : "Ничего не воспроизводится."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget spelas upp."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296439,6 +296637,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ничего не выделено."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget är markerat."
           }
         },
         "th" : {
@@ -296673,6 +296877,12 @@
             "value" : "Нечего возвращать: ни одну правку нельзя отменить."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget att återgå till: ingen redigering kan ångras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296784,6 +296994,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Нечего сохранять: аудио книги уже содержит все правки."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget att spara: bokens ljud innehåller alla redigeringar."
           }
         },
         "th" : {
@@ -297119,6 +297335,12 @@
             "value" : "Ничего не записано, поэтому сохранять нечего."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget spelades in, så det finns inget att spara."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297230,6 +297452,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Теперь длительность: %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ny längd: %@."
           }
         },
         "th" : {
@@ -298587,6 +298815,12 @@
             "value" : "OK"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "OK"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298924,6 +299158,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Предлагать расшифровку после импорта аудиокниги"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Erbjud transkribering efter import av en ljudbok"
           }
         },
         "th" : {
@@ -299717,6 +299957,12 @@
             "value" : "Изменять можно только аудио аудиокниги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bara en ljudboks ljud kan redigeras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300054,6 +300300,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Расшифровать можно только аудиокниги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bara ljudböcker kan transkriberas."
           }
         },
         "th" : {
@@ -301141,6 +301393,12 @@
             "value" : "Открыть настройки конфиденциальности"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppna integritetsinställningar"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301722,6 +301980,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открыть в окне чтения"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppna i läsare"
           }
         },
         "th" : {
@@ -303538,6 +303802,12 @@
             "value" : "Открывает «%@» в окне чтения."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar %@ i ett läsarfönster."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303875,6 +304145,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывает «Расшифровать аудио»: расшифровка начинается сразу, если модель языка есть на этом Mac; иначе загрузите её там, затем выберите «Расшифровать»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar Transkribera ljud, som startar direkt om språkets modell finns på den här Mac-datorn. Annars hämtar du den där och väljer sedan Transkribera."
           }
         },
         "th" : {
@@ -305459,6 +305735,12 @@
             "value" : "Открывает настройки конфиденциальности микрофона в Системных настройках."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar integritetsinställningarna för Mikrofon i Systeminställningar."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306040,6 +306322,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывает пресеты фильтров: их можно изменить, добавить, переупорядочить, удалить или сбросить."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar filterförinställningarna, för att redigera, lägga till, ordna om, radera eller återställa."
           }
         },
         "th" : {
@@ -307071,6 +307359,12 @@
             "value" : "Открывает вашу копию правил, transcript-cleanup.json, в текстовом редакторе; при первом открытии она создаётся из собственных правил TextMouth. Изменения применяются, когда вы возвращаетесь в TextMouth."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar din kopia av reglerna, transcript-cleanup.json, i din textredigerare. Den görs första gången av TextMouths egna regler. Ändringar börjar gälla när du återvänder till TextMouth."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307416,6 +307710,12 @@
             "value" : "Исходное аудио"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalljud"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307634,6 +307934,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Исходное аудио этой книги"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalljud för den här boken"
           }
         },
         "th" : {
@@ -308429,6 +308735,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Original behålls i %lld dag efter att boken sparades eller senast redigerades och raderas sedan."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Original behålls i %lld dagar efter att boken sparades eller senast redigerades och raderas sedan."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -308596,6 +308920,12 @@
             "value" : "Оригиналы хранятся, пока книга не будет убрана из библиотеки."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Original behålls tills boken tas bort."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -308707,6 +309037,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Конец: %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Slut vid %@."
           }
         },
         "th" : {
@@ -311614,6 +311950,12 @@
             "value" : "Вставлено %@ обратно на место вырезания."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Klistrade in %@ på nytt där det klipptes ut."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311733,6 +312075,12 @@
             "value" : "Вставлено %1$@ поверх %2$@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Klistrade in %1$@ över %2$@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311846,6 +312194,12 @@
             "value" : "Вставлено: %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Klistrade in %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311957,6 +312311,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вставляет в позиции курсора или поверх выделенного. Сразу после вырезания перемещает аудио."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Klistrar in vid markören, eller över markeringen. Direkt efter en utklippning flyttar det ljudet."
           }
         },
         "th" : {
@@ -312534,6 +312894,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Пауза %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Paus %@"
           }
         },
         "th" : {
@@ -313216,6 +313582,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pausade boken som spelades upp."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pausade %lld böcker som spelades upp."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -313383,6 +313767,12 @@
             "value" : "Пауза на %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausad vid %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313494,6 +313884,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Пауза."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausad."
           }
         },
         "th" : {
@@ -313609,6 +314005,12 @@
             "value" : "Паузы"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pauser"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313720,6 +314122,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Приостанавливает запись; «%@» продолжает ту же запись."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausar inspelningen. %@ fortsätter samma inspelning."
           }
         },
         "th" : {
@@ -315516,6 +315924,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизводить полсекунды после каждого перемещения"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp en halv sekund efter varje förflyttning"
           }
         },
         "th" : {
@@ -317617,6 +318031,12 @@
             "value" : "Воспроизведение"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317730,6 +318150,12 @@
             "value" : "Воспроизведение с начала."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp från början."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317841,6 +318267,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизводит предварительный фрагмент; чтобы применить фильтр, снова выберите «Применить»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp en förhandsvisning. Välj Tillämpa igen för att tillämpa."
           }
         },
         "th" : {
@@ -318063,6 +318495,12 @@
             "value" : "Воспроизводит с позиции курсора или ставит на паузу."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp från markören, eller pausar."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318174,6 +318612,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизводит полсекунды с позиции курсора после каждого перемещения."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp en halv sekund vid markören efter varje förflyttning."
           }
         },
         "th" : {
@@ -318929,6 +319373,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизводит выделенное и останавливается в его конце."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp markeringen och stoppar vid dess slut."
           }
         },
         "th" : {
@@ -320313,6 +320763,12 @@
             "value" : "Позиция"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Position"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321140,6 +321596,12 @@
             "value" : "Пресеты с другого Mac только что пришли и заменили эти. Повторите изменение."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förinställningar från en annan Mac kom just och ersatte dessa. Gör ändringen igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321592,6 +322054,12 @@
             "value" : "Прослушать"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förhandsvisa"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321925,6 +322393,12 @@
             "value" : "Прослушивать фильтры перед применением"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förhandsvisa filter innan de tillämpas"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322151,6 +322625,12 @@
             "value" : "Сначала прослушивается фильтр «%@». Чтобы применить его, снова выберите «Применить»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förhandsvisar %@ först. Välj Tillämpa igen för att tillämpa."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322262,6 +322742,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Прослушивание фильтра «%@»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förhandsvisar %@."
           }
         },
         "th" : {
@@ -323959,6 +324445,12 @@
             "value" : "Проблема: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Problem: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324070,6 +324562,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Прогресс"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förlopp"
           }
         },
         "th" : {
@@ -325333,6 +325831,12 @@
             "value" : "Возвращает готовые пресеты TextMouth и удаляет добавленные вами."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lägger tillbaka TextMouths färdiga förinställningar och tar bort de du har lagt till."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325444,6 +325948,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Возвращает расшифровку в состояние до последнего исправления."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lägger tillbaka transkriptionen som den var före den senaste uppstädningen."
           }
         },
         "th" : {
@@ -325783,6 +326293,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Возвращается прежняя расшифровка…"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lägger tillbaka den tidigare transkriptionen…"
           }
         },
         "th" : {
@@ -326128,6 +326644,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Тише"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lägre volym"
           }
         },
         "th" : {
@@ -331215,6 +331737,12 @@
             "value" : "Чтение расшифровки и правил…"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läser transkriptionen och reglerna…"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331445,6 +331973,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Готово к записи с микрофона «%@»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Redo att spela in från %@."
           }
         },
         "th" : {
@@ -332494,6 +333028,12 @@
             "value" : "Записать"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela in"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332605,6 +333145,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Запись"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelning"
           }
         },
         "th" : {
@@ -332720,6 +333266,12 @@
             "value" : "Запись отброшена."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelningen kasserades."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332831,6 +333383,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Идёт запись с микрофона «%@»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar in från %@."
           }
         },
         "th" : {
@@ -332952,6 +333510,12 @@
             "value" : "Запись от %1$@, %2$@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelning från %1$@, %2$@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333063,6 +333627,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Запись от %@, не содержащая звука"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelning från %@, som inte innehåller något ljud"
           }
         },
         "th" : {
@@ -333182,6 +333752,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Запись поверх %1$@ с отметки %2$@, с микрофона «%3$@», после сигнала. «Записать поверх» или «Остановить» завершает её; «Снять выделение» отбрасывает."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar in över %1$@ vid %2$@, från %3$@, efter pipet. Spela in över eller Stoppa avslutar inspelningen. Rensa markering kasserar den."
           }
         },
         "th" : {
@@ -333523,6 +334099,12 @@
             "value" : "Запись остановлена, так как микрофон сообщил о проблеме. Записанное сохранено."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inspelningen stoppades eftersom mikrofonen rapporterade ett problem. Det som spelats in har sparats."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333640,6 +334222,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Запись для вставки на отметке %1$@, с микрофона «%2$@», после сигнала. «Записать поверх» или «Остановить» завершает её; «Снять выделение» отбрасывает."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar in för infogning vid %1$@, från %2$@, efter pipet. Spela in över eller Stoppa avslutar inspelningen. Rensa markering kasserar den."
           }
         },
         "th" : {
@@ -333761,6 +334349,12 @@
             "value" : "Запись, %1$@, уровень %2$@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar in, %1$@, nivå %2$@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333874,6 +334468,12 @@
             "value" : "Идёт запись. Остановите её или отбросьте командой «Снять выделение», затем закройте окно."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar in. Stoppa eller kassera inspelningen med Rensa markering och stäng sedan."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333985,6 +334585,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Идёт запись. Сначала остановите запись."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar in. Stoppa inspelningen först."
           }
         },
         "th" : {
@@ -334326,6 +334932,12 @@
             "value" : "Записывает поверх выделенного или в позиции курсора после сигнала. Повторный вызов или «Остановить» завершает запись."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar in över markeringen eller vid markören, efter ett pip. Igen, eller Stoppa, avslutar inspelningen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334437,6 +335049,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Восстановленные записи"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återställda inspelningar"
           }
         },
         "th" : {
@@ -334909,6 +335527,12 @@
             "value" : "Повторено: %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gjorde om %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335133,6 +335757,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Повторить: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gör om %@"
           }
         },
         "th" : {
@@ -335603,6 +336233,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Повторяет правку, отменённую последней."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gör om den senast ångrade redigeringen."
           }
         },
         "th" : {
@@ -339822,6 +340458,12 @@
             "value" : "Убрать метку главы"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta bort kapitelmärke"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -340459,6 +341101,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Убрать гул"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta bort dån"
           }
         },
         "th" : {
@@ -342531,6 +343179,12 @@
             "value" : "Переименовать"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Byt namn"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -343435,6 +344089,12 @@
             "value" : "Замена: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ersätt %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -343661,6 +344321,12 @@
             "value" : "Заменить расшифровку"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ersätt transkription"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -343772,6 +344438,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Заменить расшифровку «%@»?"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ersätta transkriptionen för %@?"
           }
         },
         "th" : {
@@ -344010,6 +344682,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Заменено %1$@ новой записью длительностью %2$@, она выделена."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ersatte %1$@ med %2$@ ny inspelning, som är markerad."
           }
         },
         "th" : {
@@ -345053,6 +345731,12 @@
             "value" : "При замене сохранена расшифровка существующей копии."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vid ersättningen behölls den befintliga kopians transkription."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345622,6 +346306,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сбросить всё по умолчанию"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återställ alla till standard"
           }
         },
         "th" : {
@@ -349871,6 +350561,12 @@
             "value" : "Продолжить"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återuppta"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349982,6 +350678,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Продолжение."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återupptar."
           }
         },
         "th" : {
@@ -350097,6 +350799,12 @@
             "value" : "Расшифровать повторно"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkribera igen"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -350210,6 +350918,12 @@
             "value" : "Повторная расшифровка «%@»"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkribera %@ igen"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -350321,6 +351035,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Расшифровать аудио повторно…"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transkribera ljud igen…"
           }
         },
         "th" : {
@@ -351584,6 +352304,12 @@
             "value" : "В обратную сторону"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Baklänges"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -351816,6 +352542,12 @@
             "value" : "Вернуть"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återgå"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -352040,6 +352772,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вернуть исходное аудио?"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återgå till originalljudet?"
           }
         },
         "th" : {
@@ -352378,6 +353116,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Возвращено исходное аудио. «Повторить» вернёт правок: %lld."
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Återgick till originalljudet. Gör om tar tillbaka %lld redigering."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Återgick till originalljudet. Gör om tar tillbaka %lld redigeringar."
                 }
               }
             }
@@ -354384,6 +355140,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regler: TextMouths egna, version %@ av %@, %lld regel."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regler: TextMouths egna, version %@ av %@, %lld regler."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -354779,6 +355553,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regler: din kopia, version %@ av %@, %lld regel."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regler: din kopia, version %@ av %@, %lld regler."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -354944,6 +355736,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Применяет пресет фильтра к выделенному или ко всему файлу."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kör en filterförinställning över markeringen eller hela filen."
           }
         },
         "th" : {
@@ -355523,6 +356321,12 @@
             "value" : "Сохранить ещё раз"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara igen"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355634,6 +356438,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохранить имя"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara namn"
           }
         },
         "th" : {
@@ -355975,6 +356785,12 @@
             "value" : "Сохранение и экспорт"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara och exportera"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356086,6 +356902,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохранить как аудиокнигу"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara som ljudbok"
           }
         },
         "th" : {
@@ -356201,6 +357023,12 @@
             "value" : "Сохранить как аудиокнигу: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara som ljudbok: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356312,6 +357140,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохранить в"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara i"
           }
         },
         "th" : {
@@ -356992,6 +357826,12 @@
             "value" : "Сохранить правки в «%@»?"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara redigeringarna av ”%@”?"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -357228,6 +358068,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохранить запись?"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara inspelningen?"
           }
         },
         "th" : {
@@ -357789,6 +358635,12 @@
             "value" : "Сохранено: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparade %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358021,6 +358873,12 @@
             "value" : "Запись сохранена как «%@»"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparade inspelningen som %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358134,6 +358992,12 @@
             "value" : "Запись сохранена как «%@»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparade inspelningen som %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358245,6 +359109,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохранено как"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparad som"
           }
         },
         "th" : {
@@ -358479,6 +359349,12 @@
             "value" : "Сохранено. Теперь длительность аудио книги: %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparat. Bokens ljud är nu %@ långt."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358590,6 +359466,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохраняет правки в аудиофайл книги в формате, в котором книга его хранит."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparar redigeringarna i bokens ljudfil, i det format som boken behåller."
           }
         },
         "th" : {
@@ -358824,6 +359706,12 @@
             "value" : "Сохраняет эту запись как аудиокнигу в папке «%@» с названием по времени записи."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparar den här inspelningen som en ljudbok i den mapp som väljs i %@, med en titel efter när den spelades in."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359044,6 +359932,12 @@
             "value" : "Сохранение"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparar"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359163,6 +360057,12 @@
             "value" : "Сохранение аудио длительностью %1$@ в формате %2$@, в котором книга хранит аудио."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparar %1$@ ljud som %2$@, det format som den här boken behåller."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359276,6 +360176,12 @@
             "value" : "Сохранение аудио длительностью %@ в книгу."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparar %@ ljud i boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359387,6 +360293,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохранение записи…"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparar inspelningen…"
           }
         },
         "th" : {
@@ -359722,6 +360634,12 @@
             "value" : "Сообщает, где курсор, в какой он главе и что выделено."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Säger var markören är, i vilket kapitel, och vad som är markerat."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359833,6 +360751,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сообщает, где начинается и заканчивается выделение и какова его длина."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Säger var markeringen börjar och slutar, och hur lång den är."
           }
         },
         "th" : {
@@ -363100,6 +364024,12 @@
             "value" : "Секунд между объявлениями уровня"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sekunder mellan nivåmeddelanden"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363211,6 +364141,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Секунд должно быть меньше 60."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sekunder måste vara färre än 60."
           }
         },
         "th" : {
@@ -363651,6 +364587,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выбрать"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markera"
           }
         },
         "th" : {
@@ -364518,6 +365460,12 @@
             "value" : "Выделение и метки"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markering och ljudmärken"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -364629,6 +365577,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выберите одну аудиокнигу и снова выберите «Расшифровать аудио»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markera en ljudbok och välj sedan Transkribera ljud igen."
           }
         },
         "th" : {
@@ -365321,6 +366275,12 @@
             "value" : "Выделено: %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerade %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -365432,6 +366392,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выделено всё: %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerade allt, %@."
           }
         },
         "th" : {
@@ -365553,6 +366519,12 @@
             "value" : "Выделена глава %1$@: %2$@, %3$@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerade kapitel %1$@: %2$@, %3$@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -365664,6 +366636,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выделено аудио до главы 1: %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerade de %@ före kapitel 1."
           }
         },
         "th" : {
@@ -365779,6 +366757,12 @@
             "value" : "Выделенное"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markering"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -365890,6 +366874,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выделение снято."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markeringen rensades."
           }
         },
         "th" : {
@@ -366011,6 +367001,12 @@
             "value" : "Выделение от %1$@ до %2$@, длительность %3$@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markering från %1$@ till %2$@; %3$@ lång."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -366122,6 +367118,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выделяет всё аудио."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerar allt ljud."
           }
         },
         "th" : {
@@ -366237,6 +367239,12 @@
             "value" : "Выделяет от курсора до конца следующей паузы."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerar från markören till slutet av nästa paus."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -366350,6 +367358,12 @@
             "value" : "Выделяет от конца предыдущей паузы до курсора."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerar från slutet av föregående paus till markören."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -366461,6 +367475,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выделяет главу, в которой находится курсор."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markerar kapitlet som markören finns i."
           }
         },
         "th" : {
@@ -367260,6 +368280,12 @@
             "value" : "Установка метки главы"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ange kapitelmärke"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -367863,6 +368889,12 @@
             "value" : "Устанавливает метку главы в позиции курсора с названием, которое вы вводите."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anger ett kapitelmärke vid markören, med en titel som du skriver."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -367974,6 +369006,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Задаёт язык расшифровки. Язык со статусом «нужна загрузка» загружается только в листе «Расшифровать аудио»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anger transkriptionsspråket. Ett språk som är märkt ”behöver hämtas” hämtas bara från arket Transkribera ljud."
           }
         },
         "th" : {
@@ -369814,6 +370852,12 @@
             "value" : "Сочетание клавиш: %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Genväg: %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370159,6 +371203,12 @@
             "value" : "Сочетания клавиш: %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Genvägar: %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370270,6 +371320,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сократить длинные паузы"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förkorta långa pauser"
           }
         },
         "th" : {
@@ -374904,6 +375960,12 @@
             "value" : "Показывает длительность, файл и правки; задаёт, что делать с исходным аудио."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Visar längd, fil och redigeringar. Anger vad som händer med originalljudet."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -375838,6 +376900,12 @@
             "value" : "Тишина может длиться не более суток."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tystnaden får vara högst ett dygn."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -375951,6 +377019,12 @@
             "value" : "Тишина должна быть длиннее нуля."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tystnaden måste vara längre än noll."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -376062,6 +377136,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Тишина"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tyst"
           }
         },
         "th" : {
@@ -385434,6 +386514,12 @@
             "value" : "Начать заново"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Börja om"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -385664,6 +386750,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Начало аудио."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudets början."
           }
         },
         "th" : {
@@ -386326,6 +387418,12 @@
             "value" : "Запуск…"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startar…"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -386439,6 +387537,12 @@
             "value" : "Начинает запись с микрофона «%@»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Börjar spela in från %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -386550,6 +387654,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Начнёт запись, как только будет подключён микрофон."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Börjar spela in när en mikrofon har anslutits."
           }
         },
         "th" : {
@@ -386889,6 +387999,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Состояние"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Status"
           }
         },
         "th" : {
@@ -387768,6 +388884,12 @@
             "value" : "Паузы ещё ищутся. Повторите попытку через мгновение."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Letar fortfarande efter pauserna. Försök igen om en stund."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -387988,6 +389110,12 @@
             "value" : "Ещё выполняется последнее изменение."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arbetar fortfarande med den senaste ändringen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -388099,6 +389227,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ещё выполняется. Закройте окно, когда изменение завершится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Arbetar fortfarande. Stäng när ändringen är klar."
           }
         },
         "th" : {
@@ -389073,6 +390207,12 @@
             "value" : "Остановить прослушивание"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa förhandsvisning"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -389184,6 +390324,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Остановить запись"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa inspelning"
           }
         },
         "th" : {
@@ -389412,6 +390558,12 @@
             "value" : "Остановить и сохранить"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa och spara"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -389523,6 +390675,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Остановить и сохранить запись?"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa och spara inspelningen?"
           }
         },
         "th" : {
@@ -390723,6 +391881,12 @@
             "value" : "Остановлено. Возврат на %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppad. Tillbaka vid %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -391538,6 +392702,12 @@
             "value" : "Останавливает воспроизведение и возвращается туда, где оно началось."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppar uppspelningen och går tillbaka dit den började."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -391649,6 +392819,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Останавливает запись и сохраняет её в вашей библиотеке как аудиокнигу."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppar inspelningen och sparar den i ditt bibliotek som en ljudbok."
           }
         },
         "th" : {
@@ -391881,6 +393057,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Останавливает загрузку. Ничего не устанавливается."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppar hämtningen. Inget installeras."
           }
         },
         "th" : {
@@ -392547,6 +393729,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Останавливает расшифровку. Книга остаётся прежней."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Slutar transkribera. Boken förblir som den var."
           }
         },
         "th" : {
@@ -401363,6 +402551,12 @@
             "value" : "TextMouth прикрепляет файлы WebVTT (.vtt) и SubRip (.srt)."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth bifogar WebVTT-filer (.vtt) och SubRip-filer (.srt)."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -407885,6 +409079,12 @@
             "value" : "TextMouth не удалось начать запись с микрофона «%@»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte börja spela in från %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -408691,6 +409891,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "TextMouth не считывает метки глав из файлов %1$@, поэтому после сохранения эта книга не будет показывать метки глав (%2$lld)."
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth läser inte tillbaka kapitelmärken från %@-filer, så den här boken listar inte sitt kapitelmärke när den har sparats."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth läser inte tillbaka kapitelmärken från %@-filer, så den här boken listar inte sina %lld kapitelmärken när den har sparats."
                 }
               }
             }
@@ -409924,6 +411142,12 @@
             "value" : "У TextMouth нет собственных правил: ни одно не было верным во всех проверенных книгах. «Изменить правила…» открывает вашу копию, где можно добавить правила, например для имени, которое распознаватель всегда пишет иначе."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth har inga egna regler: ingen var rätt i alla testade böcker. Redigera regler… öppnar din kopia, där du kan lägga till regler, till exempel ett namn som igenkänningen alltid stavar på ett annat sätt."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -410493,6 +411717,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth уже расшифровывает «%@». Повторите попытку, когда это завершится."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth transkriberar redan %@. Försök igen när det är klart."
           }
         },
         "th" : {
@@ -411947,6 +413177,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth завершает работу, а в аудио книги этих правок ещё нет. «Отбросить» отменяет их; при следующем изменении этой книги «Повторить» вернёт их, пока вы не сделаете другую правку. «Отменить» оставляет TextMouth открытым."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth avslutas och bokens ljud innehåller inte de här redigeringarna än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering. Avbryt håller TextMouth öppet."
           }
         },
         "th" : {
@@ -413583,6 +414819,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth не разрешено использовать микрофон. Включите доступ в разделе «Системные настройки», «Конфиденциальность и безопасность», «Микрофон»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth får inte använda mikrofonen. Slå på det i Systeminställningar, Integritet och säkerhet, Mikrofon."
           }
         },
         "th" : {
@@ -420163,6 +421405,12 @@
             "value" : "Собственные фильтры TextMouth не включают «%1$@». Вот они: %2$@; если установлен ffmpeg, работает любой его фильтр."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouths egna filter innehåller inte ”%1$@”. De är %2$@. Med ffmpeg installerat fungerar alla filter som det har."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -420274,6 +421522,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Эту цепочку выполняют собственные фильтры TextMouth."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouths egna filter kör den här kedjan."
           }
         },
         "th" : {
@@ -420389,6 +421643,12 @@
             "value" : "Собственный loudnorm в TextMouth нормализует одним усилением, поэтому принимает только true"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouths egen loudnorm normaliserar med en enda förstärkning, så den tar bara true"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -420500,6 +421760,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Собственные правила TextMouth новее, версия %@. Чтобы использовать их, удалите вашу копию или скопируйте их правила в неё."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouths egna regler är nyare, version %@. Om du vill använda dem raderar du din kopia eller kopierar in deras regler i den."
           }
         },
         "th" : {
@@ -421404,6 +422670,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Этот элемент не является обычным файлом, который TextMouth может прочитать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det objektet är inte en vanlig fil som TextMouth kan läsa."
           }
         },
         "th" : {
@@ -422672,6 +423944,12 @@
             "value" : "Это позже конца аудио, длительность которого %@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det är efter ljudets slut, vid %@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -422904,6 +424182,12 @@
             "value" : "В файле %@ нет текста с временными метками, который может использовать TextMouth."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-filen innehåller ingen tidsatt text som TextMouth kan använda."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -423021,6 +424305,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У фильтра %1$@ здесь нет параметра «%2$@». Его параметры: %3$@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filtret %1$@ har inget alternativ ”%2$@” här. Dess alternativ är %3$@."
           }
         },
         "th" : {
@@ -423142,6 +424432,12 @@
             "value" : "Фильтру %1$@ нужен параметр %2$@: %3$@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filtret %1$@ behöver sitt alternativ %2$@: %3$@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -423253,6 +424549,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Фильтру %@ передано больше значений, чем у него параметров; указывайте их как key=value."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filtret %@ fick fler värden än det har alternativ. Ange dem som key=value."
           }
         },
         "th" : {
@@ -423372,6 +424674,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У фильтра %1$@ параметр %2$@ не может быть «%3$@»: %4$@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alternativet %2$@ i filtret %1$@ kan inte vara ”%3$@”: %4$@."
           }
         },
         "th" : {
@@ -424408,6 +425716,12 @@
             "value" : "Не удалось загрузить модель «%1$@»: %2$@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Modellen för %1$@ kunde inte hämtas: %2$@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -424521,6 +425835,12 @@
             "value" : "Модель «%@» загружена. Книгу теперь можно расшифровать."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Modellen för %@ har hämtats. Boken kan transkriberas nu."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -424632,6 +425952,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Загрузка модели «%@» отменена."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hämtningen av modellen för %@ avbröts."
           }
         },
         "th" : {
@@ -425739,6 +427065,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ljudmärket raderas, och Gör om tar inte tillbaka det."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De %lld ljudmärkena raderas, och Gör om tar inte tillbaka dem."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -426129,6 +427473,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Удалено меток: %lld."
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ljudmärket raderades."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De %lld ljudmärkena raderades."
                 }
               }
             }
@@ -431726,6 +433088,12 @@
             "value" : "Аудио нельзя изменить"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudet kan inte redigeras"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -432190,6 +433558,12 @@
             "value" : "Не удалось экспортировать аудио."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudet kunde inte exporteras."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -432301,6 +433675,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось прочитать аудио."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudet kunde inte läsas."
           }
         },
         "th" : {
@@ -432527,6 +433907,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Редактор аудио для «%@» уже открыт."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudredigeraren för %@ är redan öppen."
           }
         },
         "th" : {
@@ -433489,6 +434875,12 @@
             "value" : "Аудиофайл «%@», нужный для правок, отсутствует в книге."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudfilen ”%@” som redigeringarna behöver saknas i boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -433600,6 +434992,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Аудио пока только в облаке, а не на этом Mac."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudet finns bara i molnet, inte på den här Mac-datorn än."
           }
         },
         "th" : {
@@ -433715,6 +435113,12 @@
             "value" : "Аудио ещё не готово к воспроизведению."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudet är inte redo att spelas upp än."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -433826,6 +435230,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось открыть аудио «%@» для редактирования."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudet för %@ kunde inte öppnas för redigering."
           }
         },
         "th" : {
@@ -434066,6 +435476,12 @@
             "value" : "Аудио аудиокниги, ваша позиция чтения и ваши закладки не изменятся."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudbokens ljud, din position och dina bokmärken förblir som de är."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -434177,6 +435593,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Название аудиокниги в вашей библиотеке."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudbokens titel i ditt bibliotek."
           }
         },
         "th" : {
@@ -434536,6 +435958,12 @@
             "value" : "Книгу можно расшифровать снова."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken kan transkriberas igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -434647,6 +436075,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У книги уже есть расшифровка, поэтому TextMouth её сохранил."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken har redan en transkription, så TextMouth behöll den."
           }
         },
         "th" : {
@@ -434980,6 +436414,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Книга расшифровывается повторно. Исправьте расшифровку после завершения."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken transkriberas igen. Städa upp dess transkription när det är klart."
           }
         },
         "th" : {
@@ -435559,6 +436999,12 @@
             "value" : "Книги больше нет в библиотеке."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken finns inte längre i biblioteket."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -435791,6 +437237,12 @@
             "value" : "Книга открыта в окне чтения. Закройте его и снова сохраните."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken är öppen i en läsare. Stäng den och spara sedan igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -436021,6 +437473,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Книга исчезла из библиотеки во время расшифровки, поэтому её расшифровка не сохранена."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Boken lämnade biblioteket under transkriberingen, så dess transkription sparades inte."
           }
         },
         "th" : {
@@ -436475,6 +437933,12 @@
             "value" : "Аудио книги изменилось после расшифровки (%@), поэтому расшифровка больше не подходит. Расшифруйте снова."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens ljud har ändrats sedan det transkriberades (%@), så transkriptionen passar inte längre. Transkribera igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -436588,6 +438052,12 @@
             "value" : "Аудио книги изменилось во время расшифровки: %@. Расшифруйте снова."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens ljud ändrades medan det transkriberades: %@. Transkribera det igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -436699,6 +438169,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Аудио книги содержит правки, которых нет в истории, поэтому они остаются: их можно сохранить или отменить при следующем изменении этой книги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens ljud innehåller redigeringar som historiken tappade, så de ligger kvar, för att sparas eller ångras nästa gång du redigerar den här boken."
           }
         },
         "th" : {
@@ -437801,6 +439277,12 @@
             "value" : "В тексте книги есть изменения, которые TextMouth не смог скопировать, поэтому текст остаётся как есть."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens text har ändringar som TextMouth inte kunde kopiera, så den lämnar texten som den är."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -437912,6 +439394,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Текст книги только в iCloud, поэтому TextMouth его не трогает. Загрузите книгу и повторите попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens text finns bara i iCloud, så TextMouth lämnar den. Hämta boken och försök sedan igen."
           }
         },
         "th" : {
@@ -438132,6 +439620,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Расшифровку книги не удалось прочитать, поэтому она не экспортирована."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bokens transkription kunde inte läsas, så den exporterades inte."
           }
         },
         "th" : {
@@ -441316,6 +442810,12 @@
             "value" : "Диск почти заполнен, поэтому запись остановлена. Записанное сохранено."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Disken är nästan full, så inspelningen stoppades. Det som spelats in har sparats."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -441427,6 +442927,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "На диске слишком мало места, чтобы хранить это аудио для вставки."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Disken är för full för att behålla det här ljudet för inklistring."
           }
         },
         "th" : {
@@ -442250,6 +443756,12 @@
             "value" : "Историю правок не удалось прочитать. Копия сохранена в пакете книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Redigeringshistoriken kunde inte läsas. En kopia sparades i bokens paket."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -442361,6 +443873,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "История правок пока только в облаке, а не на этом Mac."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Redigeringshistoriken finns bara i molnet, inte på den här Mac-datorn än."
           }
         },
         "th" : {
@@ -442476,6 +443994,12 @@
             "value" : "История правок указывает на файл вне книги, поэтому не используется."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Redigeringshistoriken pekar på en fil utanför boken, så den används inte."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -442587,6 +444111,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Историю правок «%@» не удалось прочитать."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Redigeringshistoriken för %@ kunde inte läsas."
           }
         },
         "th" : {
@@ -442702,6 +444232,12 @@
             "value" : "Не удалось записать изменённое аудио."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Det redigerade ljudet kunde inte skrivas."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -442813,6 +444349,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось сохранить правки."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Redigeringarna kunde inte sparas."
           }
         },
         "th" : {
@@ -446035,6 +447577,12 @@
             "value" : "Файл — расшифровка %1$@ версии %2$@, которую TextMouth не читает."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen är en %1$@-transkription av version %2$@, som TextMouth inte läser."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -446148,6 +447696,12 @@
             "value" : "Файл превышает лимит в %lld МБ для расшифровки."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen är över gränsen på %lld MB för en transkription."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -446259,6 +447813,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл не является расшифровкой %@, которую может прочитать TextMouth."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filen är inte en %@-transkription som TextMouth kan läsa."
           }
         },
         "th" : {
@@ -447784,6 +449344,12 @@
             "value" : "Цепочка фильтров пуста."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filterkedjan är tom."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -447895,6 +449461,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Пресеты фильтров сброшены к значениям по умолчанию."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filterförinställningarna har återställts till standard."
           }
         },
         "th" : {
@@ -452417,6 +453989,12 @@
             "value" : "Папка библиотеки, в которую сохраняется запись."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bibliotekets mapp som inspelningen sparas i."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -453958,6 +455536,12 @@
             "value" : "Библиотека недоступна, поэтому пресеты фильтров нельзя сохранить."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Biblioteket är inte tillgängligt, så filterförinställningarna kan inte sparas."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -454069,6 +455653,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Библиотека недоступна, поэтому правила сейчас нельзя открыть."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Biblioteket är inte tillgängligt, så reglerna kan inte öppnas nu."
           }
         },
         "th" : {
@@ -454902,6 +456492,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Микрофон, с которого ведёт запись «Записать поверх». TextMouth запоминает его отдельно от входа macOS."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mikrofonen som Spela in över spelar in från. TextMouth kommer ihåg den, oberoende av ingången i macOS."
           }
         },
         "th" : {
