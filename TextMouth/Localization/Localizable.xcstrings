@@ -16861,7 +16861,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ necesita «%2$@», una de las tablas de braille propias de una Mac, que TextMouth en el iPhone no tiene."
+            "value" : "%1$@ necesita “%2$@”, una de las tablas de braille propias de una Mac, que TextMouth en el iPhone no tiene."
           }
         },
         "fr" : {
@@ -16992,7 +16992,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anidado demasiado profundo: %@"
+            "value" : "Demasiados niveles anidados en %@"
           }
         },
         "fr" : {
@@ -20841,7 +20841,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Velocidad %@ veces"
+            "value" : "%@ veces la velocidad"
           }
         },
         "fr" : {
@@ -59118,19 +59118,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de entradas dan solo una ortografía fonética, así que se dejaron aparte."
+                  "value" : "%lld de entradas dan solo una notación fonética, así que se dejaron aparte."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld entrada da solo una ortografía fonética, así que se dejó aparte."
+                  "value" : "%lld entrada da solo una notación fonética, así que se dejó aparte."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld entradas dan solo una ortografía fonética, así que se dejaron aparte."
+                  "value" : "%lld entradas dan solo una notación fonética, así que se dejaron aparte."
                 }
               }
             }
@@ -99510,19 +99510,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se agregaron %1$lld de reglas de «%2$@»."
+                  "value" : "Se agregaron %1$lld de reglas de “%2$@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se agregó %1$lld regla de «%2$@»."
+                  "value" : "Se agregó %1$lld regla de “%2$@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se agregaron %1$lld reglas de «%2$@»."
+                  "value" : "Se agregaron %1$lld reglas de “%2$@”."
                 }
               }
             }
@@ -100807,7 +100807,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Agrega las entradas del léxico después de tus reglas; las entradas con solo una ortografía fonética se dejan aparte"
+            "value" : "Agrega las entradas del léxico después de tus reglas; las entradas con solo una notación fonética se dejan aparte"
           }
         },
         "fr" : {
@@ -120408,7 +120408,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Principio"
+            "value" : "Empezar"
           }
         },
         "fr" : {
@@ -126854,7 +126854,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Braille Ready Format: páginas de braille, para líneas braille y para impresoras braille."
+            "value" : "Braille Ready Format: páginas de braille, para pantallas braille y para impresoras braille."
           }
         },
         "fr" : {
@@ -128887,7 +128887,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "CR LF es lo más adecuado para la mayoría de las líneas braille y de las impresoras braille."
+            "value" : "CR LF es lo más adecuado para la mayoría de las pantallas braille y de las impresoras braille."
           }
         },
         "fr" : {
@@ -135844,7 +135844,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El capítulo %1$@ de este libro %2$@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, aplana el anidado y guarda; después vuelve a exportar."
+            "value" : "El capítulo %1$@ de este libro %2$@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, simplifica el anidamiento y guarda; después vuelve a exportar."
           }
         },
         "fr" : {
@@ -164899,7 +164899,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudo exportar %1$@. El primero fue %2$@."
+            "value" : "No se pudieron exportar %1$@. El primero fue %2$@."
           }
         },
         "fr" : {
@@ -165036,7 +165036,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudo exportar %1$@: %2$@."
+            "value" : "No se pudieron exportar %1$@: %2$@."
           }
         },
         "fr" : {
@@ -173255,7 +173255,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Borrar carácter"
+            "value" : "Suprimir carácter"
           }
         },
         "fr" : {
@@ -174428,7 +174428,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Borrar línea"
+            "value" : "Suprimir línea"
           }
         },
         "fr" : {
@@ -190144,7 +190144,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Descargando «%@»"
+            "value" : "Descargando “%@”"
           }
         },
         "fr" : {
@@ -203355,7 +203355,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escape"
+            "value" : "Esc"
           }
         },
         "fr" : {
@@ -211550,7 +211550,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exportado: %1$@ a %2$@."
+            "value" : "Exportado a %2$@: %1$@."
           }
         },
         "fr" : {
@@ -211762,19 +211762,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se exportaron %1$lld de reglas a «%2$@»."
+                  "value" : "Se exportaron %1$lld de reglas a “%2$@”."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se exportó %1$lld regla a «%2$@»."
+                  "value" : "Se exportó %1$lld regla a “%2$@”."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se exportaron %1$lld reglas a «%2$@»."
+                  "value" : "Se exportaron %1$lld reglas a “%2$@”."
                 }
               }
             }
@@ -293753,7 +293753,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cambio de modo"
+            "value" : "Cambiar modo"
           }
         },
         "fr" : {
@@ -353398,7 +353398,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pegar y adaptar estilo"
+            "value" : "Pegar con el mismo estilo"
           }
         },
         "fr" : {
@@ -365264,7 +365264,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pulsa la nueva tecla, o Escape para cancelar."
+            "value" : "Pulsa la nueva tecla, o Esc para cancelar."
           }
         },
         "fr" : {
@@ -409665,7 +409665,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bloqueo de desplazamiento"
+            "value" : "Bloquear desplazamiento"
           }
         },
         "fr" : {
@@ -524226,7 +524226,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "El otro capítulo (%lld) no tiene texto."
+                  "value" : "El otro capítulo no tiene texto."
                 }
               },
               "other" : {
@@ -573004,7 +573004,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escribe comillas rectas: en TextEdit, desactiva Comillas inteligentes en Edición, Sustituciones."
+            "value" : "Escribe comillas rectas: en TextEdit, desactiva Comillas tipográficas en Edición, Sustituciones."
           }
         },
         "fr" : {
@@ -586366,7 +586366,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Advertencia: esto reescribirá la copia de la biblioteca del archivo EPUB y recalculará su hash MD5."
+            "value" : "Advertencia: esto reescribirá la copia del archivo EPUB de la biblioteca y recalculará su hash MD5."
           }
         },
         "fr" : {
@@ -600410,7 +600410,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escribe el título, el autor, la editorial y la fecha en la copia de la biblioteca de este libro."
+            "value" : "Escribe el título, el autor, la editorial y la fecha en la copia que la biblioteca guarda de este libro."
           }
         },
         "fr" : {
