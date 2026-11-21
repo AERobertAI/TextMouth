@@ -22,9 +22,11 @@ struct InterfaceTextMemoryTables: InterfaceTextTables {
 
     /// Tables from `lines`: ID, then language, then the raw entry. An ID a language lacks has no entry there.
     init(lines: [String: [String: String]]) {
-        ids = lines.keys.sorted()
+        // Local copies, so the closures below do not capture `self` before it is initialized.
+        let sortedIDs = lines.keys.sorted()
         let names = Set(lines.values.flatMap { $0.keys })
-        languages = Dictionary(uniqueKeysWithValues: names.map { name in (name, ids.map { lines[$0]?[name] ?? "" }) })
+        ids = sortedIDs
+        languages = Dictionary(uniqueKeysWithValues: names.map { name in (name, sortedIDs.map { lines[$0]?[name] ?? "" }) })
     }
 
     func idList() throws -> InterfaceTextIDList {
