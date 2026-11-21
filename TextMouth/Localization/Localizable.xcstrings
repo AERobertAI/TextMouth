@@ -22646,7 +22646,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ usano http semplice, quindi altri possono leggere o modificare ciò che inviano; TextMouth li carica comunque."
+            "value" : "%@ usano http non protetto, quindi altri possono leggere o modificare ciò che inviano; TextMouth li carica comunque."
           }
         },
         "ja" : {
@@ -22920,7 +22920,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ usa http semplice, quindi altri possono leggere o modificare ciò che invia; TextMouth lo carica comunque."
+            "value" : "%@ usa http non protetto, quindi altri possono leggere o modificare ciò che invia; TextMouth lo carica comunque."
           }
         },
         "ja" : {
@@ -43372,19 +43372,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di libri non hanno alcuni capitoli:"
+                  "value" : "%lld di libri hanno capitoli mancanti:"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libro non ha alcuni capitoli:"
+                  "value" : "%lld libro ha capitoli mancanti:"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libri non hanno alcuni capitoli:"
+                  "value" : "%lld libri hanno capitoli mancanti:"
                 }
               }
             }
@@ -69804,19 +69804,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld in più"
+                  "value" : "altri %lld"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld in più"
+                  "value" : "%lld altro"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld in più"
+                  "value" : "altri %lld"
                 }
               }
             }
@@ -89012,19 +89012,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld in attesa di una rete senza limiti di dati per questo Mac"
+                  "value" : "%lld in attesa che questo Mac usi una rete senza limiti di dati"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld in attesa di una rete senza limiti di dati per questo Mac"
+                  "value" : "%lld in attesa che questo Mac usi una rete senza limiti di dati"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld in attesa di una rete senza limiti di dati per questo Mac"
+                  "value" : "%lld in attesa che questo Mac usi una rete senza limiti di dati"
                 }
               }
             }
@@ -89479,19 +89479,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di erano già iscritti."
+                  "value" : "%lld erano già tra le tue iscrizioni."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld era già iscritto."
+                  "value" : "%lld era già tra le tue iscrizioni."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld erano già iscritti."
+                  "value" : "%lld erano già tra le tue iscrizioni."
                 }
               }
             }
@@ -99033,7 +99033,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Circa %@ rimanenti"
+            "value" : "Tempo rimanente: circa %@"
           }
         },
         "ja" : {
@@ -145275,7 +145275,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Riprende a controllare questo feed da ora, e subito."
+            "value" : "Riprende a controllare questo feed, a cominciare da subito."
           }
         },
         "ja" : {
@@ -154734,7 +154734,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scegliendo un’altra cartella, gli episodi e gli articoli del feed vengono elencati lì, compresi quelli già scaricati."
+            "value" : "Se scegli un’altra cartella, gli episodi e gli articoli del feed verranno elencati lì, compresi quelli già scaricati."
           }
         },
         "ja" : {
@@ -214454,7 +214454,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tutti i feed hanno l’iscrizione annullata, quindi nessuno è stato controllato. Scegli %1$@ nella riga di un feed, o nel foglio %2$@, per controllarlo di nuovo."
+            "value" : "Hai annullato l’iscrizione a tutti i feed, quindi nessuno è stato controllato. Scegli %1$@ nella riga di un feed, o nel foglio %2$@, per controllarlo di nuovo."
           }
         },
         "ja" : {
@@ -271713,7 +271713,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conservati per quando lo scarichi di nuovo: %@."
+            "value" : "TextMouth ne conserva %@ per quando lo scarichi di nuovo."
           }
         },
         "ja" : {
@@ -271850,7 +271850,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conservati: %@."
+            "value" : "TextMouth ne conserva %@."
           }
         },
         "ja" : {
@@ -271987,7 +271987,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conservato per quando lo scarichi di nuovo: %@."
+            "value" : "TextMouth ne conserva %@ per quando lo scarichi di nuovo."
           }
         },
         "ja" : {
@@ -272124,7 +272124,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conservato: %@."
+            "value" : "TextMouth ne conserva %@."
           }
         },
         "ja" : {
@@ -291657,7 +291657,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elenca ogni articolo; nulla viene scaricato da solo, e un download resta finché non lo elimini o non passano i giorni previsti dopo la riproduzione."
+            "value" : "Elenca ogni articolo; nulla viene scaricato automaticamente, e un download resta finché non lo elimini o non passano i giorni previsti dopo la riproduzione."
           }
         },
         "ja" : {
@@ -292261,7 +292261,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elenca ogni episodio e articolo; nulla viene scaricato da solo, e un download resta finché non lo elimini o non passano i giorni previsti dopo la riproduzione."
+            "value" : "Elenca ogni episodio e articolo; nulla viene scaricato automaticamente, e un download resta finché non lo elimini o non passano i giorni previsti dopo la riproduzione."
           }
         },
         "ja" : {
@@ -292865,7 +292865,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elenca ogni episodio; nulla viene scaricato da solo, e un download resta finché non lo elimini o non passano i giorni previsti dopo la riproduzione."
+            "value" : "Elenca ogni episodio; nulla viene scaricato automaticamente, e un download resta finché non lo elimini o non passano i giorni previsti dopo la riproduzione."
           }
         },
         "ja" : {
@@ -293429,19 +293429,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Elenca i %lld più recenti non riprodotti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando elenchi di più."
+                  "value" : "Elenca i %lld più recenti non riprodotti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando ne elenchi di più."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Elenca il più recente non riprodotto (%lld) e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando elenchi di più."
+                  "value" : "Elenca il più recente non riprodotto (%lld) e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando ne elenchi di più."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Elenca i %lld più recenti non riprodotti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando elenchi di più."
+                  "value" : "Elenca i %lld più recenti non riprodotti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando ne elenchi di più."
                 }
               }
             }
@@ -293896,19 +293896,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Elenca i %lld più recenti non letti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando elenchi di più."
+                  "value" : "Elenca i %lld più recenti non letti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando ne elenchi di più."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Elenca il più recente non letto (%lld) e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando elenchi di più."
+                  "value" : "Elenca il più recente non letto (%lld) e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando ne elenchi di più."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Elenca i %lld più recenti non letti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando elenchi di più."
+                  "value" : "Elenca i %lld più recenti non letti e ogni download. Scarica solo ciò che chiedi; gli altri conservano i loro dati e tornano quando ne elenchi di più."
                 }
               }
             }
@@ -348427,7 +348427,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Non controllato dal %@"
+            "value" : "Non più controllato, ultimo controllo %@"
           }
         },
         "ja" : {
@@ -368441,7 +368441,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Una parte di %@ non ha potuto essere decodificata ed è mantenuta come silenzio."
+            "value" : "Una parte di %@ non si è potuta decodificare ed è stata sostituita da silenzio."
           }
         },
         "ja" : {
@@ -368868,19 +368868,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Una parte di %lld di file, %@, non ha potuto essere decodificata ed è mantenuta come silenzio."
+                  "value" : "Una parte di %lld di file, %@, non si è potuta decodificare ed è stata sostituita da silenzio."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Una parte di %lld file, %@, non ha potuto essere decodificata ed è mantenuta come silenzio."
+                  "value" : "Una parte di %lld file, %@, non si è potuta decodificare ed è stata sostituita da silenzio."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Una parte di %lld file, %@, non ha potuto essere decodificata ed è mantenuta come silenzio."
+                  "value" : "Una parte di %lld file, %@, non si è potuta decodificare ed è stata sostituita da silenzio."
                 }
               }
             }
@@ -374313,7 +374313,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "http semplice: altri possono leggere o modificare ciò che invia questo feed."
+            "value" : "HTTP non protetto: altri possono leggere o modificare ciò che invia questo feed."
           }
         },
         "ja" : {
@@ -415584,7 +415584,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nuova iscrizione a %@. Controllo in corso…"
+            "value" : "Iscrizione a %@ ripristinata. Controllo in corso…"
           }
         },
         "ja" : {
@@ -468873,7 +468873,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Iscrizione a %@ completata. Questo feed usa http semplice, quindi altri possono leggere o modificare ciò che invia; TextMouth lo carica comunque."
+            "value" : "Iscrizione a %@ completata. Questo feed usa http non protetto, quindi altri possono leggere o modificare ciò che invia; TextMouth lo carica comunque."
           }
         },
         "ja" : {
