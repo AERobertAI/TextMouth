@@ -552658,7 +552658,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "A lista de leitura está vazia. Para adicionar um livro, escolha Adicionar à lista de leitura no menu de contexto dele, nas ações do VoiceOver ou no menu Biblioteca."
+            "value" : "A lista de leitura está vazia. Para adicionar um livro, escolha Adicionar à lista de leitura no menu de atalho dele, nas ações do VoiceOver ou no menu Biblioteca."
           }
         },
         "ru" : {
