@@ -57825,7 +57825,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 확인한 다음 이 피드와 다운로드, 삭제한 다운로드에서 남긴 항목을 삭제합니다."
+            "value" : "먼저 확인한 다음 이 피드와 다운로드, 제거한 다운로드에서 남긴 항목을 삭제합니다."
           }
         },
         "pt-BR" : {
@@ -78401,7 +78401,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 보관함을 선택한 폴더의 사본과 비교하여 어느 쪽이 더 최신인지 확인하는 중입니다. 최대 1분 정도 걸릴 수 있으며, 건너뛰려면 비교 중단을 선택하십시오."
+            "value" : "이 보관함을 선택한 폴더의 사본과 비교하여 어느 쪽이 더 최신인지 확인하는 중입니다. 최대 1분 정도 걸릴 수 있으며, 건너뛰려면 비교 중지를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -223035,7 +223035,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "비교 중단"
+            "value" : "비교 중지"
           }
         },
         "pt-BR" : {
@@ -243294,7 +243294,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "삭제한 다운로드 %2$lld개를 위해 보관한 %1$@이(가) 삭제되었습니다."
+                  "value" : "제거한 다운로드 %2$lld개를 위해 보관한 %1$@이(가) 삭제되었습니다."
                 }
               }
             }
@@ -243527,7 +243527,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "삭제한 다운로드 %2$lld개를 위해 보관한 %1$@이(가) 삭제되었습니다."
+                  "value" : "제거한 다운로드 %2$lld개를 위해 보관한 %1$@이(가) 삭제되었습니다."
                 }
               }
             }
@@ -296370,7 +296370,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "삭제한 다운로드 %lld개를 위해 보관한 항목이 삭제되었습니다."
+                  "value" : "제거한 다운로드 %lld개를 위해 보관한 항목이 삭제되었습니다."
                 }
               }
             }
@@ -321880,7 +321880,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "삭제한 다운로드 %2$lld개를 위해 보관한 %1$@"
+                  "value" : "제거한 다운로드 %2$lld개를 위해 보관한 %1$@"
                 }
               }
             }
@@ -325629,7 +325629,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "삭제한 다운로드 %lld개를 위해 보관한 항목"
+                  "value" : "제거한 다운로드 %lld개를 위해 보관한 항목"
                 }
               }
             }
