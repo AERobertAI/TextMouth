@@ -1,0 +1,425 @@
+{
+ "language": "fa",
+ "reviews": [
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ %@, which TextMouth can't export with its structure.",
+     "english": "%1$@ %2$@, which TextMouth can't export with its structure.",
+     "before": "%1$@ %2$@ که TextMouth نمی‌تواند آن را با ساختارش صادر کند.",
+     "after": "%1$@ %2$@ و TextMouth نمی‌تواند آن را با ساختارش صادر کند.",
+     "why": "grammar: %2$@ is a whole clause ending in its verb, so که left آن without a noun; و as in the app’s other nesting messages"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ کلید پیش‌فرض خود را دارد، %2$@",
+     "after": "%1$@ کلید پیش‌فرض این کنش را دارد، %2$@",
+     "why": "meaning: خود made it the other action’s own default; the key is this row’s default"
+    },
+    {
+     "key": "%@ now waits before %@, in case it is pressed twice.",
+     "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
+     "before": "%1$@ اکنون پیش از اجرای %2$@ کمی منتظر می‌ماند، در صورتی که دو بار فشرده شود.",
+     "after": "%1$@ اکنون پیش از اجرای %2$@ کمی منتظر می‌ماند، چون ممکن است دو بار فشرده شود.",
+     "why": "meaning: در صورتی که means only if; in case means because a second press may follow"
+    },
+    {
+     "key": "%@ sound",
+     "english": "%@ sound",
+     "before": "صدای %@",
+     "after": "افکت صوتی %@",
+     "why": "term: the glossary’s افکت صوتی for an event’s sound, kept apart from صدا (Voice)"
+    },
+    {
+     "key": "%lld books finished all time",
+     "english": {
+      "one": "%lld book finished all time",
+      "other": "%lld books finished all time"
+     },
+     "before": {
+      "one": "%lld کتاب در کل زمان تمام شده",
+      "other": "%lld کتاب در کل زمان تمام شده"
+     },
+     "after": {
+      "one": "%lld کتاب در مجموع تمام شده",
+      "other": "%lld کتاب در مجموع تمام شده"
+     },
+     "why": "natural: در کل زمان copied all time word for word; در مجموع is the Persian for in all"
+    },
+    {
+     "key": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "english": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "before": "دنباله یعنی یک نماد تکرارشده، تنها یا با فاصله‌های تکی، مانند * * * * یا ====. گفتار دنباله‌ها را پیش از قاعده‌های بالا بازنویسی می‌کند؛ صفحه و بریل هر نماد را نگه می‌دارند.",
+     "after": "دنباله یعنی یک نماد تکرارشده، تنها یا با فاصله‌های تکی، مانند * * * * یا ====. گفتار دنباله‌ها را پیش از قاعده‌های بالا بازنویسی می‌کند؛ صفحه‌نمایش و بریل هر نماد را نگه می‌دارند.",
+     "why": "meaning: صفحه alone is the app’s word for a page; the screen is صفحه‌نمایش"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "یک دکمه «صادر کردن» به نوار ابزار هر کتاب‌خوان اضافه می‌کند. فایل، صادر کردن در هر حال کار می‌کند.",
+     "after": "یک دکمه «صادر کردن» به نوار ابزار هر کتاب‌خوان اضافه می‌کند. «فایل > صادر کردن» در هر حال کار می‌کند.",
+     "why": "natural: the menu path File, Export read as a list of two words; written as the glossary writes paths, with >"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "سرعتی را که زمان‌ها با آن شمرده می‌شوند، مانند 2.0x برای کتاب صوتی که روی 1x نیست یا 500 کلمه در دقیقه برای کتاب متنی، در خواننده، «کجا هستم؟»، «کپی موقعیت مطالعه» و مدت‌های برگه سرفصل‌ها اضافه می‌کند.",
+     "after": "سرعتی را که زمان‌ها با آن شمرده می‌شوند، مانند 2.0x برای کتاب صوتی که روی 1x نیست یا 500 کلمه در دقیقه برای کتاب متنی، در کتاب‌خوان، «کجا هستم؟»، «کپی موقعیت مطالعه» و مدت‌های برگه سرفصل‌ها اضافه می‌کند.",
+     "why": "term: the glossary’s کتاب‌خوان for the reader; خواننده is a person who reads, or a singer"
+    },
+    {
+     "key": "Book Reader",
+     "english": "Book Reader",
+     "before": "خواننده کتاب",
+     "after": "کتاب‌خوان",
+     "why": "term: the glossary’s کتاب‌خوان; خواننده کتاب means a person reading a book"
+    },
+    {
+     "key": "Books Finished All Time",
+     "english": "Books Finished All Time",
+     "before": "کتاب‌های تمام‌شده در کل زمان",
+     "after": "کتاب‌های تمام‌شده در مجموع",
+     "why": "natural: در کل زمان copied all time word for word; در مجموع is the Persian for in all"
+    },
+    {
+     "key": "Brings the text to the sentence being spoken.",
+     "english": "Brings the text to the sentence being spoken.",
+     "before": "متن را به جمله‌ای که خوانده می‌شود می‌آورد.",
+     "after": "به جمله‌ای که خوانده می‌شود می‌رود.",
+     "why": "natural: متن را به جمله … می‌آورد copied brings the text to; the hint now says it goes to the sentence being spoken"
+    },
+    {
+     "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
+     "before": "فصل %1$@ پخش نشد: %2$@ در بسته‌ی کتاب.",
+     "after": "فصل %1$@ از بسته‌ی کتاب پخش نشد: %2$@.",
+     "why": "grammar: در بسته‌ی کتاب trailed the verb of the reason (فایل … وجود ندارد); moved before the colon"
+    },
+    {
+     "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "فصل %1$@ این کتاب %2$@ که TextMouth نمی‌تواند آن را با ایمنی صادر کند. «ویرایش متن» را انتخاب کنید، تو در تو بودن را صاف کنید و ذخیره کنید؛ سپس دوباره صادر کنید.",
+     "after": "فصل %1$@ این کتاب %2$@ و TextMouth نمی‌تواند آن را با ایمنی صادر کند. «ویرایش متن» را انتخاب کنید، ساختار تودرتو را ساده کنید و ذخیره کنید؛ سپس دوباره صادر کنید.",
+     "why": "grammar: %2$@ is a whole clause ending in its verb, so که left آن without a noun; و as in the other nesting messages"
+    },
+    {
+     "key": "Choose separate forward and backward navigation units for this book",
+     "english": "Choose separate forward and backward navigation units for this book",
+     "before": "انتخاب واحدهای پیمایش جداگانه به جلو و به عقب برای این کتاب.",
+     "after": "واحدهای پیمایش جداگانه به جلو و به عقب را برای این کتاب تعیین می‌کند.",
+     "why": "voiceover: the hint was a verbal-noun fragment; now a third-person sentence"
+    },
+    {
+     "key": "Downloading the next article: %@",
+     "english": "Downloading the next article: %@",
+     "before": "بارگیری مقاله‌ی بعدی: %@",
+     "after": "در حال بارگیری مقاله‌ی بعدی: %@",
+     "why": "meaning: a bare verbal noun reads as the command; the announcement says the download is under way (در حال)"
+    },
+    {
+     "key": "Downloading the next episode: %@",
+     "english": "Downloading the next episode: %@",
+     "before": "بارگیری قسمت بعدی: %@",
+     "after": "در حال بارگیری قسمت بعدی: %@",
+     "why": "meaning: a bare verbal noun reads as the command; the announcement says the download is under way (در حال)"
+    },
+    {
+     "key": "Downloading “%@”",
+     "english": "Downloading “%@”",
+     "before": "بارگیری «%@»",
+     "after": "در حال بارگیری «%@»",
+     "why": "meaning: a bare verbal noun reads as the command; the announcement says the download is under way (در حال)"
+    },
+    {
+     "key": "Hide Others",
+     "english": "Hide Others",
+     "before": "پنهان کردن دیگران",
+     "after": "پنهان کردن بقیه",
+     "why": "meaning: دیگران means other people; the command hides the other apps"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "مشخص می‌کند فشردن دوم چقدر باید زود پس از اولی باشد. کلیدی که کنش فشردن تکی و دوبل متفاوت دارد، به این اندازه صبر می‌کند تا کنش فشردن تکی اجرا شود.",
+     "after": "مشخص می‌کند فشردن دوم چقدر زود باید پس از اولی بیاید. کلیدی که فشردن تکی و دوبار فشردنش کنش‌های متفاوتی دارند، پیش از اجرای کنش فشردن تکی به همین اندازه صبر می‌کند.",
+     "why": "natural: دوبل was a colloquial loan beside the app’s دوبار فشردن, and صبر می‌کند تا … اجرا شود read as until; now before its single press acts"
+    },
+    {
+     "key": "Include Section",
+     "english": "Include Section",
+     "before": "شامل کردن بخش",
+     "after": "گنجاندن بخش",
+     "why": "natural: شامل کردن is a calque of include; گنجاندن is the verb of its own announcement (بخش گنجانده شد)"
+    },
+    {
+     "key": "Jumped to %@ in the recording.",
+     "english": "Jumped to %@ in the recording.",
+     "before": "پرش به %@ در ضبط.",
+     "after": "به %@ در ضبط رفت.",
+     "why": "natural: the announcement was a noun phrase like the command (پرش به …); now a past verb that says what happened"
+    },
+    {
+     "key": "Jumped to %@ percent.",
+     "english": "Jumped to %@ percent.",
+     "before": "پرش به %@ درصد.",
+     "after": "به %@ درصد رفت.",
+     "why": "natural: the announcement was a noun phrase like the command (پرش به …); now a past verb that says what happened"
+    },
+    {
+     "key": "Jumped to %@.",
+     "english": "Jumped to %@.",
+     "before": "پرش به %@.",
+     "after": "به %@ رفت.",
+     "why": "natural: the announcement was a noun phrase like the command (پرش به …); now a past verb that says what happened"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "پرش به صفحه %1$@، صفحه %2$@ با برچسب %3$@.",
+     "after": "به صفحه %1$@ رفت، صفحه %2$@ با برچسب %3$@.",
+     "why": "natural: the announcement was a noun phrase like the command (پرش به …); now a past verb that says what happened"
+    },
+    {
+     "key": "Jumped to page %@.",
+     "english": "Jumped to page %@.",
+     "before": "پرش به صفحه %@.",
+     "after": "به صفحه %@ رفت.",
+     "why": "natural: the announcement was a noun phrase like the command (پرش به …); now a past verb that says what happened"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "%@ از %lld فصل تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند نگه داشته شد. برای ادامه از فصل %@، همان بازه را با همان سرعت و زیر و بمی صادر کنید.",
+      "other": "%@ از %lld فصل تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند نگه داشته شد. برای ادامه از فصل %@، همان بازه را با همان سرعت و زیر و بمی صادر کنید."
+     },
+     "after": {
+      "one": "%@ از %lld فصل نگه داشته می‌شود تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ادامه از فصل %@، همان بازه را با همان سرعت و زیر و بمی صادر کنید.",
+      "other": "%@ از %lld فصل نگه داشته می‌شود تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ادامه از فصل %@، همان بازه را با همان سرعت و زیر و بمی صادر کنید."
+     },
+     "why": "grammar: past نگه داشته شد clashed with the future until-clause; now they are kept until then, and the verb comes before the long clause"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "تمام %lld فصل گفته‌شده تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند نگه داشته شد. برای ساختن فایل صوتی از آن، همان بازه را با همان سرعت و زیر و بمی صادر کنید.",
+      "other": "تمام %lld فصل گفته‌شده تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند نگه داشته شد. برای ساختن فایل صوتی از آن‌ها، همان بازه را با همان سرعت و زیر و بمی صادر کنید."
+     },
+     "after": {
+      "one": "تمام %lld فصل گفته‌شده نگه داشته می‌شود تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ساختن فایل صوتی از آن، همان بازه را با همان سرعت و زیر و بمی صادر کنید.",
+      "other": "تمام %lld فصل گفته‌شده نگه داشته می‌شوند تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ساختن فایل صوتی از آن‌ها، همان بازه را با همان سرعت و زیر و بمی صادر کنید."
+     },
+     "why": "grammar: past نگه داشته شد clashed with the future until-clause; now they are kept until then, and the verb comes before the long clause"
+    },
+    {
+     "key": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "english": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "before": "فصل گفته‌شده تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند نگه داشته شد. برای ساختن فایل صوتی از آن، همان بازه را با همان سرعت و زیر و بمی صادر کنید.",
+     "after": "فصل گفته‌شده نگه داشته می‌شود تا زمانی که TextMouth خارج شود، صادر کردن صدای گفتاری دیگری شروع شود، یا صدا، متن، جایگزینی‌ها یا وقفه‌های کتاب تغییر کنند. برای ساختن فایل صوتی از آن، همان بازه را با همان سرعت و زیر و بمی صادر کنید.",
+     "why": "grammar: past نگه داشته شد clashed with the future until-clause; now they are kept until then, and the verb comes before the long clause"
+    },
+    {
+     "key": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "english": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "before": "محافظ نشانه‌گذاری: معمولی، که فقط براکت‌های متن شبیه برچسب را بی‌صدا می‌کند.",
+     "after": "محافظ نشانه‌گذاری: معمولی، که فقط براکت‌های متن شبیه تگ را بی‌صدا می‌کند.",
+     "why": "meaning: برچسب is the app’s word for Label; markup tags are تگ, as elsewhere in the app"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "one": "OCR روی هر %lld صفحه اجرا نشد، بنابراین متنی که فقط در تصویر آن‌ها هست در دسترس نیست: %@.",
+      "other": "OCR روی هر %lld صفحه اجرا نشد، بنابراین متنی که فقط در تصویر آن‌ها هست در دسترس نیست: %@."
+     },
+     "after": {
+      "one": "OCR روی هیچ‌یک از %lld صفحه اجرا نشد، بنابراین متنی که فقط در تصاویر آن‌ها هست در دسترس نیست: %@.",
+      "other": "OCR روی هیچ‌یک از %lld صفحه اجرا نشد، بنابراین متنی که فقط در تصاویر آن‌ها هست در دسترس نیست: %@."
+     },
+     "why": "meaning: روی هر … صفحه اجرا نشد can read as not on every page; it ran on none of them"
+    },
+    {
+     "key": "Plays short sounds for playback actions",
+     "english": "Plays short sounds for playback actions",
+     "before": "برای کارهای پخش، صداهای کوتاه پخش می‌کند.",
+     "after": "برای کارهای پخش، افکت‌های صوتی کوتاه پخش می‌کند.",
+     "why": "term: the glossary’s افکت صوتی for these sounds, kept apart from صدا (Voice)"
+    },
+    {
+     "key": "Plays when you pause reading",
+     "english": "Plays when you pause reading",
+     "before": "وقتی مطالعه را مکث می‌کنید پخش می‌شود.",
+     "after": "وقتی مکث می‌کنید پخش می‌شود.",
+     "why": "grammar: مکث کردن takes no object, so مطالعه را مکث می‌کنید is not Persian"
+    },
+    {
+     "key": "Preview %@ sound",
+     "english": "Preview %@ sound",
+     "before": "پیش‌نمایش صدای %@",
+     "after": "پیش‌نمایش افکت صوتی %@",
+     "why": "term: the glossary’s افکت صوتی for an event’s sound, kept apart from صدا (Voice)"
+    },
+    {
+     "key": "Quitting TextMouth",
+     "english": "Quitting TextMouth",
+     "before": "خروج از TextMouth",
+     "after": "در حال خروج از TextMouth",
+     "why": "meaning: the panel is shown while quitting; خروج از TextMouth is the Quit command’s own name"
+    },
+    {
+     "key": "Quitting now leaves these changes unsaved:",
+     "english": "Quitting now leaves these changes unsaved:",
+     "before": "در صورت خروج اکنون، این تغییرها ذخیره نمی‌شوند:",
+     "after": "اگر اکنون خارج شوید، این تغییرها ذخیره نمی‌شوند:",
+     "why": "natural: در صورت خروج اکنون copied the English order; a plain if-clause"
+    },
+    {
+     "key": "Reader windows",
+     "english": "Reader windows",
+     "before": "پنجره‌های خواننده",
+     "after": "پنجره‌های کتاب‌خوان",
+     "why": "term: the glossary’s کتاب‌خوان; خواننده is a person who reads"
+    },
+    {
+     "key": "Restart Sleep Timer",
+     "english": "Restart Sleep Timer",
+     "before": "راه‌اندازی مجدد زمان‌سنج خواب",
+     "after": "شروع دوباره زمان‌سنج خواب",
+     "why": "natural: راه‌اندازی مجدد is rebooting a device; the timer’s own messages say شروع دوباره"
+    },
+    {
+     "key": "Show the page on the reader screen",
+     "english": "Show the page on the reader screen",
+     "before": "نمایش صفحه در نمای خواننده",
+     "after": "نمایش صفحه در نمای کتاب‌خوان",
+     "why": "term: the glossary’s کتاب‌خوان; خواننده is a person who reads"
+    },
+    {
+     "key": "Sleep timer expired at the end of the heading. Playback paused.",
+     "english": "Sleep timer expired at the end of the heading. Playback paused.",
+     "before": "زمان‌سنج خواب در پایان سرفصل تمام شد. پخش مکث شد.",
+     "after": "زمان‌سنج خواب در پایان سرفصل تمام شد. پخش موقتاً متوقف شد.",
+     "why": "grammar: مکث کردن takes no object and no passive, so مکث شد is not Persian; paused is موقتاً متوقف شد"
+    },
+    {
+     "key": "Sleep timer expired. Playback paused.",
+     "english": "Sleep timer expired. Playback paused.",
+     "before": "زمان‌سنج خواب تمام شد. پخش مکث شد.",
+     "after": "زمان‌سنج خواب تمام شد. پخش موقتاً متوقف شد.",
+     "why": "grammar: مکث کردن takes no object and no passive, so مکث شد is not Persian; paused is موقتاً متوقف شد"
+    },
+    {
+     "key": "Sorted by %@",
+     "english": "Sorted by %@",
+     "before": "مرتب‌سازی بر اساس %@",
+     "after": "بر اساس %@ مرتب شد",
+     "why": "natural: the announcement was the Sort command’s own noun phrase (مرتب‌سازی بر اساس); now says it was sorted"
+    },
+    {
+     "key": "Sound Assignments",
+     "english": "Sound Assignments",
+     "before": "اختصاص صداها",
+     "after": "اختصاص افکت‌های صوتی",
+     "why": "term: the glossary’s افکت صوتی for an event’s sound, kept apart from صدا (Voice)"
+    },
+    {
+     "key": "Speech paused: the voice did not start. Press Play to try again.",
+     "english": "Speech paused: the voice did not start. Press Play to try again.",
+     "before": "گفتار مکث شد: صدا شروع نشد. برای تلاش دوباره «پخش» را فشار دهید.",
+     "after": "گفتار موقتاً متوقف شد: صدا شروع نشد. برای تلاش دوباره «پخش» را فشار دهید.",
+     "why": "grammar: مکث کردن takes no object and no passive, so مکث شد is not Persian; paused is موقتاً متوقف شد"
+    },
+    {
+     "key": "Starting again: %@",
+     "english": "Starting again: %@",
+     "before": "شروع دوباره: %@",
+     "after": "در حال شروع دوباره: %@",
+     "why": "natural: a bare noun reads as a label; the announcement says the book is starting (در حال)"
+    },
+    {
+     "key": "Starting: %@",
+     "english": "Starting: %@",
+     "before": "شروع: %@",
+     "after": "در حال شروع: %@",
+     "why": "natural: a bare noun reads as a label; the announcement says the book is starting (در حال)"
+    },
+    {
+     "key": "The chosen table is built into TextMouth (liblouis %@).",
+     "english": "The chosen table is built into TextMouth (liblouis %@).",
+     "before": "جدول انتخاب‌شده در TextMouth ساخته شده است (liblouis %@).",
+     "after": "جدول انتخاب‌شده جزو خود TextMouth است (liblouis %@).",
+     "why": "meaning: در TextMouth ساخته شده says TextMouth made the table; built into means it comes with TextMouth"
+    },
+    {
+     "key": "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
+     "english": "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
+     "before": "این پوشه‌ی کتاب DAISY نیست: در سطح بالای آن فایل ncc.html یا OPF نیست.",
+     "after": "این پوشه یک کتاب DAISY نیست: در سطح بالای آن فایل ncc.html یا OPF نیست.",
+     "why": "grammar: the ezafe in پوشه‌ی کتاب made it the book’s folder; the folder is not a DAISY book"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "one": "%lld فصل دیگر متنی ندارند.",
+      "other": "%lld فصل دیگر متنی ندارند."
+     },
+     "after": {
+      "one": "%lld فصل دیگر متنی ندارد.",
+      "other": "%lld فصل دیگر متنی ندارند."
+     },
+     "why": "grammar: the one form, used for 1, had the plural verb ندارند"
+    },
+    {
+     "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "متن این کتاب %@ که TextMouth نمی‌تواند آن را با ایمنی صادر کند. «ویرایش متن» را انتخاب کنید، تو در تو بودن را صاف کنید و ذخیره کنید؛ سپس دوباره صادر کنید.",
+     "after": "متن این کتاب %@ و TextMouth نمی‌تواند آن را با ایمنی صادر کند. «ویرایش متن» را انتخاب کنید، ساختار تودرتو را ساده کنید و ذخیره کنید؛ سپس دوباره صادر کنید.",
+     "why": "grammar: %@ is a whole clause ending in its verb, so که left آن without a noun; و as in the other nesting messages"
+    },
+    {
+     "key": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "english": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "before": "صدا برای «%@» هیچ صدایی تولید نکرد. بررسی کنید که صدا به زبان کتاب می‌خواند.",
+     "after": "صدا برای «%@» هیچ صوتی تولید نکرد. بررسی کنید که این صدا به زبان کتاب صحبت کند.",
+     "why": "natural: صدا … هیچ صدایی said voice and sound with one word, and check that wants the subjunctive"
+    },
+    {
+     "key": "reader windows",
+     "english": "reader windows",
+     "before": "پنجره‌های خواننده",
+     "after": "پنجره‌های کتاب‌خوان",
+     "why": "term: the glossary’s کتاب‌خوان; خواننده is a person who reads"
+    },
+    {
+     "key": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "english": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "before": "ثبت کتاب اکنون قابل تغییر نیست. TextMouth دفعه بعد که ذخیره کنید یا برگردید دوباره تلاش می‌کند.",
+     "after": "رکورد کتاب اکنون قابل تغییر نیست. TextMouth دفعه بعد که ذخیره کنید یا برگردید دوباره تلاش می‌کند.",
+     "why": "meaning: ثبت is the act of registering, not the book’s stored record"
+    }
+   ]
+  }
+ ]
+}
