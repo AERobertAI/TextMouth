@@ -287328,7 +287328,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác."
+            "value" : "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi dọn sạch Thùng rác."
           }
         },
         "zh-Hans" : {
@@ -287924,7 +287924,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác."
+            "value" : "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi dọn sạch Thùng rác."
           }
         },
         "zh-Hans" : {
@@ -626615,7 +626615,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng kèm tệp đính kèm."
+            "value" : "Không đọc được tệp này dưới dạng tài liệu văn bản đa dạng thức có tệp đính kèm."
           }
         },
         "zh-Hans" : {
@@ -626764,7 +626764,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng."
+            "value" : "Không đọc được tệp này dưới dạng tài liệu văn bản đa dạng thức."
           }
         },
         "zh-Hans" : {
@@ -682220,7 +682220,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bạn có thể khôi phục nó từ Thùng rác cho đến khi làm trống Thùng rác."
+            "value" : "Bạn có thể khôi phục nó từ Thùng rác cho đến khi dọn sạch Thùng rác."
           }
         },
         "zh-Hans" : {
