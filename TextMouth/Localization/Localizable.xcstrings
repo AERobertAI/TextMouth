@@ -315168,7 +315168,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeniesiono %1$@ nad %2$@"
+            "value" : "Przeniesiono książkę %1$@ nad książkę %2$@"
           }
         },
         "pt-BR" : {
@@ -315311,7 +315311,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeniesiono %1$@ pod %2$@"
+            "value" : "Przeniesiono książkę %1$@ pod książkę %2$@"
           }
         },
         "pt-BR" : {
@@ -328792,7 +328792,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anulowano nowy folder."
+            "value" : "Anulowano tworzenie folderu."
           }
         },
         "pt-BR" : {
@@ -328935,7 +328935,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anulowano nowy folder. %1$@: %2$@."
+            "value" : "Anulowano tworzenie folderu. %1$@: %2$@."
           }
         },
         "pt-BR" : {
@@ -542854,7 +542854,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nowa kopia zastąpiła „%1$@”, ale nie udało się usunąć plików starej kopii i zostają w jej folderze: %2$@"
+            "value" : "Nowa kopia zastąpiła „%1$@”, ale nie udało się usunąć plików starej kopii; zostają w jej folderze: %2$@"
           }
         },
         "pt-BR" : {
@@ -542997,7 +542997,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nowa kopia zastąpiła „%1$@”, ale nie udało się przenieść plików starej kopii do kosza i zostają w jej folderze: %2$@"
+            "value" : "Nowa kopia zastąpiła „%1$@”, ale nie udało się przenieść plików starej kopii do kosza; zostają w jej folderze: %2$@"
           }
         },
         "pt-BR" : {
@@ -566606,7 +566606,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tych książek nie udało się usunąć i pozostają w bibliotece:"
+            "value" : "Tych książek nie udało się usunąć; pozostają w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -566743,7 +566743,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tych książek nie udało się przenieść do kosza i pozostają w bibliotece:"
+            "value" : "Tych książek nie udało się przenieść do kosza; pozostają w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -566880,7 +566880,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tych książek nie udało się usunąć z biblioteki i pozostają w niej:"
+            "value" : "Tych książek nie udało się usunąć z biblioteki; pozostają w niej:"
           }
         },
         "pt-BR" : {
@@ -567291,7 +567291,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tych pozycji nie udało się usunąć i pozostają w bibliotece:"
+            "value" : "Tych pozycji nie udało się usunąć; pozostają w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -567428,7 +567428,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tych pozycji nie udało się przenieść do kosza i pozostają w bibliotece:"
+            "value" : "Tych pozycji nie udało się przenieść do kosza; pozostają w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -567565,7 +567565,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tych pozycji nie udało się usunąć z biblioteki i pozostają w niej:"
+            "value" : "Tych pozycji nie udało się usunąć z biblioteki; pozostają w niej:"
           }
         },
         "pt-BR" : {
@@ -571961,7 +571961,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tej książki nie udało się usunąć i pozostaje w bibliotece:"
+            "value" : "Tej książki nie udało się usunąć; pozostaje w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -572098,7 +572098,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tej książki nie udało się przenieść do kosza i pozostaje w bibliotece:"
+            "value" : "Tej książki nie udało się przenieść do kosza; pozostaje w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -572235,7 +572235,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tej książki nie udało się usunąć z biblioteki i pozostaje w niej:"
+            "value" : "Tej książki nie udało się usunąć z biblioteki; pozostaje w niej:"
           }
         },
         "pt-BR" : {
@@ -580156,7 +580156,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tej pozycji nie udało się usunąć i pozostaje w bibliotece:"
+            "value" : "Tej pozycji nie udało się usunąć; pozostaje w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -580293,7 +580293,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tej pozycji nie udało się przenieść do kosza i pozostaje w bibliotece:"
+            "value" : "Tej pozycji nie udało się przenieść do kosza; pozostaje w bibliotece:"
           }
         },
         "pt-BR" : {
@@ -580430,7 +580430,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tej pozycji nie udało się usunąć z biblioteki i pozostaje w niej:"
+            "value" : "Tej pozycji nie udało się usunąć z biblioteki; pozostaje w niej:"
           }
         },
         "pt-BR" : {
