@@ -139,7 +139,7 @@ final class InterfaceTextEngine: Sendable {
         let snapshot = locked { $0.snapshot(language: language, needsEnglish: count != nil, open: open) }
         let index = snapshot.ids?.index(of: id)
         if index == nil, let ids = snapshot.ids, !ids.isEmpty {
-            noteProblem("the pack has no line \(id)")
+            noteProblem("the pack has no line \(id)")  // l10n: no (English text for the debug log, never shown)
         }
 
         // The person's own line, then the language's entry. English is the language of the code: its entry would
@@ -181,7 +181,7 @@ final class InterfaceTextEngine: Sendable {
             accepted = false
         }
         guard accepted else {
-            noteProblem("the \(language) text of \(id) does not fit the call's arguments, so its English is shown")
+            noteProblem("the \(language) text of \(id) does not fit the call's arguments, so its English is shown")  // l10n: no (English text for the debug log, never shown)
             return nil
         }
         return pattern(of: entry, count: english.firstNumber, language: language)
@@ -275,13 +275,13 @@ private extension InterfaceTextEngine.Storage {
         guard case .unopened = source else { return }
         do {
             guard let tables = try open() else {
-                note("there is no interface text pack, so every line shows its English")
+                note("there is no interface text pack, so every line shows its English")  // l10n: no (English text for the debug log, never shown)
                 source = .unavailable
                 return
             }
             source = .open(tables, try tables.idList())
         } catch {
-            note("the interface text pack is unusable, so every line shows its English: \(error)")
+            note("the interface text pack is unusable, so every line shows its English: \(error)")  // l10n: no (English text for the debug log, never shown)
             source = .unavailable
         }
     }
@@ -292,12 +292,12 @@ private extension InterfaceTextEngine.Storage {
         if case .failed? = self.tables[language] { return nil }
         do {
             let entries = try tables.entries(language: language)
-            guard entries.count == ids.count else { throw InterfaceTextFailure("\(entries.count) entries, not \(ids.count)") }
+            guard entries.count == ids.count else { throw InterfaceTextFailure("\(entries.count) entries, not \(ids.count)") }  // l10n: no (English text for the debug log, never shown)
             let table = InterfaceTextEngine.LanguageTable(entries: entries)
             self.tables[language] = .loaded(table)
             return table
         } catch {
-            note("the \(language) interface text is unusable, so its lines show English: \(error)")
+            note("the \(language) interface text is unusable, so its lines show English: \(error)")  // l10n: no (English text for the debug log, never shown)
             self.tables[language] = .failed
             return nil
         }

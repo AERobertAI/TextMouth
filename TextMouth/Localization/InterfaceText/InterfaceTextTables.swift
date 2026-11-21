@@ -64,20 +64,20 @@ enum InterfaceTextEntry: Sendable, Equatable {
     /// when the entry count is not `count`, when bytes follow the last NUL, when an entry is not valid UTF-8, or when
     /// an entry is not well formed (`init?(raw:formCount:)`), so a damaged blob is refused whole.
     static func decodeAll(_ bytes: [UInt8], count: Int, formCount: Int?) throws -> [InterfaceTextEntry] {
-        guard bytes.last == 0 || bytes.isEmpty else { throw InterfaceTextFailure("the last entry has no terminator") }
+        guard bytes.last == 0 || bytes.isEmpty else { throw InterfaceTextFailure("the last entry has no terminator") }  // l10n: no (English text for the debug log, never shown)
         var entries: [InterfaceTextEntry] = []
         entries.reserveCapacity(count)
         var start = 0
         for (index, byte) in bytes.enumerated() where byte == 0 {
-            guard entries.count < count else { throw InterfaceTextFailure("more than \(count) entries") }
+            guard entries.count < count else { throw InterfaceTextFailure("more than \(count) entries") }  // l10n: no (English text for the debug log, never shown)
             let text = try validText(bytes[start..<index])
             guard let entry = InterfaceTextEntry(raw: text, formCount: formCount) else {
-                throw InterfaceTextFailure("entry \(entries.count) is not well formed")
+                throw InterfaceTextFailure("entry \(entries.count) is not well formed")  // l10n: no (English text for the debug log, never shown)
             }
             entries.append(entry)
             start = index + 1
         }
-        guard entries.count == count else { throw InterfaceTextFailure("\(entries.count) entries, not \(count)") }
+        guard entries.count == count else { throw InterfaceTextFailure("\(entries.count) entries, not \(count)") }  // l10n: no (English text for the debug log, never shown)
         return entries
     }
 
@@ -85,7 +85,7 @@ enum InterfaceTextEntry: Sendable, Equatable {
     /// does not encode back to the same bytes was not valid.
     static func validText(_ bytes: ArraySlice<UInt8>) throws -> String {
         let text = String(decoding: bytes, as: UTF8.self)
-        guard text.utf8.elementsEqual(bytes) else { throw InterfaceTextFailure("a text is not valid UTF-8") }
+        guard text.utf8.elementsEqual(bytes) else { throw InterfaceTextFailure("a text is not valid UTF-8") }  // l10n: no (English text for the debug log, never shown)
         return text
     }
 }

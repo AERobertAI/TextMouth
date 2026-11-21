@@ -38,7 +38,7 @@ struct InterfaceTextPack: InterfaceTextTables {
     // MARK: - Limits
 
     /// The file's name inside an app's resources.
-    static let resourceName = "Strings"
+    static let resourceName = "Strings"  // l10n: no (English text for the debug log, never shown)
     static let resourceExtension = "pack"
 
     private static let magic: [UInt8] = Array("TMSP".utf8)
@@ -71,7 +71,7 @@ struct InterfaceTextPack: InterfaceTextTables {
         do {
             mapped = try Data(contentsOf: url, options: .alwaysMapped)
         } catch {
-            throw InterfaceTextFailure("the pack cannot be read: \(error.localizedDescription)")
+            throw InterfaceTextFailure("the pack cannot be read: \(error.localizedDescription)")  // l10n: no (English text for the debug log, never shown)
         }
         try self.init(data: mapped)
     }
@@ -86,17 +86,17 @@ struct InterfaceTextPack: InterfaceTextTables {
 
     /// Checks the header, and reads and checks the directory of the pack in `bytes`.
     private static func parseDirectory(_ bytes: UnsafeRawBufferPointer) throws -> (idCount: Int, blobs: [String: Blob]) {
-        guard bytes.count >= headerSize else { throw InterfaceTextFailure("the pack is shorter than its header") }
-        guard Array(bytes[0..<magic.count]) == magic else { throw InterfaceTextFailure("the pack's magic is wrong") }
+        guard bytes.count >= headerSize else { throw InterfaceTextFailure("the pack is shorter than its header") }  // l10n: no (English text for the debug log, never shown)
+        guard Array(bytes[0..<magic.count]) == magic else { throw InterfaceTextFailure("the pack's magic is wrong") }  // l10n: no (English text for the debug log, never shown)
         guard let version = bytes.littleEndian(UInt16.self, at: 4), version == supportedVersion else {
-            throw InterfaceTextFailure("the pack's format version is not \(supportedVersion)")
+            throw InterfaceTextFailure("the pack's format version is not \(supportedVersion)")  // l10n: no (English text for the debug log, never shown)
         }
-        guard bytes.littleEndian(UInt16.self, at: 6) == 0 else { throw InterfaceTextFailure("the pack sets flags this reader does not know") }
+        guard bytes.littleEndian(UInt16.self, at: 6) == 0 else { throw InterfaceTextFailure("the pack sets flags this reader does not know") }  // l10n: no (English text for the debug log, never shown)
         guard let idCount = bytes.littleEndian(UInt32.self, at: 40).map(Int.init), idCount <= largestIDCount,
               let blobCount = bytes.littleEndian(UInt32.self, at: 44).map(Int.init), blobCount <= largestBlobCount
-        else { throw InterfaceTextFailure("the pack's counts are out of range") }
+        else { throw InterfaceTextFailure("the pack's counts are out of range") }  // l10n: no (English text for the debug log, never shown)
         let directoryEnd = headerSize + blobCount * recordSize
-        guard directoryEnd <= bytes.count else { throw InterfaceTextFailure("the pack's directory is cut short") }
+        guard directoryEnd <= bytes.count else { throw InterfaceTextFailure("the pack's directory is cut short") }  // l10n: no (English text for the debug log, never shown)
 
         var blobs: [String: Blob] = [:]
         for record in 0..<blobCount {
@@ -106,17 +106,17 @@ struct InterfaceTextPack: InterfaceTextTables {
                   let compressedSize = bytes.littleEndian(UInt32.self, at: at + nameSize + 4).map(Int.init),
                   let rawSize = bytes.littleEndian(UInt32.self, at: at + nameSize + 8).map(Int.init),
                   let count = bytes.littleEndian(UInt32.self, at: at + nameSize + 12).map(Int.init)
-            else { throw InterfaceTextFailure("the directory record of \(name) is cut short") }
+            else { throw InterfaceTextFailure("the directory record of \(name) is cut short") }  // l10n: no (English text for the debug log, never shown)
             // Each blob lies wholly inside the file, after the directory; a u32 offset and size cannot overflow an Int.
             guard offset >= directoryEnd, offset + compressedSize <= bytes.count else {
-                throw InterfaceTextFailure("the blob \(name) lies outside the pack")
+                throw InterfaceTextFailure("the blob \(name) lies outside the pack")  // l10n: no (English text for the debug log, never shown)
             }
-            guard rawSize <= largestRawSize else { throw InterfaceTextFailure("the blob \(name) claims \(rawSize) bytes") }
-            guard count == idCount else { throw InterfaceTextFailure("the blob \(name) has \(count) entries, not \(idCount)") }
-            guard blobs[name] == nil else { throw InterfaceTextFailure("the blob \(name) is listed twice") }
+            guard rawSize <= largestRawSize else { throw InterfaceTextFailure("the blob \(name) claims \(rawSize) bytes") }  // l10n: no (English text for the debug log, never shown)
+            guard count == idCount else { throw InterfaceTextFailure("the blob \(name) has \(count) entries, not \(idCount)") }  // l10n: no (English text for the debug log, never shown)
+            guard blobs[name] == nil else { throw InterfaceTextFailure("the blob \(name) is listed twice") }  // l10n: no (English text for the debug log, never shown)
             blobs[name] = Blob(offset: offset, compressedSize: compressedSize, rawSize: rawSize, count: count)
         }
-        guard blobs["ids"] != nil else { throw InterfaceTextFailure("the pack has no ids blob") }
+        guard blobs["ids"] != nil else { throw InterfaceTextFailure("the pack has no ids blob") }  // l10n: no (English text for the debug log, never shown)
         return (idCount, blobs)
     }
 
@@ -126,7 +126,7 @@ struct InterfaceTextPack: InterfaceTextTables {
         let field = Array(bytes[offset..<(offset + nameSize)])
         let length = field.firstIndex(of: 0) ?? field.count
         guard length > 0, field[length...].allSatisfy({ $0 == 0 }), field[..<length].allSatisfy(isNameByte) else {
-            throw InterfaceTextFailure("a directory record has no valid name")
+            throw InterfaceTextFailure("a directory record has no valid name")  // l10n: no (English text for the debug log, never shown)
         }
         return String(decoding: field[..<length], as: UTF8.self)
     }
@@ -147,18 +147,18 @@ struct InterfaceTextPack: InterfaceTextTables {
     func idList() throws -> InterfaceTextIDList {
         let bytes = try decodedBlob(named: "ids")
         guard let list = InterfaceTextIDList(blob: bytes, count: idCount) else {
-            throw InterfaceTextFailure("the ids blob is not \(idCount) valid IDs in order")
+            throw InterfaceTextFailure("the ids blob is not \(idCount) valid IDs in order")  // l10n: no (English text for the debug log, never shown)
         }
         return list
     }
 
     func entries(language: String) throws -> [InterfaceTextEntry] {
-        guard hasLanguage(language) else { throw InterfaceTextFailure("the pack has no \(language) blob") }
+        guard hasLanguage(language) else { throw InterfaceTextFailure("the pack has no \(language) blob") }  // l10n: no (English text for the debug log, never shown)
         let bytes = try decodedBlob(named: language)
         do {
             return try InterfaceTextEntry.decodeAll(bytes, count: idCount, formCount: PluralRules.categories[language]?.count)
         } catch let failure as InterfaceTextFailure {
-            throw InterfaceTextFailure("the \(language) blob: \(failure.description)")
+            throw InterfaceTextFailure("the \(language) blob: \(failure.description)")  // l10n: no (English text for the debug log, never shown)
         }
     }
 
@@ -166,16 +166,16 @@ struct InterfaceTextPack: InterfaceTextTables {
     /// plus one byte. The extra byte tells a stream that is longer than its raw size (the decoder would stop at the
     /// buffer's end and look exact) from a right one; the size written must be the raw size, to the byte.
     private func decodedBlob(named name: String) throws -> [UInt8] {
-        guard let blob = blobs[name] else { throw InterfaceTextFailure("the pack has no \(name) blob") }
+        guard let blob = blobs[name] else { throw InterfaceTextFailure("the pack has no \(name) blob") }  // l10n: no (English text for the debug log, never shown)
         return try data.withUnsafeBytes { bytes -> [UInt8] in
             // Re-checked here, against the bytes actually in hand, though the directory was checked on opening.
             guard blob.offset >= 0, blob.compressedSize >= 0, blob.offset + blob.compressedSize <= bytes.count else {
-                throw InterfaceTextFailure("the blob \(name) lies outside the pack")
+                throw InterfaceTextFailure("the blob \(name) lies outside the pack")  // l10n: no (English text for the debug log, never shown)
             }
             if blob.rawSize == 0 { return [] }
             let source = UnsafeRawBufferPointer(rebasing: bytes[blob.offset..<(blob.offset + blob.compressedSize)])
             guard let sourceStart = source.baseAddress, source.count > 0 else {
-                throw InterfaceTextFailure("the blob \(name) is empty but claims \(blob.rawSize) bytes")
+                throw InterfaceTextFailure("the blob \(name) is empty but claims \(blob.rawSize) bytes")  // l10n: no (English text for the debug log, never shown)
             }
             var written = 0
             let decoded = [UInt8](unsafeUninitializedCapacity: blob.rawSize + 1) { buffer, count in
@@ -186,7 +186,7 @@ struct InterfaceTextPack: InterfaceTextTables {
                 count = written
             }
             guard written == blob.rawSize else {
-                throw InterfaceTextFailure("the blob \(name) decodes to \(written) bytes, not \(blob.rawSize)")
+                throw InterfaceTextFailure("the blob \(name) decodes to \(written) bytes, not \(blob.rawSize)")  // l10n: no (English text for the debug log, never shown)
             }
             return decoded
         }
