@@ -213194,7 +213194,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將名稱、條件、排序和限制還原為 TextMouth 原先給它的設定。"
+            "value" : "將顯示方式的名稱、條件、排序和限制還原為 TextMouth 原先給它的設定。"
           }
         }
       }
