@@ -286,7 +286,7 @@ To prove a flaky test fixed, a request's `test_iterations` (2 to 100) runs every
     Every settings service a test makes comes from `makeConfigService(fileURL:)` now, whose teardown drops the waiting save, and `ConfigTestWorldTeardownTests` fails for one made another way.
     The flake was never reproduced, before or after: a test shows the mechanism, and the train after the fix passed (see [the hosted-test sandbox](../architecture/state/hosted-test-sandbox.md)).
   - `LibrarySessionLeaseTests`: a lease ended during a refresh did not wait for the refresh's events; it waits for them now, up to 30 seconds, since the end needs a task-pool thread and the runner has three.
-- **Not left out:** five tests of an earlier list (`PreferenceStoreTests`, `MigrationStagingLeftoversTests`, `ReaderLifecycleAuditTests`, `NowPlayingOwnershipTests`, `HostedTestIsolationTests`) did not appear in the ten runs after the fixes.
+  - `BookManifestEditTests`' hand-edit test (Q16): a taken edit queued a write-back of the title it read, which could land on the test's next save; a take writes nothing back now (20 of 20 failed unfixed, run 44841797810; 2,450 of 2,450 passed, run 44843120549).
 - **Not the tests:**
   - GitHub did not give one of the four shards a machine for 15 minutes in run 42867725014 ("The job was not acquired by Runner of type hosted even after multiple attempts": the join named the shard as having reported nothing, and the run failed with no test failed);
   - `xcodebuild -downloadPlatform iOS` failed once with "Unable to connect to simulator."
