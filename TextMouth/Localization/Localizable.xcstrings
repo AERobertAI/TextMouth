@@ -82055,13 +82055,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld regel is weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven."
+                  "value" : "%lld regel is weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld regels zijn weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven."
+                  "value" : "%lld regels zijn weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven."
                 }
               }
             }
@@ -152971,7 +152971,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kiest waarmee Speel af en de springknoppen vooruit of terug gaan."
+            "value" : "Kiest waarmee Speel af en de springknoppen vooruit- of teruggaan."
           }
         },
         "pl" : {
@@ -342411,7 +342411,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geen regels om te exporteren: alleen gewone tekstregels die aan staan, kunnen in een lexicon worden geschreven."
+            "value" : "Geen regels om te exporteren: alleen gewone tekstregels die aanstaan, kunnen in een lexicon worden geschreven."
           }
         },
         "pl" : {
@@ -378578,7 +378578,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Speelt het boek af en pauzeert voor het volgende boek."
+            "value" : "Speelt het boek af en pauzeert vóór het volgende boek."
           }
         },
         "pl" : {
@@ -427010,7 +427010,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bewaart je gewone tekstregels die aan staan; regels met reguliere expressies worden weggelaten."
+            "value" : "Bewaart je gewone tekstregels die aanstaan; regels met reguliere expressies worden weggelaten."
           }
         },
         "pl" : {
@@ -519669,7 +519669,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aan staat."
+            "value" : "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aanstaat."
           }
         },
         "pl" : {
@@ -557783,7 +557783,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De tekst van %@ kan niet worden gelezen en dus ook niet worden gewijzigd."
+            "value" : "De tekst van %@ kan niet worden gelezen, dus kan die niet worden gewijzigd."
           }
         },
         "pl" : {
@@ -575355,7 +575355,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De tekst van dit boek kan niet worden gelezen en dus ook niet in een audiobestand worden uitgesproken."
+            "value" : "De tekst van dit boek kan niet worden gelezen, dus kan die niet in een audiobestand worden uitgesproken."
           }
         },
         "pl" : {
@@ -619894,7 +619894,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen."
+            "value" : "Als dit aanstaat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen."
           }
         },
         "pl" : {
