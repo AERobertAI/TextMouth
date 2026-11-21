@@ -217086,7 +217086,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; biri bittikten sonra işe yarar."
+            "value" : "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; bir zamanlayıcı bittiğinde işe yarar."
           }
         },
         "uk" : {
@@ -225286,7 +225286,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Varsayılana yeniden oluşturulamadı"
+            "value" : "Varsayılan konuma sıfırlanamadı"
           }
         },
         "uk" : {
@@ -252154,7 +252154,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dosya yoksa “%@” seçeneğini seçin."
+            "value" : "Dosya yoksa “%@” düğmesini seçin."
           }
         },
         "uk" : {
@@ -253119,7 +253119,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "İçe aktarma davranışı"
+            "value" : "İçe Aktarma Davranışı"
           }
         },
         "uk" : {
@@ -319145,7 +319145,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verileri ~/.TextMouth konumundaki varsayılan konuma geri taşır."
+            "value" : "Verileri varsayılan konuma (~/.TextMouth) geri taşır."
           }
         },
         "uk" : {
@@ -345989,13 +345989,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ seçili kitabın hiçbiri tercihiniz nedeniyle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
+                  "value" : "Seçili %1$@ kitabın hiçbiri sizin seçiminizle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@ seçili kitabın hiçbiri tercihiniz nedeniyle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
+                  "value" : "Seçili %1$@ kitabın hiçbiri sizin seçiminizle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
                 }
               }
             }
@@ -364049,7 +364049,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kullanılamayan kitaplık yerine, varsayılan konumdaki ~/.TextMouth kitaplığını açar veya orada yeni bir tane başlatır."
+            "value" : "Kullanılamayan kitaplık yerine, varsayılan konumdaki (~/.TextMouth) kitaplığı açar veya orada yeni bir kitaplık başlatır."
           }
         },
         "uk" : {
@@ -398844,7 +398844,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Metin Çıkarmayı Yeniden Yap?"
+            "value" : "Metin Çıkarma Yeniden Yapılsın mı?"
           }
         },
         "uk" : {
@@ -404752,7 +404752,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Kitabın İndirmelerini Kaldır"
+                  "value" : "%lld Kitabın İndirmesini Kaldır"
                 }
               },
               "other" : {
