@@ -137396,7 +137396,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige una ubicación vacía e intenta de nuevo."
+            "value" : "Elige una ubicación vacía e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -149498,7 +149498,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conéctate a internet e intenta de nuevo."
+            "value" : "Conéctate a internet e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -253202,7 +253202,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aún no se pudo preparar su texto para la lectura; TextMouth intentará de nuevo más tarde."
+            "value" : "Aún no se pudo preparar su texto para la lectura; TextMouth lo intentará de nuevo más tarde."
           }
         },
         "fr" : {
@@ -273206,7 +273206,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comprueba que se pueda escribir en su carpeta e intenta de nuevo."
+            "value" : "Comprueba que se pueda escribir en su carpeta e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -540906,7 +540906,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para soltarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
+            "value" : "Para liberarlo, quítalo de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
           }
         },
         "fr" : {
@@ -541037,7 +541037,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para soltarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
+            "value" : "Para liberarlos, quítalos de la lista de lectura, o desactiva %@ en las opciones de la lista de lectura."
           }
         },
         "fr" : {
@@ -541305,7 +541305,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para usar otra carpeta, abre Ajustes, Almacenamiento y elige %1$@ o %2$@."
+            "value" : "Para usar otra carpeta, abre Almacenamiento en Ajustes y elige %1$@ o %2$@."
           }
         },
         "fr" : {
@@ -549046,7 +549046,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo en un momento."
+            "value" : "Inténtalo de nuevo en un momento."
           }
         },
         "fr" : {
@@ -549177,7 +549177,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo cuando termine ese traslado."
+            "value" : "Inténtalo de nuevo cuando termine ese traslado."
           }
         },
         "fr" : {
@@ -549433,7 +549433,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo cuando eso termine."
+            "value" : "Inténtalo de nuevo cuando eso termine."
           }
         },
         "fr" : {
@@ -549564,7 +549564,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Intenta de nuevo."
+            "value" : "Inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -558891,7 +558891,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Úsalo después de actualizar el analizador."
+            "value" : "Úsalo después de una actualización del analizador."
           }
         },
         "fr" : {
@@ -586415,7 +586415,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "capítulo %1$@, guardado %2$@, y %3$@"
+            "value" : "capítulo %1$@, guardado el %2$@, y %3$@"
           }
         },
         "fr" : {
@@ -618171,7 +618171,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "un índice de la biblioteca, %@"
+            "value" : "el índice de la biblioteca, %@"
           }
         },
         "fr" : {
@@ -623418,7 +623418,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudo devolver «%1$@» a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@"
+            "value" : "No se pudo devolver “%1$@” a su sitio tras un traslado fallido, así que sus archivos están en %2$@ en lugar de %3$@: %4$@"
           }
         },
         "fr" : {
