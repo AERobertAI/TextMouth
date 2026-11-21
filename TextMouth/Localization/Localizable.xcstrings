@@ -164725,7 +164725,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請在「設定」>「播放控制」>「語音轉文字」中選擇語言。"
+            "value" : "請在「設定」的「播放控制」中，於「語音轉文字」選擇語言。"
           }
         }
       }
@@ -534141,7 +534141,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 未獲允許發送通知。請在「系統設定」>「通知」>「TextMouth」中開啟。"
+            "value" : "TextMouth 未獲允許發送通知。請在「系統設定」的「通知」中，於「TextMouth」開啟。"
           }
         }
       }
@@ -534290,7 +534290,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 未獲允許使用麥克風。請在「系統設定」>「隱私權與安全性」>「麥克風」中開啟。"
+            "value" : "TextMouth 未獲允許使用麥克風。請在「系統設定」的「隱私權與安全性」中，於「麥克風」開啟。"
           }
         }
       }
