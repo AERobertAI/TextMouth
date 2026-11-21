@@ -1,0 +1,544 @@
+{
+ "language": "de",
+ "reviews": [
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "one": "%1$@ von %2$lld Kapitel konnte nicht gelesen werden",
+      "other": "%1$@ von %2$lld Kapiteln konnten nicht gelesen werden"
+     },
+     "after": {
+      "one": "%1$@ von %2$lld Kapitel nicht lesbar",
+      "other": "%1$@ von %2$lld Kapiteln nicht lesbar"
+     },
+     "why": "grammar: the verb followed the total, so 1 of 14 read konnten; the short form reads right for every count"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "Fügt die Geschwindigkeit hinzu, mit der gezählt wird, etwa 2,0x bei einem Hörbuch, das nicht mit 1x läuft, oder 500 Wörter pro Minute bei einem Textbuch, in der Leseansicht, bei „Wo bin ich?“, „Leseposition kopieren“ und in den Dauern des Überschriften-Sheets.",
+     "after": "Fügt in der Leseansicht, bei „Wo bin ich?“, bei „Leseposition kopieren“ und bei der Anzeige „Dauer“ im Überschriften-Sheet die Geschwindigkeit hinzu, mit der die Zeiten berechnet werden, etwa 2,0x bei einem Hörbuch, das nicht mit 1x läuft, oder 500 Wörter pro Minute bei einem Textbuch.",
+     "why": "natural: in den Dauern is not German, and the list of places ran into the example"
+    },
+    {
+     "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "Kapitel %1$@ dieses Buchs %2$@, und TextMouth kann das nicht sicher exportieren. Wähle „Text bearbeiten“, ebne die Verschachtelung ein und sichere; exportiere dann erneut.",
+     "after": "Kapitel %1$@ dieses Buchs %2$@, und TextMouth kann das nicht sicher exportieren. Wähle „Text bearbeiten“, verringere die Verschachtelung und sichere; exportiere dann erneut.",
+     "why": "natural: the same advice reads verringere die Verschachtelung in the other messages"
+    },
+    {
+     "key": "Choose separate forward and backward navigation units for this book",
+     "english": "Choose separate forward and backward navigation units for this book",
+     "before": "Wählt getrennte Navigationseinheiten für Vorwärts und Rückwärts für dieses Buch.",
+     "after": "Wählt für dieses Buch getrennte Navigationseinheiten für Vorwärts und Rückwärts.",
+     "why": "natural: two für phrases in a row at the end of the hint"
+    },
+    {
+     "key": "Couldn't export %@. The first was %@.",
+     "english": "Couldn't export %1$@. The first was %2$@.",
+     "before": "%1$@ konnten nicht exportiert werden. Das erste war %2$@.",
+     "after": "%1$@ konnten nicht exportiert werden. Der erste war %2$@.",
+     "why": "grammar: the count reads Einträge, a masculine noun, so der erste"
+    },
+    {
+     "key": "Custom minutes",
+     "english": "Custom minutes",
+     "before": "Eigene Minuten",
+     "after": "Eigene Minutenzahl",
+     "why": "natural: Eigene Minuten says own minutes; the field holds a number of minutes"
+    },
+    {
+     "key": "Each line beginning with <!-- chapter: starts a chapter; keep those lines.",
+     "english": "Each line beginning with <!-- chapter: starts a chapter; keep those lines.",
+     "before": "Jede Zeile, die mit <!-- chapter: beginnt, beginnt ein Kapitel; behalte diese Zeilen.",
+     "after": "Jede Zeile, die mit <!-- chapter: anfängt, beginnt ein Kapitel; behalte diese Zeilen.",
+     "why": "natural: beginnt, beginnt repeated the verb"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "„Text bearbeiten“ wurde für %@ beendet, weil eine neue Kopie ihn ersetzt hat.",
+     "after": "„Text bearbeiten“ wurde für %@ beendet, weil eine neue Kopie das Buch ersetzt hat.",
+     "why": "grammar: ihn did not agree with the book"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "%1$lld von %2$@ werden exportiert…",
+     "after": "%1$lld exportiert, insgesamt %2$@…",
+     "why": "grammar: von needs the dative Einträgen, but the count reads 40 Einträge"
+    },
+    {
+     "key": "How fast the voice speaks in the file. It starts at the book's speed.",
+     "english": "How fast the voice speaks in the file. It starts at the book's speed.",
+     "before": "Wie schnell die Stimme in der Datei spricht. Sie beginnt mit der Geschwindigkeit des Buchs.",
+     "after": "Wie schnell die Stimme in der Datei spricht. Voreingestellt ist die Geschwindigkeit des Buchs.",
+     "why": "meaning: Sie beginnt mit said the voice starts at that speed; the slider starts at the book speed"
+    },
+    {
+     "key": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "english": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "before": "Wie hoch die Stimme in der Datei klingt. Sie beginnt mit der Tonhöhe des Buchs.",
+     "after": "Wie hoch die Stimme in der Datei klingt. Voreingestellt ist die Tonhöhe des Buchs.",
+     "why": "meaning: Sie beginnt mit said the voice starts at that pitch; the slider starts at the book pitch"
+    },
+    {
+     "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "before": "Wie die BRF-Datei jede Braillezelle schreibt. Die meisten Braillezeilen und Punktschriftdrucker lesen North American Braille ASCII; auf Deutsch eingerichtete lesen Eurobraille. Um sie mit anderen zu teilen, exportiere eine PEF-Datei.",
+     "after": "Wie die BRF-Datei jede Braillezelle schreibt. Die meisten Braillezeilen und Punktschriftdrucker lesen North American Braille ASCII; auf Deutsch eingerichtete lesen Eurobraille. Zum Teilen mit Lesern anderswo exportiere eine PEF-Datei.",
+     "why": "meaning: Um sie mit anderen zu teilen pointed at the displays and lost elsewhere"
+    },
+    {
+     "key": "Its earlier text was kept as %@, in the book's package.",
+     "english": "Its earlier text was kept as %@, in the book's package.",
+     "before": "Sein früherer Text wurde im Paket des Buchs als %@ behalten.",
+     "after": "Sein früherer Text wurde als %@ im Paket des Buchs aufbewahrt.",
+     "why": "natural: a backup is aufbewahrt; als %@ behalten is not said"
+    },
+    {
+     "key": "Maximum is %@.",
+     "english": "Maximum is %@.",
+     "before": "Maximal sind %@ erlaubt.",
+     "after": "Das Maximum ist %@.",
+     "why": "grammar: sind did not agree with a singular time such as 1 Stunde"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "Mediensteuerung nicht freigegeben: Dieses Buch hält sie nicht.",
+     "after": "Mediensteuerung nicht freigegeben: Dieses Buch hat sie nicht belegt.",
+     "why": "natural: hält sie nicht copies does not hold; a book has the controls belegt"
+    },
+    {
+     "key": "No copy of your edited text could be kept, so TextMouth leaves content.md as it is.",
+     "english": "No copy of your edited text could be kept, so TextMouth leaves content.md as it is.",
+     "before": "Es konnte keine Kopie deines bearbeiteten Texts behalten werden, daher lässt TextMouth content.md unverändert.",
+     "after": "Es konnte keine Kopie deines bearbeiteten Texts angelegt werden, daher lässt TextMouth content.md unverändert.",
+     "why": "meaning: behalten says retained; the sense is that no backup could be made"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "one": "Die Texterkennung (OCR) konnte auf allen %lld Seiten nicht ausgeführt werden, daher fehlt Text, der nur in den Bildern steht: %@.",
+      "other": "Die Texterkennung (OCR) konnte auf allen %lld Seiten nicht ausgeführt werden, daher fehlt Text, der nur in den Bildern steht: %@."
+     },
+     "after": {
+      "one": "Die Texterkennung (OCR) konnte auf %lld Seite nicht ausgeführt werden, daher fehlt Text, der nur in ihren Bildern steht: %@.",
+      "other": "Die Texterkennung (OCR) konnte auf allen %lld Seiten nicht ausgeführt werden, daher fehlt Text, der nur in den Bildern steht: %@."
+     },
+     "why": "grammar: the one form said allen 1 Seiten"
+    },
+    {
+     "key": "Option",
+     "english": "Option",
+     "before": "Wahltaste",
+     "after": "Option",
+     "why": "term: VoiceOver German speaks Option in a shortcut (ModKeyForShortcut), and AppKit names it Option-Taste; Wahltaste is only Apple docs prose"
+    },
+    {
+     "key": "Reader windows",
+     "english": "Reader windows",
+     "before": "Leseansichtsfenster",
+     "after": "Leseansichten",
+     "why": "natural: the glossary makes a reader window a Leseansicht; Leseansichtsfenster is an overlong compound"
+    },
+    {
+     "key": "Remove books when finished",
+     "english": "Remove books when finished",
+     "before": "Bücher nach dem Beenden entfernen",
+     "after": "Beendete Bücher entfernen",
+     "why": "meaning: nach dem Beenden also reads after quitting, which Beenden means in the app menu"
+    },
+    {
+     "key": "Set",
+     "english": "Set",
+     "before": "Setzen",
+     "after": "Stellen",
+     "why": "natural: a timer is gestellt, as Timer auf %lld Minuten stellen beside it; Setzen is not said"
+    },
+    {
+     "key": "Speak Download Progress",
+     "english": "Speak Download Progress",
+     "before": "Fortschritt beim Herunterladen vorlesen",
+     "after": "Download-Fortschritt vorlesen",
+     "why": "term: the glossary note makes the noun Download-Fortschritt, as Speak Import Progress beside it reads"
+    },
+    {
+     "key": "Speech log, its last %lld lines, offsets and lengths only:",
+     "english": {
+      "one": "Speech log, its last %lld line, offsets and lengths only:",
+      "other": "Speech log, its last %lld lines, offsets and lengths only:"
+     },
+     "before": {
+      "one": "Sprachprotokoll, seine letzte %lld Zeile, nur Positionen und Längen:",
+      "other": "Sprachprotokoll, seine letzten %lld Zeilen, nur Positionen und Längen:"
+     },
+     "after": {
+      "one": "Sprachprotokoll, seine letzte Zeile, nur Positionen und Längen:",
+      "other": "Sprachprotokoll, seine letzten %lld Zeilen, nur Positionen und Längen:"
+     },
+     "why": "natural: seine letzte 1 Zeile; German one is exactly 1"
+    },
+    {
+     "key": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "english": "Stops the export and keeps the chapters already spoken until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. Exporting the same range at the same speed and pitch goes on from them.",
+     "before": "Stoppt den Export und behält die bereits gesprochenen Kapitel, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Ein Export desselben Bereichs mit derselben Geschwindigkeit und Tonhöhe setzt dort fort.",
+     "after": "Stoppt den Export und behält die bereits gesprochenen Kapitel, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Ein Export desselben Bereichs mit derselben Geschwindigkeit und Tonhöhe macht dort weiter.",
+     "why": "natural: fortsetzen needs an object; setzt dort fort is not said"
+    },
+    {
+     "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
+     "before": "Akzeptiert %1$lld bis %2$lld Minuten. Mit Return wird der Timer gesetzt und das Buch wiedergegeben.",
+     "after": "Akzeptiert %1$lld bis %2$lld Minuten. Mit Return wird der Timer gestellt und das Buch wiedergegeben.",
+     "why": "natural: a timer is gestellt, as the Stellen button says"
+    },
+    {
+     "key": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "english": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "before": "Entfernt jedes beendete Buch aus der Liste, wenn sein Fenster weiterwechselt oder geschlossen wird. Bücher, die vor dem Aktivieren beendet wurden, bleiben.",
+     "after": "Entfernt jedes beendete Buch aus der Liste, wenn sein Fenster zu einem anderen Buch wechselt oder geschlossen wird. Bücher, die vor dem Aktivieren beendet wurden, bleiben.",
+     "why": "natural: weiterwechselt is not a German verb"
+    },
+    {
+     "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "Text nicht aktualisiert: Kapitel %1$@ des bearbeiteten Texts von %2$@ %3$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text.",
+     "after": "Text nicht aktualisiert: Kapitel %1$@ des bearbeiteten Texts von %2$@ %3$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text.",
+     "why": "natural: verflachen is intransitive; the fix is to reduce the nesting"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "Text nicht aktualisiert: Der bearbeitete Text von %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text.",
+     "after": "Text nicht aktualisiert: Der bearbeitete Text von %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text.",
+     "why": "natural: verflachen is intransitive; the fix is to reduce the nesting"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "before": "Text nicht aktualisiert: Im bearbeiteten Transkript von %@ stehen Wörter in einem Kapitel ohne Sprache, wo sie nicht behalten werden können. Entferne sie und sichere erneut; bis dahin behält das Buch seinen alten Text.",
+     "after": "Text nicht aktualisiert: Das bearbeitete Transkript von %@ fügt einem Kapitel ohne gesprochenen Text Wörter hinzu, die dort nicht behalten werden können. Entferne sie und sichere erneut; bis dahin behält das Buch seinen alten Text.",
+     "why": "meaning: ohne Sprache also reads without language, and the transcript adds the words"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth hat die letzte Sicherung noch nicht gelesen.",
+     "after": "TextMouth hat die zuletzt gesicherte Fassung noch nicht gelesen.",
+     "why": "meaning: die letzte Sicherung reads as the last backup, beside real backup files"
+    },
+    {
+     "key": "TextMouth kept the text you changed in %@.",
+     "english": "TextMouth kept the text you changed in %@.",
+     "before": "TextMouth hat den Text, den du in %@ geändert hast, unverändert gelassen.",
+     "after": "TextMouth hat deine Änderungen am Text von %@ behalten.",
+     "why": "natural: den Text, den du geändert hast, unverändert gelassen read as if the change was dropped"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while %@ played, because of a fault in macOS's audio. Your place was saved.",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while %3$@ played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "TextMouth wurde am %1$@ beendet: Sein Speicher wuchs auf %2$@ GB, während %3$@ wiedergegeben wurde, wegen eines Fehlers im Audio von macOS. Deine Position wurde gesichert.",
+     "after": "TextMouth wurde am %1$@ beendet: Wegen eines Fehlers im Audiosystem von macOS wuchs sein Speicher auf %2$@ GB, während %3$@ wiedergegeben wurde. Deine Position wurde gesichert.",
+     "why": "natural: the cause trailed the während clause; Audiosystem as the playback message says"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "TextMouth wurde am %1$@ beendet: Sein Speicher wuchs auf %2$@ GB, während ein Buch wiedergegeben wurde, wegen eines Fehlers im Audio von macOS. Deine Position wurde gesichert.",
+     "after": "TextMouth wurde am %1$@ beendet: Wegen eines Fehlers im Audiosystem von macOS wuchs sein Speicher auf %2$@ GB, während ein Buch wiedergegeben wurde. Deine Position wurde gesichert.",
+     "why": "natural: the cause trailed the während clause; Audiosystem as the playback message says"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth liest BRF- und BRL-Dateien, die du ab jetzt hinzufügst, mit diesen Zeichen und erkennt Unicode-Braillemuster selbst. Der Exportdialog beginnt eine BRF-Datei mit ihnen. Ein Buch behält seine Importzeichen, die „Buchinformationen“ ändern können.",
+     "after": "TextMouth liest BRF- und BRL-Dateien, die du ab jetzt hinzufügst, mit diesen Zeichen und erkennt Unicode-Braillemuster selbst. Der Exportdialog verwendet sie anfangs für eine BRF-Datei. Ein Buch behält seine Importzeichen, die sich in „Buchinformationen“ ändern lassen.",
+     "why": "meaning: die Buchinformationen ändern können read as the characters changing Book Information; beginnt eine BRF-Datei mit ihnen was literal"
+    },
+    {
+     "key": "The %@ starts %@ into “%@”, before the earlier %@, which starts %@ in.",
+     "english": "The %1$@ starts %2$@ into “%3$@”, before the earlier %4$@, which starts %5$@ in.",
+     "before": "Die %1$@ beginnt bei %2$@ in der Datei „%3$@“, vor der früheren %4$@, die bei %5$@ beginnt.",
+     "after": "Die %1$@ beginnt bei %2$@ in der Datei „%3$@“ und damit früher als die vorangehende %4$@, die bei %5$@ beginnt.",
+     "why": "grammar: der früheren %4$@ needs a dative ending the value unbenannte Überschrift 3 lacks; als keeps it nominative"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "Die Audiodatei %@ endet vor ihrem Audio, daher konnte sie nicht konvertiert werden.",
+     "after": "Die Audiodatei %@ bricht vor dem Ende ihres Audios ab, daher konnte sie nicht konvertiert werden.",
+     "why": "natural: endet vor ihrem Audio copies the English; the file breaks off early"
+    },
+    {
+     "key": "The export was stopped before the rest.",
+     "english": "The export was stopped before the rest.",
+     "before": "Der Export wurde vor dem Rest gestoppt.",
+     "after": "Der Export wurde gestoppt, bevor der Rest geschrieben war.",
+     "why": "natural: vor dem Rest gestoppt copies the English"
+    },
+    {
+     "key": "The file %@ failed partway through.",
+     "english": "The file %@ failed partway through.",
+     "before": "Die Datei %@ ist mittendrin fehlgeschlagen.",
+     "after": "Die Wiedergabe der Datei %@ brach mittendrin ab.",
+     "why": "natural: a file does not fehlschlagen; its playback broke off"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "one": "Das andere Kapitel (%lld) hat keinen Text.",
+      "other": "Die anderen %lld Kapitel haben keinen Text."
+     },
+     "after": {
+      "one": "Das andere Kapitel hat keinen Text.",
+      "other": "Die anderen %lld Kapitel haben keinen Text."
+     },
+     "why": "natural: the one form read Das andere Kapitel (1); German one is exactly 1"
+    },
+    {
+     "key": "The passage as the book has it, characters %@ to %@ of chapter %@:",
+     "english": "The passage as the book has it, characters %1$@ to %2$@ of chapter %3$@:",
+     "before": "Die Passage, wie das Buch sie hat, Zeichen %1$@ bis %2$@ von Kapitel %3$@:",
+     "after": "Die Passage, wie sie im Buch steht, Zeichen %1$@ bis %2$@ von Kapitel %3$@:",
+     "why": "natural: wie das Buch sie hat copies as the book has it"
+    },
+    {
+     "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "before": "Die Sprachausgabe hat sich geweigert, den Text hier zu sprechen, zweimal, daher stoppte das Vorlesen. „Wiedergeben“ versucht es von derselben Stelle erneut.",
+     "after": "Die Sprachausgabe hat sich zweimal geweigert, den Text hier zu sprechen, daher stoppte das Vorlesen. „Wiedergeben“ versucht es von derselben Stelle erneut.",
+     "why": "natural: zweimal trailed the infinitive clause"
+    },
+    {
+     "key": "The text content.md held before was kept as %@, in the book's package.",
+     "english": "The text content.md held before was kept as %@, in the book's package.",
+     "before": "Der Text, den content.md zuvor enthielt, wurde als %@ im Paket des Buchs behalten.",
+     "after": "Der Text, den content.md zuvor enthielt, wurde als %@ im Paket des Buchs aufbewahrt.",
+     "why": "natural: a backup is aufbewahrt; als %@ behalten is not said"
+    },
+    {
+     "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "Der Text dieses Buchs %@, und TextMouth kann ihn nicht sicher exportieren. Wähle „Text bearbeiten“, ebne die Verschachtelung ein und sichere; exportiere dann erneut.",
+     "after": "Der Text dieses Buchs %@, und TextMouth kann ihn nicht sicher exportieren. Wähle „Text bearbeiten“, verringere die Verschachtelung und sichere; exportiere dann erneut.",
+     "why": "natural: the same advice reads verringere die Verschachtelung in the other messages"
+    },
+    {
+     "key": "The voice changed its kind of audio partway through “%@”.",
+     "english": "The voice changed its kind of audio partway through “%@”.",
+     "before": "Die Stimme hat mittendrin in „%@“ ihre Audioart gewechselt.",
+     "after": "Die Stimme hat mitten in „%@“ ihr Audioformat gewechselt.",
+     "why": "natural: Audioart is not said, and mittendrin in doubles mitten in"
+    },
+    {
+     "key": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "english": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "before": "Die Stimme blieb mittendrin in „%@“ stehen, und TextMouth hat nicht länger gewartet.",
+     "after": "Die Stimme blieb mitten in „%@“ stehen, und TextMouth hat nicht länger gewartet.",
+     "why": "natural: mittendrin in doubles mitten in"
+    },
+    {
+     "key": "Time at %@",
+     "english": "Time at %@",
+     "before": "Zeit bei %@",
+     "after": "Zeit (%@)",
+     "why": "grammar: bei needs the dative Wörtern, but the value reads 500 Wörter pro Minute"
+    },
+    {
+     "key": "Voice changed to %@",
+     "english": "Voice changed to %@",
+     "before": "Stimme geändert zu %@",
+     "after": "Stimme geändert: %@",
+     "why": "natural: geändert zu copies changed to"
+    },
+    {
+     "key": "What a book of this kind moves by until it has a unit of its own.",
+     "english": "What a book of this kind moves by until it has a unit of its own.",
+     "before": "Wonach ein Buch dieser Art springt, bis es eine eigene Einheit hat.",
+     "after": "Um welche Einheit ein Buch dieser Art springt, bis es eine eigene hat.",
+     "why": "meaning: wonach asks after what, not by what unit"
+    },
+    {
+     "key": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "english": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "before": "Ob die Braille dieses Codes in Kurzschrift geschrieben wird, die gebräuchliche Wörter und Buchstabengruppen in weniger Zellen schreibt.",
+     "after": "Ob dieser Code Kurzschrift verwendet, die gebräuchliche Wörter und Buchstabengruppen mit weniger Zellen schreibt.",
+     "why": "natural: die Braille dieses Codes is not German"
+    },
+    {
+     "key": "Whether that code's braille is contracted.",
+     "english": "Whether that code's braille is contracted.",
+     "before": "Ob die Braille dieses Codes in Kurzschrift geschrieben wird.",
+     "after": "Ob dieser Code Kurzschrift verwendet.",
+     "why": "natural: die Braille dieses Codes is not German"
+    },
+    {
+     "key": "Your edited text was also kept as %@, in the book's package.",
+     "english": "Your edited text was also kept as %@, in the book's package.",
+     "before": "Dein bearbeiteter Text wurde außerdem als %@ im Paket des Buchs behalten.",
+     "after": "Dein bearbeiteter Text wurde außerdem als %@ im Paket des Buchs aufbewahrt.",
+     "why": "natural: a backup is aufbewahrt; als %@ behalten is not said"
+    },
+    {
+     "key": "at %@ of %@ at %@",
+     "english": "at %1$@ of %2$@ at %3$@",
+     "before": "bei %1$@ von %2$@ mit %3$@",
+     "after": "bei %1$@ von %2$@ (%3$@)",
+     "why": "grammar: mit needs the dative Wörtern, but the value reads 500 Wörter pro Minute"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "es %@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch.",
+     "after": "er %@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es; verflachen is intransitive"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "es %@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt.",
+     "after": "er %@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es; verflachen is intransitive"
+    },
+    {
+     "key": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
+     "english": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
+     "before": "es fügt Wörter zu einem Kapitel ohne Sprache hinzu, wo sie nicht behalten werden können. Entferne sie und sichere erneut, dann wird der Text angezeigt.",
+     "after": "er fügt einem Kapitel ohne gesprochenen Text Wörter hinzu, die dort nicht behalten werden können. Entferne sie und sichere erneut, dann wird der Text angezeigt.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es; ohne Sprache also reads without language"
+    },
+    {
+     "key": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
+     "english": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
+     "before": "es ändert die Überschrift eines Kapitels, die aus dem Audio stammt. Setze sie zurück und sichere erneut, dann wird der Text angezeigt.",
+     "after": "er ändert die Überschrift eines Kapitels, die aus dem Audio stammt. Setze sie zurück und sichere erneut, dann wird der Text angezeigt.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es"
+    },
+    {
+     "key": "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "english": "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "before": "es enthält %1$@, das Hörbuch aber %2$@. Behalte jede Zeile, die mit <!-- chapter: beginnt, und sichere erneut, dann wird der Text angezeigt.",
+     "after": "er enthält %1$@, das Hörbuch aber %2$@. Behalte jede Zeile, die mit <!-- chapter: beginnt, und sichere erneut, dann wird der Text angezeigt.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es"
+    },
+    {
+     "key": "it has no chapter with any text. Undo the change and save again, and the book opens.",
+     "english": "it has no chapter with any text. Undo the change and save again, and the book opens.",
+     "before": "es enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann öffnet sich das Buch.",
+     "after": "er enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann öffnet sich das Buch.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es"
+    },
+    {
+     "key": "it has no chapter with any text. Undo the change and save again, and the text shows.",
+     "english": "it has no chapter with any text. Undo the change and save again, and the text shows.",
+     "before": "es enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann wird der Text angezeigt.",
+     "after": "er enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann wird der Text angezeigt.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es"
+    },
+    {
+     "key": "it isn't UTF-8 text. Save it as UTF-8, and the book opens.",
+     "english": "it isn't UTF-8 text. Save it as UTF-8, and the book opens.",
+     "before": "es ist kein UTF-8-Text. Sichere es als UTF-8, dann öffnet sich das Buch.",
+     "after": "er ist kein UTF-8-Text. Sichere ihn als UTF-8, dann öffnet sich das Buch.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es and ihn"
+    },
+    {
+     "key": "it isn't UTF-8 text. Save it as UTF-8, and the text shows.",
+     "english": "it isn't UTF-8 text. Save it as UTF-8, and the text shows.",
+     "before": "es ist kein UTF-8-Text. Sichere es als UTF-8, dann wird der Text angezeigt.",
+     "after": "er ist kein UTF-8-Text. Sichere ihn als UTF-8, dann wird der Text angezeigt.",
+     "why": "grammar: the clause follows sein or der bearbeitete Text, so it is er, not es and ihn"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch.",
+     "after": "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch.",
+     "why": "natural: verflachen is intransitive; the fix is to reduce the nesting"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt.",
+     "after": "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt.",
+     "why": "natural: verflachen is intransitive; the fix is to reduce the nesting"
+    },
+    {
+     "key": "no copy of the edited text could be kept, so TextMouth leaves content.md as it is.",
+     "english": "no copy of the edited text could be kept, so TextMouth leaves content.md as it is.",
+     "before": "es konnte keine Kopie des bearbeiteten Texts behalten werden, daher lässt TextMouth content.md unverändert.",
+     "after": "es konnte keine Kopie des bearbeiteten Texts angelegt werden, daher lässt TextMouth content.md unverändert.",
+     "why": "meaning: behalten says retained; the sense is that no backup could be made"
+    },
+    {
+     "key": "reader windows",
+     "english": "reader windows",
+     "before": "Leseansichtsfenster",
+     "after": "Leseansichten",
+     "why": "natural: the glossary makes a reader window a Leseansicht, as the pop-up choice now reads"
+    },
+    {
+     "key": "stopping %lld speech exports with the chapters they finished kept",
+     "english": {
+      "one": "stopping %lld speech export with the chapters it finished kept",
+      "other": "stopping %lld speech exports with the chapters they finished kept"
+     },
+     "before": {
+      "one": "%lld Sprachexport wird mit den bereits fertigen Kapiteln gestoppt",
+      "other": "%lld Sprachexporte werden mit den bereits fertigen Kapiteln gestoppt"
+     },
+     "after": {
+      "one": "Stoppen von %lld Sprachexport, ohne die fertigen Kapitel zu verlieren",
+      "other": "Stoppen von %lld Sprachexporten, ohne die fertigen Kapitel zu verlieren"
+     },
+     "why": "meaning: mit den fertigen Kapiteln gestoppt could mean they stop too; they are kept, and the list phrases are nouns (Sichern der …)"
+    },
+    {
+     "key": "stopping a speech export with the chapters it finished kept",
+     "english": "stopping a speech export with the chapters it finished kept",
+     "before": "ein Sprachexport wird mit den bereits fertigen Kapiteln gestoppt",
+     "after": "Stoppen eines Sprachexports, ohne die fertigen Kapitel zu verlieren",
+     "why": "meaning: mit den fertigen Kapiteln gestoppt could mean they stop too; they are kept, and the list phrases are nouns (Sichern der …)"
+    },
+    {
+     "key": "the file %@ failed partway through",
+     "english": "the file %@ failed partway through",
+     "before": "die Datei %@ ist mittendrin fehlgeschlagen",
+     "after": "die Wiedergabe der Datei %@ brach mittendrin ab",
+     "why": "natural: a file does not fehlschlagen; its playback broke off"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "„%1$@“ ist eine Persönliche Stimme, die macOS nicht in eine Datei aufnehmen kann. Wähle mit der Taste „%2$@“ in der Leseansicht eine andere Stimme und exportiere dann erneut.",
+     "after": "„%1$@“ ist eine „Eigene Stimme“, die macOS nicht in eine Datei aufnehmen kann. Wähle mit der Taste „%2$@“ in der Leseansicht eine andere Stimme und exportiere dann erneut.",
+     "why": "term: Apple German calls Personal Voice Eigene Stimme"
+    }
+   ]
+  }
+ ]
+}
