@@ -108654,7 +108654,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv även märkena som Audacity-etiketter"
+            "value" : "Skriv även ljudmärkena som Audacity-etiketter"
           }
         },
         "th" : {
@@ -597012,7 +597012,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fullskrift"
+            "value" : "Helskrift"
           }
         },
         "th" : {
@@ -597149,7 +597149,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fullskrift (grad %@)"
+            "value" : "Helskrift (grad %@)"
           }
         },
         "th" : {
