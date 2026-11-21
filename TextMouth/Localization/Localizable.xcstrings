@@ -396169,7 +396169,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya."
+            "value" : "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya."
           }
         },
         "it" : {
@@ -396723,7 +396723,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya."
+            "value" : "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya."
           }
         },
         "it" : {
@@ -397551,7 +397551,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Tekan lagi, atau Berhenti, untuk mengakhirinya."
+            "value" : "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Pilih lagi, atau Berhenti, untuk mengakhirinya."
           }
         },
         "it" : {
@@ -409139,7 +409139,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ diganti dengan rekaman baru berdurasi %2$@, dan sedang dipilih."
+            "value" : "%1$@ diganti dengan rekaman baru berdurasi %2$@ yang kini terpilih."
           }
         },
         "it" : {
@@ -419013,7 +419013,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Dikembalikan ke audio asli semula. Ulangi mengembalikan %lld edit."
+                  "value" : "Dikembalikan ke audio asli semula. Pilih Ulangi untuk mengembalikan %lld edit."
                 }
               }
             }
@@ -431905,7 +431905,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Detik antar pengumuman level"
+            "value" : "Detik antarpengumuman level"
           }
         },
         "it" : {
@@ -437789,7 +437789,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengatur bahasa transkripsi. Bahasa yang ditandai perlu diunduh hanya dapat diunduh dari lembar Transkripsikan Audio."
+            "value" : "Mengatur bahasa transkripsi. Bahasa yang ditandai “perlu diunduh” hanya dapat diunduh dari lembar Transkripsikan Audio."
           }
         },
         "it" : {
@@ -462036,7 +462036,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Masih bekerja. Tutup setelah perubahan selesai."
+            "value" : "Masih memproses. Tutup setelah perubahan selesai."
           }
         },
         "it" : {
@@ -490552,7 +490552,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth akan keluar dan audio buku belum memuat edit ini. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain. Batal membiarkan TextMouth tetap terbuka."
+            "value" : "TextMouth akan keluar dan audio buku belum memuat edit ini. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain. Pilih Batal agar TextMouth tetap terbuka."
           }
         },
         "it" : {
