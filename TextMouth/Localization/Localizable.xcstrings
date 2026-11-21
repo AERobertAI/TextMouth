@@ -3203,7 +3203,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ staan in je bibliotheek, zonder abonnement. Kies %2$@ in de rij van een feed, of in de bijbehorende %3$@, om ze opnieuw te controleren."
+            "value" : "%1$@ staan in je bibliotheek, zonder abonnement. Kies %2$@ in de rij van een feed, of in de bijbehorende %3$@, om die feed opnieuw te controleren."
           }
         },
         "pl" : {
@@ -106492,7 +106492,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toont na een automatische verversing een waarschuwing die de feeds met nieuwe afleveringen en artikelen noemt."
+            "value" : "Toont na een automatische verversing een dialoogvenster dat de feeds met nieuwe afleveringen en artikelen noemt."
           }
         },
         "pl" : {
@@ -122407,7 +122407,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio die TextMouth bij het importeren converteert, behoudt alleen het geconverteerde bestand."
+            "value" : "Van audio die TextMouth bij het importeren converteert, wordt alleen het geconverteerde bestand bewaard."
           }
         },
         "pl" : {
@@ -144882,7 +144882,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Controleert elke feed met abonnement en meldt wat er is gekomen."
+            "value" : "Controleert elke feed met abonnement en meldt wat er is binnengekomen."
           }
         },
         "pl" : {
@@ -145293,7 +145293,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Controleert deze feed vanaf nu weer, en meteen."
+            "value" : "Controleert deze feed meteen en vanaf nu weer."
           }
         },
         "pl" : {
@@ -149135,7 +149135,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kies een OPML-bestand met abonnementen, zoals een andere feedlezer die exporteert."
+            "value" : "Kies een OPML-bestand met abonnementen, zoals een andere feedlezer ze exporteert."
           }
         },
         "pl" : {
@@ -173194,7 +173194,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Maak map"
+            "value" : "Maak map aan"
           }
         },
         "pl" : {
@@ -176619,7 +176619,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dagen nadat een aflevering is afgelopen voordat de download wordt verwijderd, van 0 (meteen) tot 365; een download die in een lezer open staat, wacht tot die wordt gesloten."
+            "value" : "Aantal dagen na het einde van een aflevering voordat de download wordt verwijderd, van 0 (meteen) tot 365; een download die in een lezer openstaat, wacht tot die wordt gesloten."
           }
         },
         "pl" : {
@@ -183774,7 +183774,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ is verwijderd."
+            "value" : "Verwijderd: %@."
           }
         },
         "pl" : {
@@ -191439,7 +191439,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download %1$lld van %2$lld: “%3$@” van %4$@"
+            "value" : "Download %1$lld van %2$lld: “%3$@” uit %4$@"
           }
         },
         "pl" : {
@@ -199702,7 +199702,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Duplicaat van boek gevonden"
+            "value" : "Dubbel boek gevonden"
           }
         },
         "pl" : {
@@ -228662,7 +228662,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feeds worden alleen bij het starten ververst, als dat aan staat, en wanneer je %1$@ of %2$@ kiest."
+            "value" : "Feeds worden alleen bij het starten ververst, als dat aanstaat, en wanneer je %1$@ of %2$@ kiest."
           }
         },
         "pl" : {
@@ -254179,7 +254179,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Import geannuleerd tijdens het uitpakken van het archief, voordat een boek was geïmporteerd."
+            "value" : "Import geannuleerd tijdens het uitpakken van het archief, voordat er een boek was geïmporteerd."
           }
         },
         "pl" : {
@@ -268823,7 +268823,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het vermeldt geen audiotrack met een begin dat TextMouth kan lezen."
+            "value" : "Het vermeldt geen audiotrack met een begintijd die TextMouth kan lezen."
           }
         },
         "pl" : {
@@ -269645,7 +269645,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het noemt geen audiobestand in de eigen map dat TextMouth kan importeren."
+            "value" : "Het noemt geen audiobestand in zijn eigen map dat TextMouth kan importeren."
           }
         },
         "pl" : {
@@ -288157,7 +288157,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lijst en download"
+            "value" : "Tonen en downloaden"
           }
         },
         "pl" : {
@@ -343918,7 +343918,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Er is geen tekst gevonden in de ene afbeelding van dit stripboekarchief."
+            "value" : "Er is geen tekst gevonden in de enige afbeelding van dit stripboekarchief."
           }
         },
         "pl" : {
@@ -355326,7 +355326,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eén kopie wordt afgespeeld van een opname en de andere wordt voorgelezen uit tekst, dus bij vervangen blijven alleen de map en de plaats op de leeslijst van de bestaande kopie behouden, niet de leespositie, de bladwijzers en hun notities of de instellingen."
+            "value" : "De ene kopie wordt afgespeeld van een opname en de andere wordt voorgelezen uit tekst, dus bij vervangen blijven alleen de map en de plaats op de leeslijst van de bestaande kopie behouden, niet de leespositie, de bladwijzers en hun notities of de instellingen."
           }
         },
         "pl" : {
@@ -386592,7 +386592,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zet de map van de feed in"
+            "value" : "Plaats de map van de feed in"
           }
         },
         "pl" : {
@@ -386729,7 +386729,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zet de mappen van de feeds in"
+            "value" : "Plaats de mappen van de feeds in"
           }
         },
         "pl" : {
@@ -399493,7 +399493,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ververs elke feed wanneer TextMouth opent"
+            "value" : "Ververs elke feed bij het starten van TextMouth"
           }
         },
         "pl" : {
@@ -425503,7 +425503,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bewaar je abonnementen als OPML-bestand, dat andere feedlezers importeren."
+            "value" : "Bewaar je abonnementen als OPML-bestand, dat andere feedlezers kunnen importeren."
           }
         },
         "pl" : {
@@ -442857,7 +442857,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toon een waarschuwing wanneer een verversing nieuwe afleveringen oplevert"
+            "value" : "Toon een dialoogvenster wanneer een verversing nieuwe afleveringen oplevert"
           }
         },
         "pl" : {
@@ -479213,7 +479213,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kan “%1$@” niet lezen als %2$@. Het bestand is mogelijk beschadigd of heeft de naam van een ander formaat."
+            "value" : "TextMouth kan “%1$@” niet lezen als %2$@. Het bestand is mogelijk beschadigd of heeft de extensie van een ander formaat."
           }
         },
         "pl" : {
@@ -481167,7 +481167,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon de nieuwe kopie van “%@” niet bewaren. Kies Annuleer om de kopie te verwerpen en importeer het bestand daarna opnieuw."
+            "value" : "TextMouth kon de nieuwe kopie van “%@” niet bewaren. Kies Annuleer om de kopie weg te gooien en importeer het bestand daarna opnieuw."
           }
         },
         "pl" : {
