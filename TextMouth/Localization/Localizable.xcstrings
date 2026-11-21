@@ -17318,7 +17318,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@は、フィードでダウンロードしたエピソードまたは記事を移動します。そのフィードのフォルダ内で1つ選択してください。"
+            "value" : "「%@」は、フィードでダウンロードしたエピソードまたは記事を移動します。そのフィードのフォルダ内で1つ選択してください。"
           }
         },
         "ko" : {
@@ -18911,7 +18911,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックに%@"
+            "value" : "このブックの経過時間：%@"
           }
         },
         "ko" : {
@@ -20847,7 +20847,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ここまで%@"
+            "value" : "%@ダウンロード済み"
           }
         },
         "ko" : {
@@ -23063,7 +23063,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@は、データ量の制限がないネットワークになると自動的に更新されます。"
+            "value" : "%@は、データ量の制限がないネットワークに接続されると自動的に更新されます。"
           }
         },
         "ko" : {
@@ -29193,7 +29193,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@、%2$@による"
+            "value" : "%1$@、%2$@"
           }
         },
         "ko" : {
@@ -50071,7 +50071,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld冊のブックを処理"
+                  "value" : "%lld冊を処理済み"
                 }
               }
             }
@@ -65158,7 +65158,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld個のファイルが失敗しました："
+                  "value" : "%lld個のファイルを読み込めませんでした："
                 }
               }
             }
@@ -93572,7 +93572,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "；%@は残ります"
+            "value" : "。%@は残ります"
           }
         },
         "ko" : {
@@ -93709,7 +93709,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "；%@は残ります"
+            "value" : "。%@は残ります"
           }
         },
         "ko" : {
@@ -106480,7 +106480,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "自動更新のあと、新しいエピソードや記事があるフィードを警告でお知らせします。"
+            "value" : "自動更新のあと、新しいエピソードや記事があるフィードをアラートでお知らせします。"
           }
         },
         "ko" : {
@@ -109687,7 +109687,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "記事の詳細はフィードから取得されます。%@を選択すると、編集できるブックになります。"
+            "value" : "記事の詳細はフィードから取得されます。「%@」を選択すると、編集できるブックになります。"
           }
         },
         "ko" : {
@@ -110372,7 +110372,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "エピソードの詳細はフィードから取得されます。%@を選択すると、編集できるブックになります。"
+            "value" : "エピソードの詳細はフィードから取得されます。「%@」を選択すると、編集できるブックになります。"
           }
         },
         "ko" : {
@@ -145281,7 +145281,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "今後このフィードを確認し、すぐに確認も行います。"
+            "value" : "このフィードの確認を再開し、すぐに確認します。"
           }
         },
         "ko" : {
@@ -228650,7 +228650,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィードは、起動時（オンの場合）と、%1$@または%2$@を選択したときにだけ更新されます。"
+            "value" : "フィードは、起動時（オンの場合）と、「%1$@」または「%2$@」を選択したときにだけ更新されます。"
           }
         },
         "ko" : {
@@ -260910,7 +260910,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "内表紙"
+            "value" : "中表紙"
           }
         },
         "ko" : {
@@ -264198,7 +264198,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ダウンロードされている間は、フィードに属します。%@を選択すると、ファイルは取り除かれ、位置とブックマークは保持されます。"
+            "value" : "ダウンロードされている間は、フィードに属します。「%@」を選択すると、ファイルは取り除かれ、位置とブックマークは保持されます。"
           }
         },
         "ko" : {
@@ -268811,7 +268811,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth が読み取れる開始位置のオーディオトラックが記載されていません。"
+            "value" : "TextMouth が開始位置を読み取れるオーディオトラックが記載されていません。"
           }
         },
         "ko" : {
@@ -275754,7 +275754,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "トラックが、指定されたオーディオの終わりを超えています。別のコピーのオーディオ用に作られたものです。"
+            "value" : "トラックが、指定されたオーディオの終わりを超えています。そのオーディオの別のコピー用に作られたものです。"
           }
         },
         "ko" : {
@@ -333438,7 +333438,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "しない"
+            "value" : "作成しない"
           }
         },
         "ko" : {
@@ -338563,7 +338563,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」に新しいブックはありません。1冊だけで、すでにライブラリにあります。"
+            "value" : "「%@」に新しいブックはありません。含まれていた1冊は、すでにライブラリにあります。"
           }
         },
         "ko" : {
@@ -442845,7 +442845,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "更新で新しいエピソードがあったときに警告を表示"
+            "value" : "更新で新しいエピソードがあったときにアラートを表示"
           }
         },
         "ko" : {
@@ -468742,7 +468742,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "購読日"
+            "value" : "購読済み"
           }
         },
         "ko" : {
@@ -476113,7 +476113,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキスト認識で読み取れませんでした（%1$@）：%2$@。"
+            "value" : "テキスト認識で%1$@を読み取れませんでした：%2$@。"
           }
         },
         "ko" : {
