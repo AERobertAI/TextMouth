@@ -1,0 +1,248 @@
+{
+  "catalogSHA256": "edf82306cf93e5f2ae6a690055f9e8d52efe19c3a9bd3bde04a0696810e9693c",
+  "ids": [
+    "fixture.books",
+    "fixture.items",
+    "fixture.ownedBooks",
+    "fixture.pages",
+    "fixture.pendingBooks"
+  ],
+  "languages": {
+    "ar": {
+      "fixture.books": {
+        "forms": [
+          "%lld كتب",
+          "%lld كتاب",
+          "%lld كتابان",
+          "%lld كتب",
+          "%lld كتابًا",
+          "%lld كتاب"
+        ]
+      },
+      "fixture.items": {
+        "forms": [
+          "%lld عناصر",
+          "%lld عنصر",
+          "%lld عنصران",
+          "%lld عناصر",
+          "%lld عنصرًا",
+          "%lld عنصر"
+        ]
+      },
+      "fixture.ownedBooks": {
+        "forms": [
+          "%1$@ لديه %2$lld كتب",
+          "%1$@ لديه كتاب واحد",
+          "%1$@ لديه %2$lld كتابان",
+          "%1$@ لديه %2$lld كتب",
+          "%1$@ لديه %2$lld كتابًا",
+          "%1$@ لديه %2$lld كتاب"
+        ]
+      },
+      "fixture.pages": {
+        "forms": [
+          "%lld صفحة",
+          "صفحة واحدة",
+          "%lld صفحتان",
+          "%lld صفحات",
+          "%lld صفحة",
+          "%lld صفحة"
+        ]
+      },
+      "fixture.pendingBooks": null
+    },
+    "en": {
+      "fixture.books": {
+        "forms": [
+          "%lld book",
+          "%lld books"
+        ]
+      },
+      "fixture.items": {
+        "forms": [
+          "%lld item",
+          "%lld items"
+        ]
+      },
+      "fixture.ownedBooks": {
+        "forms": [
+          "%@ has %lld book",
+          "%@ has %lld books"
+        ]
+      },
+      "fixture.pages": {
+        "forms": [
+          "One page",
+          "%lld pages"
+        ]
+      },
+      "fixture.pendingBooks": {
+        "forms": [
+          "%lld shelf",
+          "%lld shelves"
+        ]
+      }
+    },
+    "es": {
+      "fixture.books": {
+        "forms": [
+          "%lld libro",
+          "%lld de libros",
+          "%lld libros"
+        ]
+      },
+      "fixture.items": {
+        "text": "%lld elementos"
+      },
+      "fixture.ownedBooks": {
+        "forms": [
+          "%@ tiene un libro",
+          "%1$@ tiene %2$lld de libros",
+          "%1$@ tiene %2$lld libros"
+        ]
+      },
+      "fixture.pages": {
+        "forms": [
+          "Una página",
+          "%lld de páginas",
+          "%lld páginas"
+        ]
+      },
+      "fixture.pendingBooks": {
+        "forms": [
+          "%lld estante",
+          "%lld de estantes",
+          "%lld estantes"
+        ]
+      }
+    },
+    "ja": {
+      "fixture.books": {
+        "text": "%lld冊"
+      },
+      "fixture.items": {
+        "text": "%lld個"
+      },
+      "fixture.ownedBooks": {
+        "text": "%1$@は本を%2$lld冊持っています"
+      },
+      "fixture.pages": {
+        "text": "%lldページ"
+      },
+      "fixture.pendingBooks": null
+    },
+    "pl": {
+      "fixture.books": {
+        "forms": [
+          "%lld książka",
+          "%lld książki",
+          "%lld książek",
+          "%lld książki"
+        ]
+      },
+      "fixture.items": {
+        "forms": [
+          "%lld element",
+          "%lld elementy",
+          "%lld elementów",
+          "%lld elementu"
+        ]
+      },
+      "fixture.ownedBooks": {
+        "forms": [
+          "%@ ma jedną książkę",
+          "%@ ma %lld książki",
+          "%@ ma %lld książek",
+          "%@ ma %lld książki"
+        ]
+      },
+      "fixture.pages": {
+        "forms": [
+          "Jedna strona",
+          "%lld strony",
+          "%lld stron",
+          "%lld strony"
+        ]
+      },
+      "fixture.pendingBooks": {
+        "text": "Półki: %lld"
+      }
+    },
+    "ru": {
+      "fixture.books": {
+        "forms": [
+          "%lld книга",
+          "%lld книги",
+          "%lld книг",
+          "%lld книги"
+        ]
+      },
+      "fixture.items": {
+        "forms": [
+          "%lld элемент",
+          "%lld элемента",
+          "%lld элементов",
+          "%lld элемента"
+        ]
+      },
+      "fixture.ownedBooks": {
+        "forms": [
+          "У %@ %lld книга",
+          "У %@ %lld книги",
+          "У %@ %lld книг",
+          "У %@ %lld книги"
+        ]
+      },
+      "fixture.pages": {
+        "forms": [
+          "%lld страница",
+          "%lld страницы",
+          "%lld страниц",
+          "%lld страницы"
+        ]
+      },
+      "fixture.pendingBooks": null
+    }
+  },
+  "notes": {
+    "fixture.books": "%lld is a count of books.",
+    "fixture.items": "Forms that are all one text are written as that text (Spanish, Japanese).",
+    "fixture.ownedBooks": "%@ is a reader's name; %lld is a count. The count is the plural's number, after the name.",
+    "fixture.pages": "The one form says the number in words where the language allows it.",
+    "fixture.pendingBooks": "Russian's plural is in state new, so Russian falls back to English; Polish is a plain line for a plural English."
+  },
+  "pluralCategories": {
+    "ar": [
+      "zero",
+      "one",
+      "two",
+      "few",
+      "many",
+      "other"
+    ],
+    "en": [
+      "one",
+      "other"
+    ],
+    "es": [
+      "one",
+      "many",
+      "other"
+    ],
+    "ja": [
+      "other"
+    ],
+    "pl": [
+      "one",
+      "few",
+      "many",
+      "other"
+    ],
+    "ru": [
+      "one",
+      "few",
+      "many",
+      "other"
+    ]
+  }
+}
