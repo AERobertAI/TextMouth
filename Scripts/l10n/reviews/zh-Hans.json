@@ -2,6 +2,423 @@
  "language": "zh-Hans",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ hadn't arrived from the cloud after %lld seconds",
+     "english": {
+      "one": "%@ hadn't arrived from the cloud after %lld second",
+      "other": "%@ hadn't arrived from the cloud after %lld seconds"
+     },
+     "before": {
+      "other": "%@ 在 %lld 秒后仍未从云端到达"
+     },
+     "after": {
+      "other": "%@ 在 %lld 秒后仍未从云端下载完成"
+     },
+     "why": "natural: 到达 copies 'arrived', a file from the cloud is said to finish downloading"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@ 在 %3$@ 中归档于%2$@，在 %5$@ 中归档于%4$@。",
+     "after": "%1$@ 在 %3$@ 中存放%2$@，在 %5$@ 中存放%4$@。",
+     "why": "grammar: the second and fourth values already start with 在, so 归档于 gave the broken 于在"
+    },
+    {
+     "key": "%@ set aside a conflicting copy of %@: “%@”, in %@.",
+     "english": "%1$@ set aside a conflicting copy of %2$@: “%3$@”, in %4$@.",
+     "before": "%1$@ 已将 %2$@ 的冲突副本搁置为“%3$@”，位于 %4$@。",
+     "after": "%1$@ 已将 %2$@ 的冲突副本另存为“%3$@”，位于 %4$@。",
+     "why": "natural: 搁置 means to shelve or postpone, a file set aside under another name is 另存为"
+    },
+    {
+     "key": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "english": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "before": "%@ 未再次请求读取，因为驱动器尚未响应之前的读取",
+     "after": "未再次请求读取 %@，因为驱动器尚未响应之前的读取请求",
+     "why": "meaning: subject and object swapped, the file was not asked for again, it did not ask"
+    },
+    {
+     "key": "%@, and %lld more",
+     "english": {
+      "one": "%@, and %lld more",
+      "other": "%@, and %lld more"
+     },
+     "before": {
+      "other": "%@ 等另外 %lld 个"
+     },
+     "after": {
+      "other": "%@，以及另外 %lld 项"
+     },
+     "why": "natural: 等另外 mixes two ways of saying 'and more'"
+    },
+    {
+     "key": "%lld bookmarks the other lacks",
+     "english": {
+      "one": "%lld bookmark the other lacks",
+      "other": "%lld bookmarks the other lacks"
+     },
+     "before": {
+      "other": "%lld 个另一个副本没有的书签"
+     },
+     "after": {
+      "other": "另一个副本没有的 %lld 个书签"
+     },
+     "why": "natural: the count goes next to its noun, not before the relative clause"
+    },
+    {
+     "key": "%lld books the other lacks",
+     "english": {
+      "one": "%lld book the other lacks",
+      "other": "%lld books the other lacks"
+     },
+     "before": {
+      "other": "%lld 本另一个副本没有的图书"
+     },
+     "after": {
+      "other": "另一个副本没有的 %lld 本图书"
+     },
+     "why": "natural: the count goes next to its noun, not before the relative clause"
+    },
+    {
+     "key": "Choose a new location for the library",
+     "english": "Choose a new location for the library",
+     "before": "为资料库选取新位置。",
+     "after": "为资料库选取新位置",
+     "why": "voiceover: a button's label takes no full stop, only a hint does"
+    },
+    {
+     "key": "Choose another braille code to read the book's file again with it.",
+     "english": "Choose another braille code to read the book's file again with it.",
+     "before": "选取另一种盲文码，以用它重新读取图书文件。",
+     "after": "选取另一种盲文码来重新读取图书文件。",
+     "why": "natural: 以用它 is a stilted copy of 'with it'"
+    },
+    {
+     "key": "Choose another encoding to read the book's file again in it.",
+     "english": "Choose another encoding to read the book's file again in it.",
+     "before": "选取另一种编码，以用它重新读取图书文件。",
+     "after": "选取另一种编码来重新读取图书文件。",
+     "why": "natural: 以用它 is a stilted copy of 'in it'"
+    },
+    {
+     "key": "Choose other characters to read the book's file again with them.",
+     "english": "Choose other characters to read the book's file again with them.",
+     "before": "选取其他字符，以用它们重新读取图书文件。",
+     "after": "选取其他字符来重新读取图书文件。",
+     "why": "natural: 以用它们 is a stilted copy of 'with them'"
+    },
+    {
+     "key": "Condition %@ needs the text to look for.",
+     "english": "Condition %@ needs the text to look for.",
+     "before": "条件 %@ 需要要查找的文本。",
+     "after": "条件 %@ 需要填写要查找的文本。",
+     "why": "natural: 需要要 doubled the verb"
+    },
+    {
+     "key": "Could not relocate folder contents",
+     "english": "Could not relocate folder contents",
+     "before": "无法重新安置文件夹内容",
+     "after": "无法重新放置文件夹内容",
+     "why": "term: 重新安置 is for resettling people, Apple's Chinese says 重新放置 for relocated items"
+    },
+    {
+     "key": "Enable restart-timer gesture",
+     "english": "Enable restart-timer gesture",
+     "before": "启用重启定时器手势",
+     "after": "启用定时器重启手势",
+     "why": "meaning: 重启定时器手势 reads as restarting a timer gesture, the gesture restarts the timer"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "english": "Failed to rebuild to default",
+     "before": "重建为默认设置失败",
+     "after": "重置为默认位置失败",
+     "why": "meaning: Reset to Default moves the data back to the default location, 重建为默认设置 spoke of rebuilding settings"
+    },
+    {
+     "key": "First in the Sort",
+     "english": "First in the Sort",
+     "before": "排序中的最前",
+     "after": "排序靠前",
+     "why": "natural: 排序中的最前 is not a phrase, the limit picks the items first in the sort"
+    },
+    {
+     "key": "Go up one folder level",
+     "english": "Go up one folder level",
+     "before": "上移一级文件夹",
+     "after": "前往上一级文件夹",
+     "why": "meaning: 上移一级文件夹 read as moving a folder up, the button goes to the enclosing folder"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "english": "In this Mac's Logs folder",
+     "before": "在这台 Mac 的“日志”文件夹中。",
+     "after": "在这台 Mac 的“日志”文件夹中",
+     "why": "punctuation: a pop-up choice also used inside a sentence and before its path in parentheses takes no full stop"
+    },
+    {
+     "key": "Logs are written to %@.",
+     "english": "Logs are written to %@.",
+     "before": "日志已写入 %@。",
+     "after": "日志会写入 %@。",
+     "why": "meaning: 已写入 says the logs have been written, the line says where they go"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "触发重启的媒体控制事件。最后一个会被消耗，不会传给播放，因此无法启动音频。",
+     "after": "触发重启的媒体控制事件。最后一个事件会被拦截，不会传给播放功能，因此无法启动音频。",
+     "why": "natural: 被消耗 copies 'consumed', and 传给播放 lacked the noun, an intercepted event is 被拦截"
+    },
+    {
+     "key": "Neither is newer: each has changes the other lacks.",
+     "english": "Neither is newer: each has changes the other lacks.",
+     "before": "两者都不较新：各自都有对方没有的更改。",
+     "after": "两者都不比对方新：各自都有对方没有的更改。",
+     "why": "natural: 两者都不较新 is a stilted copy of 'neither is newer'"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "other": "所选的 %@ 本图书中，没有一本是按你的选择保留在这台 Mac 上的，另有 %lld 本因阅读列表而保留。"
+     },
+     "after": {
+      "other": "所选的 %@ 本图书中，没有一本是按你的选择保留在这台 Mac 上的，其中 %lld 本因阅读列表而保留。"
+     },
+     "why": "meaning: 另有 means further books, but the ones kept for the reading list are among those selected"
+    },
+    {
+     "key": "Nothing is copied, and nothing is created in %@.",
+     "english": "Nothing is copied, and nothing is created in %@.",
+     "before": "没有拷贝任何内容，也没有在 %@ 中创建任何内容。",
+     "after": "不会拷贝任何内容，也不会在 %@ 中创建任何内容。",
+     "why": "meaning: the question comes before the switch, 没有 said it had already happened"
+    },
+    {
+     "key": "Nothing is copied, and the library in %@ stays as it is.",
+     "english": "Nothing is copied, and the library in %@ stays as it is.",
+     "before": "没有拷贝任何内容，%@ 中的资料库保持原样。",
+     "after": "不会拷贝任何内容，%@ 中的资料库会保持原样。",
+     "why": "meaning: the question comes before the switch, 没有 said it had already happened"
+    },
+    {
+     "key": "Open the library without its index?",
+     "english": "Open the library without its index?",
+     "before": "要不使用索引打开资料库吗？",
+     "after": "要在不使用索引的情况下打开资料库吗？",
+     "why": "meaning: 要不使用 can be heard as 要不 (how about) and so as the opposite question"
+    },
+    {
+     "key": "Opened Last",
+     "english": "Opened Last",
+     "before": "最后打开",
+     "after": "最近打开",
+     "why": "term: the same limit order reads 最近打开 in the view's description and beside 最近添加, the pop-up said 最后打开"
+    },
+    {
+     "key": "Pause level",
+     "english": "Pause level",
+     "before": "暂停级别",
+     "after": "停顿级别",
+     "why": "meaning: 暂停 is pausing playback, the slider sets the pauses at punctuation, 停顿, as its label 标点停顿级别 says"
+    },
+    {
+     "key": "Read “%@” again as %@?",
+     "english": "Read “%1$@” again as %2$@?",
+     "before": "将“%1$@”重新读取为 %2$@？",
+     "after": "按 %2$@ 重新读取“%1$@”？",
+     "why": "meaning: 重新读取为 said the book is turned into the encoding, it is read again in it"
+    },
+    {
+     "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "阅读列表：“%1$@”在 %3$@ 中是%2$@，在 %5$@ 中是%4$@。",
+     "after": "阅读列表：“%1$@”在 %3$@ 中%2$@，在 %5$@ 中%4$@。",
+     "why": "grammar: 是开 and 是关 are not Chinese, the values now read 已开启 and 已关闭 and need no verb"
+    },
+    {
+     "key": "Restart Sleep Timer Gesture",
+     "english": "Restart Sleep Timer Gesture",
+     "before": "重新开始睡眠定时器手势",
+     "after": "睡眠定时器重启手势",
+     "why": "meaning: 重新开始睡眠定时器手势 reads as restarting the gesture, the gesture restarts the timer"
+    },
+    {
+     "key": "Stops saying the code was guessed. The book is not read again.",
+     "english": "Stops saying the code was guessed. The book is not read again.",
+     "before": "不再说明此编码为推测所得。不会重新读取图书。",
+     "after": "不再说明此盲文码为推测所得。不会重新读取图书。",
+     "why": "meaning: 编码 is a text encoding, the guessed code here is the braille code (Keep This Code is 保留此盲文码)"
+    },
+    {
+     "key": "Text extraction progress: %lld of %lld",
+     "english": "Text extraction progress: %1$lld of %2$lld",
+     "before": "文本提取进度：已完成 %1$lld，共 %2$lld",
+     "after": "文本提取进度：已完成 %1$lld 本，共 %2$lld 本",
+     "why": "grammar: both counts are books and need the measure word 本"
+    },
+    {
+     "key": "TextMouth could not move %@ to the current library format.",
+     "english": "TextMouth could not move %@ to the current library format.",
+     "before": "TextMouth 无法将 %@ 移到当前的资料库格式。",
+     "after": "TextMouth 无法将 %@ 迁移到当前的资料库格式。",
+     "why": "natural: a book is not moved into a format, it is migrated (迁移), as 迁移后的副本 says elsewhere"
+    },
+    {
+     "key": "TextMouth is getting them now, and the library opens when they arrive.",
+     "english": "TextMouth is getting them now, and the library opens when they arrive.",
+     "before": "TextMouth 正在获取它们，它们到达后资料库会打开。",
+     "after": "TextMouth 正在获取它们，获取完成后资料库会打开。",
+     "why": "natural: 到达 copies 'arrive', files being fetched are said to finish"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "english": "TextMouth moved %@ to the current library format, but with a problem:",
+     "before": "TextMouth 已将 %@ 移到当前的资料库格式，但出现了一个问题：",
+     "after": "TextMouth 已将 %@ 迁移到当前的资料库格式，但出现了一个问题：",
+     "why": "natural: a book is not moved into a format, it is migrated (迁移)"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth 已将 %@ 移到当前的资料库格式，但出现了一些问题：",
+     "after": "TextMouth 已将 %@ 迁移到当前的资料库格式，但出现了一些问题：",
+     "why": "natural: a book is not moved into a format, it is migrated (迁移)"
+    },
+    {
+     "key": "TextMouth waited for it.",
+     "english": "TextMouth waited for it.",
+     "before": "TextMouth 已等待它。",
+     "after": "TextMouth 已等待该文件传来。",
+     "why": "natural: 已等待它 is an unfinished calque, the file was waited for to come over"
+    },
+    {
+     "key": "The book's files aren't on this Mac yet. %@ may still be syncing them.",
+     "english": "The book's files aren't on this Mac yet. %@ may still be syncing them.",
+     "before": "这本图书的文件尚未到达这台 Mac。%@ 可能仍在同步它们。",
+     "after": "这本图书的文件尚未传到这台 Mac。%@ 可能仍在同步它们。",
+     "why": "natural: 到达 copies 'arrived', 传到这台 Mac is the wording of the same sentence for one book"
+    },
+    {
+     "key": "The library index could not be read, so library changes are not being saved.",
+     "english": "The library index could not be read, so library changes are not being saved.",
+     "before": "无法读取资料库索引，因此资料库更改没有被存储。",
+     "after": "无法读取资料库索引，因此目前不会存储资料库更改。",
+     "why": "meaning: 没有被存储 says past changes were not saved, the line says changes are not being saved from now on"
+    },
+    {
+     "key": "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@.",
+     "english": "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@.",
+     "before": "资料库的标识文件在这台 Mac 上，但其索引 %1$@ 尚未从 %2$@ 到达。",
+     "after": "资料库的标识文件在这台 Mac 上，但其索引 %1$@ 尚未从 %2$@ 传到这台 Mac。",
+     "why": "natural: 到达 copies 'arrived', a file still in the cloud has not come over to this Mac"
+    },
+    {
+     "key": "The library's index is on this Mac, but its identity file, %@, hasn't arrived from %@.",
+     "english": "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@.",
+     "before": "资料库的索引在这台 Mac 上，但其标识文件 %1$@ 尚未从 %2$@ 到达。",
+     "after": "资料库的索引在这台 Mac 上，但其标识文件 %1$@ 尚未从 %2$@ 传到这台 Mac。",
+     "why": "natural: 到达 copies 'arrived', a file still in the cloud has not come over to this Mac"
+    },
+    {
+     "key": "This is a temporary library, and library changes are not being saved.",
+     "english": "This is a temporary library, and library changes are not being saved.",
+     "before": "这是临时资料库，资料库更改没有被存储。",
+     "after": "这是临时资料库，目前不会存储资料库更改。",
+     "why": "meaning: 没有被存储 says past changes were not saved, the line says changes are not being saved from now on"
+    },
+    {
+     "key": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@",
+     "english": {
+      "one": "Unread: %@ hasn't arrived from the cloud after %lld second, %@",
+      "other": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
+     },
+     "before": {
+      "other": "未读取：%@ 在 %lld 秒后仍未从云端到达，%@"
+     },
+     "after": {
+      "other": "未读取：%@ 在 %lld 秒后仍未从云端下载完成，%@"
+     },
+     "why": "natural: 到达 copies 'arrived', a file from the cloud is said to finish downloading"
+    },
+    {
+     "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
+     "before": "未读取：%1$@ 未再次请求读取，因为驱动器尚未响应之前的读取，%2$@",
+     "after": "未读取：未再次请求读取 %1$@，因为驱动器尚未响应之前的读取请求，%2$@",
+     "why": "meaning: subject and object swapped, the file was not asked for again, it did not ask"
+    },
+    {
+     "key": "Up One Level",
+     "english": "Up One Level",
+     "before": "上移一级",
+     "after": "前往上一级",
+     "why": "meaning: 上移一级 reads as moving something up and sits beside Move Up (上移), the action goes to the enclosing folder"
+    },
+    {
+     "key": "Web Archive",
+     "english": "Web Archive",
+     "before": "网页存档",
+     "after": "网页归档",
+     "why": "term: Safari's Chinese names the .webarchive format 网页归档"
+    },
+    {
+     "key": "choose Make online-only",
+     "english": "choose Make online-only",
+     "before": "选取 Make online-only",
+     "after": "选取“Make online-only”",
+     "why": "punctuation: another app's command named in a sentence is quoted, as its siblings are"
+    },
+    {
+     "key": "choose Remove Download",
+     "english": "choose Remove Download",
+     "before": "选取“移除下载”",
+     "after": "选取“移除下载项”",
+     "why": "term: this is the Finder's own iCloud Drive command, which Apple's Chinese Finder names 移除下载项"
+    },
+    {
+     "key": "first in the sort",
+     "english": "first in the sort",
+     "before": "排序中最前的",
+     "after": "排序靠前",
+     "why": "natural: 排序中最前的 is not a phrase, and the pop-up's own name (First in the Sort) now reads 排序靠前"
+    },
+    {
+     "key": "off",
+     "english": "off",
+     "before": "关",
+     "after": "已开启",
+     "why": "grammar: the bare 开 cannot follow 在此副本中 in its one sentence, Compare Libraries' Reading List line"
+    },
+    {
+     "key": "on",
+     "english": "on",
+     "before": "开",
+     "after": "已关闭",
+     "why": "grammar: the bare 关 cannot follow 在此副本中 in its one sentence, Compare Libraries' Reading List line"
+    },
+    {
+     "key": "use the drive's own command to keep the book only online",
+     "english": "use the drive's own command to keep the book only online",
+     "before": "使用该云盘自带的命令，让这本图书仅保留在线",
+     "after": "使用该云盘自带的命令，让这本图书仅保留在云端",
+     "why": "natural: 仅保留在线 is not idiomatic, a book kept only online stays only in the cloud"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
