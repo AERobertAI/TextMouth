@@ -147104,7 +147104,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Välj Försök spara igen och försök sedan igen."
+            "value" : "Välj ”Försök spara igen” och försök sedan igen."
           }
         },
         "th" : {
@@ -160274,7 +160274,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jämför"
+            "value" : "Jämförelse"
           }
         },
         "th" : {
@@ -193381,7 +193381,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningsförlopp"
+            "value" : "Nedladdningsförlopp"
           }
         },
         "th" : {
@@ -238785,7 +238785,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gesttidsfönster"
+            "value" : "Tidsfönster för gesten"
           }
         },
         "th" : {
@@ -252696,7 +252696,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ignoreras vid inskrivning"
+            "value" : "Ignoreras vid skrivning"
           }
         },
         "th" : {
@@ -252833,7 +252833,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ignoreras vid inskrivning och sortering"
+            "value" : "Ignoreras vid skrivning och sortering"
           }
         },
         "th" : {
@@ -254614,7 +254614,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importera den igen, vilket frågar om dubbletten, och välj Ersätt befintlig så att kopian i datamappen ersätts, eller ta bort den från biblioteket, och flytta sedan datamappen igen."
+            "value" : "Importera den igen – då får du en fråga om dubbletten – och välj ”Ersätt befintlig” så att kopian som lagras i datamappen tar dess plats, eller ta bort den från biblioteket, och flytta sedan datamappen igen."
           }
         },
         "th" : {
@@ -345959,13 +345959,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ingen av de %@ markerade böckerna behålls på den här Mac-datorn på ditt val, och %lld behålls för läslistan."
+                  "value" : "Du har inte valt att behålla någon av de %@ markerade böckerna på den här Mac-datorn, och %lld behålls för läslistan."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ingen av de %@ markerade böckerna behålls på den här Mac-datorn på ditt val, och %lld behålls för läslistan."
+                  "value" : "Du har inte valt att behålla någon av de %@ markerade böckerna på den här Mac-datorn, och %lld behålls för läslistan."
                 }
               }
             }
@@ -417270,7 +417270,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Försök igen finns högst upp i biblioteksfönstret."
+            "value" : "”Försök igen” finns högst upp i biblioteksfönstret."
           }
         },
         "th" : {
