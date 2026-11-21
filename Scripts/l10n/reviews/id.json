@@ -1,0 +1,625 @@
+{
+ "language": "id",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ may be signed out or not running.",
+     "english": "%@ may be signed out or not running.",
+     "before": "%@ mungkin sudah keluar atau tidak berjalan.",
+     "after": "%@ mungkin sudah keluar dari akun atau tidak berjalan.",
+     "why": "meaning: keluar alone reads as quit; signed out is keluar dari akun"
+    },
+    {
+     "key": "%@ remaining in total",
+     "english": "%@ remaining in total",
+     "before": "%@ tersisa secara total",
+     "after": "Total %@ tersisa",
+     "why": "natural: secara total reads as completely; Total ... tersisa matches the time bar string"
+    },
+    {
+     "key": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "english": "%@ wasn't asked for again, because the drive hasn't answered an earlier read",
+     "before": "%@ tidak diminta lagi, karena drive belum menjawab pembacaan sebelumnya",
+     "after": "%@ tidak diminta lagi, karena drive belum merespons pembacaan sebelumnya",
+     "why": "natural: a drive merespons, it does not menjawab"
+    },
+    {
+     "key": "%@ wasn't downloaded",
+     "english": "%@ wasn't downloaded",
+     "before": "%@ tidak diunduh",
+     "after": "%@ gagal diunduh",
+     "why": "meaning: tidak diunduh says nobody tried; the download failed"
+    },
+    {
+     "key": "%lld books weren't downloaded: %@",
+     "english": {
+      "one": "%lld book wasn't downloaded: %@",
+      "other": "%lld books weren't downloaded: %@"
+     },
+     "before": {
+      "other": "%lld buku tidak diunduh: %@"
+     },
+     "after": {
+      "other": "%lld buku gagal diunduh: %@"
+     },
+     "why": "meaning: tidak diunduh says nobody tried; the download failed"
+    },
+    {
+     "key": "A destination folder path is invalid.",
+     "english": "A destination folder path is invalid.",
+     "before": "Path folder tujuan tidak valid.",
+     "after": "Jalur folder tujuan tidak valid.",
+     "why": "term: Apple Indonesian says jalur for a path, not the English word"
+    },
+    {
+     "key": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "english": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "before": "Nama folder tidak boleh kosong, \".\" atau \"..\", diakhiri dengan \".tmb\", atau dicadangkan oleh TextMouth.",
+     "after": "Nama folder tidak boleh kosong, berupa “.” atau “..”, berakhiran “.tmb”, atau dicadangkan oleh TextMouth.",
+     "why": "grammar: the list lacked a verb before the names; curly quotes as the glossary sets"
+    },
+    {
+     "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "before": "Pemindahan menggeser satu buku sekaligus, dan beberapa buku dipilih. Pilih satu buku, lalu coba lagi.",
+     "after": "Buku dipindahkan satu per satu, sedangkan beberapa buku sedang dipilih. Pilih satu buku, lalu coba lagi.",
+     "why": "natural: satu buku sekaligus says one book all at once; satu per satu is one at a time"
+    },
+    {
+     "key": "Add gesture step",
+     "english": "Add gesture step",
+     "before": "Tambah langkah gestur",
+     "after": "Tambah langkah gerakan",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Appends a new step to the gesture sequence",
+     "english": "Appends a new step to the gesture sequence",
+     "before": "Menambahkan langkah baru di akhir urutan gestur.",
+     "after": "Menambahkan langkah baru di akhir urutan gerakan.",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "english": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "before": "Buku tidak dapat dipindahkan dalam tampilan ini. Buka folder di Folder atau Daftar Bacaan, lalu coba lagi.",
+     "after": "Buku tidak dapat dipindahkan dalam tampilan ini. Buka folder di tampilan Folder, atau buka Daftar Bacaan, lalu coba lagi.",
+     "why": "meaning: the old text read as a folder inside the Reading List; two separate places now"
+    },
+    {
+     "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "before": "Memilih tanpa kontrol per buku, satu pemilih bersama, atau menu dengan pemilih maju dan mundur terpisah.",
+     "after": "Memilih antara tidak ada kontrol per buku, satu pemilih bersama, atau menu dengan pemilih maju dan mundur yang terpisah.",
+     "why": "meaning: Memilih tanpa read as choose without; the three choices are now a list"
+    },
+    {
+     "key": "Choose where to move the books and subfolders before deleting \"%@\".",
+     "english": "Choose where to move the books and subfolders before deleting \"%@\".",
+     "before": "Pilih tujuan untuk memindahkan buku dan subfolder sebelum menghapus \"%@\".",
+     "after": "Pilih tujuan untuk memindahkan buku dan subfolder sebelum menghapus “%@”.",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Condition %@ days",
+     "english": "Condition %@ days",
+     "before": "Kondisi %@ hari",
+     "after": "Hari kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ folder",
+     "english": "Condition %@ folder",
+     "before": "Kondisi %@ folder",
+     "after": "Folder kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ format",
+     "english": "Condition %@ format",
+     "before": "Kondisi %@ format",
+     "after": "Format kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ reading state",
+     "english": "Condition %@ reading state",
+     "before": "Kondisi %@ status baca",
+     "after": "Status baca kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ relation",
+     "english": "Condition %@ relation",
+     "before": "Kondisi %@ relasi",
+     "after": "Relasi kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Condition %@ text",
+     "english": "Condition %@ text",
+     "before": "Kondisi %@ teks",
+     "after": "Teks kondisi %@",
+     "why": "meaning: a number before a noun reads as a count (2 hari is two days); the field name now comes first"
+    },
+    {
+     "key": "Copy all TextMouth data to %@, validate it, and use the new location?",
+     "english": "Copy all TextMouth data to %@, validate it, and use the new location?",
+     "before": "Salin semua data TextMouth ke %@, validasi, dan gunakan lokasi baru?",
+     "after": "Salin semua data TextMouth ke %@, validasikan, dan gunakan lokasi baru?",
+     "why": "grammar: validasi is a noun in a row of commands; the verb is validasikan"
+    },
+    {
+     "key": "Could not delete \"%@\" and move its contents",
+     "english": "Could not delete \"%@\" and move its contents",
+     "before": "Tidak dapat menghapus \"%@\" dan memindahkan isinya",
+     "after": "Tidak dapat menghapus “%@” dan memindahkan isinya",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Could not move \"%@\"",
+     "english": "Could not move \"%@\"",
+     "before": "Tidak dapat memindahkan \"%@\"",
+     "after": "Tidak dapat memindahkan “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Could not remove folder: its library path is invalid or has changed.",
+     "english": "Could not remove folder: its library path is invalid or has changed.",
+     "before": "Tidak dapat membuang folder: path pustakanya tidak valid atau telah berubah.",
+     "after": "Tidak dapat membuang folder: jalur pustakanya tidak valid atau telah berubah.",
+     "why": "term: Apple Indonesian says jalur for a path, not the English word"
+    },
+    {
+     "key": "Could not rename \"%@\"",
+     "english": "Could not rename \"%@\"",
+     "before": "Tidak dapat mengganti nama \"%@\"",
+     "after": "Tidak dapat mengganti nama “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Duplicate",
+     "english": "Duplicate",
+     "before": "Duplikat",
+     "after": "Duplikatkan",
+     "why": "term: a command; Apple Indonesian Duplicate is the verb Duplikatkan, Duplikat is the noun"
+    },
+    {
+     "key": "Enable restart-timer gesture",
+     "english": "Enable restart-timer gesture",
+     "before": "Aktifkan gestur timer ulang",
+     "after": "Aktifkan gerakan mulai ulang timer",
+     "why": "meaning: timer ulang reads as a repeat timer; the gesture restarts the timer; gerakan as Apple says"
+    },
+    {
+     "key": "Enter or paste the text for the new book",
+     "english": "Enter or paste the text for the new book",
+     "before": "Memasukkan atau menempel teks untuk buku baru.",
+     "after": "Menerima teks yang Anda ketik atau tempel untuk buku baru.",
+     "why": "natural: the hint had the text area doing the entering; it now says what it takes"
+    },
+    {
+     "key": "Feeds are always listed by title",
+     "english": "Feeds are always listed by title",
+     "before": "Feed selalu didaftar menurut judul.",
+     "after": "Feed selalu diurutkan menurut judul.",
+     "why": "natural: didaftar reads as registered; the hint means sorted by title"
+    },
+    {
+     "key": "Feeds are listed by title",
+     "english": "Feeds are listed by title",
+     "before": "Feed didaftar menurut judul",
+     "after": "Feed diurutkan menurut judul",
+     "why": "natural: didaftar reads as registered; the value means sorted by title"
+    },
+    {
+     "key": "Gesture pattern",
+     "english": "Gesture pattern",
+     "before": "Pola gestur",
+     "after": "Pola gerakan",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Gesture time window",
+     "english": "Gesture time window",
+     "before": "Jendela waktu gestur",
+     "after": "Jangka waktu gerakan",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation says; gerakan as Apple says"
+    },
+    {
+     "key": "Hold Shift while skipping to use a secondary skip amount.",
+     "english": "Hold Shift while skipping to use a secondary skip amount.",
+     "before": "Tahan Shift saat melompati untuk memakai jumlah lompatan kedua.",
+     "after": "Tahan Shift saat melompat untuk memakai jumlah lompatan kedua.",
+     "why": "grammar: melompati needs an object; a skip in audio is melompat"
+    },
+    {
+     "key": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
+     "english": "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones.",
+     "before": "Berapa lama perintah media diblokir setelah perangkat Bluetooth terputus. Naikkan jika pemutaran lanjut setelah headphone dilepas.",
+     "after": "Berapa lama perintah media diblokir setelah perangkat Bluetooth terputus. Naikkan jika pemutaran berlanjut setelah headphone dilepas.",
+     "why": "grammar: lanjut alone is colloquial; the verb is berlanjut"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "Jika file tiba dari %@ nanti, file itu menamai pustaka yang sama.",
+     "after": "Jika file tiba dari %@ nanti, file itu merujuk ke pustaka yang sama.",
+     "why": "meaning: menamai is to give a name; the file refers to the library"
+    },
+    {
+     "key": "It may be paused, signed out, or not running.",
+     "english": "It may be paused, signed out, or not running.",
+     "before": "Mungkin dijeda, sudah keluar, atau tidak berjalan.",
+     "after": "Mungkin dijeda, sudah keluar dari akun, atau tidak berjalan.",
+     "why": "meaning: keluar alone reads as quit; signed out is keluar dari akun"
+    },
+    {
+     "key": "Leading articles",
+     "english": "Leading articles",
+     "before": "Artikel di awal",
+     "after": "Kata sandang di awal",
+     "why": "meaning: artikel is a news article in this app; The, A, and An are kata sandang"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "Peristiwa kontrol media yang memicu pengulangan. Yang terakhir dikonsumsi, tidak diteruskan ke pemutaran, jadi tidak dapat memulai audio.",
+     "after": "Peristiwa kontrol media yang memicu mulai ulang. Yang terakhir ditahan dan tidak diteruskan ke pemutaran, jadi tidak dapat memulai audio.",
+     "why": "meaning: pengulangan is repetition, not a restart; dikonsumsi is a calque of consumed"
+    },
+    {
+     "key": "Most rows shown",
+     "english": "Most rows shown",
+     "before": "Baris terbanyak yang ditampilkan",
+     "after": "Jumlah baris maksimum",
+     "why": "natural: Baris terbanyak reads as the rows with the most; the field is the largest number of rows"
+    },
+    {
+     "key": "Move \"%@\"",
+     "english": "Move \"%@\"",
+     "before": "Pindahkan \"%@\"",
+     "after": "Pindahkan “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Move Contents Out",
+     "english": "Move Contents Out",
+     "before": "Pindahkan Isi Keluar",
+     "after": "Pindahkan Isi ke Luar",
+     "why": "grammar: keluar is the verb to exit; the direction is ke luar"
+    },
+    {
+     "key": "Move Contents of \"%@\"",
+     "english": "Move Contents of \"%@\"",
+     "before": "Pindahkan Isi \"%@\"",
+     "after": "Pindahkan Isi “%@”",
+     "why": "punctuation: curly quotes as the glossary sets"
+    },
+    {
+     "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "before": "Tidak ada yang memiliki posisi atau buku lebih baru yang tidak dimiliki salinan lain, tetapi keduanya berbeda dengan cara lain.",
+     "after": "Tidak ada salinan yang memiliki posisi lebih baru atau buku yang tidak dimiliki salinan lain, tetapi keduanya berbeda dalam hal lain.",
+     "why": "natural: lebih baru had joined books; berbeda dalam hal lain is the idiom for differ in other ways"
+    },
+    {
+     "key": "Not Within the Last",
+     "english": "Not Within the Last",
+     "before": "Tidak dalam",
+     "after": "Tidak Dalam",
+     "why": "natural: title case like its sibling items Dalam and Tidak Berisi"
+    },
+    {
+     "key": "Paste from Clipboard",
+     "english": "Paste from Clipboard",
+     "before": "Tempel dari Clipboard",
+     "after": "Tempel dari Papan Klip",
+     "why": "term: Apple Indonesian calls the clipboard Papan Klip, as other strings here do"
+    },
+    {
+     "key": "Replaces the text with the text on the clipboard",
+     "english": "Replaces the text with the text on the clipboard",
+     "before": "Mengganti teks dengan teks di clipboard.",
+     "after": "Mengganti teks dengan teks di papan klip.",
+     "why": "term: Apple Indonesian calls the clipboard papan klip, as other strings here do"
+    },
+    {
+     "key": "Restart Sleep Timer Gesture",
+     "english": "Restart Sleep Timer Gesture",
+     "before": "Gestur Mulai Ulang Timer Tidur",
+     "after": "Gerakan Mulai Ulang Timer Tidur",
+     "why": "term: Apple Indonesian calls a gesture gerakan (trackpad, AssistiveTouch)"
+    },
+    {
+     "key": "Results copied to the clipboard.",
+     "english": "Results copied to the clipboard.",
+     "before": "Hasil disalin ke clipboard.",
+     "after": "Hasil disalin ke papan klip.",
+     "why": "term: Apple Indonesian calls the clipboard papan klip, as other strings here do"
+    },
+    {
+     "key": "Searches the entire library for books matching the selected criteria",
+     "english": "Searches the entire library for books matching the selected criteria",
+     "before": "Mencari di seluruh pustaka buku yang cocok dengan kriteria terpilih.",
+     "after": "Mencari buku yang cocok dengan kriteria terpilih di seluruh pustaka.",
+     "why": "natural: seluruh pustaka buku read as the whole book library; the place now ends the sentence"
+    },
+    {
+     "key": "Show Always",
+     "english": "Show Always",
+     "before": "Tampilkan Selalu",
+     "after": "Selalu Tampilkan",
+     "why": "natural: Indonesian puts selalu before the verb"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "Beberapa file “%@” hanya ada di cloud, dan menggantinya sekarang akan meninggalkannya. Unduh buku, lalu pilih %@ lagi.",
+     "after": "Beberapa file “%@” hanya ada di cloud, dan jika buku diganti sekarang, file itu akan tertinggal. Unduh buku, lalu pilih %@ lagi.",
+     "why": "natural: two -nya made it unclear what leaves what behind"
+    },
+    {
+     "key": "Still comparing: %lld seconds so far. Press Escape to stop.",
+     "english": {
+      "one": "Still comparing: %lld second so far. Press Escape to stop.",
+      "other": "Still comparing: %lld seconds so far. Press Escape to stop."
+     },
+     "before": {
+      "other": "Masih membandingkan: sejauh ini %lld detik. Tekan Escape untuk menghentikan."
+     },
+     "after": {
+      "other": "Masih membandingkan: sejauh ini %lld detik. Tekan Escape untuk menghentikannya."
+     },
+     "why": "grammar: menghentikan needs an object"
+    },
+    {
+     "key": "Stops playback resuming when headphones disconnect",
+     "english": "Stops playback resuming when headphones disconnect",
+     "before": "Menghentikan pemutaran yang berlanjut saat headphone terputus.",
+     "after": "Mencegah pemutaran berlanjut sendiri saat headphone terputus.",
+     "why": "meaning: the old hint stopped playback that goes on; the switch prevents playback from resuming"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "Keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan dulu.",
+     "after": "Keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan dulu.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "TextMouth is already moving its data directory.",
+     "english": "TextMouth is already moving its data directory.",
+     "before": "TextMouth sudah memindahkan folder datanya.",
+     "after": "TextMouth sedang memindahkan folder datanya.",
+     "why": "meaning: sudah memindahkan says the move is done; it is still under way"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "Braille diterjemahkan ke cetak lagi dengan kode ini. Tidak ada yang memeriksa apakah ini pilihan yang benar. Jika kata terbaca salah, pilih yang lain.",
+     "after": "Braille diterjemahkan ulang ke teks cetak dengan kode ini. Tidak ada yang memeriksa apakah ini pilihan yang benar. Jika kata terbaca salah, pilih yang lain.",
+     "why": "natural: ke cetak alone is not a noun for print text"
+    },
+    {
+     "key": "The clipboard has no text to paste, so the text is unchanged.",
+     "english": "The clipboard has no text to paste, so the text is unchanged.",
+     "before": "Clipboard tidak berisi teks untuk ditempel, jadi teks tidak berubah.",
+     "after": "Papan klip tidak berisi teks untuk ditempel, jadi teks tidak berubah.",
+     "why": "term: Apple Indonesian calls the clipboard papan klip, as other strings here do"
+    },
+    {
+     "key": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "english": "The most time the whole sequence may take. Shorter windows mean fewer accidental matches but quicker presses.",
+     "before": "Waktu terlama yang boleh dipakai seluruh urutan. Jendela yang lebih pendek berarti lebih sedikit kecocokan tidak sengaja tetapi penekanan harus lebih cepat.",
+     "after": "Waktu terlama yang boleh dipakai seluruh urutan. Jangka waktu yang lebih pendek berarti lebih sedikit kecocokan tidak sengaja, tetapi penekanan harus lebih cepat.",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation of the setting says"
+    },
+    {
+     "key": "The view is first in the list.",
+     "english": "The view is first in the list.",
+     "before": "Tampilan ini pertama dalam daftar.",
+     "after": "Tampilan ini berada di urutan pertama dalam daftar.",
+     "why": "grammar: pertama cannot stand as the predicate alone"
+    },
+    {
+     "key": "The view is last in the list.",
+     "english": "The view is last in the list.",
+     "before": "Tampilan ini terakhir dalam daftar.",
+     "after": "Tampilan ini berada di urutan terakhir dalam daftar.",
+     "why": "grammar: terakhir cannot stand as the predicate alone"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Lalu keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan.",
+     "after": "Lalu keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "Time window",
+     "english": "Time window",
+     "before": "Jendela waktu",
+     "after": "Jangka waktu",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation of the setting says"
+    },
+    {
+     "key": "Time window: %@",
+     "english": "Time window: %@",
+     "before": "Jendela waktu: %@",
+     "after": "Jangka waktu: %@",
+     "why": "meaning: Jendela is the app word for a window; jangka waktu as the explanation of the setting says"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Untuk melepasnya, keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan.",
+     "after": "Untuk melepasnya, keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Untuk melepasnya, keluarkan dari daftar bacaan, atau kosongkan %@ di opsi Daftar Bacaan.",
+     "after": "Untuk melepasnya, keluarkan dari daftar bacaan, atau matikan %@ di opsi Daftar Bacaan.",
+     "why": "meaning: %@ is an option, so clear is to switch it off, not kosongkan (empty)"
+    },
+    {
+     "key": "Type to search the book's transcript",
+     "english": "Type to search the book's transcript",
+     "before": "Mengetik untuk mencari di transkrip buku.",
+     "after": "Mencari di transkrip buku saat Anda mengetik.",
+     "why": "natural: Mengetik untuk mencari had the field doing the typing; the hint now says the result"
+    },
+    {
+     "key": "Type to search the text of every book in the library",
+     "english": "Type to search the text of every book in the library",
+     "before": "Mengetik untuk mencari teks setiap buku di pustaka.",
+     "after": "Mencari teks setiap buku di pustaka saat Anda mengetik.",
+     "why": "natural: Mengetik untuk mencari had the field doing the typing; the hint now says the result"
+    },
+    {
+     "key": "Type to search within the book",
+     "english": "Type to search within the book",
+     "before": "Mengetik untuk mencari di dalam buku.",
+     "after": "Mencari di dalam buku saat Anda mengetik.",
+     "why": "natural: Mengetik untuk mencari had the field doing the typing; the hint now says the result"
+    },
+    {
+     "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
+     "before": "Tidak terbaca: %@ tidak diminta lagi, karena drive belum menjawab pembacaan sebelumnya, %@",
+     "after": "Tidak terbaca: %@ tidak diminta lagi, karena drive belum merespons pembacaan sebelumnya, %@",
+     "why": "natural: a drive merespons, it does not menjawab"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "english": "What happens when a book finishes playing",
+     "before": "Apa yang terjadi saat buku selesai diputar.",
+     "after": "Memilih apa yang terjadi saat buku selesai diputar.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you hold Shift and skip backward",
+     "english": "What happens when you hold Shift and skip backward",
+     "before": "Apa yang terjadi saat Anda menahan Shift dan melompat mundur.",
+     "after": "Memilih apa yang terjadi saat Anda menahan Shift dan melompat mundur.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you hold Shift and skip forward",
+     "english": "What happens when you hold Shift and skip forward",
+     "before": "Apa yang terjadi saat Anda menahan Shift dan melompat maju.",
+     "after": "Memilih apa yang terjadi saat Anda menahan Shift dan melompat maju.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you skip backward",
+     "english": "What happens when you skip backward",
+     "before": "Apa yang terjadi saat Anda melompat mundur.",
+     "after": "Memilih apa yang terjadi saat Anda melompat mundur.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What happens when you skip forward",
+     "english": "What happens when you skip forward",
+     "before": "Apa yang terjadi saat Anda melompat maju.",
+     "after": "Memilih apa yang terjadi saat Anda melompat maju.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "What to do with the original file after importing a book",
+     "english": "What to do with the original file after importing a book",
+     "before": "Apa yang dilakukan dengan file asli setelah mengimpor buku.",
+     "after": "Memilih apa yang dilakukan pada file asli setelah buku diimpor.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence that starts with a verb"
+    },
+    {
+     "key": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "english": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "before": "Saat artikel diabaikan, buku yang metadatanya menyebut bahasa Prancis, Jerman, Spanyol, Italia, Portugis, Belanda, Katalan, Swedia, Denmark, atau Norwegia melewati artikel bahasa itu, seperti Le dan Die, dan The.",
+     "after": "Saat kata sandang diabaikan, buku yang metadatanya menyebut bahasa Prancis, Jerman, Spanyol, Italia, Portugis, Belanda, Katalan, Swedia, Denmark, atau Norwegia mengabaikan kata sandang bahasa itu, seperti Le dan Die, serta The.",
+     "why": "meaning: artikel is a news article in this app; The, Le, and Die are kata sandang"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Jika tidak ada kata mereka yang tersisa, %@, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang sama dalam kedua pembacaan.",
+     "after": "Jika kata-katanya tidak tersisa lagi, %@, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang ada di kedua pembacaan.",
+     "why": "grammar: mereka is said of people; the place and bookmarks take -nya"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Jika tidak ada kata mereka yang tersisa, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang sama dalam kedua pembacaan.",
+     "after": "Jika kata-katanya tidak tersisa lagi, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang ada di kedua pembacaan.",
+     "why": "grammar: mereka is said of people; the place and bookmarks take -nya"
+    },
+    {
+     "key": "While TextMouth was copying its data, %@ was changed to lead to %@ instead of %@.",
+     "english": "While TextMouth was copying its data, %1$@ was changed to lead to %2$@ instead of %3$@.",
+     "before": "Saat TextMouth menyalin datanya, %1$@ diubah mengarah ke %2$@ bukan %3$@.",
+     "after": "Saat TextMouth menyalin datanya, %1$@ diubah sehingga mengarah ke %2$@, bukan ke %3$@.",
+     "why": "grammar: diubah mengarah lacked sehingga, and bukan needs its comma"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "Dengan Pindahkan Isi Keluar, folder feed ikut dipindahkan bersama yang lain.",
+     "after": "Dengan Pindahkan Isi ke Luar, folder feed ikut dipindahkan bersama yang lain.",
+     "why": "term: names the button by its fixed text Pindahkan Isi ke Luar"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "Dengan Pindahkan Isi Keluar, folder mereka ikut dipindahkan bersama yang lain.",
+     "after": "Dengan Pindahkan Isi ke Luar, folder feed tersebut ikut dipindahkan bersama yang lain.",
+     "why": "term: names the button by its fixed text Pindahkan Isi ke Luar; mereka is said of people"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "Dengan Pindahkan Isi Keluar, semuanya tetap berada di pustaka dan hanya folder yang dihapus.",
+     "after": "Dengan Pindahkan Isi ke Luar, semuanya tetap berada di pustaka dan hanya folder yang dihapus.",
+     "why": "term: names the button by its fixed text Pindahkan Isi ke Luar"
+    },
+    {
+     "key": "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below.",
+     "english": "You can open and read books, and reading positions are still saved with each book, but changes to the library itself are not saved until you choose one of the options below.",
+     "before": "Anda dapat membuka dan membaca buku, dan posisi baca tetap disimpan di setiap buku, tetapi perubahan pada pustaka sendiri tidak disimpan sampai Anda memilih salah satu opsi di bawah.",
+     "after": "Anda dapat membuka dan membaca buku, dan posisi baca tetap disimpan di setiap buku, tetapi perubahan pada pustaka itu sendiri tidak disimpan sampai Anda memilih salah satu opsi di bawah.",
+     "why": "meaning: pustaka sendiri reads as your own library; the library itself is pustaka itu sendiri"
+    },
+    {
+     "key": "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again.",
+     "english": "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again.",
+     "before": "iCloud Drive mungkin dimatikan atau keluar, atau Mac ini mungkin offline. Periksa itu, lalu pilih Coba Lagi.",
+     "after": "iCloud Drive mungkin dimatikan atau Anda sudah keluar dari iCloud, atau Mac ini mungkin offline. Periksa hal itu, lalu pilih Coba Lagi.",
+     "why": "meaning: keluar alone said iCloud Drive quit; signed out is keluar dari iCloud"
+    },
+    {
+     "key": "iCloud Drive may be turned off or signed out.",
+     "english": "iCloud Drive may be turned off or signed out.",
+     "before": "iCloud Drive mungkin dimatikan atau keluar.",
+     "after": "iCloud Drive mungkin dimatikan atau Anda sudah keluar dari iCloud.",
+     "why": "meaning: keluar alone said iCloud Drive quit; signed out is keluar dari iCloud"
+    },
+    {
+     "key": "so nothing in %@ was compared.",
+     "english": "so nothing in %@ was compared.",
+     "before": "sehingga tidak ada yang di %@ dibandingkan.",
+     "after": "sehingga tidak ada apa pun di %@ yang dibandingkan.",
+     "why": "grammar: the relative clause was split around the place"
+    }
+   ]
+  }
+ ]
+}
