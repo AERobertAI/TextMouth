@@ -113344,7 +113344,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在每个阅读器的工具栏中添加“导出”按钮。使用“文件”>“导出”同样可以导出。"
+            "value" : "在每个阅读器的工具栏中添加“导出”按钮。使用“文件”菜单中的“导出”同样可以导出。"
           }
         },
         "zh-Hant" : {
@@ -164719,7 +164719,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "请在“设置”>“播放功能”>“转录”中选取语言。"
+            "value" : "请在“设置”的“播放功能”中，于“转录”选取语言。"
           }
         },
         "zh-Hant" : {
@@ -173081,7 +173081,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“设置”>“存储”中的“比较资料库”会列出每一处差异。"
+            "value" : "“设置”的“存储”中的“比较资料库”会列出每一处差异。"
           }
         },
         "zh-Hant" : {
@@ -321088,7 +321088,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“设置”>“存储”中已关闭。"
+            "value" : "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“设置”的“存储”中已关闭。"
           }
         },
         "zh-Hant" : {
@@ -364987,7 +364987,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "没有滤波器预设。请在“设置”>“存储”>“音频编辑”下添加。"
+            "value" : "没有滤波器预设。请在“设置”的“存储”中，于“音频编辑”下添加。"
           }
         },
         "zh-Hant" : {
@@ -374244,7 +374244,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未安装语音。请在“系统设置”>“辅助功能”>“朗读内容”中添加，然后再次导出。"
+            "value" : "未安装语音。请在“系统设置”的“辅助功能”中，于“朗读内容”添加，然后再次导出。"
           }
         },
         "zh-Hant" : {
@@ -374393,7 +374393,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未安装语音。请在“设置”>“辅助功能”>“朗读内容”中添加语音。"
+            "value" : "未安装语音。请在“设置”的“辅助功能”中，于“朗读内容”添加语音。"
           }
         },
         "zh-Hant" : {
@@ -534135,7 +534135,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 未获准发送通知。请在“系统设置”>“通知”>“TextMouth”中打开通知。"
+            "value" : "TextMouth 未获准发送通知。请在“系统设置”的“通知”中，于“TextMouth”打开通知。"
           }
         },
         "zh-Hant" : {
@@ -534284,7 +534284,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 无权使用麦克风。请在“系统设置”>“隐私与安全性”>“麦克风”中打开。"
+            "value" : "TextMouth 无权使用麦克风。请在“系统设置”的“隐私与安全性”中，于“麦克风”打开。"
           }
         },
         "zh-Hant" : {
@@ -638541,7 +638541,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要使用其他文件夹，请打开“设置”>“存储”，然后选取 %1$@ 或 %2$@。"
+            "value" : "要使用其他文件夹，请打开“设置”的“存储”，然后选取 %1$@ 或 %2$@。"
           }
         },
         "zh-Hant" : {
@@ -650416,7 +650416,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "请输入直引号：在“文本编辑”中，到“编辑”>“替换”下关闭“智能引号”。"
+            "value" : "请输入直引号：在“文本编辑”中，到“编辑”的“替换”下关闭“智能引号”。"
           }
         },
         "zh-Hant" : {
@@ -671561,7 +671561,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "勾选后，此订阅源会遵循“设置”>“%@”中的设置；取消勾选可为该订阅源设置专属选项。"
+            "value" : "勾选后，此订阅源会遵循“设置”的“%@”中的设置；取消勾选可为该订阅源设置专属选项。"
           }
         },
         "zh-Hant" : {
@@ -696436,7 +696436,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法启动 ffmpeg。请检查是否已安装，或在“设置”>“存储”中关闭“使用 ffmpeg”。"
+            "value" : "无法启动 ffmpeg。请检查是否已安装，或在“设置”的“存储”中关闭“使用 ffmpeg”。"
           }
         },
         "zh-Hant" : {
