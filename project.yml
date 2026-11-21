@@ -902,6 +902,10 @@ targets:
     platform: macOS
     sources:
       - TextMouthProductionTests
+      # The fixture packs and catalogs of the interface-text engine's tests (FR39), read where they are, as a folder.
+      - path: Scripts/l10n/tests/fixtures/pack
+        type: folder
+        buildPhase: resources
       # Production-backed compatibility scenarios still use the original
       # scenario registration syntax while importing the TextMouth module.
       # Keep this list explicit until these grouped activities are rewritten as
@@ -949,6 +953,10 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - TextMouthiOSTests
+      # The fixture packs and catalogs of the interface-text engine's tests (FR39), read where they are, as a folder.
+      - path: Scripts/l10n/tests/fixtures/pack
+        type: folder
+        buildPhase: resources
       # Mac test files the iPhone's unit tests share by path (one file serves both bundles; see docs/developer/testing.md).
       - TextMouthProductionTests/ArchiveBudgetTests.swift
       - TextMouthProductionTests/AudioEditTimelineTests.swift
@@ -1019,6 +1027,7 @@ targets:
       - TextMouthProductionTests/ImportProgressWordingTests.swift
       - TextMouthProductionTests/ImportRefusalTestSupport.swift
       - TextMouthProductionTests/InProcessEngineTests.swift
+      - TextMouthProductionTests/InterfaceTextPackFixtureTests.swift
       - TextMouthProductionTests/InterfaceTextTests.swift
       - TextMouthProductionTests/KF8Fixture.swift
       - TextMouthProductionTests/KF8LayoutTests.swift
