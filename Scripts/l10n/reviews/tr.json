@@ -2,6 +2,742 @@
  "language": "tr",
  "reviews": [
   {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ not recording",
+     "english": "%@ not recording",
+     "before": "%@ kayıt yapılmıyor",
+     "after": "%@, kayıt yapılmıyor",
+     "why": "punctuation: without a comma the level's label ran into 'kayıt yapılmıyor' as its subject"
+    },
+    {
+     "key": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
+     "english": "%@ plays sections that are stretches of its tracks, so its tracks can't be edited yet.",
+     "before": "%@ kısımları parçalarının belirli aralıklarını oynatıyor, bu yüzden parçaları henüz düzenlenemez.",
+     "after": "%@ kitabının kısımları ses parçalarının belirli aralıklarıdır, bu yüzden parçaları henüz düzenlenemez.",
+     "why": "grammar: '%@ kısımları' read as 'the X sections' being the subject; the book is the one whose sections are stretches of its tracks"
+    },
+    {
+     "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "before": "%@ düz http kullanıyor, bu yüzden başkaları gönderdiklerini okuyabilir veya değiştirebilir; TextMouth yine de yükler.",
+     "after": "%@ şifrelenmemiş http kullanıyor, bu yüzden gönderdikleri veriler başkalarınca okunabilir veya değiştirilebilir; TextMouth yine de bunları yükler.",
+     "why": "meaning: 'gönderdiklerini' read as what the others send, and 'düz http' copies 'plain'; the point is that it is unencrypted"
+    },
+    {
+     "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@ düz http kullanıyor, bu yüzden başkaları gönderdiklerini okuyabilir veya değiştirebilir; TextMouth yine de yükler.",
+     "after": "%@ şifrelenmemiş http kullanıyor, bu yüzden gönderdiği veriler başkalarınca okunabilir veya değiştirilebilir; TextMouth yine de yükler.",
+     "why": "grammar: one feed took the plural 'gönderdiklerini' (read as what the others send); 'düz http' copies 'plain'"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "one": "%lld düzenleme geri alındı. Başka bir düzenleme yapana kadar Yinele bunları geri getirir.",
+      "other": "%lld düzenleme geri alındı. Başka bir düzenleme yapana kadar Yinele bunları geri getirir."
+     },
+     "after": {
+      "one": "%lld düzenleme geri alındı. Başka bir düzenleme yapana kadar Yinele onu geri getirir.",
+      "other": "%lld düzenleme geri alındı. Başka bir düzenleme yapana kadar Yinele bunları geri getirir."
+     },
+     "why": "grammar: the one form, used for exactly 1, said 'bunları' (them)"
+    },
+    {
+     "key": "%lld edits, all saved",
+     "english": {
+      "one": "%lld edit, all saved",
+      "other": "%lld edits, all saved"
+     },
+     "before": {
+      "one": "%lld düzenleme, hepsi kaydedildi",
+      "other": "%lld düzenleme, hepsi kaydedildi"
+     },
+     "after": {
+      "one": "%lld düzenleme, kaydedildi",
+      "other": "%lld düzenleme, hepsi kaydedildi"
+     },
+     "why": "grammar: the one form, used for exactly 1, said 'hepsi' (all of them)"
+    },
+    {
+     "key": "%lld edits, not all saved",
+     "english": {
+      "one": "%lld edit, not all saved",
+      "other": "%lld edits, not all saved"
+     },
+     "before": {
+      "one": "%lld düzenleme, bazıları kaydedilmedi",
+      "other": "%lld düzenleme, bazıları kaydedilmedi"
+     },
+     "after": {
+      "one": "%lld düzenleme, kaydedilmedi",
+      "other": "%lld düzenleme, bazıları kaydedilmedi"
+     },
+     "why": "grammar: the one form, used for exactly 1, said 'bazıları' (some of them)"
+    },
+    {
+     "key": "%lld other files",
+     "english": {
+      "one": "%lld other file",
+      "other": "%lld other files"
+     },
+     "before": {
+      "one": "%lld diğer dosya",
+      "other": "%lld diğer dosya"
+     },
+     "after": {
+      "one": "%lld başka dosya",
+      "other": "%lld başka dosya"
+     },
+     "why": "natural: '%lld diğer dosya' copies the English order; an indefinite count of other files is 'başka'"
+    },
+    {
+     "key": "%lld skipped as duplicates",
+     "english": {
+      "one": "%lld skipped as a duplicate",
+      "other": "%lld skipped as duplicates"
+     },
+     "before": {
+      "one": "%lld kopya olarak atlandı",
+      "other": "%lld kopya olarak atlandı"
+     },
+     "after": {
+      "one": "%lld yinelenen kitap atlandı",
+      "other": "%lld yinelenen kitap atlandı"
+     },
+     "why": "meaning: 'kopya olarak atlandı' read as 'skipped as N copies'; Apple's word for duplicates is 'yinelenen'"
+    },
+    {
+     "key": "%lld timed passages were too long and cut short.",
+     "english": {
+      "one": "%lld timed passage was too long and cut short.",
+      "other": "%lld timed passages were too long and cut short."
+     },
+     "before": {
+      "one": "%lld zamanlı bölüm çok uzundu ve kısaltıldı.",
+      "other": "%lld zamanlı bölüm çok uzundu ve kısaltıldı."
+     },
+     "after": {
+      "one": "%lld zamanlı pasaj çok uzundu ve kısaltıldı.",
+      "other": "%lld zamanlı pasaj çok uzundu ve kısaltıldı."
+     },
+     "why": "meaning: 'zamanlı bölüm' reads as 'timed chapter' (bölüm is the glossary's Chapter); a timed passage of a transcript is a 'pasaj'"
+    },
+    {
+     "key": "%lld timed passages were unreadable and left out.",
+     "english": {
+      "one": "%lld timed passage was unreadable and left out.",
+      "other": "%lld timed passages were unreadable and left out."
+     },
+     "before": {
+      "one": "%lld zamanlı bölüm okunamadı ve dışarıda bırakıldı.",
+      "other": "%lld zamanlı bölüm okunamadı ve dışarıda bırakıldı."
+     },
+     "after": {
+      "one": "%lld zamanlı pasaj okunamadı ve dışarıda bırakıldı.",
+      "other": "%lld zamanlı pasaj okunamadı ve dışarıda bırakıldı."
+     },
+     "why": "meaning: 'zamanlı bölüm' reads as 'timed chapter' (bölüm is the glossary's Chapter); a timed passage of a transcript is a 'pasaj'"
+    },
+    {
+     "key": "%lld unplayed",
+     "english": {
+      "one": "%lld unplayed",
+      "other": "%lld unplayed"
+     },
+     "before": {
+      "one": "%lld oynatılmadı",
+      "other": "%lld oynatılmadı"
+     },
+     "after": {
+      "one": "%lld oynatılmamış",
+      "other": "%lld oynatılmamış"
+     },
+     "why": "grammar: a count of a state needs the adjective 'oynatılmamış', not the past verb 'oynatılmadı'"
+    },
+    {
+     "key": "%lld unread",
+     "english": {
+      "one": "%lld unread",
+      "other": "%lld unread"
+     },
+     "before": {
+      "one": "%lld okunmadı",
+      "other": "%lld okunmadı"
+     },
+     "after": {
+      "one": "%lld okunmamış",
+      "other": "%lld okunmamış"
+     },
+     "why": "grammar: a count of a state needs the adjective 'okunmamış' (as Apple's Mail), not the past verb 'okunmadı'"
+    },
+    {
+     "key": "%lld%% of %@",
+     "english": {
+      "one": "%lld%% of %@",
+      "other": "%lld%% of %@"
+     },
+     "before": {
+      "one": "%lld%%, toplam %@",
+      "other": "%lld%%, toplam %@"
+     },
+     "after": {
+      "one": "%%%lld, toplam %@",
+      "other": "%%%lld, toplam %@"
+     },
+     "why": "punctuation: Turkish puts the percent sign before the number (%45), as the catalog's other Turkish strings do"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "TextMouth'un içe aktarırken dönüştürdüğü ses yalnızca dönüştürülen dosyayı saklar.",
+     "after": "TextMouth'un içe aktarırken dönüştürdüğü seslerin yalnızca dönüştürülmüş dosyası saklanır.",
+     "why": "natural: 'ses ... dosyayı saklar' (the audio keeps the file) is a literal copy; Turkish says only the converted file is kept"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "Başka bir besleme okuyucusunun dışa aktardığı gibi, abonelikleri içeren bir OPML dosyası seçin.",
+     "after": "Başka bir besleme okuyucusunun dışa aktardığı türden, abonelikleri içeren bir OPML dosyası seçin.",
+     "why": "natural: the leading 'dışa aktardığı gibi' clause read as 'choose it the way a reader exports'"
+    },
+    {
+     "key": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "english": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "before": "Başka bir klasör seçmek, beslemenin podcast bölümlerini ve makalelerini, zaten indirilenler dahil, onun yerine orada listeler.",
+     "after": "Başka bir klasör seçerseniz beslemenin podcast bölümleri ve makaleleri, önceden indirilenler de dahil, artık orada listelenir.",
+     "why": "natural: 'seçmek ... onun yerine orada listeler' was a word-for-word copy of the English gerund subject"
+    },
+    {
+     "key": "Cleaned up on %@, with rules version %@: %@.",
+     "english": "Cleaned up on %1$@, with rules version %2$@: %3$@.",
+     "before": "%1$@ tarihinde, %2$@ sürüm kurallarıyla temizlendi: %3$@.",
+     "after": "%1$@ tarihinde, kural sürümü %2$@ ile temizlendi: %3$@.",
+     "why": "natural: '%2$@ sürüm kurallarıyla' (with 2 version rules) is a literal copy; Turkish names the version after 'kural sürümü'"
+    },
+    {
+     "key": "Deleted “%@” from its feed; its book stays in your library.",
+     "english": "Deleted “%@” from its feed; its book stays in your library.",
+     "before": "“%@” beslemesinden silindi; kitabı kitaplığınızda duruyor.",
+     "after": "“%@” kendi beslemesinden silindi; kitabı kitaplığınızda kalıyor.",
+     "why": "meaning: '“X” beslemesinden' read as 'from the feed X', though X is the item's title"
+    },
+    {
+     "key": "Every article listed, downloads by hand",
+     "english": "Every article listed, downloads by hand",
+     "before": "Her makale listelenir, indirmeler elle",
+     "after": "Her makale listelenir, elle indirilir",
+     "why": "natural: 'indirmeler elle' has no verb and reads as a fragment; 'elle indirilir' matches the newest-N choice beside it"
+    },
+    {
+     "key": "Every episode listed, downloads by hand",
+     "english": "Every episode listed, downloads by hand",
+     "before": "Her podcast bölümü listelenir, indirmeler elle",
+     "after": "Her podcast bölümü listelenir, elle indirilir",
+     "why": "natural: 'indirmeler elle' has no verb and reads as a fragment; 'elle indirilir' matches the newest-N choice beside it"
+    },
+    {
+     "key": "Every item listed, downloads by hand",
+     "english": "Every item listed, downloads by hand",
+     "before": "Her öğe listelenir, indirmeler elle",
+     "after": "Her öğe listelenir, elle indirilir",
+     "why": "natural: 'indirmeler elle' has no verb and reads as a fragment; 'elle indirilir' matches the newest-N choice beside it"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "Beslemeler yalnızca açılışta, o açıksa, ve şunlardan birini seçtiğinizde yenilenir: %1$@, %2$@.",
+     "after": "Beslemeler yalnızca açılışta (bu ayar açıksa) ve şunlardan birini seçtiğinizde yenilenir: %1$@ veya %2$@.",
+     "why": "natural: 'açılışta, o açıksa, ve' broke the sentence with commas Turkish does not use; 'or' was lost between the two commands"
+    },
+    {
+     "key": "Getting ready to record",
+     "english": "Getting ready to record",
+     "before": "Kayda hazırlanılıyor",
+     "after": "Kayda hazırlanıyor",
+     "why": "grammar: 'hazırlanılıyor' is an impersonal passive of a reflexive verb that Turkish does not use here"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "İndirilmiş olduğu sürece beslemesine aittir. Şu komut dosyasını kaldırır ama yerini ve yer imlerini saklar: %@.",
+     "after": "İndirilmiş olduğu sürece beslemesine aittir. %@ komutu, dosyasını kaldırır ama yerini ve yer imlerini saklar.",
+     "why": "meaning: 'Şu komut dosyasını kaldırır' read as 'removes this script' (komut dosyası is a script)"
+    },
+    {
+     "key": "It skipped %lld entries: %@.",
+     "english": {
+      "one": "It skipped %lld entry: %@.",
+      "other": "It skipped %lld entries: %@."
+     },
+     "before": {
+      "one": "%lld girişi atladı: %@.",
+      "other": "%lld girişi atladı: %@."
+     },
+     "after": {
+      "one": "%lld girdiyi atladı: %@.",
+      "other": "%lld girdiyi atladı: %@."
+     },
+     "why": "term: a playlist's entry is 'girdi' (as the catalog's other entries); 'giriş' is an entrance or a login"
+    },
+    {
+     "key": "Its folder “%@” goes too when nothing else is in it.",
+     "english": "Its folder “%@” goes too when nothing else is in it.",
+     "before": "Klasörü “%@” de, içinde başka bir şey yoksa silinir.",
+     "after": "“%@” klasörü de, içinde başka bir şey yoksa silinir.",
+     "why": "grammar: the separate 'de' must agree with the vowel of an unknown name; 'Klasörü “X”' copies the English apposition, Turkish says '“X” klasörü'"
+    },
+    {
+     "key": "Its folder “%@” is empty, but could not be deleted.",
+     "english": "Its folder “%@” is empty, but could not be deleted.",
+     "before": "Klasörü “%@” boş, ama silinemedi.",
+     "after": "“%@” klasörü boş, ama silinemedi.",
+     "why": "natural: 'Klasörü “X”' copies the English apposition; Turkish says '“X” klasörü'"
+    },
+    {
+     "key": "Its folder “%@” is gone too.",
+     "english": "Its folder “%@” is gone too.",
+     "before": "Klasörü “%@” de silindi.",
+     "after": "“%@” klasörü de silindi.",
+     "why": "grammar: the separate 'de' must agree with the vowel of an unknown name; 'Klasörü “X”' copies the English apposition, Turkish says '“X” klasörü'"
+    },
+    {
+     "key": "Its folder “%@” stays, as something else is in it.",
+     "english": "Its folder “%@” stays, as something else is in it.",
+     "before": "Klasörü “%@” içinde başka şeyler olduğu için kalıyor.",
+     "after": "“%@” klasörü, içinde başka şeyler olduğu için kalıyor.",
+     "why": "natural: 'Klasörü “X”' copies the English apposition; Turkish says '“X” klasörü'"
+    },
+    {
+     "key": "Keep for a number of days",
+     "english": "Keep for a number of days",
+     "before": "Birkaç gün sakla",
+     "after": "Belirli sayıda gün sakla",
+     "why": "meaning: 'Birkaç gün sakla' says 'keep for a few days', but the choice keeps for the number of days set, up to a year"
+    },
+    {
+     "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Her makaleyi listeler; hiçbir şey kendiliğinden inmez ve bir indirme, siz silene veya oynatıldıktan sonraki günleri geçene kadar kalır.",
+     "after": "Her makaleyi listeler; hiçbir şey kendiliğinden indirilmez ve bir indirme, siz silene veya oynatıldıktan sonraki gün sayısı dolana kadar kalır.",
+     "why": "natural: 'günleri geçene kadar' (until it passes its days) and 'kendiliğinden inmez' are unidiomatic; the day count runs out, nothing is downloaded"
+    },
+    {
+     "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Her podcast bölümünü ve makaleyi listeler; hiçbir şey kendiliğinden inmez ve bir indirme, siz silene veya oynatıldıktan sonraki günleri geçene kadar kalır.",
+     "after": "Her podcast bölümünü ve makaleyi listeler; hiçbir şey kendiliğinden indirilmez ve bir indirme, siz silene veya oynatıldıktan sonraki gün sayısı dolana kadar kalır.",
+     "why": "natural: 'günleri geçene kadar' (until it passes its days) and 'kendiliğinden inmez' are unidiomatic; the day count runs out, nothing is downloaded"
+    },
+    {
+     "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Her podcast bölümünü listeler; hiçbir şey kendiliğinden inmez ve bir indirme, siz silene veya oynatıldıktan sonraki günleri geçene kadar kalır.",
+     "after": "Her podcast bölümünü listeler; hiçbir şey kendiliğinden indirilmez ve bir indirme, siz silene veya oynatıldıktan sonraki gün sayısı dolana kadar kalır.",
+     "why": "natural: 'günleri geçene kadar' (until it passes its days) and 'kendiliğinden inmez' are unidiomatic; the day count runs out, nothing is downloaded"
+    },
+    {
+     "key": "Move “%@” to Library",
+     "english": "Move “%@” to Library",
+     "before": "“%@” Kitaplığa Taşı",
+     "after": "Kitaplığa Taşı: “%@”",
+     "why": "grammar: the title is a definite object, whose accusative suffix cannot agree with an unknown title; the label-colon form avoids it"
+    },
+    {
+     "key": "Moved %lld articles into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld article into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%1$lld makale taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@.",
+      "other": "%1$lld makale taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@."
+     },
+     "after": {
+      "one": "%1$lld makale taşındı (%2$@). Artık bir kitaplık kitabı; beslemesi onu şöyle listeler: %3$@.",
+      "other": "%1$lld makale taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@."
+     },
+     "why": "grammar: the one form, used for exactly 1, was plural ('oldular', 'beslemeleri bunları')"
+    },
+    {
+     "key": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld episode into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%1$lld podcast bölümü taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@.",
+      "other": "%1$lld podcast bölümü taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@."
+     },
+     "after": {
+      "one": "%1$lld podcast bölümü taşındı (%2$@). Artık bir kitaplık kitabı; beslemesi onu şöyle listeler: %3$@.",
+      "other": "%1$lld podcast bölümü taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@."
+     },
+     "why": "grammar: the one form, used for exactly 1, was plural ('oldular', 'beslemeleri bunları')"
+    },
+    {
+     "key": "Moved %lld items into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld item into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld items into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%1$lld öğe taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@.",
+      "other": "%1$lld öğe taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@."
+     },
+     "after": {
+      "one": "%1$lld öğe taşındı (%2$@). Artık bir kitaplık kitabı; beslemesi onu şöyle listeler: %3$@.",
+      "other": "%1$lld öğe taşındı (%2$@). Artık kitaplık kitabı oldular; beslemeleri bunları şöyle listeler: %3$@."
+     },
+     "why": "grammar: the one form, used for exactly 1, was plural ('oldular', 'beslemeleri bunları')"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "Bu %lld makaleyi, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar",
+      "other": "Bu %lld makaleyi, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar"
+     },
+     "after": {
+      "one": "Bu %lld makaleyi, düzenleyebileceğiniz bir kitap olarak bir kitaplık klasörüne taşır; beslemeden çıkar",
+      "other": "Bu %lld makaleyi, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar"
+     },
+     "why": "grammar: the one form, used for exactly 1, was plural ('kitaplar', 'beslemelerinden çıkarlar')"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "Bu %lld podcast bölümünü, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar",
+      "other": "Bu %lld podcast bölümünü, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar"
+     },
+     "after": {
+      "one": "Bu %lld podcast bölümünü, düzenleyebileceğiniz bir kitap olarak bir kitaplık klasörüne taşır; beslemeden çıkar",
+      "other": "Bu %lld podcast bölümünü, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar"
+     },
+     "why": "grammar: the one form, used for exactly 1, was plural ('kitaplar', 'beslemelerinden çıkarlar')"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "Bu %lld öğeyi, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar",
+      "other": "Bu %lld öğeyi, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar"
+     },
+     "after": {
+      "one": "Bu %lld öğeyi, düzenleyebileceğiniz bir kitap olarak bir kitaplık klasörüne taşır; beslemeden çıkar",
+      "other": "Bu %lld öğeyi, düzenleyebileceğiniz kitaplar olarak bir kitaplık klasörüne taşır; beslemelerinden çıkarlar"
+     },
+     "why": "grammar: the one form, used for exactly 1, was plural ('kitaplar', 'beslemelerinden çıkarlar')"
+    },
+    {
+     "key": "Not checked since %@",
+     "english": "Not checked since %@",
+     "before": "şu zamandan beri denetlenmedi: %@",
+     "after": "%@ tarihinden beri denetlenmedi",
+     "why": "natural: 'şu zamandan beri denetlenmedi: X' was a stilted workaround; the suffix can sit on 'tarih', not on the date"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "Henüz kitabın sesinde değil. At bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir.",
+     "after": "Henüz kitabın sesinde değil. At düğmesi bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir.",
+     "why": "meaning: the bare button name 'At' is heard as 'horse' or as 'throw away!'; naming it 'At düğmesi' keeps it a subject"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "%@ dosyasının bir bölümü çözülemedi ve sessizlik olarak saklanıyor.",
+     "after": "%@ dosyasının bir kısmı çözülemedi ve sessizlik olarak saklanıyor.",
+     "why": "meaning: 'bir bölümü' reads as 'a chapter of it' (bölüm is the glossary's Chapter); a part is 'bir kısmı'"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "one": "%lld dosyanın (%@) bir bölümü çözülemedi ve sessizlik olarak saklanıyor.",
+      "other": "%lld dosyanın (%@) bir bölümü çözülemedi ve sessizlik olarak saklanıyor."
+     },
+     "after": {
+      "one": "%lld dosyanın (%@) bir kısmı çözülemedi ve sessizlik olarak saklanıyor.",
+      "other": "%lld dosyanın (%@) bir kısmı çözülemedi ve sessizlik olarak saklanıyor."
+     },
+     "why": "meaning: 'bir bölümü' reads as 'a chapter of it' (bölüm is the glossary's Chapter); a part is 'bir kısmı'"
+    },
+    {
+     "key": "Plain http: others can read or change what this feed sends.",
+     "english": "Plain http: others can read or change what this feed sends.",
+     "before": "Düz http: başkaları bu beslemenin gönderdiklerini okuyabilir veya değiştirebilir.",
+     "after": "Şifrelenmemiş http: başkaları bu beslemenin gönderdiklerini okuyabilir veya değiştirebilir.",
+     "why": "natural: 'düz http' copies 'plain'; the point is that it is unencrypted, as the other http strings now say"
+    },
+    {
+     "key": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "english": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "before": "Başka bir Mac'ten hazır ayarlar henüz geldi ve bunların yerini aldı. Değişikliği yeniden yapın.",
+     "after": "Başka bir Mac'ten az önce hazır ayarlar geldi ve bunların yerini aldı. Değişikliği yeniden yapın.",
+     "why": "natural: 'henüz geldi' reads as 'not yet' to most listeners; 'just arrived' is 'az önce geldi'"
+    },
+    {
+     "key": "Retranscribe %@",
+     "english": "Retranscribe %@",
+     "before": "%@ Yeniden Yazıya Dök",
+     "after": "Yeniden Yazıya Dök: %@",
+     "why": "grammar: the title is a definite object, whose accusative suffix cannot agree with an unknown title; the colon form matches 'Sesi Düzenle: %@'"
+    },
+    {
+     "key": "Revert to the original audio?",
+     "english": "Revert to the original audio?",
+     "before": "Orijinal ses eski haline döndürülsün mü?",
+     "after": "Orijinal sese geri dönülsün mü?",
+     "why": "meaning: 'Orijinal ses eski haline döndürülsün mü?' asked whether the original audio itself should be reverted"
+    },
+    {
+     "key": "Save the edits to “%@”?",
+     "english": "Save the edits to “%@”?",
+     "before": "“%@” düzenlemeleri kaydedilsin mi?",
+     "after": "“%@” için yapılan düzenlemeler kaydedilsin mi?",
+     "why": "natural: '“X” düzenlemeleri' joins the title to the noun as if it were part of it"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Abone olundu: %@. Bu besleme düz http kullanıyor, bu yüzden başkaları gönderdiklerini okuyabilir veya değiştirebilir; TextMouth yine de yükler.",
+     "after": "Abone olundu: %@. Bu besleme şifrelenmemiş http kullanıyor, bu yüzden gönderdiği veriler başkalarınca okunabilir veya değiştirilebilir; TextMouth yine de yükler.",
+     "why": "meaning: 'başkaları gönderdiklerini' read as what the others send; 'düz http' copies 'plain'"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth kapanıyor ve kitabın sesinde bu düzenlemeler henüz yok. At bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir. Vazgeç, TextMouth'u açık tutar.",
+     "after": "TextMouth kapanıyor ve kitabın sesinde bu düzenlemeler henüz yok. At düğmesi bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir. Vazgeç düğmesi TextMouth'u açık tutar.",
+     "why": "meaning: the bare button names 'At' and 'Vazgeç' are heard as 'horse' or 'throw away!' and 'give up!'; naming them as buttons keeps them subjects"
+    },
+    {
+     "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "before": "TextMouth, içe aktarırken dönüştürdüğü sesin orijinal dosyasını saklar. Orijinal dosya, dönüştürülmüş dosyası kadar disk alanı kaplar; sıkıştırılmamışsa iki katı kadar. Dışa aktarma bunu Orijinal dosya olarak sunar. Bir besleme podcast bölümünün orijinali saklanmaz: yeniden indirilebilir.",
+     "after": "TextMouth, içe aktarırken dönüştürdüğü sesin orijinal dosyasını saklar. Bir orijinal dosya, dönüştürülmüş dosyasıyla yaklaşık aynı disk alanını kaplar; sıkıştırılmamışsa iki katı kadar. Dışa aktarma bunu Orijinal dosya olarak sunar. Beslemedeki bir podcast bölümünün orijinali saklanmaz: yeniden indirilebilir.",
+     "why": "meaning: 'about' was lost from the disk space, and 'bir besleme podcast bölümü' lacked its genitive"
+    },
+    {
+     "key": "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it.",
+     "english": "TextMouth makes a folder named after the feed in %@, and its episodes and articles download into it.",
+     "before": "TextMouth şu konumda beslemenin adını taşıyan bir klasör oluşturur: %@. Podcast bölümleri ve makaleler bu klasöre iner.",
+     "after": "TextMouth şu konumda beslemenin adını taşıyan bir klasör oluşturur: %@. Podcast bölümleri ve makaleler bu klasöre indirilir.",
+     "why": "register: 'iner' (comes down) is colloquial for a download; the interface says 'indirilir'"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "one": "TextMouth, yinelenen kitapların %lld yeni kopyasını Çöp Sepetine taşıdı; çünkü bunları yinelenen olarak saklayıp saklamama soruları, TextMouth kapanmadan önce yanıtlanmamıştı. Geri almak için Çöp Sepetini açın ve Geri Koy'u seçin.",
+      "other": "TextMouth, yinelenen kitapların %lld yeni kopyasını Çöp Sepetine taşıdı; çünkü bunları yinelenen olarak saklayıp saklamama soruları, TextMouth kapanmadan önce yanıtlanmamıştı. Geri almak için Çöp Sepetini açın ve Geri Koy'u seçin."
+     },
+     "after": {
+      "one": "TextMouth, yinelenen bir kitabın %lld yeni kopyasını Çöp Sepetine taşıdı; çünkü onu yinelenen olarak saklayıp saklamama sorusu, TextMouth kapanmadan önce yanıtlanmamıştı. Geri almak için Çöp Sepetini açın ve Geri Koy'u seçin.",
+      "other": "TextMouth, yinelenen kitapların %lld yeni kopyasını Çöp Sepetine taşıdı; çünkü bunları yinelenen olarak saklayıp saklamama soruları, TextMouth kapanmadan önce yanıtlanmamıştı. Geri almak için Çöp Sepetini açın ve Geri Koy'u seçin."
+     },
+     "why": "grammar: the one form, used for exactly 1, spoke of the copies and the questions in the plural ('bunları', 'soruları')"
+    },
+    {
+     "key": "TextMouth skipped %lld entries of “%@”: %@.",
+     "english": {
+      "one": "TextMouth skipped %lld entry of “%@”: %@.",
+      "other": "TextMouth skipped %lld entries of “%@”: %@."
+     },
+     "before": {
+      "one": "TextMouth “%2$@” çalma listesinden %1$lld girişi atladı: %3$@.",
+      "other": "TextMouth “%2$@” çalma listesinden %1$lld girişi atladı: %3$@."
+     },
+     "after": {
+      "one": "TextMouth “%2$@” çalma listesinden %1$lld girdiyi atladı: %3$@.",
+      "other": "TextMouth “%2$@” çalma listesinden %1$lld girdiyi atladı: %3$@."
+     },
+     "why": "term: a playlist's entry is 'girdi'; 'giriş' is an entrance or a login"
+    },
+    {
+     "key": "That file isn't an OPML list of subscriptions.",
+     "english": "That file isn't an OPML list of subscriptions.",
+     "before": "Bu dosya, aboneliklerin OPML listesi değil.",
+     "after": "Bu dosya bir OPML abonelik listesi değil.",
+     "why": "natural: 'aboneliklerin OPML listesi' (the subscriptions' OPML list) is a literal copy of 'OPML list of subscriptions'"
+    },
+    {
+     "key": "That item isn't a plain file TextMouth can read.",
+     "english": "That item isn't a plain file TextMouth can read.",
+     "before": "Bu öğe, TextMouth'un okuyabileceği düz bir dosya değil.",
+     "after": "Bu öğe, TextMouth'un okuyabileceği normal bir dosya değil.",
+     "why": "meaning: 'düz dosya' suggests a plain text file; the point is an ordinary file, not a folder or a pipe"
+    },
+    {
+     "key": "The archive also holds %lld other books that were not imported; unzip it to import them.",
+     "english": {
+      "one": "The archive also holds %lld other book that was not imported; unzip it to import it.",
+      "other": "The archive also holds %lld other books that were not imported; unzip it to import them."
+     },
+     "before": {
+      "one": "Arşivde içe aktarılmayan %lld kitap daha var; bunları içe aktarmak için arşivi açın.",
+      "other": "Arşivde içe aktarılmayan %lld kitap daha var; bunları içe aktarmak için arşivi açın."
+     },
+     "after": {
+      "one": "Arşivde içe aktarılmayan %lld kitap daha var; onu içe aktarmak için arşivi açın.",
+      "other": "Arşivde içe aktarılmayan %lld kitap daha var; bunları içe aktarmak için arşivi açın."
+     },
+     "why": "grammar: the one form, used for exactly 1, said 'bunları' (them)"
+    },
+    {
+     "key": "The disk is too full to keep this audio for pasting.",
+     "english": "The disk is too full to keep this audio for pasting.",
+     "before": "Disk bu sesi Yapıştır için saklayamayacak kadar dolu.",
+     "after": "Disk bu sesi yapıştırmak için saklayamayacak kadar dolu.",
+     "why": "natural: the English says 'for pasting', not the Paste command; 'Yapıştır için' read as a command name"
+    },
+    {
+     "key": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
+     "english": "The headings from %@ run past the end of the audio, so the tracks were imported without them.",
+     "before": "Başlıkları sesin sonunu aştığı için parçalar bunlarsız içe aktarıldı: %@.",
+     "after": "%@ içindeki başlıklar sesin sonunu aştığı için parçalar başlıksız içe aktarıldı.",
+     "why": "natural: the file names were pushed to the end after a colon, leaving 'Başlıkları' without an owner"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "Liste, şu ayardaki değişikliği hemen izler: %@. Neyin indirileceği ya da gideceği, değişiklik on saniye durana kadar bekler ve VoiceOver o zaman duyurur.",
+     "after": "Liste, %@ ayarındaki bir değişikliği hemen izler; indirilecekler ve kaldırılacaklar ise değişiklik on saniye boyunca aynı kalana kadar bekler ve VoiceOver bunları o zaman duyurur.",
+     "why": "natural: 'değişiklik on saniye durana kadar' read as 'until the change stops'; 'neyin ... gideceği bekler' was a literal copy"
+    },
+    {
+     "key": "The original file was kept: it is a folder, and an import never deletes a folder.",
+     "english": "The original file was kept: it is a folder, and an import never deletes a folder.",
+     "before": "Orijinal dosya saklandı: bir klasör ve içe aktarma hiçbir zaman klasör silmez.",
+     "after": "Orijinal dosya saklandı: bu bir klasör ve içe aktarma hiçbir zaman klasör silmez.",
+     "why": "grammar: 'bir klasör ve' lost 'it is' and read as 'a folder and an import'"
+    },
+    {
+     "key": "This Feed Uses Plain http",
+     "english": "This Feed Uses Plain http",
+     "before": "Bu Besleme Düz http Kullanıyor",
+     "after": "Bu Besleme Şifrelenmemiş http Kullanıyor",
+     "why": "natural: 'Düz http' copies 'plain'; the warning is that it is unencrypted, as its message says"
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "one": "Diğer %lld tanesini yeniden indirmek için satırlarında şunu seçin: %@.",
+      "other": "Diğer %lld tanesini yeniden indirmek için satırlarında şunu seçin: %@."
+     },
+     "after": {
+      "one": "Diğer %lld tanesini yeniden indirmek için satırında şunu seçin: %@.",
+      "other": "Diğer %lld tanesini yeniden indirmek için satırlarında şunu seçin: %@."
+     },
+     "why": "grammar: the one form, used for exactly 1, said 'satırlarında' (on their rows)"
+    },
+    {
+     "key": "Too many timed passages: the limit is %lld.",
+     "english": {
+      "one": "Too many timed passages: the limit is %lld.",
+      "other": "Too many timed passages: the limit is %lld."
+     },
+     "before": {
+      "one": "Çok fazla zamanlı bölüm: sınır %lld.",
+      "other": "Çok fazla zamanlı bölüm: sınır %lld."
+     },
+     "after": {
+      "one": "Çok fazla zamanlı pasaj: sınır %lld.",
+      "other": "Çok fazla zamanlı pasaj: sınır %lld."
+     },
+     "why": "meaning: 'zamanlı bölüm' reads as 'timed chapter' (bölüm is the glossary's Chapter); a timed passage is a 'pasaj'"
+    },
+    {
+     "key": "Transcribe %@",
+     "english": "Transcribe %@",
+     "before": "%@ Yazıya Dök",
+     "after": "Yazıya Dök: %@",
+     "why": "grammar: the title is a definite object, whose accusative suffix cannot agree with an unknown title; the colon form matches 'Sesi Düzenle: %@'"
+    },
+    {
+     "key": "Transcribes the book's audio again, replacing its transcript.",
+     "english": "Transcribes the book's audio again, replacing its transcript.",
+     "before": "Kitabın sesini yeniden yazıya dökerek transkriptinin yerine geçer.",
+     "after": "Kitabın sesini yeniden yazıya döker ve transkriptini değiştirir.",
+     "why": "meaning: 'yerine geçer' made the transcribing itself take the transcript's place; the glossary's 'değiştir' says it replaces it"
+    },
+    {
+     "key": "Transcribing again replaces it.",
+     "english": "Transcribing again replaces it.",
+     "before": "Yeniden yazıya dökmek onun yerine geçer.",
+     "after": "Yeniden yazıya dökmek onu değiştirir.",
+     "why": "meaning: 'yerine geçer' made the transcribing itself take the transcript's place; the glossary's 'değiştir' says it replaces it"
+    },
+    {
+     "key": "Transcribing again replaces this transcript.",
+     "english": "Transcribing again replaces this transcript.",
+     "before": "Yeniden yazıya dökmek bu transkriptin yerine geçer.",
+     "after": "Yeniden yazıya dökmek bu transkripti değiştirir.",
+     "why": "meaning: 'yerine geçer' made the transcribing itself take the transcript's place; the glossary's 'değiştir' says it replaces it"
+    },
+    {
+     "key": "Transcribing it takes %@.",
+     "english": "Transcribing it takes %@.",
+     "before": "Yazıya dökmesi %@ sürer.",
+     "after": "Yazıya dökülmesi %@ sürer.",
+     "why": "grammar: 'yazıya dökmesi' made the audiobook the one doing the transcribing; it is transcribed (passive)"
+    },
+    {
+     "key": "Unsubscribe from %@?",
+     "english": "Unsubscribe from %@?",
+     "before": "Abonelikten çıkılsın mı: %@?",
+     "after": "%@ aboneliğinden çıkılsın mı?",
+     "why": "punctuation: 'çıkılsın mı: X?' put a colon inside the question; the suffix can sit on 'abonelik', not on the title"
+    },
+    {
+     "key": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "english": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "before": "Kurallarınızın kopyası boş. Kuralları Düzenle… onu eklemeniz için açar.",
+     "after": "Kurallarınızın kopyası boş. Kuralları Düzenle… kural eklemeniz için onu açar.",
+     "why": "grammar: 'onu eklemeniz için açar' said it opens the copy for you to add the copy; you add rules"
+    },
+    {
+     "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "before": "“%@” değiştirilirken değişti, bu yüzden TextMouth iki kopyayı da olduğu gibi bıraktı. Mevcut Olanı Değiştir'i yeniden seçin.",
+     "after": "“%@”, yerine konacak yeni kopya hazırlanırken değişti, bu yüzden TextMouth iki kopyayı da olduğu gibi bıraktı. Mevcut Olanı Değiştir'i yeniden seçin.",
+     "why": "meaning: 'değiştirilirken değişti' (changed while being changed) hid that the library's copy changed while the new copy was being made ready"
+    }
+   ]
+  },
+  {
    "part": 3,
    "areas": [
     "reader, formats, and menus",
