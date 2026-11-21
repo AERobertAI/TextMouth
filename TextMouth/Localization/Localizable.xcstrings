@@ -19929,7 +19929,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ restantes no total"
+            "value" : "Tempo restante no total: %@"
           }
         },
         "ru" : {
@@ -22139,7 +22139,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ restantes no total na velocidade atual"
+            "value" : "Tempo restante no total na velocidade atual: %@"
           }
         },
         "ru" : {
@@ -214687,7 +214687,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tudo"
+            "value" : "tudo"
           }
         },
         "ru" : {
@@ -214824,7 +214824,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tudo em %@"
+            "value" : "tudo em %@"
           }
         },
         "ru" : {
@@ -564454,7 +564454,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Permanecem em %@"
+            "value" : "Continuam disponíveis via %@"
           }
         },
         "ru" : {
@@ -566336,7 +566336,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este Mac está off-line, então o livro não pode ser baixado de %@."
+            "value" : "Este Mac está off-line, então o livro não pode ser baixado via %@."
           }
         },
         "ru" : {
@@ -578856,7 +578856,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Isso recria a estrutura do diretório e migra os livros que usam o armazenamento antigo."
+            "value" : "Isso recria a estrutura da pasta de dados e migra os livros que usam o armazenamento antigo."
           }
         },
         "ru" : {
@@ -584400,7 +584400,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para soltá-lo, tire-o da lista de leitura ou desmarque %@ nas opções da Lista de leitura."
+            "value" : "Para liberá-lo, tire-o da lista de leitura ou desmarque %@ nas opções da Lista de leitura."
           }
         },
         "ru" : {
@@ -584537,7 +584537,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para soltá-los, tire-os da lista de leitura ou desmarque %@ nas opções da Lista de leitura."
+            "value" : "Para liberá-los, tire-os da lista de leitura ou desmarque %@ nas opções da Lista de leitura."
           }
         },
         "ru" : {
@@ -601913,7 +601913,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Até lá, alterar a localização e reconstruir o diretório ficam indisponíveis."
+            "value" : "Até lá, alterar a localização e reconstruir a pasta de dados ficam indisponíveis."
           }
         },
         "ru" : {
@@ -604903,7 +604903,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usar uma biblioteca em dois Macs ao mesmo tempo pode perder posições de leitura e alterações."
+            "value" : "Usar uma biblioteca em dois Macs ao mesmo tempo pode causar a perda de posições de leitura e de alterações."
           }
         },
         "ru" : {
