@@ -8786,7 +8786,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ 在 %lld 秒後仍未從雲端送達"
+                  "value" : "%@ 在 %lld 秒後仍未從雲端下載完成"
                 }
               }
             }
@@ -9355,7 +9355,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 沒有儲存的位置。"
+            "value" : "%@ 沒有已儲存的閱讀位置。"
           }
         }
       }
@@ -13581,7 +13581,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在 %3$@ 中歸檔於 %2$@，在 %5$@ 中則歸檔於 %4$@。"
+            "value" : "%1$@：%3$@ 將它存放%2$@，%5$@ 則存放%4$@。"
           }
         }
       }
@@ -103613,7 +103613,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "加入日期 %1$@，第 %2$lld 個，共 %3$lld 個。"
+            "value" : "已加入 %1$@，第 %2$lld 個，共 %3$lld 個。"
           }
         }
       }
@@ -110170,7 +110170,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "對其文字所做的編輯，會以副本形式保留在書籍的套件中，與新的閱讀結果並存。"
+            "value" : "對其文字所做的編輯，會以副本形式保留在書籍的套件中，與新的讀取結果並存。"
           }
         }
       }
@@ -150702,7 +150702,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請至少選擇一種項目，讓顯示方式列出。"
+            "value" : "請至少選擇一種讓顯示方式列出的項目類型。"
           }
         }
       }
@@ -162228,7 +162228,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "有關書籍的條件會測試書籍、單集和文章；有關訂閱源的條件會測試訂閱源。條件不會隱藏它沒有測試的列。"
+            "value" : "有關書籍的條件會檢查書籍、單集和文章；有關訂閱源的條件會檢查訂閱源。條件不會隱藏它未檢查的列。"
           }
         }
       }
@@ -204426,7 +204426,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的閱讀結果。"
+            "value" : "此書的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的讀取結果。"
           }
         }
       }
@@ -243753,7 +243753,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "上移一層檔案夾"
+            "value" : "前往上層檔案夾"
           }
         }
       }
@@ -275689,7 +275689,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其文字會被新的閱讀結果取代。"
+            "value" : "其文字會被新的讀取結果取代。"
           }
         }
       }
@@ -356756,7 +356756,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "只列出每個訂閱源的最新項目"
+            "value" : "每個訂閱源只列出最近打開的項目"
           }
         }
       }
@@ -381720,7 +381720,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在準備 %1$@ 本，共 %2$@…"
+            "value" : "正在準備：已完成 %1$@ 本，共 %2$@…"
           }
         }
       }
@@ -390494,7 +390494,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要將「%1$@」重新讀取為 %2$@ 嗎？"
+            "value" : "要以 %2$@ 重新讀取「%1$@」嗎？"
           }
         }
       }
