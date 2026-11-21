@@ -9212,7 +9212,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 已使用其默认键 %2$@"
+            "value" : "%1$@ 已占用此操作的默认键 %2$@"
           }
         },
         "zh-Hant" : {
@@ -21050,7 +21050,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 声音"
+            "value" : "“%@”的声音"
           }
         },
         "zh-Hant" : {
@@ -22444,7 +22444,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 重试，%2$@ 不存储并退出，%3$@ 保持 TextMouth 打开。"
+            "value" : "“%1$@”会再次尝试存储，“%2$@”会退出且不存储，“%3$@”会让 TextMouth 保持打开。"
           }
         },
         "zh-Hant" : {
@@ -22855,7 +22855,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 已在菜单中使用"
+            "value" : "菜单命令“%@”已使用此键"
           }
         },
         "zh-Hant" : {
@@ -23963,7 +23963,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 未添加回来：无法先保留其包内的文本副本，因此 TextMouth 保持文本不变。"
+            "value" : "%@ 未重新添加到资料库：无法先保留其包内文本的副本，因此 TextMouth 未改动文本。"
           }
         },
         "zh-Hant" : {
@@ -91120,7 +91120,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "每分钟 %lld 个词"
+                  "value" : "每分钟 %lld 字"
                 }
               }
             }
@@ -105855,7 +105855,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "添加计数所依据的速度，例如不是 1 倍速的有声书的 2.0x，或文本图书的每分钟 500 字，用于阅读器、“我在哪里”、拷贝阅读位置以及章节标题表单的时长。"
+            "value" : "注明时间所依据的速度（例如非 1 倍速的有声书为 2.0x，文本图书为每分钟 500 字），用于阅读器、“我在哪里”、“拷贝阅读位置”和章节标题表单中的时长。"
           }
         },
         "zh-Hant" : {
@@ -106683,7 +106683,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "之后，“播放”会再次尝试该段落。"
+            "value" : "之后，“播放”会再次尝试朗读该段落。"
           }
         },
         "zh-Hant" : {
@@ -116752,7 +116752,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "艺术家"
+            "value" : "艺人"
           }
         },
         "zh-Hant" : {
@@ -116889,7 +116889,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "艺术家或讲述者"
+            "value" : "艺人或讲述者"
           }
         },
         "zh-Hant" : {
@@ -139263,7 +139263,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "以每分钟 %lld 个词为步进更改速度。"
+                  "value" : "以每分钟 %lld 字为步进更改速度。"
                 }
               }
             }
@@ -154943,7 +154943,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "选取后该快捷键即归你所有；“重置为默认设置”会恢复其默认适用范围。"
+            "value" : "选取后，此快捷键即成为你的自定设置；“重置为默认设置”会恢复其默认适用范围。"
           }
         },
         "zh-Hant" : {
@@ -170597,7 +170597,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法将元数据存储到资料库中“%@”的副本，因为该文件已从资料库中缺失。"
+            "value" : "无法将元数据存储到资料库中“%@”的副本，因为资料库中已没有该文件。"
           }
         },
         "zh-Hant" : {
@@ -177542,7 +177542,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "将速度降低每分钟 %lld 个词"
+                  "value" : "将速度降低每分钟 %lld 字"
                 }
               }
             }
@@ -201400,7 +201400,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每个章节标题的标题和起点，存为 Audacity 标签，适用于只有一个音频文件的图书。"
+            "value" : "每个章节标题的文字和起点，存为 Audacity 标签，适用于只有一个音频文件的图书。"
           }
         },
         "zh-Hant" : {
@@ -201537,7 +201537,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每个章节标题的标题和起点，存为 CUE 表，按“音频”导出的方式命名音频。"
+            "value" : "每个章节标题的文字和起点，存为 CUE 表，按“音频”导出的方式命名音频。"
           }
         },
         "zh-Hant" : {
@@ -201674,7 +201674,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每行以 <!-- chapter: 开头的内容开始一个章节；请保留这些行。"
+            "value" : "每个以 <!-- chapter: 开头的行标示一个章节的开始；请保留这些行。"
           }
         },
         "zh-Hant" : {
@@ -209227,7 +209227,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "阅读列表结尾"
+            "value" : "已到阅读列表结尾"
           }
         },
         "zh-Hant" : {
@@ -222695,7 +222695,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在导出 %1$lld，共 %2$@…"
+            "value" : "正在导出第 %1$lld 个，共 %2$@…"
           }
         },
         "zh-Hant" : {
@@ -249700,7 +249700,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "第二次按键必须在多久内跟上第一次。单按和连按有不同操作的键，会等待这么久后才执行单按的操作。"
+            "value" : "两次按键之间允许的最长间隔。单按和连按操作不同的键，会等待这段时间后再执行单按操作。"
           }
         },
         "zh-Hant" : {
@@ -250522,7 +250522,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ISO 8859-13（波罗的海语）"
+            "value" : "ISO 8859-13（波罗的海）"
           }
         },
         "zh-Hant" : {
@@ -250659,7 +250659,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ISO 8859-15（西欧语）"
+            "value" : "ISO 8859-15（西欧）"
           }
         },
         "zh-Hant" : {
@@ -250796,7 +250796,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ISO 8859-2（中欧语）"
+            "value" : "ISO 8859-2（中欧）"
           }
         },
         "zh-Hant" : {
@@ -260556,7 +260556,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "将速度提高每分钟 %lld 个词"
+                  "value" : "将速度提高每分钟 %lld 字"
                 }
               }
             }
@@ -274581,7 +274581,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "唯一的页是 %@。"
+            "value" : "此图书仅有一页：%@。"
           }
         },
         "zh-Hant" : {
@@ -277059,7 +277059,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳转到页 %1$@，即标注为 %3$@ 的页面中的%2$@个。"
+            "value" : "已跳转到第 %1$@ 页，即标注为 %3$@ 的%2$@个页面。"
           }
         },
         "zh-Hant" : {
@@ -277196,7 +277196,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳转到页 %@。"
+            "value" : "已跳转到第 %@ 页。"
           }
         },
         "zh-Hant" : {
@@ -279581,7 +279581,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "将列表中的图书保留下载在这台 Mac 上；每台 Mac 各自选择。取消勾选不会移除已有的下载。"
+            "value" : "让列表中的图书在这台 Mac 上保持下载状态；每台 Mac 各自选择。取消勾选不会移除已有的下载。"
           }
         },
         "zh-Hant" : {
@@ -296337,7 +296337,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mac 中欧语"
+            "value" : "Mac 中欧"
           }
         },
         "zh-Hant" : {
@@ -296611,7 +296611,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mac Roman（西欧语）"
+            "value" : "Mac Roman（西欧）"
           }
         },
         "zh-Hant" : {
@@ -305172,7 +305172,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "元数据已存储到资料库及资料库中“%@”的副本。"
+            "value" : "元数据已存储到资料库中“%@”的副本。"
           }
         },
         "zh-Hant" : {
@@ -382536,7 +382536,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "试听 %@ 声音"
+            "value" : "试听“%@”的声音"
           }
         },
         "zh-Hant" : {
@@ -388838,7 +388838,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "现在退出会使这些更改不被存储："
+            "value" : "现在退出将不会存储以下更改："
           }
         },
         "zh-Hant" : {
@@ -420096,7 +420096,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 和“文本编辑”。"
+            "value" : "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 文稿和“文本编辑”。"
           }
         },
         "zh-Hant" : {
@@ -432257,7 +432257,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已包含章节：%@"
+            "value" : "已包含此部分：%@"
           }
         },
         "zh-Hant" : {
@@ -432394,7 +432394,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已略过章节：%@"
+            "value" : "已跳过此部分：%@"
           }
         },
         "zh-Hant" : {
@@ -447008,7 +447008,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在百分比旁显示正在阅读的页，如第 12 页，共 300 页，适用于多页图书。"
+            "value" : "在百分比旁显示正在阅读的页码（如第 12 页，共 300 页），适用于多页图书。"
           }
         },
         "zh-Hant" : {
@@ -450856,7 +450856,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "睡眠定时器已到时"
+            "value" : "睡眠定时器已结束"
           }
         },
         "zh-Hant" : {
@@ -450993,7 +450993,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "睡眠定时器已在章节标题结尾到时。播放已暂停。"
+            "value" : "睡眠定时器已在章节标题结尾处结束。播放已暂停。"
           }
         },
         "zh-Hant" : {
@@ -451130,7 +451130,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "睡眠定时器已到时。播放已暂停。"
+            "value" : "睡眠定时器已结束。播放已暂停。"
           }
         },
         "zh-Hant" : {
@@ -458350,7 +458350,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "速度：每分钟 %lld 个词；速率 %@，音调 %@，音量 %@"
+                  "value" : "速度：每分钟 %lld 字；速率 %@，音调 %@，音量 %@"
                 }
               }
             }
@@ -459318,7 +459318,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "图书开头。"
+            "value" : "已到图书开头。"
           }
         },
         "zh-Hant" : {
@@ -459455,7 +459455,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "阅读列表开头"
+            "value" : "已到阅读列表开头"
           }
         },
         "zh-Hant" : {
@@ -459866,7 +459866,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在开始：%@"
+            "value" : "开始播放：%@"
           }
         },
         "zh-Hant" : {
@@ -461840,7 +461840,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "仍在开始：%@"
+            "value" : "仍在打开：%@"
           }
         },
         "zh-Hant" : {
@@ -474785,7 +474785,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文本未更新：%@ 已被移除或其下载已删除，因此“编辑文本”已为其停止。"
+            "value" : "文本未更新：%@ 已被移除或其下载已删除，因此其“编辑文本”已停止。"
           }
         },
         "zh-Hant" : {
@@ -475762,7 +475762,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文本未更新：%1$@ 编辑后的文字稿有 %2$@，而有声书有 %3$@。请保留每一行以 <!-- chapter: 开头的行，然后再次存储；在此之前，图书保留其旧文本。"
+            "value" : "文本未更新：%1$@ 编辑后的文字稿有 %2$@，而有声书有 %3$@。请保留每个以 <!-- chapter: 开头的行，然后再次存储；在此之前，图书保留其旧文本。"
           }
         },
         "zh-Hant" : {
@@ -489671,7 +489671,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 正在完成收尾工作后退出：%@。完成后会自动退出。"
+            "value" : "TextMouth 正在完成退出前的收尾工作：%@。完成后即会退出。"
           }
         },
         "zh-Hant" : {
@@ -496321,7 +496321,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 对此后添加的 BRF 和 BRL 文件使用这些字符读取，并自动识别 Unicode 盲文点型。“导出”对话框用它们开始写 BRF。每本图书保留其导入时的字符，可在“图书信息”中更改。"
+            "value" : "TextMouth 会用这些字符读取此后添加的 BRF 和 BRL 文件，并自动识别 Unicode 盲文点型。“导出”对话框导出 BRF 时默认使用这些字符。每本图书保留其导入时的字符，可在“图书信息”中更改。"
           }
         },
         "zh-Hant" : {
@@ -506331,7 +506331,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "标注为 %2$@ 的%1$@页"
+            "value" : "标注为 %2$@ 的%1$@个页面"
           }
         },
         "zh-Hant" : {
@@ -515408,7 +515408,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "音频文件 %@ 在音频播完之前就结束了，因此无法转换。"
+            "value" : "音频文件 %@ 在其音频结束之前就已截断，因此无法转换。"
           }
         },
         "zh-Hant" : {
@@ -530364,7 +530364,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法足够快地读取文件 %@。"
+            "value" : "文件 %@ 读取速度过慢。"
           }
         },
         "zh-Hant" : {
@@ -536975,7 +536975,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其章节标题所属部分结束于音频末尾的章节标题（含其子标题），或图书结尾。"
+            "value" : "音频结束的位置：某个章节标题所属部分（含其子标题）的末尾，或图书结尾。"
           }
         },
         "zh-Hant" : {
@@ -552700,7 +552700,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "阅读列表为空。要添加图书，请从其上下文菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。"
+            "value" : "阅读列表为空。要添加图书，请从其快捷菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。"
           }
         },
         "zh-Hant" : {
@@ -553852,7 +553852,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "录音的原始状态，编辑之前。"
+            "value" : "录音制作时的原样，未经任何编辑。"
           }
         },
         "zh-Hant" : {
@@ -568846,7 +568846,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此 Kindle 图书受版权保护，TextMouth 无法读取受版权保护的图书。"
+            "value" : "此 Kindle 图书受拷贝保护，TextMouth 无法读取受拷贝保护的图书。"
           }
         },
         "zh-Hant" : {
@@ -573298,7 +573298,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此图书没有页。"
+            "value" : "此图书没有页码。"
           }
         },
         "zh-Hant" : {
@@ -575272,7 +575272,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此图书唯一的页是 %@。"
+            "value" : "此图书仅有一页：%@。"
           }
         },
         "zh-Hant" : {
@@ -578697,7 +578697,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此文件不是 TextMouth 可读取的网页档案。它可能已损坏，或是其他类型的文件。"
+            "value" : "此文件不是 TextMouth 可读取的网页归档。它可能已损坏，或是其他类型的文件。"
           }
         },
         "zh-Hant" : {
@@ -582850,7 +582850,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此网页档案中的文件类型为“%@”，不是网页或文本，因此没有可读取的内容。"
+            "value" : "此网页归档中的文件类型为“%@”，不是网页或文本，因此没有可读取的内容。"
           }
         },
         "zh-Hant" : {
@@ -598136,7 +598136,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "两次按键相隔 %1$@。请将时间设置为高于 %2$@，才会将它们算作一次。"
+            "value" : "两次按键相隔 %1$@。若要将它们算作连按两次，请将时间设为高于 %2$@。"
           }
         },
         "zh-Hant" : {
@@ -610483,7 +610483,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "语音语言过滤器"
+            "value" : "按语言筛选语音"
           }
         },
         "zh-Hant" : {
@@ -622283,7 +622283,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每页最后一行是否带有该盲文页码。"
+            "value" : "每页最后一行是否带有其盲文页码。"
           }
         },
         "zh-Hant" : {
@@ -624126,7 +624126,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Windows-1250（中欧语）"
+            "value" : "Windows-1250（中欧）"
           }
         },
         "zh-Hant" : {
@@ -624400,7 +624400,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Windows-1252（西欧语）"
+            "value" : "Windows-1252（西欧）"
           }
         },
         "zh-Hant" : {
@@ -625085,7 +625085,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Windows-1257（波罗的海语）"
+            "value" : "Windows-1257（波罗的海）"
           }
         },
         "zh-Hant" : {
@@ -648079,7 +648079,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它有 %1$@，而有声书有 %2$@。请保留每一行以 <!-- chapter: 开头的行，然后再次存储，文本便会显示。"
+            "value" : "它有 %1$@，而有声书有 %2$@。请保留每个以 <!-- chapter: 开头的行，然后再次存储，文本便会显示。"
           }
         },
         "zh-Hant" : {
@@ -660551,7 +660551,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "位于标注为 %2$@ 的%1$@页"
+            "value" : "位于标注为 %2$@ 的%1$@个页面"
           }
         },
         "zh-Hant" : {
@@ -670838,7 +670838,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法足够快地读取文件 %@"
+            "value" : "文件 %@ 读取速度过慢"
           }
         },
         "zh-Hant" : {
