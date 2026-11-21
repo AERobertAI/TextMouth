@@ -734,6 +734,604 @@
      "why": "grammar: one adds a file “bij” a book, as Voeg transcriptie bij says; “bijgevoegd aan” is an anglicism"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%@ heeft zijn standaardtoets, %@",
+     "after": "%@ heeft nu de standaardtoets, %@",
+     "why": "meaning: zijn made the default the other action's own; the key is this row's default, which that action now holds"
+    },
+    {
+     "key": "%@ now waits before %@, in case it is pressed twice.",
+     "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
+     "before": "%@ wacht nu even voor %@, voor het geval de toets twee keer wordt ingedrukt.",
+     "after": "%@ wacht nu even met %@, voor het geval de toets twee keer wordt ingedrukt.",
+     "why": "meaning: wacht voor %@ reads as waits for the action; wachten met is Dutch for holding off before doing it"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "one": "%@ van %lld hoofdstukken niet gelezen",
+      "other": "%@ van %lld hoofdstukken niet gelezen"
+     },
+     "after": {
+      "one": "%@ van %lld hoofdstuk niet te lezen",
+      "other": "%@ van %lld hoofdstukken niet te lezen"
+     },
+     "why": "grammar: the one form said 1 van 1 hoofdstukken, and niet gelezen means not yet read; niet te lezen is could not be read with no verb to agree"
+    },
+    {
+     "key": "%@ remaining at current speed",
+     "english": "%@ remaining at current speed",
+     "before": "%@ resterend op huidige snelheid",
+     "after": "Nog %@ bij de huidige snelheid",
+     "why": "natural: resterend op huidige snelheid copies the English and drops the article; matches the total-remaining string"
+    },
+    {
+     "key": "%@ through the book",
+     "english": "%@ through the book",
+     "before": "%@ door het boek",
+     "after": "%@ van het boek",
+     "why": "natural: door het boek is a calque of through the book; Dutch says 42 procent van het boek"
+    },
+    {
+     "key": "%@ times speed",
+     "english": "%@ times speed",
+     "before": "%@ keer de snelheid",
+     "after": "%@ keer zo snel",
+     "why": "natural: keer de snelheid leaves the speed unnamed; Dutch says 1,25 keer zo snel"
+    },
+    {
+     "key": "%@ to %@",
+     "english": "%1$@ to %2$@",
+     "before": "%1$@ tot %2$@",
+     "after": "%1$@ tot en met %2$@",
+     "why": "meaning: tot alone leaves the last page out of the range; tot en met includes it"
+    },
+    {
+     "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ schrijft dat hoofdstuk als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk.",
+     "after": "%@ schrijft de regels van dat hoofdstuk als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk.",
+     "why": "natural: met de tekens als tekens behouden copied the English order; waarbij ... behouden blijven is the Dutch"
+    },
+    {
+     "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ schrijft de tekst als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk.",
+     "after": "%@ schrijft de regels van de tekst als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk.",
+     "why": "natural: met de tekens als tekens behouden copied the English order; waarbij ... behouden blijven is the Dutch"
+    },
+    {
+     "key": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon.",
+     "english": {
+      "one": "%lld rule was left out: regular expressions and rules that are off cannot be written in a lexicon.",
+      "other": "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon."
+     },
+     "before": {
+      "one": "%lld regel is weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven.",
+      "other": "%lld regels zijn weggelaten: reguliere expressies en regels die uit staan, kunnen niet in een lexicon worden geschreven."
+     },
+     "after": {
+      "one": "%lld regel is weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven.",
+      "other": "%lld regels zijn weggelaten: reguliere expressies en regels die uitstaan, kunnen niet in een lexicon worden geschreven."
+     },
+     "why": "grammar: a separable verb at the clause end is one word (uitstaan), as part 2 writes it"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Bestand, Exporteer werkt in beide gevallen.",
+     "after": "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Archief, Exporteer werkt in beide gevallen.",
+     "why": "term: the system's File menu is Archief in Apple's Dutch, so Bestand names a menu the listener cannot find"
+    },
+    {
+     "key": "At Sign",
+     "english": "At Sign",
+     "before": "At-teken",
+     "after": "Apenstaartje",
+     "why": "term: the Dutch name of @ is apenstaartje, as VoiceOver says it"
+    },
+    {
+     "key": "Before page %@",
+     "english": "Before page %@",
+     "before": "Voor pagina %@",
+     "after": "Vóór pagina %@",
+     "why": "meaning: voor pagina also reads as for page; the accent says before, as Dutch spelling allows"
+    },
+    {
+     "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
+     "before": "Hoofdstuk %@ kon niet worden afgespeeld: %@ uit het pakket van het boek.",
+     "after": "Hoofdstuk %@ kon niet worden afgespeeld: %@ in het pakket van het boek.",
+     "why": "grammar: %@ ends in ontbreekt, and Dutch says ontbreekt in, not ontbreekt uit"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "Kiest waarmee Speel af en de springknoppen vooruit of terug gaan.",
+     "after": "Kiest waarmee Speel af en de springknoppen vooruit- of teruggaan.",
+     "why": "grammar: a separable verb at the clause end is one word (vooruit- of teruggaan), as part 2 writes it"
+    },
+    {
+     "key": "Chooses what a book opened from the list does when it ends.",
+     "english": "Chooses what a book opened from the list does when it ends.",
+     "before": "Kiest wat een boek dat uit de lijst is geopend doet als het eindigt.",
+     "after": "Kiest wat een boek dat uit de lijst is geopend, doet als het eindigt.",
+     "why": "punctuation: Dutch puts a comma between the verbs of two clauses (is geopend, doet), and VoiceOver pauses on it"
+    },
+    {
+     "key": "Export can't write into TextMouth's library folder. Choose another folder.",
+     "english": "Export can't write into TextMouth's library folder. Choose another folder.",
+     "before": "Exporteren kan niet naar de bibliotheekmap van TextMouth schrijven. Kies een andere map.",
+     "after": "Exporteren naar de bibliotheekmap van TextMouth is niet mogelijk. Kies een andere map.",
+     "why": "natural: Exporteren kan niet schrijven makes the infinitive an agent that writes; Dutch says exporting there is not possible"
+    },
+    {
+     "key": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "english": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "before": "Exporteren kan niet schrijven naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, en die wordt leeggemaakt. Kies een andere map.",
+     "after": "Exporteren naar de map waarin TextMouth uitgesproken hoofdstukken bewaart, is niet mogelijk, want TextMouth maakt die map leeg. Kies een andere map.",
+     "why": "natural: Exporteren kan niet schrijven makes the infinitive an agent, and en die wordt leeggemaakt lost the because"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "%1$lld van %2$@ wordt geëxporteerd…",
+     "after": "Exporteren: %1$lld van %2$@…",
+     "why": "grammar: %1$lld van %2$@ wordt needs worden for any count but 1; the progress line now has no verb to agree"
+    },
+    {
+     "key": "Finding what can be exported…",
+     "english": "Finding what can be exported…",
+     "before": "Zoeken wat er kan worden geëxporteerd…",
+     "after": "Uitzoeken wat er kan worden geëxporteerd…",
+     "why": "grammar: zoeken does not take a wat clause; uitzoeken wat is the Dutch for finding out what"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "Bewaart de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd.",
+     "after": "Houdt de boeken van de lijst gedownload op deze Mac; elke Mac kiest voor zichzelf. Als je dit uitschakelt, wordt er geen download verwijderd.",
+     "why": "natural: bewaart gedownload copies keeps downloaded; Dutch keeps something downloaded with houden"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "%@ van %lld hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "%@ van %lld hoofdstukken is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "after": {
+      "one": "TextMouth bewaart %@ van %lld hoofdstuk totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "TextMouth bewaart %@ van %lld hoofdstukken totdat de app wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om verder te gaan vanaf hoofdstuk %@, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "why": "grammar: %@ van %lld hoofdstukken is bewaard needs zijn for any count but 1; TextMouth is now the subject"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "Het gesproken hoofdstuk (%lld) is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "Alle %lld gesproken hoofdstukken zijn bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "after": {
+      "one": "Het gesproken hoofdstuk is bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte.",
+      "other": "Alle %lld gesproken hoofdstukken zijn bewaard totdat TextMouth wordt afgesloten, een andere gesproken audio-export begint of de stem, de tekst, de vervangingen of de pauzes van het boek veranderen. Om er het audiobestand van te maken, exporteer je hetzelfde bereik met dezelfde snelheid en toonhoogte."
+     },
+     "why": "natural: the one form read the count aloud in brackets, (1); Dutch one means exactly one, so it needs no number"
+    },
+    {
+     "key": "Levels 1 to %lld",
+     "english": "Levels 1 to %lld",
+     "before": "Niveau 1 tot %lld",
+     "after": "Niveaus 1 tot en met %lld",
+     "why": "meaning: tot alone leaves the last level out, and the choice shows it; levels is plural"
+    },
+    {
+     "key": "Loading book...",
+     "english": "Loading book...",
+     "before": "Boek laden…",
+     "after": "Boek wordt geladen…",
+     "why": "meaning: Boek laden… with an ellipsis reads as a command to load a book; this is a progress message"
+    },
+    {
+     "key": "Markup guard: strict, every angle bracket silent, from character %@ to %@ of the spoken text.",
+     "english": "Markup guard: strict, every angle bracket silent, from character %1$@ to %2$@ of the spoken text.",
+     "before": "Opmaakbeveiliging: streng, elke punthaak wordt niet uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst.",
+     "after": "Opmaakbeveiliging: streng, geen enkele punthaak wordt uitgesproken, van teken %1$@ tot %2$@ van de gesproken tekst.",
+     "why": "meaning: elke punthaak wordt niet uitgesproken can mean not every bracket is spoken; geen enkele says none is"
+    },
+    {
+     "key": "No rules to export: only plain text rules that are on can be written in a lexicon.",
+     "english": "No rules to export: only plain text rules that are on can be written in a lexicon.",
+     "before": "Geen regels om te exporteren: alleen gewone tekstregels die aan staan, kunnen in een lexicon worden geschreven.",
+     "after": "Geen regels om te exporteren: alleen gewone tekstregels die aanstaan, kunnen in een lexicon worden geschreven.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaan), as part 2 writes it"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken content, en exporteer daarna opnieuw.",
+     "after": "Er is geen stem geïnstalleerd. Voeg er een toe in Systeeminstellingen, Toegankelijkheid, Gesproken materiaal, en exporteer daarna opnieuw.",
+     "why": "term: Spoken Content is Gesproken materiaal in Apple's Dutch System Settings"
+    },
+    {
+     "key": "None of the %lld chapters could be read",
+     "english": {
+      "one": "None of the %lld chapter could be read",
+      "other": "None of the %lld chapters could be read"
+     },
+     "before": {
+      "one": "Geen van de %lld hoofdstukken kon worden gelezen",
+      "other": "Geen van de %lld hoofdstukken kon worden gelezen"
+     },
+     "after": {
+      "one": "Het enige hoofdstuk kon niet worden gelezen",
+      "other": "Geen van de %lld hoofdstukken kon worden gelezen"
+     },
+     "why": "grammar: the one form said geen van de 1 hoofdstukken; for exactly one chapter Dutch says het enige hoofdstuk"
+    },
+    {
+     "key": "Now Playing: %@",
+     "english": "Now Playing: %@",
+     "before": "Speelt nu af: %@",
+     "after": "Wordt nu afgespeeld: %@",
+     "why": "natural: Speelt nu af has the book as a missing subject that plays something; the Dutch for Now Playing is wordt nu afgespeeld"
+    },
+    {
+     "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
+      "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "one": "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+     },
+     "after": {
+      "one": "OCR kon niet worden uitgevoerd op %@ van %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
+     },
+     "why": "grammar: the one form said 1 pagina's; a comma now parts the two verbs staat and ontbreekt, as Dutch asks"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "one": "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+     },
+     "after": {
+      "one": "OCR kon niet worden uitgevoerd op %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@.",
+      "other": "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
+     },
+     "why": "grammar: the one form said alle 1 pagina's; a comma now parts the two verbs staat and ontbreekt"
+    },
+    {
+     "key": "OCR could not run on the PDF's only page, so text found only in its images is missing: %@.",
+     "english": "OCR could not run on the PDF's only page, so text found only in its images is missing: %@.",
+     "before": "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@.",
+     "after": "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@.",
+     "why": "punctuation: Dutch puts a comma between the verbs of two clauses (staat, ontbreekt), which VoiceOver also pauses on"
+    },
+    {
+     "key": "Percent through the book",
+     "english": "Percent through the book",
+     "before": "Percentage door het boek",
+     "after": "Percentage van het boek",
+     "why": "natural: door het boek is a calque of through the book; same wording as the percent button"
+    },
+    {
+     "key": "Plays the book and pauses before the next book.",
+     "english": "Plays the book and pauses before the next book.",
+     "before": "Speelt het boek af en pauzeert voor het volgende boek.",
+     "after": "Speelt het boek af en pauzeert vóór het volgende boek.",
+     "why": "meaning: pauzeert voor het volgende boek also reads as pauses for the next book; the accent says before"
+    },
+    {
+     "key": "Preview %@ sound",
+     "english": "Preview %@ sound",
+     "before": "Voorbeeld van geluid %@",
+     "after": "Beluister geluid voor %@",
+     "why": "natural: Voorbeeld van geluid Pauzeer reads as an example of a sound named Pauzeer; Beluister matches Beluister stem and Geluid voor %@"
+    },
+    {
+     "key": "Recording shortcut. Press a key with Command or Control.",
+     "english": "Recording shortcut. Press a key with Command or Control.",
+     "before": "Toetsenbordcommando opnemen. Druk op een toets met Command of Control.",
+     "after": "Toetsenbordcommando wordt opgenomen. Druk op een toets met Command of Control.",
+     "why": "meaning: the infinitive opnemen reads as the button's command; the label says it is recording now"
+    },
+    {
+     "key": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "english": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "before": "Toetsenbordcommando opnemen. Druk op een toets, of druk er twee keer op voor een dubbele druk.",
+     "after": "Toetsenbordcommando wordt opgenomen. Druk op een toets, of druk er twee keer op voor een dubbele druk.",
+     "why": "meaning: the infinitive opnemen reads as the button's command; the label says it is recording now"
+    },
+    {
+     "key": "Refused here: %lld times while this window has been open.",
+     "english": {
+      "one": "Refused here: %lld time while this window has been open.",
+      "other": "Refused here: %lld times while this window has been open."
+     },
+     "before": {
+      "one": "Hier geweigerd: %lld keer terwijl dit venster open was.",
+      "other": "Hier geweigerd: %lld keer terwijl dit venster open was."
+     },
+     "after": {
+      "one": "Hier geweigerd: %lld keer sinds dit venster is geopend.",
+      "other": "Hier geweigerd: %lld keer sinds dit venster is geopend."
+     },
+     "why": "meaning: terwijl dit venster open was puts the window in the past; it is still open, so sinds"
+    },
+    {
+     "key": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "english": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "before": "Haal ze weg: een luisterboek met tracks is ingedeeld met tracks.",
+     "after": "Haal ze weg: een luisterboek met tracks is ingedeeld in tracks.",
+     "why": "grammar: indelen takes in, not met"
+    },
+    {
+     "key": "Restarting: %@",
+     "english": "Restarting: %@",
+     "before": "Opnieuw starten: %@",
+     "after": "Begint opnieuw: %@",
+     "why": "natural: the infinitive Opnieuw starten reads as a command; the other start announcements say Begint"
+    },
+    {
+     "key": "Saves your plain text rules that are on; regular expression rules are left out",
+     "english": "Saves your plain text rules that are on; regular expression rules are left out",
+     "before": "Bewaart je gewone tekstregels die aan staan; regels met reguliere expressies worden weggelaten.",
+     "after": "Bewaart je gewone tekstregels die aanstaan; regels met reguliere expressies worden weggelaten.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaan), as part 2 writes it"
+    },
+    {
+     "key": "Section included: %@",
+     "english": "Section included: %@",
+     "before": "Sectie opgenomen: %@",
+     "after": "Sectie weer meegenomen: %@",
+     "why": "meaning: opgenomen also means recorded, in an app that records; meenemen is the verb of Neem sectie mee"
+    },
+    {
+     "key": "Sleep timer cancelled, because you moved to another book while it faded out.",
+     "english": "Sleep timer cancelled, because you moved to another book while it faded out.",
+     "before": "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid uitfaded.",
+     "after": "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid zachter werd.",
+     "why": "grammar: uitfaded is no Dutch verb form; zachter worden says the fade"
+    },
+    {
+     "key": "Starting again: %@",
+     "english": "Starting again: %@",
+     "before": "Opnieuw beginnen: %@",
+     "after": "Begint opnieuw: %@",
+     "why": "natural: the infinitive Opnieuw beginnen reads as a command; the other start announcements say Begint"
+    },
+    {
+     "key": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
+     "english": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
+     "before": "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit gelezen.",
+     "after": "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt er opnieuw uit gelezen wanneer het boek de volgende keer wordt geopend.",
+     "why": "natural: the English order left de volgende keer dat het boek opent in the middle of the clause; now the time clause follows"
+    },
+    {
+     "key": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "english": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "before": "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit geschreven.",
+     "after": "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt op basis daarvan opnieuw geschreven wanneer het boek de volgende keer wordt geopend.",
+     "why": "natural: the English order left de volgende keer dat het boek opent in the middle of the clause; now the time clause follows"
+    },
+    {
+     "key": "TextMouth could not translate this braille.",
+     "english": "TextMouth could not translate this braille.",
+     "before": "TextMouth kon deze braille niet vertalen.",
+     "after": "TextMouth kon deze brailletekst niet vertalen.",
+     "why": "grammar: braille is a het-word (het braille), so deze braille is wrong; brailletekst is plain"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth heeft de laatste bewaring nog niet gelezen.",
+     "after": "TextMouth heeft de laatst bewaarde versie nog niet gelezen.",
+     "why": "natural: bewaring means custody, not a save; Dutch says de laatst bewaarde versie"
+    },
+    {
+     "key": "TextMouth kept the text you changed in %@.",
+     "english": "TextMouth kept the text you changed in %@.",
+     "before": "TextMouth heeft de tekst die je in %@ hebt gewijzigd bewaard.",
+     "after": "TextMouth heeft de tekst bewaard die je in %@ hebt gewijzigd.",
+     "why": "natural: hebt gewijzigd bewaard ran two verbs together; the relative clause goes after the participle"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "Het audiobestand %@ eindigt vóór de audio zelf, dus het kon niet worden geconverteerd.",
+     "after": "Het audiobestand %@ eindigt voordat de audio is afgelopen, dus het kon niet worden geconverteerd.",
+     "why": "meaning: vóór de audio zelf can read as in front of the audio; the file stops before its audio has ended"
+    },
+    {
+     "key": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "english": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "before": "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aan staat.",
+     "after": "De audio van het boek zoals die was vóór de eerste wijziging, die TextMouth bewaart zolang de instelling Originele audio aanstaat.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaat), as part 2 writes it"
+    },
+    {
+     "key": "The file “%@” is damaged or incomplete: it begins with a %@ byte-order mark, but the rest is not valid %@ text.",
+     "english": "The file “%1$@” is damaged or incomplete: it begins with a %2$@ byte-order mark, but the rest is not valid %3$@ text.",
+     "before": "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-byteordemarkering, maar de rest is geen geldige %@-tekst.",
+     "after": "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-bytevolgordemarkering, maar de rest is geen geldige %@-tekst.",
+     "why": "term: byte order is bytevolgorde in Dutch (orde is rank or class)"
+    },
+    {
+     "key": "The folder holds %lld DAISY books (%@).",
+     "english": {
+      "one": "The folder holds %lld DAISY book (%@).",
+      "other": "The folder holds %lld DAISY books (%@)."
+     },
+     "before": {
+      "one": "De map bevat %lld DAISY-boeken (%@).",
+      "other": "De map bevat %lld DAISY-boeken (%@)."
+     },
+     "after": {
+      "one": "De map bevat %lld DAISY-boek (%@).",
+      "other": "De map bevat %lld DAISY-boeken (%@)."
+     },
+     "why": "grammar: the one form said 1 DAISY-boeken"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "one": "Het andere %lld hoofdstuk heeft geen tekst.",
+      "other": "De andere %lld hoofdstukken hebben geen tekst."
+     },
+     "after": {
+      "one": "Het andere hoofdstuk heeft geen tekst.",
+      "other": "De andere %lld hoofdstukken hebben geen tekst."
+     },
+     "why": "grammar: het andere 1 hoofdstuk is not Dutch; for exactly one, het andere hoofdstuk, as the single-chapter string says"
+    },
+    {
+     "key": "The text of %@ can't be read, so it can't be edited.",
+     "english": "The text of %@ can't be read, so it can't be edited.",
+     "before": "De tekst van %@ kan niet worden gelezen, dus kan niet worden gewijzigd.",
+     "after": "De tekst van %@ kan niet worden gelezen, dus kan die niet worden gewijzigd.",
+     "why": "grammar: same choice as part 2 for the clause after dus, which keeps its subject (dus kan die niet)"
+    },
+    {
+     "key": "This PDF needs a password to open.",
+     "english": "This PDF needs a password to open.",
+     "before": "Deze PDF heeft een wachtwoord nodig om te openen.",
+     "after": "Deze PDF kan alleen met een wachtwoord worden geopend.",
+     "why": "natural: heeft een wachtwoord nodig om te openen copies needs a password to open, as if the PDF opened something"
+    },
+    {
+     "key": "This book's text can't be read, so it can't be spoken into an audio file.",
+     "english": "This book's text can't be read, so it can't be spoken into an audio file.",
+     "before": "De tekst van dit boek kan niet worden gelezen, dus kan niet in een audiobestand worden uitgesproken.",
+     "after": "De tekst van dit boek kan niet worden gelezen, dus kan die niet in een audiobestand worden uitgesproken.",
+     "why": "grammar: same choice as part 2 for the clause after dus, which keeps its subject (dus kan die niet)"
+    },
+    {
+     "key": "This file's markup nests more than %@ levels deep, which TextMouth can't read safely.",
+     "english": "This file's markup nests more than %@ levels deep, which TextMouth can't read safely.",
+     "before": "De opmaak van dit bestand nest meer dan %@ niveaus diep, wat TextMouth niet veilig kan lezen.",
+     "after": "De opmaak van dit bestand is meer dan %@ niveaus diep genest, wat TextMouth niet veilig kan lezen.",
+     "why": "natural: nesten is not a Dutch verb in this sense; genest zijn, as the other nesting strings say"
+    },
+    {
+     "key": "This file's markup would take TextMouth far too long to read.",
+     "english": "This file's markup would take TextMouth far too long to read.",
+     "before": "Het zou TextMouth veel te lang duren om de opmaak van dit bestand te lezen.",
+     "after": "Het lezen van de opmaak van dit bestand zou TextMouth veel te veel tijd kosten.",
+     "why": "natural: het zou TextMouth te lang duren says it would try TextMouth's patience; tijd kosten is the plain Dutch"
+    },
+    {
+     "key": "Type a page as the book numbers it, such as 12 or xii.",
+     "english": "Type a page as the book numbers it, such as 12 or xii.",
+     "before": "Typ een pagina zoals het boek die nummert, zoals 12 of xii.",
+     "after": "Typ een pagina zoals het boek die nummert, bijvoorbeeld 12 of xii.",
+     "why": "natural: zoals twice in one short hint; the second is bijvoorbeeld"
+    },
+    {
+     "key": "Untitled",
+     "english": "Untitled",
+     "before": "Zonder titel",
+     "after": "Naamloos",
+     "why": "term: Apple's Dutch names an untitled document or folder Naamloos, as naamloze kop does here"
+    },
+    {
+     "key": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "english": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "before": "Als dit aan staat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen.",
+     "after": "Als dit aanstaat, wordt een braillebestand dat als verkort Unified English Braille is gelezen maar duidelijk English Braille, American Edition is, in plaats daarvan als dat gelezen.",
+     "why": "grammar: a separable verb at the clause end is one word (aanstaat), as part 2 writes it"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "Of de laatste regel van elke pagina het braillepaginanummer draagt.",
+     "after": "Of de laatste regel van elke pagina het braillepaginanummer bevat.",
+     "why": "natural: a line does not draagt a number in Dutch; bevat"
+    },
+    {
+     "key": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "english": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "before": "Of de braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven.",
+     "after": "Of het braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven.",
+     "why": "grammar: braille is a het-word, het braille"
+    },
+    {
+     "key": "Whether that code's braille is contracted.",
+     "english": "Whether that code's braille is contracted.",
+     "before": "Of de braille van die code verkort is.",
+     "after": "Of het braille van die code verkort is.",
+     "why": "grammar: braille is a het-word, het braille"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "Schrijft dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's met regels, zonder opnieuw te vragen.",
+     "after": "Schrijft de regels van dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's, zonder opnieuw te vragen.",
+     "why": "natural: alinea's met regels copied paragraphs of lines; the lines become the paragraphs, as the button's other sentences now say"
+    },
+    {
+     "key": "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual.",
+     "english": "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual.",
+     "before": "Schrijft dit hoofdstuk als gewone alinea's met zijn regels en exporteert al het andere zoals gewoonlijk.",
+     "after": "Schrijft de regels van dit hoofdstuk als gewone alinea's en exporteert al het andere zoals gewoonlijk.",
+     "why": "natural: alinea's met zijn regels copied paragraphs of its lines; the lines become the paragraphs"
+    },
+    {
+     "key": "before page %@",
+     "english": "before page %@",
+     "before": "voor pagina %@",
+     "after": "vóór pagina %@",
+     "why": "meaning: voor pagina also reads as for page; the accent says before, as in Vóór pagina"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent.",
+     "after": "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent.",
+     "why": "natural: zijn hoofdstuk 3 copies its chapter; after the colon about the book, hoofdstuk 3 says it"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt.",
+     "after": "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt.",
+     "why": "natural: zijn hoofdstuk 3 copies its chapter; after the colon about the book, hoofdstuk 3 says it"
+    }
+   ]
   }
  ]
 }
