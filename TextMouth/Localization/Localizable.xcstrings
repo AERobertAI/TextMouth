@@ -582468,7 +582468,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dadurch wird die Ordnerstruktur neu erstellt, und Bücher mit alter Speicherung werden migriert."
+            "value" : "Dadurch wird die Ordnerstruktur neu erstellt, und Bücher, die noch das alte Speicherformat nutzen, werden migriert."
           }
         },
         "es" : {
@@ -588471,7 +588471,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Um einen anderen Ordner zu verwenden, öffne Einstellungen, Speicher und wähle %1$@ oder %2$@."
+            "value" : "Um einen anderen Ordner zu verwenden, öffne die Einstellungen, wähle „Speicher“ und dann %1$@ oder %2$@."
           }
         },
         "en" : {
@@ -614080,7 +614080,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Was passiert, wenn die Wiedergabe eines Buchs endet."
+            "value" : "Legt fest, was passiert, wenn die Wiedergabe eines Buchs endet."
           }
         },
         "es" : {
@@ -614217,7 +614217,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Was passiert, wenn du die Umschalttaste hältst und zurückspulst."
+            "value" : "Legt fest, was passiert, wenn du beim Zurückspulen die Umschalttaste gedrückt hältst."
           }
         },
         "es" : {
@@ -614354,7 +614354,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Was passiert, wenn du die Umschalttaste hältst und vorspulst."
+            "value" : "Legt fest, was passiert, wenn du beim Vorspulen die Umschalttaste gedrückt hältst."
           }
         },
         "es" : {
@@ -614491,7 +614491,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Was passiert, wenn du zurückspulst."
+            "value" : "Legt fest, was passiert, wenn du zurückspulst."
           }
         },
         "es" : {
@@ -614628,7 +614628,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Was passiert, wenn du vorspulst."
+            "value" : "Legt fest, was passiert, wenn du vorspulst."
           }
         },
         "es" : {
@@ -614765,7 +614765,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Was mit der Originaldatei nach dem Importieren eines Buchs geschieht."
+            "value" : "Legt fest, was nach dem Importieren eines Buchs mit der Originaldatei geschieht."
           }
         },
         "es" : {
@@ -618333,7 +618333,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wenn Artikel ignoriert werden, übergeht ein Buch, dessen Metadaten Französisch, Deutsch, Spanisch, Italienisch, Portugiesisch, Niederländisch, Katalanisch, Schwedisch, Dänisch oder Norwegisch nennen, die Artikel dieser Sprache, wie Le und Die, und The."
+            "value" : "Wenn Artikel ignoriert werden, übergeht TextMouth bei einem Buch, dessen Metadaten Französisch, Deutsch, Spanisch, Italienisch, Portugiesisch, Niederländisch, Katalanisch, Schwedisch, Dänisch oder Norwegisch nennen, die Artikel dieser Sprache, etwa „Le“ und „Die“, sowie „The“."
           }
         },
         "es" : {
@@ -621621,7 +621621,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wo TextMouth seine Diagnoseprotokolle schreibt. %1$@ behält sie bei deinen Büchern, sodass sie mit der Bibliothek verschoben und synchronisiert werden. %2$@ legt sie in %3$@ ab, wo nichts synchronisiert wird. Eine Änderung gilt ab der nächsten Zeile; vorhandene Protokolle bleiben."
+            "value" : "Legt fest, wo TextMouth seine Diagnoseprotokolle schreibt. „%1$@“ behält sie bei deinen Büchern, sodass sie mit der Bibliothek verschoben und synchronisiert werden. „%2$@“ legt sie in %3$@ ab, wo nichts synchronisiert wird. Eine Änderung gilt ab der nächsten Zeile; vorhandene Protokolle bleiben."
           }
         },
         "en" : {
@@ -634703,7 +634703,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ein anderer Mac"
+            "value" : "einem anderen Mac"
           }
         },
         "es" : {
@@ -637517,7 +637517,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kapitel %1$@, gesichert %2$@, und %3$@"
+            "value" : "Kapitel %1$@, gesichert am %2$@, und %3$@"
           }
         },
         "en" : {
@@ -657996,7 +657996,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "keine Position gesichert, und %@"
+            "value" : "keine Position gesichert und %@"
           }
         },
         "es" : {
