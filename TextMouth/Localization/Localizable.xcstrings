@@ -128705,7 +128705,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wybierz %1$@ lub %2$@ z menu %3$@ u góry okna Biblioteki."
+            "value" : "Wybierz %1$@ lub %2$@ z menu %3$@ u góry okna biblioteki."
           }
         },
         "pt-BR" : {
@@ -164876,7 +164876,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Szczegóły są u góry okna Biblioteki."
+            "value" : "Szczegóły są u góry okna biblioteki."
           }
         },
         "pt-BR" : {
@@ -293263,7 +293263,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie jest otwarte okno Biblioteki ani żadna książka, więc nie ma czego eksportować."
+            "value" : "Nie jest otwarte okno biblioteki ani żadna książka, więc nie ma czego eksportować."
           }
         },
         "pt-BR" : {
@@ -366624,7 +366624,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przycisk Spróbuj ponownie jest u góry okna Biblioteki."
+            "value" : "Przycisk Spróbuj ponownie jest u góry okna biblioteki."
           }
         },
         "pt-BR" : {
@@ -405194,25 +405194,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Porównywanie trwa: dotąd %lld sekundy. Naciśnij Esc, aby zatrzymać."
+                  "value" : "Porównywanie trwa: dotąd %lld sekundy. Naciśnij Escape, aby zatrzymać."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Porównywanie trwa: dotąd %lld sekund. Naciśnij Esc, aby zatrzymać."
+                  "value" : "Porównywanie trwa: dotąd %lld sekund. Naciśnij Escape, aby zatrzymać."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Porównywanie trwa: dotąd %lld sekunda. Naciśnij Esc, aby zatrzymać."
+                  "value" : "Porównywanie trwa: dotąd %lld sekunda. Naciśnij Escape, aby zatrzymać."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Porównywanie trwa: dotąd %lld sekundy. Naciśnij Esc, aby zatrzymać."
+                  "value" : "Porównywanie trwa: dotąd %lld sekundy. Naciśnij Escape, aby zatrzymać."
                 }
               }
             }
@@ -413102,7 +413102,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przejdź do okna Biblioteki lub książki, a potem ponownie wybierz Eksportuj."
+            "value" : "Przejdź do okna biblioteki lub książki, a potem ponownie wybierz Eksportuj."
           }
         },
         "pt-BR" : {
@@ -473659,7 +473659,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można odczytać indeksu biblioteki. Najpierw wybierz Spróbuj ponownie lub Odbuduj indeks biblioteki w oknie Biblioteki."
+            "value" : "Nie można odczytać indeksu biblioteki. Najpierw wybierz Spróbuj ponownie lub Odbuduj indeks biblioteki w oknie biblioteki."
           }
         },
         "pt-BR" : {
