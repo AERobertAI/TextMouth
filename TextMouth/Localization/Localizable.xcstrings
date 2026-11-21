@@ -70,6 +70,12 @@
             "value" : "«%@» — не число."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” bir sayı değil."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -669,6 +675,12 @@
             "value" : "%1$@ (текущий заголовок), уровень %2$lld"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ (geçerli başlık) - düzey %2$lld"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -993,6 +1005,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@, уровень %2$lld"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ - düzey %2$lld"
           }
         },
         "uk" : {
@@ -2739,6 +2757,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удаётся открыть «%1$@», потому что изменённый текст нельзя использовать: %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Düzenlenen metni kullanılamadığı için %1$@ açılamıyor: %2$@"
           }
         },
         "uk" : {
@@ -5079,6 +5103,12 @@
             "value" : "%@ для этой книги"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu Kitap İçin %@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5649,6 +5679,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "У «%1$@» по умолчанию %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ varsayılan olarak %2$@ tuşunu kullanıyor"
           }
         },
         "uk" : {
@@ -6331,6 +6367,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ без слов, курсор %2$@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ içinde kelime yok, bu yüzden imleç %2$@."
           }
         },
         "uk" : {
@@ -7967,6 +8009,12 @@
             "value" : "%@ — аудиокнига без расшифровки, поэтому в ней нет текста для изменения."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ transkripti olmayan bir sesli kitap, bu yüzden düzenlenecek metni yok."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -8558,6 +8606,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ в пропущенном разделе, курсор %2$@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ atlanan bir kısımda, bu yüzden imleç %2$@."
           }
         },
         "uk" : {
@@ -9578,6 +9632,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ — не аудиокнига из дорожек, поэтому у неё нет манифеста для изменения."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ parçalardan oluşan bir sesli kitap değil, bu yüzden düzenlenecek bir manifesti yok."
           }
         },
         "uk" : {
@@ -10946,6 +11006,12 @@
             "value" : "%1$@ не записано для «%2$@»: %3$@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@ için kaydedilmedi: %3$@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -11116,6 +11182,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ теперь ждёт перед действием «%2$@» на случай двойного нажатия."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ artık %2$@ işleminden önce bekliyor, çünkü iki kez basılabilir."
           }
         },
         "uk" : {
@@ -11571,6 +11643,24 @@
             }
           }
         },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld bölümden %1$@ tanesi okunamadı"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld bölümden %1$@ tanesi okunamadı"
+                }
+              }
+            }
+          }
+        },
         "uk" : {
           "variations" : {
             "plural" : {
@@ -11765,6 +11855,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ или %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ veya %2$@"
           }
         },
         "uk" : {
@@ -12176,6 +12272,12 @@
             "value" : "Осталось %@ при текущей скорости"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geçerli hızda %@ kaldı"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12423,6 +12525,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ возвращено к значениям по умолчанию: %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ varsayılana sıfırlandı: %2$@"
           }
         },
         "uk" : {
@@ -13249,6 +13357,12 @@
             "value" : "%@ книги"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitapta %@ ilerleme"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13735,6 +13849,12 @@
             "value" : "%1$@ — повторить попытку, %2$@ — выйти без сохранения, %3$@ — оставить TextMouth открытым."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ yeniden dener, %2$@ kaydetmeden çıkar, %3$@ TextMouth'u açık tutar."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -13816,6 +13936,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ дважды"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ iki kez"
           }
         },
         "uk" : {
@@ -13976,6 +14102,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ использует это сочетание в меню"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ komutu menülerde bunu kullanıyor"
           }
         },
         "uk" : {
@@ -14640,6 +14772,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось добавить «%@» обратно: сначала не получилось сохранить копию текста из пакета книги, поэтому TextMouth оставил текст как был."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ geri eklenmedi: paketindeki metnin bir kopyası önceden saklanamadığı için TextMouth metni olduğu gibi bıraktı."
           }
         },
         "uk" : {
@@ -15380,6 +15518,12 @@
             "value" : "%1$@ работает: %2$@."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ çalıştığı yer: %2$@."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15799,6 +15943,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@, качество: %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@ kalite"
           }
         },
         "uk" : {
@@ -18243,6 +18393,12 @@
             "value" : "%@, изменено вручную"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@, elle düzenlendi"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -18662,6 +18818,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ записано для «%2$@»"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@ için kaydedildi"
           }
         },
         "uk" : {
@@ -19625,6 +19787,12 @@
             "value" : "%@:"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@:"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19709,6 +19877,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@: %2$@"
@@ -19801,6 +19975,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@: %2$@, автор %3$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@, %3$@ tarafından"
           }
         },
         "uk" : {
@@ -20065,6 +20245,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@: %2$@."
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@: %2$@."
@@ -24415,6 +24601,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%lld сл./мин"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld kelime/dk"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld kelime/dk"
                 }
               }
             }
@@ -33424,6 +33628,24 @@
             }
           }
         },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld bölüm"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld bölüm"
+                }
+              }
+            }
+          }
+        },
         "uk" : {
           "variations" : {
             "plural" : {
@@ -33724,6 +33946,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Не удалось прочитать %lld главы"
+                }
+              }
+            }
+          }
+        },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld bölüm okunamadı"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld bölüm okunamadı"
                 }
               }
             }
@@ -55637,6 +55877,24 @@
             }
           }
         },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "dakikada %lld kelime"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "dakikada %lld kelime"
+                }
+              }
+            }
+          }
+        },
         "uk" : {
           "variations" : {
             "plural" : {
@@ -56205,6 +56463,24 @@
             }
           }
         },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "dakikada %lld kelime, kitaba özel hız"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "dakikada %lld kelime, kitaba özel hız"
+                }
+              }
+            }
+          }
+        },
         "uk" : {
           "variations" : {
             "plural" : {
@@ -56671,6 +56947,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "(%@)"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "(%@)"
@@ -61988,6 +62270,12 @@
             "value" : "Добавить ленту…"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Besleme Ekle…"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62069,6 +62357,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Добавить метку"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İşaret Ekle"
           }
         },
         "uk" : {
@@ -62504,6 +62798,12 @@
             "value" : "Добавить закладку"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yer imi ekle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62919,6 +63219,12 @@
             "value" : "Добавить сочетание клавиш"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kısayol ekle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -63243,6 +63549,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Добавить в список для чтения"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Okuma Listesine Ekle"
           }
         },
         "uk" : {
@@ -64652,6 +64964,12 @@
             "value" : "Добавляет страницу, например «Страница 12 из 300», в сводки команды «Где я?» для книг из нескольких страниц."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sayfayı, örneğin Sayfa 12 / 300 gibi, birden çok sayfası olan kitaplar için Neredeyim? özetlerine ekler."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64810,6 +65128,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Добавляет скорость, с которой считается время, например 2,0x для аудиокниги не на скорости 1x или 500 слов в минуту для текстовой книги, в окне чтения, в «Где я?», «Скопировать позицию чтения» и в длительности на листе заголовков."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zamanların yanına, sayıldıkları hızı ekler: sesli kitap 1x hızında değilse 2.0x gibi, metin kitabı için dakikada 500 kelime gibi. Okuyucuda, Neredeyim? komutunda, Okuma Konumunu Kopyala komutunda ve Başlıklar açılır sayfasının sürelerinde görünür."
           }
         },
         "uk" : {
@@ -65381,6 +65705,12 @@
             "value" : "Альбом"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Albüm"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -65464,6 +65794,12 @@
             "value" : "Название альбома"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Albüm adı"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -65545,6 +65881,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Все"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tümü"
           }
         },
         "uk" : {
@@ -66344,6 +66686,12 @@
             "value" : "Все уровни"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tüm düzeyler"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66836,6 +67184,12 @@
             "value" : "Также записать в копию файла EPUB в библиотеке"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB dosyasının kitaplıktaki kopyasına da yaz"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67085,6 +67439,12 @@
             "value" : "Амперсанд"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ve işareti"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67243,6 +67603,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Раздел аудио ссылается на отсутствующий файл или недопустимый диапазон времени."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir ses kısmı eksik bir dosyaya ya da geçersiz bir zaman aralığına başvuruyor."
           }
         },
         "uk" : {
@@ -69168,6 +69534,12 @@
             "value" : "Апостроф"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kesme işareti"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70490,6 +70862,12 @@
             "value" : "Применить фильтр…"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Filtre Uygula…"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71425,6 +71803,12 @@
             "value" : "Исполнитель"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sanatçı"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71506,6 +71890,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Исполнитель или чтец"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sanatçı ya da anlatıcı"
           }
         },
         "uk" : {
@@ -72676,6 +73066,12 @@
             "value" : "Звёздочка"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yıldız"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72757,6 +73153,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Знак at"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "At İşareti"
           }
         },
         "uk" : {
@@ -74297,6 +74699,12 @@
             "value" : "Аудиоредактор"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ses Düzenleyici"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74463,6 +74871,12 @@
             "value" : "Сведения об аудио…"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ses Bilgileri…"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74544,6 +74958,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Настройки аудио"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ses Ayarları"
           }
         },
         "uk" : {
@@ -74629,6 +75049,12 @@
             "value" : "Скорость аудио"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ses Hızı"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74710,6 +75136,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скорость аудио"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ses hızı"
           }
         },
         "uk" : {
@@ -75453,6 +75885,12 @@
             "value" : "Автоматически"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otomatik"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76010,6 +76448,12 @@
             "value" : "Назад на 10 секунд"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "10 Saniye Geri"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76170,6 +76614,12 @@
             "value" : "Назад на одну секунду"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir Saniye Geri"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76251,6 +76701,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Назад на десятую долю секунды"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saniyenin Onda Biri Kadar Geri"
           }
         },
         "uk" : {
@@ -76336,6 +76792,12 @@
             "value" : "Назад к книге"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitaba Dön"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76419,6 +76881,12 @@
             "value" : "Обратная косая черта"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ters bölü"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76500,6 +76968,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Единица навигации назад"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geri gezinme birimi"
           }
         },
         "uk" : {
@@ -76751,6 +77225,12 @@
             "value" : "Перед страницей %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ sayfasından önce"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76921,6 +77401,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Начало"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlangıç"
           }
         },
         "uk" : {
@@ -77158,6 +77644,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Big5 (традиционный китайский)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Big5 (Geleneksel Çince)"
           }
         },
         "uk" : {
@@ -77913,6 +78405,12 @@
             "value" : "Окно чтения"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap Okuyucu"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78077,6 +78575,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Содержимое книги"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap içeriği"
           }
         },
         "uk" : {
@@ -78249,6 +78753,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Название книги"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap adı"
           }
         },
         "uk" : {
@@ -81395,6 +81905,12 @@
             "value" : "Break"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Break"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81943,6 +82459,12 @@
             "value" : "CP437 (DOS, США)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP437 (ABD DOS)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82026,6 +82548,12 @@
             "value" : "CP850 (DOS, Западная Европа)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP850 (Batı Avrupa DOS)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82107,6 +82635,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "CP866 (DOS, русский)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CP866 (Rusça DOS)"
           }
         },
         "uk" : {
@@ -83561,6 +84095,12 @@
             "value" : "Циркумфлекс"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Şapka işareti"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84154,6 +84694,12 @@
             "value" : "Меняет единицу, на которую эта книга перемещается вперёд и назад"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitabın ileri ve geri gezinme birimini değiştir"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84237,6 +84783,12 @@
             "value" : "Меняет единицы, на которые эта книга перемещается вперёд и назад"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitabın ileri ve geri gezinme birimlerini değiştir"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84318,6 +84870,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Изменить голос для этой книги"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitabın sesini değiştir"
           }
         },
         "uk" : {
@@ -86089,6 +86647,12 @@
             "value" : "Главу %1$@ не удалось воспроизвести: %2$@ в пакете книги."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bölüm %1$@ oynatılamadı: kitabın paketinde %2$@."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86176,6 +86740,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Главу %1$@ не удалось воспроизвести: %2$@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bölüm %1$@ oynatılamadı: %2$@."
           }
         },
         "uk" : {
@@ -87050,6 +87620,12 @@
             "value" : "Глава не загружена"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bölüm İndirilmedi"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -87552,6 +88128,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Убедитесь, что диск с вашей библиотекой подключён, затем выберите «Повторить»."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitaplığınızı içeren diskin bağlı olduğunu kontrol edin, sonra Tekrar Dene'yi seçin."
           }
         },
         "uk" : {
@@ -89291,6 +89873,12 @@
             "value" : "Снова выберите «Изменить текст», чтобы изменить текст новой копии."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yeni kopyanın metnini düzenlemek için Metni Düzenle'yi yeniden seçin."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -89372,6 +89960,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Снова выберите «Изменить текст», чтобы изменить новый текст."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yeni metni düzenlemek için Metni Düzenle'yi yeniden seçin."
           }
         },
         "uk" : {
@@ -89712,6 +90306,12 @@
             "value" : "Выберите «Повторить извлечение текста», чтобы заново прочитать файл книги."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabın dosyasını yeniden okumak için Metin Çıkarmayı Yeniden Yap'ı seçin."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -89882,6 +90482,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выберите «Повторить», чтобы попробовать снова, или заново импортируйте книгу, если ошибка не исчезает."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tekrar Dene'yi seçin; sürekli başarısız olursa kitabı yeniden içe aktarın."
           }
         },
         "uk" : {
@@ -92452,6 +93058,12 @@
             "value" : "Выбирает отдельные единицы навигации вперёд и назад для этой книги."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitap için ayrı ileri ve geri gezinme birimleri seçin"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92618,6 +93230,12 @@
             "value" : "Выберите приложение для изменения манифеста «%@»."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ kitabının manifestini düzenleyecek uygulamayı seçin."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92699,6 +93317,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выберите приложение для изменения текста «%@»."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ kitabının metnini düzenleyecek uygulamayı seçin."
           }
         },
         "uk" : {
@@ -94514,6 +95138,12 @@
             "value" : "Выбор делает сочетание вашим; «Сбросить по умолчанию» возвращает место, где оно работает по умолчанию."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seçim kısayolu size özel yapar; Varsayılanı Geri Yükle, varsayılan çalışma yerini geri getirir."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -95107,6 +95737,12 @@
             "value" : "Очистить"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Temizle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -95190,6 +95826,12 @@
             "value" : "Очистить дисплей"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ekranı Temizle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -95271,6 +95913,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Снять выделение"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seçimi Kaldır"
           }
         },
         "uk" : {
@@ -95597,6 +96245,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закрыть все"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tümünü Kapat"
           }
         },
         "uk" : {
@@ -96018,6 +96672,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закрывает лист заголовков и возвращает к книге."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlıklar sayfasını kapatır ve kitaba döner"
           }
         },
         "uk" : {
@@ -96445,6 +97105,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Закрывает окно этой книги."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitabın penceresini kapatır"
           }
         },
         "uk" : {
@@ -97028,6 +97694,12 @@
             "value" : "Двоеточие"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İki nokta"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97194,6 +97866,12 @@
             "value" : "Запятая"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Virgül"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97272,6 +97950,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Command"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Command"
@@ -99536,6 +100220,12 @@
             "value" : "Продолжить"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Devam"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -100272,6 +100962,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Control"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Control"
@@ -101634,6 +102330,12 @@
             "value" : "Скопировать"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kopyala"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -101792,6 +102494,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скопировать позицию чтения"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Okuma Konumunu Kopyala"
           }
         },
         "uk" : {
@@ -102456,6 +103164,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось определить длительность аудио."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ses süresi belirlenemedi."
           }
         },
         "uk" : {
@@ -103928,6 +104642,12 @@
             "value" : "Не удалось сохранить метаданные в копию «%@» в библиотеке: этот файл отсутствует в библиотеке."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” dosyasının kitaplıktaki kopyasına meta veri kaydedilemedi, çünkü o dosya kitaplıkta yok."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -104017,6 +104737,12 @@
             "value" : "Не удалось сохранить метаданные в копию «%1$@» в библиотеке: %2$@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” dosyasının kitaplıktaki kopyasına meta veri kaydedilemedi: %2$@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -104100,6 +104826,12 @@
             "value" : "Не удалось сохранить метаданные: «%@» больше нет в библиотеке."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Meta veri kaydedilemedi: “%@” artık kitaplıkta değil."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -104181,6 +104913,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось сохранить: название книги пусто."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kaydedilemedi: kitabın adı boş."
           }
         },
         "uk" : {
@@ -104924,6 +105662,12 @@
             "value" : "Не удалось открыть манифест «%1$@»: %2$@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ kitabının manifesti açılamadı: %2$@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -105094,6 +105838,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось открыть текст «%1$@»: %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ kitabının metni açılamadı: %2$@"
           }
         },
         "uk" : {
@@ -106139,6 +106889,12 @@
             "value" : "Сейчас читается"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Şu an okunuyor"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -106463,6 +107219,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вырезать"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kes"
           }
         },
         "uk" : {
@@ -106797,6 +107559,12 @@
             "value" : "Переключить единицу навигации назад"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geri Gezinme Birimini Değiştir"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -106878,6 +107646,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переключить единицу навигации вперёд"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İleri Gezinme Birimini Değiştir"
           }
         },
         "uk" : {
@@ -106963,6 +107737,12 @@
             "value" : "Файл DAISY не найден по пути: %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY dosyası şurada bulunamadı: %@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -107046,6 +107826,12 @@
             "value" : "Ошибка разбора DAISY: %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY ayrıştırma hatası: %@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -107127,6 +107913,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Файл DOCX не найден по пути: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX dosyası şurada bulunamadı: %@"
           }
         },
         "uk" : {
@@ -107714,6 +108506,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Уменьшить скорость"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hızı Azalt"
           }
         },
         "uk" : {
@@ -110048,6 +110846,12 @@
             "value" : "Удалить символ"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Karakteri Sil"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -110769,6 +111573,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Удалить строку"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Satırı Sil"
           }
         },
         "uk" : {
@@ -114879,6 +115689,12 @@
             "value" : "Показывать"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gösterim"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114960,6 +115776,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Разделите документ на файлы меньшего размера и импортируйте их."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Belgeyi daha küçük dosyalara bölün, sonra içe aktarın."
           }
         },
         "uk" : {
@@ -115126,6 +115948,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Знак доллара"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dolar işareti"
           }
         },
         "uk" : {
@@ -115943,6 +116771,12 @@
             "value" : "Время двойного нажатия"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Çift basma süresi"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116026,6 +116860,12 @@
             "value" : "Двойное нажатие."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Çift basma."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116107,6 +116947,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стрелка вниз"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aşağı Ok"
           }
         },
         "uk" : {
@@ -121373,6 +122219,12 @@
             "value" : "Загружает книгу заново."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabı yeniden indirir"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121859,6 +122711,12 @@
             "value" : "Длительность"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Süre"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121942,6 +122800,12 @@
             "value" : "Длительность: %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Süre: %@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122023,6 +122887,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Версия EPUB"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB Sürümü"
           }
         },
         "uk" : {
@@ -122197,6 +123067,12 @@
             "value" : "Версия EPUB: %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB sürümü: %@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122278,6 +123154,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "EUC-JP (японский)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EUC-JP (Japonca)"
           }
         },
         "uk" : {
@@ -122363,6 +123245,12 @@
             "value" : "EUC-KR (корейский)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EUC-KR (Korece)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122444,6 +123332,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Каждый маркер <!-- page: … --> отмечает начало страницы."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Her <!-- page: … --> bir sayfanın nerede başladığını işaretler."
           }
         },
         "uk" : {
@@ -122835,6 +123729,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Каждая строка, которая начинается с <!-- chapter:, начинает главу; сохраняйте эти строки."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "<!-- chapter: ile başlayan her satır bir bölüm başlatır; bu satırları koruyun."
           }
         },
         "uk" : {
@@ -123501,6 +124401,12 @@
             "value" : "Изменить манифест в приложении"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifesti Şununla Düzenle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -123582,6 +124488,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Изменить манифест в приложении…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifesti Şununla Düzenle…"
           }
         },
         "uk" : {
@@ -123667,6 +124579,12 @@
             "value" : "Изменить манифест в редакторе по умолчанию"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Manifesti Varsayılan Düzenleyicide Düzenle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -123748,6 +124666,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Режим изменения"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Düzenleme Modu"
           }
         },
         "uk" : {
@@ -124082,6 +125006,12 @@
             "value" : "Изменить текст в приложении"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metni Şununla Düzenle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124163,6 +125093,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Изменить текст в приложении…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metni Şununla Düzenle…"
           }
         },
         "uk" : {
@@ -124248,6 +125184,12 @@
             "value" : "Изменение текста для «%@» остановлено, так как новая копия заменила прежнюю."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ için Metni Düzenle durdu, çünkü yeni bir kopya onun yerini aldı."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124331,6 +125273,12 @@
             "value" : "Изменение текста для «%@» остановлено, так как файл был прочитан заново."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ için Metni Düzenle durdu, çünkü dosyası yeniden okundu."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124412,6 +125360,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Изменить текст в редакторе по умолчанию"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metni Varsayılan Düzenleyicide Düzenle"
           }
         },
         "uk" : {
@@ -124578,6 +125532,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Изменить в приложении"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Şununla Düzenle"
           }
         },
         "uk" : {
@@ -124995,6 +125955,12 @@
             "value" : "Изменить манифест «%@»?"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ kitabının manifesti düzenlensin mi?"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -125076,6 +126042,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Изменить текст «%@»?"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ kitabının metni düzenlensin mi?"
           }
         },
         "uk" : {
@@ -125161,6 +126133,12 @@
             "value" : "Изменяемые"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Düzenlenebilir"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -125242,6 +126220,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Изменено"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Düzenlendi"
           }
         },
         "uk" : {
@@ -126655,6 +127639,12 @@
             "value" : "Конец книги"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabın Sonu"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -126902,6 +127892,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Действие в конце этой книги"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bu kitap için kitap sonu davranışı"
           }
         },
         "uk" : {
@@ -127461,6 +128457,12 @@
             "value" : "Улучшенное"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gelişmiş"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -127539,6 +128541,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Enter"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Enter"
@@ -127625,6 +128633,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Введите процент."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir yüzde girin."
           }
         },
         "uk" : {
@@ -128805,6 +129819,12 @@
             "value" : "Равно"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Eşittir"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129043,6 +130063,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Escape"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Escape"
@@ -129937,6 +130963,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Все главы прочитаны."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tüm bölümler okundu."
           }
         },
         "uk" : {
@@ -130939,6 +131971,12 @@
             "value" : "Все страницы прочитаны."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tüm sayfalar okundu."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131022,6 +132060,12 @@
             "value" : "Все сочетания и места их работы вернутся к значениям по умолчанию. Ваши собственные клавиши будут потеряны."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tüm kısayollar ve çalıştıkları yerler varsayılana döner. Kendi tuşlarınız kaybolur."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131103,6 +132147,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Каждое окно"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Her pencere"
           }
         },
         "uk" : {
@@ -131443,6 +132493,12 @@
             "value" : "Восклицательный знак"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ünlem işareti"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131524,6 +132580,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Выполнить"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yürüt"
           }
         },
         "uk" : {
@@ -136510,6 +137572,12 @@
             "value" : "Не удалось загрузить книгу"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitap yüklenemedi"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136947,6 +138015,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Не удалось записать метаданные EPUB: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB meta verileri yazılamadı: %@"
           }
         },
         "uk" : {
@@ -139099,6 +140173,12 @@
             "value" : "Формат файла: %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dosya biçimi: %@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -139761,6 +140841,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Найти"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bul"
           }
         },
         "uk" : {
@@ -141684,6 +142770,12 @@
             "value" : "Настройки папки или ленты"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Klasör veya Besleme Ayarları"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142757,6 +143849,12 @@
             "value" : "В течение пяти секунд следующие два нажатия клавиш не считаются сочетаниями; TextMouth сообщает, были ли они двойным нажатием."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Beş saniye boyunca sonraki iki tuşa basış kısayol sayılmaz; TextMouth bunların çift basma olup olmadığını söyler."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -143000,6 +144098,12 @@
             "value" : "Вперёд на 10 секунд"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "10 Saniye İleri"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -143081,6 +144185,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Удалить вперёд"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İleri Sil"
           }
         },
         "uk" : {
@@ -143166,6 +144276,12 @@
             "value" : "Вперёд на одну секунду"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bir Saniye İleri"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -143249,6 +144365,12 @@
             "value" : "Вперёд на десятую долю секунды"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Saniyenin Onda Biri Kadar İleri"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -143330,6 +144452,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Единица навигации вперёд"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İleri gezinme birimi"
           }
         },
         "uk" : {
@@ -143508,6 +144636,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Единица навигации вперёд: %1$@; единица навигации назад: %2$@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İleri gezinme birimi: %1$@; geri gezinme birimi: %2$@"
           }
         },
         "uk" : {
@@ -144396,6 +145530,12 @@
             "value" : "GB 18030 (упрощённый китайский)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GB 18030 (Basitleştirilmiş Çince)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -144479,6 +145619,12 @@
             "value" : "GB 2312 (упрощённый китайский)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GB 2312 (Basitleştirilmiş Çince)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -144560,6 +145706,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "GBK (упрощённый китайский)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "GBK (Basitleştirilmiş Çince)"
           }
         },
         "uk" : {
@@ -144720,6 +145872,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Жанр"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tür"
           }
         },
         "uk" : {
@@ -145072,6 +146230,12 @@
             "value" : "Получите свежую копию книги и снова импортируйте её."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabın yeni bir kopyasını edinin, sonra yeniden içe aktarın."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -145155,6 +146319,12 @@
             "value" : "Получите свежую копию файла и снова импортируйте его."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dosyanın yeni bir kopyasını edinin, sonra yeniden içe aktarın."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -145236,6 +146406,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Получите другую копию файла или сохраните его в другом формате, затем снова импортируйте."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dosyanın başka bir kopyasını edinin ya da başka bir biçimde kaydedin, sonra yeniden içe aktarın."
           }
         },
         "uk" : {
@@ -146187,6 +147363,12 @@
             "value" : "Перейти назад"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geri Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146268,6 +147450,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти вперёд"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İleri Git"
           }
         },
         "uk" : {
@@ -146430,6 +147618,12 @@
             "value" : "Возвращает туда, где вы были до просмотра заголовков или закладок."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlıklara ya da yer imlerine göz atmadan önce bulunduğunuz yere geri döner"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146511,6 +147705,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти в конец"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sona Git"
           }
         },
         "uk" : {
@@ -146596,6 +147796,12 @@
             "value" : "Перейти в библиотеку"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitaplığa Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146679,6 +147885,12 @@
             "value" : "Перейти к странице…"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sayfaya Git…"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -146760,6 +147972,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти в начало"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başa Git"
           }
         },
         "uk" : {
@@ -146928,6 +148146,12 @@
             "value" : "Перейти ко времени…"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zamana Git…"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -147094,6 +148318,12 @@
             "value" : "Перейти к представлению 1"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1. Görünüme Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -147175,6 +148405,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти к представлению 2"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "2. Görünüme Git"
           }
         },
         "uk" : {
@@ -147260,6 +148496,12 @@
             "value" : "Перейти к представлению 3"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "3. Görünüme Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -147341,6 +148583,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти к представлению 4"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "4. Görünüme Git"
           }
         },
         "uk" : {
@@ -147426,6 +148674,12 @@
             "value" : "Перейти к представлению 5"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "5. Görünüme Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -147507,6 +148761,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти к представлению 6"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "6. Görünüme Git"
           }
         },
         "uk" : {
@@ -147592,6 +148852,12 @@
             "value" : "Перейти к представлению 7"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "7. Görünüme Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -147675,6 +148941,12 @@
             "value" : "Перейти к представлению 8"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "8. Görünüme Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -147756,6 +149028,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти к представлению 9"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "9. Görünüme Git"
           }
         },
         "uk" : {
@@ -148475,6 +149753,12 @@
             "value" : "Гравис"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ters tırnak işareti"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -148556,6 +149840,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Больше"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Büyüktür"
           }
         },
         "uk" : {
@@ -149139,6 +150429,12 @@
             "value" : "Уровни заголовков"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlık Düzeyleri"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -149220,6 +150516,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Режим сведений о заголовках"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlık bilgisi gösterim modu"
           }
         },
         "uk" : {
@@ -149305,6 +150607,12 @@
             "value" : "Заголовок: %@"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlık: %@"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -149386,6 +150694,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Заголовки"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlıklar"
           }
         },
         "uk" : {
@@ -149663,6 +150977,24 @@
             }
           }
         },
+        "tr" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Başlıklar, %lld başlık"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Başlıklar, %lld başlık"
+                }
+              }
+            }
+          }
+        },
         "uk" : {
           "variations" : {
             "plural" : {
@@ -149774,6 +151106,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Заголовки: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Başlıklar: %@"
           }
         },
         "uk" : {
@@ -149946,6 +151284,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Справка"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yardım"
           }
         },
         "uk" : {
@@ -150197,6 +151541,12 @@
             "value" : "Скрыть остальные"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Diğerlerini Gizle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -150278,6 +151628,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скрыть TextMouth"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth'u Gizle"
           }
         },
         "uk" : {
@@ -150363,6 +151719,12 @@
             "value" : "Скрывает элементы перехода к странице."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sayfaya git denetimlerini gizler"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -150446,6 +151808,12 @@
             "value" : "Скрывает элементы перехода к проценту."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yüzdeye git denetimlerini gizler"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -150527,6 +151895,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скрывает элементы перехода ко времени."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zamana git denetimlerini gizler"
           }
         },
         "uk" : {
@@ -150785,6 +152159,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Home"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Home"
@@ -151501,6 +152881,12 @@
             "value" : "Как быстро должно последовать второе нажатие после первого. Клавиша с разными действиями для одиночного и двойного нажатия ждёт столько времени, прежде чем сработает одиночное."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "İkinci basışın ilkini ne kadar çabuk izlemesi gerektiği. Tek ve çift basışta farklı eylemleri olan bir tuş, tek basışı işlemeden önce bu kadar bekler."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151738,6 +153124,12 @@
             "value" : "ISBN"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISBN"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151816,6 +153208,12 @@
           }
         },
         "ru" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISBN: %@"
+          }
+        },
+        "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISBN: %@"
@@ -151904,6 +153302,12 @@
             "value" : "ISO 2022-JP (японский)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 2022-JP (Japonca)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -151985,6 +153389,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-13 (балтийский)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-13 (Baltık)"
           }
         },
         "uk" : {
@@ -152070,6 +153480,12 @@
             "value" : "ISO 8859-15 (западноевропейский)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-15 (Batı Avrupa)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -152151,6 +153567,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-2 (центральноевропейский)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-2 (Orta Avrupa)"
           }
         },
         "uk" : {
@@ -152236,6 +153658,12 @@
             "value" : "ISO 8859-5 (кириллица)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-5 (Kiril)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -152317,6 +153745,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-6 (арабский)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-6 (Arapça)"
           }
         },
         "uk" : {
@@ -152402,6 +153836,12 @@
             "value" : "ISO 8859-7 (греческий)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-7 (Yunanca)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -152485,6 +153925,12 @@
             "value" : "ISO 8859-8 (иврит)"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-8 (İbranice)"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -152566,6 +154012,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ISO 8859-9 (турецкий)"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ISO 8859-9 (Türkçe)"
           }
         },
         "uk" : {
@@ -152740,6 +154192,12 @@
             "value" : "Идентификатор"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tanımlayıcı"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -152821,6 +154279,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Идентификатор: %@"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tanımlayıcı: %@"
           }
         },
         "uk" : {
@@ -153855,6 +155319,12 @@
             "value" : "Импортировать папку…"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Klasörü İçe Aktar…"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -154321,6 +155791,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Импортируйте файл .opf каждой книги отдельно."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Her kitabın .opf dosyasını ayrı ayrı içe aktarın."
           }
         },
         "uk" : {
@@ -156596,6 +158072,12 @@
             "value" : "В окнах библиотеки отдельная буква переходит к первой книге или папке, название которой с неё начинается, поэтому сочетание из одной буквы, например W, работает только в других окнах."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitaplık pencerelerinde tek başına bir harf, onunla başlayan ilk kitaba ya da klasöre gider; bu yüzden W gibi tek harflik bir kısayol yalnızca diğer pencerelerde çalışır."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -157355,6 +158837,12 @@
             "value" : "Включить раздел"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kısmı Dahil Et"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -157436,6 +158924,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Указывать скорость вместе с оставшимся и общим временем"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hızı, kalan süre ve toplam süreyle birlikte ekle"
           }
         },
         "uk" : {
@@ -157602,6 +159096,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Увеличить скорость"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hızı Artır"
           }
         },
         "uk" : {
@@ -158104,6 +159604,12 @@
             "value" : "Информация"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bilgi"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -158596,6 +160102,12 @@
             "value" : "Вставить метку главы…"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bölüm İşareti Ekle…"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -158679,6 +160191,12 @@
             "value" : "Вставить символ"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Karakter Ekle"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -158760,6 +160278,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вставить строку"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Satır Ekle"
           }
         },
         "uk" : {
@@ -158926,6 +160450,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Вставить тишину…"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sessizlik Ekle…"
           }
         },
         "uk" : {
@@ -163074,6 +164604,12 @@
             "value" : "В нём перечислены дорожки книги в порядке воспроизведения, каждая с названием своего заголовка. Вы можете менять порядок дорожек и их названия, группировать их под собственными заголовками и задавать паузы между ними."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kitabın parçalarını çalma sırasıyla, her birini başlığının adıyla listeler. Bunları yeniden sıralayabilir, yeniden adlandırabilir, kendi başlıklarınız altında gruplayabilir ve aralarındaki duraklamaları ayarlayabilirsiniz."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165662,6 +167198,12 @@
             "value" : "Прежний текст сохранён как %@ в пакете книги."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Önceki metni, kitabın paketinde %@ adıyla saklandı."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166296,6 +167838,12 @@
             "value" : "Единственная страница — %@."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tek sayfası %@."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166650,6 +168198,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Страницы идут от %1$@ до %2$@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sayfaları %1$@ ile %2$@ arasındadır."
           }
         },
         "uk" : {
@@ -167233,6 +168787,12 @@
             "value" : "Перейти"
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Git"
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167547,6 +169107,12 @@
             "value" : "Переход к %@ в записи."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kayıtta %@ konumuna gidildi."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167630,6 +169196,12 @@
             "value" : "Переход к проценту: %@."
           }
         },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Yüzde %@ konumuna gidildi."
+          }
+        },
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167711,6 +169283,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переход к %@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ konumuna gidildi."
           }
         },
         "uk" : {
@@ -167800,6 +169378,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переход к странице %1$@: это %2$@ страница с меткой %3$@."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ sayfasına gidildi, %3$@ etiketli %2$@ sayfa."
           }
         },
         "uk" : {
