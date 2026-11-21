@@ -210,7 +210,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” speelt het volgende boek in dezelfde map af, op volgorde van sortering."
+            "value" : "“%@” speelt het volgende boek in dezelfde map af, in de sorteervolgorde."
           }
         },
         "pl" : {
@@ -29348,7 +29348,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, van %2$@, %3$@, in %4$@, toegevoegd %5$@"
+            "value" : "%1$@, van %2$@, %3$@, in %4$@, toegevoegd op %5$@"
           }
         },
         "pl" : {
@@ -433208,7 +433208,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Selecteer alle %lld boek"
+                  "value" : "Selecteer het boek"
                 }
               },
               "other" : {
@@ -465603,7 +465603,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stopt het vergelijken. Er is niets gewijzigd in beide kopieën."
+            "value" : "Stopt het vergelijken. In geen van beide kopieën is iets gewijzigd."
           }
         },
         "pl" : {
@@ -466425,7 +466425,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stopt met zeggen dat de code is geraden. Het boek wordt niet opnieuw gelezen."
+            "value" : "Meldt niet langer dat de code is geraden. Het boek wordt niet opnieuw gelezen."
           }
         },
         "pl" : {
@@ -483907,7 +483907,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus beide kopieën zijn gelaten zoals ze waren."
+            "value" : "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus blijven beide kopieën zoals ze zijn."
           }
         },
         "pl" : {
@@ -484044,7 +484044,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus het boek is gelaten zoals het was."
+            "value" : "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus blijft het boek zoals het was."
           }
         },
         "pl" : {
@@ -484922,7 +484922,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was."
+            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was."
           }
         },
         "pl" : {
@@ -485065,7 +485065,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was: %@"
+            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was: %@"
           }
         },
         "pl" : {
@@ -485613,7 +485613,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon de index van de bibliotheek niet bewaren, dus beide kopieën zijn gelaten zoals ze waren."
+            "value" : "TextMouth kon de bibliotheekindex niet bewaren, dus blijven beide kopieën zoals ze zijn."
           }
         },
         "pl" : {
@@ -496541,7 +496541,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth leest zijn bestand zoals het een bestand leest dat je toevoegt: in de codering die het bestand noemt, of anders in de codering die TextMouth vindt."
+            "value" : "TextMouth leest het bestand van het boek zoals een bestand dat je toevoegt: in de codering die het bestand opgeeft, of anders in de codering die TextMouth vindt."
           }
         },
         "pl" : {
@@ -522683,7 +522683,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het braille wordt opnieuw naar print vertaald met deze code. Niets controleert of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere."
+            "value" : "Het braille wordt met deze code opnieuw naar zwartschrift vertaald. Er wordt niet gecontroleerd of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere."
           }
         },
         "pl" : {
@@ -528324,7 +528324,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De feed %@ blijft, met de downloads, zonder map totdat Feedinformatie de feed een andere geeft."
+            "value" : "De feed %@ blijft met de downloads bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft."
           }
         },
         "pl" : {
@@ -530173,7 +530173,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De feeds %@ blijven, met hun downloads, zonder map totdat Feedinformatie elke feed een andere geeft."
+            "value" : "De feeds %@ blijven met hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft."
           }
         },
         "pl" : {
@@ -536784,7 +536784,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen betekenen op deze schijf dezelfde map."
+            "value" : "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen verwijzen op deze schijf naar dezelfde map."
           }
         },
         "pl" : {
@@ -563863,13 +563863,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Er is geen weergave %@. Ga naar weergave bereikt %lld weergave."
+                  "value" : "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergave."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Er is geen weergave %@. Ga naar weergave bereikt %lld weergaven."
+                  "value" : "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergaven."
                 }
               }
             }
@@ -579191,7 +579191,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deze map heeft geen opgeslagen naam en kan dus niet veilig worden gewijzigd."
+            "value" : "Deze map heeft geen opgeslagen naam, dus die kan niet veilig worden gewijzigd."
           }
         },
         "pl" : {
@@ -619620,7 +619620,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit uit staat, wordt bij het weghalen van een boek direct het volgende gedaan: %@."
+            "value" : "Als dit uit staat, zal TextMouth bij het weghalen van een boek meteen %@."
           }
         },
         "pl" : {
@@ -620168,7 +620168,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, wordt bij het weghalen van een boek eerst gevraagd of je kiest voor: %@, of voor bewaren in de bibliotheekmap van TextMouth."
+            "value" : "Als dit aan staat, vraagt TextMouth bij het weghalen van een boek eerst of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren."
           }
         },
         "pl" : {
@@ -625591,7 +625591,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Met %@ blijven de feed en de downloads ervan bewaard, in geen enkele map vermeld totdat Feedinformatie de feed een andere geeft; Verwijder feed… op de rij van de feed verwijdert die."
+            "value" : "Met %@ blijven de feed en de downloads ervan bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van de feed verwijder je die."
           }
         },
         "pl" : {
@@ -625728,7 +625728,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Met %@ blijven de feeds en hun downloads bewaard, in geen enkele map vermeld totdat Feedinformatie elke feed een andere geeft; Verwijder feed… op de rij van een feed verwijdert die."
+            "value" : "Met %@ blijven de feeds en hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van een feed verwijder je die."
           }
         },
         "pl" : {
@@ -639912,7 +639912,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "gedeclareerd in het bestand"
+            "value" : "opgegeven in het bestand"
           }
         },
         "pl" : {
@@ -660771,7 +660771,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "alleen het nieuwste van elke feed"
+            "value" : "alleen het laatst geopende van elke feed"
           }
         },
         "pl" : {
@@ -666151,7 +666151,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "dus TextMouth kan niet zeggen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken."
+            "value" : "dus TextMouth kan niet bepalen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken."
           }
         },
         "pl" : {
