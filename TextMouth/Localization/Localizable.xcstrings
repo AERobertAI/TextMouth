@@ -194918,7 +194918,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã tải về. Đang tải sách."
+            "value" : "Đã tải về. Đang mở sách."
           }
         },
         "zh-Hans" : {
@@ -217098,7 +217098,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thử nghiệm. Một chuỗi phím đa phương tiện hoặc điều khiển AirPods trong một khoảng thời gian ngắn sẽ đặt lại hẹn giờ ngủ gần nhất, tiện khi một bộ hẹn giờ vừa hết."
+            "value" : "Thử nghiệm. Một chuỗi phím đa phương tiện hoặc điều khiển AirPods trong một khoảng thời gian ngắn sẽ khởi động lại hẹn giờ ngủ gần nhất, tiện khi một bộ hẹn giờ vừa hết."
           }
         },
         "zh-Hans" : {
@@ -225298,7 +225298,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không thể xây dựng lại về mặc định"
+            "value" : "Không thể đặt lại về vị trí mặc định"
           }
         },
         "zh-Hans" : {
@@ -254638,7 +254638,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy nhập lại, việc này sẽ hỏi về bản trùng lặp, rồi chọn Thay thế bản hiện có để bản sao lưu trong thư mục dữ liệu thế chỗ, hoặc gỡ nó khỏi thư viện, sau đó di chuyển lại thư mục dữ liệu."
+            "value" : "Hãy nhập lại, việc này sẽ hỏi về bản trùng lặp, rồi chọn Thay thế bản hiện có để bản sao được lưu trong thư mục dữ liệu thế chỗ, hoặc gỡ nó khỏi thư viện, sau đó di chuyển lại thư mục dữ liệu."
           }
         },
         "zh-Hans" : {
@@ -258573,7 +258573,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trong biểu thức chính quy, dấu đô la và số của một nhóm, như $1 hoặc $2, đặt lại phần mà nhóm đó khớp."
+            "value" : "Trong biểu thức chính quy, dấu đô la và số của một nhóm, như $1 hoặc $2, sẽ chèn lại phần mà nhóm đó đã khớp."
           }
         },
         "zh-Hans" : {
@@ -259407,7 +259407,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trong thư mục Nhật ký của máy Mac này"
+            "value" : "Trong thư mục Logs của máy Mac này"
           }
         },
         "zh-Hans" : {
@@ -297296,7 +297296,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy đảm bảo thư mục của nó có thể ghi, rồi thử lại."
+            "value" : "Hãy đảm bảo có thể ghi vào thư mục của nó, rồi thử lại."
           }
         },
         "zh-Hans" : {
@@ -304618,7 +304618,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Các sự kiện điều khiển phương tiện kích hoạt việc khởi động lại. Sự kiện cuối cùng bị tiêu thụ, không chuyển đến phát lại, nên không thể bắt đầu phát âm thanh."
+            "value" : "Các sự kiện điều khiển phương tiện kích hoạt việc khởi động lại. Sự kiện cuối cùng được giữ lại, không chuyển đến phát lại, nên không thể bắt đầu phát âm thanh."
           }
         },
         "zh-Hans" : {
@@ -345448,7 +345448,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không"
+            "value" : "Không có"
           }
         },
         "zh-Hans" : {
@@ -360636,7 +360636,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mở %@, thư mục hiện đang ghi nhật ký, trong Finder."
+            "value" : "Mở %@ trong Finder, thư mục mà nhật ký hiện được ghi vào."
           }
         },
         "zh-Hans" : {
@@ -417294,7 +417294,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thử lại nằm ở đầu cửa sổ Thư viện."
+            "value" : "Nút Thử lại nằm ở đầu cửa sổ Thư viện."
           }
         },
         "zh-Hans" : {
@@ -437120,7 +437120,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đặt phím tắt cho nó bằng %1$@ trong thẻ %2$@; mặc định là %3$@."
+            "value" : "Đặt phím tắt của nó ở mục %1$@ trong tab %2$@; mặc định là %3$@."
           }
         },
         "zh-Hans" : {
