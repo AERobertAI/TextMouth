@@ -1,0 +1,360 @@
+{
+ "language": "hi",
+ "reviews": [
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-20",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ के पास अपना डिफ़ॉल्ट, %2$@, है",
+     "after": "इसका डिफ़ॉल्ट, %2$@, %1$@ के पास है",
+     "why": "meaning: “अपना” pointed back to the other action, saying it has its own default, but this row default is now held by that action"
+    },
+    {
+     "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "before": "%1$@ को “%2$@” चाहिए, जो Mac की अपनी ब्रेल टेबल में से एक है और iPhone पर TextMouth में नहीं है।",
+     "after": "%1$@ को “%2$@” चाहिए, जो Mac की अपनी ब्रेल टेबलों में से एक है और iPhone पर TextMouth में नहीं है।",
+     "why": "grammar: “में से एक” (one of) takes the oblique plural टेबलों, “टेबल में से एक” reads as one entry from inside a table"
+    },
+    {
+     "key": "%@ nests too deeply",
+     "english": "%@ nests too deeply",
+     "before": "%@ बहुत गहराई तक नेस्ट है",
+     "after": "%@ बहुत गहराई तक नेस्टेड है",
+     "why": "grammar: “नेस्ट है” uses the bare verb stem as a state, the adjective is नेस्टेड"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "one": "%2$lld में से %1$@ अध्याय पढ़े नहीं जा सके",
+      "other": "%2$lld में से %1$@ अध्याय पढ़े नहीं जा सके"
+     },
+     "after": {
+      "one": "%2$lld अध्याय में से %1$@ को पढ़ा नहीं जा सका",
+      "other": "%2$lld अध्यायों में से %1$@ को पढ़ा नहीं जा सका"
+     },
+     "why": "grammar: the plural verb disagreed when one chapter of several failed (“5 में से 1 अध्याय पढ़े”), and the को passive reads right for any count"
+    },
+    {
+     "key": "%@ through the book",
+     "english": "%@ through the book",
+     "before": "पुस्तक का %@ भाग",
+     "after": "पुस्तक का %@ पूरा",
+     "why": "meaning: “पुस्तक का 22.9% भाग” named a portion of the book, not how far through it the reader is"
+    },
+    {
+     "key": "About",
+     "english": "About",
+     "before": "इसके बारे में",
+     "after": "परिचय",
+     "why": "term: the About section of iPhone Settings is “परिचय” in Apple Hindi, “इसके बारे में” is a literal about this"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "हर रीडर के टूलबार में एक निर्यात बटन जोड़ता है। फ़ाइल, निर्यात करें दोनों तरह से काम करता है।",
+     "after": "हर रीडर के टूलबार में एक निर्यात बटन जोड़ता है। “फ़ाइल” मेनू का “निर्यात करें” दोनों तरह से काम करता है।",
+     "why": "meaning: the bare path “फ़ाइल, निर्यात करें” read by ear as file, export as a command, it now names the File menu"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "इसके बाद “चलाएँ” अंश को फिर से प्रयास करता है।",
+     "after": "इसके बाद “चलाएँ” अंश को फिर से चलाने का प्रयास करता है।",
+     "why": "grammar: “अंश को फिर से प्रयास करता है” gives प्रयास करना an object it cannot take, Play tries to play the passage again"
+    },
+    {
+     "key": "Chapter %@ could not be played: %@ from the book's package.",
+     "english": "Chapter %1$@ could not be played: %2$@ from the book's package.",
+     "before": "अध्याय %1$@ चलाया नहीं जा सका: पुस्तक के पैकेज से %2$@।",
+     "after": "अध्याय %1$@ चलाया नहीं जा सका: पुस्तक के पैकेज में %2$@।",
+     "why": "grammar: the fragment ends “नहीं मिल रही है”, which takes “में” (not found in), not “से” copied from “from”"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "चुनता है कि चलाएँ और आगे-पीछे जाने के बटन किस इकाई से चलें।",
+     "after": "चुनता है कि “चलाएँ” और आगे-पीछे जाने के बटन किस इकाई से चलें।",
+     "why": "punctuation: the button name needs its quotation marks, or “चुनता है कि चलाएँ” reads as the verb play"
+    },
+    {
+     "key": "Couldn't export %@.",
+     "english": "Couldn't export %@.",
+     "before": "%@ निर्यात नहीं हो सका।",
+     "after": "निर्यात नहीं हो सका: %@।",
+     "why": "grammar: the slot holds the item and its reason, so the verb came after the reason (…नहीं पढ़ी हैं निर्यात नहीं हो सका), it now leads"
+    },
+    {
+     "key": "Couldn't export %@. The first was %@.",
+     "english": "Couldn't export %1$@. The first was %2$@.",
+     "before": "%1$@ निर्यात नहीं हो सके। पहला %2$@ था।",
+     "after": "%1$@ निर्यात नहीं हो सके। पहला: %2$@।",
+     "why": "grammar: the slot holds a file name and its reason, so “पहला %2$@ था” put था after a whole clause"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "%2$@ में से %1$lld निर्यात हो रहे हैं…",
+     "after": "निर्यात हो रहा है: %2$@ में से %1$lld…",
+     "why": "grammar: “में से 1 निर्यात हो रहे हैं” took a plural verb at the first item, the colon form reads right for any count"
+    },
+    {
+     "key": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "english": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "before": "पाँच सेकंड तक अगली दो कुंजी-प्रेस शॉर्टकट नहीं होतीं; TextMouth बताता है कि वे दो बार दबाना बनीं या नहीं।",
+     "after": "पाँच सेकंड तक अगली दो बार कुंजी दबाने पर शॉर्टकट नहीं चलते; TextMouth बताता है कि यह दो बार दबाना माना गया या नहीं।",
+     "why": "natural: the coinage “कुंजी-प्रेस” and “दो बार दबाना बनीं” (presses became pressing twice) do not read as Hindi"
+    },
+    {
+     "key": "From",
+     "english": "From",
+     "before": "से",
+     "after": "कहाँ से",
+     "why": "natural: a bare postposition “से” cannot stand before its value as a label, “कहाँ से” (from where) can"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "%2$lld अध्याय में से %1$@ TextMouth के बंद होने, किसी दूसरे बोले गए ऑडियो निर्यात के शुरू होने, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम के बदलने तक रखे गए हैं। अध्याय %3$@ से आगे बढ़ने के लिए उसी गति और पिच पर वही रेंज निर्यात करें।",
+      "other": "%2$lld अध्याय में से %1$@ TextMouth के बंद होने, किसी दूसरे बोले गए ऑडियो निर्यात के शुरू होने, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम के बदलने तक रखे गए हैं। अध्याय %3$@ से आगे बढ़ने के लिए उसी गति और पिच पर वही रेंज निर्यात करें।"
+     },
+     "after": {
+      "one": "%2$lld अध्याय में से %1$@ को TextMouth के बंद होने, किसी दूसरे बोले गए ऑडियो निर्यात के शुरू होने, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम के बदलने तक रखा गया है। अध्याय %3$@ से आगे बढ़ने के लिए उसी गति और पिच पर वही रेंज निर्यात करें।",
+      "other": "%2$lld अध्यायों में से %1$@ को TextMouth के बंद होने, किसी दूसरे बोले गए ऑडियो निर्यात के शुरू होने, या पुस्तक की आवाज़, टेक्स्ट, प्रतिस्थापन या विराम के बदलने तक रखा गया है। अध्याय %3$@ से आगे बढ़ने के लिए उसी गति और पिच पर वही रेंज निर्यात करें।"
+     },
+     "why": "grammar: “रखे गए हैं” disagreed when one chapter of several was kept, the को passive reads right for any count, with the oblique अध्यायों"
+    },
+    {
+     "key": "Make Double Press",
+     "english": "Make Double Press",
+     "before": "दो बार दबाना बनाएँ",
+     "after": "दो बार दबाने में बदलें",
+     "why": "natural: “दो बार दबाना बनाएँ” (make pressing twice) is a word-for-word copy, the action changes the key to a double press"
+    },
+    {
+     "key": "Make Single Press",
+     "english": "Make Single Press",
+     "before": "एक बार दबाना बनाएँ",
+     "after": "एक बार दबाने में बदलें",
+     "why": "natural: “एक बार दबाना बनाएँ” is a word-for-word copy, the action changes the key back to a single press"
+    },
+    {
+     "key": "Minimize All",
+     "english": "Minimize All",
+     "before": "सभी छोटा करें",
+     "after": "सभी को छोटा करें",
+     "why": "grammar: “छोटा” with “सभी” needs the object marker को (or agreement), “सभी छोटा करें” is broken"
+    },
+    {
+     "key": "Navigate",
+     "english": "Navigate",
+     "before": "नेविगेट",
+     "after": "नेविगेट करें",
+     "why": "natural: the bare English stem “नेविगेट” is not a Hindi word without करें, as the Edit menu has संपादित करें"
+    },
+    {
+     "key": "Open the book once, then try again.",
+     "english": "Open the book once, then try again.",
+     "before": "पुस्तक को एक बार खोलें, फिर से प्रयास करें।",
+     "after": "पुस्तक को एक बार खोलें, फिर दोबारा प्रयास करें।",
+     "why": "meaning: “खोलें, फिर से प्रयास करें” lost “then”, so the two steps read as one (open it once, try again)"
+    },
+    {
+     "key": "Pause playback after:",
+     "english": "Pause playback after:",
+     "before": "इसके बाद प्लेबैक पॉज़ करें:",
+     "after": "इतनी देर बाद प्लेबैक पॉज़ करें:",
+     "why": "meaning: “इसके बाद” reads as afterwards, the minute presets that follow say after how long"
+    },
+    {
+     "key": "Percent through the book",
+     "english": "Percent through the book",
+     "before": "पुस्तक में कितने प्रतिशत आगे",
+     "after": "पुस्तक में प्रतिशत स्थिति",
+     "why": "meaning: “कितने प्रतिशत आगे” (how many percent ahead) suggests a move forward from here, but the field takes an absolute position from 0 to 100"
+    },
+    {
+     "key": "Read Only",
+     "english": "Read Only",
+     "before": "केवल पढ़ने योग्य",
+     "after": "केवल पढ़ने के लिए",
+     "why": "term: read-only is “केवल पढ़ने के लिए” in Hindi software, “केवल पढ़ने योग्य” reads as only worth reading"
+    },
+    {
+     "key": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "english": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "before": "शॉर्टकट दर्ज किया जा रहा है। कोई कुंजी दबाएँ, या दो बार दबाने के लिए उसे दो बार दबाएँ।",
+     "after": "शॉर्टकट दर्ज किया जा रहा है। कोई कुंजी दबाएँ, या दो बार दबाने वाले शॉर्टकट के लिए उसे दो बार दबाएँ।",
+     "why": "natural: “दो बार दबाने के लिए उसे दो बार दबाएँ” (to press twice, press it twice) is circular in Hindi, the double press is a kind of shortcut"
+    },
+    {
+     "key": "Still starting: %@",
+     "english": "Still starting: %@",
+     "before": "अभी शुरू हो रही है: %@",
+     "after": "अभी भी शुरू हो रही है: %@",
+     "why": "meaning: “अभी” with the progressive reads as now, the announcement says the book is still starting"
+    },
+    {
+     "key": "Stop At",
+     "english": "Stop At",
+     "before": "इस जगह रोकें",
+     "after": "कहाँ रोकें",
+     "why": "natural: the heading “इस जगह रोकें” (stop at this place) points at nothing, the choices below it say where to stop"
+    },
+    {
+     "key": "Switch to a Library or book window, then choose Export again.",
+     "english": "Switch to a Library or book window, then choose Export again.",
+     "before": "लाइब्रेरी या पुस्तक की विंडो पर जाएँ, फिर निर्यात करें दोबारा चुनें।",
+     "after": "लाइब्रेरी या पुस्तक की विंडो पर जाएँ, फिर “निर्यात करें” दोबारा चुनें।",
+     "why": "punctuation: the command name needs its quotation marks, as the other sentences have, or “निर्यात करें दोबारा चुनें” reads as two commands"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "before": "टेक्स्ट अपडेट नहीं हुआ: %@ की संपादित ट्रांसक्रिप्ट ऐसे अध्याय में शब्द जोड़ती है जिसमें कोई बोली नहीं है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें; तब तक पुस्तक का पुराना टेक्स्ट बना रहता है।",
+     "after": "टेक्स्ट अपडेट नहीं हुआ: %@ की संपादित ट्रांसक्रिप्ट ऐसे अध्याय में शब्द जोड़ती है जिसमें कुछ भी बोला नहीं गया है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें; तब तक पुस्तक का पुराना टेक्स्ट बना रहता है।",
+     "why": "meaning: “कोई बोली नहीं” reads first as no dialect, the chapter is one in which nothing is spoken"
+    },
+    {
+     "key": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
+     "english": "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens.",
+     "before": "टेक्स्ट अपडेट नहीं हुआ: %@ की मूल फ़ाइल भी बदल गई। पुस्तक अगली बार खुलने पर उसका टेक्स्ट उसी से फिर से पढ़ा जाता है।",
+     "after": "टेक्स्ट अपडेट नहीं हुआ: %@ की मूल फ़ाइल भी बदल गई। अगली बार पुस्तक खुलने पर उसका टेक्स्ट उसी से फिर से पढ़ा जाएगा।",
+     "why": "grammar: “पुस्तक” stood with no verb of its own, and the next opening is in the future, so पढ़ा जाएगा"
+    },
+    {
+     "key": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "english": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "before": "टेक्स्ट अपडेट नहीं हुआ: %@ की ट्रांसक्रिप्ट भी बदल गई। पुस्तक अगली बार खुलने पर उसका टेक्स्ट उसी से फिर से लिखा जाता है।",
+     "after": "टेक्स्ट अपडेट नहीं हुआ: %@ की ट्रांसक्रिप्ट भी बदल गई। अगली बार पुस्तक खुलने पर उसका टेक्स्ट उसी से फिर से लिखा जाएगा।",
+     "why": "grammar: “पुस्तक” stood with no verb of its own, and the next opening is in the future, so लिखा जाएगा"
+    },
+    {
+     "key": "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@).",
+     "english": "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@).",
+     "before": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबल में से एक है (liblouis %@)।",
+     "after": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबलों में से एक है (liblouis %@)।",
+     "why": "grammar: “में से एक” (one of) takes the oblique plural टेबलों, “टेबल में से एक” reads as one entry from inside a table"
+    },
+    {
+     "key": "The chosen table is one of this Mac's VoiceOver braille tables.",
+     "english": "The chosen table is one of this Mac's VoiceOver braille tables.",
+     "before": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबल में से एक है।",
+     "after": "चुनी गई टेबल इस Mac की VoiceOver ब्रेल टेबलों में से एक है।",
+     "why": "grammar: “में से एक” (one of) takes the oblique plural टेबलों, “टेबल में से एक” reads as one entry from inside a table"
+    },
+    {
+     "key": "This file's markup would take TextMouth far too long to read.",
+     "english": "This file's markup would take TextMouth far too long to read.",
+     "before": "इस फ़ाइल का मार्कअप TextMouth को पढ़ने में बहुत अधिक समय लेगा।",
+     "after": "इस फ़ाइल के मार्कअप को पढ़ने में TextMouth को बहुत अधिक समय लगेगा।",
+     "why": "natural: “मार्कअप TextMouth को समय लेगा” copies take X time, Hindi says X को पढ़ने में Y को समय लगेगा"
+    },
+    {
+     "key": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+     "english": {
+      "one": "This range has %lld heading, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+      "other": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each."
+     },
+     "before": {
+      "one": "इस रेंज में %lld हेडिंग है, लेकिन MP3 में केवल पहली %@ के लिए अध्याय होते हैं। हर एक के लिए अध्याय पाने के लिए M4B चुनें।",
+      "other": "इस रेंज में %lld हेडिंग है, लेकिन MP3 में केवल पहली %@ के लिए अध्याय होते हैं। हर एक के लिए अध्याय पाने के लिए M4B चुनें।"
+     },
+     "after": {
+      "one": "इस रेंज में %lld हेडिंग है, लेकिन MP3 में केवल पहली %@ के लिए अध्याय होते हैं। हर एक के लिए अध्याय पाने के लिए M4B चुनें।",
+      "other": "इस रेंज में %lld हेडिंग हैं, लेकिन MP3 में केवल पहली %@ के लिए अध्याय होते हैं। हर एक के लिए अध्याय पाने के लिए M4B चुनें।"
+     },
+     "why": "grammar: the plural form said “%lld हेडिंग है”, a plural count takes हैं"
+    },
+    {
+     "key": "To",
+     "english": "To",
+     "before": "तक",
+     "after": "कहाँ तक",
+     "why": "natural: a bare postposition “तक” cannot stand before its value as a label, “कहाँ तक” (up to where) can, as From is now कहाँ से"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "english": "Toggle Bookmark",
+     "before": "बुकमार्क चालू/बंद करें",
+     "after": "बुकमार्क जोड़ें/हटाएँ",
+     "why": "natural: a bookmark is added or removed at the position, not switched on and off (चालू/बंद)"
+    },
+    {
+     "key": "Try a Double Press",
+     "english": "Try a Double Press",
+     "before": "दो बार दबाने का प्रयास करें",
+     "after": "दो बार दबाकर देखें",
+     "why": "natural: the button tests the timing, which Hindi says as करके देखें, “का प्रयास करें” is an effortful attempt"
+    },
+    {
+     "key": "Type a title, then save again.",
+     "english": "Type a title, then save again.",
+     "before": "शीर्षक टाइप करें, फिर से सहेजें।",
+     "after": "शीर्षक टाइप करें, फिर दोबारा सहेजें।",
+     "why": "meaning: “फिर से सहेजें” merged then and again, so the two steps read as one (type a title, save again)"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "सीधे उद्धरण चिह्न टाइप करें: TextEdit में, संपादित करें, प्रतिस्थापन के अंतर्गत स्मार्ट कोटेशन बंद करें।",
+     "after": "सीधे उद्धरण चिह्न टाइप करें: TextEdit के “संपादित करें” मेनू में, “प्रतिस्थापन” के अंतर्गत “स्मार्ट कोटेशन” बंद करें।",
+     "why": "meaning: the bare menu name “संपादित करें” read as the command edit, by ear it now names the Edit menu"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next book if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet"
+     },
+     "before": {
+      "one": "जब %lld मिनट या उससे कम बचे हों, तो अगला पुस्तक डाउनलोड करता है यदि वह अभी इस Mac पर नहीं है।",
+      "other": "जब %lld मिनट या उससे कम बचे हों, तो अगला पुस्तक डाउनलोड करता है यदि वह अभी इस Mac पर नहीं है।"
+     },
+     "after": {
+      "one": "जब %lld मिनट या उससे कम बचे हों, तो अगली पुस्तक डाउनलोड करता है यदि वह अभी इस Mac पर नहीं है।",
+      "other": "जब %lld मिनट या उससे कम बचे हों, तो अगली पुस्तक डाउनलोड करता है यदि वह अभी इस Mac पर नहीं है।"
+     },
+     "why": "grammar: पुस्तक is feminine, so अगली पुस्तक, not अगला पुस्तक"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "“%1$@” के साथ, पूरी हो चुकी पुस्तक पर चलाएँ बताता है कि वह पूरी हो चुकी है; “%2$@” के साथ, चलाएँ उसे शुरुआत से फिर शुरू करता है।",
+     "after": "“%1$@” के साथ, पूरी हो चुकी पुस्तक पर “चलाएँ” बताता है कि वह पूरी हो चुकी है; “%2$@” के साथ, “चलाएँ” उसे शुरुआत से फिर शुरू करता है।",
+     "why": "punctuation: the button name needs its quotation marks, or “पुस्तक पर चलाएँ बताता है” reads as the verb play"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "इस निर्यात के इस और हर दूसरे बहुत गहरे नेस्ट अध्याय को बिना दोबारा पूछे पंक्तियों के सादे अनुच्छेदों के रूप में लिखता है।",
+     "after": "इस निर्यात के इस और हर दूसरे बहुत गहराई तक नेस्टेड अध्याय को बिना दोबारा पूछे पंक्तियों के सादे अनुच्छेदों के रूप में लिखता है।",
+     "why": "grammar: “नेस्ट अध्याय” uses the bare verb stem as an adjective, the adjective is नेस्टेड"
+    },
+    {
+     "key": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
+     "english": "it adds words to a chapter with no speech, where they can't be kept. Remove them and save again, and the text shows.",
+     "before": "वह ऐसे अध्याय में शब्द जोड़ता है जिसमें कोई बोली नहीं है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें, तब टेक्स्ट दिखेगा।",
+     "after": "वह ऐसे अध्याय में शब्द जोड़ता है जिसमें कुछ भी बोला नहीं गया है, जहाँ उन्हें रखा नहीं जा सकता। उन्हें हटाएँ और फिर से सहेजें, तब टेक्स्ट दिखेगा।",
+     "why": "meaning: “कोई बोली नहीं” reads first as no dialect, the chapter is one in which nothing is spoken"
+    }
+   ]
+  }
+ ]
+}
