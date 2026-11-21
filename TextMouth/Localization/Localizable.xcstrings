@@ -9200,7 +9200,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ має типову комбінацію: %2$@"
+            "value" : "«%1$@» має типову комбінацію цієї дії: %2$@"
           }
         },
         "vi" : {
@@ -20210,7 +20210,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ повернуто до типового: %2$@"
+            "value" : "«%1$@» скинуто до типових: %2$@"
           }
         },
         "vi" : {
@@ -118932,7 +118932,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Знак at"
+            "value" : "Символ електронної пошти"
           }
         },
         "vi" : {
@@ -137012,7 +137012,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Карет"
+            "value" : "Символ вставки"
           }
         },
         "vi" : {
@@ -151643,7 +151643,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Виберіть програму, якою редагувати маніфест «%@»."
+            "value" : "Виберіть програму для редагування маніфесту «%@»."
           }
         },
         "vi" : {
@@ -151780,7 +151780,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Виберіть програму, якою редагувати текст «%@»."
+            "value" : "Виберіть програму для редагування тексту «%@»."
           }
         },
         "vi" : {
@@ -154931,7 +154931,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Вибір робить комбінацію вашою; «Скинути до типових» відновлює типове місце її дії."
+            "value" : "Ваш вибір замінює типове значення; «Скинути до типових» відновлює вікна, де комбінація діє типово."
           }
         },
         "vi" : {
@@ -156724,7 +156724,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Закрити все"
+            "value" : "Закрити всі"
           }
         },
         "vi" : {
@@ -188760,7 +188760,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Показ"
+            "value" : "Показувати"
           }
         },
         "vi" : {
@@ -205516,7 +205516,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Редаговані"
+            "value" : "Можна редагувати"
           }
         },
         "vi" : {
@@ -209352,7 +209352,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Покращена"
+            "value" : "Вдосконалена"
           }
         },
         "vi" : {
@@ -247496,7 +247496,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Сховати інші"
+            "value" : "Сховати решту"
           }
         },
         "vi" : {
@@ -247633,7 +247633,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Сховати TextMouth"
+            "value" : "Сховати програму TextMouth"
           }
         },
         "vi" : {
@@ -276630,7 +276630,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Перехід до %@ у записі."
+            "value" : "Перехід у записі: %@."
           }
         },
         "vi" : {
@@ -276767,7 +276767,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Перехід, відсоток: %@."
+            "value" : "Перехід до %@ відсотка."
           }
         },
         "vi" : {
@@ -276904,7 +276904,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Перехід до %@."
+            "value" : "Перехід: %@."
           }
         },
         "vi" : {
@@ -305845,7 +305845,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Згорнути все"
+            "value" : "Згорнути всі"
           }
         },
         "vi" : {
@@ -331437,7 +331437,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Наступна"
+            "value" : "Далі"
           }
         },
         "vi" : {
@@ -353338,7 +353338,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Знак номера"
+            "value" : "Решітка"
           }
         },
         "vi" : {
@@ -369790,7 +369790,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Вставити та узгодити стиль"
+            "value" : "Вставити і допасувати стиль"
           }
         },
         "vi" : {
@@ -400967,7 +400967,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Відпустити елементи керування медіа"
+            "value" : "Звільнити керування медіа"
           }
         },
         "vi" : {
@@ -406048,7 +406048,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Вилучити комбінацію %1$@ з %2$@"
+            "value" : "Вилучити комбінацію %1$@ з дії «%2$@»"
           }
         },
         "vi" : {
