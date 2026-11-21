@@ -18911,7 +18911,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 已将 %2$@ 的冲突副本搁置为“%3$@”，位于 %4$@。"
+            "value" : "%1$@ 已将 %2$@ 的冲突副本另存为“%3$@”，位于 %4$@。"
           }
         },
         "zh-Hant" : {
@@ -135662,7 +135662,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "为资料库选取新位置。"
+            "value" : "为资料库选取新位置"
           }
         },
         "zh-Hant" : {
@@ -328420,7 +328420,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "最后打开"
+            "value" : "最近打开"
           }
         },
         "zh-Hant" : {
@@ -425481,7 +425481,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "不再说明此编码为推测所得。不会重新读取图书。"
+            "value" : "不再说明此盲文码为推测所得。不会重新读取图书。"
           }
         },
         "zh-Hant" : {
@@ -550942,7 +550942,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "未读取：%@ 在 %lld 秒后仍未从云端到达，%@"
+                  "value" : "未读取：%@ 在 %lld 秒后仍未从云端下载完成，%@"
                 }
               }
             }
@@ -551082,7 +551082,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未读取：%1$@ 未再次请求读取，因为驱动器尚未响应之前的读取，%2$@"
+            "value" : "未读取：未再次请求读取 %1$@，因为驱动器尚未响应之前的读取请求，%2$@"
           }
         },
         "zh-Hant" : {
@@ -553537,7 +553537,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "上移一级"
+            "value" : "前往上一级"
           }
         },
         "zh-Hant" : {
@@ -560103,7 +560103,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "网页存档"
+            "value" : "网页归档"
           }
         },
         "zh-Hant" : {
@@ -586708,7 +586708,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "排序中最前的"
+            "value" : "排序靠前"
           }
         },
         "zh-Hant" : {
