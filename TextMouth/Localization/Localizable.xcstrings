@@ -521474,7 +521474,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bokens text har ändringar som TextMouth inte kunde kopiera, så den lämnar texten som den är."
+            "value" : "Bokens text har ändringar som TextMouth inte kunde kopiera, så texten lämnas som den är."
           }
         },
         "th" : {
@@ -521611,7 +521611,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bokens text finns bara i iCloud, så TextMouth lämnar den. Hämta boken och försök sedan igen."
+            "value" : "Bokens text finns bara i iCloud, så TextMouth låter den vara. Hämta boken och försök sedan igen."
           }
         },
         "th" : {
@@ -539012,7 +539012,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bibliotekets mapp som inspelningen sparas i."
+            "value" : "Biblioteksmappen som inspelningen sparas i."
           }
         },
         "th" : {
@@ -559999,7 +559999,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkriptionen finns bara i iCloud, så TextMouth lämnar den. Hämta boken och försök sedan igen."
+            "value" : "Transkriptionen finns bara i iCloud, så TextMouth låter den vara. Hämta boken och försök sedan igen."
           }
         },
         "th" : {
@@ -584053,7 +584053,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tid att transkribera: %@."
+            "value" : "Tid för transkribering: %@."
           }
         },
         "th" : {
@@ -584190,7 +584190,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tid att transkribera: inte känd än."
+            "value" : "Tid för transkribering: inte känd än."
           }
         },
         "th" : {
@@ -601948,7 +601948,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ångra uppstädning lägger tillbaka transkriptionen från före."
+            "value" : "Ångra uppstädning återställer den tidigare transkriptionen."
           }
         },
         "th" : {
@@ -602085,7 +602085,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ångra eller gör om tillbaka till ljudet som det senast sparades."
+            "value" : "Ångra eller gör om tills ljudet är som när det senast sparades."
           }
         },
         "th" : {
@@ -602222,7 +602222,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ångrar varje redigering, tillbaka till originalet. Gör om tar tillbaka dem."
+            "value" : "Ångrar varje redigering, tillbaka till originalet; Gör om återställer dem."
           }
         },
         "th" : {
@@ -611007,7 +611007,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "VoiceOver läser upp nivån under inspelning. Över högtalare kan dess tal spelas in."
+            "value" : "VoiceOver läser upp nivån under inspelning. Om du använder högtalare kan talet spelas in."
           }
         },
         "th" : {
