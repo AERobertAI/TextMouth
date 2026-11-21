@@ -66,6 +66,8 @@ TEST_METHOD = re.compile(r"^[ \t]*" + _BEFORE + r"func\s+(test[A-Za-z0-9_]*)\s*\
 # - the app's own ways in, which `@testable import TextMouth` exposes: its players, its recorder, and its audio session;
 # - calls that start sound: `togglePlay()`, `playOrResume()`, `playSelection()`, `playAudioChapter()`,
 #   `startPunchIn()` and `.play(at:)` (any arguments), and any call beginning with play or speak, and `resume(` (a Swift continuation's is not one; `resumeIndexWrites(` is a library helper).
+#   A call on a `…Wording` type (`PhoneReaderWording.playHint(movingBy:)`) only returns the text a control says, so it is
+#   not one either; the same name called on anything else still counts.
 # A bare `record(...)` is not read: in these tests it is the feed store, the log, or a test's own list recording a value, and the
 # recorder types and `startRecording` are named above.
 # A false red is the safe side. The check of the unit bundle's files (test_run_ios_ui_tests.py) and the tests census
@@ -74,7 +76,7 @@ SOUND_PATTERN = re.compile(
     r"AVFoundation|AVAudio|AVSpeech|AVPlayer|AVQueuePlayer|AudioToolbox|AudioUnit|CoreAudio|MediaPlayer|import Speech|"
     r"SpeechEngine|AudioEngine|PhoneAudioSession|PhoneAppModel|ReaderViewModel|"
     r"Recorder|RecordingService|togglePlay|playOrResume|playSelection|playAudioChapter|startPunchIn|startRecording|"
-    r"\.(?:play|speak)\(|\b(?:play|speak)\w*\(|(?<!continuation\.)\bresume\("
+    r"\.(?:play|speak)\(|(?<!Wording\.)\b(?:play|speak)\w*\(|(?<!continuation\.)\bresume\("
 )
 
 

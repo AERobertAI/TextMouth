@@ -28,8 +28,10 @@ extension XCTestCase {
     /// wait cannot do there (B22).
     @MainActor
     func waitForMainQueueTurnAsync() async {
-        await withCheckedContinuation { (turn: CheckedContinuation<Void, Never>) in
-            DispatchQueue.main.async { turn.resume() }
+        // Named `continuation`, the one name the iPhone unit bundle's sound check lets resume
+        // (Scripts/agents/ios_ui_tests.py), since a continuation's resume makes no sound.
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.main.async { continuation.resume() }
         }
     }
 

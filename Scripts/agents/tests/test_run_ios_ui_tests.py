@@ -612,6 +612,15 @@ class TheUnitTestsMakeNoSoundTests(unittest.TestCase):
             self.assertIsNotNone(self.SOUNDS.search(source), source)
         self.assertIsNone(self.SOUNDS.search("XCTAssertEqual(button.accessibilityLabel, \"Play\")"))
 
+    def test_a_wording_types_text_and_a_named_continuation_are_not_sound(self):
+        """The two allowances: a `…Wording` type's play… text and `continuation.resume()`; the same calls on anything else still count."""
+        for quiet in ("XCTAssertEqual(PhoneReaderWording.playHint(movingBy: .sentence), \"Moves back.\")",
+                      "let hint = ReaderWording.speakHint(for: unit)", "DispatchQueue.main.async { continuation.resume() }"):
+            self.assertIsNone(self.SOUNDS.search(quiet), quiet)
+        for loud in ("reader.playHint(movingBy: .sentence)", "playHint(movingBy: .sentence)", "Wordings.play(book)",
+                     "DispatchQueue.main.async { turn.resume() }"):
+            self.assertIsNotNone(self.SOUNDS.search(loud), loud)
+
     # A stopped reader built the way PhoneTextFieldScalingTests builds one: the one helper the rule lets name ReaderViewModel.
     HELPER = (
         "final class SheetTests: XCTestCase {\n"
