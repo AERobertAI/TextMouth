@@ -8420,7 +8420,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 已使用其默认键 %2$@"
+            "value" : "%1$@ 已占用此操作的默认键 %2$@"
           }
         },
         "zh-Hant" : {
@@ -20536,7 +20536,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 重试，%2$@ 不存储并退出，%3$@ 保持 TextMouth 打开。"
+            "value" : "“%1$@”会再次尝试存储，“%2$@”会退出且不存储，“%3$@”会让 TextMouth 保持打开。"
           }
         },
         "zh-Hant" : {
@@ -20911,7 +20911,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 已在菜单中使用"
+            "value" : "菜单命令“%@”已使用此键"
           }
         },
         "zh-Hant" : {
@@ -21923,7 +21923,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 未添加回来：无法先保留其包内的文本副本，因此 TextMouth 保持文本不变。"
+            "value" : "%@ 未重新添加到资料库：无法先保留其包内文本的副本，因此 TextMouth 未改动文本。"
           }
         },
         "zh-Hant" : {
@@ -96447,7 +96447,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "添加计数所依据的速度，例如不是 1 倍速的有声书的 2.0x，或文本图书的每分钟 500 字，用于阅读器、“我在哪里”、拷贝阅读位置以及章节标题表单的时长。"
+            "value" : "注明时间所依据的速度（例如非 1 倍速的有声书为 2.0x，文本图书为每分钟 500 字），用于阅读器、“我在哪里”、“拷贝阅读位置”和章节标题表单中的时长。"
           }
         },
         "zh-Hant" : {
@@ -106384,7 +106384,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "艺术家"
+            "value" : "艺人"
           }
         },
         "zh-Hant" : {
@@ -106509,7 +106509,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "艺术家或讲述者"
+            "value" : "艺人或讲述者"
           }
         },
         "zh-Hant" : {
@@ -141245,7 +141245,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "选取后该快捷键即归你所有；“重置为默认设置”会恢复其默认适用范围。"
+            "value" : "选取后，此快捷键即成为你的自定设置；“重置为默认设置”会恢复其默认适用范围。"
           }
         },
         "zh-Hant" : {
@@ -155513,7 +155513,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法将元数据存储到资料库中“%@”的副本，因为该文件已从资料库中缺失。"
+            "value" : "无法将元数据存储到资料库中“%@”的副本，因为资料库中已没有该文件。"
           }
         },
         "zh-Hant" : {
@@ -184004,7 +184004,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每行以 <!-- chapter: 开头的内容开始一个章节；请保留这些行。"
+            "value" : "每个以 <!-- chapter: 开头的行标示一个章节的开始；请保留这些行。"
           }
         },
         "zh-Hant" : {
@@ -227686,7 +227686,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "第二次按键必须在多久内跟上第一次。单按和连按有不同操作的键，会等待这么久后才执行单按的操作。"
+            "value" : "两次按键之间允许的最长间隔。单按和连按操作不同的键，会等待这段时间后再执行单按操作。"
           }
         },
         "zh-Hant" : {
@@ -250425,7 +250425,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "唯一的页是 %@。"
+            "value" : "此图书仅有一页：%@。"
           }
         },
         "zh-Hant" : {
@@ -252693,7 +252693,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳转到页 %1$@，即标注为 %3$@ 的页面中的%2$@个。"
+            "value" : "已跳转到第 %1$@ 页，即标注为 %3$@ 的%2$@个页面。"
           }
         },
         "zh-Hant" : {
@@ -252818,7 +252818,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳转到页 %@。"
+            "value" : "已跳转到第 %@ 页。"
           }
         },
         "zh-Hant" : {
@@ -278388,7 +278388,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "元数据已存储到资料库及资料库中“%@”的副本。"
+            "value" : "元数据已存储到资料库中“%@”的副本。"
           }
         },
         "zh-Hant" : {
@@ -354530,7 +354530,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "现在退出会使这些更改不被存储："
+            "value" : "现在退出将不会存储以下更改："
           }
         },
         "zh-Hant" : {
