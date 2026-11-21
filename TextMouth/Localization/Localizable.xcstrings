@@ -12026,7 +12026,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ in"
+            "value" : "%@ in i inspelningen"
           }
         },
         "th" : {
@@ -346426,7 +346426,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Inget av de %lld kapitlen kunde läsas"
+                  "value" : "Det enda kapitlet kunde inte läsas"
                 }
               },
               "other" : {
@@ -353718,7 +353718,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kunde inte köras på %@ av %lld sidor, så text som bara finns i deras bilder saknas: %@."
+                  "value" : "OCR kunde inte köras på %@ av %lld sida, så text som bara finns i dess bilder saknas: %@."
                 }
               },
               "other" : {
@@ -446978,7 +446978,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet för böcker med mer än en sida."
+            "value" : "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet, för böcker med mer än en sida."
           }
         },
         "th" : {
@@ -476006,7 +476006,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skrivs från den igen nästa gång boken öppnas."
+            "value" : "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skapas på nytt från den nästa gång boken öppnas."
           }
         },
         "th" : {
@@ -488489,7 +488489,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth har inte läst det senaste sparandet än."
+            "value" : "TextMouth har inte läst in den senast sparade versionen än."
           }
         },
         "th" : {
@@ -489641,7 +489641,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth gör sig klart innan det avslutas: %@. Det avslutas när det är klart."
+            "value" : "TextMouth gör klart innan det avslutas: %@. Det avslutas när det är klart."
           }
         },
         "th" : {
@@ -535774,7 +535774,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mappen innehåller %lld DAISY-böcker (%@)."
+                  "value" : "Mappen innehåller %lld DAISY-bok (%@)."
                 }
               },
               "other" : {
@@ -548280,13 +548280,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "De andra %lld kapitlen har ingen text."
+                  "value" : "Det övriga kapitlet har ingen text."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "De andra %lld kapitlen har ingen text."
+                  "value" : "De övriga %lld kapitlen har ingen text."
                 }
               }
             }
@@ -548486,7 +548486,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det andra kapitlet har ingen text."
+            "value" : "Det övriga kapitlet har ingen text."
           }
         },
         "th" : {
@@ -572788,7 +572788,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Den här boken har %lld sidor, från %@ till %@."
+                  "value" : "Den här boken har %lld sida, från %@ till %@."
                 }
               },
               "other" : {
@@ -583231,7 +583231,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tid in"
+            "value" : "Starttid"
           }
         },
         "th" : {
