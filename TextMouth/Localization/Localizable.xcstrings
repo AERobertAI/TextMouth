@@ -85060,7 +85060,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Diğer her kitap The, A ve An sözcüklerini atlar."
+            "value" : "Diğer her kitap The, A ve An kelimelerini atlar."
           }
         },
         "uk" : {
@@ -116299,7 +116299,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The, A ve An sözcüklerinin, başlığın başında sıralarken ve başlığın ilk harflerini yazarken sayılıp sayılmayacağını seçer."
+            "value" : "The, A ve An kelimelerinin, başlığın başında sıralarken ve başlığın ilk harflerini yazarken sayılıp sayılmayacağını seçer."
           }
         },
         "uk" : {
@@ -133960,13 +133960,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Varsayılan Hız: dakikada %lld sözcük"
+                  "value" : "Varsayılan Hız: dakikada %lld kelime"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Varsayılan Hız: dakikada %lld sözcük"
+                  "value" : "Varsayılan Hız: dakikada %lld kelime"
                 }
               }
             }
@@ -227512,7 +227512,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yalnızca tam sözcükle eşleştir"
+            "value" : "Yalnızca tam kelimeyle eşleştir"
           }
         },
         "uk" : {
@@ -255100,7 +255100,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” için podcast bulunamadı. Başka sözcükler deneyin veya beslemenin adresini yazın."
+            "value" : "“%@” için podcast bulunamadı. Başka kelimeler deneyin veya beslemenin adresini yazın."
           }
         },
         "uk" : {
@@ -306858,7 +306858,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Değiştirmek, mevcut kopyanın okuma konumunu ve yer imlerini (bulunabildikleri yerde yeni metindeki sözcüklerine taşınarak), ayrıca ayarlarını, klasörünü ve Okuma Listesindeki yerini korur. Metninde yapılmış bir düzenleme uygulanmaz; yeni metnin yanında bir kopya olarak saklanır."
+            "value" : "Değiştirmek, mevcut kopyanın okuma konumunu ve yer imlerini (bulunabildikleri yerde yeni metindeki kelimelerine taşınarak), ayrıca ayarlarını, klasörünü ve Okuma Listesindeki yerini korur. Metninde yapılmış bir düzenleme uygulanmaz; yeni metnin yanında bir kopya olarak saklanır."
           }
         },
         "uk" : {
@@ -391259,7 +391259,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Braille bu kodla yeniden yazıya çevrilir. Seçimin doğru olup olmadığını hiçbir şey denetlemez. Sözcükler yanlış okunuyorsa başka bir kod seçin."
+            "value" : "Braille bu kodla yeniden yazıya çevrilir. Seçimin doğru olup olmadığını hiçbir şey denetlemez. Kelimeler yanlış okunuyorsa başka bir kod seçin."
           }
         },
         "uk" : {
@@ -462849,7 +462849,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Artikeller yok sayıldığında, üst verisi Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe olan bir kitap, o dilin Le ve Die gibi artiklerini ve The sözcüğünü atlar."
+            "value" : "Artikeller yok sayıldığında, üst verisi Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe olan bir kitap, o dilin Le ve Die gibi artiklerini ve The kelimeyi atlar."
           }
         },
         "uk" : {
@@ -463556,7 +463556,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Etkinleştirildiğinde, sözcük sınırları için kalıpta \\b kullanın."
+            "value" : "Etkinleştirildiğinde, kelime sınırları için kalıpta \\b kullanın."
           }
         },
         "uk" : {
@@ -465380,7 +465380,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sözcüklerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider."
+            "value" : "Kelimelerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider."
           }
         },
         "uk" : {
@@ -465481,7 +465481,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sözcüklerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider."
+            "value" : "Kelimelerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider."
           }
         },
         "uk" : {
@@ -466862,7 +466862,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yalnızca tam sözcük"
+            "value" : "Yalnızca tam kelime"
           }
         },
         "uk" : {
@@ -469203,7 +469203,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sözcük Sayısı"
+            "value" : "Kelime Sayısı"
           }
         },
         "uk" : {
@@ -469405,7 +469405,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sözcük sayısı"
+            "value" : "Kelime sayısı"
           }
         },
         "uk" : {
@@ -472501,7 +472501,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yeriniz ve yer imleriniz sözcükleriyle birlikte taşınır."
+            "value" : "Yeriniz ve yer imleriniz kelimeleriyle birlikte taşınır."
           }
         },
         "uk" : {
@@ -506254,7 +506254,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "sözcük"
+            "value" : "kelime"
           }
         },
         "uk" : {
