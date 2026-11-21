@@ -2,6 +2,698 @@
  "language": "fr",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ Copy",
+     "english": "%@ Copy",
+     "before": "Copie de %@",
+     "after": "%@ copie",
+     "why": "term: the French Finder names a duplicate “name copie”, not “Copie de name”"
+    },
+    {
+     "key": "%@ Copy %@",
+     "english": "%1$@ Copy %2$@",
+     "before": "Copie %2$@ de %1$@",
+     "after": "%1$@ copie %2$@",
+     "why": "term: the French Finder numbers later duplicates “name copie 2”; “Copie 2 de name” reads oddly"
+    },
+    {
+     "key": "%@ is not a valid library folder location.",
+     "english": "%@ is not a valid library folder location.",
+     "before": "%@ n’est pas un emplacement valide de dossier de bibliothèque.",
+     "after": "%@ n’est pas un emplacement valide pour un dossier de bibliothèque.",
+     "why": "natural: four nouns chained with “de” copied the English compound"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "english": "%@ may be signed out or not running.",
+     "before": "%@ n’est peut-être pas connecté ou ne fonctionne pas.",
+     "after": "%@ est peut-être déconnecté ou n’est pas ouvert.",
+     "why": "meaning: “ne fonctionne pas” says broken; “not running” is an app that is not open"
+    },
+    {
+     "key": "%@ read",
+     "english": "%@ read",
+     "before": "%@ lu",
+     "after": "lu à %@",
+     "why": "natural: “42 pour cent lu” copies the English order; French says “lu à 42 pour cent”"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "many": "%@, ses sous-dossiers et son contenu de %lld de livres seront retirés de la bibliothèque.",
+      "one": "%@, ses sous-dossiers et son contenu de %lld livre seront retirés de la bibliothèque.",
+      "other": "%@, ses sous-dossiers et son contenu de %lld livres seront retirés de la bibliothèque."
+     },
+     "after": {
+      "many": "%@, ses sous-dossiers et les %lld de livres qu’il contient seront retirés de la bibliothèque.",
+      "one": "%@, ses sous-dossiers et %lld livre qu’il contient seront retirés de la bibliothèque.",
+      "other": "%@, ses sous-dossiers et les %lld livres qu’il contient seront retirés de la bibliothèque."
+     },
+     "why": "natural: “son contenu de 3 livres” is not French; “les 3 livres qu’il contient”, as the one-book string says"
+    },
+    {
+     "key": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "english": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "before": "%@ : des modifications ne sont pas enregistrées, et changer de bibliothèque les perdrait.",
+     "after": "%@ : des modifications ne sont pas enregistrées, et elles seraient perdues si vous changiez de bibliothèque.",
+     "why": "natural: “changer de bibliothèque les perdrait” makes switching the one that loses them, a calque"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Toujours propose une vue en permanence. Si applicable la propose seulement quand elle liste quelque chose : la liste de lecture quand elle contient un livre, un épisode ou un article, et les flux quand il y a un flux. Masquée l’omet. Une fenêtre garde sa vue jusqu’à ce que vous en choisissiez une autre.",
+     "after": "« Toujours » propose une vue en permanence. « Si applicable » la propose seulement quand elle liste quelque chose : la liste de lecture quand elle contient un livre, un épisode ou un article, et la vue Flux quand il y a un flux. « Masquée » l’omet. Une fenêtre garde sa vue jusqu’à ce que vous en choisissiez une autre.",
+     "why": "meaning: option names left unquoted at a sentence start read as plain words (“Toujours propose” is “always offers”), and “les flux” meant the Feeds view"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Une modification de son texte est conservée à côté de la nouvelle lecture, sous forme de copie dans le paquet du livre.",
+     "after": "Une modification de son texte est conservée à côté du nouveau texte, sous forme de copie dans le paquet du livre.",
+     "why": "meaning: “la nouvelle lecture” reads as a new playback (Lecture is the glossary word for Playback); it is the text read again"
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "Comparer les bibliothèques, dans les réglages de stockage, liste toutes les différences.",
+     "after": "La commande Comparer les bibliothèques des réglages Stockage liste toutes les différences.",
+     "why": "grammar: an infinitive command name cannot be the bare subject of “liste”; and other strings say “réglages Stockage”"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "Comparaison de cette bibliothèque avec la copie du dossier que vous avez choisi, pour dire laquelle est la plus récente. Cela peut prendre jusqu’à une minute ; choisissez Arrêter la comparaison pour l’ignorer.",
+     "after": "Comparaison de cette bibliothèque avec la copie du dossier que vous avez choisi, pour savoir laquelle est la plus récente. Cela peut prendre jusqu’à une minute ; choisissez Arrêter la comparaison pour l’interrompre.",
+     "why": "natural: “pour dire laquelle” copies “to say which”; “l’ignorer” (ignore it) for stopping a running comparison"
+    },
+    {
+     "key": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "english": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "before": "Impossible de relire le texte depuis le fichier de l’éditeur, donc le texte ici est inchangé.",
+     "after": "Impossible de relire le texte depuis le fichier de l’éditeur ; le texte affiché ici n’a donc pas changé.",
+     "why": "natural: “donc le texte ici est inchangé” copies the English word order"
+    },
+    {
+     "key": "Could not relocate folder contents",
+     "english": "Could not relocate folder contents",
+     "before": "Impossible de replacer le contenu du dossier",
+     "after": "Impossible de déplacer le contenu du dossier",
+     "why": "meaning: “replacer” means to put back, not to move to a new place"
+    },
+    {
+     "key": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "english": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "before": "Hauteur par défaut pour les nouveaux livres. 1.0 est la valeur normale. Chaque livre peut la remplacer.",
+     "after": "Hauteur par défaut pour les nouveaux livres. 1,0 est la valeur normale. Chaque livre peut la remplacer.",
+     "why": "punctuation: French writes the decimal comma, as the pitch label “Normale (1,0×)” already does"
+    },
+    {
+     "key": "Deleted %@. %@ selected, %lld of %lld.",
+     "english": "Deleted %1$@. %2$@ selected, %3$lld of %4$lld.",
+     "before": "Vue %@ supprimée. %@ sélectionnée, %lld sur %lld.",
+     "after": "Vue %@ supprimée. Vue %@ sélectionnée, %lld sur %lld.",
+     "why": "grammar: “Non ouverts sélectionnée” joins a view name to a feminine participle with nothing to agree with"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Modifier le texte s’arrête pour ce livre ; choisissez de nouveau Modifier le texte pour modifier la nouvelle lecture.",
+     "after": "La modification du texte s’arrête pour ce livre ; choisissez de nouveau Modifier le texte pour modifier le nouveau texte.",
+     "why": "meaning: a command name as subject read oddly, and “la nouvelle lecture” reads as a new playback"
+    },
+    {
+     "key": "Everything",
+     "english": "Everything",
+     "before": "Tout",
+     "after": "tout",
+     "why": "natural: the object inside “Placer %@ dans la corbeille” needs lower case: “Placer tout dans la corbeille”"
+    },
+    {
+     "key": "Everything in %@",
+     "english": "Everything in %@",
+     "before": "Tout dans %@",
+     "after": "tout le contenu de %@",
+     "why": "natural: “Placer Tout dans « Fiction » dans la corbeille” doubled “dans” and capitalized mid-sentence"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "english": "Failed to rebuild to default",
+     "before": "Échec de la restauration des valeurs par défaut",
+     "after": "Échec du retour à l’emplacement par défaut",
+     "why": "meaning: Reset to Default here moves the library back to its default location; “valeurs par défaut” said default values"
+    },
+    {
+     "key": "Folders and the Reading List have no conditions to copy.",
+     "english": "Folders and the Reading List have no conditions to copy.",
+     "before": "Dossiers et la liste de lecture n’ont aucune condition à copier.",
+     "after": "La vue Dossiers et la liste de lecture n’ont aucune condition à copier.",
+     "why": "grammar: the bare view name “Dossiers” beside “la liste de lecture” read as the word folders"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Dossiers et la liste de lecture listent toujours la même chose. Vous pouvez les déplacer, et masquer la liste de lecture.",
+     "after": "La vue Dossiers et la liste de lecture listent toujours la même chose. Vous pouvez les déplacer et masquer la liste de lecture.",
+     "why": "grammar: the bare view name “Dossiers” as subject read as the word folders"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "Dossiers est toujours affichée : chaque dossier et chaque flux s’y ouvre.",
+     "after": "La vue Dossiers est toujours affichée : chaque dossier et chaque flux s’y ouvre.",
+     "why": "grammar: “Dossiers est toujours affichée” mismatched a plural noun with a singular feminine verb"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "english": "In this Mac's Logs folder",
+     "before": "Dans le dossier Journaux de ce Mac.",
+     "after": "Dans le dossier Logs de ce Mac",
+     "why": "punctuation: a pop-up choice takes no final period, as the other choice “Dans le dossier de données” has none; meaning: the folder of this Mac is ~/Library/Logs, which the French Finder shows as Logs; “Journaux” names a folder the listener will not find"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "C’est le dossier du flux %@. Dans les deux cas, le flux et ses téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux lui en donne un autre ; Supprimer le flux… sur sa ligne le supprime.",
+     "after": "C’est le dossier du flux %@. Dans les deux cas, le flux et ses téléchargements restent, sans dossier, jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux ; la commande Supprimer le flux… de sa ligne le supprime.",
+     "why": "grammar: “jusqu’à ce que Informations…” missed the elision, and command names as subjects did not parse"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "C’est le dossier des flux %@. Dans les deux cas, les flux et leurs téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux en donne un autre à chacun ; Supprimer le flux… sur la ligne d’un flux le supprime.",
+     "after": "C’est le dossier des flux %@. Dans les deux cas, les flux et leurs téléchargements restent, sans dossier, jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux ; la commande Supprimer le flux… de la ligne d’un flux le supprime.",
+     "why": "grammar: as the one-feed string: the missed elision, and command names as subjects"
+    },
+    {
+     "key": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "english": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "before": "Ses conditions et son tri sont supprimés. Les livres, épisodes, articles et flux qu’elle liste restent dans la bibliothèque, et une fenêtre de bibliothèque qui l’affiche affiche une autre vue.",
+     "after": "Ses conditions et son tri sont supprimés. Les livres, épisodes, articles et flux qu’elle liste restent dans la bibliothèque, et une fenêtre de bibliothèque qui l’affiche passe à une autre vue.",
+     "why": "natural: “qui l’affiche affiche” repeated the verb"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Son texte est remplacé par la nouvelle lecture.",
+     "after": "Son texte est remplacé par le nouveau texte lu dans le fichier.",
+     "why": "meaning: “la nouvelle lecture” reads as a new playback; it is the text read again from the file"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ n’a pas été déplacé : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque.",
+     "after": "%@ n’a pas été déplacé : les épisodes et les articles restent dans leurs flux ; la commande %@ en fait un livre de votre bibliothèque.",
+     "why": "grammar: the command name Déplacer vers la bibliothèque as a bare subject did not parse"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ n’ont pas été déplacés : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque.",
+     "after": "%@ n’ont pas été déplacés : les épisodes et les articles restent dans leurs flux ; la commande %@ en fait un livre de votre bibliothèque.",
+     "why": "grammar: the command name Déplacer vers la bibliothèque as a bare subject did not parse"
+    },
+    {
+     "key": "Lists",
+     "english": "Lists",
+     "before": "Liste",
+     "after": "Éléments listés",
+     "why": "meaning: the label “Liste” of the checkboxes reads as the noun list, not as what the view lists"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "many": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld de livres le sont pour la liste de lecture.",
+      "one": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld l’est pour la liste de lecture.",
+      "other": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac par votre choix, et %lld le sont pour la liste de lecture."
+     },
+     "after": {
+      "many": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld de livres le sont pour la liste de lecture.",
+      "one": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld l’est pour la liste de lecture.",
+      "other": "Aucun des %@ livres sélectionnés n’est conservé sur ce Mac à votre demande, et %lld le sont pour la liste de lecture."
+     },
+     "why": "natural: “par votre choix” copies “by your choice”; French says “à votre demande”"
+    },
+    {
+     "key": "None of the %lld selected books is kept on this Mac.",
+     "english": {
+      "one": "None of the %lld selected books is kept on this Mac.",
+      "other": "None of the %lld selected books is kept on this Mac."
+     },
+     "before": {
+      "many": "Aucun des %lld de livres sélectionnés n’est conservé sur ce Mac.",
+      "one": "Le livre sélectionné (%lld) n’est pas conservé sur ce Mac.",
+      "other": "Aucun des %lld livres sélectionnés n’est conservé sur ce Mac."
+     },
+     "after": {
+      "many": "Aucun des %lld de livres sélectionnés n’est conservé sur ce Mac.",
+      "one": "Sur %lld livre sélectionné, aucun n’est conservé sur ce Mac.",
+      "other": "Aucun des %lld livres sélectionnés n’est conservé sur ce Mac."
+     },
+     "why": "natural: “Le livre sélectionné (1)” put the count in parentheses; “Sur 1 livre sélectionné, aucun” keeps it in the sentence"
+    },
+    {
+     "key": "One Unit for Both Directions",
+     "english": "One Unit for Both Directions",
+     "before": "Une unité pour les deux directions",
+     "after": "Une unité pour les deux sens",
+     "why": "natural: forward and backward are “les deux sens”; “directions” is compass or management"
+    },
+    {
+     "key": "Only rewind if the pause was longer than the threshold",
+     "english": "Only rewind if the pause was longer than the threshold",
+     "before": "Rembobine uniquement si la pause a duré plus longtemps que le seuil.",
+     "after": "Revient en arrière uniquement si la pause a duré plus longtemps que le seuil.",
+     "why": "term: the setting this hint belongs to says “Retour en arrière”; “Rembobine” named it another way"
+    },
+    {
+     "key": "Reading list: %@ is only on %@'s list, at place %@.",
+     "english": "Reading list: %1$@ is only on %2$@'s list, at place %3$@.",
+     "before": "Liste de lecture : %@ n’est que sur la liste de %@, à la place %@.",
+     "after": "Liste de lecture : %@ n’est que sur la liste de %@, au rang %@.",
+     "why": "meaning: “à la place 3” reads as “instead of 3”; a place in a list is “au rang 3”"
+    },
+    {
+     "key": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "english": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "before": "Les positions de lecture sont conservées, mais les décalages de caractères peuvent légèrement changer si le texte change.",
+     "after": "Les positions de lecture sont conservées, mais elles peuvent se décaler légèrement si le texte change.",
+     "why": "natural: “les décalages de caractères peuvent légèrement changer si le texte change” was jargon and repeated “changer”"
+    },
+    {
+     "key": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "english": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "before": "La lecture de l’audio a pris plus de %@ secondes ; TextMouth a cessé d’attendre.",
+     "after": "La lecture du fichier audio a pris plus de %@ secondes ; TextMouth a cessé d’attendre.",
+     "why": "meaning: “la lecture de l’audio” reads as playing the audio; it is reading the audio file"
+    },
+    {
+     "key": "Reading the audio took longer than %lld minutes; TextMouth stopped waiting.",
+     "english": {
+      "one": "Reading the audio took longer than %lld minute; TextMouth stopped waiting.",
+      "other": "Reading the audio took longer than %lld minutes; TextMouth stopped waiting."
+     },
+     "before": {
+      "many": "La lecture de l’audio a pris plus de %lld de minutes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture de l’audio a pris plus de %lld minute ; TextMouth a cessé d’attendre.",
+      "other": "La lecture de l’audio a pris plus de %lld minutes ; TextMouth a cessé d’attendre."
+     },
+     "after": {
+      "many": "La lecture du fichier audio a pris plus de %lld de minutes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture du fichier audio a pris plus de %lld minute ; TextMouth a cessé d’attendre.",
+      "other": "La lecture du fichier audio a pris plus de %lld minutes ; TextMouth a cessé d’attendre."
+     },
+     "why": "meaning: “la lecture de l’audio” reads as playing the audio; it is reading the audio file"
+    },
+    {
+     "key": "Reading the audio took longer than %lld seconds; TextMouth stopped waiting.",
+     "english": {
+      "one": "Reading the audio took longer than %lld second; TextMouth stopped waiting.",
+      "other": "Reading the audio took longer than %lld seconds; TextMouth stopped waiting."
+     },
+     "before": {
+      "many": "La lecture de l’audio a pris plus de %lld de secondes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture de l’audio a pris plus de %lld seconde ; TextMouth a cessé d’attendre.",
+      "other": "La lecture de l’audio a pris plus de %lld secondes ; TextMouth a cessé d’attendre."
+     },
+     "after": {
+      "many": "La lecture du fichier audio a pris plus de %lld de secondes ; TextMouth a cessé d’attendre.",
+      "one": "La lecture du fichier audio a pris plus de %lld seconde ; TextMouth a cessé d’attendre.",
+      "other": "La lecture du fichier audio a pris plus de %lld secondes ; TextMouth a cessé d’attendre."
+     },
+     "why": "meaning: “la lecture de l’audio” reads as playing the audio; it is reading the audio file"
+    },
+    {
+     "key": "Restore Default",
+     "english": "Restore Default",
+     "before": "Restaurer par défaut",
+     "after": "Restaurer les valeurs par défaut",
+     "why": "term: “Restaurer par défaut” is not French; Apple’s French says “Restaurer les valeurs par défaut”"
+    },
+    {
+     "key": "Restore Default…",
+     "english": "Restore Default…",
+     "before": "Restaurer par défaut…",
+     "after": "Restaurer les valeurs par défaut…",
+     "why": "term: “Restaurer par défaut” is not French; Apple’s French says “Restaurer les valeurs par défaut”"
+    },
+    {
+     "key": "Restore “%@” to its default?",
+     "english": "Restore “%@” to its default?",
+     "before": "Restaurer « %@ » par défaut ?",
+     "after": "Restaurer les valeurs par défaut de « %@ » ?",
+     "why": "grammar: “Restaurer « X » par défaut” says restore by default"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Réessayer se trouve en haut de la fenêtre de la bibliothèque.",
+     "after": "Le bouton Réessayer se trouve en haut de la fenêtre de la bibliothèque.",
+     "why": "grammar: the infinitive command name as the bare subject of “se trouve” did not parse"
+    },
+    {
+     "key": "Searched %@ of %@…",
+     "english": "Searched %1$@ of %2$@…",
+     "before": "Recherche dans %@ sur %@…",
+     "after": "Recherche : %@ sur %@…",
+     "why": "natural: “Recherche dans 30 sur 750 livres” reads as searching only 30 books; it is progress"
+    },
+    {
+     "key": "Still downloading, %@ elapsed.",
+     "english": "Still downloading, %@ elapsed.",
+     "before": "Toujours en cours de téléchargement. Temps écoulé : %@.",
+     "after": "Toujours en cours de téléchargement, temps écoulé : %@.",
+     "why": "punctuation: the English is one sentence; the French had split it in two"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "Arrêter, et Lire repart du début",
+     "after": "Arrêter et revenir au début",
+     "why": "natural: the command name Lire as a bare subject (“et Lire repart du début”) is heard as the verb read"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth n’a pas pu conserver le texte que vous avez modifié dans « %@ » à côté de la nouvelle lecture, donc il a laissé le livre tel quel.",
+     "after": "TextMouth n’a pas pu conserver le texte que vous avez modifié dans « %@ » à côté du nouveau texte, donc il a laissé le livre tel quel.",
+     "why": "meaning: “la nouvelle lecture” reads as a new playback; it is the text read again"
+    },
+    {
+     "key": "TextMouth couldn't read %lld files, so this may be incomplete.",
+     "english": {
+      "one": "TextMouth couldn't read %lld file, so this may be incomplete.",
+      "other": "TextMouth couldn't read %lld files, so this may be incomplete."
+     },
+     "before": {
+      "many": "TextMouth n’a pas pu lire %lld de fichiers, donc ceci peut être incomplet.",
+      "one": "TextMouth n’a pas pu lire %lld fichier, donc ceci peut être incomplet.",
+      "other": "TextMouth n’a pas pu lire %lld fichiers, donc ceci peut être incomplet."
+     },
+     "after": {
+      "many": "TextMouth n’a pas pu lire %lld de fichiers, ce résultat est donc peut-être incomplet.",
+      "one": "TextMouth n’a pas pu lire %lld fichier, ce résultat est donc peut-être incomplet.",
+      "other": "TextMouth n’a pas pu lire %lld fichiers, ce résultat est donc peut-être incomplet."
+     },
+     "why": "natural: “donc ceci peut être incomplet” copies “so this may be incomplete”"
+    },
+    {
+     "key": "TextMouth couldn't tell which copy is newer (%@).",
+     "english": "TextMouth couldn't tell which copy is newer (%@).",
+     "before": "TextMouth n’a pas pu dire quelle copie est la plus récente (%@).",
+     "after": "TextMouth n’a pas pu déterminer quelle copie est la plus récente (%@).",
+     "why": "natural: “dire” copies “tell” in the sense of find out"
+    },
+    {
+     "key": "TextMouth couldn't tell which copy is newer.",
+     "english": "TextMouth couldn't tell which copy is newer.",
+     "before": "TextMouth n’a pas pu dire quelle copie est la plus récente.",
+     "after": "TextMouth n’a pas pu déterminer quelle copie est la plus récente.",
+     "why": "natural: “dire” copies “tell” in the sense of find out"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "many": "Les %@ de %lld d’entre eux sont conservés.",
+      "one": "Les %@ de %lld d’entre eux sont conservés.",
+      "other": "Les %@ de %lld d’entre eux sont conservés."
+     },
+     "after": {
+      "many": "%2$lld d’entre eux gardent leurs %1$@.",
+      "one": "%2$lld d’entre eux garde ses %1$@.",
+      "other": "%2$lld d’entre eux gardent leurs %1$@."
+     },
+     "why": "grammar: “sont conservés” cannot agree with every list it takes (“les positions” needs “conservées”); the active verb needs no agreement"
+    },
+    {
+     "key": "The %lld selected books are already kept on this Mac.",
+     "english": {
+      "one": "The %lld selected book is already kept on this Mac.",
+      "other": "The %lld selected books are already kept on this Mac."
+     },
+     "before": {
+      "many": "Les %lld de livres sélectionnés sont déjà conservés sur ce Mac.",
+      "one": "Le livre sélectionné (%lld) est déjà conservé sur ce Mac.",
+      "other": "Les %lld livres sélectionnés sont déjà conservés sur ce Mac."
+     },
+     "after": {
+      "many": "Les %lld de livres sélectionnés sont déjà conservés sur ce Mac.",
+      "one": "%lld livre sélectionné est déjà conservé sur ce Mac.",
+      "other": "Les %lld livres sélectionnés sont déjà conservés sur ce Mac."
+     },
+     "why": "natural: “Le livre sélectionné (1)” put the count in parentheses; “1 livre sélectionné” keeps it in the sentence"
+    },
+    {
+     "key": "The %lld selected books are kept on this Mac for the reading list.",
+     "english": {
+      "one": "The %lld selected book is kept on this Mac for the reading list.",
+      "other": "The %lld selected books are kept on this Mac for the reading list."
+     },
+     "before": {
+      "many": "Les %lld de livres sélectionnés sont conservés sur ce Mac pour la liste de lecture.",
+      "one": "Le livre sélectionné (%lld) est conservé sur ce Mac pour la liste de lecture.",
+      "other": "Les %lld livres sélectionnés sont conservés sur ce Mac pour la liste de lecture."
+     },
+     "after": {
+      "many": "Les %lld de livres sélectionnés sont conservés sur ce Mac pour la liste de lecture.",
+      "one": "%lld livre sélectionné est conservé sur ce Mac pour la liste de lecture.",
+      "other": "Les %lld livres sélectionnés sont conservés sur ce Mac pour la liste de lecture."
+     },
+     "why": "natural: “Le livre sélectionné (1)” put the count in parentheses; “1 livre sélectionné” keeps it in the sentence"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit est classé parmi les H et s’affiche comme Hobbit, The. Taper H le trouve parmi les H.",
+     "after": "The Hobbit est classé parmi les H et s’affiche comme Hobbit, The. Taper H permet de le trouver parmi les H.",
+     "why": "natural: “Taper H le trouve” makes typing the one that finds it, a calque"
+    },
+    {
+     "key": "The archive expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "english": "The archive expands to %1$@, but the disk holding the TextMouth library has only %2$@ free, and TextMouth keeps %3$@ of it free.",
+     "before": "L’archive se développe à %1$@, mais le disque contenant la bibliothèque TextMouth n’a que %2$@ libres, et TextMouth en garde %3$@ de libre.",
+     "after": "Une fois décompressée, l’archive occupe %1$@, mais le disque contenant la bibliothèque TextMouth n’a que %2$@ libres, et TextMouth en garde %3$@ en réserve.",
+     "why": "natural: “se développe à” copies “expands to”, and “en garde 1 Go de libre” is not French"
+    },
+    {
+     "key": "The archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "english": "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "after": "Une fois décompressée, l’archive occupe %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "The archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "english": "The archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "L’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "after": "Une fois décompressée, l’archive occupe %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "The archive “%@” inside it expands to %@, but the disk holding the TextMouth library has only %@ free, and TextMouth keeps %@ of it free.",
+     "english": "The archive “%1$@” inside it expands to %2$@, but the disk holding the TextMouth library has only %3$@ free, and TextMouth keeps %4$@ of it free.",
+     "before": "L’archive « %1$@ » qu’elle contient se développe à %2$@, mais le disque contenant la bibliothèque TextMouth n’a que %3$@ libres, et TextMouth en garde %4$@ de libre.",
+     "after": "Une fois décompressée, l’archive « %1$@ » qu’elle contient occupe %2$@, mais le disque contenant la bibliothèque TextMouth n’a que %3$@ libres, et TextMouth en garde %4$@ en réserve.",
+     "why": "natural: “se développe à” copies “expands to”, and “en garde 1 Go de libre” is not French"
+    },
+    {
+     "key": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "english": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "before": "Le dossier de données n’a pas de dossier Journaux ; les journaux vont donc dans %@ jusqu’à ce qu’il en ait un.",
+     "after": "Le dossier de données n’a pas de dossier Logs ; les journaux vont donc dans %@ jusqu’à ce qu’il en ait un.",
+     "why": "meaning: the folder is named Logs on disk and is never translated; “dossier Journaux” names a folder that does not exist"
+    },
+    {
+     "key": "The data directory's Logs folder can't be written (%@), so logs go to %@ until it can.",
+     "english": "The data directory's Logs folder can't be written (%1$@), so logs go to %2$@ until it can.",
+     "before": "Le dossier Journaux du dossier de données n’est pas accessible en écriture (%1$@) ; les journaux vont donc dans %2$@ jusqu’à ce qu’il le soit.",
+     "after": "Le dossier Logs du dossier de données n’est pas accessible en écriture (%1$@) ; les journaux vont donc dans %2$@ jusqu’à ce qu’il le soit.",
+     "why": "meaning: the folder is named Logs on disk and is never translated; “dossier Journaux” names a folder that does not exist"
+    },
+    {
+     "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "before": "Le flux %@ reste, avec ses téléchargements, sans dossier jusqu’à ce que Informations sur le flux lui en donne un autre.",
+     "after": "Le flux %@ reste, avec ses téléchargements, sans dossier jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux.",
+     "why": "grammar: “jusqu’à ce que Informations…” missed the elision, and the sheet name as subject did not parse"
+    },
+    {
+     "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "before": "Les flux %@ restent, avec leurs téléchargements, sans dossier jusqu’à ce que Informations sur le flux en donne un autre à chacun.",
+     "after": "Les flux %@ restent, avec leurs téléchargements, sans dossier jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux.",
+     "why": "grammar: “jusqu’à ce que Informations…” missed the elision, and the sheet name as subject did not parse"
+    },
+    {
+     "key": "The reading list still keeps %lld of them downloaded",
+     "english": {
+      "one": "The reading list still keeps %lld of them downloaded",
+      "other": "The reading list still keeps %lld of them downloaded"
+     },
+     "before": {
+      "many": "La liste de lecture en garde encore %lld téléchargés",
+      "one": "La liste de lecture en garde encore %lld téléchargés",
+      "other": "La liste de lecture en garde encore %lld téléchargés"
+     },
+     "after": {
+      "many": "La liste de lecture en garde encore %lld téléchargés",
+      "one": "La liste de lecture en garde encore %lld téléchargé",
+      "other": "La liste de lecture en garde encore %lld téléchargés"
+     },
+     "why": "grammar: the one form (0 or 1) used the plural “téléchargés”"
+    },
+    {
+     "key": "Their %@ are kept.",
+     "english": "Their %@ are kept.",
+     "before": "Leurs %@ sont conservés.",
+     "after": "Ils gardent leurs %@.",
+     "why": "grammar: “sont conservés” cannot agree with every list it takes (“les positions” needs “conservées”); the active verb needs no agreement"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "many": "Il n’y a pas de vue %@. Aller à la vue en atteint %lld.",
+      "one": "Il n’y a pas de vue %@. Aller à la vue en atteint %lld.",
+      "other": "Il n’y a pas de vue %@. Aller à la vue en atteint %lld."
+     },
+     "after": {
+      "many": "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld.",
+      "one": "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld.",
+      "other": "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld."
+     },
+     "why": "grammar: the command name Aller à la vue as a bare subject did not parse"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Pour le laisser partir, retirez-le de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "after": "Pour qu’il ne soit plus conservé, retirez-le de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "why": "natural: “Pour le laisser partir” copies “to let it go”; it means so that it is no longer kept downloaded"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Pour les laisser partir, retirez-les de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "after": "Pour qu’ils ne soient plus conservés, retirez-les de la liste de lecture, ou décochez %@ dans les options de la liste de lecture.",
+     "why": "natural: “Pour les laisser partir” copies “to let them go”; it means so that they are no longer kept downloaded"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "after": "Avec les archives qu’elle contient, l’archive occupe %1$@ une fois décompressée, soit plus que les %2$@ que TextMouth extrait des archives contenant de l’audio ou d’autres archives.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "Avec les archives qu’elle contient, l’archive se développe à %1$@, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "after": "Avec les archives qu’elle contient, l’archive occupe %1$@ une fois décompressée, soit plus que les %2$@ que TextMouth extrait des archives sans audio.",
+     "why": "natural: “se développe à” copies “expands to”"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Là où aucun de leurs mots ne reste, %@, chacun va à peu près au même point de son chapitre, ou au passage le plus proche que les deux lectures partagent.",
+     "after": "Là où il ne reste aucun de leurs mots, %@, chacun va à peu près au même point de son chapitre, ou au passage le plus proche commun aux deux textes.",
+     "why": "meaning: “les deux lectures” reads as two playbacks; they are the old and new text; “aucun de leurs mots ne reste” copied the English order"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Là où aucun de leurs mots ne reste, chacun va à peu près au même point de son chapitre, ou au passage le plus proche que les deux lectures partagent.",
+     "after": "Là où il ne reste aucun de leurs mots, chacun va à peu près au même point de son chapitre, ou au passage le plus proche commun aux deux textes.",
+     "why": "meaning: “les deux lectures” reads as two playbacks; they are the old and new text; “aucun de leurs mots ne reste” copied the English order"
+    },
+    {
+     "key": "With %@, %@.",
+     "english": "With %1$@, %2$@.",
+     "before": "Avec %@, %@.",
+     "after": "Si vous choisissez %@, %@.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Avec %@, le flux et ses téléchargements restent, sans dossier jusqu’à ce que Informations sur le flux lui en donne un autre ; Supprimer le flux… sur sa ligne le supprime.",
+     "after": "Si vous choisissez %@, le flux et ses téléchargements restent, sans dossier jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux ; la commande Supprimer le flux… de sa ligne le supprime.",
+     "why": "grammar: “Avec” before a button name, the missed elision in “jusqu’à ce que Informations”, and command names as bare subjects"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Avec %@, les flux et leurs téléchargements restent, sans dossier jusqu’à ce que Informations sur le flux en donne un autre à chacun ; Supprimer le flux… sur la ligne d’un flux le supprime.",
+     "after": "Si vous choisissez %@, les flux et leurs téléchargements restent, sans dossier jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux ; la commande Supprimer le flux… de la ligne d’un flux le supprime.",
+     "why": "grammar: “Avec” before a button name, the missed elision in “jusqu’à ce que Informations”, and command names as bare subjects"
+    },
+    {
+     "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
+     "before": "Avec %@, le dossier et tout ce qu’il contient quittent la bibliothèque, et %@.",
+     "after": "Si vous choisissez %@, le dossier et tout ce qu’il contient quittent la bibliothèque, et %@.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "Avec Déplacer le contenu hors du dossier, le dossier du flux est déplacé avec le reste.",
+     "after": "Si vous choisissez Déplacer le contenu hors du dossier, le dossier du flux est déplacé avec le reste.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "Avec Déplacer le contenu hors du dossier, leurs dossiers sont déplacés avec le reste.",
+     "after": "Si vous choisissez Déplacer le contenu hors du dossier, leurs dossiers sont déplacés avec le reste.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "Avec Déplacer le contenu hors du dossier, ils restent dans la bibliothèque et seul le dossier est supprimé.",
+     "after": "Si vous choisissez Déplacer le contenu hors du dossier, ils restent dans la bibliothèque et seul le dossier est supprimé.",
+     "why": "natural: “Avec” followed by an infinitive button name is not French"
+    },
+    {
+     "key": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "english": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "before": "donc TextMouth ne peut pas dire si les deux copies sont une seule bibliothèque, et n’a rien comparé.",
+     "after": "donc TextMouth ne peut pas déterminer si les deux copies sont la même bibliothèque, et n’a rien comparé.",
+     "why": "natural: “dire” copies “tell”, and “sont une seule bibliothèque” copies “are one library”"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "donc sa position et ses signets ont été pris dans l’index de la bibliothèque seul.",
+     "after": "donc sa position et ses signets ont été tirés du seul index de la bibliothèque.",
+     "why": "natural: “dans l’index de la bibliothèque seul” left “seul” to modify the library"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
