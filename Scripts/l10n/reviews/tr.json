@@ -2,6 +2,931 @@
  "language": "tr",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "one": "%1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor; bunlar olduğu gibi saklanır.",
+      "other": "%1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor; bunlar olduğu gibi saklanır."
+     },
+     "after": {
+      "one": "%1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor; bu kitap olduğu gibi saklanır.",
+      "other": "%1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor; bunlar olduğu gibi saklanır."
+     },
+     "why": "grammar: the one form said bunlar (these) of a single book"
+    },
+    {
+     "key": "%@ by %@",
+     "english": "%1$@ by %2$@",
+     "before": "%1$@, %2$@ tarafından",
+     "after": "%1$@, yazar: %2$@",
+     "why": "natural: \"X, Y tarafından\" copies English \"by\" with no verb; the app's own book summaries say \"yazar: Y\""
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@ yerleşimi, %3$@: %2$@; %5$@: %4$@.",
+     "after": "%1$@ kitabının yeri, %3$@: %2$@; %5$@: %4$@.",
+     "why": "natural: \"X yerleşimi\" (X's settlement) joined a title to a noun with no genitive and the wrong sense; now \"the place of the book X\""
+    },
+    {
+     "key": "%@, at %@",
+     "english": "%1$@, at %2$@",
+     "before": "%1$@, %2$@ zamanında",
+     "after": "%1$@, %2$@ noktasında",
+     "why": "natural: \"12:34 zamanında\" means \"in the time of\"; the time-into-book label beside it already says \"noktasında\""
+    },
+    {
+     "key": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "english": "%@: Some changes are not saved, and switching libraries would lose them.",
+     "before": "%@: Bazı değişiklikler kaydedilmedi ve kitaplığı değiştirmek bunları kaybettirir.",
+     "after": "%@: Bazı değişiklikler kaydedilmedi; kitaplık değiştirilirse bunlar kaybolur.",
+     "why": "natural: \"kitaplığı değiştirmek bunları kaybettirir\" lost the would of the English; now \"if the library is switched, they are lost\""
+    },
+    {
+     "key": "%@: more than %lld matches",
+     "english": {
+      "one": "%@: more than %lld match",
+      "other": "%@: more than %lld matches"
+     },
+     "before": {
+      "one": "%1$@: %2$lld üzerinde eşleşme",
+      "other": "%1$@: %2$lld üzerinde eşleşme"
+     },
+     "after": {
+      "one": "%1$@: %2$lld eşleşmeden fazla",
+      "other": "%1$@: %2$lld eşleşmeden fazla"
+     },
+     "why": "natural: \"100 üzerinde eşleşme\" needs a genitive Turkish cannot add after a number; the suffix now goes on the noun"
+    },
+    {
+     "key": "%lld Books",
+     "english": {
+      "one": "%lld Book",
+      "other": "%lld Books"
+     },
+     "before": {
+      "one": "%lld Kitap",
+      "other": "%lld Kitap"
+     },
+     "after": {
+      "one": "%lld Kitabı",
+      "other": "%lld Kitabı"
+     },
+     "why": "grammar: the object of Move/Delete/Remove buttons now carries the accusative, so the titles no longer need \"Öğesini\" (3 Kitap Öğesini)"
+    },
+    {
+     "key": "%lld Selected",
+     "english": {
+      "one": "%lld Selected",
+      "other": "%lld Selected"
+     },
+     "before": {
+      "one": "%lld Seçili",
+      "other": "%lld Seçili"
+     },
+     "after": {
+      "one": "Seçili %lld Kitabı",
+      "other": "Seçili %lld Kitabı"
+     },
+     "why": "grammar: the object of Move/Delete/Remove buttons now carries the accusative, so the titles no longer need \"Öğesini\""
+    },
+    {
+     "key": "%lld books in the cloud were skipped.",
+     "english": {
+      "one": "%lld book in the cloud was skipped.",
+      "other": "%lld books in the cloud were skipped."
+     },
+     "before": {
+      "one": "%lld buluttaki kitap atlandı.",
+      "other": "%lld buluttaki kitap atlandı."
+     },
+     "after": {
+      "one": "Buluttaki %lld kitap atlandı.",
+      "other": "Buluttaki %lld kitap atlandı."
+     },
+     "why": "natural: \"%lld buluttaki kitap\" puts the number before the place phrase; Turkish says \"buluttaki 3 kitap\""
+    },
+    {
+     "key": "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read.",
+     "english": "A library in the cloud can take a while: its cloud-only files are downloaded to this Mac to be read.",
+     "before": "Bulutta bir kitaplık biraz sürebilir: yalnızca bulutta olan dosyalar okunmak üzere bu Mac'e indirilir.",
+     "after": "Buluttaki bir kitaplıkta bu işlem biraz sürebilir: yalnızca bulutta olan dosyaları okunmak üzere bu Mac'e indirilir.",
+     "why": "natural: \"Bulutta bir kitaplık biraz sürebilir\" made the library the thing that takes a while; it is the work on it"
+    },
+    {
+     "key": "A limit chooses among books, episodes, and articles, never feeds.",
+     "english": "A limit chooses among books, episodes, and articles, never feeds.",
+     "before": "Bir sınır kitaplar, podcast bölümleri ve makaleler arasında seçim yapar, beslemeler arasında asla.",
+     "after": "Sınır, beslemeler arasından değil, yalnızca kitaplar, podcast bölümleri ve makaleler arasından seçer.",
+     "why": "natural: the trailing \"beslemeler arasında asla\" copied the English afterthought"
+    },
+    {
+     "key": "Adds or removes a bookmark at the current position",
+     "english": "Adds or removes a bookmark at the current position",
+     "before": "Geçerli konuma yer imi ekler veya kaldırır.",
+     "after": "Geçerli konumda yer imi ekler veya kaldırır.",
+     "why": "grammar: \"konuma ... kaldırır\" gave \"remove\" a dative; the locative \"konumda\" serves both adds and removes"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Metinde yapılan bir düzenleme, kitabın paketinde bir kopya olarak yeni okumanın yanında saklanır.",
+     "after": "Metinde yapılan bir düzenleme, kitabın paketinde bir kopya olarak yeniden okunan metnin yanında saklanır.",
+     "why": "meaning: \"yeni okuma\" is an act of reading; the new reading here is the text a re-read makes"
+    },
+    {
+     "key": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Şunlardan birini sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
+     "after": "Hangisini istediğinizi sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
+     "why": "meaning: \"Şunlardan birini sorar\" said it asks one of the two; it asks which of the two you want"
+    },
+    {
+     "key": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "english": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "before": "Kitaplar bu görünümde taşınamaz. Klasörlerde bir klasöre veya Okuma Listesine gidin, sonra tekrar deneyin.",
+     "after": "Kitaplar bu görünümde taşınamaz. Klasörler görünümünde bir klasöre veya Okuma Listesine gidin, sonra tekrar deneyin.",
+     "why": "natural: \"Klasörlerde bir klasöre\" (to a folder in folders) hid that Folders is a view's name"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "one": "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bunlar ve her birini içeren her klasör olduğu yerde kalır.",
+      "other": "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bunlar ve her birini içeren her klasör olduğu yerde kalır."
+     },
+     "after": {
+      "one": "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bu kitap ve onu içeren her klasör olduğu yerde kalır.",
+      "other": "Ancak %1$@ klasörü ayrıca daha yeni bir TextMouth'un eklediği %2$lld kitap içeriyor: bu kitaplar ve bunlardan birini içeren her klasör olduğu yerde kalır."
+     },
+     "why": "grammar: the one form said bunlar ve her birini (these, each of them) of a single book"
+    },
+    {
+     "key": "Cancel New Folder",
+     "english": "Cancel New Folder",
+     "before": "Yeni Klasörü İptal Et",
+     "after": "Yeni Klasörden Vazgeç",
+     "why": "term: the glossary and Apple's Turkish say Vazgeç for Cancel, not İptal Et"
+    },
+    {
+     "key": "Chapter %@ of %@ isn't downloaded.",
+     "english": "Chapter %1$@ of %2$@ isn't downloaded.",
+     "before": "%1$@ numaralı bölüm indirilmedi. Kitap: %2$@.",
+     "after": "%2$@ kitabının %1$@ numaralı bölümü indirilmedi.",
+     "why": "natural: the sentence split into \"... indirilmedi. Kitap: X.\"; Turkish says \"the chapter 3 of the book X\""
+    },
+    {
+     "key": "Check that %@ is running and that this Mac is online, then choose Try Again.",
+     "english": "Check that %@ is running and that this Mac is online, then choose Try Again.",
+     "before": "Şunun çalıştığını ve bu Mac'in çevrimiçi olduğunu kontrol edin: %@. Sonra Tekrar Dene düğmesini seçin.",
+     "after": "%@ çalışıyor mu, bu Mac çevrimiçi mi, denetleyin; sonra “Tekrar Dene” düğmesini seçin.",
+     "why": "natural: \"Şunun çalıştığını ... kontrol edin: iCloud Drive.\" left the service's name dangling at the end; now two plain questions, which read right for every service name"
+    },
+    {
+     "key": "Checks the library's location again, and opens the library when it is there.",
+     "english": "Checks the library's location again, and opens the library when it is there.",
+     "before": "Kitaplığın konumunu yeniden denetler ve konum orada ise kitaplığı açar.",
+     "after": "Kitaplığın konumunu yeniden denetler ve kitaplık oradaysa açar.",
+     "why": "meaning: \"konum orada ise\" said \"if the location is there\"; it is the library that may be there"
+    },
+    {
+     "key": "Choose another in Book Information.",
+     "english": "Choose another in Book Information.",
+     "before": "Kitap Bilgileri'nde başka birini seçin.",
+     "after": "Kitap Bilgilerinde başka birini seçin.",
+     "why": "punctuation: no apostrophe after a translated name such as Kitap Bilgileri"
+    },
+    {
+     "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "before": "Kitap başına denetim olmasın, tek bir ortak seçici olsun veya ileri ve geri için ayrı seçicileri olan bir menü kullanılsın.",
+     "after": "Kitap başına denetim olmamasını, tek bir ortak seçiciyi veya ileri ve geri için ayrı seçicileri olan bir menüyü seçer.",
+     "why": "voiceover: a hint says what the control does in the third person; the optative \"olmasın ... olsun ... kullanılsın\" read as wishes"
+    },
+    {
+     "key": "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
+     "english": "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters.",
+     "before": "The, A ve An kelimelerinin, başlığın başında sıralarken ve başlığın ilk harflerini yazarken sayılıp sayılmayacağını seçer.",
+     "after": "Başlığın başındaki The, A ve An kelimelerinin sıralamada ve bir başlığın ilk harfleri yazılırken sayılıp sayılmayacağını seçer.",
+     "why": "natural: \"başlığın başında sıralarken\" ran \"at the start of a title\" into \"while sorting\""
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "Depolama ayarlarındaki Kitaplıkları Karşılaştır tüm farkları listeler.",
+     "after": "Depolama ayarlarındaki “Kitaplıkları Karşılaştır” komutu tüm farkları listeler.",
+     "why": "natural: the bare command name read as a verb phrase mid-sentence; now quoted and called a command"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "Bu kitaplık, hangisinin daha yeni olduğunu söylemek için seçtiğiniz klasördeki kopyayla karşılaştırılıyor. Bu bir dakikaya kadar sürebilir; atlamak için Karşılaştırmayı Durdur'u seçin.",
+     "after": "Bu kitaplık, hangisinin daha yeni olduğunu söylemek için seçtiğiniz klasördeki kopyayla karşılaştırılıyor. Bu bir dakikaya kadar sürebilir; atlamak için “Karşılaştırmayı Durdur” düğmesini seçin.",
+     "why": "punctuation: no apostrophe after a translated control name (Karşılaştırmayı Durdur'u); quoted and named as the button"
+    },
+    {
+     "key": "Condition %@ days",
+     "english": "Condition %@ days",
+     "before": "Koşul %@ gün",
+     "after": "Koşul %@, gün",
+     "why": "meaning: \"Koşul 2 gün\" reads as \"condition, 2 days\" since a noun after a number is a count; a comma keeps the field's name apart"
+    },
+    {
+     "key": "Condition %@ folder",
+     "english": "Condition %@ folder",
+     "before": "Koşul %@ klasör",
+     "after": "Koşul %@, klasör",
+     "why": "meaning: \"Koşul 2 klasör\" reads as \"2 folders\"; a comma keeps the field's name apart"
+    },
+    {
+     "key": "Condition %@ format",
+     "english": "Condition %@ format",
+     "before": "Koşul %@ biçim",
+     "after": "Koşul %@, biçim",
+     "why": "meaning: \"Koşul 2 biçim\" reads as \"2 formats\"; a comma keeps the field's name apart"
+    },
+    {
+     "key": "Condition %@ includes subfolders",
+     "english": "Condition %@ includes subfolders",
+     "before": "Koşul %@ alt klasörleri içerir",
+     "after": "Koşul %@, alt klasörler dahil",
+     "why": "meaning: \"Koşul 2 alt klasörleri içerir\" runs the number into the words; a comma and the checkbox's own words (Alt Klasörler Dahil)"
+    },
+    {
+     "key": "Condition %@ reading state",
+     "english": "Condition %@ reading state",
+     "before": "Koşul %@ okuma durumu",
+     "after": "Koşul %@, okuma durumu",
+     "why": "meaning: \"Koşul 2 okuma durumu\" runs the number into the field's name; a comma keeps it apart"
+    },
+    {
+     "key": "Condition %@ relation",
+     "english": "Condition %@ relation",
+     "before": "Koşul %@ ilişki",
+     "after": "Koşul %@, ilişki",
+     "why": "meaning: \"Koşul 2 ilişki\" reads as \"2 relations\"; a comma keeps the field's name apart"
+    },
+    {
+     "key": "Condition %@ text",
+     "english": "Condition %@ text",
+     "before": "Koşul %@ metin",
+     "after": "Koşul %@, metin",
+     "why": "meaning: \"Koşul 2 metin\" reads as \"2 texts\"; a comma keeps the field's name apart"
+    },
+    {
+     "key": "Continue listening to %@",
+     "english": "Continue listening to %@",
+     "before": "%@ dinlemeye devam et",
+     "after": "Dinlemeye devam et: %@",
+     "why": "grammar: a title before \"dinlemeye\" needs an accusative suffix Turkish cannot add to a placeholder; the title now follows a colon, as on the button"
+    },
+    {
+     "key": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "english": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "before": "Yeni kitaplar için varsayılan perde. 1.0 normaldir. Her kitap bunu geçersiz kılabilir.",
+     "after": "Yeni kitaplar için varsayılan perde. 1,0 normaldir. Her kitap bunu geçersiz kılabilir.",
+     "why": "punctuation: Turkish writes the decimal comma, 1,0, as the slider shows it"
+    },
+    {
+     "key": "Delete %@",
+     "english": "Delete %@",
+     "before": "%@ öğesini sil",
+     "after": "Sil: %@",
+     "why": "grammar: \"öğesini\" after a phrase such as \"3 indirme\" or \"“X” indirmesi\" read clumsily; the action now comes first and the object after a colon"
+    },
+    {
+     "key": "Delete %@ Permanently",
+     "english": "Delete %@ Permanently",
+     "before": "%@ Öğesini Kalıcı Olarak Sil",
+     "after": "Kalıcı Olarak %@ Sil",
+     "why": "grammar: \"%@ Öğesini\" made \"Her Şey Öğesini\" and \"3 Kitap Öğesini\"; the objects now carry the accusative, and the object sits before the verb so the one-book \"Kitap\" also reads right"
+    },
+    {
+     "key": "Delete %@ permanently",
+     "english": "Delete %@ permanently",
+     "before": "%@ öğesini kalıcı olarak sil",
+     "after": "Kalıcı olarak sil: %@",
+     "why": "grammar: \"öğesini\" after \"seçili 3 kitap\" or \"orijinal dosya\" read clumsily; the action now comes first and the object after a colon"
+    },
+    {
+     "key": "Edit %@",
+     "english": "Edit %@",
+     "before": "%@ öğesini düzenle",
+     "after": "%@ Görünümünü Düzenle",
+     "why": "meaning: a library view is not an item (öğe); the title now names it as a view"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Bu kitap için Metni Düzenle durur; yeni okumayı düzenlemek için Metni Düzenle'yi yeniden seçin.",
+     "after": "Bu kitabın “Metni Düzenle” oturumu sona erer; yeniden okunan metni düzenlemek için “Metni Düzenle” komutunu yeniden seçin.",
+     "why": "meaning: \"yeni okuma\" is an act of reading, not the re-read text; the session ends, and the apostrophe after a translated name goes"
+    },
+    {
+     "key": "Everything",
+     "english": "Everything",
+     "before": "Her Şey",
+     "after": "Her Şeyi",
+     "why": "grammar: object of a removal button title, now in the accusative (Her Şeyi Çöp Sepetine Taşı)"
+    },
+    {
+     "key": "Everything in %@",
+     "english": "Everything in %@",
+     "before": "%@ İçindeki Her Şey",
+     "after": "%@ İçindeki Her Şeyi",
+     "why": "grammar: object of a removal confirmation title, now in the accusative"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; biri bittikten sonra işe yarar.",
+     "after": "Deneysel. Kısa bir süre içinde bir dizi medya tuşu veya AirPods denetimi, son uyku zamanlayıcısını yeniden kurar; bir zamanlayıcı bittiğinde işe yarar.",
+     "why": "natural: \"biri bittikten sonra\" left \"one\" without its noun; it is a timer that has run out"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "english": "Failed to rebuild to default",
+     "before": "Varsayılana yeniden oluşturulamadı",
+     "after": "Varsayılan konuma sıfırlanamadı",
+     "why": "grammar: \"Varsayılana yeniden oluşturulamadı\" (could not be rebuilt to the default) does not parse; Reset to Default Location says \"Varsayılan Konuma Sıfırla\""
+    },
+    {
+     "key": "Folder “%@” in %@ is “%@” in %@.",
+     "english": "Folder “%1$@” in %2$@ is “%3$@” in %4$@.",
+     "before": "Klasör yolu farklı: %2$@: “%1$@”, %4$@: “%3$@”.",
+     "after": "Klasör yolu farklı: %2$@ içinde “%1$@”, %4$@ içinde “%3$@”.",
+     "why": "natural: two colons in a row (farklı: bu kopya: “A”); now \"in this copy “A”, in the other copy “B”\" as the other differences say"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Klasörler ve Okuma Listesi her zaman aynı öğeleri listeler. Bunları taşıyabilir ve Okuma Listesini gizleyebilirsiniz.",
+     "after": "Klasörler ve Okuma Listesi her zaman kendi içeriklerini listeler. Bunları taşıyabilir ve Okuma Listesini gizleyebilirsiniz.",
+     "why": "meaning: \"her zaman aynı öğeleri\" said their contents never change; they list their own contents, not conditions"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "Kitabın braille'inden tahmin edildi. Yanlış okunuyorsa Braille Kodu'nda Unified English Braille'i seçin.",
+     "after": "Kitabın braille'inden tahmin edildi. Yanlış okunuyorsa Braille Kodu menüsünde Unified English Braille'i seçin.",
+     "why": "punctuation: no apostrophe after a translated name (Braille Kodu'nda); named as the menu it is"
+    },
+    {
+     "key": "If it is gone, choose %@.",
+     "english": "If it is gone, choose %@.",
+     "before": "Dosya yoksa “%@” seçeneğini seçin.",
+     "after": "Dosya yoksa “%@” düğmesini seçin.",
+     "why": "term: the placeholder names a button, so düğmesini, not seçeneğini (an option)"
+    },
+    {
+     "key": "Import Behavior",
+     "english": "Import Behavior",
+     "before": "İçe aktarma davranışı",
+     "after": "İçe Aktarma Davranışı",
+     "why": "punctuation: a heading in title case, as the other Storage settings headings (Kitaplık Bakımı, Kitaplık İstatistikleri)"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Metin, yeni okumayla değiştirilir.",
+     "after": "Kitabın metni, yeniden okunan metinle değiştirilir.",
+     "why": "meaning: \"yeni okumayla\" is an act of reading; the book's text is replaced by the re-read text"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; %2$@ birini kitaplığınızın kitabı yapar.",
+     "after": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; “%2$@” komutu birini kitaplığınızın bir kitabı yapar.",
+     "why": "punctuation: the Move to Library command's name stood bare as the subject; quoted and called a command, as the consistency pass does for a control's name in a placeholder"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; %2$@ birini kitaplığınızın kitabı yapar.",
+     "after": "%1$@ olduğu yerde bırakıldı: podcast bölümleri ve makaleler beslemelerinde kalır; “%2$@” komutu birini kitaplığınızın bir kitabı yapar.",
+     "why": "punctuation: the Move to Library command's name stood bare as the subject; quoted and called a command"
+    },
+    {
+     "key": "Made %@, %lld of %lld.",
+     "english": "Made %1$@, %2$lld of %3$lld.",
+     "before": "%1$@ yapıldı, %3$lld içinden %2$lld.",
+     "after": "%1$@ oluşturuldu, %3$lld içinden %2$lld.",
+     "why": "natural: a copy of a view is created (oluşturuldu), not \"done\" (yapıldı)"
+    },
+    {
+     "key": "More than %lld matches in %@",
+     "english": {
+      "one": "More than %lld match in %@",
+      "other": "More than %lld matches in %@"
+     },
+     "before": {
+      "one": "%2$@ içinde %1$lld üzerinde eşleşme",
+      "other": "%2$@ içinde %1$lld üzerinde eşleşme"
+     },
+     "after": {
+      "one": "%2$@ içinde %1$lld eşleşmeden fazla",
+      "other": "%2$@ içinde %1$lld eşleşmeden fazla"
+     },
+     "why": "natural: \"100 üzerinde eşleşme\" needs a genitive Turkish cannot add after a number; the suffix now goes on the noun"
+    },
+    {
+     "key": "Move \"%@\"",
+     "english": "Move \"%@\"",
+     "before": "“%@” öğesini taşı",
+     "after": "“%@” Klasörünü Taşı",
+     "why": "natural: the sheet moves a folder, so it says klasörünü, not the generic öğesini, in title case as a heading"
+    },
+    {
+     "key": "Move %@ to Trash",
+     "english": "Move %@ to Trash",
+     "before": "%@ Öğesini Çöp Sepetine Taşı",
+     "after": "Çöp Sepetine %@ Taşı",
+     "why": "grammar: \"%@ Öğesini\" made \"Her Şey Öğesini\" and \"3 Kitap Öğesini\"; the objects now carry the accusative, and the object sits before the verb so the one-book \"Kitap\" also reads right"
+    },
+    {
+     "key": "Move %@ to the Trash",
+     "english": "Move %@ to the Trash",
+     "before": "%@ öğesini Çöp Sepetine taşı",
+     "after": "Çöp Sepetine taşı: %@",
+     "why": "grammar: \"öğesini\" after \"seçili 3 kitap\" or \"orijinal dosya\" read clumsily; the action now comes first and the object after a colon"
+    },
+    {
+     "key": "Moved %@ above %@",
+     "english": "Moved %1$@ above %2$@",
+     "before": "%1$@, %2$@ üstüne taşındı",
+     "after": "%1$@, %2$@ kitabının üstüne taşındı",
+     "why": "grammar: \"Y üstüne\" after a title lacks the genitive; \"Y kitabının üstüne\" works for any title"
+    },
+    {
+     "key": "Moved %@ below %@",
+     "english": "Moved %1$@ below %2$@",
+     "before": "%1$@, %2$@ altına taşındı",
+     "after": "%1$@, %2$@ kitabının altına taşındı",
+     "why": "grammar: \"Y altına\" after a title lacks the genitive; \"Y kitabının altına\" works for any title"
+    },
+    {
+     "key": "Moved to %@, %@.",
+     "english": "Moved to %1$@, %2$@.",
+     "before": "%1$@ konumuna taşındı, %2$@.",
+     "after": "%1$@ konumuna gidildi, %2$@.",
+     "why": "meaning: the reader went to a place in the audio; taşındı means a thing was relocated"
+    },
+    {
+     "key": "Moved to %@.",
+     "english": "Moved to %@.",
+     "before": "%@ konumuna taşındı.",
+     "after": "%@ konumuna gidildi.",
+     "why": "meaning: the reader went to a place in the audio; taşındı means a thing was relocated"
+    },
+    {
+     "key": "Moved to the match, %@.",
+     "english": "Moved to the match, %@.",
+     "before": "Eşleşmeye taşındı, %@.",
+     "after": "Eşleşmeye gidildi, %@.",
+     "why": "meaning: the reader went to the match; taşındı means a thing was relocated"
+    },
+    {
+     "key": "Moved to the match.",
+     "english": "Moved to the match.",
+     "before": "Eşleşmeye taşındı.",
+     "after": "Eşleşmeye gidildi.",
+     "why": "meaning: the reader went to the match; taşındı means a thing was relocated"
+    },
+    {
+     "key": "Moves data back to the default location at ~/.TextMouth",
+     "english": "Moves data back to the default location at ~/.TextMouth",
+     "before": "Verileri ~/.TextMouth konumundaki varsayılan konuma geri taşır.",
+     "after": "Verileri varsayılan konuma (~/.TextMouth) geri taşır.",
+     "why": "natural: \"~/.TextMouth konumundaki varsayılan konuma\" said location twice; the path now follows in parentheses"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "one": "%1$@ seçili kitabın hiçbiri tercihiniz nedeniyle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor.",
+      "other": "%1$@ seçili kitabın hiçbiri tercihiniz nedeniyle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
+     },
+     "after": {
+      "one": "Seçili %1$@ kitabın hiçbiri sizin seçiminizle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor.",
+      "other": "Seçili %1$@ kitabın hiçbiri sizin seçiminizle bu Mac'te tutulmuyor; %2$lld tanesi okuma listesi için tutuluyor."
+     },
+     "why": "meaning: \"tercihiniz nedeniyle tutulmuyor\" said your choice is why they are not kept; the English says none is kept by your choice"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "Bunun doğru seçim olduğunu hiçbir şey denetlemez. Sayılar ve noktalama yanlış seslenirse başka birini seçin.",
+     "after": "Bunun doğru seçim olduğunu hiçbir şey denetlemez. Sayılar ve noktalama işaretleri kulağa yanlış gelirse başka birini seçin.",
+     "why": "meaning: \"yanlış seslenirse\" means \"if they call out wrongly\"; to sound wrong is \"kulağa yanlış gelmek\""
+    },
+    {
+     "key": "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available.",
+     "english": "Opens the library in the default location, ~/.TextMouth, or starts a new one there, instead of the library that isn't available.",
+     "before": "Kullanılamayan kitaplık yerine, varsayılan konumdaki ~/.TextMouth kitaplığını açar veya orada yeni bir tane başlatır.",
+     "after": "Kullanılamayan kitaplık yerine, varsayılan konumdaki (~/.TextMouth) kitaplığı açar veya orada yeni bir kitaplık başlatır.",
+     "why": "natural: \"~/.TextMouth kitaplığını\" made the path the library's name; the path now follows the location in parentheses"
+    },
+    {
+     "key": "Position in %@: differs, and both were saved at the same time.",
+     "english": "Position in %@: differs, and both were saved at the same time.",
+     "before": "%@ konumu: farklı ve ikisi de aynı anda kaydedilmiş.",
+     "after": "%@ kitabındaki konum: farklı ve ikisi de aynı anda kaydedilmiş.",
+     "why": "meaning: \"X konumu\" after a title reads as a place named X; it is the position in the book X"
+    },
+    {
+     "key": "Position in %@: newer in %@, %@.",
+     "english": "Position in %1$@: newer in %2$@, %3$@.",
+     "before": "%1$@ konumu: %2$@ içinde daha yeni, %3$@.",
+     "after": "%1$@ kitabındaki konum: %2$@ içinde daha yeni, %3$@.",
+     "why": "meaning: \"X konumu\" after a title reads as a place named X; it is the position in the book X"
+    },
+    {
+     "key": "Reading list: %@ is only on %@'s list, at place %@.",
+     "english": "Reading list: %1$@ is only on %2$@'s list, at place %3$@.",
+     "before": "Okuma listesi: %1$@ yalnızca %2$@ listesinde, %3$@. sırada.",
+     "after": "Okuma listesi: %1$@ yalnızca %2$@ içindeki listede, %3$@. sırada.",
+     "why": "grammar: \"bu kopya listesinde\" lacks the genitive; \"the list in this copy\", as the other differences say \"içinde\""
+    },
+    {
+     "key": "Redo Text Extraction?",
+     "english": "Redo Text Extraction?",
+     "before": "Metin Çıkarmayı Yeniden Yap?",
+     "after": "Metin Çıkarma Yeniden Yapılsın mı?",
+     "why": "grammar: a question title needs the question form, as the other titles (Klasör Silinsin mi?), not an imperative with a question mark"
+    },
+    {
+     "key": "Remove %@ from Library Only",
+     "english": "Remove %@ from Library Only",
+     "before": "%@ Öğesini Yalnızca Kitaplıktan Kaldır",
+     "after": "Yalnızca Kitaplıktan %@ Kaldır",
+     "why": "grammar: \"%@ Öğesini\" made \"3 Kitap Öğesini\"; the objects now carry the accusative, and the object sits before the verb so the one-book \"Kitap\" also reads right"
+    },
+    {
+     "key": "Remove %@ from the library",
+     "english": "Remove %@ from the library",
+     "before": "%@ öğesini kitaplıktan kaldır",
+     "after": "Kitaplıktan kaldır: %@",
+     "why": "grammar: \"öğesini\" after \"3 kitap\" read clumsily; the action now comes first and the object after a colon"
+    },
+    {
+     "key": "Remove %@ from the library and keep the files",
+     "english": "Remove %@ from the library and keep the files",
+     "before": "%@ öğesini kitaplıktan kaldır ve dosyaları sakla",
+     "after": "Kitaplıktan kaldır ve dosyaları sakla: %@",
+     "why": "grammar: \"öğesini\" after \"seçili 3 kitap\" read clumsily; the action now comes first and the object after a colon"
+    },
+    {
+     "key": "Remove Downloads of %lld Books",
+     "english": {
+      "one": "Remove Download of %lld Book",
+      "other": "Remove Downloads of %lld Books"
+     },
+     "before": {
+      "one": "%lld Kitabın İndirmelerini Kaldır",
+      "other": "%lld Kitabın İndirmelerini Kaldır"
+     },
+     "after": {
+      "one": "%lld Kitabın İndirmesini Kaldır",
+      "other": "%lld Kitabın İndirmelerini Kaldır"
+     },
+     "why": "grammar: the one form said İndirmelerini (downloads) of one book's single download"
+    },
+    {
+     "key": "Restore “%@” to its default?",
+     "english": "Restore “%@” to its default?",
+     "before": "“%@” varsayılanına geri yüklensin mi?",
+     "after": "“%@” görünümünün varsayılanı geri yüklensin mi?",
+     "why": "grammar: \"“X” varsayılanına\" said \"to the X default\"; it is the view's default that is restored"
+    },
+    {
+     "key": "Sets when the View pop-up offers this view",
+     "english": "Sets when the View pop-up offers this view",
+     "before": "Görünüm açılır menüsünün bu görünümü ne zaman sunacağını belirler",
+     "after": "Görünüm açılır menüsünün bu görünümü ne zaman sunacağını belirler.",
+     "why": "punctuation: a hint is a sentence and ends with a period, as the other Turkish hints do"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "“%1$@” kitabının bazı dosyaları yalnızca bulutta ve şimdi değiştirmek onları geride bırakır. Kitabı indirin, sonra “%2$@” düğmesini yeniden seçin.",
+     "after": "“%1$@” kitabının bazı dosyaları yalnızca bulutta; kitap şimdi değiştirilirse bu dosyalar geride kalır. Kitabı indirin, sonra “%2$@” düğmesini yeniden seçin.",
+     "why": "natural: \"şimdi değiştirmek onları geride bırakır\" lost the would of the English; now \"if it is replaced now, they stay behind\""
+    },
+    {
+     "key": "Sort Ascending",
+     "english": "Sort Ascending",
+     "before": "Artan Sırala",
+     "after": "Artan Şekilde Sırala",
+     "why": "natural: \"Artan Sırala\" sets an adjective before the verb; Apple's Turkish says \"Artan Şekilde Sırala\""
+    },
+    {
+     "key": "Sort Descending",
+     "english": "Sort Descending",
+     "before": "Azalan Sırala",
+     "after": "Azalan Şekilde Sırala",
+     "why": "natural: \"Azalan Sırala\" sets an adjective before the verb; Apple's Turkish says \"Azalan Şekilde Sırala\""
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth, “%@” içinde değiştirdiğiniz metni yeni okumanın yanında saklayamadı, bu yüzden kitabı olduğu gibi bıraktı.",
+     "after": "TextMouth, “%@” içinde değiştirdiğiniz metni yeniden okunan metnin yanında saklayamadı, bu yüzden kitabı olduğu gibi bıraktı.",
+     "why": "meaning: \"yeni okuma\" is an act of reading; the new reading is the re-read text"
+    },
+    {
+     "key": "TextMouth couldn't read %lld files, so this may be incomplete.",
+     "english": {
+      "one": "TextMouth couldn't read %lld file, so this may be incomplete.",
+      "other": "TextMouth couldn't read %lld files, so this may be incomplete."
+     },
+     "before": {
+      "one": "TextMouth %lld dosyayı okuyamadı, bu yüzden bu eksik olabilir.",
+      "other": "TextMouth %lld dosyayı okuyamadı, bu yüzden bu eksik olabilir."
+     },
+     "after": {
+      "one": "TextMouth %lld dosyayı okuyamadı, bu yüzden bu bilgi eksik olabilir.",
+      "other": "TextMouth %lld dosyayı okuyamadı, bu yüzden bu bilgi eksik olabilir."
+     },
+     "why": "natural: \"bu yüzden bu eksik olabilir\" doubled bu and left \"this\" vague; it is this account that may be incomplete"
+    },
+    {
+     "key": "TextMouth couldn't tell which copy is newer (%@).",
+     "english": "TextMouth couldn't tell which copy is newer (%@).",
+     "before": "TextMouth hangi kopyanın daha yeni olduğunu söyleyemedi (%@).",
+     "after": "TextMouth hangi kopyanın daha yeni olduğunu belirleyemedi (%@).",
+     "why": "natural: \"tell\" here is to determine (belirlemek), not to say (söylemek)"
+    },
+    {
+     "key": "TextMouth couldn't tell which copy is newer.",
+     "english": "TextMouth couldn't tell which copy is newer.",
+     "before": "TextMouth hangi kopyanın daha yeni olduğunu söyleyemedi.",
+     "after": "TextMouth hangi kopyanın daha yeni olduğunu belirleyemedi.",
+     "why": "natural: \"tell\" here is to determine (belirlemek), not to say (söylemek)"
+    },
+    {
+     "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "english": {
+      "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
+      "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
+     },
+     "before": {
+      "one": "Bu, %1$@ konumunu %2$lld düzey derine koyar, ancak klasörler en fazla %3$lld düzey iç içe olabilir.",
+      "other": "Bu, %1$@ konumunu %2$lld düzey derine koyar, ancak klasörler en fazla %3$lld düzey iç içe olabilir."
+     },
+     "after": {
+      "one": "Bu, %1$@ konumunu %2$lld düzey derine taşırdı, ancak klasörler en fazla %3$lld düzey iç içe olabilir.",
+      "other": "Bu, %1$@ konumunu %2$lld düzey derine taşırdı, ancak klasörler en fazla %3$lld düzey iç içe olabilir."
+     },
+     "why": "grammar: the refused move needs the conditional (taşırdı), not the aorist \"koyar\" (it puts)"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "one": "Bunlardan %2$lld tanesinin %1$@ saklanır.",
+      "other": "Bunlardan %2$lld tanesinin %1$@ saklanır."
+     },
+     "after": {
+      "one": "Bunlardan %2$lld tanesi için şunlar saklanır: %1$@.",
+      "other": "Bunlardan %2$lld tanesi için şunlar saklanır: %1$@."
+     },
+     "why": "grammar: \"Bunlardan 2 tanesinin yerler ve yer imleri\" lacks the possessive the parts' own words cannot carry; now \"for 2 of them these are kept:\""
+    },
+    {
+     "key": "Their %@ are kept.",
+     "english": "Their %@ are kept.",
+     "before": "Bunların %@ saklanır.",
+     "after": "Bunlar için şunlar saklanır: %@.",
+     "why": "grammar: \"Bunların yerler ve transkriptler\" lacks the possessive the parts' own words cannot carry; now \"for these, the following are kept:\""
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "one": "%1$@ numaralı görünüm yok. Görünüme Git %2$lld görünüme ulaşır.",
+      "other": "%1$@ numaralı görünüm yok. Görünüme Git %2$lld görünüme ulaşır."
+     },
+     "after": {
+      "one": "%1$@ numaralı görünüm yok. “Görünüme Git” komutu %2$lld görünüme ulaşır.",
+      "other": "%1$@ numaralı görünüm yok. “Görünüme Git” komutu %2$lld görünüme ulaşır."
+     },
+     "why": "punctuation: the command name Görünüme Git stood bare as the subject; quoted and called a command"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "Bu braille, English Braille, American Edition gibi görünüyor. Braille Kodu'nu Kitap Bilgileri'nde seçin.",
+     "after": "Bu braille, English Braille, American Edition gibi görünüyor. Kodunu Kitap Bilgilerindeki Braille Kodu menüsünden seçin.",
+     "why": "punctuation: no apostrophe after translated names (Braille Kodu'nu, Kitap Bilgileri'nde); the code is chosen in the Braille Code pop-up"
+    },
+    {
+     "key": "Unread: %@ couldn't be read (%@), %@",
+     "english": "Unread: %1$@ couldn't be read (%2$@), %3$@",
+     "before": "Okunamadı: %1$@ okunamadı (%2$@), %3$@",
+     "after": "Okunamayan dosya: %1$@ okunamadı (%2$@), %3$@",
+     "why": "natural: \"Okunamadı: X okunamadı\" said the same word twice; the label now names the unread file, as the list's title does"
+    },
+    {
+     "key": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@",
+     "english": {
+      "one": "Unread: %@ hasn't arrived from the cloud after %lld second, %@",
+      "other": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
+     },
+     "before": {
+      "one": "Okunamadı: %1$@ %2$lld saniye sonra bile buluttan gelmedi, %3$@",
+      "other": "Okunamadı: %1$@ %2$lld saniye sonra bile buluttan gelmedi, %3$@"
+     },
+     "after": {
+      "one": "Okunamayan dosya: %1$@, %2$lld saniye sonra bile buluttan gelmedi, %3$@",
+      "other": "Okunamayan dosya: %1$@, %2$lld saniye sonra bile buluttan gelmedi, %3$@"
+     },
+     "why": "natural: \"Okunamadı:\" before a sentence that is itself about an unread file; the label now names the file"
+    },
+    {
+     "key": "Unread: %@ wasn't asked for again, because the drive hasn't answered an earlier read, %@",
+     "english": "Unread: %1$@ wasn't asked for again, because the drive hasn't answered an earlier read, %2$@",
+     "before": "Okunamadı: %1$@ yeniden istenmedi, çünkü sürücü önceki bir okumaya yanıt vermedi, %2$@",
+     "after": "Okunamayan dosya: %1$@ yeniden istenmedi, çünkü sürücü önceki bir okumaya yanıt vermedi, %2$@",
+     "why": "natural: \"Okunamadı:\" before a sentence that is itself about an unread file; the label now names the file"
+    },
+    {
+     "key": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@",
+     "english": {
+      "one": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld second in all, %@",
+      "other": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@"
+     },
+     "before": {
+      "one": "Okunamadı: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@",
+      "other": "Okunamadı: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@"
+     },
+     "after": {
+      "one": "Okunamayan dosya: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@",
+      "other": "Okunamayan dosya: %1$@ okunmadı, çünkü TextMouth toplam %2$lld saniye sonra beklemeyi bıraktı, %3$@"
+     },
+     "why": "natural: \"Okunamadı: X okunmadı\" said the same thing twice; the label now names the file"
+    },
+    {
+     "key": "When a book is deleted, %@.",
+     "english": "When a book is deleted, %@.",
+     "before": "Bir kitap silindiğinde: %@.",
+     "after": "Bir kitap silindiğinde %@.",
+     "why": "punctuation: the colon cut the sentence in two; \"Bir kitap silindiğinde dosyaları ... gider.\" reads as one sentence"
+    },
+    {
+     "key": "When off, removing a book will %@ at once.",
+     "english": "When off, removing a book will %@ at once.",
+     "before": "Kapalıyken bir kitabı kaldırmak hemen şunu yapar: %@.",
+     "after": "Kapalıyken, bir kitabı kaldırdığınızda hemen şu yapılır: %@.",
+     "why": "natural: \"bir kitabı kaldırmak ... şunu yapar\" made the act of removing the subject; now \"when you remove a book, this is done at once:\""
+    },
+    {
+     "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Açıkken bir kitabı kaldırmak önce şunlardan birini sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
+     "after": "Açıkken, bir kitabı kaldırdığınızda önce hangisini istediğiniz sorulur: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
+     "why": "meaning: \"şunlardan birini sorar\" said it asks one of the two; it asks which of the two you want"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Kelimelerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider.",
+     "after": "Kelimelerinden hiçbiri kalmadığında, %@, her biri bölümünde yaklaşık aynı noktaya ya da iki metnin ortak olduğu en yakın pasaja gider.",
+     "why": "meaning: \"iki okuma\" is two acts of reading; the two readings are the old and the new text"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Kelimelerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki okumanın paylaştığı en yakın pasaja gider.",
+     "after": "Kelimelerinden hiçbiri kalmadığında, her biri bölümünde yaklaşık aynı noktaya ya da iki metnin ortak olduğu en yakın pasaja gider.",
+     "why": "meaning: \"iki okuma\" is two acts of reading; the two readings are the old and the new text"
+    },
+    {
+     "key": "With %@, %@.",
+     "english": "With %1$@, %2$@.",
+     "before": "%1$@ ile: %2$@.",
+     "after": "“%1$@” ile %2$@.",
+     "why": "punctuation: the button's name in the placeholder is quoted, as the consistency pass quotes a control's name, and the stray colon goes"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "%@ ile besleme ve indirmeleri kalır; Besleme Bilgileri ona başka bir klasör verene kadar hiçbir klasörde listelenmez; satırındaki Beslemeyi Sil… onu siler.",
+     "after": "“%@” ile besleme ve indirmeleri kalır; Besleme Bilgileri ona başka bir klasör verene kadar hiçbir klasörde listelenmez; satırındaki Beslemeyi Sil… onu siler.",
+     "why": "punctuation: the button's name in the placeholder is quoted, as the consistency pass quotes a control's name"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "%@ ile beslemeler ve indirmeleri kalır; Besleme Bilgileri her birine başka bir klasör verene kadar hiçbir klasörde listelenmez; bir beslemenin satırındaki Beslemeyi Sil… onu siler.",
+     "after": "“%@” ile beslemeler ve indirmeleri kalır; Besleme Bilgileri her birine başka bir klasör verene kadar hiçbir klasörde listelenmez; bir beslemenin satırındaki Beslemeyi Sil… onu siler.",
+     "why": "punctuation: the button's name in the placeholder is quoted, as the consistency pass quotes a control's name"
+    },
+    {
+     "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
+     "before": "%1$@ ile klasör ve içindeki her şey kitaplıktan çıkar; %2$@.",
+     "after": "“%1$@” ile klasör ve içindeki her şey kitaplıktan çıkar; %2$@.",
+     "why": "punctuation: the button's name in the placeholder is quoted, as the consistency pass quotes a control's name"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "İçeriği Dışarı Taşı ile beslemenin klasörü de diğerleriyle birlikte taşınır.",
+     "after": "“İçeriği Dışarı Taşı” ile beslemenin klasörü de diğerleriyle birlikte taşınır.",
+     "why": "punctuation: quoted like the other buttons named in the same dialog"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "İçeriği Dışarı Taşı ile beslemelerin klasörleri de diğerleriyle birlikte taşınır.",
+     "after": "“İçeriği Dışarı Taşı” ile beslemelerin klasörleri de diğerleriyle birlikte taşınır.",
+     "why": "punctuation: quoted like the other buttons named in the same dialog"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "İçeriği Dışarı Taşı ile bunlar kitaplıkta kalır ve yalnızca klasör silinir.",
+     "after": "“İçeriği Dışarı Taşı” ile bunlar kitaplıkta kalır ve yalnızca klasör silinir.",
+     "why": "punctuation: quoted like the other buttons named in the same dialog"
+    },
+    {
+     "key": "more than %lld",
+     "english": {
+      "one": "more than %lld",
+      "other": "more than %lld"
+     },
+     "before": {
+      "one": "%lld üzerinde",
+      "other": "%lld üzerinde"
+     },
+     "after": {
+      "one": "%lld üzeri",
+      "other": "%lld üzeri"
+     },
+     "why": "natural: \"1.000 üzerinde\" needs a genitive Turkish cannot add after a number; \"1.000 üzeri\" is the idiom without one"
+    },
+    {
+     "key": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "english": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "before": "bu yüzden TextMouth iki kopyanın tek bir kitaplık olup olmadığını söyleyemedi ve hiçbir şeyi karşılaştırmadı.",
+     "after": "bu yüzden TextMouth iki kopyanın tek bir kitaplık olup olmadığını anlayamadı ve hiçbir şeyi karşılaştırmadı.",
+     "why": "natural: \"tell\" here is to determine (anlamak), not to say (söylemek)"
+    },
+    {
+     "key": "subscribed",
+     "english": "subscribed",
+     "before": "abone",
+     "after": "abone olunan",
+     "why": "meaning: \"abone\" alone is \"a subscriber\"; the condition is that the feed is subscribed to"
+    },
+    {
+     "key": "the identity marker of %@",
+     "english": "the identity marker of %@",
+     "before": "%@ kimlik işareti",
+     "after": "%@ içindeki kimlik işareti",
+     "why": "grammar: \"bu kopya kimlik işareti\" lacks the genitive; \"the identity marker in this copy\" works for every value"
+    },
+    {
+     "key": "the library index of %@",
+     "english": "the library index of %@",
+     "before": "%@ kitaplık dizini",
+     "after": "%@ içindeki kitaplık dizini",
+     "why": "grammar: \"bu kopya kitaplık dizini\" lacks the genitive; \"the library index in this copy\" works for every value"
+    },
+    {
+     "key": "unsubscribed",
+     "english": "unsubscribed",
+     "before": "abone değil",
+     "after": "abone olunmayan",
+     "why": "meaning: \"abone değil\" says \"is not a subscriber\"; the condition is that the feed is not subscribed to"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
