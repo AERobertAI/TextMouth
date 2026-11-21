@@ -161804,7 +161804,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "将速度降低 %lld 字/分钟"
+                  "value" : "将速度降低每分钟 %lld 字"
                 }
               }
             }
@@ -237552,7 +237552,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "将速度提高 %lld 字/分钟"
+                  "value" : "将速度提高每分钟 %lld 字"
                 }
               }
             }
@@ -411328,7 +411328,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "睡眠定时器已到时"
+            "value" : "睡眠定时器已结束"
           }
         },
         "zh-Hant" : {
@@ -411447,7 +411447,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "睡眠定时器已在章节标题结尾到时。播放已暂停。"
+            "value" : "睡眠定时器已在章节标题结尾处结束。播放已暂停。"
           }
         },
         "zh-Hant" : {
@@ -411566,7 +411566,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "睡眠定时器已到时。播放已暂停。"
+            "value" : "睡眠定时器已结束。播放已暂停。"
           }
         },
         "zh-Hant" : {
