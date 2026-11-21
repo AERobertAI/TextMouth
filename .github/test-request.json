@@ -1,0 +1,21 @@
+{
+  "areas": [
+    "phone"
+  ],
+  "classes": [
+    "SpanishLocalizationTests"
+  ],
+  "full": false,
+  "shards": 1,
+  "train": "1121-1425",
+  "requests": [
+    {
+      "agent": "orchestrator-058b",
+      "branch": "integrate/l10n-wave3-1121",
+      "head": "66dc2a74e5cd810b492028733bc99d614cfc8979"
+    }
+  ],
+  "ios_ui_classes": [
+    "LanguagePackTests"
+  ]
+}
