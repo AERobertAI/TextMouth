@@ -3251,7 +3251,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ đã có trong thư viện của bạn nhưng chưa đăng ký. Chọn %2$@ trên hàng của từng nguồn cấp, hoặc trong %3$@ của nguồn cấp đó, để kiểm tra lại."
+            "value" : "%1$@ đã có trong thư viện của bạn nhưng bạn đã hủy đăng ký. Chọn %2$@ trên hàng của từng nguồn cấp, hoặc trong %3$@ của nguồn cấp đó, để kiểm tra lại."
           }
         },
         "zh-Hans" : {
@@ -13998,7 +13998,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ đã có trong thư viện của bạn nhưng chưa đăng ký. Chọn %2$@ trên hàng của nguồn cấp đó, hoặc trong %3$@ của nguồn cấp đó, để kiểm tra lại."
+            "value" : "%1$@ đã có trong thư viện của bạn nhưng bạn đã hủy đăng ký. Chọn %2$@ trên hàng của nguồn cấp đó hoặc trong %3$@ của nó để kiểm tra lại."
           }
         },
         "zh-Hans" : {
@@ -15392,7 +15392,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ đã hủy đăng ký nên TextMouth không kiểm tra. Chọn %2$@ để kiểm tra lại."
+            "value" : "Bạn đã hủy đăng ký %1$@ nên TextMouth không kiểm tra nguồn cấp này. Chọn %2$@ để kiểm tra lại."
           }
         },
         "zh-Hans" : {
@@ -22021,7 +22021,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ để chuyển âm thanh Ogg của sách này sang AAC. Hãy giải phóng bớt dung lượng, và TextMouth sẽ chuyển ở lần mở kế tiếp."
+            "value" : "%@ để chuyển âm thanh Ogg của sách này sang AAC. Hãy giải phóng bớt dung lượng, TextMouth sẽ chuyển đổi sách này vào lần mở kế tiếp."
           }
         },
         "zh-Hans" : {
@@ -22158,7 +22158,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ để chuyển âm thanh Ogg của các sách này sang AAC. Hãy giải phóng bớt dung lượng, và TextMouth sẽ chuyển ở lần mở kế tiếp."
+            "value" : "%@ để chuyển âm thanh Ogg của các sách này sang AAC. Hãy giải phóng bớt dung lượng, TextMouth sẽ chuyển đổi chúng vào lần mở kế tiếp."
           }
         },
         "zh-Hans" : {
@@ -95139,7 +95139,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Địa chỉ nguồn cấp, như liên kết kết thúc bằng .rss hoặc .xml, hoặc trang web nêu tên nguồn cấp của nó."
+            "value" : "Địa chỉ nguồn cấp, như liên kết kết thúc bằng .rss hoặc .xml, hoặc trang web có liên kết đến nguồn cấp của nó."
           }
         },
         "zh-Hans" : {
@@ -122455,7 +122455,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Âm thanh mà TextMouth chuyển đổi khi nhập chỉ giữ lại tệp đã chuyển đổi."
+            "value" : "Với âm thanh được TextMouth chuyển đổi khi nhập, chỉ tệp đã chuyển đổi được giữ lại."
           }
         },
         "zh-Hans" : {
@@ -136190,7 +136190,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đang hủy sau sách này..."
+            "value" : "Sẽ hủy sau khi xong sách này..."
           }
         },
         "zh-Hans" : {
@@ -191487,7 +191487,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bản tải về %1$lld trên %2$lld: “%3$@” từ %4$@"
+            "value" : "Đang tải về %1$lld trên %2$lld: “%3$@” từ %4$@"
           }
         },
         "zh-Hans" : {
@@ -206070,7 +206070,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Các chỉnh sửa âm thanh hoặc bản kê khai của nó không được giữ lại."
+            "value" : "Các chỉnh sửa đối với âm thanh hoặc tệp kê khai của nó không được giữ lại."
           }
         },
         "zh-Hans" : {
@@ -214520,7 +214520,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mọi nguồn cấp đều chưa đăng ký nên không nguồn nào được kiểm tra. Chọn %1$@ trên hàng của nguồn cấp, hoặc trong %2$@ của nguồn cấp đó, để kiểm tra lại."
+            "value" : "Bạn đã hủy đăng ký mọi nguồn cấp nên không nguồn nào được kiểm tra. Chọn %1$@ trên hàng của một nguồn cấp, hoặc trong %2$@ của nguồn cấp đó, để kiểm tra lại."
           }
         },
         "zh-Hans" : {
@@ -218991,7 +218991,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy xuất bản thuyết trình Keynote từ Keynote sang tệp PDF, rồi nhập các tệp đó."
+            "value" : "Hãy xuất bài thuyết trình Keynote từ Keynote sang tệp PDF, rồi nhập các tệp đó."
           }
         },
         "zh-Hans" : {
@@ -223785,7 +223785,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đang giải nén kho lưu trữ..."
+            "value" : "Đang giải nén tệp lưu trữ..."
           }
         },
         "zh-Hans" : {
@@ -254227,7 +254227,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã hủy nhập khi đang giải nén kho lưu trữ, trước khi sách nào được nhập."
+            "value" : "Đã hủy nhập khi đang giải nén tệp lưu trữ, trước khi có sách nào được nhập."
           }
         },
         "zh-Hans" : {
@@ -263984,7 +263984,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nó cũng xóa %@."
+            "value" : "Thao tác này cũng xóa %@."
           }
         },
         "zh-Hans" : {
@@ -265080,7 +265080,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nó xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác."
+            "value" : "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác."
           }
         },
         "zh-Hans" : {
@@ -265217,7 +265217,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nó xóa %@: mục này bị xóa vĩnh viễn và không thể khôi phục."
+            "value" : "Thao tác này xóa %@: mục này bị xóa vĩnh viễn và không thể khôi phục."
           }
         },
         "zh-Hans" : {
@@ -265354,7 +265354,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nó xóa %@: mục này vẫn nằm trong thư mục thư viện của TextMouth."
+            "value" : "Thao tác này xóa %@: mục này vẫn nằm trong thư mục thư viện của TextMouth."
           }
         },
         "zh-Hans" : {
@@ -265491,7 +265491,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nó xóa %@: chúng bị xóa vĩnh viễn và không thể khôi phục."
+            "value" : "Thao tác này xóa %@: chúng bị xóa vĩnh viễn và không thể khôi phục."
           }
         },
         "zh-Hans" : {
@@ -265628,7 +265628,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nó xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác."
+            "value" : "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác."
           }
         },
         "zh-Hans" : {
@@ -265765,7 +265765,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nó xóa %@: chúng vẫn nằm trong thư mục thư viện của TextMouth."
+            "value" : "Thao tác này xóa %@: chúng vẫn nằm trong thư mục thư viện của TextMouth."
           }
         },
         "zh-Hans" : {
