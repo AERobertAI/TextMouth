@@ -944,6 +944,1165 @@
    ]
   },
   {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has no transcript to clean up. Transcribe its audio first.",
+     "english": "%@ has no transcript to clean up. Transcribe its audio first.",
+     "before": "%@ ไม่มีข้อความถอดเสียงให้ล้าง ให้ถอดเสียงจากไฟล์เสียงก่อน",
+     "after": "%@ ไม่มีข้อความถอดเสียงให้ตรวจแก้ ให้ถอดเสียงจากไฟล์เสียงก่อน",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "%@ is being transcribed. Clean up its transcript once that finishes.",
+     "english": "%@ is being transcribed. Clean up its transcript once that finishes.",
+     "before": "กำลังถอดเสียง %@ ให้ล้างข้อความถอดเสียงหลังจากเสร็จแล้ว",
+     "after": "กำลังถอดเสียง %@ ให้ตรวจแก้ข้อความถอดเสียงหลังจากเสร็จแล้ว",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "%@ moved to position %lld of %lld",
+     "english": "%1$@ moved to position %2$lld of %3$lld",
+     "before": "ย้าย %1$@ ไปตำแหน่งที่ %2$lld จาก %3$lld",
+     "after": "ย้าย %1$@ ไปตำแหน่งที่ %2$lld จาก %3$lld แล้ว",
+     "why": "meaning: without แล้ว the announcement reads as an order to move"
+    },
+    {
+     "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "before": "%@ ย้ายตอนหรือบทความที่ดาวน์โหลดในฟีดของตน เลือกรายการหนึ่งในโฟลเดอร์ของฟีด",
+     "after": "คำสั่ง %@ ย้ายตอนหรือบทความที่ดาวน์โหลดไว้ในฟีด เลือกรายการหนึ่งในโฟลเดอร์ของฟีด",
+     "why": "natural: a bare command name as the subject reads as an order; คำสั่ง names it as the command"
+    },
+    {
+     "key": "%@ on this book",
+     "english": "%@ on this book",
+     "before": "%@ กับหนังสือเล่มนี้",
+     "after": "หนังสือเล่มนี้ใช้เวลาไปแล้ว %@",
+     "why": "natural: กับหนังสือเล่มนี้ copied on this book; now says the time this book has taken"
+    },
+    {
+     "key": "%@ so far",
+     "english": "%@ so far",
+     "before": "%@ จนถึงตอนนี้",
+     "after": "ดาวน์โหลดแล้ว %@",
+     "why": "natural: จนถึงตอนนี้ copied so far; now says how much has downloaded"
+    },
+    {
+     "key": "%@ was disconnected, so recording stopped. What was recorded is kept.",
+     "english": "%@ was disconnected, so recording stopped. What was recorded is kept.",
+     "before": "ยกเลิกการเชื่อมต่อ %@ การบันทึกเสียงจึงหยุด เสียงที่บันทึกไว้แล้วยังอยู่",
+     "after": "ตัดการเชื่อมต่อ %@ แล้ว การบันทึกเสียงจึงหยุด เสียงที่บันทึกไว้แล้วยังอยู่",
+     "why": "meaning: ยกเลิกการเชื่อมต่อ %@ read as an order to disconnect it; the app says ตัดการเชื่อมต่อ elsewhere"
+    },
+    {
+     "key": "%@ was disconnected, so recordings use %@.",
+     "english": "%1$@ was disconnected, so recordings use %2$@.",
+     "before": "ยกเลิกการเชื่อมต่อ %1$@ การบันทึกเสียงจึงใช้ %2$@ แทน",
+     "after": "ตัดการเชื่อมต่อ %1$@ แล้ว การบันทึกเสียงจึงใช้ %2$@ แทน",
+     "why": "meaning: ยกเลิกการเชื่อมต่อ %@ read as an order to disconnect it; the app says ตัดการเชื่อมต่อ elsewhere"
+    },
+    {
+     "key": "%@ was disconnected. Connect a microphone to record.",
+     "english": "%@ was disconnected. Connect a microphone to record.",
+     "before": "ยกเลิกการเชื่อมต่อ %@ ให้เชื่อมต่อไมโครโฟนเพื่อบันทึกเสียง",
+     "after": "ตัดการเชื่อมต่อ %@ แล้ว ให้เชื่อมต่อไมโครโฟนเพื่อบันทึกเสียง",
+     "why": "meaning: ยกเลิกการเชื่อมต่อ %@ read as an order to disconnect it; the app says ตัดการเชื่อมต่อ elsewhere"
+    },
+    {
+     "key": "%@, at %@.",
+     "english": "%1$@, at %2$@.",
+     "before": "%1$@ ที่ %2$@",
+     "after": "%1$@ อยู่ที่ %2$@",
+     "why": "grammar: after a marker number, ที่ reads as a count of places (3 ที่); อยู่ที่ says at"
+    },
+    {
+     "key": "%@-bit floating-point",
+     "english": "%@-bit floating-point",
+     "before": "ทศนิยมลอยตัว %@ บิต",
+     "after": "จุดลอยตัว %@ บิต",
+     "why": "term: floating point is จุดลอยตัว in Thai; ทศนิยมลอยตัว is not a term in use"
+    },
+    {
+     "key": "%lld books are missing chapters:",
+     "english": {
+      "one": "%lld book is missing chapters:",
+      "other": "%lld books are missing chapters:"
+     },
+     "before": {
+      "other": "%lld เล่มมีบทที่ขาดหายไป:"
+     },
+     "after": {
+      "other": "หนังสือ %lld เล่มมีบทที่ขาดหายไป:"
+     },
+     "why": "grammar: a count of books needs its noun (หนังสือ %lld เล่ม), not a bare classifier"
+    },
+    {
+     "key": "%lld books have pages that could not be read:",
+     "english": {
+      "one": "%lld book has pages that could not be read:",
+      "other": "%lld books have pages that could not be read:"
+     },
+     "before": {
+      "other": "%lld เล่มมีหน้าที่อ่านไม่ได้:"
+     },
+     "after": {
+      "other": "หนังสือ %lld เล่มมีหน้าที่อ่านไม่ได้:"
+     },
+     "why": "grammar: a count of books needs its noun (หนังสือ %lld เล่ม), not a bare classifier"
+    },
+    {
+     "key": "%lld corrections",
+     "english": {
+      "one": "%lld correction",
+      "other": "%lld corrections"
+     },
+     "before": {
+      "other": "%lld การแก้ไข"
+     },
+     "after": {
+      "other": "การแก้ไข %lld รายการ"
+     },
+     "why": "grammar: a count of corrections needs the classifier รายการ"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "other": "เลิกทำการแก้ไข %lld รายการแล้ว ทำซ้ำจะนำกลับมาได้จนกว่าคุณจะแก้ไขใหม่"
+     },
+     "after": {
+      "other": "เลิกทำการแก้ไข %lld รายการแล้ว คำสั่ง ทำซ้ำ จะนำกลับมาได้จนกว่าคุณจะแก้ไขใหม่"
+     },
+     "why": "natural: the bare command name ทำซ้ำ (also repeat) as the subject; คำสั่ง names it"
+    },
+    {
+     "key": "%lld more imports waiting",
+     "english": {
+      "one": "%lld more import waiting",
+      "other": "%lld more imports waiting"
+     },
+     "before": {
+      "other": "รออีก %lld รายการนำเข้า"
+     },
+     "after": {
+      "other": "รอนำเข้าอีก %lld รายการ"
+     },
+     "why": "natural: รออีก ... รายการนำเข้า copied the English order; now N more waiting to import"
+    },
+    {
+     "key": "%lld timed passages were too long and cut short.",
+     "english": {
+      "one": "%lld timed passage was too long and cut short.",
+      "other": "%lld timed passages were too long and cut short."
+     },
+     "before": {
+      "other": "ตัดข้อความที่มีเวลากำกับ %lld ช่วงให้สั้นลงเพราะยาวเกินไป"
+     },
+     "after": {
+      "other": "ตัดข้อความที่มีเวลากำกับ %lld ช่วงให้สั้นลงแล้ว เพราะยาวเกินไป"
+     },
+     "why": "meaning: without แล้ว the report reads as an order to cut"
+    },
+    {
+     "key": "%lld timed passages were unreadable and left out.",
+     "english": {
+      "one": "%lld timed passage was unreadable and left out.",
+      "other": "%lld timed passages were unreadable and left out."
+     },
+     "before": {
+      "other": "ข้ามข้อความที่มีเวลากำกับ %lld ช่วงเพราะอ่านไม่ได้"
+     },
+     "after": {
+      "other": "ข้ามข้อความที่มีเวลากำกับ %lld ช่วงแล้ว เพราะอ่านไม่ได้"
+     },
+     "why": "meaning: without แล้ว the report reads as an order to skip"
+    },
+    {
+     "key": "%lld waiting for room on this Mac",
+     "english": {
+      "one": "%lld waiting for room on this Mac",
+      "other": "%lld waiting for room on this Mac"
+     },
+     "before": {
+      "other": "%lld รอพื้นที่ว่างบน Mac เครื่องนี้"
+     },
+     "after": {
+      "other": "%lld รายการรอพื้นที่ว่างบน Mac เครื่องนี้"
+     },
+     "why": "grammar: a bare number cannot be the subject; the classifier รายการ added"
+    },
+    {
+     "key": "%lld waiting until this Mac is on a network without data limits",
+     "english": {
+      "one": "%lld waiting until this Mac is on a network without data limits",
+      "other": "%lld waiting until this Mac is on a network without data limits"
+     },
+     "before": {
+      "other": "%lld รอจน Mac เครื่องนี้อยู่บนเครือข่ายที่ไม่จำกัดข้อมูล"
+     },
+     "after": {
+      "other": "%lld รายการรอจนกว่า Mac เครื่องนี้จะเชื่อมต่อเครือข่ายที่ไม่จำกัดข้อมูล"
+     },
+     "why": "grammar: classifier added; อยู่บนเครือข่าย copied on a network, Thai connects to one"
+    },
+    {
+     "key": "A symbolic link cannot be deleted as a managed book package.",
+     "english": "A symbolic link cannot be deleted as a managed book package.",
+     "before": "ลบลิงก์สัญลักษณ์เป็นแพ็กเกจหนังสือที่จัดการไม่ได้",
+     "after": "ไม่สามารถลบลิงก์สัญลักษณ์ในฐานะแพ็กเกจหนังสือที่จัดการโดย TextMouth",
+     "why": "meaning: the final ไม่ได้ bound to จัดการ and read as an unmanageable package"
+    },
+    {
+     "key": "After a pause of %@, at %@.",
+     "english": "After a pause of %1$@, at %2$@.",
+     "before": "หลังพัก %1$@ ที่ %2$@",
+     "after": "หลังช่วงหยุด %1$@ ที่ %2$@",
+     "why": "term: the editor calls its pauses ช่วงหยุด (Pause %@); พัก is a rest"
+    },
+    {
+     "key": "After an automatic refresh, an alert names the feeds with new episodes and articles",
+     "english": "After an automatic refresh, an alert names the feeds with new episodes and articles",
+     "before": "หลังรีเฟรชอัตโนมัติ จะแสดงการแจ้งเตือนที่ระบุฟีดที่มีตอนและบทความใหม่",
+     "after": "หลังรีเฟรชอัตโนมัติ จะแสดงหน้าต่างแจ้งเตือนที่ระบุฟีดที่มีตอนและบทความใหม่",
+     "why": "meaning: การแจ้งเตือน is also the notification of the switch beside it; หน้าต่างแจ้งเตือน is the alert"
+    },
+    {
+     "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "before": "รายละเอียดของบทความมาจากฟีด %@ จะทำให้เป็นหนังสือที่คุณแก้ไขได้",
+     "after": "รายละเอียดของบทความมาจากฟีด คำสั่ง %@ จะทำให้บทความเป็นหนังสือที่คุณแก้ไขได้",
+     "why": "natural: a bare command name as the subject reads as an order; คำสั่ง names it as the command"
+    },
+    {
+     "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "before": "รายละเอียดของตอนมาจากฟีด %@ จะทำให้เป็นหนังสือที่คุณแก้ไขได้",
+     "after": "รายละเอียดของตอนมาจากฟีด คำสั่ง %@ จะทำให้ตอนเป็นหนังสือที่คุณแก้ไขได้",
+     "why": "natural: a bare command name as the subject reads as an order; คำสั่ง names it as the command"
+    },
+    {
+     "key": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "english": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "before": "ใช้ตัวกรอง จะแสดงรายการเหล่านี้ตามลำดับนี้ แต่ละรายการคือลูกโซ่ของตัวกรองในไวยากรณ์ของ ffmpeg เช่น highpass=f=80,volume=3dB TextMouth ใช้ตัวกรองของตัวเอง และใช้ตัวกรองของ ffmpeg ทุกตัวเมื่อติดตั้ง ffmpeg และเปิดไว้ด้านบน",
+     "after": "คำสั่ง ใช้ตัวกรอง จะแสดงรายการเหล่านี้ตามลำดับนี้ แต่ละรายการคือลูกโซ่ของตัวกรองในไวยากรณ์ของ ffmpeg เช่น highpass=f=80,volume=3dB TextMouth ใช้ตัวกรองของตัวเอง และใช้ตัวกรองของ ffmpeg ทุกตัวเมื่อติดตั้ง ffmpeg และเปิดไว้ด้านบน",
+     "why": "natural: a bare command name as the subject reads as an order; คำสั่ง names it"
+    },
+    {
+     "key": "Apply Filter plays a preview first, and applies when you choose Apply again.",
+     "english": "Apply Filter plays a preview first, and applies when you choose Apply again.",
+     "before": "ใช้ตัวกรอง จะเล่นตัวอย่างก่อน และใช้ตัวกรองเมื่อคุณเลือก นำไปใช้ อีกครั้ง",
+     "after": "คำสั่ง ใช้ตัวกรอง จะเล่นตัวอย่างก่อน และใช้ตัวกรองเมื่อคุณเลือก นำไปใช้ อีกครั้ง",
+     "why": "natural: a bare command name as the subject reads as an order; คำสั่ง names it"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "ถามหลังนำเข้าหนังสือเสียงแต่ละเล่มว่าจะถอดเสียงหรือไม่ เมื่อปิด จะถอดเสียงหนังสือเสียงด้วย ถอดเสียงจากไฟล์เสียง เท่านั้น",
+     "after": "ถามหลังนำเข้าหนังสือเสียงแต่ละเล่มว่าจะถอดเสียงหรือไม่ เมื่อปิด จะถอดเสียงหนังสือเสียงเฉพาะเมื่อคุณเลือกคำสั่ง ถอดเสียงจากไฟล์เสียง",
+     "why": "meaning: ด้วย before the command name read as also (audiobooks are also transcribed)"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "ตรวจสอบฟีดนี้อีกครั้งตั้งแต่นี้ไปและทันที",
+     "after": "ตรวจสอบฟีดนี้ทันทีและตรวจสอบต่อไปจากนี้",
+     "why": "natural: อีกครั้งตั้งแต่นี้ไปและทันที copied the English order; now at once and from now on"
+    },
+    {
+     "key": "Clean Up Transcript (Experimental)…",
+     "english": "Clean Up Transcript (Experimental)…",
+     "before": "ล้างข้อความถอดเสียง (ทดลอง)…",
+     "after": "ตรวจแก้ข้อความถอดเสียง (ทดลอง)…",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "Clean Up the Transcript of %@",
+     "english": "Clean Up the Transcript of %@",
+     "before": "ล้างข้อความถอดเสียงของ %@",
+     "after": "ตรวจแก้ข้อความถอดเสียงของ %@",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "Cleaned up on %@, with rules version %@: %@.",
+     "english": "Cleaned up on %1$@, with rules version %2$@: %3$@.",
+     "before": "ล้างเมื่อ %1$@ ด้วยกฎเวอร์ชัน %2$@: %3$@",
+     "after": "ตรวจแก้เมื่อ %1$@ ด้วยกฎเวอร์ชัน %2$@: %3$@",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "Cleaned up the transcript of %@: %@.",
+     "english": "Cleaned up the transcript of %1$@: %2$@.",
+     "before": "ล้างข้อความถอดเสียงของ %1$@ แล้ว: %2$@",
+     "after": "ตรวจแก้ข้อความถอดเสียงของ %1$@ แล้ว: %2$@",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "Cleaning up the transcript…",
+     "english": "Cleaning up the transcript…",
+     "before": "กำลังล้างข้อความถอดเสียง…",
+     "after": "กำลังตรวจแก้ข้อความถอดเสียง…",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording.",
+     "english": "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording.",
+     "before": "การปิดจะสิ้นสุดการบันทึกเสียง %1$@ บันทึกเป็นหนังสือเสียง %2$@ ลบการบันทึก และ %3$@ บันทึกต่อ",
+     "after": "การปิดจะสิ้นสุดการบันทึกเสียง เลือก %1$@ เพื่อบันทึกเป็นหนังสือเสียง %2$@ เพื่อลบการบันทึก หรือ %3$@ เพื่อบันทึกต่อ",
+     "why": "natural: three bare button names as subjects ran into their verbs; now choose X to ..."
+    },
+    {
+     "key": "Convert it to 16-bit or 24-bit integer samples, then import it again.",
+     "english": "Convert it to 16-bit or 24-bit integer samples, then import it again.",
+     "before": "แปลงเป็นตัวอย่างจำนวนเต็ม 16 บิตหรือ 24 บิต แล้วนำเข้าอีกครั้ง",
+     "after": "แปลงเป็นข้อมูลเสียงแบบจำนวนเต็ม 16 บิตหรือ 24 บิต แล้วนำเข้าอีกครั้ง",
+     "why": "meaning: ตัวอย่าง (samples) reads as examples; ข้อมูลเสียง is the audio data"
+    },
+    {
+     "key": "Couldn't clean up the transcript of %@: %@",
+     "english": "Couldn't clean up the transcript of %1$@: %2$@",
+     "before": "ล้างข้อความถอดเสียงของ %1$@ ไม่ได้: %2$@",
+     "after": "ตรวจแก้ข้อความถอดเสียงของ %1$@ ไม่ได้: %2$@",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "Couldn't undo the cleanup of the transcript of %@: %@",
+     "english": "Couldn't undo the cleanup of the transcript of %1$@: %2$@",
+     "before": "เลิกทำการล้างข้อความถอดเสียงของ %1$@ ไม่ได้: %2$@",
+     "after": "เลิกทำการตรวจแก้ข้อความถอดเสียงของ %1$@ ไม่ได้: %2$@",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean Up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "Discarded the recording of %@, which holds no sound.",
+     "english": "Discarded the recording of %@, which holds no sound.",
+     "before": "ทิ้งการบันทึกเสียงของ %@ ซึ่งไม่มีเสียงแล้ว",
+     "after": "ทิ้งการบันทึกเสียงของ %@ แล้ว เพราะไม่มีเสียง",
+     "why": "meaning: ซึ่งไม่มีเสียงแล้ว read as which no longer holds sound"
+    },
+    {
+     "key": "Every article listed, downloads by hand",
+     "english": "Every article listed, downloads by hand",
+     "before": "แสดงบทความทั้งหมด ดาวน์โหลดเอง",
+     "after": "แสดงบทความทั้งหมด ดาวน์โหลดด้วยตนเอง",
+     "why": "meaning: ดาวน์โหลดเอง also reads as downloads by itself, the opposite; ด้วยตนเอง is by hand"
+    },
+    {
+     "key": "Every episode listed, downloads by hand",
+     "english": "Every episode listed, downloads by hand",
+     "before": "แสดงตอนทั้งหมด ดาวน์โหลดเอง",
+     "after": "แสดงตอนทั้งหมด ดาวน์โหลดด้วยตนเอง",
+     "why": "meaning: ดาวน์โหลดเอง also reads as downloads by itself, the opposite; ด้วยตนเอง is by hand"
+    },
+    {
+     "key": "Every item listed, downloads by hand",
+     "english": "Every item listed, downloads by hand",
+     "before": "แสดงรายการทั้งหมด ดาวน์โหลดเอง",
+     "after": "แสดงรายการทั้งหมด ดาวน์โหลดด้วยตนเอง",
+     "why": "meaning: ดาวน์โหลดเอง also reads as downloads by itself, the opposite; ด้วยตนเอง is by hand"
+    },
+    {
+     "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "before": "ทดลอง กฎเหล่านี้แก้คำที่ตัวรู้จำเสียงเขียนต่างจากหนังสือที่อ่านออกเสียง ตรวจสอบการเปลี่ยนแปลงก่อนใช้ เลิกทำการล้าง จะนำข้อความถอดเสียงกลับคืน",
+     "after": "ทดลอง กฎเหล่านี้แก้คำที่ตัวรู้จำเสียงเขียนต่างจากหนังสือที่อ่านออกเสียง ตรวจสอบการเปลี่ยนแปลงก่อนใช้ คำสั่ง เลิกทำการตรวจแก้ จะนำข้อความถอดเสียงกลับคืน",
+     "why": "meaning: ล้าง (Clear) for Clean Up; also คำสั่ง before the command name as the subject"
+    },
+    {
+     "key": "Fade In",
+     "english": "Fade In",
+     "before": "ค่อยๆ ดังขึ้น",
+     "after": "ค่อย ๆ ดังขึ้น",
+     "why": "punctuation: the catalog writes ๆ after a space (อื่น ๆ), as the Royal Institute does"
+    },
+    {
+     "key": "Fade Out (Select the Last Second)",
+     "english": "Fade Out (Select the Last Second)",
+     "before": "ค่อยๆ เบาลง (เลือกวินาทีสุดท้าย)",
+     "after": "ค่อย ๆ เบาลง (เลือกวินาทีสุดท้าย)",
+     "why": "punctuation: the catalog writes ๆ after a space (อื่น ๆ), as the Royal Institute does"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "ฟีดจะรีเฟรชเมื่อเปิดแอปเท่านั้น หากเปิดอยู่ และเมื่อคุณเลือก %1$@ หรือ %2$@",
+     "after": "ฟีดจะรีเฟรชเฉพาะเมื่อเปิดแอปหากเปิดใช้ตัวเลือกนั้นไว้ และเมื่อคุณเลือก %1$@ หรือ %2$@",
+     "why": "meaning: หากเปิดอยู่ read as if the app is open, and เท่านั้น cut off the second case"
+    },
+    {
+     "key": "Imported %lld books, but %@",
+     "english": {
+      "one": "Imported %lld book, but %@",
+      "other": "Imported %lld books, but %@"
+     },
+     "before": {
+      "other": "นำเข้าหนังสือ %lld เล่ม แต่ %@"
+     },
+     "after": {
+      "other": "นำเข้าหนังสือแล้ว %lld เล่ม แต่ %@"
+     },
+     "why": "meaning: without แล้ว the report reads as an order to import"
+    },
+    {
+     "key": "Imported %lld books.",
+     "english": {
+      "one": "Imported %lld book.",
+      "other": "Imported %lld books."
+     },
+     "before": {
+      "other": "นำเข้าหนังสือ %lld เล่ม"
+     },
+     "after": {
+      "other": "นำเข้าหนังสือแล้ว %lld เล่ม"
+     },
+     "why": "meaning: without แล้ว the report reads as an order to import"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "รายการนี้เป็นของฟีดขณะที่ดาวน์โหลดอยู่ %@ จะนำไฟล์ของรายการออกและเก็บตำแหน่งกับที่คั่นหน้าไว้",
+     "after": "รายการนี้เป็นของฟีดตราบใดที่ยังดาวน์โหลดไว้ คำสั่ง %@ จะนำไฟล์ออกโดยเก็บตำแหน่งและที่คั่นหน้าไว้",
+     "why": "meaning: ขณะที่ดาวน์โหลดอยู่ said while downloading; also คำสั่ง before the bare command name"
+    },
+    {
+     "key": "Its %@ are kept for when you download it again.",
+     "english": "Its %@ are kept for when you download it again.",
+     "before": "จะเก็บ %@ ของรายการไว้สำหรับตอนที่คุณดาวน์โหลดอีกครั้ง",
+     "after": "จะเก็บ %@ ของรายการไว้ใช้เมื่อคุณดาวน์โหลดอีกครั้ง",
+     "why": "meaning: สำหรับตอนที่ reads as for the episode that, ตอน being the word for Episode"
+    },
+    {
+     "key": "Its %@ is kept for when you download it again.",
+     "english": "Its %@ is kept for when you download it again.",
+     "before": "จะเก็บ %@ ของรายการไว้สำหรับตอนที่คุณดาวน์โหลดอีกครั้ง",
+     "after": "จะเก็บ %@ ของรายการไว้ใช้เมื่อคุณดาวน์โหลดอีกครั้ง",
+     "why": "meaning: สำหรับตอนที่ reads as for the episode that, ตอน being the word for Episode"
+    },
+    {
+     "key": "Its cleanup is replaced too.",
+     "english": "Its cleanup is replaced too.",
+     "before": "การล้างของข้อความถอดเสียงนั้นก็ถูกแทนที่ด้วย",
+     "after": "การตรวจแก้ข้อความถอดเสียงนั้นก็จะถูกแทนที่ด้วย",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so the cleanup read as a clearing; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "english": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "before": "ปล่อยหนังสือเสียงไว้โดยไม่ถอดเสียง ถอดเสียงจากไฟล์เสียง ทำได้ภายหลัง",
+     "after": "ปล่อยหนังสือเสียงไว้โดยไม่ถอดเสียง ใช้คำสั่ง ถอดเสียงจากไฟล์เสียง ภายหลังได้",
+     "why": "natural: a bare command name as the subject; now use the command later"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "แสดงบทความทั้งหมด เก็บ %lld รายการล่าสุดไว้ที่ดาวน์โหลดแล้ว และนำการดาวน์โหลดที่เก่ากว่าซึ่งสร้างไว้ออก โดยเก็บตำแหน่ง ที่คั่นหน้า และการตั้งค่าไว้"
+     },
+     "after": {
+      "other": "แสดงบทความทั้งหมด ดาวน์โหลด %lld รายการล่าสุดไว้เสมอ และนำรายการที่เก่ากว่าซึ่ง TextMouth ดาวน์โหลดไว้ออก โดยเก็บตำแหน่ง ที่คั่นหน้า และการตั้งค่าไว้"
+     },
+     "why": "natural: เก็บ ... ไว้ที่ดาวน์โหลดแล้ว and ซึ่งสร้างไว้ did not parse; now keeps the newest downloaded and removes older ones TextMouth made"
+    },
+    {
+     "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "แสดงบทความทั้งหมด ไม่มีสิ่งใดดาวน์โหลดเอง และการดาวน์โหลดจะอยู่จนกว่าคุณจะลบหรือครบจำนวนวันหลังเล่น",
+     "after": "แสดงบทความทั้งหมด ไม่ดาวน์โหลดอัตโนมัติ และรายการดาวน์โหลดจะอยู่จนกว่าคุณจะลบหรือครบจำนวนวันหลังเล่น",
+     "why": "meaning: ไม่มีสิ่งใดดาวน์โหลดเอง can read as nothing you download yourself; อัตโนมัติ is unambiguous"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "แสดงตอนและบทความทั้งหมด เก็บ %lld รายการล่าสุดไว้ที่ดาวน์โหลดแล้ว และนำการดาวน์โหลดที่เก่ากว่าซึ่งสร้างไว้ออก โดยเก็บตำแหน่ง ที่คั่นหน้า และการตั้งค่าไว้"
+     },
+     "after": {
+      "other": "แสดงตอนและบทความทั้งหมด ดาวน์โหลด %lld รายการล่าสุดไว้เสมอ และนำรายการที่เก่ากว่าซึ่ง TextMouth ดาวน์โหลดไว้ออก โดยเก็บตำแหน่ง ที่คั่นหน้า และการตั้งค่าไว้"
+     },
+     "why": "natural: เก็บ ... ไว้ที่ดาวน์โหลดแล้ว and ซึ่งสร้างไว้ did not parse; now keeps the newest downloaded and removes older ones TextMouth made"
+    },
+    {
+     "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "แสดงตอนและบทความทั้งหมด ไม่มีสิ่งใดดาวน์โหลดเอง และการดาวน์โหลดจะอยู่จนกว่าคุณจะลบหรือครบจำนวนวันหลังเล่น",
+     "after": "แสดงตอนและบทความทั้งหมด ไม่ดาวน์โหลดอัตโนมัติ และรายการดาวน์โหลดจะอยู่จนกว่าคุณจะลบหรือครบจำนวนวันหลังเล่น",
+     "why": "meaning: ไม่มีสิ่งใดดาวน์โหลดเอง can read as nothing you download yourself; อัตโนมัติ is unambiguous"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "แสดงตอนทั้งหมด เก็บ %lld ตอนล่าสุดไว้ที่ดาวน์โหลดแล้ว และนำการดาวน์โหลดที่เก่ากว่าซึ่งสร้างไว้ออก โดยเก็บตำแหน่ง ที่คั่นหน้า และการตั้งค่าไว้"
+     },
+     "after": {
+      "other": "แสดงตอนทั้งหมด ดาวน์โหลด %lld ตอนล่าสุดไว้เสมอ และนำตอนที่เก่ากว่าซึ่ง TextMouth ดาวน์โหลดไว้ออก โดยเก็บตำแหน่ง ที่คั่นหน้า และการตั้งค่าไว้"
+     },
+     "why": "natural: เก็บ ... ไว้ที่ดาวน์โหลดแล้ว and ซึ่งสร้างไว้ did not parse; now keeps the newest downloaded and removes older ones TextMouth made"
+    },
+    {
+     "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "แสดงตอนทั้งหมด ไม่มีสิ่งใดดาวน์โหลดเอง และการดาวน์โหลดจะอยู่จนกว่าคุณจะลบหรือครบจำนวนวันหลังเล่น",
+     "after": "แสดงตอนทั้งหมด ไม่ดาวน์โหลดอัตโนมัติ และรายการดาวน์โหลดจะอยู่จนกว่าคุณจะลบหรือครบจำนวนวันหลังเล่น",
+     "why": "meaning: ไม่มีสิ่งใดดาวน์โหลดเอง can read as nothing you download yourself; อัตโนมัติ is unambiguous"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "ทำการแก้ไขเหล่านี้ ข้อความถอดเสียงเดิมยังเก็บไว้ เลิกทำการล้าง จึงนำกลับคืนได้",
+     "after": "ทำการแก้ไขเหล่านี้ ข้อความถอดเสียงเดิมยังเก็บไว้ คำสั่ง เลิกทำการตรวจแก้ จึงนำกลับคืนได้",
+     "why": "meaning: ล้าง (Clear) for Clean Up; also คำสั่ง before the command name as the subject"
+    },
+    {
+     "key": "Marker %@ at %@.",
+     "english": "Marker %1$@ at %2$@.",
+     "before": "เครื่องหมาย %1$@ ที่ %2$@",
+     "after": "เครื่องหมาย %1$@ อยู่ที่ %2$@",
+     "why": "grammar: after the marker number, ที่ reads as a count of places (3 ที่); อยู่ที่ says at"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "other": "ย้าย %lld ตอนนี้ไปยังโฟลเดอร์ในไลบรารีเป็นหนังสือที่คุณแก้ไขได้ ตอนจะออกจากฟีด"
+     },
+     "after": {
+      "other": "ย้ายทั้ง %lld ตอนไปยังโฟลเดอร์ในไลบรารีเป็นหนังสือที่คุณแก้ไขได้ ตอนเหล่านี้จะออกจากฟีด"
+     },
+     "why": "meaning: ตอนนี้ (these episodes) is heard as ตอนนี้, now"
+    },
+    {
+     "key": "Moves this episode into a library folder as a book you can edit; it leaves the feed",
+     "english": "Moves this episode into a library folder as a book you can edit; it leaves the feed",
+     "before": "ย้ายตอนนี้ไปยังโฟลเดอร์ในไลบรารีเป็นหนังสือที่คุณแก้ไขได้ ตอนจะออกจากฟีด",
+     "after": "ย้ายตอนไปยังโฟลเดอร์ในไลบรารีเป็นหนังสือที่คุณแก้ไขได้ ตอนจะออกจากฟีด",
+     "why": "meaning: ย้ายตอนนี้ (move this episode) is heard as move now"
+    },
+    {
+     "key": "Newest articles kept downloaded or listed, from 1 to 2,000",
+     "english": "Newest articles kept downloaded or listed, from 1 to 2,000",
+     "before": "จำนวนบทความล่าสุดที่เก็บไว้ในดาวน์โหลดหรือแสดงรายการ ตั้งแต่ 1 ถึง 2,000",
+     "after": "จำนวนบทความล่าสุดที่ดาวน์โหลดไว้หรือแสดงในรายการ ตั้งแต่ 1 ถึง 2,000",
+     "why": "meaning: เก็บไว้ในดาวน์โหลด read as kept in the Downloads folder"
+    },
+    {
+     "key": "Newest episodes and articles kept downloaded or listed, from 1 to 2,000",
+     "english": "Newest episodes and articles kept downloaded or listed, from 1 to 2,000",
+     "before": "จำนวนตอนและบทความล่าสุดที่เก็บไว้ในดาวน์โหลดหรือแสดงรายการ ตั้งแต่ 1 ถึง 2,000",
+     "after": "จำนวนตอนและบทความล่าสุดที่ดาวน์โหลดไว้หรือแสดงในรายการ ตั้งแต่ 1 ถึง 2,000",
+     "why": "meaning: เก็บไว้ในดาวน์โหลด read as kept in the Downloads folder"
+    },
+    {
+     "key": "Newest episodes kept downloaded or listed, from 1 to 2,000",
+     "english": "Newest episodes kept downloaded or listed, from 1 to 2,000",
+     "before": "จำนวนตอนล่าสุดที่เก็บไว้ในดาวน์โหลดหรือแสดงรายการ ตั้งแต่ 1 ถึง 2,000",
+     "after": "จำนวนตอนล่าสุดที่ดาวน์โหลดไว้หรือแสดงในรายการ ตั้งแต่ 1 ถึง 2,000",
+     "why": "meaning: เก็บไว้ในดาวน์โหลด read as kept in the Downloads folder"
+    },
+    {
+     "key": "Newest items kept downloaded or listed, from 1 to 2,000",
+     "english": "Newest items kept downloaded or listed, from 1 to 2,000",
+     "before": "จำนวนรายการล่าสุดที่เก็บไว้ในดาวน์โหลดหรือแสดงรายการ ตั้งแต่ 1 ถึง 2,000",
+     "after": "จำนวนรายการล่าสุดที่ดาวน์โหลดไว้หรือแสดงในรายการ ตั้งแต่ 1 ถึง 2,000",
+     "why": "meaning: เก็บไว้ในดาวน์โหลด read as kept in the Downloads folder"
+    },
+    {
+     "key": "No cleanup to undo: the earlier transcript is gone.",
+     "english": "No cleanup to undo: the earlier transcript is gone.",
+     "before": "ไม่มีการล้างให้เลิกทำ: ไม่มีข้อความถอดเสียงก่อนหน้าแล้ว",
+     "after": "ไม่มีการตรวจแก้ให้เลิกทำ: ไม่มีข้อความถอดเสียงก่อนหน้าแล้ว",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so the cleanup read as a clearing; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "No markers yet. Add Marker drops one at the cursor.",
+     "english": "No markers yet. Add Marker drops one at the cursor.",
+     "before": "ยังไม่มีเครื่องหมาย เพิ่มเครื่องหมาย จะวางหนึ่งรายการที่เคอร์เซอร์",
+     "after": "ยังไม่มีเครื่องหมาย คำสั่ง เพิ่มเครื่องหมาย จะวางเครื่องหมายที่เคอร์เซอร์",
+     "why": "natural: the bare command name after ยังไม่มีเครื่องหมาย read as an order to add one"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "ไม่ได้เก็บต้นฉบับ จึงย้อนกลับไม่ได้ เลิกทำ จะนำการแก้ไขตั้งแต่การบันทึกครั้งล่าสุดกลับคืน",
+     "after": "ไม่ได้เก็บต้นฉบับ จึงย้อนกลับไม่ได้ คำสั่ง เลิกทำ จะยกเลิกการแก้ไขตั้งแต่การบันทึกครั้งล่าสุด",
+     "why": "meaning: นำการแก้ไข...กลับคืน read as bringing the edits back; Undo takes them away"
+    },
+    {
+     "key": "Not Now",
+     "english": "Not Now",
+     "before": "ไว้ทีหลัง",
+     "after": "ไม่ใช่ตอนนี้",
+     "why": "term: Apple Thai says ไม่ใช่ตอนนี้ for Not Now; ไว้ทีหลัง is Later"
+    },
+    {
+     "key": "Not checked",
+     "english": "Not checked",
+     "before": "Mac เครื่องนี้ไม่เคยตรวจสอบ",
+     "after": "ไม่เคยตรวจสอบ",
+     "why": "natural: the English is two words; Mac เครื่องนี้ added a subject it does not say"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "ยังไม่อยู่ในเสียงของหนังสือ ทิ้ง จะเลิกทำการแก้ไขเหล่านั้น เมื่อแก้ไขหนังสือเล่มนี้ครั้งหน้า ทำซ้ำ จะนำกลับมาได้จนกว่าคุณจะแก้ไขใหม่",
+     "after": "ยังไม่อยู่ในเสียงของหนังสือ คำสั่ง ทิ้ง จะเลิกทำการแก้ไขเหล่านั้น และเมื่อแก้ไขหนังสือเล่มนี้ครั้งหน้า คำสั่ง ทำซ้ำ จะนำกลับมาได้จนกว่าคุณจะแก้ไขใหม่",
+     "why": "natural: two bare command names as subjects; คำสั่ง names them"
+    },
+    {
+     "key": "Pauses the recording; %@ continues the same recording.",
+     "english": "Pauses the recording; %@ continues the same recording.",
+     "before": "หยุดการบันทึกเสียงชั่วคราว %@ จะบันทึกต่อในการบันทึกเสียงเดิม",
+     "after": "หยุดการบันทึกเสียงชั่วคราว เลือก %@ เพื่อบันทึกต่อในการบันทึกเสียงเดิม",
+     "why": "natural: a bare button name as the subject; now choose X to continue"
+    },
+    {
+     "key": "Play half a second after each move",
+     "english": "Play half a second after each move",
+     "before": "เล่นต่ออีกครึ่งวินาทีหลังเลื่อนทุกครั้ง",
+     "after": "เล่นครึ่งวินาทีหลังเลื่อนทุกครั้ง",
+     "why": "meaning: เล่นต่อ is the glossary Resume; the switch plays half a second, as its hint says"
+    },
+    {
+     "key": "Puts back the transcript as it was before the last cleanup.",
+     "english": "Puts back the transcript as it was before the last cleanup.",
+     "before": "นำข้อความถอดเสียงกลับเป็นแบบก่อนการล้างครั้งล่าสุด",
+     "after": "นำข้อความถอดเสียงกลับเป็นแบบก่อนการตรวจแก้ครั้งล่าสุด",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so the cleanup read as a clearing; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "บันทึกทับ %1$@ ที่ %2$@ จาก %3$@ หลังเสียงบี๊บ บันทึกทับ หรือ หยุด จะสิ้นสุดการบันทึก ล้างส่วนที่เลือก จะทิ้งการบันทึก",
+     "after": "กำลังบันทึกทับ %1$@ ที่ %2$@ จาก %3$@ หลังเสียงบี๊บ เลือก บันทึกทับ หรือ หยุด เพื่อสิ้นสุด หรือ ล้างส่วนที่เลือก เพื่อทิ้งการบันทึก",
+     "why": "natural: the status began like the command, and three button names were subjects; now choose X to end"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "บันทึกเสียงเพื่อแทรกที่ %1$@ จาก %2$@ หลังเสียงบี๊บ บันทึกทับ หรือ หยุด จะสิ้นสุดการบันทึก ล้างส่วนที่เลือก จะทิ้งการบันทึก",
+     "after": "กำลังบันทึกเสียงเพื่อแทรกที่ %1$@ จาก %2$@ หลังเสียงบี๊บ เลือก บันทึกทับ หรือ หยุด เพื่อสิ้นสุด หรือ ล้างส่วนที่เลือก เพื่อทิ้งการบันทึก",
+     "why": "natural: the status read as an order, and three button names were subjects; now choose X to end"
+    },
+    {
+     "key": "Recording. Stop or discard it with Clear Selection, then close.",
+     "english": "Recording. Stop or discard it with Clear Selection, then close.",
+     "before": "กำลังบันทึกเสียง ให้หยุด หรือทิ้งด้วย ล้างส่วนที่เลือก แล้วจึงปิด",
+     "after": "กำลังบันทึกเสียง ให้หยุด หรือทิ้งโดยใช้คำสั่ง ล้างส่วนที่เลือก แล้วจึงปิด",
+     "why": "meaning: หรือทิ้งด้วย read as or discard it too"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "บันทึกทับส่วนที่เลือก หรือที่เคอร์เซอร์ หลังเสียงบี๊บ กดอีกครั้ง หรือ หยุด เพื่อสิ้นสุด",
+     "after": "บันทึกทับส่วนที่เลือก หรือที่เคอร์เซอร์ หลังเสียงบี๊บ เลือกอีกครั้ง หรือเลือก หยุด เพื่อสิ้นสุด",
+     "why": "voiceover: กดอีกครั้ง named a press; the English says Again"
+    },
+    {
+     "key": "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied.",
+     "english": "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied.",
+     "before": "การแทนที่จะเก็บตำแหน่งการอ่านและที่คั่นหน้าของสำเนาที่มีอยู่ โดยย้ายไปยังคำของที่คั่นหน้าในข้อความใหม่หากพบ รวมถึงการตั้งค่า โฟลเดอร์ และตำแหน่งในรายการอ่าน การแก้ไขข้อความจะเก็บไว้เป็นสำเนาข้างข้อความใหม่ ไม่ถูกนำไปใช้",
+     "after": "การแทนที่จะเก็บตำแหน่งการอ่านและที่คั่นหน้าของสำเนาที่มีอยู่ โดยย้ายไปยังคำเดียวกันในข้อความใหม่หากพบ รวมถึงการตั้งค่า โฟลเดอร์ และตำแหน่งในรายการอ่าน การแก้ไขข้อความจะเก็บไว้เป็นสำเนาข้างข้อความใหม่ ไม่ถูกนำไปใช้",
+     "why": "meaning: คำของที่คั่นหน้า moved only the bookmarks; the position moves to its words too"
+    },
+    {
+     "key": "Resume",
+     "english": "Resume",
+     "before": "เล่นต่อ",
+     "after": "บันทึกต่อ",
+     "why": "meaning: เล่นต่อ (play on) on the button that continues a paused recording; the announcement says กำลังบันทึกต่อ"
+    },
+    {
+     "key": "Reverse",
+     "english": "Reverse",
+     "before": "ย้อนกลับเสียง",
+     "after": "เล่นถอยหลัง",
+     "why": "meaning: ย้อนกลับ is the glossary Revert, beside Revert to Original; the preset plays backwards"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "other": "ย้อนกลับเป็นเสียงต้นฉบับแล้ว ทำซ้ำ จะนำการแก้ไข %lld รายการกลับมา"
+     },
+     "after": {
+      "other": "ย้อนกลับเป็นเสียงต้นฉบับแล้ว คำสั่ง ทำซ้ำ จะนำการแก้ไข %lld รายการกลับมา"
+     },
+     "why": "natural: the bare command name ทำซ้ำ (also repeat) as the subject; คำสั่ง names it"
+    },
+    {
+     "key": "Rules: TextMouth's own, version %@ of %@, %lld rules.",
+     "english": {
+      "one": "Rules: TextMouth's own, version %@ of %@, %lld rule.",
+      "other": "Rules: TextMouth's own, version %@ of %@, %lld rules."
+     },
+     "before": {
+      "other": "กฎ: ของ TextMouth เวอร์ชัน %@ ของ %@ จำนวน %lld กฎ"
+     },
+     "after": {
+      "other": "กฎ: ของ TextMouth เวอร์ชัน %@ ลงวันที่ %@ จำนวน %lld ข้อ"
+     },
+     "why": "meaning: ของ before the date read as belonging to it (ลงวันที่ dates it); rules are counted in ข้อ"
+    },
+    {
+     "key": "Rules: your copy, version %@ of %@, %lld rules.",
+     "english": {
+      "one": "Rules: your copy, version %@ of %@, %lld rule.",
+      "other": "Rules: your copy, version %@ of %@, %lld rules."
+     },
+     "before": {
+      "other": "กฎ: สำเนาของคุณ เวอร์ชัน %@ ของ %@ จำนวน %lld กฎ"
+     },
+     "after": {
+      "other": "กฎ: สำเนาของคุณ เวอร์ชัน %@ ลงวันที่ %@ จำนวน %lld ข้อ"
+     },
+     "why": "meaning: ของ before the date read as belonging to it (ลงวันที่ dates it); rules are counted in ข้อ"
+    },
+    {
+     "key": "Selected chapter %@: %@, %@.",
+     "english": "Selected chapter %1$@: %2$@, %3$@.",
+     "before": "เลือกบทที่ %1$@: %2$@ ยาว %3$@",
+     "after": "เลือกบทที่ %1$@ แล้ว: %2$@ ยาว %3$@",
+     "why": "meaning: without แล้ว the announcement reads as the Select Chapter command"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "ตั้งภาษาสำหรับการถอดเสียง ภาษาที่มีเครื่องหมายต้องดาวน์โหลด จะดาวน์โหลดได้จากชีต ถอดเสียงจากไฟล์เสียง เท่านั้น",
+     "after": "ตั้งภาษาสำหรับการถอดเสียง ภาษาที่ระบุว่า “ต้องดาวน์โหลด” จะดาวน์โหลดได้จากชีต ถอดเสียงจากไฟล์เสียง เท่านั้น",
+     "why": "meaning: ภาษาที่มีเครื่องหมายต้องดาวน์โหลด said languages with a mark must be downloaded; the status word is quoted"
+    },
+    {
+     "key": "Show an alert when a refresh brings new episodes",
+     "english": "Show an alert when a refresh brings new episodes",
+     "before": "แสดงการแจ้งเตือนเมื่อการรีเฟรชนำตอนใหม่มา",
+     "after": "แสดงหน้าต่างแจ้งเตือนเมื่อการรีเฟรชพบตอนใหม่",
+     "why": "meaning: การแจ้งเตือน is also the notification of the switch beside it; หน้าต่างแจ้งเตือน is the alert"
+    },
+    {
+     "key": "Stopped %lld feed downloads.",
+     "english": {
+      "one": "Stopped %lld feed download.",
+      "other": "Stopped %lld feed downloads."
+     },
+     "before": {
+      "other": "หยุดการดาวน์โหลดฟีด %lld รายการ"
+     },
+     "after": {
+      "other": "หยุดการดาวน์โหลดฟีด %lld รายการแล้ว"
+     },
+     "why": "meaning: without แล้ว the announcement reads as an order to stop"
+    },
+    {
+     "key": "Subscribed",
+     "english": "Subscribed",
+     "before": "วันที่ติดตาม",
+     "after": "ติดตามแล้ว",
+     "why": "meaning: the key is also a view condition, where วันที่ติดตาม (date subscribed) is wrong; ติดตามแล้ว reads right in both"
+    },
+    {
+     "key": "Text recognition could not read %@: %@.",
+     "english": "Text recognition could not read %1$@: %2$@.",
+     "before": "การรู้จำข้อความอ่านไม่ได้ %1$@: %2$@",
+     "after": "การรู้จำข้อความอ่าน %1$@ ไม่ได้: %2$@",
+     "why": "grammar: ไม่ได้ follows the object in Thai (อ่าน X ไม่ได้)"
+    },
+    {
+     "key": "TextMouth Subscriptions",
+     "english": "TextMouth Subscriptions",
+     "before": "การติดตามของ TextMouth",
+     "after": "รายการที่ติดตามของ TextMouth",
+     "why": "meaning: การติดตาม is also Apple Thai for Tracking; the app calls subscriptions รายการที่ติดตาม"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "other": "TextMouth จะดาวน์โหลดอีก %lld รายการเมื่อฟีดตรวจสอบครั้งถัดไป หรือเมื่อเปิดแอปครั้งถัดไป"
+     },
+     "after": {
+      "other": "TextMouth จะดาวน์โหลด %lld รายการในนั้นอีกครั้งเมื่อตรวจสอบฟีดครั้งถัดไป หรือเมื่อเปิดแอปครั้งถัดไป"
+     },
+     "why": "meaning: ดาวน์โหลดอีก %lld รายการ said N more, not N of them again; the feed does not check itself"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth จะดาวน์โหลดอีก 1 รายการเมื่อฟีดของรายการตรวจสอบครั้งถัดไป หรือเมื่อเปิดแอปครั้งถัดไป",
+     "after": "TextMouth จะดาวน์โหลด 1 รายการในนั้นอีกครั้งเมื่อตรวจสอบฟีดของรายการครั้งถัดไป หรือเมื่อเปิดแอปครั้งถัดไป",
+     "why": "meaning: ดาวน์โหลดอีก 1 รายการ said one more, not one of them again; the feed does not check itself"
+    },
+    {
+     "key": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "english": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "before": "TextMouth ไม่มีกฎของตัวเอง เพราะไม่มีกฎใดที่ถูกต้องในทุกเล่มที่ทดสอบ แก้ไขกฎ… จะเปิดสำเนาของคุณ ซึ่งคุณเพิ่มกฎได้ เช่น ชื่อที่ตัวรู้จำเสียงสะกดต่างไปเสมอ",
+     "after": "TextMouth ไม่มีกฎของตัวเอง เพราะไม่มีกฎใดที่ถูกต้องในทุกเล่มที่ทดสอบ คำสั่ง แก้ไขกฎ… จะเปิดสำเนาของคุณ ซึ่งคุณเพิ่มกฎได้ เช่น ชื่อที่ตัวรู้จำเสียงสะกดต่างไปเสมอ",
+     "why": "natural: a bare command name as the subject; คำสั่ง names it"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth กำลังจะออก และเสียงของหนังสือยังไม่มีการแก้ไขเหล่านี้ ทิ้ง จะเลิกทำการแก้ไข เมื่อแก้ไขหนังสือเล่มนี้ครั้งหน้า ทำซ้ำ จะนำกลับมาได้จนกว่าคุณจะแก้ไขใหม่ ยกเลิก จะให้ TextMouth เปิดต่อไป",
+     "after": "TextMouth กำลังจะออก และเสียงของหนังสือยังไม่มีการแก้ไขเหล่านี้ คำสั่ง ทิ้ง จะเลิกทำการแก้ไข และเมื่อแก้ไขหนังสือเล่มนี้ครั้งหน้า คำสั่ง ทำซ้ำ จะนำกลับมาได้จนกว่าคุณจะแก้ไขใหม่ ส่วนคำสั่ง ยกเลิก จะให้ TextMouth เปิดอยู่ต่อไป",
+     "why": "natural: three bare button names as subjects; คำสั่ง names them"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "other": "TextMouth ย้ายสำเนาใหม่ของหนังสือที่ซ้ำ %lld รายการไปที่ถังขยะ เพราะคำถามว่าจะเก็บไว้เป็นหนังสือซ้ำหรือไม่ไม่เคยได้รับคำตอบก่อน TextMouth ปิด หากต้องการนำกลับมา ให้เปิดถังขยะแล้วเลือก นำกลับ"
+     },
+     "after": {
+      "other": "TextMouth ย้ายสำเนาใหม่ของหนังสือที่ซ้ำ %lld รายการไปที่ถังขยะ เพราะไม่มีการตอบคำถามว่าจะเก็บไว้เป็นหนังสือซ้ำหรือไม่ก่อนที่ TextMouth จะปิด หากต้องการนำกลับมา ให้เปิดถังขยะแล้วเลือก นำกลับ"
+     },
+     "why": "natural: หรือไม่ไม่เคยได้รับคำตอบ ran two negations together; now there was no answer"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth ย้ายสำเนาใหม่ของ %@ ไปที่ถังขยะ เพราะคำถามว่าจะเก็บไว้เป็นหนังสือซ้ำหรือไม่ไม่เคยได้รับคำตอบก่อน TextMouth ปิด หากต้องการนำกลับมา ให้เปิดถังขยะแล้วเลือก นำกลับ",
+     "after": "TextMouth ย้ายสำเนาใหม่ของ %@ ไปที่ถังขยะ เพราะไม่มีการตอบคำถามว่าจะเก็บไว้เป็นหนังสือซ้ำหรือไม่ก่อนที่ TextMouth จะปิด หากต้องการนำกลับมา ให้เปิดถังขยะแล้วเลือก นำกลับ",
+     "why": "natural: หรือไม่ไม่เคยได้รับคำตอบ ran two negations together; now there was no answer"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth ย้ายสำเนาใหม่ของ “%@” ไปที่ถังขยะ เพราะคำถามว่าจะเก็บไว้เป็นหนังสือซ้ำหรือไม่ไม่เคยได้รับคำตอบก่อน TextMouth ปิด หากต้องการนำกลับมา ให้เปิดถังขยะแล้วเลือก นำกลับ",
+     "after": "TextMouth ย้ายสำเนาใหม่ของ “%@” ไปที่ถังขยะ เพราะไม่มีการตอบคำถามว่าจะเก็บไว้เป็นหนังสือซ้ำหรือไม่ก่อนที่ TextMouth จะปิด หากต้องการนำกลับมา ให้เปิดถังขยะแล้วเลือก นำกลับ",
+     "why": "natural: หรือไม่ไม่เคยได้รับคำตอบ ran two negations together; now there was no answer"
+    },
+    {
+     "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "english": {
+      "one": "The marker is deleted, and Redo doesn't bring it back.",
+      "other": "The %lld markers are deleted, and Redo doesn't bring them back."
+     },
+     "before": {
+      "other": "ลบเครื่องหมาย %lld รายการแล้ว และ ทำซ้ำ จะไม่นำกลับมา"
+     },
+     "after": {
+      "other": "ลบเครื่องหมาย %lld รายการแล้ว และคำสั่ง ทำซ้ำ จะไม่นำกลับมา"
+     },
+     "why": "natural: the bare command name ทำซ้ำ (also repeat) as the subject; คำสั่ง names it"
+    },
+    {
+     "key": "The article leaves the list for good, and its download, if any, is deleted.",
+     "english": "The article leaves the list for good, and its download, if any, is deleted.",
+     "before": "บทความจะออกจากรายการถาวร และการดาวน์โหลดของบทความ ถ้ามี จะถูกลบ",
+     "after": "บทความจะออกจากรายการอย่างถาวร และการดาวน์โหลดของบทความ ถ้ามี จะถูกลบ",
+     "why": "meaning: ออกจากรายการถาวร read as leaves the permanent list"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "บทความจะออกจากรายการถาวร หนังสือที่บทความกลายเป็นในไลบรารีของคุณยังอยู่",
+     "after": "บทความจะออกจากรายการอย่างถาวร ส่วนหนังสือที่ได้จากบทความในไลบรารีของคุณจะยังอยู่",
+     "why": "meaning: รายการถาวร read as the permanent list; the book the article became copied the English"
+    },
+    {
+     "key": "The book is being transcribed again. Clean up its transcript once that finishes.",
+     "english": "The book is being transcribed again. Clean up its transcript once that finishes.",
+     "before": "กำลังถอดเสียงหนังสืออีกครั้ง ให้ล้างข้อความถอดเสียงหลังจากเสร็จแล้ว",
+     "after": "กำลังถอดเสียงหนังสืออีกครั้ง ให้ตรวจแก้ข้อความถอดเสียงหลังจากเสร็จแล้ว",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Clean up read as erasing the transcript; ตรวจแก้ is correcting it"
+    },
+    {
+     "key": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "english": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "before": "ตอนจะออกจากรายการถาวร และการดาวน์โหลดของตอน ถ้ามี จะถูกลบ",
+     "after": "ตอนจะออกจากรายการอย่างถาวร และการดาวน์โหลดของตอน ถ้ามี จะถูกลบ",
+     "why": "meaning: ออกจากรายการถาวร read as leaves the permanent list"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "ตอนจะออกจากรายการถาวร หนังสือที่ตอนกลายเป็นในไลบรารีของคุณยังอยู่",
+     "after": "ตอนจะออกจากรายการอย่างถาวร ส่วนหนังสือที่ได้จากตอนในไลบรารีของคุณจะยังอยู่",
+     "why": "meaning: รายการถาวร read as the permanent list; the book the episode became copied the English"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "ฟีดจะอยู่ในไลบรารีของคุณพร้อมการตั้งค่าและ %1$@ และ %2$@ จะตรวจสอบฟีดอีกครั้ง",
+     "after": "ฟีดจะอยู่ในไลบรารีของคุณพร้อมการตั้งค่าและ %1$@ เลือก %2$@ เพื่อตรวจสอบฟีดอีกครั้ง",
+     "why": "natural: a bare command name as the subject after a second และ; now Choose X to check it again"
+    },
+    {
+     "key": "The feed stays in your library with its settings, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings, and %@ checks it again.",
+     "before": "ฟีดจะอยู่ในไลบรารีของคุณพร้อมการตั้งค่า และ %@ จะตรวจสอบฟีดอีกครั้ง",
+     "after": "ฟีดจะอยู่ในไลบรารีของคุณพร้อมการตั้งค่า เลือก %@ เพื่อตรวจสอบฟีดอีกครั้ง",
+     "why": "natural: a bare command name as the subject; now Choose X to check it again"
+    },
+    {
+     "key": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "english": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "before": "ไมโครโฟนที่ใช้บันทึกทับ TextMouth จำไว้แยกจากอินพุตของ macOS",
+     "after": "ไมโครโฟนที่ใช้บันทึกทับ โดย TextMouth จะจำไว้แยกจากอินพุตของ macOS",
+     "why": "natural: the sentence break before TextMouth was only the space a Latin word gets, so it ran on as punching in over TextMouth"
+    },
+    {
+     "key": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
+     "english": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
+     "before": "ไมโครโฟนที่ใช้บันทึกเสียง TextMouth จำไว้ อินพุตที่ macOS ใช้ในที่อื่นไม่เปลี่ยนแปลง",
+     "after": "ไมโครโฟนที่ใช้บันทึกเสียง โดย TextMouth จะจำไว้ และอินพุตที่ macOS ใช้ในที่อื่นจะไม่เปลี่ยนแปลง",
+     "why": "natural: the sentence break before TextMouth was only the space a Latin word gets, so it ran on as recording TextMouth"
+    },
+    {
+     "key": "The page at %@ is larger than TextMouth reads.",
+     "english": "The page at %@ is larger than TextMouth reads.",
+     "before": "หน้าที่ %@ ใหญ่กว่าที่ TextMouth อ่านได้",
+     "after": "หน้าเว็บที่ %@ ใหญ่กว่าที่ TextMouth อ่านได้",
+     "why": "meaning: หน้าที่ (the page at) is also the word for duty"
+    },
+    {
+     "key": "The pre-cleanup transcript is only in the cloud. Download the book and try again.",
+     "english": "The pre-cleanup transcript is only in the cloud. Download the book and try again.",
+     "before": "ข้อความถอดเสียงก่อนการล้างอยู่ในคลาวด์เท่านั้น ให้ดาวน์โหลดหนังสือแล้วลองอีกครั้ง",
+     "after": "ข้อความถอดเสียงก่อนการตรวจแก้อยู่ในคลาวด์เท่านั้น ให้ดาวน์โหลดหนังสือแล้วลองอีกครั้ง",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so the cleanup read as a clearing; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
+     "english": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
+     "before": "ข้อความถอดเสียงเปลี่ยนไปตั้งแต่แสดงรายการนี้ ให้เปิด ล้างข้อความถอดเสียง อีกครั้งเพื่อดูการเปลี่ยนแปลง",
+     "after": "ข้อความถอดเสียงเปลี่ยนไปตั้งแต่แสดงรายการนี้ ให้เปิด ตรวจแก้ข้อความถอดเสียง อีกครั้งเพื่อดูการเปลี่ยนแปลง",
+     "why": "meaning: the command is now ตรวจแก้ข้อความถอดเสียง, not ล้าง (Clear)"
+    },
+    {
+     "key": "The transcript from before the cleanup can't be used: %@.",
+     "english": "The transcript from before the cleanup can't be used: %@.",
+     "before": "ใช้ข้อความถอดเสียงก่อนการล้างไม่ได้: %@",
+     "after": "ใช้ข้อความถอดเสียงก่อนการตรวจแก้ไม่ได้: %@",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so the cleanup read as a clearing; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
+     "english": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
+     "before": "ข้อความถอดเสียงพร้อมการเปลี่ยนแปลงของคุณจะอยู่กับตอนในฟีด แม้ลบไฟล์ที่ดาวน์โหลดแล้ว การลบตอนหรือฟีดจะลบข้อความถอดเสียงด้วย ย้ายไปยังไลบรารี จะเก็บไว้เป็นหนังสือ",
+     "after": "ข้อความถอดเสียงพร้อมการเปลี่ยนแปลงของคุณจะอยู่กับตอนในฟีด แม้ลบไฟล์ที่ดาวน์โหลดแล้ว การลบตอนหรือฟีดจะลบข้อความถอดเสียงด้วย ส่วนคำสั่ง ย้ายไปยังไลบรารี จะเก็บไว้เป็นหนังสือ",
+     "why": "natural: a bare command name as the subject reads as an order; คำสั่ง names it"
+    },
+    {
+     "key": "There isn't room on this Mac for this episode (%@).",
+     "english": "There isn't room on this Mac for this episode (%@).",
+     "before": "Mac เครื่องนี้มีพื้นที่ไม่พอสำหรับตอนนี้ (%@)",
+     "after": "Mac เครื่องนี้มีพื้นที่ไม่พอสำหรับไฟล์ของตอน (%@)",
+     "why": "meaning: สำหรับตอนนี้ (for this episode) is heard as for now"
+    },
+    {
+     "key": "These transcript files beside the audio weren't attached: %@. The debug log says why.",
+     "english": "These transcript files beside the audio weren't attached: %@. The debug log says why.",
+     "before": "ไม่ได้แนบไฟล์ข้อความถอดเสียงเหล่านี้ที่อยู่ข้างไฟล์เสียง: %@ บันทึกการแก้ปัญหาบอกสาเหตุ",
+     "after": "ไม่ได้แนบไฟล์ข้อความถอดเสียงเหล่านี้ที่อยู่ข้างไฟล์เสียง: %@ ดูสาเหตุได้ในบันทึกการทำงานสำหรับดีบัก",
+     "why": "term: the app calls the debug log บันทึกการทำงานสำหรับดีบัก (glossary Logs), not บันทึกการแก้ปัญหา"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "ไฟล์ XML นี้ไม่ใช่หนังสือ DTBook เอกสาร Word 2003 XML หรือไฟล์อักษรเบรลล์ PEF ซึ่งเป็น XML เพียงชนิดเดียวที่ TextMouth อ่านได้",
+     "after": "ไฟล์ XML นี้ไม่ใช่หนังสือ DTBook เอกสาร Word 2003 XML หรือไฟล์อักษรเบรลล์ PEF ซึ่ง TextMouth อ่านได้เฉพาะ XML ชนิดเหล่านี้",
+     "why": "meaning: XML เพียงชนิดเดียว said one kind; three kinds are listed"
+    },
+    {
+     "key": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "english": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "before": "หนังสือนี้ไม่มีแพ็กเกจที่จัดการได้ นำออกจากไลบรารีเท่านั้น หรือซ่อมแซมที่เก็บข้อมูลก่อนลบ",
+     "after": "หนังสือนี้ไม่มีแพ็กเกจที่ถูกต้องซึ่งจัดการโดย TextMouth นำออกจากไลบรารีเท่านั้น หรือซ่อมแซมที่เก็บข้อมูลก่อนลบ",
+     "why": "meaning: แพ็กเกจที่จัดการได้ said a manageable package, not a valid managed one"
+    },
+    {
+     "key": "This episode has no description.",
+     "english": "This episode has no description.",
+     "before": "ตอนนี้ไม่มีคำอธิบาย",
+     "after": "ไม่มีคำอธิบายของตอน",
+     "why": "meaning: ตอนนี้ไม่มีคำอธิบาย is heard as there is no description right now"
+    },
+    {
+     "key": "This file could not be read as a rich text document with attachments.",
+     "english": "This file could not be read as a rich text document with attachments.",
+     "before": "อ่านไฟล์นี้เป็นเอกสาร Rich Text ที่มีไฟล์แนบไม่ได้",
+     "after": "อ่านไฟล์นี้เป็นเอกสารริชเท็กซ์พร้อมสิ่งที่แนบไม่ได้",
+     "why": "term: the glossary and the format names say ริชเท็กซ์ and ริชเท็กซ์พร้อมสิ่งที่แนบ"
+    },
+    {
+     "key": "This file could not be read as a rich text document.",
+     "english": "This file could not be read as a rich text document.",
+     "before": "อ่านไฟล์นี้เป็นเอกสาร Rich Text ไม่ได้",
+     "after": "อ่านไฟล์นี้เป็นเอกสารริชเท็กซ์ไม่ได้",
+     "why": "term: the glossary and the format name say ริชเท็กซ์"
+    },
+    {
+     "key": "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open.",
+     "english": "This recording isn't saved. %1$@ tries again, %2$@ deletes it, and %3$@ keeps the window open.",
+     "before": "ยังไม่ได้บันทึกการบันทึกเสียงนี้ %1$@ ลองอีกครั้ง %2$@ ลบการบันทึก และ %3$@ เปิดหน้าต่างไว้",
+     "after": "ยังไม่ได้บันทึกการบันทึกเสียงนี้ เลือก %1$@ เพื่อลองอีกครั้ง %2$@ เพื่อลบการบันทึก หรือ %3$@ เพื่อเปิดหน้าต่างไว้",
+     "why": "natural: three bare button names as subjects ran into their verbs; now choose X to ..."
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "other": "หากต้องการดาวน์โหลดอีก %lld รายการอีกครั้ง ให้เลือก %@ ที่แถวของรายการเหล่านั้น"
+     },
+     "after": {
+      "other": "หากต้องการดาวน์โหลด %lld รายการที่เหลืออีกครั้ง ให้เลือก %@ ที่แถวของรายการเหล่านั้น"
+     },
+     "why": "natural: อีก %lld รายการอีกครั้ง ran two อีก together; the remaining N reads cleanly"
+    },
+    {
+     "key": "To download the other one again, choose %@ on its row.",
+     "english": "To download the other one again, choose %@ on its row.",
+     "before": "หากต้องการดาวน์โหลดอีกรายการหนึ่งอีกครั้ง ให้เลือก %@ ที่แถวของรายการนั้น",
+     "after": "หากต้องการดาวน์โหลดรายการที่เหลืออีกครั้ง ให้เลือก %@ ที่แถวของรายการนั้น",
+     "why": "natural: อีกรายการหนึ่งอีกครั้ง ran two อีก together; the remaining one reads cleanly"
+    },
+    {
+     "key": "Undid the cleanup of the transcript of %@.",
+     "english": "Undid the cleanup of the transcript of %@.",
+     "before": "เลิกทำการล้างข้อความถอดเสียงของ %@ แล้ว",
+     "after": "เลิกทำการตรวจแก้ข้อความถอดเสียงของ %@ แล้ว",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so the cleanup read as a clearing; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "Undo Cleanup",
+     "english": "Undo Cleanup",
+     "before": "เลิกทำการล้าง",
+     "after": "เลิกทำการตรวจแก้",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so Undo Cleanup read as undo clearing; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "เลิกทำการล้าง จะนำข้อความถอดเสียงเดิมกลับคืน",
+     "after": "คำสั่ง เลิกทำการตรวจแก้ จะนำข้อความถอดเสียงเดิมกลับคืน",
+     "why": "meaning: ล้าง (Clear) for Clean Up; also คำสั่ง before the command name as the subject"
+    },
+    {
+     "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "english": "Undoes every edit, back to the original; Redo brings them back.",
+     "before": "เลิกทำทุกการแก้ไขกลับไปเป็นต้นฉบับ ทำซ้ำ จะนำกลับมา",
+     "after": "เลิกทำทุกการแก้ไขกลับไปเป็นต้นฉบับ คำสั่ง ทำซ้ำ จะนำกลับมา",
+     "why": "natural: the bare command name ทำซ้ำ (also repeat) as the subject; คำสั่ง names it"
+    },
+    {
+     "key": "You cleaned it up on %@.",
+     "english": "You cleaned it up on %@.",
+     "before": "คุณล้างไว้เมื่อ %@",
+     "after": "คุณตรวจแก้ไว้เมื่อ %@",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so cleaned it up read as cleared it; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "You cleaned up this transcript on %@. Transcribing again replaces the cleanup.",
+     "english": "You cleaned up this transcript on %@. Transcribing again replaces the cleanup.",
+     "before": "คุณล้างข้อความถอดเสียงนี้เมื่อ %@ การถอดเสียงอีกครั้งจะแทนที่การล้างนั้น",
+     "after": "คุณตรวจแก้ข้อความถอดเสียงนี้เมื่อ %@ การถอดเสียงอีกครั้งจะแทนที่การตรวจแก้นั้น",
+     "why": "meaning: ล้าง is Apple Thai for Clear, so cleaned up read as cleared; ตรวจแก้ is correcting"
+    },
+    {
+     "key": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "english": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "before": "คุณแก้ไขข้อความถอดเสียงเมื่อ %@ หลังการล้าง เลิกทำการล้าง จะเลิกทำการแก้ไขเหล่านั้นด้วย",
+     "after": "คุณแก้ไขข้อความถอดเสียงเมื่อ %@ หลังการตรวจแก้ คำสั่ง เลิกทำการตรวจแก้ จะเลิกทำการแก้ไขเหล่านั้นด้วย",
+     "why": "meaning: ล้าง (Clear) for Clean Up; also คำสั่ง before the command name as the subject"
+    },
+    {
+     "key": "You will be asked whether to delete the original file permanently after each import.",
+     "english": "You will be asked whether to delete the original file permanently after each import.",
+     "before": "คุณจะถูกถามว่าจะลบไฟล์ต้นฉบับอย่างถาวรหรือไม่หลังการนำเข้าแต่ละครั้ง",
+     "after": "TextMouth จะถามว่าจะลบไฟล์ต้นฉบับอย่างถาวรหรือไม่หลังการนำเข้าแต่ละครั้ง",
+     "why": "natural: คุณจะถูกถาม is a translated passive (ถูก is adversative); TextMouth asks"
+    },
+    {
+     "key": "You will be asked whether to move the original file to the Trash after each import.",
+     "english": "You will be asked whether to move the original file to the Trash after each import.",
+     "before": "คุณจะถูกถามว่าจะย้ายไฟล์ต้นฉบับไปที่ถังขยะหรือไม่หลังการนำเข้าแต่ละครั้ง",
+     "after": "TextMouth จะถามว่าจะย้ายไฟล์ต้นฉบับไปที่ถังขยะหรือไม่หลังการนำเข้าแต่ละครั้ง",
+     "why": "natural: คุณจะถูกถาม is a translated passive (ถูก is adversative); TextMouth asks"
+    },
+    {
+     "key": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "english": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "before": "สำเนากฎของคุณว่างเปล่า แก้ไขกฎ… จะเปิดสำเนาเพื่อเพิ่มกฎ",
+     "after": "สำเนากฎของคุณว่างเปล่า คำสั่ง แก้ไขกฎ… จะเปิดสำเนาเพื่อเพิ่มกฎ",
+     "why": "natural: a bare command name as the subject reads as an order; คำสั่ง names it"
+    },
+    {
+     "key": "it downloads once this Mac is on a network without data limits",
+     "english": "it downloads once this Mac is on a network without data limits",
+     "before": "จะดาวน์โหลดเมื่อ Mac เครื่องนี้อยู่บนเครือข่ายที่ไม่จำกัดข้อมูล",
+     "after": "จะดาวน์โหลดเมื่อ Mac เครื่องนี้เชื่อมต่อเครือข่ายที่ไม่จำกัดข้อมูล",
+     "why": "natural: อยู่บนเครือข่าย copied on a network; Thai connects to one"
+    },
+    {
+     "key": "saving the changes to your feed subscriptions",
+     "english": "saving the changes to your feed subscriptions",
+     "before": "กำลังบันทึกการเปลี่ยนแปลงรายการที่ติดตามของฟีด",
+     "after": "กำลังบันทึกการเปลี่ยนแปลงรายการฟีดที่คุณติดตาม",
+     "why": "meaning: รายการที่ติดตามของฟีด said the feed subscriptions belong to the feed; they are yours"
+    },
+    {
+     "key": "“%@” downloads once this Mac is on a network without data limits.",
+     "english": "“%@” downloads once this Mac is on a network without data limits.",
+     "before": "“%@” จะดาวน์โหลดเมื่อ Mac เครื่องนี้อยู่บนเครือข่ายที่ไม่จำกัดข้อมูล",
+     "after": "“%@” จะดาวน์โหลดเมื่อ Mac เครื่องนี้เชื่อมต่อเครือข่ายที่ไม่จำกัดข้อมูล",
+     "why": "natural: อยู่บนเครือข่าย copied on a network; Thai connects to one"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "“%@” กำลังบันทึกเสียง ให้หยุด หรือทิ้งด้วย ล้างส่วนที่เลือก แล้วจึงออก",
+     "after": "“%@” กำลังบันทึกเสียง ให้หยุด หรือทิ้งโดยใช้คำสั่ง ล้างส่วนที่เลือก แล้วจึงออก",
+     "why": "meaning: หรือทิ้งด้วย read as or discard it too"
+    },
+    {
+     "key": "“%@” matches “%@”, already in your library. Replace the existing copy, or keep both as separate books?",
+     "english": "“%1$@” matches “%2$@”, already in your library. Replace the existing copy, or keep both as separate books?",
+     "before": "“%1$@” ตรงกับ “%2$@” ที่อยู่ในไลบรารีของคุณแล้ว แทนที่สำเนาที่มีอยู่ หรือเก็บทั้งสองไว้เป็นหนังสือแยกกัน",
+     "after": "“%1$@” ตรงกับ “%2$@” ที่อยู่ในไลบรารีของคุณแล้ว ต้องการแทนที่สำเนาที่มีอยู่ หรือเก็บทั้งสองไว้เป็นหนังสือแยกกัน",
+     "why": "grammar: without ต้องการ and with no question mark the choice read as two orders"
+    },
+    {
+     "key": "“%@” uses %@ samples, which TextMouth can't play.",
+     "english": "“%1$@” uses %2$@ samples, which TextMouth can't play.",
+     "before": "“%1$@” ใช้ตัวอย่างแบบ%2$@ ซึ่ง TextMouth เล่นไม่ได้",
+     "after": "“%1$@” ใช้ข้อมูลเสียงแบบ%2$@ ซึ่ง TextMouth เล่นไม่ได้",
+     "why": "meaning: ตัวอย่าง (samples) reads as examples; ข้อมูลเสียง is the audio data"
+    }
+   ]
+  },
+  {
    "part": 3,
    "areas": [
     "reader, formats, and menus",
