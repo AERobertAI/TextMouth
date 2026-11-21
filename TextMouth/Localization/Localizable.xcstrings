@@ -60249,7 +60249,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已還原 %lld 項編輯。在你進行另一項編輯之前，可以用「重做」將它們帶回。"
+                  "value" : "已還原 %lld 項編輯。在你進行其他編輯之前，可以用「重做」恢復它們。"
                 }
               }
             }
@@ -94877,7 +94877,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已在書籍套件中保留一份副本。你可以重新開始而不帶任何編輯，或取消。"
+            "value" : "已在書籍套件中保留一份副本。你可以從頭開始（不含任何編輯），或取消。"
           }
         }
       }
@@ -96807,7 +96807,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」中有引號沒有結束。"
+            "value" : "「%@」中有引號未閉合。"
           }
         }
       }
@@ -106278,7 +106278,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停頓 %1$@ 之後，位於 %2$@。"
+            "value" : "停頓 %1$@之後，位於 %2$@。"
           }
         }
       }
@@ -125761,7 +125761,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "之前：%1$@ 之後：%2$@"
+            "value" : "修正前：%1$@ 修正後：%2$@"
           }
         }
       }
@@ -140909,7 +140909,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章節 %@"
+            "value" : "第 %@ 章"
           }
         }
       }
@@ -142190,7 +142190,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章節 %1$@：%2$@，位於 %3$@"
+            "value" : "第 %1$@ 章：%2$@，位於 %3$@"
           }
         }
       }
@@ -142333,7 +142333,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章節 %1$@：%2$@，位於 %3$@。"
+            "value" : "第 %1$@ 章：%2$@，位於 %3$@。"
           }
         }
       }
@@ -193560,7 +193560,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下載 %1$@ 模型，%2$@"
+            "value" : "下載%1$@模型，%2$@"
           }
         }
       }
@@ -197156,7 +197156,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "正在下載 %@ 模型：百分之 %lld。"
+                  "value" : "正在下載%@模型：百分之 %lld。"
                 }
               }
             }
@@ -197296,7 +197296,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在下載 %@ 模型…"
+            "value" : "正在下載%@模型…"
           }
         }
       }
@@ -212222,7 +212222,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "平均音量"
+            "value" : "平衡音量"
           }
         }
       }
@@ -222558,7 +222558,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在將 %1$@ 的音訊以 %2$@ 格式輸出到「%3$@」。"
+            "value" : "正在將 %1$@的音訊以 %2$@ 格式輸出到「%3$@」。"
           }
         }
       }
@@ -261256,7 +261256,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "插入 %@ 的音訊"
+            "value" : "插入 %@的音訊"
           }
         }
       }
@@ -261393,7 +261393,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "插入 %@ 的靜音"
+            "value" : "插入 %@的靜音"
           }
         }
       }
@@ -262352,7 +262352,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已插入 %@ 的新錄音，並已選取。"
+            "value" : "已插入 %@的新錄音，並已選取。"
           }
         }
       }
@@ -262489,7 +262489,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已插入 %@ 的靜音。"
+            "value" : "已插入 %@的靜音。"
           }
         }
       }
@@ -278628,7 +278628,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "保留數天"
+            "value" : "保留指定天數"
           }
         }
       }
@@ -315508,7 +315508,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已將 %1$@ 移到 %2$@。"
+            "value" : "已將 %1$@移到 %2$@。"
           }
         }
       }
@@ -349520,7 +349520,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "尚未寫入書籍的音訊。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。"
+            "value" : "尚未寫入書籍的音訊。「捨棄」會還原這些編輯；下次編輯這本書時，在你進行其他編輯之前，可用「重做」恢復它們。"
           }
         }
       }
@@ -370219,7 +370219,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已將 %@ 貼回剪下的位置。"
+            "value" : "已將 %@貼回剪下的位置。"
           }
         }
       }
@@ -370362,7 +370362,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已將 %1$@ 貼上，取代 %2$@。"
+            "value" : "已貼上 %1$@，取代 %2$@。"
           }
         }
       }
@@ -372336,7 +372336,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已在 %@ 暫停。"
+            "value" : "已暫停於 %@。"
           }
         }
       }
