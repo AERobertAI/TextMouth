@@ -78836,25 +78836,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld czeka, aż ten Mac połączy się z siecią bez limitów danych"
+                  "value" : "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld czeka, aż ten Mac połączy się z siecią bez limitów danych"
+                  "value" : "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld czeka, aż ten Mac połączy się z siecią bez limitów danych"
+                  "value" : "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld czeka, aż ten Mac połączy się z siecią bez limitów danych"
+                  "value" : "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
                 }
               }
             }
@@ -84754,7 +84754,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Porównanie biblioteki w chmurze może chwilę potrwać: jej pliki, które są tylko w chmurze, są pobierane na ten Mac, aby można je było odczytać."
+            "value" : "Porównanie biblioteki w chmurze może chwilę potrwać: jej pliki, które są tylko w chmurze, są pobierane na ten komputer Mac, aby można je było odczytać."
           }
         },
         "pt-BR" : {
@@ -104590,7 +104590,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Najpierw pyta, a potem zapisuje tożsamość, którą ten Mac zna dla biblioteki, i otwiera ją."
+            "value" : "Najpierw pyta, a potem zapisuje tożsamość, którą ten komputer Mac zna dla biblioteki, i otwiera ją."
           }
         },
         "pt-BR" : {
@@ -126396,7 +126396,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sprawdź, czy %@ działa i czy ten Mac jest online, a następnie wybierz Spróbuj ponownie."
+            "value" : "Sprawdź, czy %@ działa i czy ten komputer Mac jest online, a następnie wybierz Spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -126759,7 +126759,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sprawdź tekst albo zapisz plik w edytorze jako UTF-8 i ponownie wybierz: %@."
+            "value" : "Sprawdź tekst albo zachowaj plik w edytorze jako UTF-8 i ponownie wybierz: %@."
           }
         },
         "pt-BR" : {
@@ -208753,25 +208753,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Znaleziono %1$lld nagrania sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zapisz lub odrzuć każde."
+                  "value" : "Znaleziono %1$lld nagrania sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zachowaj lub odrzuć każde."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Znaleziono %1$lld nagrań sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zapisz lub odrzuć każde."
+                  "value" : "Znaleziono %1$lld nagrań sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zachowaj lub odrzuć każde."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Znaleziono %1$lld nagranie sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zapisz je lub odrzuć."
+                  "value" : "Znaleziono %1$lld nagranie sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zachowaj je lub odrzuć."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Znaleziono %1$lld nagrania sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zapisz lub odrzuć każde."
+                  "value" : "Znaleziono %1$lld nagrania sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %2$@. Zachowaj lub odrzuć każde."
                 }
               }
             }
@@ -208995,7 +208995,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Znaleziono nagranie sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %@. Zapisz je lub odrzuć."
+            "value" : "Znaleziono nagranie sprzed ostatniego zakończenia TextMouth, pod nagłówkiem %@. Zachowaj je lub odrzuć."
           }
         },
         "pt-BR" : {
@@ -210893,7 +210893,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobierz inną kopię pliku lub zapisz go w innym formacie, a następnie zaimportuj go ponownie."
+            "value" : "Pobierz inną kopię pliku lub zachowaj go w innym formacie, a następnie zaimportuj go ponownie."
           }
         },
         "pt-BR" : {
@@ -222259,7 +222259,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jeśli własny plik %1$@ biblioteki dotrze później (źródło: %2$@), %3$@ może zachować dwie jego kopie, a ten Mac i drugi będą się różnić co do tego, która to biblioteka."
+            "value" : "Jeśli własny plik %1$@ biblioteki dotrze później (źródło: %2$@), %3$@ może zachować dwie jego kopie, a ten komputer Mac i drugi będą się różnić co do tego, która to biblioteka."
           }
         },
         "pt-BR" : {
@@ -245939,7 +245939,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zachowuje pobrane książki z listy na tym komputerze Mac; każdy Mac wybiera osobno. Odznaczenie nie usuwa pobranych plików."
+            "value" : "Zachowuje pobrane książki z listy na tym komputerze Mac; każdy komputer Mac wybiera osobno. Odznaczenie nie usuwa pobranych plików."
           }
         },
         "pt-BR" : {
@@ -262149,7 +262149,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Manifest nie został zaktualizowany: %1$@ Popraw go w edytorze i zapisz ponownie; do tego czasu %2$@ zachowuje swoje nagłówki."
+            "value" : "Manifest nie został zaktualizowany: %1$@ Popraw go w edytorze i zachowaj ponownie; do tego czasu %2$@ zachowuje swoje nagłówki."
           }
         },
         "pt-BR" : {
@@ -315422,7 +315422,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz go w edytorze tekstu, usuń definicje encji, zapisz plik, a następnie zaimportuj go ponownie."
+            "value" : "Otwórz go w edytorze tekstu, usuń definicje encji, zachowaj plik, a następnie zaimportuj go ponownie."
           }
         },
         "pt-BR" : {
@@ -315535,7 +315535,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz książkę w programie, w którym została utworzona, zapisz ją ponownie, a następnie zaimportuj ją ponownie."
+            "value" : "Otwórz książkę w programie, w którym została utworzona, zachowaj ją ponownie, a następnie zaimportuj ją ponownie."
           }
         },
         "pt-BR" : {
@@ -315761,7 +315761,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz dokument w programie, w którym został utworzony, zapisz go ponownie, a następnie zaimportuj go ponownie."
+            "value" : "Otwórz dokument w programie, w którym został utworzony, zachowaj go ponownie, a następnie zaimportuj go ponownie."
           }
         },
         "pt-BR" : {
@@ -371808,7 +371808,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zapisz dokumenty WordPerfect jako pliki Word lub HTML w programie, który je odczytuje, takim jak LibreOffice, a potem zaimportuj je."
+            "value" : "Zachowaj dokumenty WordPerfect jako pliki Word lub HTML w programie, który je odczytuje, takim jak LibreOffice, a potem zaimportuj je."
           }
         },
         "pt-BR" : {
@@ -371927,7 +371927,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zapisz kopię bez hasła, a następnie zaimportuj tę kopię."
+            "value" : "Zachowaj kopię bez hasła, a następnie zaimportuj tę kopię."
           }
         },
         "pt-BR" : {
@@ -372516,7 +372516,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zapisz go jako tekst UTF-8, a następnie zaimportuj go ponownie."
+            "value" : "Zachowaj go jako tekst UTF-8, a następnie zaimportuj go ponownie."
           }
         },
         "pt-BR" : {
@@ -372629,7 +372629,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zapisz go jako UTF-8, a następnie zaimportuj go ponownie."
+            "value" : "Zachowaj go jako UTF-8, a następnie zaimportuj go ponownie."
           }
         },
         "pt-BR" : {
@@ -373212,7 +373212,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zapisz plik w edytorze, a potem ponownie wybierz: %1$@, albo wybierz: %2$@, aby zacząć od nowa."
+            "value" : "Zachowaj plik w edytorze, a potem ponownie wybierz: %1$@, albo wybierz: %2$@, aby zacząć od nowa."
           }
         },
         "pt-BR" : {
@@ -373795,7 +373795,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zapisz subskrypcje jako plik OPML, który importują inne czytniki kanałów."
+            "value" : "Zachowaj subskrypcje jako plik OPML, który importują inne czytniki kanałów."
           }
         },
         "pt-BR" : {
@@ -417315,7 +417315,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %1$@ %2$@, czego TextMouth nie może bezpiecznie odczytać. Spłaszcz go i zapisz ponownie albo cofnij zmianę; do tego czasu książka zachowuje stary tekst."
+            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %1$@ %2$@, czego TextMouth nie może bezpiecznie odczytać. Spłaszcz go i zachowaj ponownie albo cofnij zmianę; do tego czasu książka zachowuje stary tekst."
           }
         },
         "pt-BR" : {
@@ -417428,7 +417428,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie ma rozdziału z żadnym tekstem. Cofnij zmianę i zapisz ponownie; do tego czasu książka zachowuje stary tekst."
+            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie ma rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie; do tego czasu książka zachowuje stary tekst."
           }
         },
         "pt-BR" : {
@@ -417541,7 +417541,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie jest tekstem UTF-8. Zapisz go jako UTF-8; do tego czasu książka zachowuje stary tekst."
+            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie jest tekstem UTF-8. Zachowaj go jako UTF-8; do tego czasu książka zachowuje stary tekst."
           }
         },
         "pt-BR" : {
@@ -417654,7 +417654,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zaktualizowano tekstu: edytowana transkrypcja książki %@ dodaje słowa do rozdziału bez mowy, w którym nie można ich zachować. Usuń je i zapisz ponownie; do tego czasu książka zachowuje stary tekst."
+            "value" : "Nie zaktualizowano tekstu: edytowana transkrypcja książki %@ dodaje słowa do rozdziału bez mowy, w którym nie można ich zachować. Usuń je i zachowaj ponownie; do tego czasu książka zachowuje stary tekst."
           }
         },
         "pt-BR" : {
@@ -417767,7 +417767,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zaktualizowano tekstu: edytowana transkrypcja książki %@ zmienia nagłówek rozdziału, który pochodzi z jego dźwięku. Przywróć go i zapisz ponownie; do tego czasu książka zachowuje stary tekst."
+            "value" : "Nie zaktualizowano tekstu: edytowana transkrypcja książki %@ zmienia nagłówek rozdziału, który pochodzi z jego dźwięku. Przywróć go i zachowaj ponownie; do tego czasu książka zachowuje stary tekst."
           }
         },
         "pt-BR" : {
@@ -420804,7 +420804,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth nie może odczytać tego rodzaju obrazu (%@). Zapisz go jako PNG lub JPEG, a potem zaimportuj tę kopię."
+            "value" : "TextMouth nie może odczytać tego rodzaju obrazu (%@). Zachowaj go jako PNG lub JPEG, a potem zaimportuj tę kopię."
           }
         },
         "pt-BR" : {
@@ -439035,7 +439035,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth zapisuje %@ z tożsamością, którą ten Mac zna dla biblioteki, i otwiera ją."
+            "value" : "TextMouth zapisuje %@ z tożsamością, którą ten komputer Mac zna dla biblioteki, i otwiera ją."
           }
         },
         "pt-BR" : {
@@ -455353,7 +455353,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Książka jest zachowana na tym komputerze Mac i znajduje się na liście czytelniczej, którą ten Mac utrzymuje pobraną, więc nie można usunąć jej pobranego pliku."
+            "value" : "Książka jest zachowana na tym komputerze Mac i znajduje się na liście czytelniczej, którą ten komputer Mac utrzymuje pobraną, więc nie można usunąć jej pobranego pliku."
           }
         },
         "pt-BR" : {
@@ -455847,7 +455847,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Książka jest na liście czytelniczej, którą ten Mac utrzymuje pobraną, więc nie można usunąć jej pobranego pliku."
+            "value" : "Książka jest na liście czytelniczej, którą ten komputer Mac utrzymuje pobraną, więc nie można usunąć jej pobranego pliku."
           }
         },
         "pt-BR" : {
@@ -500185,7 +500185,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten Mac"
+            "value" : "Ten komputer Mac"
           }
         },
         "pt-BR" : {
@@ -500548,7 +500548,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten Mac nie zna tożsamości biblioteki, więc nie może jej przywrócić."
+            "value" : "Ten komputer Mac nie zna tożsamości biblioteki, więc nie może jej przywrócić."
           }
         },
         "pt-BR" : {
@@ -500667,7 +500667,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten Mac jest offline, więc nie można odświeżyć %@. Połącz się z internetem i spróbuj ponownie."
+            "value" : "Ten komputer Mac jest offline, więc nie można odświeżyć %@. Połącz się z internetem i spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -500792,7 +500792,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten Mac jest offline, więc nie można pobrać książki (źródło: %@)."
+            "value" : "Ten komputer Mac jest offline, więc nie można pobrać książki (źródło: %@)."
           }
         },
         "pt-BR" : {
@@ -500911,7 +500911,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten Mac jest offline, więc nie można przeszukać katalogu. Połącz się z internetem i spróbuj ponownie."
+            "value" : "Ten komputer Mac jest offline, więc nie można przeszukać katalogu. Połącz się z internetem i spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -501030,7 +501030,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten Mac jest offline, więc nie można pobrać „%@”. Połącz się z internetem i spróbuj ponownie."
+            "value" : "Ten komputer Mac jest offline, więc nie można pobrać „%@”. Połącz się z internetem i spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -501149,7 +501149,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten Mac nie ma już wybranej tabeli „%@”; wybierz inną."
+            "value" : "Ten komputer Mac nie ma już wybranej tabeli „%@”; wybierz inną."
           }
         },
         "pt-BR" : {
@@ -509299,7 +509299,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ten iPhone"
+            "value" : "To urządzenie iPhone"
           }
         },
         "pt-BR" : {
@@ -557597,7 +557597,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "inny Mac"
+            "value" : "inny komputer Mac"
           }
         },
         "pt-BR" : {
@@ -567371,7 +567371,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Możliwe, że funkcja iCloud Drive jest wyłączona, logowanie do niej wygasło albo ten Mac jest offline. Sprawdź to, a następnie wybierz Spróbuj ponownie."
+            "value" : "Możliwe, że funkcja iCloud Drive jest wyłączona, logowanie do niej wygasło albo ten komputer Mac jest offline. Sprawdź to, a następnie wybierz Spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -569156,7 +569156,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "pobierze się, gdy ten Mac będzie w sieci bez limitów danych"
+            "value" : "pobierze się, gdy ten komputer Mac będzie w sieci bez limitów danych"
           }
         },
         "pt-BR" : {
@@ -591868,7 +591868,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ten Mac już jej nie ma"
+            "value" : "ten komputer Mac już jej nie ma"
           }
         },
         "pt-BR" : {
@@ -595953,7 +595953,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobieranie „%@” nastąpi, gdy ten Mac będzie w sieci bez limitów danych."
+            "value" : "Pobieranie „%@” nastąpi, gdy ten komputer Mac będzie w sieci bez limitów danych."
           }
         },
         "pt-BR" : {
