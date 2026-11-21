@@ -379311,7 +379311,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Phát khi Tôi đang ở đâu đọc xong."
+            "value" : "Phát khi lệnh Tôi đang ở đâu đọc xong."
           }
         },
         "zh-Hans" : {
@@ -379448,7 +379448,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Phát khi Tôi đang ở đâu bắt đầu đọc."
+            "value" : "Phát khi lệnh Tôi đang ở đâu bắt đầu đọc."
           }
         },
         "zh-Hans" : {
@@ -427058,7 +427058,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lưu các quy tắc văn bản thuần đang bật của bạn; các quy tắc biểu thức chính quy sẽ bị bỏ ra."
+            "value" : "Lưu các quy tắc văn bản thuần đang bật của bạn; các quy tắc biểu thức chính quy sẽ bị loại ra."
           }
         },
         "zh-Hans" : {
@@ -466747,7 +466747,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dừng quá trình xuất và giữ các chương đã đọc cho đến khi TextMouth thoát, một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Xuất cùng phạm vi với cùng tốc độ và cao độ sẽ tiếp tục từ các chương đó."
+            "value" : "Dừng quá trình xuất và giữ các chương đã đọc cho đến khi TextMouth thoát, một lần xuất âm thanh đọc khác bắt đầu, hoặc giọng nói, văn bản, quy tắc thay thế hay quãng nghỉ của sách thay đổi. Nếu xuất cùng phạm vi với cùng tốc độ và cao độ, quá trình xuất sẽ tiếp tục từ các chương đó."
           }
         },
         "zh-Hans" : {
@@ -470240,7 +470240,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy chuyển sang cửa sổ Thư viện hoặc cửa sổ sách, rồi chọn Xuất lại."
+            "value" : "Hãy chuyển sang cửa sổ Thư viện hoặc cửa sổ sách, rồi chọn Xuất lần nữa."
           }
         },
         "zh-Hans" : {
@@ -472164,7 +472164,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nhận từ %1$lld đến %2$lld phút."
+            "value" : "Nhận giá trị từ %1$lld đến %2$lld phút."
           }
         },
         "zh-Hans" : {
@@ -472307,7 +472307,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nhận từ %1$lld đến %2$lld phút. Return đặt bộ hẹn giờ và phát sách."
+            "value" : "Nhận giá trị từ %1$lld đến %2$lld phút. Phím Return đặt bộ hẹn giờ và phát sách."
           }
         },
         "zh-Hans" : {
@@ -472444,7 +472444,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gỡ mỗi sách đã đọc xong khỏi danh sách khi cửa sổ của sách chuyển tiếp hoặc đóng. Các sách đã đọc xong trước khi bạn bật tùy chọn này vẫn được giữ lại."
+            "value" : "Gỡ mỗi sách đã đọc xong khỏi danh sách khi cửa sổ của sách chuyển sang sách khác hoặc đóng. Các sách đã đọc xong trước khi bạn bật tùy chọn này vẫn được giữ lại."
           }
         },
         "zh-Hans" : {
@@ -495892,7 +495892,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth đã thoát vào %1$@: bộ nhớ của nó tăng lên %2$@ GB khi %3$@ đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu."
+            "value" : "TextMouth đã thoát vào ngày %1$@: bộ nhớ của nó tăng lên %2$@ GB khi %3$@ đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu."
           }
         },
         "zh-Hans" : {
@@ -496035,7 +496035,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth đã thoát vào %1$@: bộ nhớ của nó tăng lên %2$@ GB khi một sách đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu."
+            "value" : "TextMouth đã thoát vào ngày %1$@: bộ nhớ của nó tăng lên %2$@ GB khi một sách đang phát, do lỗi âm thanh của macOS. Vị trí của bạn đã được lưu."
           }
         },
         "zh-Hans" : {
@@ -496178,7 +496178,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth đã thoát vào %1$@: bộ nhớ của nó tăng lên %2$@ GB khi không có gì đang phát. Vị trí của bạn đã được lưu."
+            "value" : "TextMouth đã thoát vào ngày %1$@: bộ nhớ của nó tăng lên %2$@ GB khi không có gì đang phát. Vị trí của bạn đã được lưu."
           }
         },
         "zh-Hans" : {
@@ -517936,7 +517936,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sách không có bản chép lời theo thời gian để ghi thành phụ đề."
+            "value" : "Sách không có bản chép lời có mốc thời gian để ghi thành phụ đề."
           }
         },
         "zh-Hans" : {
@@ -522594,7 +522594,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mã braille mà sách được viết bằng."
+            "value" : "Mã braille được dùng để viết sách."
           }
         },
         "zh-Hans" : {
@@ -537934,7 +537934,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ngôn ngữ của mã braille mà sách được viết bằng."
+            "value" : "Ngôn ngữ của mã braille được dùng để viết sách."
           }
         },
         "zh-Hans" : {
@@ -556729,7 +556729,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bộ máy đọc đã hai lần từ chối đọc văn bản tại đây, nên giọng đọc đã dừng. Phát sẽ thử lại từ cùng vị trí."
+            "value" : "Bộ máy đọc đã hai lần từ chối đọc văn bản tại đây, nên giọng đọc đã dừng. Nút Phát sẽ thử lại từ cùng vị trí."
           }
         },
         "zh-Hans" : {
@@ -625359,7 +625359,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Với “%1$@”, Phát trên một sách đã đọc xong sẽ báo là đã xong; với “%2$@”, Phát bắt đầu lại từ đầu."
+            "value" : "Nếu chọn “%1$@”, khi nhấn nút Phát trên một sách đã đọc xong, TextMouth sẽ báo là sách đã xong; nếu chọn “%2$@”, nút Phát sẽ bắt đầu lại sách từ đầu."
           }
         },
         "zh-Hans" : {
@@ -631131,7 +631131,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thư viện của bạn trống. Thêm vào thư viện sẽ thêm một sách."
+            "value" : "Thư viện của bạn trống. Nút Thêm vào thư viện sẽ thêm một sách."
           }
         },
         "zh-Hans" : {
@@ -641467,7 +641467,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "đang nhỏ dần âm thanh"
+            "value" : "đang giảm dần âm lượng"
           }
         },
         "zh-Hans" : {
