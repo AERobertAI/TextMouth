@@ -1,0 +1,569 @@
+{
+ "language": "zh-Hant",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ hadn't arrived from the cloud after %lld seconds",
+     "english": {
+      "one": "%@ hadn't arrived from the cloud after %lld second",
+      "other": "%@ hadn't arrived from the cloud after %lld seconds"
+     },
+     "before": {
+      "other": "%@ 在 %lld 秒後仍未從雲端送達"
+     },
+     "after": {
+      "other": "%@ 在 %lld 秒後仍未從雲端下載完成"
+     },
+     "why": "natural: a file is downloaded from the cloud, not delivered (送達) like a parcel"
+    },
+    {
+     "key": "%@ has no place saved.",
+     "english": "%@ has no place saved.",
+     "before": "%@ 沒有儲存的位置。",
+     "after": "%@ 沒有已儲存的閱讀位置。",
+     "why": "meaning: 儲存的位置 reads as a storage location; the place is the reading position"
+    },
+    {
+     "key": "%@ hasn't arrived on this Mac yet. %@ may still be syncing it.",
+     "english": "%1$@ hasn't arrived on this Mac yet. %2$@ may still be syncing it.",
+     "before": "%1$@ 尚未抵達這部 Mac。%2$@ 可能仍在同步。",
+     "after": "%1$@ 尚未下載到這部 Mac 上。%2$@ 可能仍在同步。",
+     "why": "natural: a file is downloaded or synced to the Mac; 抵達 is said of travellers and parcels"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "%1$@ 在 %3$@ 中歸檔於 %2$@，在 %5$@ 中則歸檔於 %4$@。",
+     "after": "%1$@：%3$@ 將它存放%2$@，%5$@ 則存放%4$@。",
+     "why": "grammar: %2$@ and %4$@ already begin with 在 (在書庫最上層, 在檔案夾「…」中), so 歸檔於 在… doubled the preposition"
+    },
+    {
+     "key": "%lld episodes",
+     "english": {
+      "one": "%lld episode",
+      "other": "%lld episodes"
+     },
+     "before": {
+      "other": "%lld 單集"
+     },
+     "after": {
+      "other": "%lld 個單集"
+     },
+     "why": "grammar: a counted noun needs its measure word (個), as every other count here has"
+    },
+    {
+     "key": "%lld of %@, %lld percent",
+     "english": "%1$lld of %2$@, %3$lld percent",
+     "before": "已完成 %1$lld，共 %2$@，百分之 %3$lld",
+     "after": "已完成 %1$lld 個，共 %2$@，百分之 %3$lld",
+     "why": "grammar: 已完成 3 left the count without its measure word"
+    },
+    {
+     "key": "%lld of %@, %lld%%",
+     "english": "%1$lld of %2$@, %3$lld%%",
+     "before": "已完成 %1$lld，共 %2$@，%3$lld%%",
+     "after": "已完成 %1$lld 個，共 %2$@，%3$lld%%",
+     "why": "grammar: 已完成 3 left the count without its measure word"
+    },
+    {
+     "key": "%lld/%lld",
+     "english": "%1$lld/%2$lld",
+     "before": "%1$lld／%2$lld",
+     "after": "%1$lld/%2$lld",
+     "why": "punctuation: between Arabic numerals the slash stays half-width, as Apple writes 3/10; the full-width ／ is another braille cell"
+    },
+    {
+     "key": "Added %@, %lld of %lld.",
+     "english": "Added %1$@, %2$lld of %3$lld.",
+     "before": "加入日期 %1$@，第 %2$lld 個，共 %3$lld 個。",
+     "after": "已加入 %1$@，第 %2$lld 個，共 %3$lld 個。",
+     "why": "meaning: the announcement says a view was added; 加入日期 means the date added"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "對其文字所做的編輯，會以副本形式保留在書籍的套件中，與新的閱讀結果並存。",
+     "after": "對其文字所做的編輯，會以副本形式保留在書籍的套件中，與新的讀取結果並存。",
+     "why": "meaning: the new reading is the app reading the file (讀取), not a person reading (閱讀)"
+    },
+    {
+     "key": "Asks first, then gives the library a new identity and opens it.",
+     "english": "Asks first, then gives the library a new identity and opens it.",
+     "before": "先詢問，然後為書庫給予新身分並打開書庫。",
+     "after": "先詢問，然後給予書庫新身分並打開書庫。",
+     "why": "grammar: 為書庫給予 mixed two constructions; 給予書庫新身分, the verb of the Give a New Identity button"
+    },
+    {
+     "key": "Chapter %@ isn't on this Mac.",
+     "english": "Chapter %@ isn't on this Mac.",
+     "before": "章節 %@ 不在這部 Mac 上。",
+     "after": "第 %@ 章不在這部 Mac 上。",
+     "why": "natural: a numbered chapter is 第 N 章, as the Compare Libraries strings say; 章節 3 copied Chapter 3"
+    },
+    {
+     "key": "Chapter %@ of %@ isn't downloaded.",
+     "english": "Chapter %1$@ of %2$@ isn't downloaded.",
+     "before": "「%2$@」的章節 %1$@ 未下載。",
+     "after": "「%2$@」的第 %1$@ 章未下載。",
+     "why": "natural: a numbered chapter is 第 N 章; 章節 3 copied Chapter 3"
+    },
+    {
+     "key": "Chapter %@, from %@",
+     "english": "Chapter %1$@, from %2$@",
+     "before": "章節 %1$@，來自 %2$@",
+     "after": "第 %1$@ 章，來自 %2$@",
+     "why": "natural: a numbered chapter is 第 N 章; 章節 3 copied Chapter 3"
+    },
+    {
+     "key": "Choose at least one kind of item for the view to list.",
+     "english": "Choose at least one kind of item for the view to list.",
+     "before": "請至少選擇一種項目，讓顯示方式列出。",
+     "after": "請至少選擇一種讓顯示方式列出的項目類型。",
+     "why": "natural: the purpose clause dangled after the comma; a kind of item is 項目類型"
+    },
+    {
+     "key": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "english": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "before": "有關書籍的條件會測試書籍、單集和文章；有關訂閱源的條件會測試訂閱源。條件不會隱藏它沒有測試的列。",
+     "after": "有關書籍的條件會檢查書籍、單集和文章；有關訂閱源的條件會檢查訂閱源。條件不會隱藏它未檢查的列。",
+     "why": "natural: 測試 (run a test) is a literal copy of test; a condition checks (檢查) a row"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "此書的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的閱讀結果。",
+     "after": "此書的「編輯文字」會停止；請再次選擇「編輯文字」來編輯新的讀取結果。",
+     "why": "meaning: the new reading is the text the re-read made (讀取), not a person reading (閱讀)"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "english": "Failed to rebuild to default",
+     "before": "無法重建為預設值",
+     "after": "無法重置為預設位置",
+     "why": "meaning: Reset to Default moves the data back to the default location; 預設值 means a default value"
+    },
+    {
+     "key": "Give the library a new identity?",
+     "english": "Give the library a new identity?",
+     "before": "要為書庫給予新身分嗎？",
+     "after": "要給予書庫新身分嗎？",
+     "why": "grammar: 為書庫給予 mixed two constructions; 給予書庫新身分, as the button says"
+    },
+    {
+     "key": "Go up one folder level",
+     "english": "Go up one folder level",
+     "before": "上移一層檔案夾",
+     "after": "前往上層檔案夾",
+     "why": "meaning: 上移 is the glossary Move Up, so 上移一層檔案夾 sounded like moving a folder; the button goes to the enclosing folder (Finder: 上層檔案夾)"
+    },
+    {
+     "key": "If %@ arrives from %@ later, %@ may keep two copies of it.",
+     "english": "If %1$@ arrives from %2$@ later, %3$@ may keep two copies of it.",
+     "before": "如果之後 %1$@ 從 %2$@ 抵達，%3$@ 可能會保留它的兩個副本。",
+     "after": "如果之後 %1$@ 從 %2$@ 同步過來，%3$@ 可能會保留它的兩個副本。",
+     "why": "natural: a file syncs over (同步過來) from a cloud service; 抵達 is said of travellers and parcels"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "如果之後該檔案從 %@ 抵達，它會指向同一個書庫。",
+     "after": "如果之後該檔案從 %@ 同步過來，它會指向同一個書庫。",
+     "why": "natural: a file syncs over (同步過來) from a cloud service; 抵達 is said of travellers and parcels"
+    },
+    {
+     "key": "If the library's own %@ arrives from %@ later, %@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "english": "If the library's own %1$@ arrives from %2$@ later, %3$@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "before": "如果書庫本身的 %1$@ 之後從 %2$@ 抵達，%3$@ 可能會保留它的兩個副本，而這部 Mac 與另一部對於這是哪個書庫會有不同看法。",
+     "after": "如果書庫本身的 %1$@ 之後從 %2$@ 同步過來，%3$@ 可能會保留它的兩個副本，而這部 Mac 與另一部 Mac 對於這是哪個書庫會有不同看法。",
+     "why": "natural: a file syncs over (同步過來) from a cloud service, not arrives (抵達); 另一部 alone lacked its noun"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "其文字會被新的閱讀結果取代。",
+     "after": "其文字會被新的讀取結果取代。",
+     "why": "meaning: the new reading is the text the re-read made (讀取), not a person reading (閱讀)"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "觸發重新啟動的媒體控制事件。最後一個事件會被消耗，不會傳給播放，因此無法啟動音訊。",
+     "after": "觸發重新啟動的媒體控制事件。最後一個事件會被攔截，不會傳給播放功能，因此無法啟動音訊。",
+     "why": "natural: an event that is consumed is intercepted (攔截); 消耗 means used up, like fuel"
+    },
+    {
+     "key": "Nothing is copied, and nothing is created in %@.",
+     "english": "Nothing is copied, and nothing is created in %@.",
+     "before": "不會複製任何內容，也不會在 %@ 中建立任何內容。",
+     "after": "不會拷貝任何內容，也不會在 %@ 中建立任何內容。",
+     "why": "term: copying data is the glossary verb 拷貝, as the question before the move says; 複製 is Apple's Duplicate"
+    },
+    {
+     "key": "Nothing is copied, and the library in %@ stays as it is.",
+     "english": "Nothing is copied, and the library in %@ stays as it is.",
+     "before": "不會複製任何內容，位於 %@ 的書庫會維持原樣。",
+     "after": "不會拷貝任何內容，位於 %@ 的書庫會維持原樣。",
+     "why": "term: copying data is the glossary verb 拷貝, as the question before the move says; 複製 is Apple's Duplicate"
+    },
+    {
+     "key": "Only the Latest from Each Feed",
+     "english": "Only the Latest from Each Feed",
+     "before": "只列出每個訂閱源的最新項目",
+     "after": "每個訂閱源只列出最近打開的項目",
+     "why": "meaning: the checkbox keeps the item you opened last (its hint says so); 最新項目 reads as the newest episode published"
+    },
+    {
+     "key": "Open the library without its index?",
+     "english": "Open the library without its index?",
+     "before": "要不使用索引打開書庫嗎？",
+     "after": "要在不使用索引的情況下打開書庫嗎？",
+     "why": "meaning: 要不使用索引… is heard as 要不 (how about) using the index; the question is whether to open without it"
+    },
+    {
+     "key": "Preparing %@ of %@…",
+     "english": "Preparing %1$@ of %2$@…",
+     "before": "正在準備 %1$@ 本，共 %2$@…",
+     "after": "正在準備：已完成 %1$@ 本，共 %2$@…",
+     "why": "meaning: %1$@ counts the books already prepared; 正在準備 3 本 said three were being prepared"
+    },
+    {
+     "key": "Read “%@” again as %@?",
+     "english": "Read “%1$@” again as %2$@?",
+     "before": "要將「%1$@」重新讀取為 %2$@ 嗎？",
+     "after": "要以 %2$@ 重新讀取「%1$@」嗎？",
+     "why": "natural: the encoding or code is the means of the re-read (以 X 讀取); 重新讀取為 X read as turning the book into X"
+    },
+    {
+     "key": "Still comparing: %lld seconds so far. Press Escape to stop.",
+     "english": {
+      "one": "Still comparing: %lld second so far. Press Escape to stop.",
+      "other": "Still comparing: %lld seconds so far. Press Escape to stop."
+     },
+     "before": {
+      "other": "仍在比較：目前已 %lld 秒。按 Escape 鍵可停止。"
+     },
+     "after": {
+      "other": "仍在比較：已進行 %lld 秒。按 Escape 鍵可停止。"
+     },
+     "why": "grammar: 目前已 %lld 秒 had no verb; the comparison has run (已進行) that long"
+    },
+    {
+     "key": "Stops moving the library. The library stays where it is, and nothing is changed.",
+     "english": "Stops moving the library. The library stays where it is, and nothing is changed.",
+     "before": "停止移動書庫。書庫會維持原處，不會有任何更改。",
+     "after": "停止移動書庫。書庫會留在原處，不會有任何更改。",
+     "why": "natural: a place is kept with 留在原處; 維持原處 mixed it with 維持原狀"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "請先將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
+     "after": "請先將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
+     "why": "meaning: %@ is a checkbox, which is unchecked (取消勾選); 清除 means erase"
+    },
+    {
+     "key": "Text extraction progress: %lld of %lld",
+     "english": "Text extraction progress: %1$lld of %2$lld",
+     "before": "文字擷取進度：已完成 %1$lld，共 %2$lld",
+     "after": "文字擷取進度：已完成 %1$lld 本，共 %2$lld 本",
+     "why": "grammar: the counts of books lacked their measure word (本)"
+    },
+    {
+     "key": "TextMouth could not move %@ to the current library format.",
+     "english": "TextMouth could not move %@ to the current library format.",
+     "before": "TextMouth 無法將 %@ 移到目前的書庫格式。",
+     "after": "TextMouth 無法將 %@ 移轉到目前的書庫格式。",
+     "why": "natural: a book is migrated (移轉, as in Apple's 移轉輔助程式) to the new format; 移到…格式 moved it to a format as to a place"
+    },
+    {
+     "key": "TextMouth could not record the removal in its package, %@.",
+     "english": "TextMouth could not record the removal in its package, %@.",
+     "before": "TextMouth 無法在其套件中記錄這次移除，%@。",
+     "after": "TextMouth 無法在書籍的套件 %@ 中記錄這次移除。",
+     "why": "meaning: 其套件 read as TextMouth's own package, and the folder name trailed after a comma; it is the book's package named %@"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth 無法將你在「%@」中更改的文字與新的閱讀結果一併保留，因此書籍維持原樣。",
+     "after": "TextMouth 無法將你在「%@」中更改的文字與新的讀取結果一併保留，因此書籍維持原樣。",
+     "why": "meaning: the new reading is the text the re-read made (讀取), not a person reading (閱讀)"
+    },
+    {
+     "key": "TextMouth is getting them now, and the library opens when they arrive.",
+     "english": "TextMouth is getting them now, and the library opens when they arrive.",
+     "before": "TextMouth 現在正在取得這些檔案，檔案抵達後會打開書庫。",
+     "after": "TextMouth 正在取得這些檔案，取得後就會打開書庫。",
+     "why": "natural: the files are fetched (取得), as the first clause says; 抵達 is said of travellers and parcels"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "english": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "before": "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中保持未儲存。",
+     "after": "TextMouth 正在重新打開並改用另一個書庫，因此這些更改在這個書庫中仍未儲存。",
+     "why": "natural: 在另一個書庫上重新打開 copied opening again on; TextMouth reopens and uses the other library; they are the unsaved changes"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "english": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "before": "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中維持原處。",
+     "after": "TextMouth 正在重新打開並改用另一個書庫，因此它們會留在這個書庫中的原處。",
+     "why": "natural: 在另一個書庫上重新打開 copied opening again on; TextMouth reopens and uses the other library"
+    },
+    {
+     "key": "TextMouth is switching to another library and opening again on it.",
+     "english": "TextMouth is switching to another library and opening again on it.",
+     "before": "TextMouth 正在切換到另一個書庫，並在其上重新打開。",
+     "after": "TextMouth 正在切換到另一個書庫，並以該書庫重新打開。",
+     "why": "natural: 在另一個書庫上重新打開 copied opening again on; TextMouth reopens and uses the other library"
+    },
+    {
+     "key": "TextMouth isn't allowed to make changes in %@.",
+     "english": "TextMouth isn't allowed to make changes in %@.",
+     "before": "TextMouth 不被允許在 %@ 中做更改。",
+     "after": "TextMouth 沒有權限在 %@ 中進行更改。",
+     "why": "natural: 不被允許 is a translated passive; Chinese says TextMouth has no permission"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "english": "TextMouth moved %@ to the current library format, but with a problem:",
+     "before": "TextMouth 已將 %@ 移到目前的書庫格式，但有一個問題：",
+     "after": "TextMouth 已將 %@ 移轉到目前的書庫格式，但有一個問題：",
+     "why": "natural: a book is migrated (移轉, as in Apple's 移轉輔助程式) to the new format; 移到…格式 moved it to a format as to a place"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth 已將 %@ 移到目前的書庫格式，但有一些問題：",
+     "after": "TextMouth 已將 %@ 移轉到目前的書庫格式，但有一些問題：",
+     "why": "natural: a book is migrated (移轉, as in Apple's 移轉輔助程式) to the new format; 移到…格式 moved it to a format as to a place"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth 會結束並重新打開以開始它。",
+     "after": "TextMouth 會結束並重新打開，以開始新書庫。",
+     "why": "natural: 以開始它 has no object Chinese can start; it is the new library (開始新書庫, as the button says)"
+    },
+    {
+     "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "english": {
+      "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
+      "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
+     },
+     "before": {
+      "other": "這樣會讓 %@ 深入 %lld 層，但檔案夾最多只能巢狀 %lld 層。"
+     },
+     "after": {
+      "other": "這樣會讓 %@ 深入 %lld 層，但檔案夾最多只能有 %lld 層。"
+     },
+     "why": "natural: 巢狀 as a verb is programmer jargon; folders can have at most N levels"
+    },
+    {
+     "key": "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered.",
+     "english": "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered.",
+     "before": "書庫視窗的「顯示方式」彈出式選單會依此順序提供這些顯示方式。新視窗會打開在提供的第一個。",
+     "after": "書庫視窗的「顯示方式」彈出式選單會依此順序提供這些顯示方式。新視窗會以第一個提供的顯示方式打開。",
+     "why": "natural: 打開在提供的第一個 copied the English word order and left the noun out"
+    },
+    {
+     "key": "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+     "english": "The book is kept on this Mac, and is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+     "before": "這本書已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載項目。",
+     "after": "這本書已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會讓閱讀列表中的書籍保持下載，因此無法移除它的下載項目。",
+     "why": "natural: 這部 Mac 會保持閱讀列表的下載 was garbled; the Mac keeps the reading list's books downloaded"
+    },
+    {
+     "key": "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+     "english": "The book is on the reading list, which this Mac keeps downloaded, so its download can't be removed.",
+     "before": "這本書在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載項目。",
+     "after": "這本書在閱讀列表上，而這部 Mac 會讓閱讀列表中的書籍保持下載，因此無法移除其下載項目。",
+     "why": "natural: 這部 Mac 會保持閱讀列表的下載 was garbled; the Mac keeps the reading list's books downloaded"
+    },
+    {
+     "key": "The library already had different content under its package name, %@, so it was stored in a new package, %@, and its original file was kept at %@.",
+     "english": "The library already had different content under its package name, %1$@, so it was stored in a new package, %2$@, and its original file was kept at %3$@.",
+     "before": "書庫的封裝名稱 %1$@ 下已有不同內容，因此它存放在新的封裝 %2$@ 中，原始檔案保留在 %3$@。",
+     "after": "書庫中已有其他內容使用它的套件名稱 %1$@，因此它存放在新的套件 %2$@ 中，原始檔案保留在 %3$@。",
+     "why": "meaning: the package name is the book's, not the library's; term: package is the glossary 套件, not 封裝"
+    },
+    {
+     "key": "The library index was read successfully. Your library has %@, and changes are being saved again.",
+     "english": "The library index was read successfully. Your library has %@, and changes are being saved again.",
+     "before": "已成功讀取書庫索引。你的書庫有 %@，且更改已再次儲存。",
+     "after": "已成功讀取書庫索引。你的書庫有 %@，且已恢復儲存更改。",
+     "why": "meaning: changes are being saved again means saving has resumed; 更改已再次儲存 said they were saved a second time"
+    },
+    {
+     "key": "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@.",
+     "english": "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@.",
+     "before": "書庫的身分檔案在這部 Mac 上，但它的索引 %1$@ 尚未從 %2$@ 抵達。",
+     "after": "書庫的身分檔案在這部 Mac 上，但它的索引 %1$@ 尚未從 %2$@ 同步過來。",
+     "why": "natural: a file syncs over (同步過來) from a cloud service; 抵達 is said of travellers and parcels"
+    },
+    {
+     "key": "The library's index is on this Mac, but its identity file, %@, hasn't arrived from %@.",
+     "english": "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@.",
+     "before": "書庫的索引在這部 Mac 上，但它的身分檔案 %1$@ 尚未從 %2$@ 抵達。",
+     "after": "書庫的索引在這部 Mac 上，但它的身分檔案 %1$@ 尚未從 %2$@ 同步過來。",
+     "why": "natural: a file syncs over (同步過來) from a cloud service; 抵達 is said of travellers and parcels"
+    },
+    {
+     "key": "The view is first in the list.",
+     "english": "The view is first in the list.",
+     "before": "此顯示方式位於列表的第一個。",
+     "after": "此顯示方式已是列表中的第一個。",
+     "why": "grammar: 位於列表的第一個 put a place verb before a rank; it is already the first"
+    },
+    {
+     "key": "The view is last in the list.",
+     "english": "The view is last in the list.",
+     "before": "此顯示方式位於列表的最後一個。",
+     "after": "此顯示方式已是列表中的最後一個。",
+     "why": "grammar: 位於列表的最後一個 put a place verb before a rank; it is already the last"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "然後請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
+     "after": "然後請將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
+     "why": "meaning: %@ is a checkbox, which is unchecked (取消勾選); 清除 means erase"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "此點字看起來像英文點字的美國版。請在「書籍資訊」中選擇其點字碼。",
+     "after": "此點字看起來像 English Braille, American Edition。請在「書籍資訊」中選擇其點字碼。",
+     "why": "term: the code keeps its English name, as the Braille Code pop-up and the other strings name it; 英文點字的美國版 is not a name the listener can find"
+    },
+    {
+     "key": "This view is as TextMouth made it.",
+     "english": "This view is as TextMouth made it.",
+     "before": "此顯示方式是 TextMouth 原本製作的樣子。",
+     "after": "此顯示方式仍維持 TextMouth 的原始設定。",
+     "why": "natural: 是 TextMouth 原本製作的樣子 was a word-for-word copy of as TextMouth made it"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "書名會照原樣排序，也照原樣輸入尋找：The Hobbit 在 T 之中。",
+     "after": "書名會依原樣排序，輸入字母尋找時也是如此：The Hobbit 在 T 之中。",
+     "why": "natural: 也照原樣輸入尋找 said to type the titles as written; titles are found by typing as they are written"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "若要讓它釋出，請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
+     "after": "若要讓它釋出，請將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
+     "why": "meaning: %@ is a checkbox, which is unchecked (取消勾選); 清除 means erase"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "若要讓它們釋出，請將它們從閱讀列表中移除，或清除閱讀列表選項中的 %@。",
+     "after": "若要讓它們釋出，請將它們從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。",
+     "why": "meaning: %@ is a checkbox, which is unchecked (取消勾選); 清除 means erase"
+    },
+    {
+     "key": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@",
+     "english": {
+      "one": "Unread: %@ hasn't arrived from the cloud after %lld second, %@",
+      "other": "Unread: %@ hasn't arrived from the cloud after %lld seconds, %@"
+     },
+     "before": {
+      "other": "未讀取：%@ 在 %lld 秒後仍未從雲端送達，%@"
+     },
+     "after": {
+      "other": "未讀取：%@ 在 %lld 秒後仍未從雲端下載完成，%@"
+     },
+     "why": "natural: a file is downloaded from the cloud, not delivered (送達) like a parcel"
+    },
+    {
+     "key": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@",
+     "english": {
+      "one": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld second in all, %@",
+      "other": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@"
+     },
+     "before": {
+      "other": "未讀取：%@ 未被讀取，因為 TextMouth 在總共等候 %lld 秒後停止等候，%@"
+     },
+     "after": {
+      "other": "未讀取：%@ 未讀取，因為 TextMouth 總共等了 %lld 秒後就不再等候，%@"
+     },
+     "why": "natural: 在總共等候 N 秒後停止等候 repeated the verb in a stiff passive sentence"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "當它們的字詞都不剩時，%@，各自會移到章節中大約相同的位置，或兩種閱讀結果共有的最近段落。",
+     "after": "當它們的字詞都不剩時，%@，各自會移到章節中大約相同的位置，或兩種讀取結果共有的最近段落。",
+     "why": "meaning: the two readings are the app's two readings of the file (讀取), not a person reading (閱讀)"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "當它們的字詞都不剩時，各自會移到章節中大約相同的位置，或兩種閱讀結果共有的最近段落。",
+     "after": "當它們的字詞都不剩時，各自會移到章節中大約相同的位置，或兩種讀取結果共有的最近段落。",
+     "why": "meaning: the two readings are the app's two readings of the file (讀取), not a person reading (閱讀)"
+    },
+    {
+     "key": "chapter %@, saved %@, and %@",
+     "english": "chapter %1$@, saved %2$@, and %3$@",
+     "before": "第 %1$@ 章，%2$@ 儲存，以及 %3$@",
+     "after": "第 %1$@ 章，儲存於 %2$@，以及 %3$@",
+     "why": "natural: %2$@ is a date and time, which follows 於 (儲存於 %2$@)"
+    },
+    {
+     "key": "no place saved, and %@",
+     "english": "no place saved, and %@",
+     "before": "沒有儲存的位置，以及 %@",
+     "after": "沒有已儲存的閱讀位置，以及 %@",
+     "why": "meaning: 儲存的位置 reads as a storage location; the place is the reading position"
+    },
+    {
+     "key": "only the latest from each feed",
+     "english": "only the latest from each feed",
+     "before": "只列出每個訂閱源的最新項目",
+     "after": "每個訂閱源只列出最近打開的項目",
+     "why": "meaning: the clause keeps the item you opened last (the checkbox hint says so); 最新項目 reads as the newest episode published"
+    },
+    {
+     "key": "regex",
+     "english": "regex",
+     "before": "正則",
+     "after": "正規表示式",
+     "why": "term: 正則 is the mainland word; Taiwan and the glossary say 正規表示式"
+    },
+    {
+     "key": "use the drive's own command to keep the book only online",
+     "english": "use the drive's own command to keep the book only online",
+     "before": "使用該磁碟機本身的指令，讓書籍僅保留在線上",
+     "after": "使用該雲端硬碟本身的指令，讓這本書只保留在雲端",
+     "why": "meaning: the drive is a cloud drive (雲端硬碟); 磁碟機 is a physical disk drive"
+    },
+    {
+     "key": "“%@” can't be read as %@: %@ Nothing was changed.",
+     "english": "“%1$@” can't be read as %2$@: %3$@ Nothing was changed.",
+     "before": "無法將「%1$@」讀取為 %2$@：%3$@沒有任何項目被更改。",
+     "after": "無法以 %2$@ 讀取「%1$@」：%3$@沒有任何項目被更改。",
+     "why": "natural: the encoding is the means of reading (以 X 讀取); 讀取為 X read as turning the book into X"
+    },
+    {
+     "key": "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@",
+     "english": "“%1$@” could not be moved back after a failed move, so its files are at %2$@ instead of %3$@: %4$@",
+     "before": "在失敗的移動之後，無法將「%1$@」移回，因此它的檔案在 %2$@，而不是 %3$@：%4$@",
+     "after": "移動失敗後，無法將「%1$@」移回，因此它的檔案在 %2$@，而不是 %3$@：%4$@",
+     "why": "natural: 在失敗的移動之後 copied after a failed move; Chinese says 移動失敗後"
+    }
+   ]
+  }
+ ]
+}
