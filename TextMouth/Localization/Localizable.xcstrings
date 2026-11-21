@@ -233642,7 +233642,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mappplacering och manuell ordning som bara lagrades i det oläsliga indexet går förlorade från biblioteket."
+            "value" : "Mappplacering och manuell ordning som bara lagrades i det oläsbara indexet går förlorade från biblioteket."
           }
         },
         "th" : {
@@ -464195,7 +464195,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stoppa, och Spela upp börjar om"
+            "value" : "Stoppa och börja om vid nästa uppspelning"
           }
         },
         "th" : {
@@ -465353,7 +465353,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stoppar flytten av biblioteket innan avslut."
+            "value" : "Stoppar flytten av biblioteket innan TextMouth avslutas."
           }
         },
         "th" : {
@@ -470764,7 +470764,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ett byte förlorar ändringarna som TextMouth inte kunde spara medan biblioteket inte är tillgängligt."
+            "value" : "Om du byter förlorar du ändringarna som TextMouth inte kunde spara medan biblioteket inte är tillgängligt."
           }
         },
         "th" : {
@@ -471860,7 +471860,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta bort den från läslistan, eller rensa %@ i läslistans alternativ först."
+            "value" : "Ta bort den från läslistan, eller avmarkera ”%@” i läslistans alternativ först."
           }
         },
         "th" : {
@@ -481054,7 +481054,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kunde inte kontrollera om den skulle flyttas till papperskorgen."
+            "value" : "TextMouth kunde inte kontrollera om den skulle läggas i papperskorgen."
           }
         },
         "th" : {
@@ -481602,7 +481602,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kunde inte läsa sitt biblioteksindex, filen som registrerar dina mappar, sorteringsinställningar och bokordning."
+            "value" : "TextMouth kunde inte läsa sitt biblioteksindex, filen som lagrar dina mappar, sorteringsinställningar och böckernas ordning."
           }
         },
         "th" : {
@@ -487804,7 +487804,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sparar först en kopia av den gamla filen och bygger inte om om det inte går."
+            "value" : "TextMouth sparar först en kopia av den gamla filen och bygger bara om när kopian har sparats."
           }
         },
         "th" : {
@@ -490326,7 +490326,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth öppnas igen på ett annat bibliotek, så de förblir osparade i det här."
+            "value" : "TextMouth öppnas igen med ett annat bibliotek, så de förblir osparade i det här."
           }
         },
         "th" : {
@@ -490463,7 +490463,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth öppnas igen på ett annat bibliotek, så de ligger kvar där de är i det här."
+            "value" : "TextMouth öppnas igen med ett annat bibliotek, så de ligger kvar där de är i det här."
           }
         },
         "th" : {
@@ -492107,7 +492107,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth byter till ett annat bibliotek och öppnas igen på det."
+            "value" : "TextMouth byter till ett annat bibliotek och öppnas igen med det."
           }
         },
         "th" : {
@@ -495177,7 +495177,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth flyttar tillbaka dem när det har byggt klart om sin datamapp."
+            "value" : "TextMouth flyttar tillbaka dem när ombyggnaden av datamappen är klar."
           }
         },
         "th" : {
@@ -496839,7 +496839,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sparar dem när det har byggt klart om sin datamapp."
+            "value" : "TextMouth sparar dem när ombyggnaden av datamappen är klar."
           }
         },
         "th" : {
@@ -510510,7 +510510,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The Hobbit sorteras bland H och visas som Hobbit, The. Att skriva H hittar den bland H."
+            "value" : "The Hobbit sorteras bland H och visas som Hobbit, The. Om du skriver H hittas den bland H."
           }
         },
         "th" : {
@@ -553411,7 +553411,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Läslistan håller fortfarande den hämtad"
+            "value" : "Läslistan håller den fortfarande hämtad"
           }
         },
         "th" : {
@@ -553548,7 +553548,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Läslistan håller fortfarande dem hämtade"
+            "value" : "Läslistan håller dem fortfarande hämtade"
           }
         },
         "th" : {
@@ -553685,7 +553685,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Läslistan, mapparnas sorteringar och lyssningsalternativ, och alla böcker vars filer inte finns i den här mappen än kommer inte att finnas i det."
+            "value" : "Läslistan, mapparnas sorteringar och lyssningsalternativ och de böcker vars filer inte finns i den här mappen än kommer inte att finnas med i det."
           }
         },
         "th" : {
@@ -562882,7 +562882,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta sedan bort den från läslistan, eller rensa %@ i läslistans alternativ."
+            "value" : "Ta sedan bort den från läslistan, eller avmarkera ”%@” i läslistans alternativ."
           }
         },
         "th" : {
@@ -586301,7 +586301,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Titlar sorteras, och hittas genom att skriva, som de är skrivna: The Hobbit finns bland T."
+            "value" : "Titlar sorteras, och hittas när du skriver, som de är skrivna: The Hobbit finns bland T."
           }
         },
         "th" : {
@@ -588138,7 +588138,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "För att släppa den, ta bort den från läslistan eller rensa %@ i läslistans alternativ."
+            "value" : "För att släppa den, ta bort den från läslistan eller avmarkera ”%@” i läslistans alternativ."
           }
         },
         "th" : {
@@ -588275,7 +588275,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "För att släppa dem, ta bort dem från läslistan eller rensa %@ i läslistans alternativ."
+            "value" : "För att släppa dem, ta bort dem från läslistan eller avmarkera ”%@” i läslistans alternativ."
           }
         },
         "th" : {
@@ -588555,7 +588555,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "För att använda en annan mapp, öppna Inställningar, Lagring och välj %1$@ eller %2$@."
+            "value" : "För att använda en annan mapp, öppna ”Inställningar” > ”Lagring” och välj %1$@ eller %2$@."
           }
         },
         "th" : {
@@ -595497,7 +595497,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Försöker spara varje ändring som inte kunde sparas igen."
+            "value" : "Försöker igen att spara varje ändring som inte kunde sparas."
           }
         },
         "th" : {
@@ -612240,7 +612240,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väntar på att boksanalysen ska bli klar..."
+            "value" : "Väntar på att analysen av böckerna ska bli klar..."
           }
         },
         "th" : {
@@ -621705,7 +621705,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Var TextMouth skriver sina diagnostikloggar. %1$@ behåller dem med dina böcker, så de flyttas och synkas med biblioteket. %2$@ behåller dem i %3$@, som aldrig synkas. En ändring gäller från nästa rad; befintliga loggar finns kvar."
+            "value" : "Var TextMouth skriver sina diagnostikloggar. ”%1$@” sparar dem tillsammans med dina böcker, så de flyttas och synkas med biblioteket. ”%2$@” sparar dem i %3$@, som aldrig synkas. En ändring gäller från nästa rad; befintliga loggar finns kvar."
           }
         },
         "th" : {
@@ -675746,7 +675746,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "använd molndrivenhetens eget kommando för att bara behålla boken online"
+            "value" : "använd molntjänstens eget kommando för att bara behålla boken online"
           }
         },
         "th" : {
