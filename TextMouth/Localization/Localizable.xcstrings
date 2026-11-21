@@ -529362,7 +529362,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "这是临时资料库，资料库更改没有被存储。"
+            "value" : "这是临时资料库，目前不会存储资料库更改。"
           }
         },
         "zh-Hant" : {
@@ -582839,7 +582839,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "选取 Make online-only"
+            "value" : "选取“Make online-only”"
           }
         },
         "zh-Hant" : {
@@ -582970,7 +582970,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "选取“移除下载”"
+            "value" : "选取“移除下载项”"
           }
         },
         "zh-Hant" : {
@@ -616790,7 +616790,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "使用该云盘自带的命令，让这本图书仅保留在线"
+            "value" : "使用该云盘自带的命令，让这本图书仅保留在云端"
           }
         },
         "zh-Hant" : {
