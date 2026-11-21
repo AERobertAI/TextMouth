@@ -3227,7 +3227,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ finns i ditt bibliotek, utan prenumeration. Välj %2$@ på flödets rad, eller i dess %3$@, för att kontrollera dem igen."
+            "value" : "%1$@ finns i ditt bibliotek, utan prenumeration. Välj %2$@ på ett flödes rad, eller i dess %3$@, för att kontrollera det igen."
           }
         },
         "th" : {
@@ -7396,7 +7396,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Misslyckades vid steget %1$@: %2$@"
+            "value" : "Steget ”%1$@” misslyckades: %2$@"
           }
         },
         "th" : {
@@ -89629,13 +89629,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld prenumererades redan på."
+                  "value" : "%lld fanns redan bland dina prenumerationer."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld prenumererades redan på."
+                  "value" : "%lld fanns redan bland dina prenumerationer."
                 }
               }
             }
@@ -106379,7 +106379,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Efter en automatisk uppdatering nämns varje flöde med nya avsnitt och artiklar i en avisering."
+            "value" : "Efter en automatisk uppdatering nämner en notis varje flöde med nya avsnitt och artiklar."
           }
         },
         "th" : {
@@ -144495,7 +144495,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Att kontrollera flödet igen tar inte tillbaka det."
+            "value" : "Det går inte att få tillbaka genom att kontrollera flödet igen."
           }
         },
         "th" : {
@@ -144906,7 +144906,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kontrollerar alla flöden du prenumererar på och säger vad som kom in."
+            "value" : "Kontrollerar alla flöden du prenumererar på och berättar vad som är nytt."
           }
         },
         "th" : {
@@ -149159,7 +149159,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Välj en OPML-fil med prenumerationer, som en annan flödesläsare exporterar dem."
+            "value" : "Välj en OPML-fil med prenumerationer, till exempel en som en annan flödesläsare har exporterat."
           }
         },
         "th" : {
@@ -165909,7 +165909,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Konverterar ljud: %1$@ av ”%2$@”"
+            "value" : "Konverterar ljud: %1$@ i ”%2$@”"
           }
         },
         "th" : {
@@ -199726,7 +199726,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dubblettbok hittades"
+            "value" : "Dubblett hittades"
           }
         },
         "th" : {
@@ -212323,7 +212323,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla artiklar listade, hämtning för hand"
+            "value" : "Alla artiklar listade, manuell hämtning"
           }
         },
         "th" : {
@@ -213749,7 +213749,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla avsnitt listade, hämtning för hand"
+            "value" : "Alla avsnitt listade, manuell hämtning"
           }
         },
         "th" : {
@@ -214633,7 +214633,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla objekt listade, hämtning för hand"
+            "value" : "Alla objekt listade, manuell hämtning"
           }
         },
         "th" : {
@@ -257590,7 +257590,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importerar en mapp som innehåller en DAISY-bok eller ljudspår som en bok."
+            "value" : "Importerar en mapp med en DAISY-bok eller ljudspår som en enda bok."
           }
         },
         "th" : {
@@ -265056,7 +265056,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det raderar %@: det flyttas till papperskorgen, där du kan återställa det tills papperskorgen töms."
+            "value" : "Det raderar %@, som flyttas till papperskorgen och kan återställas tills papperskorgen töms."
           }
         },
         "th" : {
@@ -265193,7 +265193,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det raderar %@: det raderas permanent och kan inte återställas."
+            "value" : "Det raderar %@ permanent, och det går inte att återställa."
           }
         },
         "th" : {
@@ -265330,7 +265330,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det raderar %@: det finns kvar i biblioteksmappen för TextMouth."
+            "value" : "Det raderar %@, som finns kvar i biblioteksmappen för TextMouth."
           }
         },
         "th" : {
@@ -268847,7 +268847,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Den listar inget ljudspår med en start som TextMouth kan läsa."
+            "value" : "Den listar inget ljudspår med en starttid som TextMouth kan läsa."
           }
         },
         "th" : {
@@ -336351,7 +336351,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inget flöde prenumererades på."
+            "value" : "Ingen ny prenumeration lades till."
           }
         },
         "th" : {
@@ -361982,7 +361982,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar dess bok i ditt bibliotek."
+            "value" : "Öppnar boken i ditt bibliotek."
           }
         },
         "th" : {
@@ -381404,7 +381404,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skicka en avisering för varje flöde med nya avsnitt"
+            "value" : "Skicka en notis för varje flöde med nya avsnitt"
           }
         },
         "th" : {
@@ -399654,7 +399654,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Uppdatera flöden var"
+            "value" : "Uppdateringsintervall"
           }
         },
         "th" : {
@@ -425527,7 +425527,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spara dina prenumerationer som en OPML-fil, som andra flödesläsare importerar."
+            "value" : "Spara dina prenumerationer som en OPML-fil, som andra flödesläsare kan importera."
           }
         },
         "th" : {
