@@ -1,0 +1,450 @@
+{
+ "language": "ja",
+ "reviews": [
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ for %@ now follows the global setting: %@.",
+     "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
+     "before": "「%2$@」の%1$@は全体の設定に従います：%3$@。",
+     "after": "「%2$@」の%1$@は全体の設定に従うようになりました：%3$@。",
+     "why": "natural: an announcement of a change; 従います states a rule, and the sibling This book follows the global setting now says 従うようになりました"
+    },
+    {
+     "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "before": "%@は、フィードでダウンロードしたエピソードまたは記事を移動します。そのフィードのフォルダ内で1つ選択してください。",
+     "after": "「%@」は、フィードでダウンロードしたエピソードまたは記事を移動します。そのフィードのフォルダ内で1つ選択してください。",
+     "why": "punctuation: the command name with its ellipsis used bare as the topic is unreadable; Apple quotes command names in 「」"
+    },
+    {
+     "key": "%@ on this book",
+     "english": "%@ on this book",
+     "before": "このブックに%@",
+     "after": "このブックの経過時間：%@",
+     "why": "natural: このブックに2分 copies the English on this book; the time spent is 経過時間"
+    },
+    {
+     "key": "%@ so far",
+     "english": "%@ so far",
+     "before": "ここまで%@",
+     "after": "%@ダウンロード済み",
+     "why": "natural: ここまで12 MB is a literal so far; a download count reads 12 MBダウンロード済み"
+    },
+    {
+     "key": "%@ waits for a network without data limits to refresh by itself.",
+     "english": "%@ waits for a network without data limits to refresh by itself.",
+     "before": "%@は、データ量の制限がないネットワークになると自動的に更新されます。",
+     "after": "%@は、データ量の制限がないネットワークに接続されると自動的に更新されます。",
+     "why": "grammar: ネットワークになると says the feed becomes a network; it is connected to one"
+    },
+    {
+     "key": "%@, by %@",
+     "english": "%1$@, by %2$@",
+     "before": "%1$@、%2$@による",
+     "after": "%1$@、%2$@",
+     "why": "natural: a dangling による after the name is a fragment; Apple reads a title and its author or performer as two items with a comma"
+    },
+    {
+     "key": "%lld books processed",
+     "english": {
+      "one": "%lld book processed",
+      "other": "%lld books processed"
+     },
+     "before": {
+      "other": "%lld冊のブックを処理"
+     },
+     "after": {
+      "other": "%lld冊を処理済み"
+     },
+     "why": "natural: follows 3 / and must read 3 / 10冊を処理済み, not processing 10 books"
+    },
+    {
+     "key": "%lld files failed:",
+     "english": {
+      "one": "%lld file failed:",
+      "other": "%lld files failed:"
+     },
+     "before": {
+      "other": "%lld個のファイルが失敗しました："
+     },
+     "after": {
+      "other": "%lld個のファイルを読み込めませんでした："
+     },
+     "why": "natural: files do not fail in Japanese; the heading counts files that could not be imported"
+    },
+    {
+     "key": "; %@ stay",
+     "english": "; %@ stay",
+     "before": "；%@は残ります",
+     "after": "。%@は残ります",
+     "why": "punctuation: Japanese has no full-width semicolon in running text; the clause becomes its own sentence"
+    },
+    {
+     "key": "; %@ stays",
+     "english": "; %@ stays",
+     "before": "；%@は残ります",
+     "after": "。%@は残ります",
+     "why": "punctuation: Japanese has no full-width semicolon in running text; the clause becomes its own sentence"
+    },
+    {
+     "key": "After an automatic refresh, an alert names the feeds with new episodes and articles",
+     "english": "After an automatic refresh, an alert names the feeds with new episodes and articles",
+     "before": "自動更新のあと、新しいエピソードや記事があるフィードを警告でお知らせします。",
+     "after": "自動更新のあと、新しいエピソードや記事があるフィードをアラートでお知らせします。",
+     "why": "term: an alert dialog is アラート in Apple Japanese; 警告 means a warning"
+    },
+    {
+     "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "before": "記事の詳細はフィードから取得されます。%@を選択すると、編集できるブックになります。",
+     "after": "記事の詳細はフィードから取得されます。「%@」を選択すると、編集できるブックになります。",
+     "why": "punctuation: the verb-phrase command name needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "before": "エピソードの詳細はフィードから取得されます。%@を選択すると、編集できるブックになります。",
+     "after": "エピソードの詳細はフィードから取得されます。「%@」を選択すると、編集できるブックになります。",
+     "why": "punctuation: the verb-phrase command name needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "Asks first, then stops checking; the feed and its downloads stay",
+     "english": "Asks first, then stops checking; the feed and its downloads stay",
+     "before": "確認してから、チェックを停止します。フィードとそのダウンロードは残ります。",
+     "after": "先に尋ねてから、このフィードの確認を停止します。フィードとそのダウンロードは残ります。",
+     "why": "term: feed checks are 確認 everywhere else (Check Feed, 確認を停止); 先に尋ねてから avoids two senses of 確認"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "今後このフィードを確認し、すぐに確認も行います。",
+     "after": "このフィードの確認を再開し、すぐに確認します。",
+     "why": "natural: 今後…確認も行います is clumsy; the hint says checking resumes and runs now"
+    },
+    {
+     "key": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "english": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "before": "%@の WebVTT（.vtt）または SubRip（.srt）形式の文字起こしを選んでください。時刻はオーディオの先頭からのものにします。",
+     "after": "%@の、オーディオの先頭からの時刻が付いた WebVTT（.vtt）または SubRip（.srt）形式の文字起こしを選んでください。",
+     "why": "meaning: the added sentence 時刻は…ものにします says the app sets the times; the English describes the file to choose, in one sentence"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "フィードは、起動時（オンの場合）と、%1$@または%2$@を選択したときにだけ更新されます。",
+     "after": "フィードは、起動時（オンの場合）と、「%1$@」または「%2$@」を選択したときにだけ更新されます。",
+     "why": "punctuation: two verb-phrase command names run together without 「」, so the listener cannot tell where each ends"
+    },
+    {
+     "key": "File %lld of %lld",
+     "english": "File %1$lld of %2$lld",
+     "before": "%2$lld個のうち%1$lld番目のファイル",
+     "after": "ファイル%1$lld/%2$lld",
+     "why": "natural: matches the other n of m lines (ブック1/3, ダウンロード1/3) and is half as long to hear"
+    },
+    {
+     "key": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+     "english": {
+      "one": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+      "other": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
+     },
+     "before": {
+      "other": "TextMouth を最後に終了する前の録音が%lld件見つかりました（%@の下）。それぞれ保存または破棄してください。"
+     },
+     "after": {
+      "other": "TextMouth を最後に終了する前の録音が%lld件見つかりました（「%@」の下）。それぞれ保存または破棄してください。"
+     },
+     "why": "punctuation: the bare heading name in （…の下） runs into the particle; quoted as Apple quotes names"
+    },
+    {
+     "key": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
+     "english": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
+     "before": "TextMouth を最後に終了する前の録音が見つかりました（%@の下）。保存または破棄してください。",
+     "after": "TextMouth を最後に終了する前の録音が見つかりました（「%@」の下）。保存または破棄してください。",
+     "why": "punctuation: the bare heading name in （…の下） runs into the particle; quoted as Apple quotes names"
+    },
+    {
+     "key": "Inner Cover",
+     "english": "Inner Cover",
+     "before": "内表紙",
+     "after": "中表紙",
+     "why": "term: the inner cover page of a comic or book is 中表紙 in Japanese; 内表紙 is not a standard word"
+    },
+    {
+     "key": "Inserted %@ of new recording, which is selected.",
+     "english": "Inserted %@ of new recording, which is selected.",
+     "before": "新しい録音%@を挿入しました。選択された状態です。",
+     "after": "%@の新しい録音を挿入し、選択しました。",
+     "why": "natural: 新しい録音5秒 reads the length as part of a name, and 選択された状態です has no subject; it now matches %@の無音を挿入しました"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "ダウンロードされている間は、フィードに属します。%@を選択すると、ファイルは取り除かれ、位置とブックマークは保持されます。",
+     "after": "ダウンロードされている間は、フィードに属します。「%@」を選択すると、ファイルは取り除かれ、位置とブックマークは保持されます。",
+     "why": "punctuation: the verb-phrase command name needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "TextMouth が読み取れる開始位置のオーディオトラックが記載されていません。",
+     "after": "TextMouth が開始位置を読み取れるオーディオトラックが記載されていません。",
+     "why": "grammar: the relative clause made the start position, not the track, what TextMouth reads"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "トラックが、指定されたオーディオの終わりを超えています。別のコピーのオーディオ用に作られたものです。",
+     "after": "トラックが、指定されたオーディオの終わりを超えています。そのオーディオの別のコピー用に作られたものです。",
+     "why": "natural: 別のコピーのオーディオ is a literal word order; it was made for another copy of that audio"
+    },
+    {
+     "key": "No Thanks",
+     "english": "No Thanks",
+     "before": "しない",
+     "after": "作成しない",
+     "why": "voiceover: しない alone is heard without its verb; the button answers Create Folder, so it says 作成しない"
+    },
+    {
+     "key": "No new books in “%@”: its one book was already in your library.",
+     "english": "No new books in “%@”: its one book was already in your library.",
+     "before": "「%@」に新しいブックはありません。1冊だけで、すでにライブラリにあります。",
+     "after": "「%@」に新しいブックはありません。含まれていた1冊は、すでにライブラリにあります。",
+     "why": "natural: 1冊だけで、すでに is a clumsy literal of its one book"
+    },
+    {
+     "key": "No podcasts were found for “%@”. Try other words, or type the feed's address.",
+     "english": "No podcasts were found for “%@”. Try other words, or type the feed's address.",
+     "before": "「%@」の Podcast は見つかりませんでした。別の言葉をお試しいただくか、フィードのアドレスを入力してください。",
+     "after": "「%@」の Podcast は見つかりませんでした。別の言葉で検索するか、フィードのアドレスを入力してください。",
+     "why": "register: お試しいただくか is honorific where the rest of the interface says してください"
+    },
+    {
+     "key": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "english": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "before": "TextMouth のプリセットを元に戻し、追加したものを取り除きます。",
+     "after": "TextMouth 標準のプリセットに戻し、追加したものを取り除きます。",
+     "why": "meaning: プリセットを元に戻し loses premade; the presets return to TextMouth 標準, the word the rules lines use"
+    },
+    {
+     "key": "Recording. Stop or discard it with Clear Selection, then close.",
+     "english": "Recording. Stop or discard it with Clear Selection, then close.",
+     "before": "録音中です。「選択解除」で停止または破棄してから、閉じてください。",
+     "after": "録音中です。停止するか、「選択解除」で破棄してから、閉じてください。",
+     "why": "meaning: the translation made Clear Selection both stop and discard; Stop ends the recording, Clear Selection discards it"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "%1$@を、新しい録音%2$@で置き換えました。選択された状態です。",
+     "after": "%1$@を%2$@の新しい録音で置き換え、選択しました。",
+     "why": "natural: 新しい録音5秒 reads the length as part of a name, and 選択された状態です has no subject; matches the insert announcement"
+    },
+    {
+     "key": "Runs a filter preset over the selection or the whole file.",
+     "english": "Runs a filter preset over the selection or the whole file.",
+     "before": "フィルタプリセットを、選択範囲またはファイル全体に実行します。",
+     "after": "選択範囲またはファイル全体に、フィルタプリセットを適用します。",
+     "why": "natural: a preset is applied (適用), not run (実行), to a stretch of audio; Apply is 適用 in the same sheet"
+    },
+    {
+     "key": "Show an alert when a refresh brings new episodes",
+     "english": "Show an alert when a refresh brings new episodes",
+     "before": "更新で新しいエピソードがあったときに警告を表示",
+     "after": "更新で新しいエピソードがあったときにアラートを表示",
+     "why": "term: an alert dialog is アラート in Apple Japanese; 警告 means a warning"
+    },
+    {
+     "key": "Stops checking; the feed and its downloads stay",
+     "english": "Stops checking; the feed and its downloads stay",
+     "before": "チェックを停止します。フィードとそのダウンロードは残ります。",
+     "after": "このフィードの確認を停止します。フィードとそのダウンロードは残ります。",
+     "why": "term: feed checks are 確認 everywhere else, as in the sibling TextMouth stops checking strings"
+    },
+    {
+     "key": "Subscribed",
+     "english": "Subscribed",
+     "before": "購読日",
+     "after": "購読済み",
+     "why": "meaning: the key is also the view editor condition paired with 購読解除済み, where 購読日 (subscription date) is wrong; 購読済み fits both"
+    },
+    {
+     "key": "Text recognition could not read %@: %@.",
+     "english": "Text recognition could not read %1$@: %2$@.",
+     "before": "テキスト認識で読み取れませんでした（%1$@）：%2$@。",
+     "after": "テキスト認識で%1$@を読み取れませんでした：%2$@。",
+     "why": "natural: the count in parentheses after the verb copies the English; it is the object, 1 / 12ページを読み取れませんでした"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "other": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は重複するブックの新しいコピー%lld個をゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「元に戻す」を選択してください。"
+     },
+     "after": {
+      "other": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は重複するブックの新しいコピー%lld個をゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「戻す」を選択してください。"
+     },
+     "why": "term: Finder names its Put Back command 戻す in Japanese (its menu, N153.1); 元に戻す is not the command the listener must find"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は%@の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「元に戻す」を選択してください。",
+     "after": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は%@の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「戻す」を選択してください。",
+     "why": "term: Finder names its Put Back command 戻す in Japanese (its menu, N153.1); 元に戻す is not the command the listener must find"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は「%@」の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「元に戻す」を選択してください。",
+     "after": "TextMouth を終了するまでに、重複するブックとして保持するかどうかの質問に回答がなかったため、TextMouth は「%@」の新しいコピーをゴミ箱に移動しました。元に戻すには、ゴミ箱を開いて「戻す」を選択してください。",
+     "why": "term: Finder names its Put Back command 戻す in Japanese (its menu, N153.1); 元に戻す is not the command the listener must find"
+    },
+    {
+     "key": "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back.",
+     "english": "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back.",
+     "before": "ライブラリにアクセスできないため、TextMouth は「%@」の新しいコピーを保持できません。ライブラリに戻ってから、もう一度回答してください。",
+     "after": "ライブラリにアクセスできないため、TextMouth は「%@」の新しいコピーを保持できません。ライブラリにアクセスできるようになってから、もう一度回答してください。",
+     "why": "meaning: ライブラリに戻ってから tells the listener to go back to the library; it means once the library is reachable again"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "一覧は%@の変更にすぐ従います。ダウンロードされるものや削除されるものは、変更から10秒間そのままになるまで待ち、そのときに VoiceOver が読み上げます。",
+     "after": "「%@」を変更すると、一覧にはすぐに反映されます。ダウンロードされるものや削除されるものは、変更から10秒間そのままになるまで待ち、そのときに VoiceOver が読み上げます。",
+     "why": "natural: 一覧は一覧とダウンロードの変更に従います repeats 一覧 with the bare control name; quoted, and follows becomes 反映されます"
+    },
+    {
+     "key": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "english": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "before": "元のオーディオとは、録音の保存元になる可逆圧縮のテイク、またはオーディオブックのファイルの最初の編集前のコピーです。保持しておくと、すべての編集を劣化なしで取り消せます。録音の場合は1時間あたり約345 MBです。変更はすでに保持されている元のオーディオにも適用され、クラウドライブラリでは元のオーディオがブックと同期されます。",
+     "after": "元のオーディオとは、録音の保存元になる劣化のないテイク、またはオーディオブックのファイルの最初の編集前のコピーです。保持しておくと、すべての編集を劣化なしで取り消せます。録音の場合は1時間あたり約345 MBです。変更はすでに保持されている元のオーディオにも適用され、クラウドライブラリでは元のオーディオがブックと同期されます。",
+     "why": "meaning: 可逆圧縮 says the take is compressed; it is uncompressed PCM (345 MB an hour), and lossless only means without loss"
+    },
+    {
+     "key": "The podcast's own transcript, downloaded with the episode on %@.",
+     "english": "The podcast's own transcript, downloaded with the episode on %@.",
+     "before": "ポッドキャスト自身の文字起こしで、%@にエピソードとともにダウンロードされました。",
+     "after": "Podcast 自身の文字起こしで、%@にエピソードとともにダウンロードされました。",
+     "why": "term: the glossary and Apple write Podcast in Latin letters; ポッドキャスト appears nowhere else"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "録音を保存できませんでした：%1$@ 録音は保持されています。「%2$@」または「%3$@」を選んでください。",
+     "after": "録音を保存できませんでした：%1$@録音は保持されています。「%2$@」または「%3$@」を選んでください。",
+     "why": "punctuation: the reason ends with its own 。, and Japanese puts no space between sentences"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "この XML ファイルは、TextMouth が読み取れる唯一の XML である DTBook ブック、Word 2003 XML 書類、PEF 点字ファイルのいずれでもありません。",
+     "after": "この XML ファイルは、TextMouth が読み取れる XML（DTBook ブック、Word 2003 XML 書類、PEF 点字ファイル）のいずれでもありません。",
+     "why": "grammar: 唯一の XML である followed by three formats is a contradiction; the list becomes the readable kinds in parentheses"
+    },
+    {
+     "key": "To keep an article, choose %@ on its row first.",
+     "english": "To keep an article, choose %@ on its row first.",
+     "before": "記事を残すには、先にその行で%@を選択してください。",
+     "after": "記事を残すには、先にその行で「%@」を選択してください。",
+     "why": "punctuation: the verb-phrase command name needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "To keep an episode, choose %@ on its row first.",
+     "english": "To keep an episode, choose %@ on its row first.",
+     "before": "エピソードを残すには、先にその行で%@を選択してください。",
+     "after": "エピソードを残すには、先にその行で「%@」を選択してください。",
+     "why": "punctuation: the verb-phrase command name needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "To keep an item, choose %@ on its row first.",
+     "english": "To keep an item, choose %@ on its row first.",
+     "before": "項目を残すには、先にその行で%@を選択してください。",
+     "after": "項目を残すには、先にその行で「%@」を選択してください。",
+     "why": "punctuation: the verb-phrase command name needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "To use it, choose %@ on the Text tab in Settings.",
+     "english": "To use it, choose %@ on the Text tab in Settings.",
+     "before": "使用するには、設定の「テキスト」タブで%@を選択してください。",
+     "after": "使用するには、設定の「テキスト」タブで「%@」を選択してください。",
+     "why": "punctuation: the verb-phrase command name needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "オンにすると、このフィードは設定の%@の設定に従います。オフにすると、このフィード独自の設定になります。",
+     "after": "オンにすると、このフィードは設定の「%@」タブの設定に従います。オフにすると、このフィード独自の設定になります。",
+     "why": "natural: 設定のフィードの設定 reads as nonsense with the bare tab name; it is the Feeds tab, quoted as the Text tab is"
+    },
+    {
+     "key": "choose %@ again",
+     "english": "choose %@ again",
+     "before": "%@をもう一度選択してください",
+     "after": "「%@」をもう一度選択してください",
+     "why": "punctuation: the command name with its ellipsis needs 「」 before を, as Apple writes command names"
+    },
+    {
+     "key": "file %lld of %lld",
+     "english": "file %1$lld of %2$lld",
+     "before": "%2$lld個中%1$lld番目のファイル",
+     "after": "ファイル%1$lld/%2$lld",
+     "why": "natural: matches the Transcribe Audio line File n of m and is half as long after 40パーセント、"
+    },
+    {
+     "key": "keeping the place of your feed downloads for next time",
+     "english": "keeping the place of your feed downloads for next time",
+     "before": "次回のためのフィードのダウンロードの位置の保持",
+     "after": "フィードのダウンロードの位置を次回のために保存",
+     "why": "natural: a chain of five の after the colon; the activity reads as an object and 保存"
+    },
+    {
+     "key": "more than %@",
+     "english": "more than %@",
+     "before": "%@を超える",
+     "after": "%@超",
+     "why": "grammar: the phrase is always followed by のうち, which needs a noun; を超える left the adnominal form dangling"
+    },
+    {
+     "key": "returning it to the library",
+     "english": "returning it to the library",
+     "before": "ライブラリへの戻し",
+     "after": "ライブラリに戻す処理",
+     "why": "natural: 戻し is not a noun Japanese uses; it reads ライブラリに戻す処理に失敗しました"
+    },
+    {
+     "key": "saving the changes to your feed subscriptions",
+     "english": "saving the changes to your feed subscriptions",
+     "before": "フィードの購読の変更の保存",
+     "after": "フィードの購読の変更を保存",
+     "why": "natural: a chain of four の after the colon; the activity reads as an object and 保存"
+    },
+    {
+     "key": "“%@” is already being added to the library.",
+     "english": "“%@” is already being added to the library.",
+     "before": "「%@」はすでにライブラリに追加されています。",
+     "after": "「%@」はすでにライブラリへの追加中です。",
+     "why": "meaning: すでに追加されています says it was added; the book is still being added"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "「%@」は録音中です。「選択解除」で停止または破棄してから、終了してください。",
+     "after": "「%@」は録音中です。停止するか、「選択解除」で破棄してから、終了してください。",
+     "why": "meaning: the translation made Clear Selection both stop and discard; Stop ends the recording, Clear Selection discards it"
+    }
+   ]
+  }
+ ]
+}
