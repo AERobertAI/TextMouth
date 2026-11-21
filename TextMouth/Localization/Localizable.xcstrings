@@ -85971,7 +85971,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld đoạn có thời gian quá dài và đã bị cắt ngắn."
+                  "value" : "%lld đoạn có mốc thời gian quá dài và đã bị cắt ngắn."
                 }
               }
             }
@@ -86438,7 +86438,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld đoạn có thời gian không đọc được và đã bị bỏ qua."
+                  "value" : "%lld đoạn có mốc thời gian không đọc được và đã bị bỏ qua."
                 }
               }
             }
@@ -114853,7 +114853,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Áp dụng bộ lọc liệt kê các mục này theo thứ tự này. Mỗi mục là một chuỗi bộ lọc theo cú pháp của ffmpeg, chẳng hạn highpass=f=80,volume=3dB. TextMouth chạy các bộ lọc riêng của mình, cùng mọi bộ lọc của ffmpeg khi ffmpeg đã được cài đặt và bật ở trên."
+            "value" : "Lệnh Áp dụng bộ lọc liệt kê các mục này theo thứ tự này. Mỗi mục là một chuỗi bộ lọc theo cú pháp của ffmpeg, chẳng hạn highpass=f=80,volume=3dB. TextMouth chạy các bộ lọc riêng của mình, cùng mọi bộ lọc của ffmpeg khi ffmpeg đã được cài đặt và bật ở trên."
           }
         },
         "zh-Hans" : {
@@ -114990,7 +114990,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Áp dụng bộ lọc phát bản nghe thử trước, và chỉ áp dụng khi bạn chọn Áp dụng lần nữa."
+            "value" : "Lệnh Áp dụng bộ lọc phát bản nghe thử trước, và chỉ áp dụng khi bạn chọn Áp dụng lần nữa."
           }
         },
         "zh-Hans" : {
@@ -117431,7 +117431,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hỏi sau mỗi lần nhập sách nói xem có chép lời hay không. Khi tắt, sách nói chỉ được chép lời bằng Chép lời âm thanh."
+            "value" : "Hỏi sau mỗi lần nhập sách nói xem có chép lời hay không. Khi tắt, sách nói chỉ được chép lời bằng lệnh Chép lời âm thanh."
           }
         },
         "zh-Hans" : {
@@ -119492,7 +119492,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã đính kèm từ tệp %1$@ khi nhập, vào %2$@."
+            "value" : "Đã đính kèm từ tệp %1$@ khi nhập, vào ngày %2$@."
           }
         },
         "zh-Hans" : {
@@ -119635,7 +119635,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã đính kèm từ một tệp %1$@ vào %2$@."
+            "value" : "Đã đính kèm từ một tệp %1$@ vào ngày %2$@."
           }
         },
         "zh-Hans" : {
@@ -119772,7 +119772,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã đính kèm từ một tệp vào %@."
+            "value" : "Đã đính kèm từ một tệp vào ngày %@."
           }
         },
         "zh-Hans" : {
@@ -119909,7 +119909,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã đính kèm từ các tệp khi nhập, vào %@."
+            "value" : "Đã đính kèm từ các tệp khi nhập, vào ngày %@."
           }
         },
         "zh-Hans" : {
@@ -120052,7 +120052,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã đính kèm từ “%1$@” khi nhập, vào %2$@."
+            "value" : "Đã đính kèm từ “%1$@” khi nhập, vào ngày %2$@."
           }
         },
         "zh-Hans" : {
@@ -120195,7 +120195,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã đính kèm từ “%1$@” vào %2$@."
+            "value" : "Đã đính kèm từ “%1$@” vào ngày %2$@."
           }
         },
         "zh-Hans" : {
@@ -120332,7 +120332,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã đính kèm vào %@."
+            "value" : "Đã đính kèm vào ngày %@."
           }
         },
         "zh-Hans" : {
@@ -122866,7 +122866,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Độ lớn của sách nói"
+            "value" : "Độ to cho sách nói"
           }
         },
         "zh-Hans" : {
@@ -147539,7 +147539,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chọn bản chép lời WebVTT (.vtt) hoặc SubRip (.srt) của %@, có thời gian tính từ đầu âm thanh."
+            "value" : "Chọn bản chép lời WebVTT (.vtt) hoặc SubRip (.srt) của %@, có mốc thời gian tính từ đầu âm thanh."
           }
         },
         "zh-Hans" : {
@@ -158654,7 +158654,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đóng sẽ kết thúc bản ghi âm. %1$@ lưu bản ghi thành sách nói, %2$@ xóa bản ghi, và %3$@ tiếp tục ghi âm."
+            "value" : "Đóng cửa sổ này sẽ kết thúc việc ghi âm. %1$@ lưu bản ghi thành sách nói, %2$@ xóa bản ghi, và %3$@ tiếp tục ghi âm."
           }
         },
         "zh-Hans" : {
@@ -199476,7 +199476,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thả một điểm đánh dấu tại con trỏ, kể cả khi âm thanh đang phát."
+            "value" : "Đặt một điểm đánh dấu tại con trỏ, kể cả khi âm thanh đang phát."
           }
         },
         "zh-Hans" : {
@@ -224065,7 +224065,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tăng dần"
+            "value" : "Tăng dần âm lượng"
           }
         },
         "zh-Hans" : {
@@ -581204,7 +581204,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ảnh này có %lld trang, nhiều hơn %@ mà TextMouth đọc."
+                  "value" : "Ảnh này có %lld trang, vượt mức %@ mà TextMouth đọc được."
                 }
               }
             }
@@ -581671,7 +581671,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ảnh này là %1$@, lớn hơn %2$lld megapixel mà TextMouth đọc."
+                  "value" : "Ảnh này có kích thước %1$@, vượt mức %2$lld megapixel mà TextMouth đọc được."
                 }
               }
             }
@@ -615456,7 +615456,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Những gì được giữ cho %lld bản tải về đã gỡ đã bị xóa."
+                  "value" : "Đã xóa những gì được giữ lại cho %lld bản tải về đã gỡ."
                 }
               }
             }
@@ -637065,7 +637065,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "bởi %@"
+            "value" : "của %@"
           }
         },
         "zh-Hans" : {
@@ -641330,7 +641330,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "giải nén kho lưu trữ"
+            "value" : "giải nén tệp lưu trữ"
           }
         },
         "zh-Hans" : {
@@ -648799,7 +648799,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "nó là %1$@, lớn hơn %2$lld megapixel"
+                  "value" : "nó có kích thước %1$@, vượt quá %2$lld megapixel"
                 }
               }
             }
@@ -652942,7 +652942,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "tệp của nó không đọc được như một ảnh"
+            "value" : "tệp của nó không đọc được dưới dạng ảnh"
           }
         },
         "zh-Hans" : {
@@ -653627,7 +653627,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "gói của nó không nằm trong thư mục thư viện của nó lẫn thư mục của nguồn cấp"
+            "value" : "gói của nó không nằm trong thư mục thư viện của nó, cũng không nằm trong thư mục của nguồn cấp"
           }
         },
         "zh-Hans" : {
@@ -663067,7 +663067,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "đọc bản kê khai của nó"
+            "value" : "đọc tệp kê khai của nó"
           }
         },
         "zh-Hans" : {
@@ -673167,7 +673167,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "đầu thư viện của bạn"
+            "value" : "cấp cao nhất trong thư viện của bạn"
           }
         },
         "zh-Hans" : {
