@@ -1294,6 +1294,894 @@
    ]
   },
   {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ adds one at the current position.",
+     "english": "%@ adds one at the current position.",
+     "before": "%@ lägger till ett vid den aktuella positionen.",
+     "after": "”%@” lägger till ett vid den aktuella positionen.",
+     "why": "grammar: the button name as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "english": "%@ does the same for every such chapter of this export, without asking again.",
+     "before": "Med %@ görs detsamma för varje sådant kapitel i den här exporten, utan att fråga igen.",
+     "after": "Med ”%@” görs detsamma för varje sådant kapitel i den här exporten, utan att fråga igen.",
+     "why": "grammar: the button title after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%@ har sin standardgenväg, %@",
+     "after": "”%@” har standardgenvägen, %@",
+     "why": "meaning: reflexive sin said the other action has its own default; the key is this row action default, and the action name, the subject, is quoted as parts 1 and 2 do"
+    },
+    {
+     "key": "%@ in",
+     "english": "%@ in",
+     "before": "%@ in",
+     "after": "%@ in i inspelningen",
+     "why": "natural: a bare in after a time is an anglicism; Swedish says in i and what it is in, as the Mac reading position does"
+    },
+    {
+     "key": "%@ now waits before %@, in case it is pressed twice.",
+     "english": "%1$@ now waits before %2$@, in case it is pressed twice.",
+     "before": "%@ väntar nu innan %@ utförs, ifall den trycks två gånger.",
+     "after": "%@ väntar nu innan ”%@” utförs, ifall tangenten trycks två gånger.",
+     "why": "grammar: den did not agree with a key named J or Mellanslag, so tangenten; the action name, a subject, quoted as parts 1 and 2 do"
+    },
+    {
+     "key": "%@ reset to default: %@",
+     "english": "%1$@ reset to default: %2$@",
+     "before": "%@ återställd till standard: %@",
+     "after": "”%@” återställd till standard: %@",
+     "why": "grammar: the action name as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "%@ stops the whole export. Files already written stay.",
+     "english": "%@ stops the whole export. Files already written stay.",
+     "before": "Med %@ stoppas hela exporten. Redan skrivna filer finns kvar.",
+     "after": "Med ”%@” stoppas hela exporten. Redan skrivna filer finns kvar.",
+     "why": "grammar: the button title after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%@ försöker igen, %@ avslutar utan att spara, %@ låter TextMouth vara öppet.",
+     "after": "”%@” försöker igen, ”%@” avslutar utan att spara, ”%@” låter TextMouth vara öppet.",
+     "why": "grammar: the button names (Försök igen försöker igen) as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "english": "%@ uses it in the menus",
+     "before": "%@ använder den i menyerna",
+     "after": "”%@” använder den genvägen i menyerna",
+     "why": "grammar: the command name as subject reads as an imperative, and den did not agree with every key; quoted, and den genvägen"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "%@ lades inte tillbaka: ingen kopia av texten som dess paket innehöll kunde sparas först, så TextMouth lämnade texten som den var.",
+     "after": "%@ lades inte till i biblioteket igen: ingen kopia av texten som dess paket innehöll kunde sparas först, så TextMouth lämnade texten som den var.",
+     "why": "meaning: adding a book back is an import that adds it again, not the Trash Put Back (lägga tillbaka)"
+    },
+    {
+     "key": "%@ works in %@.",
+     "english": "%1$@ works in %2$@.",
+     "before": "%@ fungerar i %@.",
+     "after": "”%@” fungerar i %@.",
+     "why": "grammar: the action name as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "Med %@ skrivs det kapitlet som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
+     "after": "Med ”%@” skrivs det kapitlet som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
+     "why": "grammar: the button title after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "Med %@ skrivs texten som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
+     "after": "Med ”%@” skrivs texten som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt.",
+     "why": "grammar: the button title after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "%@, %@ quality",
+     "english": "%1$@, %2$@ quality",
+     "before": "%@, %@ kvalitet",
+     "after": "%@, kvalitet %@",
+     "why": "grammar: Standard kvalitet and Premium kvalitet are split compounds; the label-value order fits every tier, as the voice report string does"
+    },
+    {
+     "key": "%@: off while Never collapse is checked",
+     "english": "%@: off while Never collapse is checked",
+     "before": "%@: av så länge Komprimera aldrig är markerat",
+     "after": "%@: av så länge ”Komprimera aldrig” är markerat",
+     "why": "grammar: the option name as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "Add it on your Mac, then send the book here.",
+     "english": "Add it on your Mac, then send the book here.",
+     "before": "Lägg till den på din Mac och skicka sedan boken hit.",
+     "after": "Lägg till filen på din Mac och skicka sedan boken hit.",
+     "why": "grammar: den did not agree with every refused item (ett dokument); says filen"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Lägger till en Exportera-knapp i varje läsares verktygsfält. Arkiv, Exportera fungerar i båda fallen.",
+     "after": "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv” > ”Exportera” fungerar i båda fallen.",
+     "why": "term: the path written as the glossary writes a settings path, with quoted names and >"
+    },
+    {
+     "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "before": "Lägger till sidan, till exempel sidan 12 av 300, i sammanfattningarna från Var är jag? för böcker med mer än en sida.",
+     "after": "Lägger till sidan, till exempel sidan 12 av 300, i sammanfattningarna från ”Var är jag?” för böcker med mer än en sida.",
+     "why": "grammar: the command name with its question mark runs into the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "Lägger till hastigheten de räknas i, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, Var är jag?, Kopiera läsposition och rubrikarkets längder.",
+     "after": "Lägger till hastigheten som tiderna räknas med, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, ”Var är jag?”, ”Kopiera läsposition” och rubrikarkets längder.",
+     "why": "natural: de had no antecedent and räknas i is not idiomatic, so räknas med; the command names in the list are quoted as part 1 does"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "Därefter försöker Spela upp stycket igen.",
+     "after": "Därefter gör ”Spela upp” ett nytt försök med stycket.",
+     "why": "grammar: försöka takes a verb, not an object (försöker stycket igen); the command name, the subject, quoted as parts 1 and 2 do"
+    },
+    {
+     "key": "Audacity labels mark one audio file, and this book's audio is in %lld files.",
+     "english": {
+      "one": "Audacity labels mark one audio file, and this book's audio is in %lld file.",
+      "other": "Audacity labels mark one audio file, and this book's audio is in %lld files."
+     },
+     "before": {
+      "one": "Audacity-etiketter markerar en ljudfil, och den här bokens ljud finns i %lld fil.",
+      "other": "Audacity-etiketter markerar en ljudfil, och den här bokens ljud finns i %lld filer."
+     },
+     "after": {
+      "one": "Audacity-etiketter gäller bara en ljudfil, men den här bokens ljud finns i %lld fil.",
+      "other": "Audacity-etiketter gäller bara en ljudfil, men den här bokens ljud finns i %lld filer."
+     },
+     "why": "meaning: markerar en ljudfil read as mark an audio file; the point is only one file, against this book"
+    },
+    {
+     "key": "Available only while this feed's articles go on to another article when one ends",
+     "english": "Available only while this feed's articles go on to another article when one ends",
+     "before": "Tillgänglig bara när det här flödets artiklar går vidare till en annan artikel när en tar slut.",
+     "after": "Tillgänglig bara så länge det här flödets artiklar går vidare till en annan artikel när en tar slut.",
+     "why": "natural: när twice in one hint; while is så länge"
+    },
+    {
+     "key": "Available only while this feed's episodes go on to another episode when one ends",
+     "english": "Available only while this feed's episodes go on to another episode when one ends",
+     "before": "Tillgänglig bara när det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut.",
+     "after": "Tillgänglig bara så länge det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut.",
+     "why": "natural: när twice in one hint; while is så länge"
+    },
+    {
+     "key": "Available only while this feed's items go on to another item when one ends",
+     "english": "Available only while this feed's items go on to another item when one ends",
+     "before": "Tillgänglig bara när det här flödets objekt går vidare till ett annat objekt när ett tar slut.",
+     "after": "Tillgänglig bara så länge det här flödets objekt går vidare till ett annat objekt när ett tar slut.",
+     "why": "natural: när twice in one hint; while is så länge"
+    },
+    {
+     "key": "Available only while this folder's books go on to another book when one ends",
+     "english": "Available only while this folder's books go on to another book when one ends",
+     "before": "Tillgänglig bara när den här mappens böcker går vidare till en annan bok när en tar slut.",
+     "after": "Tillgänglig bara så länge den här mappens böcker går vidare till en annan bok när en tar slut.",
+     "why": "natural: när twice in one hint; while is så länge"
+    },
+    {
+     "key": "Brings the text to the sentence being spoken.",
+     "english": "Brings the text to the sentence being spoken.",
+     "before": "Flyttar texten till meningen som läses upp.",
+     "after": "Rullar texten till meningen som läses upp.",
+     "why": "meaning: flyttar texten says the text itself moves; the view scrolls, rullar"
+    },
+    {
+     "key": "Choose Edit Text again to edit the new copy's text.",
+     "english": "Choose Edit Text again to edit the new copy's text.",
+     "before": "Välj Redigera text igen för att redigera den nya kopians text.",
+     "after": "Välj ”Redigera text” igen för att redigera den nya kopians text.",
+     "why": "grammar: the command name runs into igen; quoted as part 1 writes välj ”Redigera text” igen"
+    },
+    {
+     "key": "Choose Edit Text again to edit the new text.",
+     "english": "Choose Edit Text again to edit the new text.",
+     "before": "Välj Redigera text igen för att redigera den nya texten.",
+     "after": "Välj ”Redigera text” igen för att redigera den nya texten.",
+     "why": "grammar: the command name runs into igen; quoted as part 1 writes välj ”Redigera text” igen"
+    },
+    {
+     "key": "Choose the folder to export to. New Folder makes one.",
+     "english": "Choose the folder to export to. New Folder makes one.",
+     "before": "Välj mappen att exportera till. Med Ny mapp skapar du en.",
+     "after": "Välj mappen att exportera till. Med ”Ny mapp” skapar du en.",
+     "why": "grammar: the button name after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "Väljer vad Spela upp och hoppknapparna flyttar med.",
+     "after": "Väljer vad ”Spela upp” och hoppknapparna flyttar med.",
+     "why": "grammar: the button name as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes.",
+     "english": "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes.",
+     "before": "Väljer var nästa bok öppnas: i det här fönstret eller i ett nytt. En bok som är öppen i ett annat fönster kommer fram, och med %@ valt stängs det här fönstret.",
+     "after": "Väljer var nästa bok öppnas: i det här fönstret eller i ett nytt. En bok som är öppen i ett annat fönster kommer fram, och med ”%@” valt stängs det här fönstret.",
+     "why": "grammar: the choice name after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "Ett val gör genvägen till din egen; Återställ till standard återställer var den fungerar som standard.",
+     "after": "Ett val gör genvägen till din egen; ”Återställ till standard” återställer var den fungerar som standard.",
+     "why": "grammar: the button name, which begins a clause, as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "Download cancelled, so playback stopped.",
+     "english": "Download cancelled, so playback stopped.",
+     "before": "Hämtningen avbröts, så uppspelningen stoppades.",
+     "after": "Nedladdningen avbröts, så uppspelningen stoppades.",
+     "why": "term: the glossary noun for a download is nedladdning, as part 1 made the other cancelled-download sentences"
+    },
+    {
+     "key": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
+     "english": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
+     "before": "Varje rubriks titel och start, som Audacity-etiketter, för en bok med en ljudfil.",
+     "after": "Varje rubriks titel och starttid, som Audacity-etiketter, för en bok med en ljudfil.",
+     "why": "natural: start alone is a race start; a heading has a starttid"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "Varje rubriks titel och start, som en CUE-fil som namnger ljudet så som Ljud exporterar det.",
+     "after": "Varje rubriks titel och starttid, som en CUE-fil som namnger ljudet så som ”Ljud” exporterar det.",
+     "why": "natural: start alone is a race start, so starttid; the option name Ljud, a subject, quoted so it is not read as the noun"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "Redigera text har stoppats för %@, eftersom en ny kopia ersatte den.",
+     "after": "”Redigera text” har avslutats för %@, eftersom en ny kopia ersatte den.",
+     "why": "grammar: the command name as subject reads as an imperative; quoted, and an editing session avslutas, as part 1 says"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since its file was read again.",
+     "english": "Edit Text has stopped for %@, since its file was read again.",
+     "before": "Redigera text har stoppats för %@, eftersom dess fil lästes in igen.",
+     "after": "”Redigera text” har avslutats för %@, eftersom dess fil lästes in igen.",
+     "why": "grammar: the command name as subject reads as an imperative; quoted, and an editing session avslutas, as part 1 says"
+    },
+    {
+     "key": "Every chapter was read.",
+     "english": "Every chapter was read.",
+     "before": "Alla kapitel lästes.",
+     "after": "Alla kapitel lästes in.",
+     "why": "meaning: lästes alone sounds like read aloud in a reading app; an import loads them, lästes in"
+    },
+    {
+     "key": "Every page was read.",
+     "english": "Every page was read.",
+     "before": "Alla sidor lästes.",
+     "after": "Alla sidor lästes in.",
+     "why": "meaning: lästes alone sounds like read aloud in a reading app; an import loads them, lästes in"
+    },
+    {
+     "key": "Export Every Such Chapter as Written",
+     "english": "Export Every Such Chapter as Written",
+     "before": "Exportera alla sådana kapitel som skrivet",
+     "after": "Exportera alla sådana kapitel som de är skrivna",
+     "why": "natural: som skrivet is a calque of as written with no noun to agree with"
+    },
+    {
+     "key": "Export as Written",
+     "english": "Export as Written",
+     "before": "Exportera som skrivet",
+     "after": "Exportera som det är skrivet",
+     "why": "natural: som skrivet is a calque of as written with no noun to agree with"
+    },
+    {
+     "key": "Export can't write into TextMouth's library folder. Choose another folder.",
+     "english": "Export can't write into TextMouth's library folder. Choose another folder.",
+     "before": "Export kan inte skriva i mappen där TextMouth har sitt bibliotek. Välj en annan mapp.",
+     "after": "Det går inte att exportera till mappen där TextMouth har sitt bibliotek. Välj en annan mapp.",
+     "why": "natural: Export kan inte skriva used a bare noun as the subject"
+    },
+    {
+     "key": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "english": "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder.",
+     "before": "Export kan inte skriva i mappen där TextMouth sparar upplästa kapitel, som töms. Välj en annan mapp.",
+     "after": "Det går inte att exportera till mappen där TextMouth sparar upplästa kapitel, eftersom den töms. Välj en annan mapp.",
+     "why": "natural: Export kan inte skriva used a bare noun as the subject; som töms read as the chapters being emptied"
+    },
+    {
+     "key": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "english": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "before": "Under fem sekunder är de nästa två tangenttrycken inte genvägar; TextMouth säger om de blir ett dubbeltryck.",
+     "after": "Under fem sekunder räknas nästa två tangenttryck inte som genvägar; TextMouth säger om de blir ett dubbeltryck.",
+     "why": "natural: de nästa två tangenttrycken är inte genvägar copied the English; nästa takes the indefinite and räknas som is the idiom"
+    },
+    {
+     "key": "Go back to where you were before browsing headings or bookmarks",
+     "english": "Go back to where you were before browsing headings or bookmarks",
+     "before": "Går tillbaka till där du var innan du bläddrade bland rubriker eller bokmärken.",
+     "after": "Går tillbaka dit du var innan du bläddrade bland rubriker eller bokmärken.",
+     "why": "grammar: tillbaka till där is spoken Swedish; written Swedish says dit du var"
+    },
+    {
+     "key": "Goes back to where the last jump began.",
+     "english": "Goes back to where the last jump began.",
+     "before": "Går tillbaka till där det senaste hoppet började.",
+     "after": "Går tillbaka dit det senaste hoppet började.",
+     "why": "grammar: tillbaka till där is spoken Swedish; written Swedish says dit"
+    },
+    {
+     "key": "Goes to a page, a percent, or a time.",
+     "english": "Goes to a page, a percent, or a time.",
+     "before": "Går till en sida, en procentsats eller en tid.",
+     "after": "Går till en sida, en procentsats eller en tidpunkt.",
+     "why": "natural: en tid also means an appointment; the other jump hints say tidpunkt"
+    },
+    {
+     "key": "How fast the voice speaks in the file. It starts at the book's speed.",
+     "english": "How fast the voice speaks in the file. It starts at the book's speed.",
+     "before": "Hur snabbt rösten talar i filen. Den börjar med bokens hastighet.",
+     "after": "Hur snabbt rösten talar i filen. Från början gäller bokens hastighet.",
+     "why": "natural: den börjar med copied it starts at; the control starts at the book speed"
+    },
+    {
+     "key": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "english": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "before": "Hur högt rösten låter i filen. Den börjar med bokens tonhöjd.",
+     "after": "Hur ljus eller mörk rösten låter i filen. Från början gäller bokens tonhöjd.",
+     "why": "meaning: hur högt rösten låter means how loud; pitch is ljus or mörk"
+    },
+    {
+     "key": "Include the speed with time left and total time",
+     "english": "Include the speed with time left and total time",
+     "before": "Ta med hastigheten vid återstående tid och total tid",
+     "after": "Ta med hastigheten i återstående tid och total tid",
+     "why": "natural: vid (at) does not fit; the speed goes into the time readouts"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "Behåller listans böcker hämtade på den här Mac-datorn; varje Mac väljer själv. Om du avmarkerar det tas ingen nedladdning bort.",
+     "after": "Behåller listans böcker hämtade på den här Mac-datorn; varje Mac väljer själv. Om du avmarkerar alternativet tas ingen nedladdning bort.",
+     "why": "grammar: det pointed at no noun in the hint; says alternativet"
+    },
+    {
+     "key": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "english": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "before": "Behåller ordningen du ställt in med Flytta boken uppåt, Flytta boken nedåt eller genom att dra.",
+     "after": "Behåller ordningen du ställt in med ”Flytta boken uppåt”, ”Flytta boken nedåt” eller genom att dra.",
+     "why": "grammar: the command names after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd.",
+      "other": "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+     },
+     "after": {
+      "one": "%@ av %lld kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd.",
+      "other": "%@ av %lld kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+     },
+     "why": "grammar: past behöll with tills TextMouth avslutas mixed tenses; the chapters are kept from now on, sparas"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd.",
+      "other": "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+     },
+     "after": {
+      "one": "Det upplästa kapitlet sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd.",
+      "other": "Alla %lld upplästa kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+     },
+     "why": "grammar: past behöll with tills TextMouth avslutas mixed tenses; the one form said alla 1 kapitel"
+    },
+    {
+     "key": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "english": "Kept the spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+     "before": "Behöll det upplästa kapitlet tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd.",
+     "after": "Det upplästa kapitlet sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd.",
+     "why": "grammar: past behöll with tills TextMouth avslutas mixed tenses; the chapter is kept from now on, sparas"
+    },
+    {
+     "key": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "english": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "before": "Märkningsskydd: det vanliga, som bara tystar parenteserna i text som ser ut som taggar.",
+     "after": "Märkningsskydd: det vanliga, som bara tystar vinkelparenteserna i text som ser ut som taggar.",
+     "why": "meaning: parenteserna are round brackets; tags use angle brackets, as the strict guard line says"
+    },
+    {
+     "key": "No Library window or book is open, so there is nothing to export.",
+     "english": "No Library window or book is open, so there is nothing to export.",
+     "before": "Inget biblioteksfönster eller ingen bok är öppen, så det finns inget att exportera.",
+     "after": "Varken något biblioteksfönster eller någon bok är öppen, så det finns inget att exportera.",
+     "why": "grammar: inget X eller ingen Y copied the English negation; Swedish says varken något eller någon"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Ingen röst är installerad. Lägg till en i Systeminställningar, Hjälpmedel, Uppläst innehåll och exportera sedan igen.",
+     "after": "Ingen röst är installerad. Lägg till en i ”Systeminställningar” > ”Hjälpmedel” > ”Uppläst innehåll” och exportera sedan igen.",
+     "why": "term: the path written as the glossary writes a settings path, with quoted names and >"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "Inga röster är installerade. Lägg till röster i Inställningar, Hjälpmedel, Uppläst innehåll.",
+     "after": "Inga röster är installerade. Lägg till röster i ”Inställningar” > ”Hjälpmedel” > ”Uppläst innehåll”.",
+     "why": "term: the path written as the glossary writes a settings path, with quoted names and >"
+    },
+    {
+     "key": "None of the %lld chapters could be read",
+     "english": {
+      "one": "None of the %lld chapter could be read",
+      "other": "None of the %lld chapters could be read"
+     },
+     "before": {
+      "one": "Inget av de %lld kapitlen kunde läsas",
+      "other": "Inget av de %lld kapitlen kunde läsas"
+     },
+     "after": {
+      "one": "Det enda kapitlet kunde inte läsas",
+      "other": "Inget av de %lld kapitlen kunde läsas"
+     },
+     "why": "grammar: the one form said de 1 kapitlen; Swedish one is exactly 1, so it says the only chapter"
+    },
+    {
+     "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
+      "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "one": "OCR kunde inte köras på %@ av %lld sidor, så text som bara finns i deras bilder saknas: %@.",
+      "other": "OCR kunde inte köras på %@ av %lld sidor, så text som bara finns i deras bilder saknas: %@."
+     },
+     "after": {
+      "one": "OCR kunde inte köras på %@ av %lld sida, så text som bara finns i dess bilder saknas: %@.",
+      "other": "OCR kunde inte köras på %@ av %lld sidor, så text som bara finns i deras bilder saknas: %@."
+     },
+     "why": "grammar: the one form copied the plural sidor and deras"
+    },
+    {
+     "key": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
+     "english": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
+     "before": "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. Bokinformation säger att koden gissades och kan välja en annan.",
+     "after": "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. I Bokinformation står det att koden gissades, och där kan du välja en annan.",
+     "why": "meaning: the code read as the subject of kan välja; says where the listener chooses another"
+    },
+    {
+     "key": "Paste and Match Style",
+     "english": "Paste and Match Style",
+     "before": "Klistra in och anpassa stil",
+     "after": "Klistra in och matcha stil",
+     "why": "term: names the Edit menu command, which Apple Swedish calls Klistra in och matcha stil"
+    },
+    {
+     "key": "Plays when Where Am I finishes speaking",
+     "english": "Plays when Where Am I finishes speaking",
+     "before": "Spelas upp när Var är jag? har läst klart.",
+     "after": "Spelas upp när ”Var är jag?” har läst klart.",
+     "why": "grammar: the command name, with its question mark, as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "Plays when Where Am I starts speaking",
+     "english": "Plays when Where Am I starts speaking",
+     "before": "Spelas upp när Var är jag? börjar läsa upp.",
+     "after": "Spelas upp när ”Var är jag?” börjar läsa upp.",
+     "why": "grammar: the command name, with its question mark, as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "Reading the book's headings…",
+     "english": "Reading the book's headings…",
+     "before": "Läser bokens rubriker…",
+     "after": "Läser in bokens rubriker…",
+     "why": "meaning: läser alone sounds like reading aloud in a reading app; the export loads the headings, läser in"
+    },
+    {
+     "key": "Reset %@ to Default",
+     "english": "Reset %@ to Default",
+     "before": "Återställ %@ till standard",
+     "after": "Återställ ”%@” till standard",
+     "why": "grammar: the action name (Återställ Spela upp till standard) runs into the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "Show Export in the reader toolbar",
+     "english": "Show Export in the reader toolbar",
+     "before": "Visa Exportera i läsarens verktygsfält",
+     "after": "Visa ”Exportera” i läsarens verktygsfält",
+     "why": "grammar: the button name (Visa Exportera reads as two commands) runs into the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "before": "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet för böcker med mer än en sida.",
+     "after": "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet, för böcker med mer än en sida.",
+     "why": "natural: without the comma it reads as the percentage of books with more than one page"
+    },
+    {
+     "key": "Switch to a Library or book window, then choose Export again.",
+     "english": "Switch to a Library or book window, then choose Export again.",
+     "before": "Växla till ett biblioteks- eller bokfönster och välj sedan Exportera igen.",
+     "after": "Växla till ett biblioteks- eller bokfönster och välj sedan ”Exportera” igen.",
+     "why": "grammar: the command name runs into igen; quoted as part 1 writes välj ”Redigera text” igen"
+    },
+    {
+     "key": "Takes %lld to %lld minutes.",
+     "english": "Takes %1$lld to %2$lld minutes.",
+     "before": "Tar %1$lld till %2$lld minuter.",
+     "after": "Tar emot %1$lld till %2$lld minuter.",
+     "why": "meaning: tar 1 till 480 minuter says something lasts that long; the field accepts that many, tar emot"
+    },
+    {
+     "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
+     "before": "Tar %1$lld till %2$lld minuter. Retur ställer in timern och spelar upp boken.",
+     "after": "Tar emot %1$lld till %2$lld minuter. Retur ställer in timern och spelar upp boken.",
+     "why": "meaning: tar 1 till 480 minuter says something lasts that long; the field accepts that many, tar emot"
+    },
+    {
+     "key": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "english": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "before": "Tar bort varje avslutad bok från listan när dess fönster går vidare eller stängs. Böcker som avslutades innan du slår på det finns kvar.",
+     "after": "Tar bort varje avslutad bok från listan när dess fönster går vidare eller stängs. Böcker som avslutades innan du slår på alternativet finns kvar.",
+     "why": "grammar: det pointed at no noun in the hint; says alternativet"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Texten uppdaterades inte: %@ har tagits bort, eller dess nedladdning har raderats, så Redigera text har stoppats för den.",
+     "after": "Texten uppdaterades inte: %@ har tagits bort, eller dess nedladdning har raderats, så ”Redigera text” har avslutats för den.",
+     "why": "grammar: the command name as subject reads as an imperative; quoted, and an editing session avslutas, as part 1 says"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
+     "before": "Texten uppdaterades inte: den redigerade transkriptionen för %@ ändrar ett kapitels rubrik, som kommer från dess ljud. Sätt tillbaka den och spara igen; boken behåller sin gamla text tills dess.",
+     "after": "Texten uppdaterades inte: den redigerade transkriptionen för %@ ändrar ett kapitels rubrik, som kommer från dess ljud. Återställ den och spara igen; boken behåller sin gamla text tills dess.",
+     "why": "meaning: put it back here means restore the heading, återställ, as part 2 does; lägga tillbaka is the Trash Put Back"
+    },
+    {
+     "key": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "english": "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens.",
+     "before": "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skrivs från den igen nästa gång boken öppnas.",
+     "after": "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skapas på nytt från den nästa gång boken öppnas.",
+     "why": "natural: skrivs från den copied written from it; the text is made again from the transcript"
+    },
+    {
+     "key": "TextMouth can't safely read the file “%@” in this book, because it defines entities of its own.",
+     "english": "TextMouth can't safely read the file “%@” in this book, because it defines entities of its own.",
+     "before": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom den definierar egna entiteter.",
+     "after": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom filen definierar egna entiteter.",
+     "why": "grammar: den could point at boken, the nearer noun of the same gender; says filen"
+    },
+    {
+     "key": "TextMouth can't safely read the file “%@” in this book, because it is written in the %@ encoding.",
+     "english": "TextMouth can't safely read the file “%1$@” in this book, because it is written in the %2$@ encoding.",
+     "before": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom den är skriven med teckenkodningen %@.",
+     "after": "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom filen är skriven med teckenkodningen %@.",
+     "why": "grammar: den could point at boken, the nearer noun of the same gender; says filen"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth har inte läst det senaste sparandet än.",
+     "after": "TextMouth har inte läst in den senast sparade versionen än.",
+     "why": "natural: det senaste sparandet is not idiomatic; the latest saved version"
+    },
+    {
+     "key": "TextMouth hasn't read this book's headings yet. Open the book once, then export again.",
+     "english": "TextMouth hasn't read this book's headings yet. Open the book once, then export again.",
+     "before": "TextMouth har inte läst bokens rubriker än. Öppna boken en gång och exportera sedan igen.",
+     "after": "TextMouth har inte läst in bokens rubriker än. Öppna boken en gång och exportera sedan igen.",
+     "why": "meaning: läst alone sounds like read aloud; the headings are not loaded yet, läst in"
+    },
+    {
+     "key": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "english": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "before": "TextMouth gör sig klart innan det avslutas: %@. Det avslutas när det är klart.",
+     "after": "TextMouth gör klart innan det avslutas: %@. Det avslutas när det är klart.",
+     "why": "meaning: gör sig klart means gets ready; finishing up is gör klart"
+    },
+    {
+     "key": "TextMouth stopped %@ because %@, and won't try again until TextMouth is closed and opened again.",
+     "english": "TextMouth stopped %1$@ because %2$@, and won't try again until TextMouth is closed and opened again.",
+     "before": "TextMouth stoppade %1$@ eftersom %2$@ och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
+     "after": "TextMouth stoppade %1$@ eftersom %2$@, och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
+     "why": "punctuation: without the comma och försöker inte igen joined the because clause"
+    },
+    {
+     "key": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "english": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "before": "TextMouth stoppade %@ tidigare eftersom det tog för lång tid och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
+     "after": "TextMouth stoppade %@ tidigare eftersom det tog för lång tid, och försöker inte igen förrän TextMouth har stängts och öppnats på nytt.",
+     "why": "punctuation: without the comma och försöker inte igen joined the because clause"
+    },
+    {
+     "key": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "english": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "before": "Mac-datorns talmotor vägrade läsa upp en del av ”%@”, även med parenteserna tystade.",
+     "after": "Mac-datorns talmotor vägrade läsa upp en del av ”%@”, även med vinkelparenteserna tystade.",
+     "why": "meaning: parenteserna are round brackets; the markup guard silences angle brackets"
+    },
+    {
+     "key": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "english": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "before": "Bokens ljud som det var före första redigeringen, vilket TextMouth behåller så länge inställningen Originalljud är på.",
+     "after": "Bokens ljud som det var före första redigeringen, vilket TextMouth behåller så länge inställningen ”Originalljud” är på.",
+     "why": "grammar: the option name as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "before": "Bokens röst kan inte spelas in till en fil. Välj en annan röst med knappen %@ i läsaren och exportera sedan igen.",
+     "after": "Bokens röst kan inte spelas in till en fil. Välj en annan röst med knappen ”%@” i läsaren och exportera sedan igen.",
+     "why": "grammar: the button title runs into the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "The export was stopped before the rest.",
+     "english": "The export was stopped before the rest.",
+     "before": "Exporten stoppades före resten.",
+     "after": "Exporten stoppades innan resten hann exporteras.",
+     "why": "natural: stoppades före resten does not say what the rest is"
+    },
+    {
+     "key": "The file %@ failed partway through.",
+     "english": "The file %@ failed partway through.",
+     "before": "Filen %@ misslyckades halvvägs.",
+     "after": "Filen %@ slutade fungera under uppspelningen.",
+     "why": "meaning: halvvägs means halfway, not partway, and a file does not misslyckas; it stopped working while playing"
+    },
+    {
+     "key": "The folder holds %lld DAISY books (%@).",
+     "english": {
+      "one": "The folder holds %lld DAISY book (%@).",
+      "other": "The folder holds %lld DAISY books (%@)."
+     },
+     "before": {
+      "one": "Mappen innehåller %lld DAISY-böcker (%@).",
+      "other": "Mappen innehåller %lld DAISY-böcker (%@)."
+     },
+     "after": {
+      "one": "Mappen innehåller %lld DAISY-bok (%@).",
+      "other": "Mappen innehåller %lld DAISY-böcker (%@)."
+     },
+     "why": "grammar: the one form copied the plural böcker"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "one": "De andra %lld kapitlen har ingen text.",
+      "other": "De andra %lld kapitlen har ingen text."
+     },
+     "after": {
+      "one": "Det övriga kapitlet har ingen text.",
+      "other": "De övriga %lld kapitlen har ingen text."
+     },
+     "why": "grammar: the one form said de andra 1 kapitlen; övriga matches the one-chapter sentence"
+    },
+    {
+     "key": "The other chapter has no text.",
+     "english": "The other chapter has no text.",
+     "before": "Det andra kapitlet har ingen text.",
+     "after": "Det övriga kapitlet har ingen text.",
+     "why": "meaning: det andra kapitlet also means the second chapter; övriga says the other one"
+    },
+    {
+     "key": "The passage as the book has it, characters %@ to %@ of chapter %@:",
+     "english": "The passage as the book has it, characters %1$@ to %2$@ of chapter %3$@:",
+     "before": "Stycket som boken har det, tecken %1$@ till %2$@ i kapitel %3$@:",
+     "after": "Stycket så som det står i boken, tecken %1$@ till %2$@ i kapitel %3$@:",
+     "why": "natural: som boken har det copied as the book has it; so som det står i boken"
+    },
+    {
+     "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "before": "Talmotorn vägrade läsa upp texten här, två gånger, så uppläsningen stoppades. Spela upp försöker igen från samma ställe.",
+     "after": "Talmotorn vägrade läsa upp texten här, två gånger, så uppläsningen stoppades. ”Spela upp” försöker igen från samma ställe.",
+     "why": "grammar: the command name as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "The transcript as TextMouth keeps it, in JSON, with its text as Markdown.",
+     "english": "The transcript as TextMouth keeps it, in JSON, with its text as Markdown.",
+     "before": "Transkriptionen som TextMouth behåller den, i JSON, med dess text som Markdown.",
+     "after": "Transkriptionen så som TextMouth behåller den, i JSON, med dess text som Markdown.",
+     "why": "natural: som alone first reads as a relative clause; så som says as"
+    },
+    {
+     "key": "The voice changed its kind of audio partway through “%@”.",
+     "english": "The voice changed its kind of audio partway through “%@”.",
+     "before": "Rösten ändrade typ av ljud halvvägs genom ”%@”.",
+     "after": "Rösten ändrade typ av ljud mitt i ”%@”.",
+     "why": "meaning: halvvägs genom means halfway through, not partway"
+    },
+    {
+     "key": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "english": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "before": "Rösten stannade halvvägs genom ”%@”, och TextMouth slutade vänta.",
+     "after": "Rösten stannade mitt i ”%@”, och TextMouth slutade vänta.",
+     "why": "meaning: halvvägs genom means halfway through, not partway"
+    },
+    {
+     "key": "This Mac's braille table “%@” changed from liblouis %@ to %@ since the book was read, so TextMouth keeps the book's text as it was.",
+     "english": "This Mac's braille table “%1$@” changed from liblouis %2$@ to %3$@ since the book was read, so TextMouth keeps the book's text as it was.",
+     "before": "Den här Mac-datorns punktskriftstabell ”%1$@” ändrades från liblouis %2$@ till %3$@ sedan boken lästes, så TextMouth behåller bokens text som den var.",
+     "after": "Den här Mac-datorns punktskriftstabell ”%1$@” ändrades från liblouis %2$@ till %3$@ sedan boken lästes in, så TextMouth behåller bokens text som den var.",
+     "why": "meaning: lästes alone sounds like read aloud; the book was read in, lästes in"
+    },
+    {
+     "key": "This Mac's braille table “%@” may have changed since liblouis %@ read the book, so TextMouth keeps the book's text as it was.",
+     "english": "This Mac's braille table “%1$@” may have changed since liblouis %2$@ read the book, so TextMouth keeps the book's text as it was.",
+     "before": "Den här Mac-datorns punktskriftstabell ”%1$@” kan ha ändrats sedan liblouis %2$@ läste boken, så TextMouth behåller bokens text som den var.",
+     "after": "Den här Mac-datorns punktskriftstabell ”%1$@” kan ha ändrats sedan liblouis %2$@ läste in boken, så TextMouth behåller bokens text som den var.",
+     "why": "meaning: läste alone sounds like read aloud; liblouis read the book in, läste in"
+    },
+    {
+     "key": "This book has %lld pages, from %@ to %@.",
+     "english": {
+      "one": "This book has %lld page, from %@ to %@.",
+      "other": "This book has %lld pages, from %@ to %@."
+     },
+     "before": {
+      "one": "Den här boken har %lld sidor, från %@ till %@.",
+      "other": "Den här boken har %lld sidor, från %@ till %@."
+     },
+     "after": {
+      "one": "Den här boken har %lld sida, från %@ till %@.",
+      "other": "Den här boken har %lld sidor, från %@ till %@."
+     },
+     "why": "grammar: the one form copied the plural sidor"
+    },
+    {
+     "key": "This book's text can't be read, so it can't be spoken into an audio file.",
+     "english": "This book's text can't be read, so it can't be spoken into an audio file.",
+     "before": "Bokens text kan inte läsas, så den kan inte läsas upp till en ljudfil.",
+     "after": "Bokens text kan inte läsas in, så den kan inte läsas upp till en ljudfil.",
+     "why": "meaning: läsas beside läsas upp blurred loading and speaking; läsas in"
+    },
+    {
+     "key": "Time In",
+     "english": "Time In",
+     "before": "Tid in",
+     "after": "Starttid",
+     "why": "natural: Tid in is a calque of Time In; each heading shows the time it begins"
+    },
+    {
+     "key": "Timer restarted: %@.",
+     "english": "Timer restarted: %@.",
+     "before": "Timern startad om: %@.",
+     "after": "Timern startades om: %@.",
+     "why": "grammar: startad om is not a participle of starta om; startades om"
+    },
+    {
+     "key": "Transcribe it first, with Transcribe Audio.",
+     "english": "Transcribe it first, with Transcribe Audio.",
+     "before": "Transkribera den först med Transkribera ljud.",
+     "after": "Transkribera den först med ”Transkribera ljud”.",
+     "why": "grammar: the command name after med (Transkribera den ... Transkribera ljud) runs into the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Skriv raka citattecken: i TextEdit stänger du av Smarta citattecken under Redigera, Ersättningar.",
+     "after": "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera” > ”Ersättningar”.",
+     "why": "term: the path written as the glossary writes a settings path, with quoted names and >; the option quoted as part 1 does after avmarkera"
+    },
+    {
+     "key": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "english": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "before": "När det är på läses en punktskriftsfil som lästs som kortskrift i Unified English Braille men tydligt är English Braille, American Edition som den i stället.",
+     "after": "När inställningen är på läses en punktskriftsfil som tydligt är English Braille, American Edition som den koden i stället för som kortskrift i Unified English Braille.",
+     "why": "natural: som lästs som and som den i stället copied the English; det pointed at no noun, so inställningen"
+    },
+    {
+     "key": "Where the audio begins: the book's beginning, or a heading.",
+     "english": "Where the audio begins: the book's beginning, or a heading.",
+     "before": "Där ljudet börjar: bokens början eller en rubrik.",
+     "after": "Var ljudet börjar: bokens början eller en rubrik.",
+     "why": "grammar: där is the place itself; a description of the choice is var ljudet börjar"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "Med ”%1$@” säger Spela upp på en avslutad bok att den är avslutad; med ”%2$@” startar Spela upp den igen från början.",
+     "after": "Med ”%1$@” säger ”Spela upp” på en avslutad bok att den är avslutad; med ”%2$@” startar ”Spela upp” den igen från början.",
+     "why": "grammar: the command name, beside the quoted choices, as subject reads as an imperative; quoted as a name, as parts 1 and 2 do"
+    },
+    {
+     "key": "Your library is empty. Add to Library adds a book.",
+     "english": "Your library is empty. Add to Library adds a book.",
+     "before": "Ditt bibliotek är tomt. Med Lägg till i biblioteket lägger du till en bok.",
+     "after": "Ditt bibliotek är tomt. Med ”Lägg till i biblioteket” lägger du till en bok.",
+     "why": "grammar: the command name after Med sits unquoted inside the sentence; quoted as a name, as part 1 does"
+    },
+    {
+     "key": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
+     "english": "it changes a chapter's heading, which comes from the audio. Put it back and save again, and the text shows.",
+     "before": "den ändrar ett kapitels rubrik, som kommer från ljudet. Sätt tillbaka den och spara igen, så visas texten.",
+     "after": "den ändrar ett kapitels rubrik, som kommer från ljudet. Återställ den och spara igen, så visas texten.",
+     "why": "meaning: put it back here means restore the heading, återställ, as part 2 does; lägga tillbaka is the Trash Put Back"
+    },
+    {
+     "key": "manifest.json has segments, which TextMouth writes only for a DAISY book it converts.",
+     "english": "manifest.json has segments, which TextMouth writes only for a DAISY book it converts.",
+     "before": "manifest.json har segment, som TextMouth bara skriver för en DAISY-bok som den konverterar.",
+     "after": "manifest.json har segment, som TextMouth bara skriver vid konvertering av en DAISY-bok.",
+     "why": "grammar: den pointed at TextMouth, which the catalog calls det; rewritten without the pronoun"
+    },
+    {
+     "key": "text fields use it for editing",
+     "english": "text fields use it for editing",
+     "before": "textfält använder den för redigering",
+     "after": "textfält använder den tangenten för redigering",
+     "why": "grammar: den did not agree with every key (ett mellanslag); den tangenten fits any key"
+    },
+    {
+     "key": "the braille helper failed",
+     "english": "the braille helper failed",
+     "before": "punktskriftshjälpen misslyckades",
+     "after": "hjälpprogrammet för punktskrift misslyckades",
+     "why": "meaning: punktskriftshjälpen reads as braille help; the helper is a program, hjälpprogram"
+    },
+    {
+     "key": "the braille helper was stopped because %@",
+     "english": "the braille helper was stopped because %@",
+     "before": "punktskriftshjälpen stoppades eftersom %@",
+     "after": "hjälpprogrammet för punktskrift stoppades eftersom %@",
+     "why": "meaning: punktskriftshjälpen reads as braille help; the helper is a program, hjälpprogram"
+    },
+    {
+     "key": "the file %@ failed partway through",
+     "english": "the file %@ failed partway through",
+     "before": "filen %@ misslyckades halvvägs",
+     "after": "filen %@ slutade fungera under uppspelningen",
+     "why": "meaning: halvvägs means halfway, not partway, and a file does not misslyckas; it stopped working while playing"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "”%1$@” är en Personlig röst, som macOS inte kan spela in till en fil. Välj en annan röst med knappen %2$@ i läsaren och exportera sedan igen.",
+     "after": "”%1$@” är en Personlig röst, som macOS inte kan spela in till en fil. Välj en annan röst med knappen ”%2$@” i läsaren och exportera sedan igen.",
+     "why": "grammar: the button title runs into the sentence; quoted as a name, as part 1 does"
+    }
+   ]
+  },
+  {
    "part": 4,
    "areas": [
     "the whole app: words carried across the three parts"
