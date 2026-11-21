@@ -1687,7 +1687,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@（著者: %2$@）"
+            "value" : "%1$@（著者：%2$@）"
           }
         },
         "pt-BR" : {
@@ -2351,7 +2351,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を読み込めませんでした: %2$@"
+            "value" : "%1$@を読み込めませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -2416,7 +2416,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@はブックをダウンロードできませんでした: %2$@"
+            "value" : "%1$@はブックをダウンロードできませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -2481,7 +2481,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@はブックのダウンロードを取り除けませんでした: %2$@"
+            "value" : "%1$@はブックのダウンロードを取り除けませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -2676,7 +2676,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@はこのブックをアップロードできませんでした: %2$@"
+            "value" : "%1$@はこのブックをアップロードできませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -4266,7 +4266,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@には、現在検索できる文字起こしテキストがありません。理由: %2$@"
+            "value" : "%1$@には、現在検索できる文字起こしテキストがありません。理由：%2$@"
           }
         },
         "pt-BR" : {
@@ -4331,7 +4331,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@には、編集したテキストを使用できないため、現在検索できる文字起こしテキストがありません: %2$@"
+            "value" : "%1$@には、編集したテキストを使用できないため、現在検索できる文字起こしテキストがありません：%2$@"
           }
         },
         "pt-BR" : {
@@ -8967,7 +8967,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "合計の残り時間: %@"
+            "value" : "合計の残り時間：%@"
           }
         },
         "pt-BR" : {
@@ -9941,7 +9941,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現在の速度での合計残り時間: %@"
+            "value" : "現在の速度での合計残り時間：%@"
           }
         },
         "pt-BR" : {
@@ -13969,7 +13969,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@（リンク先: %2$@）"
+            "value" : "%1$@（リンク先：%2$@）"
           }
         },
         "pt-BR" : {
@@ -14465,7 +14465,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@: ピーク%2$@ dB、平均%3$@ dB、%4$@"
+            "value" : "%1$@：ピーク%2$@ dB、平均%3$@ dB、%4$@"
           }
         },
         "pt-BR" : {
@@ -14530,7 +14530,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@: %2$@、初期設定から変更済み"
+            "value" : "%1$@：%2$@、初期設定から変更済み"
           }
         },
         "pt-BR" : {
@@ -15625,7 +15625,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@: %lldパーセント文字起こししました。"
+                  "value" : "%@：%lldパーセント文字起こししました。"
                 }
               }
             }
@@ -15759,7 +15759,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: 一部の変更が保存されておらず、ライブラリを切り替えると失われます。"
+            "value" : "%@：一部の変更が保存されておらず、ライブラリを切り替えると失われます。"
           }
         },
         "pt-BR" : {
@@ -16275,7 +16275,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: 録音していません"
+            "value" : "%@：録音していません"
           }
         },
         "pt-BR" : {
@@ -16835,7 +16835,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: 無音"
+            "value" : "%@：無音"
           }
         },
         "pt-BR" : {
@@ -21643,7 +21643,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "クラウド上のブック: %lld冊"
+                  "value" : "クラウド上のブック：%lld冊"
                 }
               }
             }
@@ -22365,7 +22365,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "この Mac に保存されているブック: %lld冊"
+                  "value" : "この Mac に保存されているブック：%lld冊"
                 }
               }
             }
@@ -23912,7 +23912,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld冊のブックをダウンロードできませんでした: %@"
+                  "value" : "%lld冊のブックをダウンロードできませんでした：%@"
                 }
               }
             }
@@ -42893,7 +42893,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "（未開封のブック: %lld冊）"
+                  "value" : "（未開封のブック：%lld冊）"
                 }
               }
             }
@@ -45788,7 +45788,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "動作: スキップ"
+            "value" : "動作：スキップ"
           }
         },
         "pt-BR" : {
@@ -47646,7 +47646,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "追加: %@"
+            "value" : "追加：%@"
           }
         },
         "pt-BR" : {
@@ -48227,7 +48227,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "アドレス: %@"
+            "value" : "アドレス：%@"
           }
         },
         "pt-BR" : {
@@ -55141,7 +55141,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」を%2$@に添付しました: %3$@。"
+            "value" : "「%1$@」を%2$@に添付しました：%3$@。"
           }
         },
         "pt-BR" : {
@@ -56076,7 +56076,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオ: %@。"
+            "value" : "オーディオ：%@。"
           }
         },
         "pt-BR" : {
@@ -56135,7 +56135,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオ: 長さはまだわかっていません。"
+            "value" : "オーディオ：長さはまだわかっていません。"
           }
         },
         "pt-BR" : {
@@ -56312,7 +56312,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "著者:"
+            "value" : "著者："
           }
         },
         "pt-BR" : {
@@ -57256,7 +57256,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "後方への移動の単位: %@"
+            "value" : "後方への移動単位：%@"
           }
         },
         "pt-BR" : {
@@ -57439,7 +57439,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "変更前: %1$@ 変更後: %2$@"
+            "value" : "変更前：%1$@ 変更後：%2$@"
           }
         },
         "pt-BR" : {
@@ -58395,7 +58395,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@にのみあるブック: %2$@。"
+            "value" : "%1$@にのみあるブック：%2$@。"
           }
         },
         "pt-BR" : {
@@ -58761,7 +58761,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@のブックマーク%1$@: 相違があります。"
+            "value" : "%2$@のブックマーク%1$@：相違があります。"
           }
         },
         "pt-BR" : {
@@ -58826,7 +58826,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@のブックマーク%1$@: %3$@のみ、%4$@。"
+            "value" : "%2$@のブックマーク%1$@：%3$@のみ、%4$@。"
           }
         },
         "pt-BR" : {
@@ -60487,7 +60487,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "点字の文字: %@"
+            "value" : "点字の文字：%@"
           }
         },
         "pt-BR" : {
@@ -60605,7 +60605,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "点字コード: %@"
+            "value" : "点字コード：%@"
           }
         },
         "pt-BR" : {
@@ -61121,7 +61121,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "著者: %@"
+            "value" : "著者：%@"
           }
         },
         "pt-BR" : {
@@ -63979,7 +63979,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィード「%1$@」の変更を保存できませんでした: %2$@"
+            "value" : "フィード「%1$@」の変更を保存できませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -64044,7 +64044,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」の変更を保存できませんでした: %2$@"
+            "value" : "「%1$@」の変更を保存できませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -64682,7 +64682,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "チャプタ%1$@: %2$@、%3$@の位置"
+            "value" : "チャプタ%1$@：%2$@、%3$@の位置"
           }
         },
         "pt-BR" : {
@@ -64747,7 +64747,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "チャプタ%1$@: %2$@、%3$@の位置。"
+            "value" : "チャプタ%1$@：%2$@、%3$@の位置。"
           }
         },
         "pt-BR" : {
@@ -64924,7 +64924,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "チャプタマーカーの名前を変更しました: 「%@」。"
+            "value" : "チャプタマーカーの名前を変更しました：「%@」。"
           }
         },
         "pt-BR" : {
@@ -70429,7 +70429,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@に、ルールのバージョン%2$@で整理済み: %3$@。"
+            "value" : "%1$@に、ルールのバージョン%2$@で整理済み：%3$@。"
           }
         },
         "pt-BR" : {
@@ -70494,7 +70494,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@の文字起こしを整理しました: %2$@。"
+            "value" : "%1$@の文字起こしを整理しました：%2$@。"
           }
         },
         "pt-BR" : {
@@ -71320,7 +71320,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "先にこれらを閉じてください: %@。"
+            "value" : "先にこれらを閉じてください：%@。"
           }
         },
         "pt-BR" : {
@@ -73981,7 +73981,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "続き: %@"
+            "value" : "続き：%@"
           }
         },
         "pt-BR" : {
@@ -76654,7 +76654,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フォルダを取り除けませんでした: ライブラリ内のパスが無効か、変更されています。"
+            "value" : "フォルダを取り除けませんでした：ライブラリ内のパスが無効か、変更されています。"
           }
         },
         "pt-BR" : {
@@ -77374,7 +77374,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@の文字起こしを整理できませんでした: %2$@"
+            "value" : "%1$@の文字起こしを整理できませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -77439,7 +77439,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@の文字起こしを削除できませんでした: %2$@"
+            "value" : "%1$@の文字起こしを削除できませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -77752,7 +77752,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ルールを開けませんでした: %@"
+            "value" : "ルールを開けませんでした：%@"
           }
         },
         "pt-BR" : {
@@ -78000,7 +78000,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@の文字起こしの整理を元に戻せませんでした: %2$@"
+            "value" : "%1$@の文字起こしの整理を元に戻せませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -78531,7 +78531,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現在のパターン: %@"
+            "value" : "現在のパターン：%@"
           }
         },
         "pt-BR" : {
@@ -79357,7 +79357,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "データディレクトリ: %@"
+            "value" : "データディレクトリ：%@"
           }
         },
         "pt-BR" : {
@@ -80109,7 +80109,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "デフォルトのピッチ: %@"
+            "value" : "デフォルトのピッチ：%@"
           }
         },
         "pt-BR" : {
@@ -80314,7 +80314,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "デフォルトの速度: %lld WPM"
+                  "value" : "デフォルトの速度：%lld WPM"
                 }
               }
             }
@@ -84392,7 +84392,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "破棄: %@"
+            "value" : "破棄：%@"
           }
         },
         "pt-BR" : {
@@ -84693,7 +84693,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "切断後の遅延: %@"
+            "value" : "切断後の遅延：%@"
           }
         },
         "pt-BR" : {
@@ -85342,7 +85342,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "完了しました。ライブラリ内: %@。"
+            "value" : "完了しました。ライブラリ内：%@。"
           }
         },
         "pt-BR" : {
@@ -88514,7 +88514,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@のモデルをダウンロードしています: %lldパーセント。"
+                  "value" : "%@のモデルをダウンロードしています：%lldパーセント。"
                 }
               }
             }
@@ -88825,7 +88825,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前の記事をダウンロード中: %@"
+            "value" : "前の記事をダウンロード中：%@"
           }
         },
         "pt-BR" : {
@@ -88884,7 +88884,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前のエピソードをダウンロード中: %@"
+            "value" : "前のエピソードをダウンロード中：%@"
           }
         },
         "pt-BR" : {
@@ -90713,7 +90713,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオを編集: %@"
+            "value" : "オーディオを編集：%@"
           }
         },
         "pt-BR" : {
@@ -90778,7 +90778,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオを編集: %1$@、%2$@"
+            "value" : "オーディオを編集：%1$@、%2$@"
           }
         },
         "pt-BR" : {
@@ -92678,7 +92678,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "経過時間: %@"
+            "value" : "経過時間：%@"
           }
         },
         "pt-BR" : {
@@ -95008,7 +95008,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "エラー: %@"
+            "value" : "エラー：%@"
           }
         },
         "pt-BR" : {
@@ -100588,7 +100588,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フェードアウト: %@"
+            "value" : "フェードアウト：%@"
           }
         },
         "pt-BR" : {
@@ -102759,7 +102759,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ファイルサイズ: %@"
+            "value" : "ファイルサイズ：%@"
           }
         },
         "pt-BR" : {
@@ -104252,7 +104252,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フォルダ「%1$@」を作成しました。%2$@: %3$@。"
+            "value" : "フォルダ「%1$@」を作成しました。%2$@：%3$@。"
           }
         },
         "pt-BR" : {
@@ -105798,7 +105798,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前方への移動の単位: %@"
+            "value" : "前方への移動単位：%@"
           }
         },
         "pt-BR" : {
@@ -106202,7 +106202,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "場所: %@。オンにすると、エディタのフィルタは ffmpeg で実行され、ffmpeg のすべてのフィルタを使えます。"
+            "value" : "場所：%@。オンにすると、エディタのフィルタは ffmpeg で実行され、ffmpeg のすべてのフィルタを使えます。"
           }
         },
         "pt-BR" : {
@@ -115538,7 +115538,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "イン点: %@。"
+            "value" : "イン点：%@。"
           }
         },
         "pt-BR" : {
@@ -117541,7 +117541,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無効な正規表現: %@"
+            "value" : "無効な正規表現：%@"
           }
         },
         "pt-BR" : {
@@ -117600,7 +117600,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正規表現が無効です: %@"
+            "value" : "正規表現が無効です：%@"
           }
         },
         "pt-BR" : {
@@ -119680,7 +119680,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」のレコードが含まれています: %2$@。"
+            "value" : "「%1$@」のレコードが含まれています：%2$@。"
           }
         },
         "pt-BR" : {
@@ -119745,7 +119745,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」のレコードが含まれています: %2$@。レコードには%3$@があります。"
+            "value" : "「%1$@」のレコードが含まれています：%2$@。レコードには%3$@があります。"
           }
         },
         "pt-BR" : {
@@ -125853,7 +125853,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "言語: %1$@、%2$@。"
+            "value" : "言語：%1$@、%2$@。"
           }
         },
         "pt-BR" : {
@@ -126266,7 +126266,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "最後に開いた日: %@"
+            "value" : "最後に開いた日：%@"
           }
         },
         "pt-BR" : {
@@ -127104,7 +127104,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "挿入する無音の長さ: 秒（2.5）、または分と秒（1:30）。"
+            "value" : "挿入する無音の長さ：秒（2.5）、または分と秒（1:30）。"
           }
         },
         "pt-BR" : {
@@ -127871,7 +127871,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ライブラリの変更を保存できませんでした: %@"
+            "value" : "ライブラリの変更を保存できませんでした：%@"
           }
         },
         "pt-BR" : {
@@ -128225,7 +128225,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ライブラリ: %@"
+            "value" : "ライブラリ：%@"
           }
         },
         "pt-BR" : {
@@ -128290,7 +128290,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ライブラリ: %1$@（%2$@）"
+            "value" : "ライブラリ：%1$@（%2$@）"
           }
         },
         "pt-BR" : {
@@ -128703,7 +128703,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "聴取の統計を保存できませんでした: %@"
+            "value" : "聴取の統計を保存できませんでした：%@"
           }
         },
         "pt-BR" : {
@@ -129785,7 +129785,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を表示、条件: %2$@"
+            "value" : "%1$@を表示、条件：%2$@"
           }
         },
         "pt-BR" : {
@@ -135365,7 +135365,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "一致条件（チェックした条件は組み合わされます）:"
+            "value" : "一致条件（チェックした条件は組み合わされます）："
           }
         },
         "pt-BR" : {
@@ -136514,7 +136514,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "最小の一時停止: %lld秒"
+                  "value" : "最小の一時停止：%lld秒"
                 }
               }
             }
@@ -139434,7 +139434,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "中身を移動: %@"
+            "value" : "中身を移動：%@"
           }
         },
         "pt-BR" : {
@@ -139611,7 +139611,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フォルダを移動: %@"
+            "value" : "フォルダを移動：%@"
           }
         },
         "pt-BR" : {
@@ -145834,7 +145834,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ナビゲーション単位: %@"
+            "value" : "移動単位：%@"
           }
         },
         "pt-BR" : {
@@ -146607,7 +146607,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新規フォルダをキャンセルしました。%1$@: %2$@。"
+            "value" : "新規フォルダをキャンセルしました。%1$@：%2$@。"
           }
         },
         "pt-BR" : {
@@ -149321,7 +149321,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "条件なし: 選択した種類のすべての項目がビューに表示されます。"
+            "value" : "条件なし：選択した種類のすべての項目がビューに表示されます。"
           }
         },
         "pt-BR" : {
@@ -155824,7 +155824,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開かれなかったもの: %@。"
+            "value" : "開かれなかったもの：%@。"
           }
         },
         "pt-BR" : {
@@ -161384,7 +161384,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "システム設定の「プライバシーとセキュリティ」にある「マイク」を開きます。"
+            "value" : "「システム設定」の「プライバシーとセキュリティ」にある「マイク」を開きます。"
           }
         },
         "pt-BR" : {
@@ -161620,7 +161620,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィードの設定を開きます: ダウンロード先、表示とダウンロードの対象、エピソード終了時の動作。"
+            "value" : "フィードの設定を開きます：ダウンロード先、表示とダウンロードの対象、エピソード終了時の動作。"
           }
         },
         "pt-BR" : {
@@ -161738,7 +161738,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フォルダの設定を開きます: 中身と、ブック終了時の動作。"
+            "value" : "フォルダの設定を開きます：中身と、ブック終了時の動作。"
           }
         },
         "pt-BR" : {
@@ -163080,7 +163080,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "アウト点: %@。"
+            "value" : "アウト点：%@。"
           }
         },
         "pt-BR" : {
@@ -164906,7 +164906,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "パターンのエラー: %@"
+            "value" : "パターンのエラー：%@"
           }
         },
         "pt-BR" : {
@@ -164965,7 +164965,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "パターン: %@"
+            "value" : "パターン：%@"
           }
         },
         "pt-BR" : {
@@ -169360,7 +169360,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@の位置: 異なり、どちらも同時に保存されました。"
+            "value" : "%@の位置：異なり、どちらも同時に保存されました。"
           }
         },
         "pt-BR" : {
@@ -169425,7 +169425,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@の位置: %2$@のほうが新しく、%3$@。"
+            "value" : "%1$@の位置：%2$@のほうが新しく、%3$@。"
           }
         },
         "pt-BR" : {
@@ -171142,7 +171142,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "問題: %@"
+            "value" : "問題：%@"
           }
         },
         "pt-BR" : {
@@ -171673,7 +171673,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "句読点での一時停止: %@"
+            "value" : "句読点での一時停止：%@"
           }
         },
         "pt-BR" : {
@@ -173992,7 +173992,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "リーディングリスト: %1$@は%2$@のリストにのみあり、位置は%3$@です。"
+            "value" : "リーディングリスト：%1$@は%2$@のリストにのみあり、位置は%3$@です。"
           }
         },
         "pt-BR" : {
@@ -174051,7 +174051,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "リーディングリスト: 順序が異なります。"
+            "value" : "リーディングリスト：順序が異なります。"
           }
         },
         "pt-BR" : {
@@ -174116,7 +174116,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "リーディングリスト: 「%1$@」は%3$@では%2$@、%5$@では%4$@です。"
+            "value" : "リーディングリスト：「%1$@」は%3$@では%2$@、%5$@では%4$@です。"
           }
         },
         "pt-BR" : {
@@ -181584,7 +181584,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "置き換え後: %@"
+            "value" : "置き換え後：%@"
           }
         },
         "pt-BR" : {
@@ -184481,7 +184481,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "結果: %@"
+            "value" : "結果：%@"
           }
         },
         "pt-BR" : {
@@ -186972,7 +186972,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ルール: TextMouth 標準（%2$@付けのバージョン%1$@）、%3$lld件。"
+                  "value" : "ルール：TextMouth 標準（%2$@付けのバージョン%1$@）、%3$lld件。"
                 }
               }
             }
@@ -187193,7 +187193,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ルール: お使いのコピー（%2$@付けのバージョン%1$@）、%3$lld件。"
+                  "value" : "ルール：お使いのコピー（%2$@付けのバージョン%1$@）、%3$lld件。"
                 }
               }
             }
@@ -187976,7 +187976,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオブックとして保存: %@"
+            "value" : "オーディオブックとして保存：%@"
           }
         },
         "pt-BR" : {
@@ -194383,7 +194383,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "設定を保存できませんでした: %@"
+            "value" : "設定を保存できませんでした：%@"
           }
         },
         "pt-BR" : {
@@ -195091,7 +195091,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ショートカット: %@。"
+            "value" : "ショートカット：%@。"
           }
         },
         "pt-BR" : {
@@ -195268,7 +195268,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ショートカット: %@。"
+            "value" : "ショートカット：%@。"
           }
         },
         "pt-BR" : {
@@ -204276,7 +204276,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ステップ%@:"
+            "value" : "ステップ%@："
           }
         },
         "pt-BR" : {
@@ -204422,7 +204422,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "比較を続けています: これまでに%lld秒。停止するには Escape キーを押してください。"
+                  "value" : "比較を続けています：これまでに%lld秒。停止するには Escape キーを押してください。"
                 }
               }
             }
@@ -206007,7 +206007,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "全%2$@のうち%1$@冊で停止:"
+            "value" : "全%2$@のうち%1$@冊で停止："
           }
         },
         "pt-BR" : {
@@ -209615,7 +209615,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テスト結果: %@"
+            "value" : "テスト結果：%@"
           }
         },
         "pt-BR" : {
@@ -210146,7 +210146,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字エンコーディング: %@"
+            "value" : "文字エンコーディング：%@"
           }
         },
         "pt-BR" : {
@@ -210211,7 +210211,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキスト抽出の進行状況: %2$lld冊中%1$lld冊"
+            "value" : "テキスト抽出の進行状況：%2$lld冊中%1$lld冊"
           }
         },
         "pt-BR" : {
@@ -211282,7 +211282,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキスト置換ルールを保存できませんでした: %@"
+            "value" : "テキスト置換ルールを保存できませんでした：%@"
           }
         },
         "pt-BR" : {
@@ -212179,7 +212179,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はフォルダ%1$@を読み取れません: %2$@。"
+            "value" : "TextMouth はフォルダ%1$@を読み取れません：%2$@。"
           }
         },
         "pt-BR" : {
@@ -214867,7 +214867,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は「%1$@」を読み込み直せなかったため、ブックをそのままにしました: %2$@"
+            "value" : "TextMouth は「%1$@」を読み込み直せなかったため、ブックをそのままにしました：%2$@"
           }
         },
         "pt-BR" : {
@@ -218067,7 +218067,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は通知を送信できません。システム設定の「通知」で、TextMouth の通知をオンにしてください。"
+            "value" : "TextMouth は通知を送信できません。「システム設定」の「通知」で、TextMouth の通知をオンにしてください。"
           }
         },
         "pt-BR" : {
@@ -218126,7 +218126,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はマイクの使用を許可されていません。システム設定の「プライバシーとセキュリティ」の「マイク」でオンにしてください。"
+            "value" : "TextMouth はマイクの使用を許可されていません。「システム設定」の「プライバシーとセキュリティ」の「マイク」でオンにしてください。"
           }
         },
         "pt-BR" : {
@@ -218775,7 +218775,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は%@を現在のライブラリ形式に移行しましたが、問題がありました:"
+            "value" : "TextMouth は%@を現在のライブラリ形式に移行しましたが、問題がありました："
           }
         },
         "pt-BR" : {
@@ -218834,7 +218834,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は%@を現在のライブラリ形式に移行しましたが、問題がありました:"
+            "value" : "TextMouth は%@を現在のライブラリ形式に移行しましたが、問題がありました："
           }
         },
         "pt-BR" : {
@@ -220905,7 +220905,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次に TextMouth を開いたときに%1$@のライブラリを開きますが、自動では開き直せませんでした: %2$@"
+            "value" : "次に TextMouth を開いたときに%1$@のライブラリを開きますが、自動では開き直せませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -223159,7 +223159,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」フィルタには「%2$@」が必要です: %3$@。"
+            "value" : "「%1$@」フィルタには「%2$@」が必要です：%3$@。"
           }
         },
         "pt-BR" : {
@@ -223283,7 +223283,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」フィルタの「%2$@」は「%3$@」にできません: %4$@。"
+            "value" : "「%1$@」フィルタの「%2$@」は「%3$@」にできません：%4$@。"
           }
         },
         "pt-BR" : {
@@ -223855,7 +223855,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@のモデルをダウンロードできませんでした: %2$@"
+            "value" : "%1$@のモデルをダウンロードできませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -230341,7 +230341,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字起こし中にブックのオーディオが変わりました: %@。もう一度文字起こししてください。"
+            "value" : "文字起こし中にブックのオーディオが変わりました：%@。もう一度文字起こししてください。"
           }
         },
         "pt-BR" : {
@@ -233197,7 +233197,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@のダウンロードは取り除かれませんでした: %2$@"
+            "value" : "%1$@のダウンロードは取り除かれませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -236515,7 +236515,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "フォルダ%@には、ほかに%lld件の項目があります: %@。"
+                  "value" : "フォルダ%@には、ほかに%lld件の項目があります：%@。"
                 }
               }
             }
@@ -237466,7 +237466,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フォルダはありますが、TextMouth はそのライブラリの ID ファイルを読み取れません: %@"
+            "value" : "フォルダはありますが、TextMouth はそのライブラリの ID ファイルを読み取れません：%@"
           }
         },
         "pt-BR" : {
@@ -240340,7 +240340,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新しいコピーで「%1$@」を置き換えましたが、古いコピーのファイルを削除できず、フォルダに残っています: %2$@"
+            "value" : "新しいコピーで「%1$@」を置き換えましたが、古いコピーのファイルを削除できず、フォルダに残っています：%2$@"
           }
         },
         "pt-BR" : {
@@ -240405,7 +240405,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新しいコピーで「%1$@」を置き換えましたが、古いコピーのファイルをゴミ箱に入れられず、フォルダに残っています: %2$@"
+            "value" : "新しいコピーで「%1$@」を置き換えましたが、古いコピーのファイルをゴミ箱に入れられず、フォルダに残っています：%2$@"
           }
         },
         "pt-BR" : {
@@ -245353,7 +245353,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "録音を保存できませんでした: %1$@ 録音は保持されています。「%2$@」または「%3$@」を選んでください。"
+            "value" : "録音を保存できませんでした：%1$@ 録音は保持されています。「%2$@」または「%3$@」を選んでください。"
           }
         },
         "pt-BR" : {
@@ -247601,7 +247601,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオの横にある文字起こしファイルは添付されませんでした: %@"
+            "value" : "オーディオの横にある文字起こしファイルは添付されませんでした：%@"
           }
         },
         "pt-BR" : {
@@ -247660,7 +247660,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "整理前の文字起こしは使えません: %@。"
+            "value" : "整理前の文字起こしは使えません：%@。"
           }
         },
         "pt-BR" : {
@@ -250760,7 +250760,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のブックは削除できず、ライブラリに残っています:"
+            "value" : "次のブックは削除できず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -250819,7 +250819,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のブックはゴミ箱に入れられず、ライブラリに残っています:"
+            "value" : "次のブックはゴミ箱に入れられず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -250878,7 +250878,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のブックはライブラリから取り除けず、ライブラリに残っています:"
+            "value" : "次のブックはライブラリから取り除けず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -250937,7 +250937,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のブックはライブラリから取り除かれましたが、bookInfo.json ファイルを削除できませんでした。これらはライブラリの外に残ります:"
+            "value" : "次のブックはライブラリから取り除かれましたが、bookInfo.json ファイルを削除できませんでした。これらはライブラリの外に残ります："
           }
         },
         "pt-BR" : {
@@ -251055,7 +251055,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次の項目は削除できず、ライブラリに残っています:"
+            "value" : "次の項目は削除できず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -251114,7 +251114,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次の項目はゴミ箱に入れられず、ライブラリに残っています:"
+            "value" : "次の項目はゴミ箱に入れられず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -251173,7 +251173,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次の項目はライブラリから取り除けず、ライブラリに残っています:"
+            "value" : "次の項目はライブラリから取り除けず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -251232,7 +251232,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオの横にあるこれらの文字起こしファイルは添付されませんでした: %@。理由はデバッグログにあります。"
+            "value" : "オーディオの横にあるこれらの文字起こしファイルは添付されませんでした：%@。理由はデバッグログにあります。"
           }
         },
         "pt-BR" : {
@@ -253073,7 +253073,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックは削除できず、ライブラリに残っています:"
+            "value" : "このブックは削除できず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -253132,7 +253132,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックはゴミ箱に入れられず、ライブラリに残っています:"
+            "value" : "このブックはゴミ箱に入れられず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -253191,7 +253191,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックはライブラリから取り除けず、ライブラリに残っています:"
+            "value" : "このブックはライブラリから取り除けず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -254282,7 +254282,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックはライブラリから取り除かれましたが、bookInfo.json ファイルを削除できませんでした。ライブラリの外に残ります:"
+            "value" : "このブックはライブラリから取り除かれましたが、bookInfo.json ファイルを削除できませんでした。ライブラリの外に残ります："
           }
         },
         "pt-BR" : {
@@ -256583,7 +256583,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "これは TextMouth が使用しているライブラリです: %@。"
+            "value" : "これは TextMouth が使用しているライブラリです：%@。"
           }
         },
         "pt-BR" : {
@@ -256642,7 +256642,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この項目は削除できず、ライブラリに残っています:"
+            "value" : "この項目は削除できず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -256701,7 +256701,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この項目はゴミ箱に入れられず、ライブラリに残っています:"
+            "value" : "この項目はゴミ箱に入れられず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -256760,7 +256760,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この項目はライブラリから取り除けず、ライブラリに残っています:"
+            "value" : "この項目はライブラリから取り除けず、ライブラリに残っています："
           }
         },
         "pt-BR" : {
@@ -258379,7 +258379,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字起こしにかかる時間: %@。"
+            "value" : "文字起こしにかかる時間：%@。"
           }
         },
         "pt-BR" : {
@@ -258438,7 +258438,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字起こしにかかる時間: まだわかっていません。"
+            "value" : "文字起こしにかかる時間：まだわかっていません。"
           }
         },
         "pt-BR" : {
@@ -258556,7 +258556,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "時間枠: %@"
+            "value" : "時間枠：%@"
           }
         },
         "pt-BR" : {
@@ -259249,7 +259249,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "タイトル:"
+            "value" : "タイトル："
           }
         },
         "pt-BR" : {
@@ -259485,7 +259485,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "移動先: %@"
+            "value" : "移動先：%@"
           }
         },
         "pt-BR" : {
@@ -260296,7 +260296,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "移動先: デフォルトの場所、%@"
+            "value" : "移動先：デフォルトの場所、%@"
           }
         },
         "pt-BR" : {
@@ -262081,7 +262081,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を文字起こししました: %3$@で%2$@。"
+            "value" : "%1$@を文字起こししました：%3$@で%2$@。"
           }
         },
         "pt-BR" : {
@@ -262447,7 +262447,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を文字起こししています。所要時間: %2$@。"
+            "value" : "%1$@を文字起こししています。所要時間：%2$@。"
           }
         },
         "pt-BR" : {
@@ -263155,7 +263155,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字起こしが停止しました: %@"
+            "value" : "文字起こしが停止しました：%@"
           }
         },
         "pt-BR" : {
@@ -263214,7 +263214,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字起こしが停止しました: %@。"
+            "value" : "文字起こしが停止しました：%@。"
           }
         },
         "pt-BR" : {
@@ -264937,7 +264937,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "時刻を入力してください。例: 12:04.3、1:02:03、75.5。"
+            "value" : "時刻を入力してください。例：12:04.3、1:02:03、75.5。"
           }
         },
         "pt-BR" : {
@@ -266654,7 +266654,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未読み込み: %1$@を読み込めませんでした（%2$@）。%3$@"
+            "value" : "未読み込み：%1$@を読み込めませんでした（%2$@）。%3$@"
           }
         },
         "pt-BR" : {
@@ -266800,7 +266800,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "未読み込み: %@が%lld秒待ってもクラウドから届きませんでした。%@"
+                  "value" : "未読み込み：%@が%lld秒待ってもクラウドから届きませんでした。%@"
                 }
               }
             }
@@ -266940,7 +266940,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未読み込み: 以前の読み込みにドライブが応答していないため、%1$@は再度要求されませんでした。%2$@"
+            "value" : "未読み込み：以前の読み込みにドライブが応答していないため、%1$@は再度要求されませんでした。%2$@"
           }
         },
         "pt-BR" : {
@@ -267086,7 +267086,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "未読み込み: TextMouth が合計%2$lld秒待って待機をやめたため、%1$@は読み込まれませんでした。%3$@"
+                  "value" : "未読み込み：TextMouth が合計%2$lld秒待って待機をやめたため、%1$@は読み込まれませんでした。%3$@"
                 }
               }
             }
@@ -275475,7 +275475,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth がデータをコピーしている間に、%lld件の項目が%@に現れました: %@。"
+                  "value" : "TextMouth がデータをコピーしている間に、%lld件の項目が%@に現れました：%@。"
                 }
               }
             }
@@ -279114,7 +279114,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ルールファイルを使用できません: %@。TextMouth はそのファイルとコピーを保持し、修正されるまで標準のルールを使います。"
+            "value" : "ルールファイルを使用できません：%@。TextMouth はそのファイルとコピーを保持し、修正されるまで標準のルールを使います。"
           }
         },
         "pt-BR" : {
@@ -283701,7 +283701,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ffmpeg はフィルタを実行できませんでした: %@"
+            "value" : "ffmpeg はフィルタを実行できませんでした：%@"
           }
         },
         "pt-BR" : {
@@ -285495,7 +285495,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "チャプタ%1$@内: %2$@"
+            "value" : "チャプタ%1$@内：%2$@"
           }
         },
         "pt-BR" : {
@@ -299315,7 +299315,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」を「%2$@」に置き換え（単語の途中も対象）: %3$@。"
+            "value" : "「%1$@」を「%2$@」に置き換え（単語の途中も対象）：%3$@。"
           }
         },
         "pt-BR" : {
@@ -299380,7 +299380,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」を「%2$@」に置き換え: %3$@。"
+            "value" : "「%1$@」を「%2$@」に置き換え：%3$@。"
           }
         },
         "pt-BR" : {
@@ -299445,7 +299445,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオの横にある「%1$@」は添付されませんでした: %2$@"
+            "value" : "オーディオの横にある「%1$@」は添付されませんでした：%2$@"
           }
         },
         "pt-BR" : {
@@ -299510,7 +299510,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」を%2$@として読み込めません: %3$@ 何も変更されていません。"
+            "value" : "「%1$@」を%2$@として読み込めません：%3$@ 何も変更されていません。"
           }
         },
         "pt-BR" : {
@@ -299634,7 +299634,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」は移動の失敗後に元に戻せなかったため、ファイルは%3$@ではなく%2$@にあります: %4$@"
+            "value" : "「%1$@」は移動の失敗後に元に戻せなかったため、ファイルは%3$@ではなく%2$@にあります：%4$@"
           }
         },
         "pt-BR" : {
@@ -299758,7 +299758,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」を読み取れませんでした: %2$@。"
+            "value" : "「%1$@」を読み取れませんでした：%2$@。"
           }
         },
         "pt-BR" : {
@@ -301293,7 +301293,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」を%2$@に添付できませんでした: %3$@"
+            "value" : "「%1$@」を%2$@に添付できませんでした：%3$@"
           }
         },
         "pt-BR" : {
@@ -301482,7 +301482,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」: このバージョンの TextMouth では読み込めません"
+            "value" : "「%@」：このバージョンの TextMouth では読み込めません"
           }
         },
         "pt-BR" : {
