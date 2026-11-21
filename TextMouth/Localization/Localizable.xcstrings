@@ -103437,7 +103437,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rozdział %1$@, z %2$@"
+            "value" : "Rozdział %1$@, źródło: %2$@"
           }
         },
         "pt-BR" : {
@@ -141869,7 +141869,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobieranie %1$@ z %2$@."
+            "value" : "Pobieranie %1$@, źródło: %2$@."
           }
         },
         "pt-BR" : {
@@ -182705,7 +182705,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jeśli %1$@ dotrze później z %2$@, %3$@ może zachować dwie kopie tego pliku."
+            "value" : "Jeśli %1$@ dotrze później (źródło: %2$@), %3$@ może zachować dwie kopie tego pliku."
           }
         },
         "pt-BR" : {
@@ -182907,7 +182907,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jeśli plik dotrze później z %@, będzie określał tę samą bibliotekę."
+            "value" : "Jeśli plik dotrze później (źródło: %@), będzie określał tę samą bibliotekę."
           }
         },
         "pt-BR" : {
@@ -183115,7 +183115,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jeśli własny plik %1$@ biblioteki dotrze później z %2$@, %3$@ może zachować dwie jego kopie, a ten Mac i drugi będą się różnić co do tego, która to biblioteka."
+            "value" : "Jeśli własny plik %1$@ biblioteki dotrze później (źródło: %2$@), %3$@ może zachować dwie jego kopie, a ten Mac i drugi będą się różnić co do tego, która to biblioteka."
           }
         },
         "pt-BR" : {
@@ -195264,7 +195264,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mógł zostać przeniesiony lub zmieniony albo nie został jeszcze zsynchronizowany z tym komputerem Mac przez %@."
+            "value" : "Mógł zostać przeniesiony lub zmieniony albo nie został jeszcze zsynchronizowany z tym komputerem Mac (usługa: %@)."
           }
         },
         "pt-BR" : {
@@ -317009,7 +317009,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Najpierw rozwiąż konflikt w %@."
+            "value" : "Najpierw rozwiąż konflikt (usługa: %@)."
           }
         },
         "pt-BR" : {
@@ -327286,7 +327286,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Niektóre zmiany w tej książce nie zostały jeszcze przesłane do %@, więc nie można usunąć pobranego pliku."
+            "value" : "Niektóre zmiany w tej książce nie zostały jeszcze przesłane (usługa: %@), więc nie można usunąć pobranego pliku."
           }
         },
         "pt-BR" : {
@@ -327595,7 +327595,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Niektóre pliki biblioteki są w %@ i nie ma ich jeszcze na tym komputerze Mac."
+            "value" : "Niektóre pliki biblioteki są w usłudze (%@) i nie ma ich jeszcze na tym komputerze Mac."
           }
         },
         "pt-BR" : {
