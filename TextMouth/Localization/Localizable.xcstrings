@@ -40738,7 +40738,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld หนังสือเสียง"
+                  "value" : "หนังสือเสียง %lld เล่ม"
                 }
               }
             }
@@ -355630,7 +355630,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "แท็กหนึ่งในไฟล์นี้มีแอตทริบิวต์เกิน %@ รายการ ซึ่ง TextMouth อ่านอย่างปลอดภัยไม่ได้"
+            "value" : "แท็กหนึ่งในไฟล์นี้มีแอตทริบิวต์เกิน %@ รายการ ซึ่ง TextMouth อ่านได้ไม่ปลอดภัย"
           }
         },
         "tr" : {
@@ -450010,7 +450010,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slash"
+            "value" : "เครื่องหมายทับ"
           }
         },
         "tr" : {
@@ -471455,7 +471455,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "System"
+            "value" : "ระบบ"
           }
         },
         "tr" : {
@@ -488495,7 +488495,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth ยังไม่ได้อ่านการบันทึกล่าสุด"
+            "value" : "TextMouth ยังไม่ได้อ่านข้อความที่บันทึกไว้ล่าสุด"
           }
         },
         "tr" : {
@@ -506307,7 +506307,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "หน้า%1$@ซึ่งมีป้ายกำกับ %2$@"
+            "value" : "หน้า%1$@ ซึ่งมีป้ายกำกับ %2$@"
           }
         },
         "tr" : {
@@ -582963,7 +582963,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tilde"
+            "value" : "เครื่องหมายตัวหนอน"
           }
         },
         "tr" : {
@@ -589538,7 +589538,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "สลับที่คั่นหน้า"
+            "value" : "เพิ่มหรือนำที่คั่นหน้าออก"
           }
         },
         "tr" : {
@@ -599488,7 +599488,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "พิมพ์เครื่องหมายคำพูดแบบตรง: ใน TextEdit ให้ปิดเครื่องหมายคำพูดอัจฉริยะภายใต้ แก้ไข > การแทนที่"
+            "value" : "พิมพ์เครื่องหมายคำพูดแบบตรง: ใน TextEdit ให้ปิด อัญประกาศอัจฉริยะ ใน แก้ไข > การเปลี่ยนแทนที่"
           }
         },
         "tr" : {
@@ -601132,7 +601132,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Underscore"
+            "value" : "เครื่องหมายขีดล่าง"
           }
         },
         "tr" : {
@@ -606206,7 +606206,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Up Arrow"
+            "value" : "ลูกศรขึ้น"
           }
         },
         "tr" : {
@@ -606480,7 +606480,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "อัปเดตเสียง ความเร็ว และความสูงต่ำของเสียงเริ่มต้นสำหรับทุกหนังสือที่ไม่มีการตั้งค่าของตัวเอง"
+            "value" : "อัปเดตเสียง ความเร็ว และความสูงต่ำของเสียงเริ่มต้นสำหรับหนังสือทุกเล่มที่ไม่มีการตั้งค่าของตัวเอง"
           }
         },
         "tr" : {
@@ -608541,7 +608541,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "User"
+            "value" : "ผู้ใช้"
           }
         },
         "tr" : {
@@ -609089,7 +609089,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vertical Bar"
+            "value" : "เครื่องหมายเส้นแนวตั้ง"
           }
         },
         "tr" : {
@@ -660527,7 +660527,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ที่หน้า%1$@ซึ่งมีป้ายกำกับ %2$@"
+            "value" : "ที่หน้า%1$@ ซึ่งมีป้ายกำกับ %2$@"
           }
         },
         "tr" : {
