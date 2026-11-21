@@ -33914,7 +33914,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Velocidade do áudio redefinida para %@"
+            "value" : "Velocidade do áudio restaurada para %@"
           }
         }
       }
@@ -107847,7 +107847,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redefinir todos os efeitos sonoros para os padrões"
+            "value" : "Restaurar todos os efeitos sonoros para os padrões"
           }
         }
       }
@@ -107882,7 +107882,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redefinir símbolos para o padrão"
+            "value" : "Restaurar símbolos para o padrão"
           }
         }
       }
@@ -118671,7 +118671,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Efeitos sonoros redefinidos para os padrões"
+            "value" : "Efeitos sonoros restaurados para os padrões"
           }
         }
       }
@@ -122924,7 +122924,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Símbolos redefinidos para a lista padrão"
+            "value" : "Símbolos restaurados para a lista padrão"
           }
         }
       }
