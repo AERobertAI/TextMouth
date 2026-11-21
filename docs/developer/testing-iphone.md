@@ -65,6 +65,7 @@ Tests that act as a person does find what tests of the parts miss.
   Neither the Mac's nor the iPhone's tests play, speak, or record anything (`test_run_ios_ui_tests.py` reads every file the target compiles, its own folder and the shared files, and fails if one names an audio framework, a player, or a recorder), so they need no sound variable.
   The check reads names (`SOUND_PATTERN` in `Scripts/agents/ios_ui_tests.py`), so it does not see a call whose name starts with another word, such as `startSpeaking(` or `startPlayback(`.
   A bare `record(` (the feed store's and the log's), `continuation.resume(`, and `resumeIndexWrites(` are not sound.
+  Neither is a call on a `…Wording` type (`PhoneReaderWording.playHint(movingBy:)`), which only returns the text a control says; the same name on anything else still counts.
   What it does catch is the model types a unit test would reach one through (`ReaderViewModel`, `PhoneAppModel`), so add a pattern for those words if a unit test ever takes a bare model.
   The one exception is a helper `func makeReader() -> ReaderViewModel`, the only place `ReaderViewModel` may appear, since the stopped reader the Go To, Search, and Sleep Timer sheets need is built there (Q11).
   The scanner cuts the first such helper out by its braces and reads it with the whole rule except that one name, so a call in it that plays, speaks, or resumes is still refused, and every other file is read with the whole rule.

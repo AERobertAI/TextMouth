@@ -81,11 +81,13 @@ It fails on any difference that its `knownDifferences` does not list with the re
 `testEveryXPathTheReadersPassIsCompared` scans the four reader files for XPath strings and fails on one the comparison does not make; its floor on how many it finds is 4, since the EPUB reader's package, NCX, and page list moved to `XMLElementIndex`.
 
 ## Mac braille table check tests
-<!-- id: mac-braille-table-check-tests; keys: peakResidentBytes, liblouis, braille helper, watchdog, flaky, peak memory, table check; src: TextMouthProductionTests/MacBrailleTableCheckTests.swift, TextMouth/Services/MacBrailleTableCheck.swift -->
+<!-- id: mac-braille-table-check-tests; keys: peakResidentBytes, liblouis, braille helper, watchdog, flaky, peak memory, table check; src: TextMouthProductionTests/MacBrailleTableCheckTests.swift, TextMouth/Services/MacBrailleTableCheck.swift, TextMouth/Platform/macOS/Services/WatchedProcess.swift -->
 
-`MacBrailleTableCheckTests` reads the memory of the braille helper it checks a table with, and its reading can miss all three short runs of a table, so that `testFrenchGermanAndSpanishPassAndRoundTrip` fails at its `peakResidentBytes` assertion for a table, with the load time before it passing.
-The watchdog takes a reading only after one poll interval (1 ms) passes with the helper still running, and a helper that ends first leaves a peak of 0.
-When that test alone fails, rerun its class: `python3 -I Scripts/agents/build-train.py request --agent SLUG --branch BRANCH --classes MacBrailleTableCheckTests`.
+`MacBrailleTableCheckTests` reads the memory of the braille helper it checks a table with.
+The watchdog (`WatchedProcess`) takes one reading the moment the helper exists, before it waits one poll interval (1 ms), so a helper that ends at once is still measured.
+Before that reading, a short run left a peak of 0 and `testFrenchGermanAndSpanishPassAndRoundTrip` failed at its `peakResidentBytes` assertion on a slow or starved machine (Q15).
+`testAHelperThatEndsAtOnceIsStillMeasuredOnce` pins the reading, and a peak of 0 never sets or lowers a limit.
+If that test fails again, rerun its class: `python3 -I Scripts/agents/build-train.py request --agent SLUG --branch BRANCH --classes MacBrailleTableCheckTests`.
 If it fails again, run the same class on main, to show that the failure predates the change; any other test failing beside it is not this.
 
 ## Golden tests against a Release build

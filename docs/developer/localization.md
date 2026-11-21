@@ -6,7 +6,7 @@ Part of [TextMouth's documentation](../../README.md).
 This page is for the developer or agent who converts a part of the app's code to localized text.
 A translator reads [Translating TextMouth](translation.md) instead; it covers the translation steps, the glossary, and the rules for every language, and this page does not repeat it.
 Every Swift file of the app is converted, in three rounds of waves, and the interface text was cut by the user's rules with every fact kept (FR34).
-Spanish is the first language, as the test of the system, and about eleven are planned; the Spanish is not on main yet.
+The catalog holds eleven languages: English, Spanish, Italian, French, Brazilian Portuguese, German, Russian, Ukrainian, Simplified Chinese, Japanese, and Korean.
 The plan and its measurements are in `research/LOCALIZATION-RESEARCH-2026-11-18.md`.
 
 ## The String Catalog
@@ -39,7 +39,9 @@ Three checks hold it:
 - `make check` fails when a file of either app is left in XML.
 
 A new language needs its plural rule in `LanguagePackPluralRules`, or `LanguagePackTests` fails and names it.
-Compact, English ships 42,341 bytes and Spanish 466,619, against 158,097 and 651,532 as XML.
+Compact, the eleven languages ship 4,810,232 bytes together, against 6,925,064 as Xcode writes them.
+By language, the files hold English 42,341, Spanish 466,619, Italian 462,144, French 494,321, Brazilian Portuguese 467,335, and German 452,004 bytes.
+The rest are Russian 580,548, Ukrainian 582,169, Simplified Chinese 372,313, Japanese 462,727, and Korean 427,711 bytes.
 Binary plurals compress worse than XML, so the IPA grows about 9 KB while each app shrinks 301 KB; the size limits count the app on disk.
 
 ## The size budget
@@ -66,6 +68,7 @@ Converting a sentence whole grows the English by about a fifth before any cut, b
   `scan.py show FILE` lists a file's unlocalized literals until it shows none, and also its keys whose note is missing or misplaced, which `lint` refuses.
   A line ending `// l10n: no (reason)` is left out on purpose: an identifier, a stored value, a log line.
 - `todo` and `apply` are the translators' commands; see [Translating TextMouth](translation.md).
+- The l10n tools' speed tests (`Scripts/l10n/tests`) time their own CPU (`time.process_time`), not the clock, so a busy Mac cannot fail them.
 
 ## The extraction and the lock
 <!-- id: localization-extraction-lock; keys: typecheck.py --emit-strings, -emit-localized-strings, stringsdata, heavy-work lock, locations.json, sync time; src: Scripts/ios/typecheck.py, Scripts/l10n/l10n.py, Scripts/agents/heavy_lock.py -->
