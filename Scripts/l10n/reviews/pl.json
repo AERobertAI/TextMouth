@@ -1,0 +1,602 @@
+{
+ "language": "pl",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ couldn't be read: %@",
+     "english": "%1$@ couldn't be read: %2$@",
+     "before": "Nie można odczytać %1$@: %2$@",
+     "after": "Nie można odczytać pliku %1$@: %2$@",
+     "why": "grammar: the file phrase it takes is nominative (znacznik tożsamości: …), so pliku carries the genitive the negation needs, as in the sibling reasons"
+    },
+    {
+     "key": "%@ downloaded",
+     "english": "%@ downloaded",
+     "before": "Pobrano %@",
+     "after": "Pobrano książkę %@",
+     "why": "grammar: a bare title cannot take the accusative Pobrano needs (Lalka, not Lalkę); książkę carries the case"
+    },
+    {
+     "key": "%@ moved to position %@ of %@",
+     "english": "%1$@ moved to position %2$@ of %3$@",
+     "before": "Przeniesiono %1$@ na pozycję %2$@ z %3$@",
+     "after": "Przeniesiono regułę %1$@ na pozycję %2$@ z %3$@",
+     "why": "grammar: a bare rule name cannot take the accusative Przeniesiono needs; regułę carries the case"
+    },
+    {
+     "key": "%@ wasn't downloaded",
+     "english": "%@ wasn't downloaded",
+     "before": "Nie pobrano %@",
+     "after": "Nie pobrano książki %@",
+     "why": "grammar: a bare title cannot take the genitive the negation needs; książki carries the case"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "few": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki z jego wnętrza.",
+      "many": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książek z jego wnętrza.",
+      "one": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książka z jego wnętrza.",
+      "other": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki z jego wnętrza."
+     },
+     "after": {
+      "one": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książka znajdująca się w środku.",
+      "few": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki znajdujące się w środku.",
+      "many": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książek znajdujących się w środku.",
+      "other": "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki znajdujące się w środku."
+     },
+     "why": "natural: z jego wnętrza (from its interior) is stilted; the books inside, as the single-book string says it"
+    },
+    {
+     "key": "%@, which leads to %@",
+     "english": "%1$@, which leads to %2$@",
+     "before": "%1$@, prowadzi do %2$@",
+     "after": "%1$@ – prowadzi do %2$@",
+     "why": "punctuation: a comma before a verb with no subject reads as a broken sentence; a dash marks the note"
+    },
+    {
+     "key": "%lld files couldn't be read, so the comparison may be missing differences.",
+     "english": {
+      "one": "%lld file couldn't be read, so the comparison may be missing differences.",
+      "other": "%lld files couldn't be read, so the comparison may be missing differences."
+     },
+     "before": {
+      "few": "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic.",
+      "many": "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic.",
+      "one": "Nie udało się odczytać %lld pliku, więc w porównaniu mogą brakować różnic.",
+      "other": "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic."
+     },
+     "after": {
+      "one": "Nie udało się odczytać %lld pliku, więc w porównaniu może brakować różnic.",
+      "few": "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic.",
+      "many": "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic.",
+      "other": "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic."
+     },
+     "why": "grammar: brakować is impersonal, so może brakować, not mogą brakować"
+    },
+    {
+     "key": "Book only in %@: %@.",
+     "english": "Book only in %1$@: %2$@.",
+     "before": "Książka tylko w: %1$@. %2$@.",
+     "after": "Książka tylko w: %1$@ – %2$@.",
+     "why": "punctuation: the period split the title into a sentence of its own; a dash keeps one sentence without a second colon"
+    },
+    {
+     "key": "Cancel New Folder",
+     "english": "Cancel New Folder",
+     "before": "Anuluj nowy folder",
+     "after": "Anuluj tworzenie folderu",
+     "why": "natural: Anuluj nowy folder copies the English; the button cancels making the folder"
+    },
+    {
+     "key": "Choose a folder outside it.",
+     "english": "Choose a folder outside it.",
+     "before": "Wybierz folder poza Koszem.",
+     "after": "Wybierz folder poza koszem.",
+     "why": "term: the glossary writes kosz in lower case inside a sentence (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "Close sheet after setting timer",
+     "english": "Close sheet after setting timer",
+     "before": "Zamknij arkusz po ustawieniu wyłącznika",
+     "after": "Zamykaj arkusz po ustawieniu wyłącznika",
+     "why": "register: a checkbox setting takes the habitual imperfective (Zamykaj), as Potwierdzaj and Pokazuj in this catalog and the checkboxes of Apple Polish do"
+    },
+    {
+     "key": "Close sleep timer sheet after setting a timer",
+     "english": "Close sleep timer sheet after setting a timer",
+     "before": "Zamknij arkusz wyłącznika czasowego po jego ustawieniu",
+     "after": "Zamykaj arkusz wyłącznika czasowego po jego ustawieniu",
+     "why": "register: the spoken label of the checkbox takes the habitual imperfective Zamykaj, as its title does"
+    },
+    {
+     "key": "Don't rewind if paused for less than this.",
+     "english": "Don't rewind if paused for less than this.",
+     "before": "Nie przewijaj do tyłu, jeśli wstrzymanie trwało krócej niż ten czas.",
+     "after": "Nie przewija do tyłu, jeśli wstrzymanie trwało krócej niż ten czas.",
+     "why": "meaning: the imperative Nie przewijaj tells the listener not to rewind; the explanation says what the setting does"
+    },
+    {
+     "key": "Downloading %@ from %@.",
+     "english": "Downloading %1$@ from %2$@.",
+     "before": "Pobieranie %1$@, źródło: %2$@.",
+     "after": "Pobieranie: %1$@, źródło: %2$@.",
+     "why": "grammar: a bare title after Pobieranie needs the genitive it cannot take; a colon, as in Pobieranie: %@, keeps it nominative"
+    },
+    {
+     "key": "Downloading %@, a reading list book",
+     "english": "Downloading %@, a reading list book",
+     "before": "Pobieranie %@, książki z listy czytelniczej",
+     "after": "Pobieranie: %@, książka z listy czytelniczej",
+     "why": "grammar: the genitive apposition książki cannot match a bare title; after a colon both stay nominative"
+    },
+    {
+     "key": "Enable %@",
+     "english": "Enable %@",
+     "before": "Włącz %@",
+     "after": "Włącz regułę %@",
+     "why": "grammar: a bare rule name cannot take the accusative Włącz needs; regułę carries the case"
+    },
+    {
+     "key": "Failed to rebuild to default",
+     "english": "Failed to rebuild to default",
+     "before": "Nie udało się przywrócić ustawień domyślnych",
+     "after": "Nie udało się przywrócić lokalizacji domyślnej",
+     "why": "meaning: Reset to Default moves the data back to the default location; ustawień domyślnych says settings were reset"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "english": "In this Mac's Logs folder",
+     "before": "W folderze Dzienniki na tym komputerze Mac.",
+     "after": "W folderze Dzienniki na tym komputerze Mac",
+     "why": "punctuation: a pop-up choice takes no period, and its folder path follows it in parentheses"
+    },
+    {
+     "key": "It may have been moved or renamed, or %@ may not have synced it to this Mac yet.",
+     "english": "It may have been moved or renamed, or %@ may not have synced it to this Mac yet.",
+     "before": "Mógł zostać przeniesiony lub zmieniony albo nie został jeszcze zsynchronizowany z tym komputerem Mac (usługa: %@).",
+     "after": "Mógł zostać przeniesiony lub mogła zostać zmieniona jego nazwa albo usługa %@ nie zsynchronizowała go jeszcze z tym komputerem Mac.",
+     "why": "meaning: zmieniony (changed) lost renamed, and the service moved to a parenthesis; the service is now the subject, as in the English"
+    },
+    {
+     "key": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "english": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "before": "Pozycja czytania, zakładki i transkrypcja, jeśli istnieje, zostają zachowane, a pobrany plik można pobrać ponownie.",
+     "after": "Pozycja czytania, zakładki i transkrypcja, jeśli istnieje, zostają zachowane, a plik można pobrać ponownie.",
+     "why": "natural: a pobrany plik można pobrać ponownie (the downloaded file can be downloaded again) is circular once the download is gone"
+    },
+    {
+     "key": "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept.",
+     "english": "Menu changes are saved as defaults for the current book. Hiding the menus uses the global skip choices; book defaults are kept.",
+     "before": "Zmiany w menu są zapisywane jako ustawienia domyślne bieżącej książki. Ukrycie menu używa globalnych wyborów przewijania; ustawienia domyślne książek zostają zachowane.",
+     "after": "Zmiany w menu są zapisywane jako ustawienia domyślne bieżącej książki. Po ukryciu menu używane są globalne ustawienia przewijania; ustawienia domyślne książek zostają zachowane.",
+     "why": "natural: Ukrycie menu używa (the hiding uses) copies the English subject; Polish says what is used once the menus are hidden"
+    },
+    {
+     "key": "Move to Trash instead of deleting",
+     "english": "Move to Trash instead of deleting",
+     "before": "Przenoś do Kosza zamiast usuwać",
+     "after": "Przenoś do kosza zamiast usuwać",
+     "why": "term: the glossary writes kosz in lower case inside a phrase (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "Moved %@ above %@",
+     "english": "Moved %1$@ above %2$@",
+     "before": "Przeniesiono %1$@ nad %2$@",
+     "after": "Przeniesiono książkę %1$@ nad książkę %2$@",
+     "why": "grammar: a bare title cannot take the accusative Przeniesiono and nad need (Lalka, not Lalkę); książkę carries the case"
+    },
+    {
+     "key": "Moved %@ below %@",
+     "english": "Moved %1$@ below %2$@",
+     "before": "Przeniesiono %1$@ pod %2$@",
+     "after": "Przeniesiono książkę %1$@ pod książkę %2$@",
+     "why": "grammar: a bare title cannot take the accusative Przeniesiono and pod need; książkę carries the case"
+    },
+    {
+     "key": "New Folder cancelled.",
+     "english": "New Folder cancelled.",
+     "before": "Anulowano nowy folder.",
+     "after": "Anulowano tworzenie folderu.",
+     "why": "natural: Anulowano nowy folder copies the English; it is making the folder that was cancelled"
+    },
+    {
+     "key": "New Folder cancelled. %@: %@.",
+     "english": "New Folder cancelled. %1$@: %2$@.",
+     "before": "Anulowano nowy folder. %1$@: %2$@.",
+     "after": "Anulowano tworzenie folderu. %1$@: %2$@.",
+     "why": "natural: Anulowano nowy folder copies the English; it is making the folder that was cancelled"
+    },
+    {
+     "key": "None (Use Global)",
+     "english": "None (Use Global)",
+     "before": "Brak (użyj globalnych)",
+     "after": "Brak (użyj ustawień globalnych)",
+     "why": "natural: użyj globalnych leaves the noun out (global what); the global settings are meant"
+    },
+    {
+     "key": "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
+     "english": "Re-extracts cached text from all books. Useful after parser fixes or format improvements.",
+     "before": "Ponownie wyodrębnia tekst z pamięci podręcznej wszystkich książek. Przydatne po poprawkach parsera lub ulepszeniach formatów.",
+     "after": "Ponownie wyodrębnia tekst wszystkich książek, odświeżając jego kopię w pamięci podręcznej. Przydatne po poprawkach parsera lub ulepszeniach formatów.",
+     "why": "meaning: z pamięci podręcznej says the text is extracted from the cache; it is extracted again and the cached copy replaced"
+    },
+    {
+     "key": "Re-extracts every book's cached text.",
+     "english": "Re-extracts every book's cached text.",
+     "before": "Ponownie wyodrębnia tekst z pamięci podręcznej każdej książki.",
+     "after": "Ponownie wyodrębnia tekst każdej książki, odświeżając jego kopię w pamięci podręcznej.",
+     "why": "meaning: z pamięci podręcznej says the text is extracted from the cache; it is extracted again and the cached copy replaced"
+    },
+    {
+     "key": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "english": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "before": "Pozycje czytania są zachowane, ale przesunięcia znaków mogą się nieco zmienić, jeśli tekst się zmieni.",
+     "after": "Pozycje czytania są zachowane, ale jeśli tekst się zmieni, mogą się przesunąć o kilka znaków.",
+     "why": "natural: przesunięcia znaków mogą się zmienić (the offsets may change) is a calque of character offsets; Polish says the places may shift by a few characters"
+    },
+    {
+     "key": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "english": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "before": "Odczyt dźwięku przekroczył limit czasu (sekundy: %@); TextMouth przestał czekać.",
+     "after": "Odczyt dźwięku trwał dłużej niż %@ sekundy; TextMouth przestał czekać.",
+     "why": "natural: (sekundy: %@) is stilted; the value always has a fraction, which takes sekundy, as the sibling strings read"
+    },
+    {
+     "key": "Show bookmark button",
+     "english": "Show bookmark button",
+     "before": "Pokaż przycisk zakładki",
+     "after": "Pokazuj przycisk zakładki",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Show bookmark button in playback controls",
+     "english": "Show bookmark button in playback controls",
+     "before": "Pokaż przycisk zakładki w elementach sterujących odtwarzaniem",
+     "after": "Pokazuj przycisk zakładki w elementach sterujących odtwarzaniem",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Show speed controls",
+     "english": "Show speed controls",
+     "before": "Pokaż elementy sterujące prędkością",
+     "after": "Pokazuj elementy sterujące prędkością",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Show speed controls in playback controls",
+     "english": "Show speed controls in playback controls",
+     "before": "Pokaż elementy sterujące prędkością w elementach sterujących odtwarzaniem",
+     "after": "Pokazuj elementy sterujące prędkością w elementach sterujących odtwarzaniem",
+     "why": "register: a checkbox setting takes the habitual imperfective (Pokazuj), as Apple Polish checkboxes and this catalog (Pokazuj zawsze, Potwierdzaj) do"
+    },
+    {
+     "key": "Start New Library",
+     "english": "Start New Library",
+     "before": "Rozpocznij nową bibliotekę",
+     "after": "Utwórz nową bibliotekę",
+     "why": "natural: rozpocząć bibliotekę (begin a library) is a calque; a library is created"
+    },
+    {
+     "key": "Start a New Library?",
+     "english": "Start a New Library?",
+     "before": "Rozpocząć nową bibliotekę?",
+     "after": "Utworzyć nową bibliotekę?",
+     "why": "natural: rozpocząć bibliotekę (begin a library) is a calque; a library is created"
+    },
+    {
+     "key": "Storage problems",
+     "english": "Storage problems",
+     "before": "Problemy z pamięcią",
+     "after": "Problemy z plikami",
+     "why": "meaning: Problemy z pamięcią reads as memory trouble; the banner lists files that could not be saved or removed"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "Zdejmij ją z listy czytelniczej albo najpierw wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Zdejmij ją z listy czytelniczej albo najpierw odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "TextMouth could not check whether to move it to the Trash.",
+     "english": "TextMouth could not check whether to move it to the Trash.",
+     "before": "TextMouth nie mógł sprawdzić, czy przenieść go do Kosza.",
+     "after": "TextMouth nie mógł sprawdzić, czy przenieść go do kosza.",
+     "why": "term: the glossary writes kosz in lower case inside a sentence (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth zakończy działanie i otworzy się ponownie, aby ją uruchomić.",
+     "after": "TextMouth zakończy działanie i otworzy się ponownie, aby ją utworzyć.",
+     "why": "natural: a new library is created (Utwórz nową bibliotekę), not launched (uruchomić)"
+    },
+    {
+     "key": "The folder %@ is in the Trash.",
+     "english": "The folder %@ is in the Trash.",
+     "before": "Folder %@ jest w Koszu.",
+     "after": "Folder %@ jest w koszu.",
+     "why": "term: the glossary writes kosz in lower case inside a sentence (Przenieś do kosza), as 28 other strings do"
+    },
+    {
+     "key": "The new copy replaced “%@”, but the old copy's files could not be deleted and stay in its folder: %@",
+     "english": "The new copy replaced “%1$@”, but the old copy's files could not be deleted and stay in its folder: %2$@",
+     "before": "Nowa kopia zastąpiła „%1$@”, ale nie udało się usunąć plików starej kopii i zostają w jej folderze: %2$@",
+     "after": "Nowa kopia zastąpiła „%1$@”, ale nie udało się usunąć plików starej kopii; zostają w jej folderze: %2$@",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "The new copy replaced “%@”, but the old copy's files could not be moved to the Trash and stay in its folder: %@",
+     "english": "The new copy replaced “%1$@”, but the old copy's files could not be moved to the Trash and stay in its folder: %2$@",
+     "before": "Nowa kopia zastąpiła „%1$@”, ale nie udało się przenieść plików starej kopii do kosza i zostają w jej folderze: %2$@",
+     "after": "Nowa kopia zastąpiła „%1$@”, ale nie udało się przenieść plików starej kopii do kosza; zostają w jej folderze: %2$@",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Następnie zdejmij ją z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Następnie zdejmij ją z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "These books could not be deleted and remain in the library:",
+     "english": "These books could not be deleted and remain in the library:",
+     "before": "Tych książek nie udało się usunąć i pozostają w bibliotece:",
+     "after": "Tych książek nie udało się usunąć; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These books could not be moved to the Trash and remain in the library:",
+     "english": "These books could not be moved to the Trash and remain in the library:",
+     "before": "Tych książek nie udało się przenieść do kosza i pozostają w bibliotece:",
+     "after": "Tych książek nie udało się przenieść do kosza; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These books could not be removed from the library and remain in it:",
+     "english": "These books could not be removed from the library and remain in it:",
+     "before": "Tych książek nie udało się usunąć z biblioteki i pozostają w niej:",
+     "after": "Tych książek nie udało się usunąć z biblioteki; pozostają w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These items could not be deleted and remain in the library:",
+     "english": "These items could not be deleted and remain in the library:",
+     "before": "Tych pozycji nie udało się usunąć i pozostają w bibliotece:",
+     "after": "Tych pozycji nie udało się usunąć; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These items could not be moved to the Trash and remain in the library:",
+     "english": "These items could not be moved to the Trash and remain in the library:",
+     "before": "Tych pozycji nie udało się przenieść do kosza i pozostają w bibliotece:",
+     "after": "Tych pozycji nie udało się przenieść do kosza; pozostają w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "These items could not be removed from the library and remain in it:",
+     "english": "These items could not be removed from the library and remain in it:",
+     "before": "Tych pozycji nie udało się usunąć z biblioteki i pozostają w niej:",
+     "after": "Tych pozycji nie udało się usunąć z biblioteki; pozostają w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This book could not be deleted and remains in the library:",
+     "english": "This book could not be deleted and remains in the library:",
+     "before": "Tej książki nie udało się usunąć i pozostaje w bibliotece:",
+     "after": "Tej książki nie udało się usunąć; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This book could not be moved to the Trash and remains in the library:",
+     "english": "This book could not be moved to the Trash and remains in the library:",
+     "before": "Tej książki nie udało się przenieść do kosza i pozostaje w bibliotece:",
+     "after": "Tej książki nie udało się przenieść do kosza; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This book could not be removed from the library and remains in it:",
+     "english": "This book could not be removed from the library and remains in it:",
+     "before": "Tej książki nie udało się usunąć z biblioteki i pozostaje w niej:",
+     "after": "Tej książki nie udało się usunąć z biblioteki; pozostaje w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This item could not be deleted and remains in the library:",
+     "english": "This item could not be deleted and remains in the library:",
+     "before": "Tej pozycji nie udało się usunąć i pozostaje w bibliotece:",
+     "after": "Tej pozycji nie udało się usunąć; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This item could not be moved to the Trash and remains in the library:",
+     "english": "This item could not be moved to the Trash and remains in the library:",
+     "before": "Tej pozycji nie udało się przenieść do kosza i pozostaje w bibliotece:",
+     "after": "Tej pozycji nie udało się przenieść do kosza; pozostaje w bibliotece:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This item could not be removed from the library and remains in it:",
+     "english": "This item could not be removed from the library and remains in it:",
+     "before": "Tej pozycji nie udało się usunąć z biblioteki i pozostaje w niej:",
+     "after": "Tej pozycji nie udało się usunąć z biblioteki; pozostaje w niej:",
+     "why": "grammar: the genitive object of nie udało się cannot be the subject of the verb joined to it by i; a semicolon gives the second clause its own subject"
+    },
+    {
+     "key": "This re-extracts the cached text of every book, which may take a while for a large library.",
+     "english": "This re-extracts the cached text of every book, which may take a while for a large library.",
+     "before": "To ponownie wyodrębni tekst z pamięci podręcznej każdej książki, co w dużej bibliotece może chwilę potrwać.",
+     "after": "To ponownie wyodrębni tekst każdej książki i odświeży jego kopię w pamięci podręcznej, co w dużej bibliotece może chwilę potrwać.",
+     "why": "meaning: z pamięci podręcznej says the text is extracted from the cache; it is extracted again and the cached copy replaced"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Aby ją zwolnić, zdejmij ją z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Aby ją zwolnić, zdejmij ją z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Aby je zwolnić, zdejmij je z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej.",
+     "after": "Aby je zwolnić, zdejmij je z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej.",
+     "why": "meaning: %@ is a checkbox, so clear means uncheck (odznacz), not wipe its content (wyczyść)"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives holding audio or other archives.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives holding audio or other archives.",
+     "before": "Razem z archiwami w środku archiwum po rozpakowaniu zajmie %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów zawierających dźwięk lub inne archiwa.",
+     "after": "Archiwum wraz z zawartymi w nim archiwami zajmie po rozpakowaniu %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów zawierających dźwięk lub inne archiwa.",
+     "why": "natural: Razem z archiwami w środku archiwum… makes a listener hear the archives inside the archive and lose the subject; the archive comes first"
+    },
+    {
+     "key": "Together with the archives inside it, the archive expands to %@, more than the %@ TextMouth extracts from archives without audio.",
+     "english": "Together with the archives inside it, the archive expands to %1$@, more than the %2$@ TextMouth extracts from archives without audio.",
+     "before": "Razem z archiwami w środku archiwum po rozpakowaniu zajmie %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów bez dźwięku.",
+     "after": "Archiwum wraz z zawartymi w nim archiwami zajmie po rozpakowaniu %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów bez dźwięku.",
+     "why": "natural: Razem z archiwami w środku archiwum… makes a listener hear the archives inside the archive and lose the subject; the archive comes first"
+    },
+    {
+     "key": "Together with the archives inside it, the archive holds %@ files and folders, more than the %@ TextMouth extracts in one import.",
+     "english": "Together with the archives inside it, the archive holds %1$@ files and folders, more than the %2$@ TextMouth extracts in one import.",
+     "before": "Razem z archiwami w środku archiwum zawiera %1$@ plików i folderów, więcej niż %2$@, które TextMouth wyodrębnia podczas jednego importu.",
+     "after": "Archiwum wraz z zawartymi w nim archiwami zawiera %1$@ plików i folderów, więcej niż %2$@, które TextMouth wyodrębnia podczas jednego importu.",
+     "why": "natural: Razem z archiwami w środku archiwum… makes a listener hear the archives inside the archive and lose the subject; the archive comes first"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "english": "What happens when a book finishes playing",
+     "before": "Co się dzieje po zakończeniu odtwarzania książki.",
+     "after": "Określa, co się dzieje po zakończeniu odtwarzania książki.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you hold Shift and skip backward",
+     "english": "What happens when you hold Shift and skip backward",
+     "before": "Co się dzieje po przytrzymaniu Shift i przewinięciu do tyłu.",
+     "after": "Określa, co się dzieje po przytrzymaniu Shift i przewinięciu do tyłu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you hold Shift and skip forward",
+     "english": "What happens when you hold Shift and skip forward",
+     "before": "Co się dzieje po przytrzymaniu Shift i przewinięciu do przodu.",
+     "after": "Określa, co się dzieje po przytrzymaniu Shift i przewinięciu do przodu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you skip backward",
+     "english": "What happens when you skip backward",
+     "before": "Co się dzieje po przewinięciu do tyłu.",
+     "after": "Określa, co się dzieje po przewinięciu do tyłu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What happens when you skip forward",
+     "english": "What happens when you skip forward",
+     "before": "Co się dzieje po przewinięciu do przodu.",
+     "after": "Określa, co się dzieje po przewinięciu do przodu.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co się dzieje… alone is a fragment"
+    },
+    {
+     "key": "What to do with the original file after importing a book",
+     "english": "What to do with the original file after importing a book",
+     "before": "Co zrobić z oryginalnym plikiem po zaimportowaniu książki.",
+     "after": "Określa, co zrobić z oryginalnym plikiem po zaimportowaniu książki.",
+     "why": "voiceover: a hint is a sentence that starts with a third-person verb; Co zrobić… alone is a fragment"
+    },
+    {
+     "key": "When checked, matches must use the same upper and lower case",
+     "english": "When checked, matches must use the same upper and lower case",
+     "before": "Gdy zaznaczone, trafienia muszą mieć taką samą wielkość liter.",
+     "after": "Gdy ta opcja jest zaznaczona, trafienia muszą mieć taką samą wielkość liter.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When checked, the search text is an ICU regular expression",
+     "english": "When checked, the search text is an ICU regular expression",
+     "before": "Gdy zaznaczone, szukany tekst jest wyrażeniem regularnym ICU.",
+     "after": "Gdy ta opcja jest zaznaczona, szukany tekst jest wyrażeniem regularnym ICU.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When enabled, search text is treated as a regular expression",
+     "english": "When enabled, search text is treated as a regular expression",
+     "before": "Gdy włączone, szukany tekst jest traktowany jak wyrażenie regularne.",
+     "after": "Gdy ta opcja jest włączona, szukany tekst jest traktowany jak wyrażenie regularne.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When off, its files are deleted permanently and cannot be recovered.",
+     "english": "When off, its files are deleted permanently and cannot be recovered.",
+     "before": "Gdy wyłączone, pliki są trwale usuwane i nie można ich odzyskać.",
+     "after": "Gdy ta opcja jest wyłączona, pliki są trwale usuwane i nie można ich odzyskać.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When off, removing a book will %@ at once.",
+     "english": "When off, removing a book will %@ at once.",
+     "before": "Gdy wyłączone, usunięcie książki od razu powoduje: %@.",
+     "after": "Gdy ta opcja jest wyłączona, usunięcie książki od razu powoduje: %@.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When off, the sheet stays open showing the remaining time and a reset button",
+     "english": "When off, the sheet stays open showing the remaining time and a reset button",
+     "before": "Gdy wyłączone, arkusz pozostaje otwarty i pokazuje pozostały czas oraz przycisk resetowania.",
+     "after": "Gdy ta opcja jest wyłączona, arkusz pozostaje otwarty i pokazuje pozostały czas oraz przycisk resetowania.",
+     "why": "grammar: Gdy wyłączone without a subject copies the English When off; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Gdy włączone, pliki usuniętej książki trafiają do kosza, skąd można je odzyskać do czasu opróżnienia kosza.",
+     "after": "Gdy ta opcja jest włączona, pliki usuniętej książki trafiają do kosza, skąd można je odzyskać do czasu opróżnienia kosza.",
+     "why": "grammar: Gdy włączone/zaznaczone without a subject copies the English When on; Polish needs Gdy ta opcja jest …"
+    },
+    {
+     "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Gdy włączone, usunięcie książki najpierw pyta, czy wybrać %@, czy zachować pliki w folderze biblioteki TextMouth.",
+     "after": "Gdy ta opcja jest włączona, przed usunięciem książki TextMouth pyta, czy wybrać %@, czy zachować pliki w folderze biblioteki TextMouth.",
+     "why": "grammar: Gdy włączone has no subject, and usunięcie książki pyta (the removal asks) reads oddly; TextMouth asks before the removal"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "Gdzie TextMouth zapisuje swoje dzienniki diagnostyczne. %1$@ przechowuje je razem z książkami, więc przenoszą się i synchronizują z biblioteką. %2$@ przechowuje je w %3$@, który nigdy się nie synchronizuje. Zmiana działa od następnego wiersza; istniejące dzienniki pozostają.",
+     "after": "Określa, gdzie TextMouth zapisuje swoje dzienniki diagnostyczne. Opcja %1$@ przechowuje je razem z książkami, więc przenoszą się i synchronizują z biblioteką. Opcja %2$@ przechowuje je w %3$@, który nigdy się nie synchronizuje. Zmiana działa od następnego wiersza; istniejące dzienniki pozostają.",
+     "why": "grammar: the choice names (Wewnątrz folderu danych, W folderze Dzienniki…) read as adverbs, not subjects, until Opcja names them; the hint now starts with a verb"
+    },
+    {
+     "key": "“%@” is being exported. %@, then %@.",
+     "english": "“%1$@” is being exported. %2$@, then %3$@.",
+     "before": "„%1$@” jest eksportowana. %2$@, a potem %3$@.",
+     "after": "Książka „%1$@” jest eksportowana. %2$@, a potem %3$@.",
+     "why": "grammar: the feminine jest eksportowana cannot agree with every title (Pan Tadeusz); Książka carries the gender"
+    },
+    {
+     "key": "“%@” is now read as %@.",
+     "english": "“%1$@” is now read as %2$@.",
+     "before": "„%1$@” jest teraz odczytywana jako: %2$@.",
+     "after": "Książka „%1$@” jest teraz odczytywana jako: %2$@.",
+     "why": "grammar: the feminine odczytywana cannot agree with every title; Książka carries the gender"
+    }
+   ]
+  }
+ ]
+}
