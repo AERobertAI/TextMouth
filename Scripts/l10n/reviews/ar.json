@@ -1,0 +1,602 @@
+{
+ "language": "ar",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ Copy %@",
+     "english": "%1$@ Copy %2$@",
+     "before": "نسخة من %1$@ %2$@",
+     "after": "نسخة %2$@ من %1$@",
+     "why": "meaning: the number of the copy read as part of the name of the view; it now follows the word copy"
+    },
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "few": "يحتوي %@ أيضًا على %lld كتب من إضافة إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها.",
+      "many": "يحتوي %@ أيضًا على %lld كتابًا من إضافة إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها.",
+      "one": "يحتوي %@ أيضًا على %lld كتاب من إضافة إصدار أحدث من TextMouth، وسيتم الاحتفاظ به.",
+      "other": "يحتوي %@ أيضًا على %lld كتاب من إضافة إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها.",
+      "two": "يحتوي %@ أيضًا على %lld كتابين من إضافة إصدار أحدث من TextMouth، وسيتم الاحتفاظ بهما.",
+      "zero": "يحتوي %@ أيضًا على %lld كتب من إضافة إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها."
+     },
+     "after": {
+      "zero": "يحتوي %@ أيضًا على %lld كتب أضافها إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها.",
+      "one": "يحتوي %@ أيضًا على %lld كتاب أضافه إصدار أحدث من TextMouth، وسيتم الاحتفاظ به.",
+      "two": "يحتوي %@ أيضًا على %lld كتابين أضافهما إصدار أحدث من TextMouth، وسيتم الاحتفاظ بهما.",
+      "few": "يحتوي %@ أيضًا على %lld كتب أضافها إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها.",
+      "many": "يحتوي %@ أيضًا على %lld كتابًا أضافها إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها.",
+      "other": "يحتوي %@ أيضًا على %lld كتاب أضافها إصدار أحدث من TextMouth، وسيتم الاحتفاظ بها."
+     },
+     "why": "natural: books from the adding of a newer version becomes books a newer version added"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "english": "%@ may be signed out or not running.",
+     "before": "ربما تم تسجيل الخروج من %@ أو أنه غير قيد التشغيل.",
+     "after": "ربما تم تسجيل الخروج من %@ أو أنه ليس قيد التشغيل.",
+     "why": "grammar: ghayr qayd al-tashghil is not Arabic; a prepositional phrase is negated with laysa"
+    },
+    {
+     "key": "%lld books are kept on this Mac",
+     "english": {
+      "one": "%lld book is kept on this Mac",
+      "other": "%lld books are kept on this Mac"
+     },
+     "before": {
+      "few": "%lld كتب محتفظ بها على هذا الـ Mac",
+      "many": "%lld كتابًا محتفظ به على هذا الـ Mac",
+      "one": "%lld كتاب محتفظ به على هذا الـ Mac",
+      "other": "%lld كتاب محتفظ به على هذا الـ Mac",
+      "two": "%lld كتابان محتفظ بهما على هذا الـ Mac",
+      "zero": "%lld كتب محتفظ بها على هذا الـ Mac"
+     },
+     "after": {
+      "zero": "%lld كتب محتفظ بها على هذا الـ Mac",
+      "one": "%lld كتاب محتفظ به على هذا الـ Mac",
+      "two": "%lld كتابان محتفظ بهما على هذا الـ Mac",
+      "few": "%lld كتب محتفظ بها على هذا الـ Mac",
+      "many": "%lld كتابًا محتفظًا به على هذا الـ Mac",
+      "other": "%lld كتاب محتفظ به على هذا الـ Mac"
+     },
+     "why": "grammar: in the many form the participle after kitaban must take the accusative too (muhtafazan)"
+    },
+    {
+     "key": "%lld books in the cloud were skipped.",
+     "english": {
+      "one": "%lld book in the cloud was skipped.",
+      "other": "%lld books in the cloud were skipped."
+     },
+     "before": {
+      "few": "تم تخطي %lld كتب موجودة في السحابة.",
+      "many": "تم تخطي %lld كتابًا موجود في السحابة.",
+      "one": "تم تخطي %lld كتاب موجود في السحابة.",
+      "other": "تم تخطي %lld كتاب موجود في السحابة.",
+      "two": "تم تخطي %lld كتابين موجودين في السحابة.",
+      "zero": "تم تخطي %lld كتب موجودة في السحابة."
+     },
+     "after": {
+      "zero": "تم تخطي %lld كتب موجودة في السحابة.",
+      "one": "تم تخطي %lld كتاب موجود في السحابة.",
+      "two": "تم تخطي %lld كتابين موجودين في السحابة.",
+      "few": "تم تخطي %lld كتب موجودة في السحابة.",
+      "many": "تم تخطي %lld كتابًا موجودًا في السحابة.",
+      "other": "تم تخطي %lld كتاب موجود في السحابة."
+     },
+     "why": "grammar: in the many form the adjective after kitaban must take the accusative too (mawjudan)"
+    },
+    {
+     "key": "%lld books kept on this Mac",
+     "english": {
+      "one": "%lld book kept on this Mac",
+      "other": "%lld books kept on this Mac"
+     },
+     "before": {
+      "few": "%lld كتب محتفظ بها على هذا الـ Mac",
+      "many": "%lld كتابًا محتفظ به على هذا الـ Mac",
+      "one": "%lld كتاب محتفظ به على هذا الـ Mac",
+      "other": "%lld كتاب محتفظ به على هذا الـ Mac",
+      "two": "%lld كتابان محتفظ بهما على هذا الـ Mac",
+      "zero": "%lld كتب محتفظ بها على هذا الـ Mac"
+     },
+     "after": {
+      "zero": "%lld كتب محتفظ بها على هذا الـ Mac",
+      "one": "%lld كتاب محتفظ به على هذا الـ Mac",
+      "two": "%lld كتابان محتفظ بهما على هذا الـ Mac",
+      "few": "%lld كتب محتفظ بها على هذا الـ Mac",
+      "many": "%lld كتابًا محتفظًا به على هذا الـ Mac",
+      "other": "%lld كتاب محتفظ به على هذا الـ Mac"
+     },
+     "why": "grammar: in the many form the participle after kitaban must take the accusative too (muhtafazan)"
+    },
+    {
+     "key": "%lld books whose edited text can't be used yet were skipped.",
+     "english": {
+      "one": "%lld book whose edited text can't be used yet was skipped.",
+      "other": "%lld books whose edited text can't be used yet were skipped."
+     },
+     "before": {
+      "few": "تم تخطي %lld كتب لا يمكن استخدام نصه المحرَّر بعد.",
+      "many": "تم تخطي %lld كتابًا لا يمكن استخدام نصه المحرَّر بعد.",
+      "one": "تم تخطي %lld كتاب لا يمكن استخدام نصه المحرَّر بعد.",
+      "other": "تم تخطي %lld كتاب لا يمكن استخدام نصه المحرَّر بعد.",
+      "two": "تم تخطي %lld كتابين لا يمكن استخدام نصه المحرَّر بعد.",
+      "zero": "تم تخطي %lld كتب لا يمكن استخدام نصه المحرَّر بعد."
+     },
+     "after": {
+      "zero": "تم تخطي %lld كتب لا يمكن استخدام نصها المحرَّر بعد.",
+      "one": "تم تخطي %lld كتاب لا يمكن استخدام نصه المحرَّر بعد.",
+      "two": "تم تخطي %lld كتابين لا يمكن استخدام نصهما المحرَّر بعد.",
+      "few": "تم تخطي %lld كتب لا يمكن استخدام نصها المحرَّر بعد.",
+      "many": "تم تخطي %lld كتابًا لا يمكن استخدام نصها المحرَّر بعد.",
+      "other": "تم تخطي %lld كتاب لا يمكن استخدام نصها المحرَّر بعد."
+     },
+     "why": "grammar: the pronoun of its edited text was singular in every form; plural books take -ha, two books -huma"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "دائمًا يعرض العرض طوال الوقت. عند الحاجة يعرضه فقط أثناء وجود شيء فيه: قائمة القراءة أثناء احتوائها على كتاب أو حلقة أو مقالة، والموجزات أثناء وجود موجز. مخفي يستبعده. تحتفظ النافذة بعرضها إلى أن تختار عرضًا آخر.",
+     "after": "“دائمًا” يعرض العرض طوال الوقت. “عند الحاجة” يعرضه فقط أثناء وجود شيء فيه: قائمة القراءة أثناء احتوائها على كتاب أو حلقة أو مقالة، والموجزات أثناء وجود موجز. “مخفي” يستبعده. تحتفظ النافذة بعرضها إلى أن تختار عرضًا آخر.",
+     "why": "natural: the option names began sentences as plain words (hidden excludes it); quoted as names"
+    },
+    {
+     "key": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "english": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "before": "ابدأ التشغيل تلقائيًا عند الانتقال إلى عنوان رئيسي أو إشارة مرجعية أو نتيجة بحث.",
+     "after": "يبدأ التشغيل تلقائيًا عند الانتقال إلى عنوان رئيسي أو إشارة مرجعية أو نتيجة بحث.",
+     "why": "meaning: the explanation of the setting was an imperative telling the listener to start playing; now says what the setting does"
+    },
+    {
+     "key": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "english": "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again.",
+     "before": "لا يمكن نقل الكتب في هذا العرض. انتقل إلى مجلد في المجلدات، أو إلى قائمة القراءة، ثم حاول مرة أخرى.",
+     "after": "لا يمكن نقل الكتب في هذا العرض. انتقل إلى مجلد في عرض المجلدات، أو إلى قائمة القراءة، ثم حاول مرة أخرى.",
+     "why": "natural: a folder in the folders did not name the Folders view"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "few": "لكن %@ يحتوي أيضًا على %lld كتب من إضافة إصدار أحدث من TextMouth: ستبقى في مكانها، وكذلك كل مجلد يحتوي عليها.",
+      "many": "لكن %@ يحتوي أيضًا على %lld كتابًا من إضافة إصدار أحدث من TextMouth: ستبقى في مكانها، وكذلك كل مجلد يحتوي عليها.",
+      "one": "لكن %@ يحتوي أيضًا على %lld كتاب من إضافة إصدار أحدث من TextMouth: سيبقى في مكانه، وكذلك كل مجلد يحتوي عليه.",
+      "other": "لكن %@ يحتوي أيضًا على %lld كتاب من إضافة إصدار أحدث من TextMouth: سيبقى في مكانه، وكذلك كل مجلد يحتوي عليه.",
+      "two": "لكن %@ يحتوي أيضًا على %lld كتابين من إضافة إصدار أحدث من TextMouth: سيبقيان في مكانهما، وكذلك كل مجلد يحتوي عليهما.",
+      "zero": "لكن %@ يحتوي أيضًا على %lld كتب من إضافة إصدار أحدث من TextMouth: ستبقى في مكانها، وكذلك كل مجلد يحتوي عليها."
+     },
+     "after": {
+      "zero": "لكن %@ يحتوي أيضًا على %lld كتب أضافها إصدار أحدث من TextMouth: ستبقى في مكانها، وكذلك كل مجلد يحتوي على أي منها.",
+      "one": "لكن %@ يحتوي أيضًا على %lld كتاب أضافه إصدار أحدث من TextMouth: سيبقى في مكانه، وكذلك كل مجلد يحتوي عليه.",
+      "two": "لكن %@ يحتوي أيضًا على %lld كتابين أضافهما إصدار أحدث من TextMouth: سيبقيان في مكانهما، وكذلك كل مجلد يحتوي على أي منهما.",
+      "few": "لكن %@ يحتوي أيضًا على %lld كتب أضافها إصدار أحدث من TextMouth: ستبقى في مكانها، وكذلك كل مجلد يحتوي على أي منها.",
+      "many": "لكن %@ يحتوي أيضًا على %lld كتابًا أضافها إصدار أحدث من TextMouth: ستبقى في مكانها، وكذلك كل مجلد يحتوي على أي منها.",
+      "other": "لكن %@ يحتوي أيضًا على %lld كتاب أضافها إصدار أحدث من TextMouth: ستبقى في مكانها، وكذلك كل مجلد يحتوي على أي منها."
+     },
+     "why": "grammar: the other form (100 and up) said it stays for many books; also from the adding of, and holds any of them"
+    },
+    {
+     "key": "Close search and return to the book",
+     "english": "Close search and return to the book",
+     "before": "يغلق البحث ويعود إلى الكتاب",
+     "after": "يغلق البحث ويعود إلى الكتاب.",
+     "why": "punctuation: a hint ends with a period, as the other hints do"
+    },
+    {
+     "key": "Could not discard duplicate import",
+     "english": "Could not discard duplicate import",
+     "before": "تعذّر تجاهل الاستيراد المكرر",
+     "after": "تعذّر التخلص من الاستيراد المكرر",
+     "why": "meaning: tajahul (ignore) for discarding the new copy, which is thrown away; now get rid of"
+    },
+    {
+     "key": "Could not open the text in an editor, because no app opened its file.",
+     "english": "Could not open the text in an editor, because no app opened its file.",
+     "before": "تعذّر فتح النص في محرر، لأن أي تطبيق لم يفتح ملفه.",
+     "after": "تعذّر فتح النص في محرر، لأنه لم يفتح أي تطبيق ملفه.",
+     "why": "natural: because any app did not open its file is a calque of the English negation; now because no app opened it"
+    },
+    {
+     "key": "Deleted %@. %@ selected, %lld of %lld.",
+     "english": "Deleted %1$@. %2$@ selected, %3$lld of %4$lld.",
+     "before": "تم حذف %1$@. %2$@ محدد، %3$lld من %4$lld.",
+     "after": "تم حذف %1$@. تم تحديد %2$@، %3$lld من %4$lld.",
+     "why": "grammar: the participle selected could not agree with every view name (Feeds selected read masculine singular); now a verb phrase"
+    },
+    {
+     "key": "Enter or paste the text for the new book",
+     "english": "Enter or paste the text for the new book",
+     "before": "أدخل نص الكتاب الجديد أو الصقه",
+     "after": "أدخل نص الكتاب الجديد أو الصقه.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "Feeds are always listed by title",
+     "english": "Feeds are always listed by title",
+     "before": "تُسرد الموجزات دائمًا حسب العنوان",
+     "after": "تُسرد الموجزات دائمًا حسب العنوان.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "First in the Sort",
+     "english": "First in the Sort",
+     "before": "أولًا في الترتيب",
+     "after": "الأول في الترتيب",
+     "why": "natural: the pop-up said awlan (an adverb) where the description of the same option says al-awwal, like its sister options al-mudaf akhiran and al-maftuh akhiran"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "المجلدات تظهر دائمًا: يُفتح كل مجلد وموجز هناك.",
+     "after": "يظهر عرض المجلدات دائمًا: يُفتح فيه كل مجلد وموجز.",
+     "why": "natural: the Folders view read as the folders (plural) appear always; now names the view"
+    },
+    {
+     "key": "It may be paused, signed out, or not running.",
+     "english": "It may be paused, signed out, or not running.",
+     "before": "ربما تكون الخدمة متوقفة مؤقتًا أو مسجّلة الخروج أو غير قيد التشغيل.",
+     "after": "ربما تكون الخدمة متوقفة مؤقتًا أو مسجّلة الخروج أو ليست قيد التشغيل.",
+     "why": "grammar: ghayr qayd al-tashghil is not Arabic; a prepositional phrase is negated with laysa (here laysat, the service)"
+    },
+    {
+     "key": "Manual order has no direction",
+     "english": "Manual order has no direction",
+     "before": "الترتيب اليدوي بلا اتجاه",
+     "after": "الترتيب اليدوي بلا اتجاه.",
+     "why": "punctuation: a hint ends with a period, as the other hints do"
+    },
+    {
+     "key": "Neither is newer: each has changes the other lacks.",
+     "english": "Neither is newer: each has changes the other lacks.",
+     "before": "لا أحد منهما أحدث: لدى كل منهما تغييرات ليست لدى الأخرى.",
+     "after": "ليست أي منهما أحدث: لدى كل منهما تغييرات ليست لدى الأخرى.",
+     "why": "grammar: la ahad (nobody) is said of people, and its masculine clashed with the feminine al-ukhra; now neither of the two copies"
+    },
+    {
+     "key": "None of the %lld selected books is kept on this Mac.",
+     "english": {
+      "one": "None of the %lld selected books is kept on this Mac.",
+      "other": "None of the %lld selected books is kept on this Mac."
+     },
+     "before": {
+      "few": "لا يُحتفَظ على هذا الـ Mac بأي من الكتب المحددة وعددها %lld.",
+      "many": "لا يُحتفَظ على هذا الـ Mac بأي من الكتب المحددة وعددها %lld.",
+      "one": "لا يُحتفَظ على هذا الـ Mac بالكتاب المحدد (%lld).",
+      "other": "لا يُحتفَظ على هذا الـ Mac بالكتاب المحدد (%lld).",
+      "two": "لا يُحتفَظ على هذا الـ Mac بأي من الكتابين المحددين (%lld).",
+      "zero": "لا يُحتفَظ على هذا الـ Mac بأي كتاب من الكتب المحددة وعددها %lld."
+     },
+     "after": {
+      "zero": "لا يُحتفَظ على هذا الـ Mac بأي كتاب من الكتب المحددة وعددها %lld.",
+      "one": "لا يُحتفَظ على هذا الـ Mac بالكتاب المحدد (%lld).",
+      "two": "لا يُحتفَظ على هذا الـ Mac بأي من الكتابين المحددين (%lld).",
+      "few": "لا يُحتفَظ على هذا الـ Mac بأي من الكتب المحددة وعددها %lld.",
+      "many": "لا يُحتفَظ على هذا الـ Mac بأي من الكتب المحددة وعددها %lld.",
+      "other": "لا يُحتفَظ على هذا الـ Mac بأي من الكتب المحددة وعددها %lld."
+     },
+     "why": "grammar: the other form (100 and up) said the selected book, singular, as if one book; now any of the selected books, like few and many"
+    },
+    {
+     "key": "Position in %@: differs, and both were saved at the same time.",
+     "english": "Position in %@: differs, and both were saved at the same time.",
+     "before": "الموضع في %@: مختلف، وقد حُفظ في الوقت نفسه.",
+     "after": "الموضع في %@: مختلف، وقد حُفظ كلاهما في الوقت نفسه.",
+     "why": "meaning: both were saved at the same time had become it was saved at the same time"
+    },
+    {
+     "key": "Remove Downloads of %lld Books",
+     "english": {
+      "one": "Remove Download of %lld Book",
+      "other": "Remove Downloads of %lld Books"
+     },
+     "before": {
+      "few": "إزالة تنزيلات %lld كتب",
+      "many": "إزالة تنزيلات %lld كتابًا",
+      "one": "إزالة تنزيلات %lld كتاب",
+      "other": "إزالة تنزيلات %lld كتاب",
+      "two": "إزالة تنزيلات %lld كتابين",
+      "zero": "إزالة تنزيلات %lld كتب"
+     },
+     "after": {
+      "zero": "إزالة تنزيلات %lld كتب",
+      "one": "إزالة تنزيل %lld كتاب",
+      "two": "إزالة تنزيلات %lld كتابين",
+      "few": "إزالة تنزيلات %lld كتب",
+      "many": "إزالة تنزيلات %lld كتابًا",
+      "other": "إزالة تنزيلات %lld كتاب"
+     },
+     "why": "grammar: the one form said downloads (plural) of one book, where the English says Download"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "إيقاف، ويبدأ التشغيل من جديد",
+     "after": "إيقاف، ويبدأ “تشغيل” من البداية",
+     "why": "meaning: and playback starts again read as the book playing again by itself; it is the Play command that starts the book over"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "أزله من قائمة القراءة، أو امسح %@ في خيارات قائمة القراءة أولًا.",
+     "after": "أزله من قائمة القراءة، أو ألغِ تحديد %@ في خيارات قائمة القراءة أولًا.",
+     "why": "meaning: clear an option (a checkbox) had become erase it; now uncheck it"
+    },
+    {
+     "key": "TextMouth could not record the removal in its package, %@.",
+     "english": "TextMouth could not record the removal in its package, %@.",
+     "before": "لم يتمكن TextMouth من تسجيل الإزالة في حزمته، %@.",
+     "after": "لم يتمكن TextMouth من تسجيل الإزالة في حزمة الكتاب، %@.",
+     "why": "meaning: in its package read as the package of TextMouth; it is the package of the book"
+    },
+    {
+     "key": "TextMouth moves them back once it has finished moving books between folders.",
+     "english": "TextMouth moves them back once it has finished moving books between folders.",
+     "before": "ينقلها TextMouth مرة أخرى بعد انتهاء نقل الكتب بين المجلدات.",
+     "after": "يعيدها TextMouth إلى مكانها بعد انتهاء نقل الكتب بين المجلدات.",
+     "why": "meaning: moves them back had become moves them once more; now returns them to their place"
+    },
+    {
+     "key": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "english": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "before": "ينقلها TextMouth مرة أخرى بعد انتهاء إعادة بناء مجلد بياناته.",
+     "after": "يعيدها TextMouth إلى مكانها بعد انتهاء إعادة بناء مجلد بياناته.",
+     "why": "meaning: moves them back had become moves them once more; now returns them to their place"
+    },
+    {
+     "key": "TextMouth moves them back once the move of its data directory ends.",
+     "english": "TextMouth moves them back once the move of its data directory ends.",
+     "before": "ينقلها TextMouth مرة أخرى بمجرد انتهاء نقل مجلد بياناته.",
+     "after": "يعيدها TextMouth إلى مكانها بمجرد انتهاء نقل مجلد بياناته.",
+     "why": "meaning: moves them back had become moves them once more; now returns them to their place"
+    },
+    {
+     "key": "The %lld selected books are already kept on this Mac.",
+     "english": {
+      "one": "The %lld selected book is already kept on this Mac.",
+      "other": "The %lld selected books are already kept on this Mac."
+     },
+     "before": {
+      "few": "الكتب المحددة وعددها %lld محتفَظ بها بالفعل على هذا الـ Mac.",
+      "many": "الكتب المحددة وعددها %lld محتفَظ بها بالفعل على هذا الـ Mac.",
+      "one": "الكتاب المحدد (%lld) محتفَظ به بالفعل على هذا الـ Mac.",
+      "other": "الكتاب المحدد (%lld) محتفَظ به بالفعل على هذا الـ Mac.",
+      "two": "الكتابان المحددان (%lld) محتفَظ بهما بالفعل على هذا الـ Mac.",
+      "zero": "الكتب المحددة وعددها %lld محتفَظ بها بالفعل على هذا الـ Mac."
+     },
+     "after": {
+      "zero": "الكتب المحددة وعددها %lld محتفَظ بها بالفعل على هذا الـ Mac.",
+      "one": "الكتاب المحدد (%lld) محتفَظ به بالفعل على هذا الـ Mac.",
+      "two": "الكتابان المحددان (%lld) محتفَظ بهما بالفعل على هذا الـ Mac.",
+      "few": "الكتب المحددة وعددها %lld محتفَظ بها بالفعل على هذا الـ Mac.",
+      "many": "الكتب المحددة وعددها %lld محتفَظ بها بالفعل على هذا الـ Mac.",
+      "other": "الكتب المحددة وعددها %lld محتفَظ بها بالفعل على هذا الـ Mac."
+     },
+     "why": "grammar: the other form (100 and up) said the selected book, singular, as if one book"
+    },
+    {
+     "key": "The %lld selected books are kept on this Mac for the reading list.",
+     "english": {
+      "one": "The %lld selected book is kept on this Mac for the reading list.",
+      "other": "The %lld selected books are kept on this Mac for the reading list."
+     },
+     "before": {
+      "few": "الكتب المحددة وعددها %lld محتفَظ بها على هذا الـ Mac من أجل قائمة القراءة.",
+      "many": "الكتب المحددة وعددها %lld محتفَظ بها على هذا الـ Mac من أجل قائمة القراءة.",
+      "one": "الكتاب المحدد (%lld) محتفَظ به على هذا الـ Mac من أجل قائمة القراءة.",
+      "other": "الكتاب المحدد (%lld) محتفَظ به على هذا الـ Mac من أجل قائمة القراءة.",
+      "two": "الكتابان المحددان (%lld) محتفَظ بهما على هذا الـ Mac من أجل قائمة القراءة.",
+      "zero": "الكتب المحددة وعددها %lld محتفَظ بها على هذا الـ Mac من أجل قائمة القراءة."
+     },
+     "after": {
+      "zero": "الكتب المحددة وعددها %lld محتفَظ بها على هذا الـ Mac من أجل قائمة القراءة.",
+      "one": "الكتاب المحدد (%lld) محتفَظ به على هذا الـ Mac من أجل قائمة القراءة.",
+      "two": "الكتابان المحددان (%lld) محتفَظ بهما على هذا الـ Mac من أجل قائمة القراءة.",
+      "few": "الكتب المحددة وعددها %lld محتفَظ بها على هذا الـ Mac من أجل قائمة القراءة.",
+      "many": "الكتب المحددة وعددها %lld محتفَظ بها على هذا الـ Mac من أجل قائمة القراءة.",
+      "other": "الكتب المحددة وعددها %lld محتفَظ بها على هذا الـ Mac من أجل قائمة القراءة."
+     },
+     "why": "grammar: the other form (100 and up) said the selected book, singular, as if one book"
+    },
+    {
+     "key": "The book %@ is stored at %@, outside the data directory, so the move cannot carry it.",
+     "english": "The book %1$@ is stored at %2$@, outside the data directory, so the move cannot carry it.",
+     "before": "الكتاب %@ مخزّن في %@، خارج مجلد البيانات، لذا لا يمكن للنقل حمله.",
+     "after": "الكتاب %@ مخزّن في %@، خارج مجلد البيانات، لذا لا يشمله النقل.",
+     "why": "natural: the move cannot carry it was a word-for-word calque; now the move does not include it"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "تتم ترجمة برايل إلى الطباعة مرة أخرى بهذا الرمز. لا شيء يتحقق من أنه الاختيار الصحيح. إذا قُرئت الكلمات بشكل خاطئ، فاختر غيره.",
+     "after": "تتم ترجمة برايل مرة أخرى إلى نص عادي بهذا الرمز. لا شيء يتحقق من أنه الاختيار الصحيح. إذا قُرئت الكلمات بشكل خاطئ، فاختر غيره.",
+     "why": "meaning: translated to print (print text, not braille) had become translated to printing"
+    },
+    {
+     "key": "The copy made in the library did not match the original, so the copy was discarded.",
+     "english": "The copy made in the library did not match the original, so the copy was discarded.",
+     "before": "لم تطابق النسخة المنشأة في المكتبة الأصل، لذا تم تجاهل النسخة.",
+     "after": "لم تطابق النسخة المنشأة في المكتبة الأصل، لذا تم التخلص من النسخة.",
+     "why": "meaning: tajahul (ignore) for a copy that was thrown away; now get rid of"
+    },
+    {
+     "key": "The library can't move while a book is open. Close %@ first.",
+     "english": "The library can't move while a book is open. Close %@ first.",
+     "before": "لا يمكن نقل المكتبة بينما كتاب مفتوح. أغلق %@ أولًا.",
+     "after": "لا يمكن نقل المكتبة بينما يوجد كتاب مفتوح. أغلق %@ أولًا.",
+     "why": "grammar: a nominal clause cannot start with an indefinite subject (baynama kitab maftuh); now baynama yujad"
+    },
+    {
+     "key": "The library can't move while a book is open. Close it first.",
+     "english": "The library can't move while a book is open. Close it first.",
+     "before": "لا يمكن نقل المكتبة بينما كتاب مفتوح. أغلقه أولًا.",
+     "after": "لا يمكن نقل المكتبة بينما يوجد كتاب مفتوح. أغلقه أولًا.",
+     "why": "grammar: a nominal clause cannot start with an indefinite subject (baynama kitab maftuh); now baynama yujad"
+    },
+    {
+     "key": "The library can't move while books are open.",
+     "english": "The library can't move while books are open.",
+     "before": "لا يمكن نقل المكتبة بينما كتب مفتوحة.",
+     "after": "لا يمكن نقل المكتبة بينما توجد كتب مفتوحة.",
+     "why": "grammar: a nominal clause cannot start with an indefinite subject (baynama kutub maftuha); now baynama tujad"
+    },
+    {
+     "key": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "english": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "before": "لن يحتوي عليها: قائمة القراءة، وإعدادات الفرز وخيارات الاستماع للمجلدات، وأي كتاب ملفاته ليست في هذا المجلد بعد.",
+     "after": "لن يحتوي على قائمة القراءة، ولا على إعدادات الفرز وخيارات الاستماع للمجلدات، ولا على أي كتاب ملفاته ليست في هذا المجلد بعد.",
+     "why": "natural: a pronoun pointing ahead to a list after a colon (it will not hold them: ...); now it will not hold X, nor Y, nor Z"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "ثم أزله من قائمة القراءة، أو امسح %@ في خيارات قائمة القراءة.",
+     "after": "ثم أزله من قائمة القراءة، أو ألغِ تحديد %@ في خيارات قائمة القراءة.",
+     "why": "meaning: clear an option (a checkbox) had become erase it; now uncheck it"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "few": "لا يوجد عرض %@. يتيح الانتقال إلى عرض الوصول إلى %lld عروض.",
+      "many": "لا يوجد عرض %@. يتيح الانتقال إلى عرض الوصول إلى %lld عرضًا.",
+      "one": "لا يوجد عرض %@. يتيح الانتقال إلى عرض الوصول إلى %lld عرض.",
+      "other": "لا يوجد عرض %@. يتيح الانتقال إلى عرض الوصول إلى %lld عرض.",
+      "two": "لا يوجد عرض %@. يتيح الانتقال إلى عرض الوصول إلى %lld عرضين.",
+      "zero": "لا يوجد عرض %@. يتيح الانتقال إلى عرض الوصول إلى %lld عروض."
+     },
+     "after": {
+      "zero": "لا يوجد عرض %@. يتيح “الانتقال إلى عرض” الوصول إلى %lld عروض.",
+      "one": "لا يوجد عرض %@. يتيح “الانتقال إلى عرض” الوصول إلى %lld عرض.",
+      "two": "لا يوجد عرض %@. يتيح “الانتقال إلى عرض” الوصول إلى %lld عرضين.",
+      "few": "لا يوجد عرض %@. يتيح “الانتقال إلى عرض” الوصول إلى %lld عروض.",
+      "many": "لا يوجد عرض %@. يتيح “الانتقال إلى عرض” الوصول إلى %lld عرضًا.",
+      "other": "لا يوجد عرض %@. يتيح “الانتقال إلى عرض” الوصول إلى %lld عرض."
+     },
+     "why": "natural: the command name Go to View read as a phrase (going to a view lets you reach); quoted as a name"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "لإتاحة التخلي عنه، أزله من قائمة القراءة، أو امسح %@ في خيارات قائمة القراءة.",
+     "after": "لإيقاف الاحتفاظ به، أزله من قائمة القراءة، أو ألغِ تحديد %@ في خيارات قائمة القراءة.",
+     "why": "meaning: clear an option had become erase it; and to allow abandoning it is now to stop keeping it, the words of the command"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "لإتاحة التخلي عنها، أزلها من قائمة القراءة، أو امسح %@ في خيارات قائمة القراءة.",
+     "after": "لإيقاف الاحتفاظ بها، أزلها من قائمة القراءة، أو ألغِ تحديد %@ في خيارات قائمة القراءة.",
+     "why": "meaning: clear an option had become erase it; and to allow abandoning them is now to stop keeping them, the words of the command"
+    },
+    {
+     "key": "Type to search the book's transcript",
+     "english": "Type to search the book's transcript",
+     "before": "اكتب للبحث في النسخة النصية للكتاب",
+     "after": "اكتب للبحث في النسخة النصية للكتاب.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "Type to search the text of every book in the library",
+     "english": "Type to search the text of every book in the library",
+     "before": "اكتب للبحث في نص كل كتاب في المكتبة",
+     "after": "اكتب للبحث في نص كل كتاب في المكتبة.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "Type to search within the book",
+     "english": "Type to search within the book",
+     "before": "اكتب للبحث داخل الكتاب",
+     "after": "اكتب للبحث داخل الكتاب.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "When checked, matches must use the same upper and lower case",
+     "english": "When checked, matches must use the same upper and lower case",
+     "before": "عند التحديد، يجب أن تستخدم المطابقات حالة الأحرف نفسها",
+     "after": "عند التحديد، يجب أن تستخدم المطابقات حالة الأحرف نفسها.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "When checked, the search text is an ICU regular expression",
+     "english": "When checked, the search text is an ICU regular expression",
+     "before": "عند التحديد، يكون نص البحث تعبيرًا نمطيًا بصيغة ICU",
+     "after": "عند التحديد، يكون نص البحث تعبيرًا نمطيًا بصيغة ICU.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result",
+     "english": "When enabled, playback starts automatically after jumping to a heading, bookmark, or search result",
+     "before": "عند التفعيل، يبدأ التشغيل تلقائيًا بعد الانتقال إلى عنوان رئيسي أو إشارة مرجعية أو نتيجة بحث",
+     "after": "عند التفعيل، يبدأ التشغيل تلقائيًا بعد الانتقال إلى عنوان رئيسي أو إشارة مرجعية أو نتيجة بحث.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "When enabled, search text is treated as a regular expression",
+     "english": "When enabled, search text is treated as a regular expression",
+     "before": "عند التفعيل، يُعامل نص البحث على أنه تعبير نمطي",
+     "after": "عند التفعيل، يُعامل نص البحث على أنه تعبير نمطي.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "When enabled, use \\b in the pattern for word boundaries",
+     "english": "When enabled, use \\b in the pattern for word boundaries",
+     "before": "عند التفعيل، استخدم \\b في النمط لحدود الكلمات",
+     "after": "عند التفعيل، استخدم \\b في النمط لحدود الكلمات.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "When off, the sheet stays open showing the remaining time and a reset button",
+     "english": "When off, the sheet stays open showing the remaining time and a reset button",
+     "before": "عند الإيقاف، تبقى الورقة مفتوحة وتعرض الوقت المتبقي وزر إعادة الضبط",
+     "after": "عند الإيقاف، تبقى الورقة مفتوحة وتعرض الوقت المتبقي وزر إعادة الضبط.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "When resuming playback, rewind to the start of this unit",
+     "english": "When resuming playback, rewind to the start of this unit",
+     "before": "عند استئناف التشغيل، يرجّع إلى بداية هذه الوحدة",
+     "after": "عند استئناف التشغيل، يرجّع إلى بداية هذه الوحدة.",
+     "why": "punctuation: a hint ends with a period, as the other hints of this part do"
+    },
+    {
+     "key": "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again.",
+     "english": "iCloud Drive may be turned off or signed out, or this Mac may be offline. Check that, then choose Try Again.",
+     "before": "قد يكون iCloud Drive متوقفًا أو مسجّلًا للخروج، أو قد يكون هذا الـ Mac غير متصل بالإنترنت. تحقق من ذلك، ثم اختر “إعادة المحاولة”.",
+     "after": "قد يكون iCloud Drive متوقفًا أو لم يُسجَّل الدخول إليه، أو قد يكون هذا الـ Mac غير متصل بالإنترنت. تحقق من ذلك، ثم اختر “إعادة المحاولة”.",
+     "why": "natural: musajjalan lil-khuruj (registered for exit) is not how Arabic says signed out; now not signed in"
+    },
+    {
+     "key": "iCloud Drive may be turned off or signed out.",
+     "english": "iCloud Drive may be turned off or signed out.",
+     "before": "قد يكون iCloud Drive متوقفًا أو مسجّلًا للخروج.",
+     "after": "قد يكون iCloud Drive متوقفًا أو لم يُسجَّل الدخول إليه.",
+     "why": "natural: musajjalan lil-khuruj (registered for exit) is not how Arabic says signed out; now not signed in"
+    },
+    {
+     "key": "use the drive's own command to keep the book only online",
+     "english": "use the drive's own command to keep the book only online",
+     "before": "استخدم أمر محرك الأقراص نفسه لإبقاء الكتاب متصلًا بالإنترنت فقط",
+     "after": "استخدم أمر التخزين السحابي نفسه لإبقاء الكتاب على الإنترنت فقط",
+     "why": "meaning: keep the book only online had become keep the book connected to the internet; and the drive is the cloud storage, not a disk drive"
+    }
+   ]
+  }
+ ]
+}
