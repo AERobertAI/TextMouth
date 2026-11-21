@@ -21199,7 +21199,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 仍留在其訂閱源中：%2$@"
+            "value" : "%1$@仍留在其訂閱源中：%2$@"
           }
         }
       }
@@ -21342,7 +21342,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 仍留在其訂閱源中：%2$@"
+            "value" : "%1$@仍留在其訂閱源中：%2$@"
           }
         }
       }
@@ -88797,7 +88797,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 個正在等待這部 Mac 的空間"
+                  "value" : "%lld 個正在等待這部 Mac 騰出空間"
                 }
               }
             }
@@ -93644,7 +93644,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "；%@ 仍保留"
+            "value" : "；%@仍保留"
           }
         }
       }
@@ -93781,7 +93781,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "；%@ 仍保留"
+            "value" : "；%@仍保留"
           }
         }
       }
@@ -135380,7 +135380,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "取消訂閱源下載"
+            "value" : "取消下載訂閱源內容"
           }
         }
       }
@@ -145353,7 +145353,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "從現在起，並立即再次檢查此訂閱源。"
+            "value" : "從現在起再次檢查此訂閱源，並立即檢查一次。"
           }
         }
       }
@@ -176679,7 +176679,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已播放單集完成後，刪除其下載項目前等待的天數，從 0（立即）到 365；在閱讀器中打開的會等到關閉後。"
+            "value" : "單集播放完畢後，刪除其下載項目前等待的天數，從 0（立即）到 365；在閱讀器中打開的單集會等到關閉後才刪除。"
           }
         }
       }
@@ -206082,7 +206082,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其音訊或資訊清單的編輯不會保留。"
+            "value" : "對其音訊或資訊清單所做的編輯不會保留。"
           }
         }
       }
@@ -219003,7 +219003,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請從 Keynote 將 Keynote 簡報輸出為 PDF 檔案，然後輸入這些檔案。"
+            "value" : "請在 Keynote 中將簡報輸出為 PDF 檔案，然後輸入這些檔案。"
           }
         }
       }
@@ -219140,7 +219140,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請從 Numbers 將 Numbers 試算表輸出為 PDF 檔案，然後輸入這些檔案。"
+            "value" : "請在 Numbers 中將試算表輸出為 PDF 檔案，然後輸入這些檔案。"
           }
         }
       }
@@ -219414,7 +219414,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請從 Pages 將 Pages 文件輸出為 Word 文件或 EPUB 書籍，然後輸入這些檔案。"
+            "value" : "請在 Pages 中將文件輸出為 Word 文件或 EPUB 書籍，然後輸入這些檔案。"
           }
         }
       }
@@ -249569,7 +249569,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "最新幾個"
+            "value" : "最新項目數量"
           }
         }
       }
@@ -254102,7 +254102,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已在 %@ 之後取消輸入。"
+            "value" : "輸入已取消，已完成 %@。"
           }
         }
       }
@@ -263996,7 +263996,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "同時也會刪除 %@。"
+            "value" : "同時也會刪除%@。"
           }
         }
       }
@@ -264270,7 +264270,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下載期間，它屬於其訂閱源。「%@」會移除其檔案，並保留其位置與書籤。"
+            "value" : "它作為下載項目，屬於其訂閱源。「%@」會移除其檔案，並保留其位置與書籤。"
           }
         }
       }
@@ -265092,7 +265092,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "刪除%@：它會移到垃圾桶，在清倒垃圾桶前你都可以復原。"
+            "value" : "這會刪除%@：該項目會移到垃圾桶，在清空垃圾桶前你都可以復原。"
           }
         }
       }
@@ -265229,7 +265229,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它會刪除 %@：會永久刪除，無法復原。"
+            "value" : "這會刪除%@：該項目會永久刪除，無法復原。"
           }
         }
       }
@@ -265366,7 +265366,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它會刪除 %@：該項目會保留在 TextMouth 書庫檔案夾中。"
+            "value" : "這會刪除%@：該項目會保留在 TextMouth 書庫檔案夾中。"
           }
         }
       }
@@ -265503,7 +265503,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它會刪除 %@：會永久刪除，無法復原。"
+            "value" : "這會刪除%@：這些項目會永久刪除，無法復原。"
           }
         }
       }
@@ -265640,7 +265640,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它會刪除 %@：它們會移到垃圾桶，在清倒垃圾桶前你都可以復原。"
+            "value" : "這會刪除%@：這些項目會移到垃圾桶，在清空垃圾桶前你都可以復原。"
           }
         }
       }
@@ -265777,7 +265777,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它會刪除 %@：這些項目會保留在 TextMouth 書庫檔案夾中。"
+            "value" : "這會刪除%@：這些項目會保留在 TextMouth 書庫檔案夾中。"
           }
         }
       }
@@ -269705,7 +269705,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其中沒有指向 TextMouth 能輸入、位於其自身檔案夾內的音訊檔案。"
+            "value" : "其中沒有列出同一檔案夾內任何 TextMouth 能輸入的音訊檔案。"
           }
         }
       }
@@ -291595,7 +291595,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出每篇文章，保留最新 %lld 篇為已下載，並移除它所做的較舊下載項目，同時保留其位置、書籤與設定。"
+                  "value" : "列出每篇文章，保留最新 %lld 篇為已下載，並移除自動下載的較舊項目，同時保留其位置、書籤與設定。"
                 }
               }
             }
@@ -292199,7 +292199,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出每個單集與文章，保留最新 %lld 個為已下載，並移除它所做的較舊下載項目，同時保留其位置、書籤與設定。"
+                  "value" : "列出每個單集與文章，保留最新 %lld 個為已下載，並移除自動下載的較舊項目，同時保留其位置、書籤與設定。"
                 }
               }
             }
@@ -292803,7 +292803,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出每個單集，保留最新 %lld 個為已下載，並移除它所做的較舊下載項目，同時保留其位置、書籤與設定。"
+                  "value" : "列出每個單集，保留最新 %lld 個為已下載，並移除自動下載的較舊項目，同時保留其位置、書籤與設定。"
                 }
               }
             }
@@ -293681,7 +293681,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出你尚未播放的最新 %lld 個，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時回來。"
+                  "value" : "列出你尚未播放的最新 %lld 個，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時重新出現。"
                 }
               }
             }
@@ -294148,7 +294148,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出你尚未閱讀的最新 %lld 篇，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時回來。"
+                  "value" : "列出你尚未閱讀的最新 %lld 篇，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時重新出現。"
                 }
               }
             }
@@ -368519,7 +368519,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」有一部分無法解碼，已保留為靜音。"
+            "value" : "%@有一部分無法解碼，已以靜音代替。"
           }
         }
       }
@@ -369120,7 +369120,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 個檔案（%@）有一部分無法解碼，已保留為靜音。"
+                  "value" : "%lld 個檔案（%@）有一部分無法解碼，已以靜音代替。"
                 }
               }
             }
@@ -415662,7 +415662,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已重新訂閱 %@。正在立即檢查…"
+            "value" : "已重新訂閱 %@。正在檢查…"
           }
         }
       }
@@ -478296,7 +478296,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法轉換「%@」的聲音：它屬於 TextMouth 不讀取的音訊種類。"
+            "value" : "TextMouth 無法轉換「%@」的聲音：它屬於 TextMouth 無法讀取的音訊類型。"
           }
         }
       }
