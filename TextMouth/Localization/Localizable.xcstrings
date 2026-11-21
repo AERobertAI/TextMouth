@@ -351438,7 +351438,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "不會複製任何內容，也不會在 %@ 中建立任何內容。"
+            "value" : "不會拷貝任何內容，也不會在 %@ 中建立任何內容。"
           }
         }
       }
@@ -351575,7 +351575,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "不會複製任何內容，位於 %@ 的書庫會維持原樣。"
+            "value" : "不會拷貝任何內容，位於 %@ 的書庫會維持原樣。"
           }
         }
       }
@@ -359278,7 +359278,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要不使用索引打開書庫嗎？"
+            "value" : "要在不使用索引的情況下打開書庫嗎？"
           }
         }
       }
@@ -465937,7 +465937,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停止移動書庫。書庫會維持原處，不會有任何更改。"
+            "value" : "停止移動書庫。書庫會留在原處，不會有任何更改。"
           }
         }
       }
@@ -471896,7 +471896,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請先將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。"
+            "value" : "請先將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。"
           }
         }
       }
@@ -474517,7 +474517,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字擷取進度：已完成 %1$lld，共 %2$lld"
+            "value" : "文字擷取進度：已完成 %1$lld 本，共 %2$lld 本"
           }
         }
       }
@@ -481501,7 +481501,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法將 %@ 移到目前的書庫格式。"
+            "value" : "TextMouth 無法將 %@ 移轉到目前的書庫格式。"
           }
         }
       }
@@ -489814,7 +489814,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 現在正在取得這些檔案，檔案抵達後會打開書庫。"
+            "value" : "TextMouth 正在取得這些檔案，取得後就會打開書庫。"
           }
         }
       }
@@ -490362,7 +490362,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中保持未儲存。"
+            "value" : "TextMouth 正在重新打開並改用另一個書庫，因此這些更改在這個書庫中仍未儲存。"
           }
         }
       }
@@ -490499,7 +490499,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中維持原處。"
+            "value" : "TextMouth 正在重新打開並改用另一個書庫，因此它們會留在這個書庫中的原處。"
           }
         }
       }
@@ -492143,7 +492143,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 正在切換到另一個書庫，並在其上重新打開。"
+            "value" : "TextMouth 正在切換到另一個書庫，並以該書庫重新打開。"
           }
         }
       }
@@ -492280,7 +492280,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 不被允許在 %@ 中做更改。"
+            "value" : "TextMouth 沒有權限在 %@ 中進行更改。"
           }
         }
       }
@@ -494061,7 +494061,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 已將 %@ 移到目前的書庫格式，但有一個問題："
+            "value" : "TextMouth 已將 %@ 移轉到目前的書庫格式，但有一個問題："
           }
         }
       }
@@ -494198,7 +494198,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 已將 %@ 移到目前的書庫格式，但有一些問題："
+            "value" : "TextMouth 已將 %@ 移轉到目前的書庫格式，但有一些問題："
           }
         }
       }
@@ -499141,7 +499141,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 會結束並重新打開以開始它。"
+            "value" : "TextMouth 會結束並重新打開，以開始新書庫。"
           }
         }
       }
@@ -518359,7 +518359,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載項目。"
+            "value" : "這本書已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會讓閱讀列表中的書籍保持下載，因此無法移除它的下載項目。"
           }
         }
       }
@@ -518907,7 +518907,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載項目。"
+            "value" : "這本書在閱讀列表上，而這部 Mac 會讓閱讀列表中的書籍保持下載，因此無法移除其下載項目。"
           }
         }
       }
@@ -538089,7 +538089,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書庫的封裝名稱 %1$@ 下已有不同內容，因此它存放在新的封裝 %2$@ 中，原始檔案保留在 %3$@。"
+            "value" : "書庫中已有其他內容使用它的套件名稱 %1$@，因此它存放在新的套件 %2$@ 中，原始檔案保留在 %3$@。"
           }
         }
       }
@@ -540007,7 +540007,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已成功讀取書庫索引。你的書庫有 %@，且更改已再次儲存。"
+            "value" : "已成功讀取書庫索引。你的書庫有 %@，且已恢復儲存更改。"
           }
         }
       }
@@ -541383,7 +541383,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書庫的身分檔案在這部 Mac 上，但它的索引 %1$@ 尚未從 %2$@ 抵達。"
+            "value" : "書庫的身分檔案在這部 Mac 上，但它的索引 %1$@ 尚未從 %2$@ 同步過來。"
           }
         }
       }
@@ -541526,7 +541526,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書庫的索引在這部 Mac 上，但它的身分檔案 %1$@ 尚未從 %2$@ 抵達。"
+            "value" : "書庫的索引在這部 Mac 上，但它的身分檔案 %1$@ 尚未從 %2$@ 同步過來。"
           }
         }
       }
