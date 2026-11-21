@@ -6,7 +6,9 @@ Part of [TextMouth's documentation](../../README.md).
 This is what a translator, human or agent, reads before translating the app's interface text.
 The text lives in one String Catalog, `TextMouth/Localization/Localizable.xcstrings`, which both apps share.
 Never edit the catalog by hand: `Scripts/l10n/l10n.py` writes it in the layout Xcode expects, and checks what it writes.
-The shipped languages are listed in `Scripts/l10n/config.json`; Spanish (`es`) is the first.
+The catalog holds eleven languages: English, Spanish (`es`), Italian (`it`), French (`fr`), Brazilian Portuguese (`pt-BR`), German (`de`), Russian (`ru`), Ukrainian (`uk`), Simplified Chinese (`zh-Hans`), Japanese (`ja`), and Korean (`ko`).
+All but English are machine translations, and a native speaker has reviewed none.
+`Scripts/l10n/config.json`'s `languages` list is still empty, so `check` does not yet fail for a string missing in a language; it fails only for a string that is wrong.
 
 ## The steps
 <!-- id: translation-steps; keys: sync, todo, apply, check, status, batch, rejected, plural; src: Scripts/l10n/l10n.py, Scripts/l10n/translate.py -->
@@ -105,6 +107,8 @@ Every state is compiled into the app, so an empty value would ship as empty text
   A glossary entry with `"check": true` is a word a native speaker has not yet confirmed.
   A term is never found inside a name (Windows-1252 is the name Windows), and a command word that is also an everyday word (Close, Open, Done, Play) is found only as a whole label or in a title-case phrase, so a sentence such as "close to the end" has no hit.
 - Never change a name in `doNotTranslate`: TextMouth, VoiceOver, EPUB, DAISY, and the other product and format names.
+- A name beside Japanese, Chinese, or Korean text is not hidden by it: "TextMouthは" and "TextMouth가" keep the name, since those scripts have no spaces (`_SPACELESS` in `Scripts/l10n/glossary.py`).
+  A Latin or Cyrillic letter beside a name still joins it into another word.
 - Never translate what a person does not read: the debug log's lines, a stored key or identifier, a file extension, a URL, a format's element names, or code.
   Such a string should not be in a batch; set `keepEnglish` on it, and name it in your report so it can be marked `shouldTranslate: false`.
 - Translate meaning, not words: a text that reads as the English reads in the language is a good one, and a label that is a literal copy of the English word order is not.
@@ -137,24 +141,105 @@ One neutral Spanish (`es`) serves every region, until the user says otherwise.
 - `many` is the exact-millions form: "%lld de libros".
   The usual counts use `one` and `other`.
 
-## Translating at scale
-<!-- id: translation-at-scale; keys: partition, key file, disjoint keys, batches, consistency pass, scratch folder, parallel translators, keys-from; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json -->
+## Italian
+<!-- id: translation-italian; keys: it, tu, Apple's Italian, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
 
-The first Spanish was made this way, with about 4,000 strings and six translator agents working at once; the Spanish is on its way to main, not merged.
+- Address the listener as "tu": "Scegli una cartella", "la tua libreria".
+- Menu items and buttons use the imperative ("Apri", "Riproduci"); hints use the third person and end with a period ("Riproduce il libro.").
+- Sentence case: "Elenco di lettura".
+- Plural categories `one`, `many`, `other`; `many` is exact millions ("%lld di libri").
+
+## French
+<!-- id: translation-french; keys: fr, vous, no-break space, Apple's French, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- Address the listener as "vous": "Choisissez un dossier", "votre bibliothèque".
+- Menu items and buttons use the infinitive ("Ouvrir", "Lire"); hints use the third person and end with a period ("Lit le livre.").
+- Sentence case.
+  A no-break space (U+00A0) goes before `:`, `;`, `?`, and `!` and inside « », never a plain space.
+- Plural categories `one`, `many`, `other`; `one` covers 0 and 1 and keeps the number, and `many` is exact millions ("%lld de livres").
+
+## Brazilian Portuguese
+<!-- id: translation-portuguese-brazil; keys: pt-BR, você, Brazilian words, Apple's Portuguese, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- Address the listener as "você": "Escolha uma pasta", "sua biblioteca".
+- Menu items and buttons use the infinitive ("Abrir", "Reproduzir"); hints use the third person and end with a period ("Reproduz o livro.").
+- Brazil's words and spelling ("arquivo", "tela", "excluir"), never Portugal's.
+- Plural categories `one`, `many`, `other`; `one` covers 0 and 1 and keeps the number, and `many` is exact millions ("%lld de livros").
+
+## German
+<!-- id: translation-german; keys: de, du, capitalized nouns, long words, Apple's German; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- Address the listener as "du", as Apple's German does: "Wähle einen Ordner", "deine Bibliothek".
+- Menu items and buttons use the infinitive ("Öffnen", "Wiedergeben"); hints use the third person and end with a period ("Gibt das Buch wieder.").
+- Nouns are capitalized; quotation marks are „…“.
+- German runs long: take the shorter of two good words, and never a compound a button label cannot hold.
+- Plural categories `one`, `other`.
+
+## Russian
+<!-- id: translation-russian; keys: ru, вы, Cyrillic, few, many, Apple's Russian; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- Address the listener formally, "вы" in lower case: "Выберите папку", "ваша книга".
+- Menu items and buttons use the infinitive ("Открыть", "Воспроизвести"); hints use the third person and end with a period ("Воспроизводит книгу.").
+- Quotation marks «…»; use "ё" only where Apple's Russian does, and consistently.
+- Plural categories `one` (1, 21, not 11), `few` (2 to 4, 22 to 24), `many` (0, 5 to 20, 25 to 30), and `other` (a fraction); every form keeps the number.
+
+## Ukrainian
+<!-- id: translation-ukrainian; keys: uk, ви, Cyrillic, apostrophe, few, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- Ukrainian words and spelling, never Russian ones; address the listener formally, "ви": "Виберіть папку", "ваша бібліотека".
+- Menu items and buttons use the infinitive ("Відкрити", "Відтворити"); hints use the third person and end with a period ("Відтворює книгу.").
+- Quotation marks «…»; the apostrophe inside a word is the typographic one (U+2019), everywhere.
+- Plural categories `one`, `few`, `many`, `other`, as in Russian; every form keeps the number.
+
+## Simplified Chinese
+<!-- id: translation-chinese; keys: zh-Hans, Mandarin, full-width punctuation, measure word, Apple's Chinese; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- Mainland Simplified Chinese as Apple writes it; address the listener as "你" where a sentence needs it.
+- Full-width punctuation in Chinese text (，。：；？！“”（）), and a space between Chinese characters and a Latin word or a placeholder: "在 Mac 上", "%lld 本书".
+- Labels are short noun or verb phrases ("打开", "播放"); hints are sentences that end with "。".
+- One plural category, `other`, with the number and the right measure word.
+
+## Japanese
+<!-- id: translation-japanese; keys: ja, polite style, katakana, counters, Apple's Japanese; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- The polite style (です・ます) in sentences, hints, and messages ("ブックを再生します。"); labels and menu items as Apple writes them ("開く", "再生").
+- Full-width punctuation (、。「」); loanwords in katakana as Apple spells them (ライブラリ, フォルダ).
+- One plural category, `other`, with the number and the right counter (冊, 件, 個, 分).
+
+## Korean
+<!-- id: translation-korean; keys: ko, Hangul, particles, polite endings, Apple's Korean; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+
+- Polite formal endings in sentences, hints, and messages ("책을 재생합니다."); labels and menu items as Apple writes them ("열기", "재생").
+- Where a placeholder's last sound is unknown, write both particle forms, as Apple's Korean does: "%@을(를)", "%@이(가)".
+  A name takes its particle straight against it ("TextMouth가").
+- One plural category, `other`, with the number and the right counter (권, 개, 분).
+
+## Translating at scale
+<!-- id: translation-at-scale; keys: partition, key file, disjoint keys, batches, consistency pass, glossary first, 20 agents, extract-report; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json, Scripts/agents/extract-report.py -->
+
+The nine languages added after Spanish were made this way, about 4,200 strings each.
 Developers who convert code read [Localizing TextMouth's code](localization.md) instead.
 
-1. Partition the keys.
-   List the keys that still lack the language, and split them by area of the app into disjoint key files of 500 to 750 keys (library; storage and settings; feeds and import; audio and transcripts; reader, formats, and menus; export, speech, and iPhone), one JSON list each.
+1. Glossary first.
+   One agent (`l10nglossary`) chooses each glossary term in every new language, marked `"check": true`, before any translator starts.
+   Translators use those words even where they would choose another, and propose better ones in their reports.
+2. Partition the keys.
+   List the keys that still lack the language, and split them by area of the app into six disjoint key files of 650 to 750 keys (library; storage and settings; feeds and import; audio and transcripts; reader, formats, and menus; export, speech, and iPhone).
    Two translators never hold the same key, so their branches merge without a conflict.
-2. Give each translator one file.
-   It runs `todo --keys-from FILE --out DIR/batch.json`, 250 strings at a time, and `apply` as in the steps above.
-   Its branch holds only the catalog and any glossary entries, and its report lists the terms it doubts and the control names it chose.
-3. Give each translator its own subfolder of a shared scratch folder.
-   Two translators that wrote `batch-1.json` in one folder overwrote each other's batch, so one applied 250 strings that were another's, and they had to be reset.
-4. Check each branch before merging: it changed only its own keys, and none of them is left without the language.
-5. After all the branches merge, one agent makes a consistency pass over the whole language:
-   - a control's name inside a sentence matches that control's own label ("Punch In" was kept in one batch and translated in another);
-   - each term has one translation, and the translators' proposals enter `glossary.json`, marked `"check": true` until a native speaker confirms them;
+3. Give each translator one file, and its own scratch folder, since two translators that wrote `batch-1.json` in one folder overwrote each other's batch.
+   It runs `todo --keys-from FILE --out DIR/batch.json`, 250 strings at a time, and `apply`.
+   Its branch holds only the catalog.
+4. Run at most 20 agents at once, and launch the next as a slot frees.
+   Past 20, a launch is refused; a finished agent keeps its slot until it is stopped, and stopping it also ends its leftover background checks.
+5. A translator never runs `check`.
+   One run takes about 12 minutes on an eleven-language catalog, and twenty at once pushed the load past 80.
+   `apply` already checks every string it writes, and the orchestrator runs `check` on the merged catalog.
+6. A translator's report is its final message.
+   An agent in an isolated worktree cannot write the main checkout, so `Scripts/agents/extract-report.py` prints the report from the agent's transcript.
+7. Check each branch before merging: it changed only its own keys, in its own language, and none of them is left without the language.
+8. After a language's branches merge, one agent makes a consistency pass over the whole language:
+   - a control's name inside a sentence matches that control's own label;
+   - each term has one translation, and the pass's glossary changes go to a file, which the orchestrator applies to `glossary.json` at once, so later passes see them;
    - names that must not be translated stay as they are.
    The pass changes the catalog only, and is a branch of its own.
 
