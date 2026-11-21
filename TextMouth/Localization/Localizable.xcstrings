@@ -148586,7 +148586,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este Mac está offline, então o livro não pode ser baixado de %@."
+            "value" : "Este Mac está off-line, então o livro não pode ser baixado de %@."
           }
         }
       }
@@ -167921,7 +167921,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O iCloud Drive pode estar desativado ou sem login, ou este Mac pode estar offline. Verifique isso e escolha Tentar novamente."
+            "value" : "O iCloud Drive pode estar desativado ou sem login, ou este Mac pode estar off-line. Verifique isso e escolha Tentar novamente."
           }
         }
       }
@@ -175623,7 +175623,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "use o menu Acesso offline do Google Drive"
+            "value" : "use o menu Acesso off-line do Google Drive"
           }
         }
       }
