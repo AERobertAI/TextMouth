@@ -156155,6 +156155,12 @@
     "Jumped to page %@." : {
       "comment" : "Announcement after Go to Page jumped. %@ is the page's label, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পৃষ্ঠা %@-এ যাওয়া হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -156232,6 +156238,12 @@
     "KOI8-R (Russian)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "KOI8-R (রুশ)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -156309,6 +156321,12 @@
     "KOI8-U (Ukrainian)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "KOI8-U (ইউক্রেনীয়)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -158834,6 +158852,12 @@
     "Language" : {
       "comment" : "Name of the book information sheet's row that shows the language a book is written in.\nThe label of the pop-up that chooses the language of a braille code, in the Braille tab of Settings and in the Export dialog's braille options.\nTitle of the pop-up in the Voice settings that narrows the voices to one language, and the label of the selected voice's language beneath it.\nTitle of the voice sheet's menu that limits the voices listed to one language.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভাষা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -158911,6 +158935,12 @@
     "Language: %@" : {
       "comment" : "What VoiceOver says for the book information sheet's language row. %@ is the language code the book gives, such as en.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভাষা: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159586,6 +159616,12 @@
     "Last try: %@" : {
       "comment" : "Text below the Try a Double Press button after a trial ended. %@ is what the trial found, a whole sentence such as \"Double press.\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বশেষ চেষ্টা: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160190,6 +160226,12 @@
     "Left Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Arrow\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাম তীর"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160267,6 +160309,12 @@
     "Left Brace" : {
       "comment" : "Name of the punctuation key \"{\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Brace\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাম ব্রেস"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160344,6 +160392,12 @@
     "Left Bracket" : {
       "comment" : "Name of the punctuation key \"[\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Bracket\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাম ব্র্যাকেট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160421,6 +160475,12 @@
     "Left Parenthesis" : {
       "comment" : "Name of the punctuation key \"(\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Left Parenthesis\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাম বন্ধনী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160664,6 +160724,12 @@
     "Less Than" : {
       "comment" : "Name of the punctuation key \"<\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Less Than\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ক্ষুদ্রতর চিহ্ন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160895,6 +160961,12 @@
     "Level 1" : {
       "comment" : "Choice of the headings sheet's level filter that shows only the biggest headings, level 1.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্তর 1"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -160972,6 +161044,12 @@
     "Levels 1 to %lld" : {
       "comment" : "Choice of the headings sheet's level filter that shows levels from 1 to a deeper one. %lld is the deepest level shown.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্তর 1 থেকে %lld"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -161991,6 +162069,12 @@
     "Library windows" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the Library windows, where the library's books are listed.\nNames where a keyboard shortcut works, inside a sentence such as \"Works in Library windows.\": the Library windows, where the library's books are listed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি উইন্ডো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165697,6 +165781,12 @@
     "Loading %@" : {
       "comment" : "What VoiceOver says for the spinner in the reader while a book loads. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ লোড হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -165857,6 +165947,12 @@
     "Loading book..." : {
       "comment" : "Words beside the spinner in the reader while a book loads.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই লোড হচ্ছে..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166248,6 +166344,12 @@
     "Looks for the book again" : {
       "comment" : "Hint of the Try Again button of the reader's view for a book that the cloud has not yet synced.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি আবার খোঁজে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166740,6 +166842,12 @@
     "Mac Central European" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac মধ্য ইউরোপীয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166817,6 +166925,12 @@
     "Mac Cyrillic" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: an encoding of the classic Mac OS, named by its script. The word Mac stays as it is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac সিরিলিক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166894,6 +167008,12 @@
     "Mac Roman (Western European)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mac Roman (পশ্চিম ইউরোপীয়)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167042,6 +167162,12 @@
     "Make Double Press" : {
       "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a single press of the key into the key pressed twice quickly.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "দুইবার চাপা করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167119,6 +167245,12 @@
     "Make Single Press" : {
       "comment" : "VoiceOver action and context menu item of a keyboard shortcut's key button: changes a key pressed twice quickly into a single press of the key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একবার চাপা করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167646,6 +167778,12 @@
     "Manifest not updated: %@ Fix it in your editor and save again; until then, %@ keeps its headings." : {
       "comment" : "Announcement after an edited manifest.json was refused. %1$@ is the reason, a whole sentence in English that names what is wrong inside the file and may stay in English; %2$@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ম্যানিফেস্ট হালনাগাদ হয়নি: %1$@ আপনার এডিটরে ঠিক করে আবার সংরক্ষণ করুন; তার আগে পর্যন্ত %2$@ তার হেডিং রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -167729,6 +167867,12 @@
     "Manifest updated" : {
       "comment" : "Announcement after the user saved an edited manifest.json and TextMouth took it as the book's arrangement of tracks.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ম্যানিফেস্ট হালনাগাদ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -168078,6 +168222,12 @@
     "Mark In" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts a selection at the current position.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মার্ক ইন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -168155,6 +168305,12 @@
     "Mark Out" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Ends the selection at the current position.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মার্ক আউট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -170229,6 +170385,12 @@
     "Markers and Pauses…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Opens the list of markers and silent pauses.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মার্কার ও বিরতি…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171064,6 +171226,12 @@
     "Maximum is %@." : {
       "comment" : "Second sentence of that refusal. %@ is the longest time allowed, spoken in words, such as \"1 hour\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বোচ্চ %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171378,6 +171546,12 @@
     "Menu" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Menu\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মেনু"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171538,6 +171712,12 @@
     "Metadata saved to the library only; the EPUB file is unchanged." : {
       "comment" : "Announcement after the metadata was saved to the library only, as the user chose; the book's EPUB file was not rewritten.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মেটাডেটা শুধু লাইব্রেরিতে সংরক্ষিত হয়েছে; EPUB ফাইল বদলায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171615,6 +171795,12 @@
     "Metadata saved to the library's copy of “%@”." : {
       "comment" : "Announcement after the metadata was saved to the library and to the library's copy of the book's EPUB file. %@ is the EPUB file's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মেটাডেটা লাইব্রেরির “%@”-এর কপিতে সংরক্ষিত হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171935,6 +172121,12 @@
     "Minimize" : {
       "comment" : "Name of the Window menu's Minimize command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মিনিমাইজ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172012,6 +172204,12 @@
     "Minimize All" : {
       "comment" : "Name of the Window menu's Minimize All command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব মিনিমাইজ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172477,6 +172675,12 @@
     "Minus" : {
       "comment" : "Name of the punctuation key \"-\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Minus\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিয়োগ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172797,6 +173001,12 @@
     "Missing DAISY content: %@" : {
       "comment" : "Why a DAISY book could not be imported: a part it needs is missing. %@ is what is missing, a phrase in English.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY বিষয়বস্তু নেই: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -172874,6 +173084,12 @@
     "Mode Switch" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Mode Switch\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মোড সুইচ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -173034,6 +173250,12 @@
     "Monkey's Audio" : {
       "comment" : "The name of an audio format, in a failure to read a file and in Book Information: Monkey's Audio, in .ape files. A format's own name, usually kept as it is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Monkey's Audio"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175334,6 +175556,12 @@
     "Move Book Down" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place down in its folder. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি নিচে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175411,6 +175639,12 @@
     "Move Book Up" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected book one place up in its folder. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি উপরে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176535,6 +176769,12 @@
     "Move to Folder" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves the selected books into a folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারে স্থানান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176677,6 +176917,12 @@
     "Move to Library…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Moves feed episodes or articles into a library folder as books of their own. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরিতে স্থানান্তর করুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182902,6 +183148,12 @@
     "Navigate" : {
       "comment" : "Title of the Navigate menu in the menu bar, which holds the commands that move around a book, such as Go to Library and Next Heading. Only a reader window shows it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নেভিগেট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -183192,6 +183444,12 @@
     "Navigation unit" : {
       "comment" : "Label of the playback bar's menu that sets the unit by which this book moves forward and backward.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নেভিগেশন ইউনিট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -183672,6 +183930,12 @@
     "Navigation units" : {
       "comment" : "Label of the playback bar's menu that holds separate forward and backward navigation units.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নেভিগেশন ইউনিটগুলো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -184808,6 +185072,12 @@
     "New Recording…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens the window that records a new book from the microphone. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন রেকর্ডিং…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185299,6 +185569,12 @@
     "New from Text…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Makes a new book from text the listener types or pastes. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট থেকে নতুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185796,6 +186072,12 @@
     "Next" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Next\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185873,6 +186155,12 @@
     "Next Bookmark" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the next bookmark. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী বুকমার্ক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185950,6 +186238,12 @@
     "Next Chapter Marker" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next chapter marker.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী অধ্যায় মার্কার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186110,6 +186404,12 @@
     "Next Heading" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the next heading in the book. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী হেডিং"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186187,6 +186487,12 @@
     "Next Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the next silent pause found in the audio.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী বিরতি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186341,6 +186647,12 @@
     "Next in Folder" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the next book in the same folder or feed. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারে পরবর্তী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186418,6 +186730,12 @@
     "Next in Reading List" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the next book in the reading list. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায় পরবর্তী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186495,6 +186813,12 @@
     "Next paragraph" : {
       "comment" : "Announcement after the reader moved to the next paragraph.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী অনুচ্ছেদ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186572,6 +186896,12 @@
     "Next section" : {
       "comment" : "Announcement after a sentence or paragraph move crossed into the next section of the book, when no heading names it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী অংশ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -186649,6 +186979,12 @@
     "Next sentence" : {
       "comment" : "Announcement after the reader moved to the next sentence.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী বাক্য"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -187164,6 +187500,12 @@
     "No book is loaded." : {
       "comment" : "What Where Am I? says when no book is open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো বই লোড করা নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -188011,6 +188353,12 @@
     "No copy of your edited text could be kept, so TextMouth leaves content.md as it is." : {
       "comment" : "Sentence saying that no backup of the user's edited text could be made. content.md is the file name of the book's text and stays as written.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার সম্পাদিত টেক্সটের কোনো কপি রাখা যায়নি, তাই TextMouth content.md যেমন আছে তেমনই রাখছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -188793,6 +189141,12 @@
     "No headings found in this document." : {
       "comment" : "Message in the headings sheet when the book has no headings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই নথিতে কোনো হেডিং পাওয়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -188941,6 +189295,12 @@
     "No key was pressed twice." : {
       "comment" : "Announced by VoiceOver at the end of a trial of the double press time when no second press came in time.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো কী দুইবার চাপা হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192148,6 +192508,12 @@
     "No shortcut" : {
       "comment" : "Said of an action that has no keyboard shortcut, in place of its keys, such as \"Release Media Controls: No shortcut\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কোনো শর্টকাট নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192474,6 +192840,12 @@
     "No supported audio files found." : {
       "comment" : "Why an audio book could not be imported: none of the files in it is an audio file TextMouth reads.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সমর্থিত কোনো অডিও ফাইল পাওয়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192551,6 +192923,12 @@
     "No text content could be extracted from the PDF." : {
       "comment" : "Why a PDF could not be imported: none of its pages holds text.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF থেকে কোনো টেক্সট বের করা যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192628,6 +193006,12 @@
     "No text could be read from the PDF: it has no embedded text, and OCR could not run (%@)." : {
       "comment" : "Why a PDF could not be imported: its pages are pictures, and text recognition (OCR) could not run. %@ is the reason, a phrase in English with no full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF থেকে কোনো টেক্সট পড়া যায়নি: এতে এমবেড করা টেক্সট নেই, এবং OCR চালানো যায়নি (%@)।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194116,6 +194500,24 @@
     "None of the %lld chapters could be read" : {
       "comment" : "Starts the warning after an import where none of a book's chapters could be read. %lld is how many chapters the book has, always two or more. Has no full stop.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি অধ্যায়ের একটিও পড়া যায়নি"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lldটি অধ্যায়ের একটিও পড়া যায়নি"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -195211,6 +195613,12 @@
     "Not a valid DAISY book (no OPF or ncc.html found)." : {
       "comment" : "Why a file could not be imported as a DAISY book: it holds neither a package file (.opf) nor a navigation file (ncc.html). OPF and ncc.html are file names and stay as they are.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বৈধ DAISY বই নয় (কোনো OPF বা ncc.html পাওয়া যায়নি)।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197641,6 +198049,12 @@
     "Nothing was changed." : {
       "comment" : "Last sentence of a message that says saving failed: nothing the user edited was saved anywhere.\nLast sentence of a refusal to read a book again: the book and its text are as they were.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কিছুই বদলানো হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198103,6 +198517,12 @@
     "Number Sign" : {
       "comment" : "Name of the punctuation key \"#\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Number Sign\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নম্বর চিহ্ন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198180,6 +198600,24 @@
     "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@." : {
       "comment" : "Warning after an import of a PDF where some pages needed text recognition (OCR) where it could not run. %1$@ is how many of them, one or more, written with digit grouping; %2$lld is how many pages the PDF has, two or more; %3$@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lldটি পৃষ্ঠার মধ্যে %1$@টিতে OCR চালানো যায়নি, তাই শুধু ছবিতে থাকা টেক্সট বাদ পড়েছে: %3$@।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lldটি পৃষ্ঠার মধ্যে %1$@টিতে OCR চালানো যায়নি, তাই শুধু ছবিতে থাকা টেক্সট বাদ পড়েছে: %3$@।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -198443,6 +198881,24 @@
     "OCR could not run on all %lld pages, so text found only in their images is missing: %@." : {
       "comment" : "Warning after an import of a PDF whose every page needed text recognition (OCR) where it could not run. %lld is how many pages the PDF has, two or more. %@ is the pages and why, such as \"pages 3 and 7 (text recognition is not available)\", the reasons in English.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব %1$lldটি পৃষ্ঠায় OCR চালানো যায়নি, তাই শুধু ছবিতে থাকা টেক্সট বাদ পড়েছে: %2$@।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব %1$lldটি পৃষ্ঠায় OCR চালানো যায়নি, তাই শুধু ছবিতে থাকা টেক্সট বাদ পড়েছে: %2$@।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -198706,6 +199162,12 @@
     "OCR could not run on the PDF's only page, so text found only in its images is missing: %@." : {
       "comment" : "Warning after an import of a PDF whose only page needed text recognition (OCR) where it could not run. %@ is the page and why, such as \"page 1 (text recognition is not available)\", the reason in English.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF-এর একমাত্র পৃষ্ঠায় OCR চালানো যায়নি, তাই শুধু ছবিতে থাকা টেক্সট বাদ পড়েছে: %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199316,6 +199778,12 @@
     "One document in this file has too much markup for TextMouth to read in memory." : {
       "comment" : "First sentence of why a file was refused: one of its documents has so much markup that reading it would take too much memory.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফাইলের একটি নথিতে মার্কআপ এত বেশি যে TextMouth তা মেমোরিতে পড়তে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199393,6 +199861,12 @@
     "One tag in this file has more than %@ attributes, which TextMouth can't read safely." : {
       "comment" : "First sentence of why a file was refused: one of its markup tags has more attributes than TextMouth reads. %@ is the most attributes, a number.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফাইলের একটি ট্যাগে %@-এর বেশি অ্যাট্রিবিউট আছে, যা TextMouth নিরাপদে পড়তে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199855,6 +200329,12 @@
     "Only files inside the folder can be imported." : {
       "comment" : "Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু ফোল্ডারের ভেতরের ফাইল আমদানি করা যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200402,6 +200882,12 @@
     "Open Book…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the File group and read by VoiceOver. Opens a book file to import it. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই খুলুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200562,6 +201048,12 @@
     "Open Selected Book" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the selected book in a reader.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত বই খুলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201083,6 +201575,12 @@
     "Open it in a text editor, take the entity definitions out, save it, then import it again." : {
       "comment" : "Last sentence of why an SSML file was refused because it defines entities of its own: what to do.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি টেক্সট এডিটরে খুলে এনটিটি সংজ্ঞাগুলো সরিয়ে দিন, সংরক্ষণ করুন, তারপর আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201160,6 +201658,12 @@
     "Open the book in the program that made it, save it again, then import it again." : {
       "comment" : "Last sentence of why a file inside an EPUB or DAISY book was refused because it defines entities of its own: what to do.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি যে প্রোগ্রামে তৈরি হয়েছিল তাতে খুলে আবার সংরক্ষণ করুন, তারপর আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201237,6 +201741,12 @@
     "Open the book once, then try again." : {
       "comment" : "Second sentence of that message: opening the book makes its text ready.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি একবার খুলুন, তারপর আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201314,6 +201824,12 @@
     "Open the document in the program that made it, save it again, then import it again." : {
       "comment" : "Last sentence of why a file inside a Word or OpenDocument document was refused because it defines entities of its own: what to do.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নথিটি যে প্রোগ্রামে তৈরি হয়েছিল তাতে খুলে আবার সংরক্ষণ করুন, তারপর আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202990,6 +203506,12 @@
     "Opens jump to page controls" : {
       "comment" : "Hint of the status row's page button while no jump panel is open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পৃষ্ঠায় যাওয়ার নিয়ন্ত্রণ খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203067,6 +203589,12 @@
     "Opens jump to percent controls" : {
       "comment" : "Hint of the reader's percent button while no jump panel is open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শতাংশে যাওয়ার নিয়ন্ত্রণ খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203144,6 +203672,12 @@
     "Opens jump to time controls" : {
       "comment" : "Hint of the reader's time button while no jump panel is open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সময়ে যাওয়ার নিয়ন্ত্রণ খোলে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -204464,6 +204998,12 @@
     "Option" : {
       "comment" : "Name of the Option modifier key, spoken or brailled in a keyboard shortcut such as \"Option + Command + G\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অপশন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205717,6 +206257,12 @@
     "PDF file not found at: %@" : {
       "comment" : "Why a PDF could not be imported: there is no file at its path. %@ is the path.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF ফাইল পাওয়া যায়নি: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205794,6 +206340,12 @@
     "Page" : {
       "comment" : "A unit a skip or navigation picker moves by: one page of the book, as the book numbers its pages.\nLabel of the Go to Page field, where the user types a page of the book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পৃষ্ঠা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205942,6 +206494,12 @@
     "Page %@ of %@" : {
       "comment" : "Where the reader is in a book that has pages. %1$@ is the page's label (a number or a roman numeral, an identifier written without digit grouping); %2$@ is the number of pages, written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ পৃষ্ঠার মধ্যে পৃষ্ঠা %1$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206025,6 +206583,12 @@
     "Page Down" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Down\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পেজ ডাউন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206102,6 +206666,12 @@
     "Page Up" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Page Up\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পেজ আপ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206256,6 +206826,12 @@
     "Panels" : {
       "comment" : "Heading of the group of keyboard shortcuts that open a reader's panels, such as the headings list and the sleep timer, in Settings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্যানেল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207188,6 +207764,12 @@
     "Paste" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Inserts the copied audio at the current position.\nName of the Edit menu's Paste command, in a sentence saying why a keyboard shortcut cannot take its key.\nThe first word of the title a book made from pasted text is given until the user types another, followed by the date and time, as in \"Paste 2026-10-04 06:30\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পেস্ট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207265,6 +207847,12 @@
     "Paste and Match Style" : {
       "comment" : "Name of the Edit menu's Paste and Match Style command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পেস্ট করুন ও স্টাইল মেলান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208302,6 +208890,12 @@
     "Pause or Resume" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Record window group and read by VoiceOver. Pauses the recording, or resumes a paused one.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিরতি দিন বা পুনরায় শুরু করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209093,6 +209687,12 @@
     "Percent Sign" : {
       "comment" : "Name of the punctuation key \"%\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Percent Sign\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শতাংশ চিহ্ন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209170,6 +209770,12 @@
     "Percent must be between 0 and 100." : {
       "comment" : "Message when the number typed in Go to Percent is below 0 or above 100.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শতাংশ 0 থেকে 100-এর মধ্যে হতে হবে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209247,6 +209853,12 @@
     "Percent through the book" : {
       "comment" : "Label of the Go to Percent field, where the user types how far through the book to jump.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের কত শতাংশ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209324,6 +209936,12 @@
     "Percentage" : {
       "comment" : "A segment of the display picker in Search in Book: each result's position is shown as a percentage of the book.\nChoice of the headings sheet's display picker: each heading shows how far through the book it begins, as a percent.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শতাংশ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209401,6 +210019,12 @@
     "Period" : {
       "comment" : "Name of the punctuation key \".\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Period\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফুল স্টপ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209774,6 +210398,12 @@
     "Pitch: %@" : {
       "comment" : "Caption above the voice sheet's pitch slider. %@ is the pitch, such as 1.0x.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পিচ: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -210064,6 +210694,12 @@
     "Play / Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Starts or pauses reading aloud or playing the book. Also the title of the menu command of the same name.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Starts or pauses playback in the audio editor.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চালান / বিরতি দিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -210141,6 +210777,12 @@
     "Play Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Plays only the selection.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত অংশ চালান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -210994,6 +211636,12 @@
     "Playback" : {
       "comment" : "Heading of the group of playback keyboard shortcuts in Settings, and the title of the Playback menu.\nName of the Settings tab for skipping, rewinding, the end of a book, the sleep timer, and the playback controls.\nTitle of the Playback menu in the menu bar, which holds the commands that play, pause, skip, and change the speed. Only a reader window shows it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্লেব্যাক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211154,6 +211802,12 @@
     "Playback Problem" : {
       "comment" : "Title of the reader's alert shown when the audio could not be played.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্লেব্যাকে সমস্যা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211231,6 +211885,12 @@
     "Playback controls" : {
       "comment" : "What VoiceOver calls the group of playback buttons at the bottom of the reader.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্লেব্যাক নিয়ন্ত্রণ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211308,6 +211968,12 @@
     "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio." : {
       "comment" : "Message on the Mac when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes); macOS is the name of the Mac's system.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্লেব্যাক বন্ধ হয়েছে, কারণ অডিও চলার সময় TextMouth-এর মেমোরি %@ GB-তে পৌঁছেছে, যা macOS-এর অডিওর একটি ত্রুটি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211385,6 +212051,12 @@
     "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio." : {
       "comment" : "Message on the iPhone when playback was stopped because the app's memory kept growing. %@ is the memory reached, a number such as 3.2, before \"GB\" (gigabytes).",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্লেব্যাক বন্ধ হয়েছে, কারণ অডিও চলার সময় TextMouth-এর মেমোরি %@ GB-তে পৌঁছেছে, যা সিস্টেমের অডিওর একটি ত্রুটি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211462,6 +212134,12 @@
     "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth." : {
       "comment" : "Message when playback was stopped because the system's audio stopped responding. Play is the name of a button; TextMouth is the app's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্লেব্যাক বন্ধ হয়েছে: অডিও সাড়া দেওয়া বন্ধ করেছে। আবার চেষ্টা করতে ‘চালান’ চাপুন; আবার বন্ধ হলে TextMouth প্রস্থান করে আবার খুলুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213180,6 +213858,12 @@
     "Plus" : {
       "comment" : "Name of the punctuation key \"+\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Plus\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্লাস"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213994,6 +214678,12 @@
     "Premium" : {
       "comment" : "A voice's quality tier, the best, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Premium quality\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রিমিয়াম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -214225,6 +214915,12 @@
     "Press a key twice." : {
       "comment" : "Announced by VoiceOver when a trial of the double press time starts: asks the listener to press one key twice.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি কী দুইবার চাপুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -214302,6 +214998,12 @@
     "Press a key..." : {
       "comment" : "Shown on a keyboard shortcut's key button while it waits for the new key. The three periods say that a key press is awaited.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি কী চাপুন..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -214379,6 +215081,12 @@
     "Press the new key, or Escape to cancel." : {
       "comment" : "VoiceOver hint of a keyboard shortcut's key button while it waits for the new key: Escape stops recording.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন কী চাপুন, বা বাতিল করতে এস্কেপ চাপুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -214616,6 +215324,12 @@
     "Preview Voice" : {
       "comment" : "Button of the voice sheet that speaks a sample in the chosen voice.\nTitle of the button in the Voice settings that speaks a sample sentence in the selected voice.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভয়েস প্রিভিউ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -214776,6 +215490,12 @@
     "Preview selected voice" : {
       "comment" : "VoiceOver label of the Preview Voice button in the Voice settings.\nWhat VoiceOver calls the voice sheet's button that speaks a sample in the chosen voice.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত ভয়েস প্রিভিউ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215019,6 +215739,12 @@
     "Previous" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Previous\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215096,6 +215822,12 @@
     "Previous Bookmark" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Moves to the previous bookmark. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী বুকমার্ক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215173,6 +215905,12 @@
     "Previous Chapter Marker" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous chapter marker.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী অধ্যায় মার্কার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215333,6 +216071,12 @@
     "Previous Heading" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Moves to the previous heading in the book. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী হেডিং"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215410,6 +216154,12 @@
     "Previous Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Moves to the previous silent pause found in the audio.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী বিরতি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215487,6 +216237,12 @@
     "Previous in Folder" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Goes to the previous book in the same folder or feed. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারে পূর্ববর্তী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215564,6 +216320,12 @@
     "Previous in Reading List" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Navigation group and read by VoiceOver. Opens the previous book in the reading list. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায় পূর্ববর্তী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215641,6 +216403,12 @@
     "Previous paragraph" : {
       "comment" : "Announcement after the reader moved to the previous paragraph.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী অনুচ্ছেদ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215718,6 +216486,12 @@
     "Previous section" : {
       "comment" : "Announcement after a sentence or paragraph move crossed into the previous section of the book, when no heading names it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী অংশ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215795,6 +216569,12 @@
     "Previous sentence" : {
       "comment" : "Announcement after the reader moved to the previous sentence.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী বাক্য"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215949,6 +216729,12 @@
     "Print" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রিন্ট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216026,6 +216812,12 @@
     "Print Screen" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Print Screen\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রিন্ট স্ক্রিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216269,6 +217061,12 @@
     "Publication Date" : {
       "comment" : "Name of the book information sheet's field for a book's publication date.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রকাশের তারিখ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216346,6 +217144,12 @@
     "Publication date" : {
       "comment" : "What VoiceOver says for the book information sheet's field for a book's publication date.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রকাশের তারিখ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216494,6 +217298,12 @@
     "Publisher" : {
       "comment" : "Name of the book information sheet's field for a book's publisher; VoiceOver reads it as the field's label.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রকাশক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216571,6 +217381,12 @@
     "Punch In" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Records new audio over the selection.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "উপরে রেকর্ড করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217513,6 +218329,12 @@
     "Question Mark" : {
       "comment" : "Name of the punctuation key \"?\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Question Mark\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রশ্নচিহ্ন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217673,6 +218495,12 @@
     "Quit Anyway" : {
       "comment" : "Button of the unsaved-changes alert that quits TextMouth and leaves the changes unsaved.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তবুও প্রস্থান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218082,6 +218910,12 @@
     "Quitting TextMouth" : {
       "comment" : "Title of the panel TextMouth shows, and the start of what it says aloud, while it finishes work before quitting.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth প্রস্থান করছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218159,6 +218993,12 @@
     "Quitting now leaves these changes unsaved:" : {
       "comment" : "First line of the alert's message when quitting would leave changes unsaved; a list of what is unsaved follows it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখন প্রস্থান করলে এই পরিবর্তনগুলো সংরক্ষিত হবে না:"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218236,6 +219076,12 @@
     "Quotation Mark" : {
       "comment" : "Name of the punctuation key \"\"\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Quotation Mark\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "উদ্ধৃতি চিহ্ন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218645,6 +219491,12 @@
     "Re-import the book to replace it." : {
       "comment" : "Second sentence of the message when a chapter's audio file is unreadable: what to do.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিস্থাপন করতে বইটি আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218722,6 +219574,12 @@
     "Re-import the book to restore it." : {
       "comment" : "Second sentence of the message when a chapter's audio file is missing: what to do.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পুনরুদ্ধার করতে বইটি আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218935,6 +219793,12 @@
     "Read Only" : {
       "comment" : "Heading of the group of fields of the book information sheet that the user cannot change.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু পঠনযোগ্য"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -219296,6 +220160,12 @@
     "Reader windows" : {
       "comment" : "Choice of the Works in pop-up of a keyboard shortcut: the shortcut works in the reader windows, where a book is read.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিডার উইন্ডো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -220036,6 +220906,12 @@
     "Reading position copied to clipboard" : {
       "comment" : "Announcement after Copy Reading Position put the reading position on the clipboard.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার অবস্থান ক্লিপবোর্ডে কপি হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -222519,6 +223395,12 @@
     "Recording shortcut. Press a key with Command or Control." : {
       "comment" : "VoiceOver label of a menu command's key button while it waits for the new key: the shortcut of a menu command must be a key held with the Command or Control key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শর্টকাট রেকর্ড হচ্ছে। কমান্ড বা কন্ট্রোল-সহ একটি কী চাপুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -222596,6 +223478,12 @@
     "Recording shortcut. Press a key, or press it twice for a double press." : {
       "comment" : "VoiceOver label of a keyboard shortcut's key button while it waits for the new key: pressing a key records it, and pressing the same key twice quickly records a double press.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শর্টকাট রেকর্ড হচ্ছে। একটি কী চাপুন, বা দুইবার চাপার জন্য সেটি দুইবার চাপুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -223100,6 +223988,12 @@
     "Records a new shortcut." : {
       "comment" : "VoiceOver hint of a keyboard shortcut's key button, and of the add shortcut button, in Settings: the next key pressed becomes the shortcut.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি নতুন শর্টকাট রেকর্ড করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -223746,6 +224640,12 @@
     "Redo" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Redo\".\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Does the last undone edit again.\nName of the Edit menu's Redo command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিডু"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -225152,6 +226052,12 @@
     "Release Media Controls" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Playback group and read by VoiceOver. Gives the Mac's media keys back to other apps. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মিডিয়া নিয়ন্ত্রণ ছেড়ে দিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227402,6 +228308,12 @@
     "Remove bookmark" : {
       "comment" : "What VoiceOver says for the playback bar's bookmark button while a bookmark is at the place being read; it removes that bookmark.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227621,6 +228533,12 @@
     "Remove from Library" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Removes the selected books from the library.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি থেকে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227828,6 +228746,12 @@
     "Remove from Reading List" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Takes the selected books off the reading list. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকা থেকে সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227905,6 +228829,12 @@
     "Remove shortcut %@ from %@" : {
       "comment" : "VoiceOver label of the button that removes one key from a keyboard shortcut action. %1$@ is the key in words, such as \"Command + I\", and %2$@ is the action's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@ থেকে শর্টকাট %1$@ সরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -228071,6 +229001,12 @@
     "Remove them: an audiobook of tracks is arranged with tracks." : {
       "comment" : "Second sentence of the reason an edited manifest.json was refused for having segments: the user should remove the segments.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেগুলো সরিয়ে দিন: ট্র্যাকের অডিওবুক ট্র্যাক দিয়েই সাজানো হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -228598,6 +229534,12 @@
     "Removes this book's own voice, speed, and pitch, so it uses the global defaults." : {
       "comment" : "Hint of the button that removes a text book's own voice, speed and pitch.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইয়ের নিজস্ব ভয়েস, গতি ও পিচ সরিয়ে দেয়, ফলে এটি গ্লোবাল ডিফল্ট ব্যবহার করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230481,6 +231423,12 @@
     "Reset" : {
       "comment" : "Button of an alert that confirms resetting every keyboard shortcut to its default.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Reset\".\nName of a premade filter preset's Reset button, also its VoiceOver action and context menu item: puts the preset back as it came.\nTitle of the button that goes ahead in the question asked before the Substitutions settings replace every rule with the defaults.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিসেট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230558,6 +231506,12 @@
     "Reset %@ to Default" : {
       "comment" : "VoiceOver label of the Reset to Default button in the row of a keyboard shortcut action. %@ is the action's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ডিফল্টে রিসেট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -230801,6 +231755,12 @@
     "Reset Keyboard Shortcuts?" : {
       "comment" : "Title of the alert that asks the listener to confirm resetting every keyboard shortcut to its default.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কীবোর্ড শর্টকাট রিসেট করবেন?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231121,6 +232081,12 @@
     "Reset all shortcuts to defaults" : {
       "comment" : "VoiceOver label of the button at the end of the Shortcuts tab of Settings that gives every keyboard shortcut its default keys again.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব শর্টকাট ডিফল্টে রিসেট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231352,6 +232318,12 @@
     "Reset this book's voice, speed, and pitch to the global defaults" : {
       "comment" : "What VoiceOver calls the button that removes a text book's own voice, speed and pitch.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইয়ের ভয়েস, গতি ও পিচ গ্লোবাল ডিফল্টে রিসেট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231429,6 +232401,12 @@
     "Reset to Default" : {
       "comment" : "Button in Storage settings that moves the library back to the default location.\nButton in the row of a keyboard shortcut action the listener changed, and the row's VoiceOver action: gives that one action its default keys again.\nTitle of the button in Settings, Text, Repeated Symbols that restores the standard list of symbols.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডিফল্ট পুনরুদ্ধার করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231672,6 +232650,12 @@
     "Reset to Global Settings" : {
       "comment" : "Button of a text book's own settings sheet that removes its own voice, speed and pitch.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "গ্লোবাল সেটিংসে রিসেট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231749,6 +232733,12 @@
     "Reset to Normal Speed" : {
       "comment" : "Button of an audiobook's own settings sheet that sets its speed back to normal.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্বাভাবিক গতিতে রিসেট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231909,6 +232899,12 @@
     "Reset to global end-of-book setting" : {
       "comment" : "What VoiceOver calls the button that removes the book's own end of book choice.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "গ্লোবাল বইয়ের শেষের সেটিংয়ে রিসেট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231986,6 +232982,12 @@
     "Reset to normal audio speed" : {
       "comment" : "What VoiceOver calls the button that sets an audiobook's speed back to normal.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্বাভাবিক অডিও গতিতে রিসেট করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -232063,6 +233065,12 @@
     "Resets this book to %@" : {
       "comment" : "Hint of the button that sets an audiobook's speed back to normal. %@ names the normal speed, such as \"1.0 times speed\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইকে %@-এ রিসেট করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -232140,6 +233148,12 @@
     "Restart Sleep Timer" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Starts the sleep timer again with its last length.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্লিপ টাইমার আবার শুরু করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -233123,6 +234137,12 @@
     "Restores this action's default shortcuts, which follow later releases' changes" : {
       "comment" : "VoiceOver hint of the Reset to Default button of one keyboard shortcut action: the action goes back to the default keys, and later versions of TextMouth may change them.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই কাজের ডিফল্ট শর্টকাট ফিরিয়ে আনে, যা পরবর্তী সংস্করণের পরিবর্তন অনুসরণ করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -233970,6 +234990,12 @@
     "Retry" : {
       "comment" : "Button of the reader's error alert that tries to play the audio again.\nButton of the unsaved-changes alert that tries to save the changes again.\nButton on a failure notice that tries to save again.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার চেষ্টা করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -234462,6 +235488,12 @@
     "Return" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Return\".\nTitle of the reader toolbar's button that goes back to the reading position left before browsing.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিটার্ন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -234539,6 +235571,12 @@
     "Return to previous reading position" : {
       "comment" : "What VoiceOver calls the reader toolbar's Return button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আগের পড়ার অবস্থানে ফিরুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235001,6 +236039,12 @@
     "Revert to Original…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Throws away all edits and goes back to the original audio.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আসলটিতে ফিরুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235922,6 +236966,12 @@
     "Right Arrow" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Arrow\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডান তীর"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235999,6 +237049,12 @@
     "Right Brace" : {
       "comment" : "Name of the punctuation key \"}\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Brace\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডান ব্রেস"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236076,6 +237132,12 @@
     "Right Bracket" : {
       "comment" : "Name of the punctuation key \"]\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Bracket\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডান ব্র্যাকেট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236153,6 +237215,12 @@
     "Right Parenthesis" : {
       "comment" : "Name of the punctuation key \")\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Right Parenthesis\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডান বন্ধনী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237806,6 +238874,12 @@
     "Save a copy without the password, then import that copy." : {
       "comment" : "Last sentence of why a password-protected document could not be imported: what to do.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পাসওয়ার্ড ছাড়া একটি কপি সংরক্ষণ করুন, তারপর সেই কপি আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238215,6 +239289,12 @@
     "Save it as UTF-8 text, then import it again." : {
       "comment" : "Last sentence of why an HTML file could not be imported because of its declared text encoding: what to do. UTF-8 is an encoding's name and stays as it is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "UTF-8 টেক্সট হিসেবে সংরক্ষণ করুন, তারপর আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238292,6 +239372,12 @@
     "Save it as UTF-8, then import it again." : {
       "comment" : "Last sentence of why a file was refused because of its text encoding: what to do. UTF-8 is an encoding's name and stays as it is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "UTF-8 হিসেবে সংরক্ষণ করুন, তারপর আবার আমদানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238369,6 +239455,12 @@
     "Save metadata changes" : {
       "comment" : "What VoiceOver says for the Save button of an audiobook's book information sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মেটাডেটা পরিবর্তন সংরক্ষণ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238446,6 +239538,12 @@
     "Save metadata to the library and to the library's copy of the EPUB file" : {
       "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is on.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরিতে এবং লাইব্রেরির EPUB ফাইলের কপিতে মেটাডেটা সংরক্ষণ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238523,6 +239621,12 @@
     "Save metadata to the library only" : {
       "comment" : "Label of the metadata editor's Save button while the switch that also writes the EPUB file is off.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু লাইব্রেরিতে মেটাডেটা সংরক্ষণ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238837,6 +239941,12 @@
     "Save this book's voice, speed, and pitch as the global defaults" : {
       "comment" : "What VoiceOver calls the buttons that save a text book's voice, speed and pitch as the settings for every book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইয়ের ভয়েস, গতি ও পিচ গ্লোবাল ডিফল্ট হিসেবে সংরক্ষণ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238914,6 +240024,12 @@
     "Save to Global Settings" : {
       "comment" : "Button of a text book's own settings sheet that saves its voice, speed and pitch as the settings for every book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "গ্লোবাল সেটিংসে সংরক্ষণ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -240443,6 +241559,12 @@
     "Say the page in Where Am I?" : {
       "comment" : "Label of the Playback setting's checkbox that adds the page to Where Am I?, a command that says where the reader is.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "‘আমি কোথায়?’-এ পৃষ্ঠা বলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -240852,6 +241974,12 @@
     "Scroll Lock" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Scroll Lock\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্ক্রল লক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -241065,6 +242193,12 @@
     "Search Library…" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Opens the window that searches the text of every book. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরিতে অনুসন্ধান করুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -241408,6 +242542,12 @@
     "Search in book" : {
       "comment" : "What VoiceOver calls the reader toolbar's button that opens the search in the book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ে অনুসন্ধান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243076,6 +244216,12 @@
     "Select All" : {
       "comment" : "Button of the edit bar that selects every listed book.\nName of a keyboard shortcut action, listed in Settings in the Library group and read by VoiceOver. Selects every row of the library list.\nName of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects all of the audio.\nName of the Edit menu's Select All command, in a sentence saying why a keyboard shortcut cannot take its key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সব নির্বাচন করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243153,6 +244299,12 @@
     "Select Chapter" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Selects the chapter at the current position.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অধ্যায় নির্বাচন করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243694,6 +244846,12 @@
     "Select to Next Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection forward to the next silent pause.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরবর্তী বিরতি পর্যন্ত নির্বাচন করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243771,6 +244929,12 @@
     "Select to Previous Pause" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Extends the selection back to the previous silent pause.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ববর্তী বিরতি পর্যন্ত নির্বাচন করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243931,6 +245095,12 @@
     "Select voice for this book" : {
       "comment" : "What VoiceOver calls the voice sheet's menu of voices.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইয়ের জন্য ভয়েস বেছে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245063,6 +246233,12 @@
     "Semicolon" : {
       "comment" : "Name of the punctuation key \";\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Semicolon\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেমিকোলন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246683,6 +247859,12 @@
     "Shift" : {
       "comment" : "Name of the Shift modifier key, spoken or brailled in a keyboard shortcut such as \"Shift + Command + B\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শিফট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246760,6 +247942,12 @@
     "Shift JIS (Japanese)" : {
       "comment" : "The name of a text encoding in Book Information's Text Encoding pop-up, its row, and Speak Info: the encoding's standard name, which stays as it is, then the language or script it is for, in parentheses.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Shift JIS (জাপানি)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247418,6 +248606,12 @@
     "Shortcuts reset to defaults." : {
       "comment" : "Announced by VoiceOver after the listener confirmed resetting every keyboard shortcut to its default.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শর্টকাট ডিফল্টে রিসেট হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248031,6 +249225,12 @@
     "Show Bookmarks" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Bookmarks group and read by VoiceOver. Opens the list of the book's bookmarks. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248256,6 +249456,12 @@
     "Show Headings" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the list of the book's headings. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "হেডিং দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248499,6 +249705,12 @@
     "Show Sleep Timer" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Panels group and read by VoiceOver. Opens the sleep timer, which stops playback after a time. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্লিপ টাইমার দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249247,6 +250459,12 @@
     "Show bookmarks" : {
       "comment" : "What VoiceOver calls the reader toolbar's button that opens the bookmarks sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249324,6 +250542,12 @@
     "Show heading navigator" : {
       "comment" : "What VoiceOver calls the reader toolbar's button that opens the headings sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "হেডিং নেভিগেটর দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249484,6 +250708,12 @@
     "Show levels" : {
       "comment" : "Label of the headings sheet's level filter, which limits the headings shown to those up to a level.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্তর দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -250037,6 +251267,12 @@
     "Show the page on the reader screen" : {
       "comment" : "Label of the Playback setting's checkbox that shows the page being read on the reader screen.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রিডার স্ক্রিনে পৃষ্ঠা দেখান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -250750,6 +251986,12 @@
     "Shows only the headings up to the level chosen." : {
       "comment" : "Hint of the headings sheet's level filter: what choosing a level does.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বেছে নেওয়া স্তর পর্যন্ত হেডিংগুলোই দেখায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251141,6 +252383,12 @@
     "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page." : {
       "comment" : "Hint and caption of the Playback setting that shows the page on the reader screen. \"Page 12 of 300\" is an example of how the page is shown.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একাধিক পৃষ্ঠার বইয়ের জন্য শতাংশের পাশে পড়া পৃষ্ঠা দেখায়, যেমন 300 পৃষ্ঠার মধ্যে পৃষ্ঠা 12।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251716,6 +252964,12 @@
     "Skip Section" : {
       "comment" : "Name of a heading row's command that makes speech skip the section, as a VoiceOver action and a context menu item.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অংশ বাদ দিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251953,6 +253207,12 @@
     "Skip backward: %@" : {
       "comment" : "What VoiceOver says for the playback bar's skip backward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পিছিয়ে যান: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252498,6 +253758,12 @@
     "Skip forward: %@" : {
       "comment" : "What VoiceOver says for the playback bar's skip forward button. %@ is the unit it skips by, such as \"15 seconds\" or \"Sentence\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এগিয়ে যান: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252575,6 +253841,12 @@
     "Skipped" : {
       "comment" : "What VoiceOver says for the mark on a heading the user skipped.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাদ দেওয়া"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252652,6 +253924,12 @@
     "Skipped, %@ (current heading) - level %lld" : {
       "comment" : "What VoiceOver says for the heading being read when the user skipped it, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাদ দেওয়া, %1$@ (বর্তমান হেডিং) - স্তর %2$lld"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252735,6 +254013,12 @@
     "Skipped, %@ - level %lld" : {
       "comment" : "What VoiceOver says for a heading the user skipped, in the headings list. %1$@ is the heading's text; %2$lld is its level, 1 for the biggest heading.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাদ দেওয়া, %1$@ - স্তর %2$lld"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252901,6 +254185,12 @@
     "Slash" : {
       "comment" : "Name of the punctuation key \"/\", spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Slash\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্ল্যাশ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -253055,6 +254345,12 @@
     "Sleep timer" : {
       "comment" : "What VoiceOver calls the reader toolbar's button that opens the sleep timer sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্লিপ টাইমার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254254,6 +255550,12 @@
     "Some Changes Could Not Be Saved" : {
       "comment" : "Title of the alert shown when TextMouth is asked to quit while some changes could not be written to disk.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কিছু পরিবর্তন সংরক্ষণ করা যায়নি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255580,6 +256882,12 @@
     "Space" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Space\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্পেস"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255657,6 +256965,12 @@
     "Speak Download Progress" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the feed downloads under way have got. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডাউনলোডের অগ্রগতি বলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255734,6 +257048,12 @@
     "Speak Full Info" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks the full summary of the selected book, folder or feed. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্ণ তথ্য বলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255811,6 +257131,12 @@
     "Speak Import Progress" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks how far the imports under way have got. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আমদানির অগ্রগতি বলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255888,6 +257214,12 @@
     "Speak Info" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the Information group and read by VoiceOver. Speaks a short summary of the selected book, folder or feed. Also the title of the menu command of the same name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তথ্য বলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255965,6 +257297,12 @@
     "Speak Selection" : {
       "comment" : "Name of a keyboard shortcut action, listed in Settings in the audio editor group and read by VoiceOver. Speaks what is selected, with its length.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচন বলুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257010,6 +258348,12 @@
     "Speed: %@" : {
       "comment" : "Caption above an audiobook's speed slider in its own settings sheet. %@ is the speed, such as 1.25x.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "গতি: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257087,6 +258431,24 @@
     "Speed: %lld WPM" : {
       "comment" : "Caption above the voice sheet's speed slider for a text book. WPM is the abbreviation of words per minute; %lld is the number of words.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "গতি: মিনিটে %lld শব্দ"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "গতি: মিনিটে %lld শব্দ"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -257684,6 +259046,12 @@
     "Standard" : {
       "comment" : "A voice's quality tier, the plainest, shown beside its name in the voice pickers and spoken by VoiceOver, such as \"Samantha, Standard quality\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "স্ট্যান্ডার্ড"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260557,6 +261925,12 @@
     "Stop Where Am I announcement" : {
       "comment" : "What VoiceOver calls the reader toolbar's Where Am I? button while an announcement speaks; pressing it stops the announcement.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "‘আমি কোথায়?’ ঘোষণা থামান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -262816,6 +264190,12 @@
     "Stops waiting for the download" : {
       "comment" : "Hint of the Cancel button of the reader's view while a book downloads.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডাউনলোডের জন্য অপেক্ষা বন্ধ করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264352,6 +265732,12 @@
     "Switches to jump to page controls" : {
       "comment" : "Hint of the status row's page button while the jump to percent or time panel is open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পৃষ্ঠায় যাওয়ার নিয়ন্ত্রণে বদলায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264429,6 +265815,12 @@
     "Switches to jump to percent controls" : {
       "comment" : "Hint of the reader's percent button while the jump to time or page panel is open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শতাংশে যাওয়ার নিয়ন্ত্রণে বদলায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264506,6 +265898,12 @@
     "Switches to jump to time controls" : {
       "comment" : "Hint of the reader's time button while the jump to percent or page panel is open.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সময়ে যাওয়ার নিয়ন্ত্রণে বদলায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264980,6 +266378,12 @@
     "System" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিস্টেম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265057,6 +266461,12 @@
     "System Request" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + System Request\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সিস্টেম রিকোয়েস্ট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265134,6 +266544,12 @@
     "Tab" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Tab\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্যাব"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265294,6 +266710,12 @@
     "Taken from %@" : {
       "comment" : "Announced by VoiceOver after a key was given to a keyboard shortcut action that another action had. %@ names the action or actions that lost the key, such as \"Play / Pause and Where Am I?\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ থেকে নেওয়া হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266781,6 +268203,12 @@
     "Text not updated: %@" : {
       "comment" : "Announcement when an edited text could not be taken for a reason the system or another part of the app gives. %@ is the reason.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266858,6 +268286,12 @@
     "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it." : {
       "comment" : "Announcement when an Edit Text session ends because the book left the library. %@ is the book's title. Edit Text is a menu command.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@ সরানো হয়েছে, বা এর ডাউনলোড মুছে ফেলা হয়েছে, তাই এর জন্য টেক্সট সম্পাদনা বন্ধ হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266935,6 +268369,12 @@
     "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited text was refused because one chapter nests lists or quotes too deeply. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title; %3$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %2$@-এর সম্পাদিত টেক্সটের অধ্যায় %1$@ %3$@, যা TextMouth নিরাপদে পড়তে পারে না। এটি সমতল করে আবার সংরক্ষণ করুন, বা পরিবর্তনটি পূর্বাবস্থায় ফেরান; তার আগে পর্যন্ত বইটি আগের টেক্সট রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267018,6 +268458,12 @@
     "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited text was refused because it nests lists or quotes too deeply. %1$@ is the book's title; %2$@ is a clause such as \"nests more than 20 levels deep\", written by another part of the app.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %1$@-এর সম্পাদিত টেক্সট %2$@, যা TextMouth নিরাপদে পড়তে পারে না। এটি সমতল করে আবার সংরক্ষণ করুন, বা পরিবর্তনটি পূর্বাবস্থায় ফেরান; তার আগে পর্যন্ত বইটি আগের টেক্সট রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267101,6 +268547,12 @@
     "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited text was refused because no chapter has any text left. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@-এর সম্পাদিত টেক্সটে এমন কোনো অধ্যায় নেই যাতে টেক্সট আছে। পরিবর্তনটি পূর্বাবস্থায় ফেরান ও আবার সংরক্ষণ করুন; তার আগে পর্যন্ত বইটি আগের টেক্সট রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267178,6 +268630,12 @@
     "Text not updated: the edited text of %@ isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited text was refused because it is not UTF-8 text. %@ is the book's title. UTF-8 is a text encoding.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@-এর সম্পাদিত টেক্সট UTF-8 টেক্সট নয়। UTF-8 হিসেবে সংরক্ষণ করুন; তার আগে পর্যন্ত বইটি আগের টেক্সট রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267255,6 +268713,12 @@
     "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited transcript was refused because the user added words to a chapter with no speech. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@-এর সম্পাদিত ট্রান্সক্রিপ্ট এমন একটি অধ্যায়ে শব্দ যোগ করেছে যাতে কথা নেই, সেখানে সেগুলো রাখা যায় না। সেগুলো সরিয়ে আবার সংরক্ষণ করুন; তার আগে পর্যন্ত বইটি আগের টেক্সট রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267332,6 +268796,12 @@
     "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited transcript was refused because the user changed a chapter's heading. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@-এর সম্পাদিত ট্রান্সক্রিপ্ট একটি অধ্যায়ের হেডিং বদলেছে, যা তার অডিও থেকে আসে। এটি আগের অবস্থায় ফিরিয়ে আবার সংরক্ষণ করুন; তার আগে পর্যন্ত বইটি আগের টেক্সট রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267409,6 +268879,12 @@
     "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then." : {
       "comment" : "Announcement when an edited transcript was refused because its number of chapters no longer matches the audiobook's. %1$@ is the book's title; %2$@ and %3$@ are counts of chapters such as \"3 chapters\". \"<!-- chapter:\" is literal text in the file and stays exactly as written.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %1$@-এর সম্পাদিত ট্রান্সক্রিপ্টে %2$@ আছে, কিন্তু অডিওবুকে আছে %3$@। <!-- chapter: দিয়ে শুরু হওয়া প্রতিটি লাইন রেখে আবার সংরক্ষণ করুন; তার আগে পর্যন্ত বইটি আগের টেক্সট রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267492,6 +268968,12 @@
     "Text not updated: the original file of %@ changed too. The book's text is read from it again the next time the book opens." : {
       "comment" : "Announcement when an edited text was not taken because the book's own file changed too. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@-এর মূল ফাইলও বদলেছে। বইটি পরের বার খোলার সময় এর টেক্সট ফাইল থেকে আবার পড়া হবে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267569,6 +269051,12 @@
     "Text not updated: the transcript of %@ changed too. The book's text is written from it again the next time the book opens." : {
       "comment" : "Announcement when an edited text was not taken because the book's transcript changed too. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়নি: %@-এর ট্রান্সক্রিপ্টও বদলেছে। বইটি পরের বার খোলার সময় এর টেক্সট তা থেকে আবার লেখা হবে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268276,6 +269764,12 @@
     "Text updated" : {
       "comment" : "Announcement after the user saved an edited text and TextMouth took it as the book's text. Written without its full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268353,6 +269847,12 @@
     "Text updated." : {
       "comment" : "Announcement after the user saved an edited text of a feed episode's transcript, followed by a note about where the transcript stays.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেক্সট হালনাগাদ হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269099,6 +270599,12 @@
     "TextMouth can't read the audio file %@ because %@." : {
       "comment" : "Why an audio file could not be converted at import: it is of a format TextMouth reads, in a form it refuses. %1$@ is the file's name and %2$@ the reason, a clause in English that follows \"because\" and has no full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth অডিও ফাইল %1$@ পড়তে পারে না, কারণ %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269419,6 +270925,12 @@
     "TextMouth can't safely read the file “%@” in this book, because it defines entities of its own." : {
       "comment" : "First sentence of why a file inside an EPUB or DAISY book was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই বইয়ের “%@” ফাইলটি নিরাপদে পড়তে পারে না, কারণ এটি নিজের এনটিটি সংজ্ঞায়িত করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269496,6 +271008,12 @@
     "TextMouth can't safely read the file “%@” in this book, because it is written in the %@ encoding." : {
       "comment" : "First sentence of why a file inside an EPUB or DAISY book was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the book and %2$@ the encoding's name as the file declares it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই বইয়ের “%1$@” ফাইলটি নিরাপদে পড়তে পারে না, কারণ এটি %2$@ এনকোডিংয়ে লেখা।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269579,6 +271097,12 @@
     "TextMouth can't safely read the file “%@” in this document, because it defines entities of its own." : {
       "comment" : "First sentence of why a file inside a Word or OpenDocument document was refused: it defines XML entities of its own, which could make it far larger when read. %@ is the file's path inside the document.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই নথির “%@” ফাইলটি নিরাপদে পড়তে পারে না, কারণ এটি নিজের এনটিটি সংজ্ঞায়িত করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269656,6 +271180,12 @@
     "TextMouth can't safely read the file “%@” in this document, because it is written in the %@ encoding." : {
       "comment" : "First sentence of why a file inside a Word or OpenDocument document was refused: it is in a text encoding TextMouth cannot see through. %1$@ is the file's path inside the document and %2$@ the encoding's name as the file declares it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই নথির “%1$@” ফাইলটি নিরাপদে পড়তে পারে না, কারণ এটি %2$@ এনকোডিংয়ে লেখা।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269739,6 +271269,12 @@
     "TextMouth can't safely read this SSML file, because it defines entities of its own." : {
       "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it defines XML entities of its own, which could make it far larger when read.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই SSML ফাইল নিরাপদে পড়তে পারে না, কারণ এটি নিজের এনটিটি সংজ্ঞায়িত করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269816,6 +271352,12 @@
     "TextMouth can't safely read this SSML file, because it is written in the %@ encoding." : {
       "comment" : "First sentence of why an SSML (Speech Synthesis Markup Language) file was refused: it is in a text encoding TextMouth cannot see through. %@ is the encoding's name as the file declares it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এই SSML ফাইল নিরাপদে পড়তে পারে না, কারণ এটি %@ এনকোডিংয়ে লেখা।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274502,6 +276044,12 @@
     "TextMouth hasn't read the latest save yet." : {
       "comment" : "Reason after a colon: a rebuild left the book's text alone because the latest save of the edited text is not read yet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth এখনও সর্বশেষ সংরক্ষণ পড়েনি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
