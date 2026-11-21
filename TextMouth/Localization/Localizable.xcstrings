@@ -194578,7 +194578,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scaricato: %@"
+            "value" : "Scaricati: %@"
           }
         },
         "ja" : {
@@ -233600,7 +233600,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La posizione nelle cartelle e l’ordine manuale memorizzati solo nell’indice illeggibile vanno persi dalla libreria."
+            "value" : "La posizione nelle cartelle e l’ordine manuale memorizzati solo nell’indice illeggibile vanno persi."
           }
         },
         "ja" : {
@@ -259341,7 +259341,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nella cartella Registri di questo Mac."
+            "value" : "Nella cartella Registri di questo Mac"
           }
         },
         "ja" : {
@@ -269353,7 +269353,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Potrebbe essere in pausa, aver perso l’accesso o non essere in esecuzione."
+            "value" : "Potrebbe essere in pausa, non aver effettuato l’accesso o non essere in esecuzione."
           }
         },
         "ja" : {
@@ -304826,7 +304826,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le modifiche al menu vengono salvate come predefinite per il libro corrente. Nascondere i menu usa le scelte di salto globali; le impostazioni predefinite dei libri vengono mantenute."
+            "value" : "Le modifiche al menu vengono salvate come predefinite per il libro corrente. Se nascondi i menu, vengono usate le scelte di salto globali; le impostazioni predefinite dei libri vengono mantenute."
           }
         },
         "ja" : {
@@ -438617,7 +438617,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Risolvi prima il conflitto con %@."
+            "value" : "Risolvi prima il conflitto in %@."
           }
         },
         "ja" : {
@@ -464153,7 +464153,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Interrompi, Riproduci ricomincia da capo"
+            "value" : "Interrompi; con Riproduci ricomincia da capo"
           }
         },
         "ja" : {
@@ -465037,7 +465037,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Smesso di mantenere su questo Mac: %@"
+            "value" : "Mantenimento su questo Mac interrotto: %@"
           }
         },
         "ja" : {
@@ -494998,7 +494998,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth li sposta di nuovo quando ha finito di spostare i libri tra le cartelle."
+            "value" : "TextMouth li riporta al loro posto quando ha finito di spostare i libri tra le cartelle."
           }
         },
         "ja" : {
@@ -495135,7 +495135,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth li sposta di nuovo quando ha finito di ricostruire la sua cartella dei dati."
+            "value" : "TextMouth li riporta al loro posto quando ha finito di ricostruire la sua cartella dei dati."
           }
         },
         "ja" : {
@@ -495272,7 +495272,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth li sposta di nuovo quando lo spostamento della sua cartella dei dati termina."
+            "value" : "TextMouth li riporta al loro posto quando lo spostamento della sua cartella dei dati termina."
           }
         },
         "ja" : {
@@ -538011,7 +538011,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La libreria aveva già un contenuto diverso con il nome del suo pacchetto, %@, quindi è stato archiviato in un nuovo pacchetto, %@, e il suo file originale è stato conservato in %@."
+            "value" : "La libreria aveva già un contenuto diverso con il nome del suo pacchetto, %@, quindi il libro è stato archiviato in un nuovo pacchetto, %@, e il suo file originale è stato conservato in %@."
           }
         },
         "ja" : {
