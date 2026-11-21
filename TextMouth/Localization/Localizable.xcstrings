@@ -98600,7 +98600,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "還有 %lld 個副本，記錄在日誌中。"
+                  "value" : "還有 %lld 個副本，詳見記錄。"
                 }
               }
             }
@@ -229743,7 +229743,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在這部 Mac 的日誌檔案夾中"
+            "value" : "在這部 Mac 的 Logs 檔案夾中"
           }
         }
       }
@@ -261312,7 +261312,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "日誌位置"
+            "value" : "記錄位置"
           }
         }
       }
@@ -261437,7 +261437,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "日誌"
+            "value" : "記錄"
           }
         }
       }
@@ -261562,7 +261562,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "日誌寫入到 %@。"
+            "value" : "記錄寫入到 %@。"
           }
         }
       }
@@ -319182,7 +319182,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在 Finder 中打開目前寫入日誌的檔案夾 %@。"
+            "value" : "在 Finder 中打開目前寫入記錄的檔案夾 %@。"
           }
         }
       }
@@ -336713,7 +336713,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "另有 %lld 本書籍，全都列在位於 %@ 的除錯日誌中。"
+                  "value" : "另有 %lld 本書籍，全都列在位於 %@ 的除錯記錄中。"
                 }
               }
             }
@@ -390956,7 +390956,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在 Finder 中顯示日誌"
+            "value" : "在 Finder 中顯示記錄"
           }
         }
       }
@@ -464520,7 +464520,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "資料目錄中沒有日誌檔案夾，因此在有之前，日誌會存放到 %@。"
+            "value" : "資料目錄中沒有 Logs 檔案夾，因此在有之前，記錄會存放到 %@。"
           }
         }
       }
@@ -464645,7 +464645,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "資料目錄不見了，因此在它回來之前，日誌會存放到 %@。"
+            "value" : "資料目錄不見了，因此在它回來之前，記錄會存放到 %@。"
           }
         }
       }
@@ -464776,7 +464776,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法寫入資料目錄的日誌檔案夾（%1$@），因此在可寫入之前，日誌會存放到 %2$@。"
+            "value" : "無法寫入資料目錄的 Logs 檔案夾（%1$@），因此在可寫入之前，記錄會存放到 %2$@。"
           }
         }
       }
@@ -478364,7 +478364,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書庫無法使用，因此在可使用之前，日誌會存放到 %@。"
+            "value" : "書庫無法使用，因此在可使用之前，記錄會存放到 %@。"
           }
         }
       }
@@ -549939,7 +549939,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 寫入診斷日誌的位置。%1$@ 會將日誌與你的書籍放在一起，因此日誌會隨書庫移動和同步。%2$@ 會將日誌保留在 %3$@，那裡永遠不會同步。更改會從下一行起套用；現有的日誌會保留。"
+            "value" : "TextMouth 寫入診斷記錄的位置。%1$@ 會將記錄與你的書籍放在一起，因此記錄會隨書庫移動和同步。%2$@ 會將記錄保留在 %3$@，那裡永遠不會同步。更改會從下一行起套用；現有的記錄會保留。"
           }
         }
       }
