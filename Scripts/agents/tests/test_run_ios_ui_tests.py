@@ -372,6 +372,17 @@ class TheCommandTests(unittest.TestCase):
         """The command for a simulator and the given classes."""
         return uitests.test_command("UDID-1", "build/dd", "build/out/result.xcresult", list(classes))
 
+    def test_a_request_repeats_each_test_only_with_a_sensible_number(self):
+        self.assertNotIn("-test-iterations", self.command())
+        for odd in (None, True, 1, 0, 101, "50", 50.0):
+            with self.subTest(odd=odd):
+                self.assertEqual(uitests.iterations_of({"test_iterations": odd}), 1)
+        self.assertEqual(uitests.iterations_of({}), 1)
+        self.assertEqual(uitests.iterations_of({"test_iterations": 50}), 50)
+        command = uitests.test_command("UDID-1", "build/dd", "build/out/result.xcresult", ["A"], iterations=50)
+        self.assertEqual(command[command.index("-test-iterations") + 1], "50")
+        self.assertNotIn("-retry-tests-on-failure", command)
+
     def test_it_tests_without_building_in_the_simulator_by_id(self):
         command = self.command()
         self.assertEqual(command[:2], ["xcodebuild", "test-without-building"])
@@ -1053,9 +1064,9 @@ class RunningTheScriptTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for, and builds the real command."""
-            seen.append(real(udid, derived, bundle, classes))
+            seen.append(real(udid, derived, bundle, classes, iterations))
             return [sys.executable, "-c", self.BOTH_PASS]
 
         with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
@@ -1093,9 +1104,9 @@ class RunningTheScriptTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for, and builds the real command."""
-            seen.append(real(udid, derived, bundle, classes))
+            seen.append(real(udid, derived, bundle, classes, iterations))
             return [sys.executable, "-c", self.BOTH_PASS.split("; ")[0] + "; " + self.BOTH_PASS.split("; ")[1] + "; print('** TEST EXECUTE SUCCEEDED **')"]
 
         with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
@@ -1113,10 +1124,10 @@ class RunningTheScriptTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for."""
             seen.append(classes)
-            return real(udid, derived, bundle, classes)
+            return real(udid, derived, bundle, classes, iterations)
 
         with mock.patch.object(uitests, "test_command", spy), mock.patch.object(uitests, "run_tests", return_value=(0, False)):
             fake = io.StringIO()
@@ -1145,10 +1156,10 @@ class ShardedRunTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for."""
             seen.append(classes)
-            return real(udid, derived, bundle, classes)
+            return real(udid, derived, bundle, classes, iterations)
 
         with mock.patch.object(uitests, "test_command", spy), mock.patch.object(uitests, "run_tests", return_value=(0, False)), \
                 mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \

@@ -618,6 +618,25 @@ class SkipTests(RunnerTestCase):
         request = {"full": True, "areas": [], "classes": [], "parallel_workers": 3}
         self.assertIn("-parallel-testing-worker-count", runner.runner_arguments(request, []))
 
+    def test_a_request_repeats_every_test_only_with_a_sensible_number_and_then_takes_no_retry(self):
+        self.assertEqual(runner.iteration_arguments({}), [])
+        for odd in (True, 1, 0, 101, "50", 50.0, None):
+            with self.subTest(odd=odd):
+                self.assertEqual(runner.iteration_arguments({"test_iterations": odd}), [])
+        self.assertEqual(runner.iteration_arguments({"test_iterations": 50}), ["-test-iterations", "50"])
+        request = {"full": False, "areas": [], "classes": ["FooTests"], "test_iterations": 50}
+        extra = runner.runner_arguments(request, [])
+        # The repeats are the only -test-iterations, and the Xcode retry (which counts tries, not repeats) is gone.
+        for command in (test_command.area_command([], ["FooTests"], "/d", "/l", extra=extra),
+                        test_command.full_suite_command("/d", extra=extra)):
+            joined = " ".join(command)
+            self.assertEqual(joined.count("-test-iterations"), 1, joined)
+            self.assertIn("-test-iterations 50", joined.replace("--xcodebuild-arg=", ""))
+            self.assertNotIn("-retry-tests-on-failure", joined)
+        # Without the key the retry stays as it was.
+        plain = " ".join(test_command.full_suite_command("/d", extra=runner.runner_arguments({"full": True, "areas": [], "classes": []}, [])))
+        self.assertIn("-retry-tests-on-failure -test-iterations 3", plain)
+
     @staticmethod
     def declared_tests():
         """{class name: {test names}} read from the hosted test sources: a test is a `func test...()` indented one
