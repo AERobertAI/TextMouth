@@ -1027,6 +1027,1010 @@
    ]
   },
   {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ נמצאים בספרייה שלך, ללא הרשמה. בחר “%2$@” בשורת הערוץ, או “%3$@” שלו, כדי לבדוק אותם שוב.",
+     "after": "%1$@ נמצאים בספרייה שלך, ללא הרשמה. כדי לבדוק ערוץ שוב, בחר “%2$@” בשורה שלו או ב“%3$@” שלו.",
+     "why": "grammar: the Feed Info clause had lost its preposition (in its Feed Info)"
+    },
+    {
+     "key": "%@ for %@ is now in effect: %@.",
+     "english": "%1$@ for %2$@ is now in effect: %3$@.",
+     "before": "%1$@ עבור %2$@ בתוקף כעת: %3$@.",
+     "after": "“%1$@” עבור %2$@ בתוקף כעת: %3$@.",
+     "why": "punctuation: the name of the List and download choice goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "%@ for %@ now follows the global setting: %@.",
+     "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
+     "before": "%1$@ עבור %2$@ פועל כעת לפי ההגדרה הכללית: %3$@.",
+     "after": "“%1$@” עבור %2$@ נקבעת כעת לפי ההגדרה הכללית: %3$@.",
+     "why": "punctuation: the name of the List and download choice goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "%@ is in your library, unsubscribed. Choose %@ on its row, or in its %@, to check it again.",
+     "english": "%1$@ is in your library, unsubscribed. Choose %2$@ on its row, or in its %3$@, to check it again.",
+     "before": "%1$@ נמצא בספרייה שלך, ללא הרשמה. בחר “%2$@” בשורה שלו, או “%3$@” שלו, כדי לבדוק אותו שוב.",
+     "after": "%1$@ נמצא בספרייה שלך, ללא הרשמה. כדי לבדוק אותו שוב, בחר “%2$@” בשורה שלו או ב“%3$@” שלו.",
+     "why": "grammar: the Feed Info clause had lost its preposition (in its Feed Info)"
+    },
+    {
+     "key": "%@ is now in effect: %@.",
+     "english": "%1$@ is now in effect: %2$@.",
+     "before": "%1$@ בתוקף כעת: %2$@.",
+     "after": "“%1$@” בתוקף כעת: %2$@.",
+     "why": "punctuation: the name of the List and download choice goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "before": "%@ מעביר אפיזודה או כתבה שהורדו בערוץ שלהן. בחר אחת מהן בתיקיית הערוץ.",
+     "after": "“%@” מעביר אפיזודה או כתבה שהורדו בערוץ שלהן. בחר אחת מהן בתיקיית הערוץ.",
+     "why": "punctuation: the name of Move to Library goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "%lld books processed",
+     "english": {
+      "one": "%lld book processed",
+      "other": "%lld books processed"
+     },
+     "before": {
+      "one": "%lld ספר עובד",
+      "other": "%lld ספרים עובדו",
+      "two": "%lld ספרים עובדו"
+     },
+     "after": {
+      "one": "%lld ספר עבר עיבוד",
+      "two": "%lld ספרים עברו עיבוד",
+      "other": "%lld ספרים עברו עיבוד"
+     },
+     "why": "meaning: unvocalized עובד is read aloud as works or worker, not processed"
+    },
+    {
+     "key": "; %@ stay",
+     "english": "; %@ stay",
+     "before": "; %@ נשארים",
+     "after": "; %@ עדיין בספרייה",
+     "why": "grammar: the downloads (episodes, articles) are feminine; a clause without a verb fits every value"
+    },
+    {
+     "key": "; %@ stays",
+     "english": "; %@ stays",
+     "before": "; %@ נשאר",
+     "after": "; %@ עדיין בספרייה",
+     "why": "grammar: the download (episode, article) is feminine; a clause without a verb fits every value"
+    },
+    {
+     "key": "A feed can have its own %@ choice and its own days before deleting played downloads, in its %@.",
+     "english": "A feed can have its own %1$@ choice and its own days before deleting played downloads, in its %2$@.",
+     "before": "לערוץ יכולה להיות בחירת %1$@ משלו ומספר ימים משלו עד למחיקת הורדות שהושמעו, ב-%2$@.",
+     "after": "לערוץ יכולה להיות בחירת “%1$@” משלו ומספר ימים משלו עד למחיקת הורדות שהושמעו, ב“%2$@”.",
+     "why": "punctuation: the name of the List and download choice and of Feed Info goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "After an automatic refresh, a notification names each feed with new episodes and articles",
+     "english": "After an automatic refresh, a notification names each feed with new episodes and articles",
+     "before": "לאחר רענון אוטומטי, הודעה מציינת כל ערוץ שיש בו אפיזודות וכתבות חדשות.",
+     "after": "לאחר רענון אוטומטי, מוצג עדכון לכל ערוץ שיש בו אפיזודות וכתבות חדשות.",
+     "why": "term: Apple's Hebrew calls notifications עדכונים (System Settings, Notifications)"
+    },
+    {
+     "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "before": "פרטי הכתבה מגיעים מהערוץ שלה; %@ הופך אותה לספר שאפשר לערוך.",
+     "after": "פרטי הכתבה מגיעים מהערוץ שלה; “%@” הופך אותה לספר שאפשר לערוך.",
+     "why": "punctuation: the name of Move to Library goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "before": "פרטי האפיזודה מגיעים מהערוץ שלה; %@ הופך אותה לספר שאפשר לערוך.",
+     "after": "פרטי האפיזודה מגיעים מהערוץ שלה; “%@” הופך אותה לספר שאפשר לערוך.",
+     "why": "punctuation: the name of Move to Library goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "Checking the feed won't bring it back.",
+     "english": "Checking the feed won't bring it back.",
+     "before": "בדיקה חוזרת של הערוץ לא תחזיר אותו.",
+     "after": "בדיקה חוזרת של הערוץ לא תחזיר אותה.",
+     "why": "grammar: it is the episode or article, both feminine; אותו read as the feed"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "בודק את הערוץ הזה שוב מעכשיו, ומיד.",
+     "after": "חוזר לבדוק את הערוץ הזה מעכשיו והלאה, ובודק אותו מיד.",
+     "why": "natural: a literal copy (checks again from now, and at once); now says it resumes and checks at once"
+    },
+    {
+     "key": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "english": "Choosing another folder lists the feed's episodes and articles there instead, those already downloaded too.",
+     "before": "בחירה בתיקייה אחרת מציגה במקומה את האפיזודות והכתבות של הערוץ, גם אלה שכבר הורדו.",
+     "after": "בחירה בתיקייה אחרת מציגה בה במקום זאת את האפיזודות והכתבות של הערוץ, גם אלה שכבר הורדו.",
+     "why": "meaning: there was lost, and במקומה read as in the folder's place"
+    },
+    {
+     "key": "Converting audio: %@ of “%@”",
+     "english": "Converting audio: %1$@ of “%2$@”",
+     "before": "ממיר שמע: %1$@ מתוך “%2$@”",
+     "after": "ממיר שמע: %1$@ של “%2$@”",
+     "why": "natural: %1$@ already holds מתוך (12 מתוך 176 רצועות), so a second מתוך read of of"
+    },
+    {
+     "key": "Download %lld of %lld: “%@” from %@",
+     "english": "Download %1$lld of %2$lld: “%3$@” from %4$@",
+     "before": "הורדה %1$lld מתוך %2$lld: “%3$@” מתוך %4$@",
+     "after": "הורדה %1$lld מתוך %2$lld: “%3$@” מהערוץ %4$@",
+     "why": "meaning: from its feed was מתוך (out of), as in a count"
+    },
+    {
+     "key": "Downloaded",
+     "english": "Downloaded",
+     "before": "הורד",
+     "after": "ההורדה הושלמה",
+     "why": "meaning: unvocalized הורד reads as the Download command; Apple's Podcasts says ההורדה הושלמה"
+    },
+    {
+     "key": "Downloading “%@”. It opens once it has downloaded.",
+     "english": "Downloading “%@”. It opens once it has downloaded.",
+     "before": "מוריד את “%@”. הוא ייפתח לאחר שיורד.",
+     "after": "מוריד את “%@”. הוא ייפתח בסיום ההורדה.",
+     "why": "natural: לאחר שיורד was awkward and can read as goes down; now when the download ends"
+    },
+    {
+     "key": "Downloads the speech model from Apple, kept and shared by macOS. Nothing else is downloaded, and the book's audio never leaves this Mac.",
+     "english": "Downloads the speech model from Apple, kept and shared by macOS. Nothing else is downloaded, and the book's audio never leaves this Mac.",
+     "before": "מוריד את מודל הדיבור מ-Apple, שנשמר ומשותף על ידי macOS. שום דבר אחר לא יורד, והשמע של הספר לעולם לא עוזב את ה-Mac הזה.",
+     "after": "מוריד את מודל הדיבור מ-Apple, שנשמר ומשותף על ידי macOS. לא מתבצעת שום הורדה אחרת, והשמע של הספר לעולם לא עוזב את ה-Mac הזה.",
+     "why": "meaning: unvocalized לא יורד reads as does not go down; now no other download is made"
+    },
+    {
+     "key": "Every feed is unsubscribed, so none was checked. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "english": "Every feed is unsubscribed, so none was checked. Choose %1$@ on a feed's row, or in its %2$@, to check it again.",
+     "before": "כל הערוצים ללא הרשמה, ולכן אף אחד לא נבדק. בחר “%1$@” בשורת הערוץ, או “%2$@” שלו, כדי לבדוק אותו שוב.",
+     "after": "כל הערוצים ללא הרשמה, ולכן אף אחד מהם לא נבדק. כדי לבדוק ערוץ שוב, בחר “%1$@” בשורה שלו או ב“%2$@” שלו.",
+     "why": "grammar: the Feed Info clause had lost its preposition (in its Feed Info)"
+    },
+    {
+     "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "before": "ניסיוני. כללים אלה מתקנים מילים שהמזהה כותב אחרת מאשר בספרים המוקראים בקול. בדוק את השינויים לפני שתחיל אותם; “בטל ניקוי” מחזיר את התמליל.",
+     "after": "ניסיוני. כללים אלה מתקנים מילים שזיהוי הדיבור כותב אחרת מאשר בספרים המוקראים בקול. בדוק את השינויים לפני שתחיל אותם; “בטל ניקוי” מחזיר את התמליל.",
+     "why": "natural: המזהה (the identifier) stood for the speech recognizer; now זיהוי הדיבור"
+    },
+    {
+     "key": "Exported “%@” and its labels, “%@”.",
+     "english": "Exported “%1$@” and its labels, “%2$@”.",
+     "before": "“%1$@” ותוויותיו, “%2$@”, יוצאו.",
+     "after": "ייצוא “%1$@” והתוויות שלו, “%2$@”, הושלם.",
+     "why": "meaning: unvocalized יוצא reads as goes out, not was exported; now the export finished"
+    },
+    {
+     "key": "Exported “%@”, but its labels couldn't be written.",
+     "english": "Exported “%@”, but its labels couldn't be written.",
+     "before": "“%@” יוצא, אך לא ניתן היה לכתוב את התוויות שלו.",
+     "after": "ייצוא “%@” הושלם, אך לא ניתן היה לכתוב את התוויות שלו.",
+     "why": "meaning: unvocalized יוצא reads as goes out, not was exported; now the export finished"
+    },
+    {
+     "key": "Exported “%@”.",
+     "english": "Exported “%@”.",
+     "before": "“%@” יוצא.",
+     "after": "ייצוא “%@” הושלם.",
+     "why": "meaning: unvocalized יוצא reads as goes out, not was exported; now the export finished"
+    },
+    {
+     "key": "Exported “%@”. It has no markers, so no label file was written.",
+     "english": "Exported “%@”. It has no markers, so no label file was written.",
+     "before": "“%@” יוצא. אין בו נקודות ציון, ולכן לא נכתב קובץ תוויות.",
+     "after": "ייצוא “%@” הושלם. אין בו נקודות ציון, ולכן לא נכתב קובץ תוויות.",
+     "why": "meaning: unvocalized יוצא reads as goes out, not was exported; now the export finished"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "הערוצים מתרעננים רק בעת ההפעלה, אם האפשרות פועלת, וכשבוחרים ב-%1$@ או ב-%2$@.",
+     "after": "הערוצים מתרעננים רק בעת ההפעלה, אם האפשרות פועלת, וכשבוחרים ב“%1$@” או ב“%2$@”.",
+     "why": "punctuation: the name of Check Feed and Refresh All Feeds goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+     "english": {
+      "one": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+      "other": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
+     },
+     "before": {
+      "one": "נמצאה הקלטה %1$lld מלפני היציאה האחרונה מ-TextMouth, תחת %2$@. שמור או השלך אותה.",
+      "other": "נמצאו %1$lld הקלטות מלפני היציאה האחרונה מ-TextMouth, תחת %2$@. שמור או השלך כל אחת.",
+      "two": "נמצאו %1$lld הקלטות מלפני היציאה האחרונה מ-TextMouth, תחת %2$@. שמור או השלך כל אחת."
+     },
+     "after": {
+      "one": "נמצאה %1$lld הקלטה מלפני היציאה האחרונה מ-TextMouth, תחת “%2$@”. שמור או השלך אותה.",
+      "two": "נמצאו %1$lld הקלטות מלפני היציאה האחרונה מ-TextMouth, תחת “%2$@”. שמור או השלך כל אחת.",
+      "other": "נמצאו %1$lld הקלטות מלפני היציאה האחרונה מ-TextMouth, תחת “%2$@”. שמור או השלך כל אחת."
+     },
+     "why": "meaning: הקלטה %lld read as recording number 1; and the list's heading goes in quotation marks"
+    },
+    {
+     "key": "Go",
+     "english": "Go",
+     "before": "עבור",
+     "after": "מעבר",
+     "why": "meaning: a lone עבור also reads as the preposition for; מעבר is the go action, as ביטול is cancel"
+    },
+    {
+     "key": "Inserted %@ of new recording, which is selected.",
+     "english": "Inserted %@ of new recording, which is selected.",
+     "before": "נוספו %@ של הקלטה חדשה, והם נבחרו.",
+     "after": "נוספה הקלטה חדשה באורך %@, והיא נבחרה.",
+     "why": "grammar: נוספו and והם fit neither 1 minute nor seconds (feminine); now a new recording %@ long"
+    },
+    {
+     "key": "It also deletes %@.",
+     "english": "It also deletes %@.",
+     "before": "הפעולה גם מוחקת %@.",
+     "after": "הפעולה מוחקת גם: %@.",
+     "why": "grammar: a definite object (מה שנשמר) needs את; a colon fits every value"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "הוא שייך לערוץ שלו כל עוד הוא מורד. %@ מסיר את הקובץ שלו ושומר את מקומו ואת הסימניות שלו.",
+     "after": "הוא שייך לערוץ שלו כל עוד ההורדה שלו קיימת. “%@” מסיר את הקובץ שלו ושומר את מיקום הקריאה ואת הסימניות שלו.",
+     "why": "punctuation: the name of Delete Download goes in quotation marks, as the other Hebrew strings mark a control; and הוא מורד read as he rebels"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "הפעולה מוחקת %@: הדבר עובר לאשפה, שם אפשר לשחזר אותו עד לריקון האשפה.",
+     "after": "הפעולה מוחקת: %@. הקבצים עוברים לאשפה, ואפשר לשחזר אותם משם עד לריקון האשפה.",
+     "why": "grammar: the pronoun did not fit a feminine download (האפיזודה שהורדה, 5 אפיזודות שהורדו), and a definite one lacked את; now the files"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "הפעולה מוחקת %@: הוא נמחק לצמיתות ואי אפשר לשחזר אותו.",
+     "after": "הפעולה מוחקת: %@. הקבצים נמחקים לצמיתות, ואי אפשר לשחזר אותם.",
+     "why": "grammar: the pronoun did not fit a feminine download (האפיזודה שהורדה, 5 אפיזודות שהורדו), and a definite one lacked את; now the files"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "הפעולה מוחקת %@: הוא נשאר בתיקיית הספרייה של TextMouth.",
+     "after": "הפעולה מוחקת: %@. הקבצים נשארים בתיקיית הספרייה של TextMouth.",
+     "why": "grammar: the pronoun did not fit a feminine download (האפיזודה שהורדה, 5 אפיזודות שהורדו), and a definite one lacked את; now the files"
+    },
+    {
+     "key": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "english": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "before": "הפעולה מוחקת %@: הם נמחקים לצמיתות ואי אפשר לשחזר אותם.",
+     "after": "הפעולה מוחקת: %@. הקבצים נמחקים לצמיתות, ואי אפשר לשחזר אותם.",
+     "why": "grammar: the pronoun did not fit a feminine download (האפיזודה שהורדה, 5 אפיזודות שהורדו), and a definite one lacked את; now the files"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "הפעולה מוחקת %@: הם עוברים לאשפה, שם אפשר לשחזר אותם עד לריקון האשפה.",
+     "after": "הפעולה מוחקת: %@. הקבצים עוברים לאשפה, ואפשר לשחזר אותם משם עד לריקון האשפה.",
+     "why": "grammar: the pronoun did not fit a feminine download (האפיזודה שהורדה, 5 אפיזודות שהורדו), and a definite one lacked את; now the files"
+    },
+    {
+     "key": "It deletes %@: they stay in the TextMouth library folder.",
+     "english": "It deletes %@: they stay in the TextMouth library folder.",
+     "before": "הפעולה מוחקת %@: הם נשארים בתיקיית הספרייה של TextMouth.",
+     "after": "הפעולה מוחקת: %@. הקבצים נשארים בתיקיית הספרייה של TextMouth.",
+     "why": "grammar: the pronoun did not fit a feminine download (האפיזודה שהורדה, 5 אפיזודות שהורדו), and a definite one lacked את; now the files"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "הוא אינו מפרט רצועת שמע עם התחלה ש-TextMouth יכול לקרוא.",
+     "after": "הוא אינו מציין אף רצועת שמע עם זמן התחלה ש-TextMouth יכול לקרוא.",
+     "why": "natural: a track with a start (רצועה עם התחלה) was a literal copy; a cue sheet gives a start time"
+    },
+    {
+     "key": "Its %@ are kept for when you download it again.",
+     "english": "Its %@ are kept for when you download it again.",
+     "before": "%@ שלו נשמרים למקרה שתוריד אותו שוב.",
+     "after": "%@ נשמרו למקרה של הורדה חוזרת.",
+     "why": "grammar: נשמרים did not fit bookmarks (סימניות), and שלו after an indefinite list lacks the article"
+    },
+    {
+     "key": "Its %@ are kept.",
+     "english": "Its %@ are kept.",
+     "before": "%@ שלו נשמרים.",
+     "after": "%@ נשמרו.",
+     "why": "grammar: נשמרים did not fit bookmarks (סימניות), and שלו after an indefinite list lacks the article"
+    },
+    {
+     "key": "Its %@ is kept for when you download it again.",
+     "english": "Its %@ is kept for when you download it again.",
+     "before": "%@ שלו נשמר למקרה שתוריד אותו שוב.",
+     "after": "%@ נשמר למקרה של הורדה חוזרת.",
+     "why": "grammar: שלו after an indefinite noun (מקום שלו) lacks the article and was masculine for a feminine download"
+    },
+    {
+     "key": "Its %@ is kept.",
+     "english": "Its %@ is kept.",
+     "before": "%@ שלו נשמר.",
+     "after": "%@ נשמר.",
+     "why": "grammar: שלו after an indefinite noun (מקום שלו) lacks the article and was masculine for a feminine download"
+    },
+    {
+     "key": "No feed was subscribed to.",
+     "english": "No feed was subscribed to.",
+     "before": "לא נרשם אף ערוץ.",
+     "after": "לא נרשמת לאף ערוץ.",
+     "why": "natural: לא נרשם אף ערוץ says no feed signed itself up; now as Subscribed to %lld feeds says it"
+    },
+    {
+     "key": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "english": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "before": "עותק אחד מושמע מהקלטה והאחר מוקרא בקול מטקסט, ולכן החלפה שומרת רק את התיקייה ואת המקום ברשימת הקריאה של העותק הקיים, ולא את מיקום הקריאה, את הסימניות והערות שלהן או את ההגדרות.",
+     "after": "עותק אחד מושמע מהקלטה והאחר מוקרא בקול מטקסט, ולכן החלפה שומרת רק את התיקייה ואת המקום ברשימת הקריאה של העותק הקיים, ולא את מיקום הקריאה, את הסימניות וההערות שלהן או את ההגדרות.",
+     "why": "grammar: והערות שלהן lacked its article (וההערות שלהן)"
+    },
+    {
+     "key": "Only at launch and when I ask",
+     "english": "Only at launch and when I ask",
+     "before": "רק בהפעלה וכשאני מבקש",
+     "after": "רק בהפעלה ולפי בקשה",
+     "why": "register: כשאני מבקש is a masculine form; on request fits every listener"
+    },
+    {
+     "key": "Originals are kept for %lld days after the book was saved or last edited, then deleted.",
+     "english": {
+      "one": "Originals are kept for %lld day after the book was saved or last edited, then deleted.",
+      "other": "Originals are kept for %lld days after the book was saved or last edited, then deleted."
+     },
+     "before": {
+      "one": "מקורות נשמרים למשך %lld יום לאחר ששמירת הספר או עריכתו האחרונה, ואז נמחקים.",
+      "other": "מקורות נשמרים למשך %lld ימים לאחר ששמירת הספר או עריכתו האחרונה, ואז נמחקים.",
+      "two": "מקורות נשמרים למשך %lld ימים לאחר ששמירת הספר או עריכתו האחרונה, ואז נמחקים."
+     },
+     "after": {
+      "one": "השמע המקורי נשמר למשך %lld יום לאחר שמירת הספר או עריכתו האחרונה, ואז נמחק.",
+      "two": "השמע המקורי נשמר למשך %lld ימים לאחר שמירת הספר או עריכתו האחרונה, ואז נמחק.",
+      "other": "השמע המקורי נשמר למשך %lld ימים לאחר שמירת הספר או עריכתו האחרונה, ואז נמחק."
+     },
+     "why": "grammar: לאחר ששמירת joined ש to a noun with no verb; and מקורות (sources) is the glossary's original audio (שמע מקורי)"
+    },
+    {
+     "key": "Originals are kept until the book is removed.",
+     "english": "Originals are kept until the book is removed.",
+     "before": "מקורות נשמרים עד שהספר מוסר.",
+     "after": "השמע המקורי נשמר עד שהספר מוסר.",
+     "why": "term: מקורות (sources) for the originals; the glossary's original audio is שמע מקורי"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "%@ הודבקו בחזרה למקום שבו נגזרו.",
+     "after": "הודבק בחזרה קטע של %@ למקום שבו נגזר.",
+     "why": "grammar: the verb agreed with no subject that every length fits (הודבקו for 1 minute); now a stretch (קטע) of that length"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "הודבקו %1$@ על %2$@.",
+     "after": "הודבק קטע של %1$@ במקום %2$@.",
+     "why": "grammar: the verb agreed with no subject that every length fits (הודבקו for 1 minute); now a stretch (קטע) of that length"
+    },
+    {
+     "key": "Post a notification for each feed with new episodes",
+     "english": "Post a notification for each feed with new episodes",
+     "before": "פרסם הודעה לכל ערוץ שיש בו אפיזודות חדשות",
+     "after": "הצג עדכון לכל ערוץ שיש בו אפיזודות חדשות",
+     "why": "term: Apple's Hebrew calls notifications עדכונים and shows them; פרסם הודעה is publish a message"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "מקליט מעל הבחירה, או בסמן, אחרי צפצוף. לחיצה נוספת, או “עצור”, מסיימת את ההקלטה.",
+     "after": "מקליט מעל הבחירה, או בסמן, אחרי צפצוף. הפעלה נוספת, או “עצור”, מסיימת את ההקלטה.",
+     "why": "voiceover: a hint names no gesture; לחיצה נוספת (another press) is now another activation"
+    },
+    {
+     "key": "Redo %@",
+     "english": "Redo %@",
+     "before": "בצע שוב %@",
+     "after": "בצע שוב: %@",
+     "why": "natural: two commands in a row (בצע שוב גזור 2.5 שניות); a colon sets the edit apart, as Apple's שחזור הפעולה: %@ does"
+    },
+    {
+     "key": "Refreshed %@: %@",
+     "english": "Refreshed %1$@: %2$@",
+     "before": "רועננו %1$@: %2$@",
+     "after": "רענון %1$@ הסתיים: %2$@",
+     "why": "grammar: the plural רועננו did not fit 1 feed (%lld ערוץ); a noun phrase fits every count"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "%1$@ הוחלפו ב-%2$@ של הקלטה חדשה, שנבחרה.",
+     "after": "קטע של %1$@ הוחלף בהקלטה חדשה באורך %2$@, והיא נבחרה.",
+     "why": "grammar: הוחלפו fit no length of 1 minute (feminine singular); now a stretch (קטע) of that length"
+    },
+    {
+     "key": "Retranscribe Audio…",
+     "english": "Retranscribe Audio…",
+     "before": "תמלל שוב שמע…",
+     "after": "תמלל שמע שוב…",
+     "why": "natural: תמלל שוב שמע split the command Transcribe Audio (תמלל שמע) with its again"
+    },
+    {
+     "key": "Save in",
+     "english": "Save in",
+     "before": "שמור ב",
+     "after": "שמור בתיקייה",
+     "why": "grammar: the prefix ב cannot end a label (שמור ב); the pop-up chooses a folder"
+    },
+    {
+     "key": "Saves the edits into the book's audio file, in the format the book keeps.",
+     "english": "Saves the edits into the book's audio file, in the format the book keeps.",
+     "before": "שומר את העריכות בקובץ השמע של הספר, בפורמט שהספר שומר.",
+     "after": "שומר את העריכות בקובץ השמע של הספר, בפורמט שבו הספר נשמר.",
+     "why": "natural: the format the book keeps is the format the book is saved in, not one it saves (שהספר שומר)"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "שומר %1$@ של שמע בפורמט %2$@, הפורמט שהספר הזה שומר.",
+     "after": "שומר %1$@ של שמע בפורמט %2$@, הפורמט שבו הספר הזה נשמר.",
+     "why": "natural: the format the book keeps is the format the book is saved in, not one it saves (שהספר שומר)"
+    },
+    {
+     "key": "Search",
+     "english": "Search",
+     "before": "חפש",
+     "after": "חיפוש",
+     "why": "term: the glossary and Apple's Hebrew name the Search button חיפוש"
+    },
+    {
+     "key": "Selected the %@ before chapter 1.",
+     "english": "Selected the %@ before chapter 1.",
+     "before": "נבחרו %@ שלפני פרק 1.",
+     "after": "נבחר הקטע שלפני פרק 1, באורך %@.",
+     "why": "grammar: נבחרו fit no length of 1 minute (feminine singular); now the stretch before chapter 1, %@ long"
+    },
+    {
+     "key": "Stopped %lld feed downloads.",
+     "english": {
+      "one": "Stopped %lld feed download.",
+      "other": "Stopped %lld feed downloads."
+     },
+     "before": {
+      "one": "נעצרה הורדת ערוץ %lld.",
+      "other": "נעצרו %lld הורדות ערוצים.",
+      "two": "נעצרו %lld הורדות ערוצים."
+     },
+     "after": {
+      "one": "נעצרה %lld הורדת ערוץ.",
+      "two": "נעצרו %lld הורדות ערוצים.",
+      "other": "נעצרו %lld הורדות ערוצים."
+     },
+     "why": "meaning: הורדת ערוץ %lld read as the download of feed number 1"
+    },
+    {
+     "key": "Stops every feed download, including those waiting, and deletes what they had downloaded.",
+     "english": "Stops every feed download, including those waiting, and deletes what they had downloaded.",
+     "before": "עוצר כל הורדת ערוץ, כולל אלה שממתינות, ומוחק את מה שהורדו.",
+     "after": "עוצר כל הורדת ערוץ, כולל אלה שממתינות, ומוחק את מה שכבר הורד.",
+     "why": "grammar: מה takes a singular verb (מה שהורד, not מה שהורדו)"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth לא יכול להמיר את השמע של “%@”: הוא בסוג שמע שאינו נקרא.",
+     "after": "TextMouth לא יכול להמיר את השמע של “%@”: זהו סוג שמע ש-TextMouth אינו קורא.",
+     "why": "meaning: שאינו נקרא read as unread audio; it is TextMouth that does not read it"
+    },
+    {
+     "key": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "english": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "before": "ל-TextMouth אין כללים משלו: אף כלל לא היה נכון בכל הספרים שנבדקו. “ערוך כללים…” פותח את העותק שלך, שבו ניתן להוסיף כללים, כגון שם שהמזהה תמיד מאיית אחרת.",
+     "after": "ל-TextMouth אין כללים משלו: אף כלל לא היה נכון בכל הספרים שנבדקו. “ערוך כללים…” פותח את העותק שלך, שבו ניתן להוסיף כללים, כגון שם שזיהוי הדיבור תמיד מאיית אחרת.",
+     "why": "natural: המזהה (the identifier) stood for the speech recognizer; now זיהוי הדיבור"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth אינו מורשה לפרסם הודעות. הפעל אותן בהגדרות המערכת, “הודעות”, “TextMouth”.",
+     "after": "TextMouth אינו מורשה לשלוח עדכונים. הפעל אותם בהגדרות המערכת, “עדכונים”, “TextMouth”.",
+     "why": "term: Apple's Hebrew names the Notifications pane עדכונים, so הודעות led to no pane"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "one": "TextMouth העביר %lld עותק חדש של ספרים כפולים לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר החזר.",
+      "other": "TextMouth העביר %lld עותקים חדשים של ספרים כפולים לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר החזר.",
+      "two": "TextMouth העביר %lld עותקים חדשים של ספרים כפולים לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר החזר."
+     },
+     "after": {
+      "one": "TextMouth העביר %lld עותק חדש של ספרים כפולים לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר “החזר”.",
+      "two": "TextMouth העביר %lld עותקים חדשים של ספרים כפולים לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר “החזר”.",
+      "other": "TextMouth העביר %lld עותקים חדשים של ספרים כפולים לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר “החזר”."
+     },
+     "why": "punctuation: Put Back was not quoted, so בחר החזר read as two commands; quoted as the other command names are"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth העביר את העותקים החדשים של %@ לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר החזר.",
+     "after": "TextMouth העביר את העותקים החדשים של %@ לאשפה, כי השאלות אם לשמור אותם ככפולים לא נענו לפני ש-TextMouth נסגר. כדי להחזיר אותם, פתח את האשפה ובחר “החזר”.",
+     "why": "punctuation: Put Back was not quoted, so בחר החזר read as two commands; quoted as the other command names are"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth העביר את העותק החדש של “%@” לאשפה, כי השאלה אם לשמור אותו ככפול לא נענתה לפני ש-TextMouth נסגר. כדי להחזיר אותו, פתח את האשפה ובחר החזר.",
+     "after": "TextMouth העביר את העותק החדש של “%@” לאשפה, כי השאלה אם לשמור אותו ככפול לא נענתה לפני ש-TextMouth נסגר. כדי להחזיר אותו, פתח את האשפה ובחר “החזר”.",
+     "why": "punctuation: Put Back was not quoted, so בחר החזר read as two commands; quoted as the other command names are"
+    },
+    {
+     "key": "TextMouth stops checking this feed for new articles.",
+     "english": "TextMouth stops checking this feed for new articles.",
+     "before": "TextMouth מפסיק לבדוק את הערוץ הזה לגבי כתבות חדשות.",
+     "after": "TextMouth מפסיק לבדוק אם יש בערוץ הזה כתבות חדשות.",
+     "why": "natural: to check a feed for new items (לבדוק לגבי) was a literal copy; now checks whether it has new items"
+    },
+    {
+     "key": "TextMouth stops checking this feed for new episodes.",
+     "english": "TextMouth stops checking this feed for new episodes.",
+     "before": "TextMouth מפסיק לבדוק את הערוץ הזה לגבי אפיזודות חדשות.",
+     "after": "TextMouth מפסיק לבדוק אם יש בערוץ הזה אפיזודות חדשות.",
+     "why": "natural: to check a feed for new items (לבדוק לגבי) was a literal copy; now checks whether it has new items"
+    },
+    {
+     "key": "TextMouth stops checking this feed for new items.",
+     "english": "TextMouth stops checking this feed for new items.",
+     "before": "TextMouth מפסיק לבדוק את הערוץ הזה לגבי פריטים חדשים.",
+     "after": "TextMouth מפסיק לבדוק אם יש בערוץ הזה פריטים חדשים.",
+     "why": "natural: to check a feed for new items (לבדוק לגבי) was a literal copy; now checks whether it has new items"
+    },
+    {
+     "key": "The archive also holds %lld other books that were not imported; unzip it to import them.",
+     "english": {
+      "one": "The archive also holds %lld other book that was not imported; unzip it to import it.",
+      "other": "The archive also holds %lld other books that were not imported; unzip it to import them."
+     },
+     "before": {
+      "one": "הארכיון מכיל גם %lld ספר אחר שלא יובא; חלץ אותו כדי לייבא אותו.",
+      "other": "הארכיון מכיל גם %lld ספרים אחרים שלא יובאו; חלץ אותם כדי לייבא אותם.",
+      "two": "הארכיון מכיל גם %lld ספרים אחרים שלא יובאו; חלץ אותם כדי לייבא אותם."
+     },
+     "after": {
+      "one": "הארכיון מכיל גם %lld ספר אחר שלא יובא; חלץ אותו כדי לייבא אותו.",
+      "two": "הארכיון מכיל גם %lld ספרים אחרים שלא יובאו; חלץ אותו כדי לייבא אותם.",
+      "other": "הארכיון מכיל גם %lld ספרים אחרים שלא יובאו; חלץ אותו כדי לייבא אותם."
+     },
+     "why": "meaning: unzip it (the archive) had become unzip them (the books)"
+    },
+    {
+     "key": "The archive holds a link to a file outside it, which is never extracted.",
+     "english": "The archive holds a link to a file outside it, which is never extracted.",
+     "before": "הארכיון מכיל קישור לקובץ מחוץ לו, שלא יחולץ לעולם.",
+     "after": "הארכיון מכיל קישור לקובץ שמחוצה לו, ולכן הקישור לא יחולץ לעולם.",
+     "why": "grammar: outside it is מחוצה לו, not מחוץ לו"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "הכתבה עוזבת את הרשימה לצמיתות; הספר שהיא הפכה אליו בספרייה שלך נשאר.",
+     "after": "הכתבה עוזבת את הרשימה לצמיתות; הספר שנוצר ממנה בספרייה שלך נשאר.",
+     "why": "grammar: הפכה אליו says turned toward it; the book it became is the book made from it"
+    },
+    {
+     "key": "The audio file %@ has %lld channels but does not say which is which, so TextMouth cannot mix it to stereo.",
+     "english": {
+      "one": "The audio file %@ has %lld channel but does not say which is which, so TextMouth cannot mix it to stereo.",
+      "other": "The audio file %@ has %lld channels but does not say which is which, so TextMouth cannot mix it to stereo."
+     },
+     "before": {
+      "one": "בקובץ השמע %@ יש %lld ערוץ שמע אך לא מצוין איזה הוא איזה, ולכן TextMouth לא יכול לערבב אותו לסטריאו.",
+      "other": "בקובץ השמע %@ יש %lld ערוצי שמע אך לא מצוין איזה הוא איזה, ולכן TextMouth לא יכול לערבב אותו לסטריאו.",
+      "two": "בקובץ השמע %@ יש %lld ערוצי שמע אך לא מצוין איזה הוא איזה, ולכן TextMouth לא יכול לערבב אותו לסטריאו."
+     },
+     "after": {
+      "one": "בקובץ השמע %@ יש %lld ערוץ שמע, אך הוא אינו מציין את תפקידו, ולכן TextMouth לא יכול לערבל אותו לסטריאו.",
+      "two": "בקובץ השמע %@ יש %lld ערוצי שמע, אך הוא אינו מציין את תפקידו של כל ערוץ, ולכן TextMouth לא יכול לערבל אותו לסטריאו.",
+      "other": "בקובץ השמע %@ יש %lld ערוצי שמע, אך הוא אינו מציין את תפקידו של כל ערוץ, ולכן TextMouth לא יכול לערבל אותו לסטריאו."
+     },
+     "why": "natural: איזה הוא איזה and לערבב (stir) were literal; now the role of each channel, mixed (לערבל) to stereo"
+    },
+    {
+     "key": "The book's transcript couldn't be read, so it wasn't exported.",
+     "english": "The book's transcript couldn't be read, so it wasn't exported.",
+     "before": "לא ניתן היה לקרוא את התמליל של הספר, ולכן הוא לא יוצא.",
+     "after": "לא ניתן היה לקרוא את התמליל של הספר, ולכן הוא לא נכלל בייצוא.",
+     "why": "meaning: unvocalized לא יוצא reads as does not go out; now it was left out of the export"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "האפיזודה עוזבת את הרשימה לצמיתות; הספר שהיא הפכה אליו בספרייה שלך נשאר.",
+     "after": "האפיזודה עוזבת את הרשימה לצמיתות; הספר שנוצר ממנה בספרייה שלך נשאר.",
+     "why": "grammar: הפכה אליו says turned toward it; the book it became is the book made from it"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "הערוץ נשאר בספרייה שלך עם ההגדרות שלו ועם %1$@, ו-%2$@ בודק אותו שוב.",
+     "after": "הערוץ נשאר בספרייה שלך עם ההגדרות שלו ועם %1$@, ובחירה ב“%2$@” תבדוק אותו שוב.",
+     "why": "grammar: the command name (הירשם מחדש) stood bare as the verb's subject; now choosing it checks the feed"
+    },
+    {
+     "key": "The feed stays in your library with its settings, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings, and %@ checks it again.",
+     "before": "הערוץ נשאר בספרייה שלך עם ההגדרות שלו, ו-%@ בודק אותו שוב.",
+     "after": "הערוץ נשאר בספרייה שלך עם ההגדרות שלו, ובחירה ב“%@” תבדוק אותו שוב.",
+     "why": "grammar: the command name (הירשם מחדש) stood bare as the verb's subject; now choosing it checks the feed"
+    },
+    {
+     "key": "The feed “%@” stays with it.",
+     "english": "The feed “%@” stays with it.",
+     "before": "הערוץ “%@” נשאר איתו.",
+     "after": "הערוץ “%@” נשאר גם הוא.",
+     "why": "grammar: איתו was masculine for an episode or article (feminine); stays too fits every item"
+    },
+    {
+     "key": "The feed “%@” stays with them.",
+     "english": "The feed “%@” stays with them.",
+     "before": "הערוץ “%@” נשאר איתם.",
+     "after": "הערוץ “%@” נשאר גם הוא.",
+     "why": "grammar: איתם was masculine for episodes or articles (feminine); stays too fits every item"
+    },
+    {
+     "key": "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again.",
+     "english": "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again.",
+     "before": "הקבצים של העותק החדש של “%@” כבר אינם בספרייה, ולכן אי אפשר לשמור אותו. בחר ביטול, ואז ייבא את הקובץ שוב.",
+     "after": "הקבצים של העותק החדש של “%@” כבר אינם בספרייה, ולכן אי אפשר לשמור אותו. בחר “ביטול”, ואז ייבא את הקובץ שוב.",
+     "why": "punctuation: Cancel was not quoted, as it is in the same sentence elsewhere (בחר ״ביטול״)"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "הרשימה מגיבה מיד לשינוי של %@; מה שמורד או יוסר ממתין עד שהשינוי יישאר עשר שניות, ו-VoiceOver מכריז עליו אז.",
+     "after": "הרשימה מתעדכנת מיד לפי שינוי ב“%@”; הורדות והסרות ממתינות עד שהשינוי נשאר בתוקף עשר שניות, ואז VoiceOver מכריז עליו.",
+     "why": "punctuation: the name of the List and download choice goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "english": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "before": "המקום, הסימניות והתמליל ששמורים עבורו נמחקים גם הם.",
+     "after": "המקום, הסימניות והתמליל שנשמרו עבורה נמחקים גם הם.",
+     "why": "grammar: it is the episode or article, both feminine (עבורה, not עבורו)"
+    },
+    {
+     "key": "The podcast directory at %@ couldn't answer the search (error %@). Try again later.",
+     "english": "The podcast directory at %1$@ couldn't answer the search (error %2$@). Try again later.",
+     "before": "ספריית הפודקאסטים ב-%1$@ לא הצליחה לענות על החיפוש (שגיאה %2$@). נסה שוב מאוחר יותר.",
+     "after": "מאגר הפודקאסטים ב-%1$@ לא הצליח לענות על החיפוש (שגיאה %2$@). נסה שוב מאוחר יותר.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory at %@ couldn't be found.",
+     "english": "The podcast directory at %@ couldn't be found.",
+     "before": "לא ניתן למצוא את ספריית הפודקאסטים ב-%@.",
+     "after": "לא ניתן למצוא את מאגר הפודקאסטים ב-%@.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory at %@ couldn't be reached: %@",
+     "english": "The podcast directory at %1$@ couldn't be reached: %2$@",
+     "before": "לא ניתן להתחבר לספריית הפודקאסטים ב-%1$@: %2$@",
+     "after": "לא ניתן להתחבר למאגר הפודקאסטים ב-%1$@: %2$@",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory at %@ didn't answer for %lld seconds.",
+     "english": {
+      "one": "The podcast directory at %@ didn't answer for %lld second.",
+      "other": "The podcast directory at %@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "one": "ספריית הפודקאסטים ב-%@ לא ענתה במשך %lld שנייה.",
+      "other": "ספריית הפודקאסטים ב-%@ לא ענתה במשך %lld שניות.",
+      "two": "ספריית הפודקאסטים ב-%@ לא ענתה במשך %lld שניות."
+     },
+     "after": {
+      "one": "מאגר הפודקאסטים ב-%@ לא ענה במשך %lld שנייה.",
+      "two": "מאגר הפודקאסטים ב-%@ לא ענה במשך %lld שניות.",
+      "other": "מאגר הפודקאסטים ב-%@ לא ענה במשך %lld שניות."
+     },
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory can't be searched on this network, which limits data.",
+     "english": "The podcast directory can't be searched on this network, which limits data.",
+     "before": "אי אפשר לחפש בספריית הפודקאסטים ברשת הזו, שמגבילה נתונים.",
+     "after": "אי אפשר לחפש במאגר הפודקאסטים ברשת הזו, שמגבילה נתונים.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory couldn't answer the search. Try again later.",
+     "english": "The podcast directory couldn't answer the search. Try again later.",
+     "before": "ספריית הפודקאסטים לא הצליחה לענות על החיפוש. נסה שוב מאוחר יותר.",
+     "after": "מאגר הפודקאסטים לא הצליח לענות על החיפוש. נסה שוב מאוחר יותר.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.",
+     "english": "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.",
+     "before": "ספריית הפודקאסטים סירבה לחיפוש; היא מתירה בערך 20 בדקה. המתן דקה ונסה שוב.",
+     "after": "מאגר הפודקאסטים סירב לחיפוש; הוא מתיר כ-20 חיפושים בדקה. המתן דקה ונסה שוב.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory sent an answer TextMouth can't read. Try again later.",
+     "english": "The podcast directory sent an answer TextMouth can't read. Try again later.",
+     "before": "ספריית הפודקאסטים שלחה תשובה ש-TextMouth לא יכול לקרוא. נסה שוב מאוחר יותר.",
+     "after": "מאגר הפודקאסטים שלח תשובה ש-TextMouth לא יכול לקרוא. נסה שוב מאוחר יותר.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The podcast directory's answer is larger than TextMouth reads.",
+     "english": "The podcast directory's answer is larger than TextMouth reads.",
+     "before": "התשובה של ספריית הפודקאסטים גדולה ממה ש-TextMouth קורא.",
+     "after": "התשובה של מאגר הפודקאסטים גדולה ממה ש-TextMouth קורא.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "לא ניתן היה לשמור את ההקלטה: %1$@ היא נשמרת; בחר “%2$@” או “%3$@”.",
+     "after": "לא ניתן היה לשמור את ההקלטה: %1$@ ההקלטה לא אבדה; בחר “%2$@” או “%3$@”.",
+     "why": "meaning: Hebrew saves and keeps with one verb, so היא נשמרת after could not be saved read as it is being saved; now it is not lost"
+    },
+    {
+     "key": "The search couldn't be sent, because the directory's address isn't a web address.",
+     "english": "The search couldn't be sent, because the directory's address isn't a web address.",
+     "before": "לא ניתן היה לשלוח את החיפוש, כי הכתובת של הספרייה אינה כתובת אינטרנט.",
+     "after": "לא ניתן היה לשלוח את החיפוש, כי הכתובת של המאגר אינה כתובת אינטרנט.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "The transcript is only in the cloud. Its details appear once the book is downloaded.",
+     "english": "The transcript is only in the cloud. Its details appear once the book is downloaded.",
+     "before": "התמליל נמצא רק בענן. הפרטים שלו יופיעו לאחר שהספר יורד.",
+     "after": "התמליל נמצא רק בענן. הפרטים שלו יופיעו לאחר הורדת הספר.",
+     "why": "meaning: unvocalized שהספר יורד reads as the book goes down; now after the book's download"
+    },
+    {
+     "key": "There's no feed at that address any more.",
+     "english": "There's no feed at that address any more.",
+     "before": "אין עוד ערוץ בכתובת הזו.",
+     "after": "כבר אין ערוץ בכתובת הזו.",
+     "why": "meaning: אין עוד ערוץ also reads as there is no other feed"
+    },
+    {
+     "key": "This Mac is offline, so the directory can't be searched. Connect to the internet and try again.",
+     "english": "This Mac is offline, so the directory can't be searched. Connect to the internet and try again.",
+     "before": "ה-Mac הזה אינו מקוון, ולכן אי אפשר לחפש בספרייה. התחבר לאינטרנט ונסה שוב.",
+     "after": "ה-Mac הזה אינו מקוון, ולכן אי אפשר לחפש במאגר הפודקאסטים. התחבר לאינטרנט ונסה שוב.",
+     "why": "meaning: ספרייה is the glossary's Library, so the podcast directory read as your library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "קובץ ה-XML הזה אינו ספר DTBook, מסמך XML של Word 2003 או קובץ ברייל PEF, שהם ה-XML היחיד ש-TextMouth קורא.",
+     "after": "קובץ ה-XML הזה אינו ספר DTBook, מסמך XML של Word 2003 או קובץ ברייל PEF, שהם סוגי ה-XML היחידים ש-TextMouth קורא.",
+     "why": "grammar: three kinds (שהם) cannot be the only XML (ה-XML היחיד); now the only kinds of XML"
+    },
+    {
+     "key": "This book keeps its original audio for %lld days after it was saved or last edited.",
+     "english": {
+      "one": "This book keeps its original audio for %lld day after it was saved or last edited.",
+      "other": "This book keeps its original audio for %lld days after it was saved or last edited."
+     },
+     "before": {
+      "one": "הספר הזה שומר את השמע המקורי שלו למשך %lld יום לאחר ששמירתו או עריכתו האחרונה.",
+      "other": "הספר הזה שומר את השמע המקורי שלו למשך %lld ימים לאחר ששמירתו או עריכתו האחרונה.",
+      "two": "הספר הזה שומר את השמע המקורי שלו למשך %lld ימים לאחר ששמירתו או עריכתו האחרונה."
+     },
+     "after": {
+      "one": "הספר הזה שומר את השמע המקורי שלו למשך %lld יום לאחר שמירתו או עריכתו האחרונה.",
+      "two": "הספר הזה שומר את השמע המקורי שלו למשך %lld ימים לאחר שמירתו או עריכתו האחרונה.",
+      "other": "הספר הזה שומר את השמע המקורי שלו למשך %lld ימים לאחר שמירתו או עריכתו האחרונה."
+     },
+     "why": "grammar: לאחר ששמירתו joined ש to a noun with no verb"
+    },
+    {
+     "key": "This picture is %@, larger than the %lld megapixels TextMouth reads.",
+     "english": {
+      "one": "This picture is %@, larger than the %lld megapixel TextMouth reads.",
+      "other": "This picture is %@, larger than the %lld megapixels TextMouth reads."
+     },
+     "before": {
+      "one": "התמונה הזו היא %@, גדולה מ-%lld מגה-פיקסל ש-TextMouth קורא.",
+      "other": "התמונה הזו היא %@, גדולה מ-%lld מגה-פיקסלים ש-TextMouth קורא.",
+      "two": "התמונה הזו היא %@, גדולה מ-%lld מגה-פיקסלים ש-TextMouth קורא."
+     },
+     "after": {
+      "one": "התמונה הזו בגודל %@, גדולה מ-%lld מגה-פיקסל ש-TextMouth קורא.",
+      "two": "התמונה הזו בגודל %@, גדולה מ-%lld מגה-פיקסלים ש-TextMouth קורא.",
+      "other": "התמונה הזו בגודל %@, גדולה מ-%lld מגה-פיקסלים ש-TextMouth קורא."
+     },
+     "why": "natural: a picture is not a size (היא 30,000 על 30,000); it is of that size (בגודל)"
+    },
+    {
+     "key": "To download the other one again, choose %@ on its row.",
+     "english": "To download the other one again, choose %@ on its row.",
+     "before": "כדי להוריד שוב את האחד האחר, בחר “%@” בשורה שלו.",
+     "after": "כדי להוריד שוב את השני, בחר “%@” בשורה שלו.",
+     "why": "natural: האחד האחר is a literal copy of the other one; Hebrew says השני"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "קוצץ לפי הבחירה: נשארו %@.",
+     "after": "קוצץ לפי הבחירה: נשמר קטע של %@.",
+     "why": "grammar: נשארו fit no length of 1 minute (feminine singular); now a stretch (קטע) of that length is kept"
+    },
+    {
+     "key": "Try again once the book has downloaded.",
+     "english": "Try again once the book has downloaded.",
+     "before": "נסה שוב לאחר שהספר יורד.",
+     "after": "נסה שוב לאחר הורדת הספר.",
+     "why": "meaning: unvocalized שהספר יורד reads as the book goes down; now after the book's download"
+    },
+    {
+     "key": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "english": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "before": "הקלד שם או מפרסם של פודקאסט, ואז הקש Return כדי לחפש בספרייה של Apple.",
+     "after": "הקלד שם או מפרסם של פודקאסט, ואז הקש Return כדי לחפש במאגר הפודקאסטים של Apple.",
+     "why": "meaning: ספרייה is the glossary's Library, so Apple's directory read as a library; now מאגר הפודקאסטים"
+    },
+    {
+     "key": "Undo %@",
+     "english": "Undo %@",
+     "before": "בטל %@",
+     "after": "בטל פעולה: %@",
+     "why": "natural: two commands in a row (בטל גזור 2.5 שניות); the glossary's Undo (בטל פעולה) and a colon set the edit apart, as Apple's ביטול הפעולה: %@ does"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אותו לגבי כתבות חדשות%2$@.",
+     "after": "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אם יש בו כתבות חדשות%2$@.",
+     "why": "natural: to check a feed for new items (לבדוק לגבי) was a literal copy; now checks whether it has new items"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אותו לגבי אפיזודות חדשות%2$@.",
+     "after": "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אם יש בו אפיזודות חדשות%2$@.",
+     "why": "natural: to check a feed for new items (לבדוק לגבי) was a literal copy; now checks whether it has new items"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אותו לגבי פריטים חדשים%2$@.",
+     "after": "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אם יש בו פריטים חדשים%2$@.",
+     "why": "natural: to check a feed for new items (לבדוק לגבי) was a literal copy; now checks whether it has new items"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "כשהאפשרות מסומנת, הערוץ הזה פועל לפי ההגדרה בהגדרות, %@; בטל את הסימון כדי לתת לערוץ הגדרה משלו.",
+     "after": "כשהאפשרות מסומנת, הערוץ הזה פועל לפי ההגדרה בהגדרות, “%@”; בטל את הסימון כדי לתת לערוץ הגדרה משלו.",
+     "why": "punctuation: the name of the Feeds tab goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "it downloads once this Mac is on a network without data limits",
+     "english": "it downloads once this Mac is on a network without data limits",
+     "before": "הוא יורד ברגע שה-Mac הזה נמצא ברשת ללא מגבלות נתונים",
+     "after": "ההורדה תתחיל ברגע שה-Mac הזה יהיה ברשת ללא מגבלות נתונים",
+     "why": "meaning: unvocalized יורד reads as goes down, not is downloaded; now the download starts"
+    },
+    {
+     "key": "it is %@, larger than %lld megapixels",
+     "english": {
+      "one": "it is %@, larger than %lld megapixel",
+      "other": "it is %@, larger than %lld megapixels"
+     },
+     "before": {
+      "one": "הוא %@, גדול מ-%lld מגה-פיקסל",
+      "other": "הוא %@, גדול מ-%lld מגה-פיקסלים",
+      "two": "הוא %@, גדול מ-%lld מגה-פיקסלים"
+     },
+     "after": {
+      "one": "הוא בגודל %@, גדול מ-%lld מגה-פיקסל",
+      "two": "הוא בגודל %@, גדול מ-%lld מגה-פיקסלים",
+      "other": "הוא בגודל %@, גדול מ-%lld מגה-פיקסלים"
+     },
+     "why": "natural: a page is not a size (הוא 30,000 על 30,000); it is of that size (בגודל)"
+    },
+    {
+     "key": "it needs room for %@ on this Mac",
+     "english": "it needs room for %@ on this Mac",
+     "before": "הוא זקוק למקום ל-%@ ב-Mac הזה",
+     "after": "הוא זקוק ל-%@ פנויים ב-Mac הזה",
+     "why": "natural: room for a size (מקום ל-120 MB) was literal; now needs 120 MB free, as other disk messages say"
+    },
+    {
+     "key": "only at launch and when you ask",
+     "english": "only at launch and when you ask",
+     "before": "רק בהפעלה וכשתבקש",
+     "after": "רק בהפעלה ולפי בקשה",
+     "why": "register: matches its switch's label (רק בהפעלה ולפי בקשה), and fits every listener"
+    },
+    {
+     "key": "own settings",
+     "english": "own settings",
+     "before": "הגדרות משלו",
+     "after": "הגדרות ספר",
+     "why": "grammar: משלו pointed at nothing in the list and was masculine for a feminine download; now the book's settings"
+    },
+    {
+     "key": "place",
+     "english": "place",
+     "before": "מקום",
+     "after": "מיקום קריאה",
+     "why": "term: a bare מקום in a list also reads as room or space; the glossary's reading position is מיקום קריאה"
+    },
+    {
+     "key": "places",
+     "english": "places",
+     "before": "מקומות",
+     "after": "מיקומי קריאה",
+     "why": "term: a bare מקומות in a list also reads as rooms or spaces; the glossary's reading position is מיקום קריאה"
+    },
+    {
+     "key": "the %@ kept for %lld removed downloads",
+     "english": {
+      "one": "the %@ kept for %lld removed download",
+      "other": "the %@ kept for %lld removed downloads"
+     },
+     "before": {
+      "one": "%@ שנשמרו עבור %lld הורדה שהוסרה",
+      "other": "%@ שנשמרו עבור %lld הורדות שהוסרו",
+      "two": "%@ שנשמרו עבור %lld הורדות שהוסרו"
+     },
+     "after": {
+      "one": "%@ של %lld הורדה שהוסרה",
+      "two": "%@ שנשמרו עבור %lld הורדות שהוסרו",
+      "other": "%@ שנשמרו עבור %lld הורדות שהוסרו"
+     },
+     "why": "grammar: for one download the list can be one part (מיקום קריאה), which שנשמרו (plural) does not fit"
+    },
+    {
+     "key": "the top of your library",
+     "english": "the top of your library",
+     "before": "ראש הספרייה שלך",
+     "after": "הרמה העליונה של הספרייה שלך",
+     "why": "meaning: ראש הספרייה reads as the head (chief) of the library; now its top level"
+    },
+    {
+     "key": "“%@” downloads once this Mac is on a network without data limits.",
+     "english": "“%@” downloads once this Mac is on a network without data limits.",
+     "before": "“%@” יורד ברגע שה-Mac הזה נמצא ברשת ללא מגבלות נתונים.",
+     "after": "ההורדה של “%@” תתחיל ברגע שה-Mac הזה יהיה ברשת ללא מגבלות נתונים.",
+     "why": "meaning: unvocalized יורד reads as goes down, not is downloaded; now the download starts"
+    },
+    {
+     "key": "“%@” no longer waits to download; it downloads when you choose %@.",
+     "english": "“%1$@” no longer waits to download; it downloads when you choose %2$@.",
+     "before": "“%1$@” אינו ממתין עוד להורדה; הוא יורד כשתבחר ב-%2$@.",
+     "after": "“%1$@” אינו ממתין עוד להורדה; ההורדה תתחיל כשתבחר ב“%2$@”.",
+     "why": "punctuation: the name of the Download command goes in quotation marks, as the other Hebrew strings mark a control"
+    }
+   ]
+  },
+  {
    "part": 3,
    "areas": [
     "reader, formats, and menus",
