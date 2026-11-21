@@ -96828,7 +96828,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停顿 %1$@ 之后，位于 %2$@。"
+            "value" : "停顿 %1$@之后，位于 %2$@。"
           }
         },
         "zh-Hant" : {
@@ -202860,7 +202860,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在将 %1$@ 的音频导出为 %2$@，文件为“%3$@”。"
+            "value" : "正在将 %1$@的音频导出为 %2$@，文件为“%3$@”。"
           }
         },
         "zh-Hant" : {
@@ -238186,7 +238186,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "插入 %@ 的音频"
+            "value" : "插入 %@的音频"
           }
         },
         "zh-Hant" : {
@@ -238311,7 +238311,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "插入 %@ 的静音"
+            "value" : "插入 %@的静音"
           }
         },
         "zh-Hant" : {
@@ -239186,7 +239186,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已插入 %@ 的新录音，并已选中。"
+            "value" : "已插入 %@的新录音，并已选中。"
           }
         },
         "zh-Hant" : {
@@ -239311,7 +239311,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已插入 %@ 的静音。"
+            "value" : "已插入 %@的静音。"
           }
         },
         "zh-Hant" : {
@@ -287854,7 +287854,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已将 %1$@ 移到 %2$@。"
+            "value" : "已将 %1$@移到 %2$@。"
           }
         },
         "zh-Hant" : {
@@ -337621,7 +337621,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已将 %@ 粘贴回剪切处。"
+            "value" : "已将 %@粘贴回剪切处。"
           }
         },
         "zh-Hant" : {
@@ -361357,7 +361357,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在用 %3$@ 覆盖录制 %2$@ 处的 %1$@，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。"
+            "value" : "正在用 %3$@ 覆盖录制 %2$@处的 %1$@，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。"
           }
         },
         "zh-Hant" : {
@@ -361863,7 +361863,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在用 %2$@ 录制，将插入到 %1$@ 处，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。"
+            "value" : "正在用 %2$@ 录制，将插入到 %1$@处，提示音之后开始。“覆盖录制”或“停止”会结束录制；“取消选择”会放弃录制。"
           }
         },
         "zh-Hant" : {
@@ -373181,7 +373181,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已将 %1$@ 替换为 %2$@ 的新录音，并已选中。"
+            "value" : "已将 %1$@替换为 %2$@的新录音，并已选中。"
           }
         },
         "zh-Hant" : {
@@ -389808,7 +389808,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在将 %1$@ 的音频存储为 %2$@，即此图书所用的格式。"
+            "value" : "正在将 %1$@的音频存储为 %2$@，即此图书所用的格式。"
           }
         },
         "zh-Hant" : {
@@ -389933,7 +389933,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在将 %@ 的音频存入图书。"
+            "value" : "正在将 %@的音频存入图书。"
           }
         },
         "zh-Hant" : {
@@ -397238,7 +397238,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "所选内容从 %1$@ 到 %2$@；长度 %3$@。"
+            "value" : "所选内容从 %1$@到 %2$@；长度 %3$@。"
           }
         },
         "zh-Hant" : {
@@ -620638,7 +620638,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@”正在录音。请用“取消选择”停止或放弃录音，然后再退出。"
+            "value" : "“%@”正在录音。请先停止录音，或用“取消选择”放弃录音，然后再退出。"
           }
         },
         "zh-Hant" : {
@@ -621662,7 +621662,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@”使用 %2$@ 采样，TextMouth 无法播放。"
+            "value" : "“%1$@”使用 %2$@采样，TextMouth 无法播放。"
           }
         },
         "zh-Hant" : {
