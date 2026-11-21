@@ -68,6 +68,7 @@ Converting a sentence whole grows the English by about a fifth before any cut, b
   `scan.py show FILE` lists a file's unlocalized literals until it shows none, and also its keys whose note is missing or misplaced, which `lint` refuses.
   A line ending `// l10n: no (reason)` is left out on purpose: an identifier, a stored value, a log line.
 - `todo` and `apply` are the translators' commands; see [Translating TextMouth](translation.md).
+- The l10n tools' speed tests (`Scripts/l10n/tests`) time their own CPU (`time.process_time`), not the clock, so a busy Mac cannot fail them.
 
 ## The extraction and the lock
 <!-- id: localization-extraction-lock; keys: typecheck.py --emit-strings, -emit-localized-strings, stringsdata, heavy-work lock, locations.json, sync time; src: Scripts/ios/typecheck.py, Scripts/l10n/l10n.py, Scripts/agents/heavy_lock.py -->
