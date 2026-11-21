@@ -218638,6 +218638,12 @@
             "value" : "В списке для чтения"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "I läslistan"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218993,6 +218999,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В озвучиваемом тексте, смещения которого даёт журнал речи: речь остановилась на символе %1$@; отклонённый текст занимает символы с %2$@ по %3$@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "I den upplästa texten, vars positioner uppläsningsloggen anger: uppläsningen stoppade vid tecken %1$@; den avvisade texten sträcker sig från tecken %2$@ till %3$@."
           }
         },
         "th" : {
@@ -219679,6 +219691,12 @@
             "value" : "Увеличить скорость аудио на %@×"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öka ljudhastigheten med %@ gånger"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -219985,6 +220003,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Увеличить скорость на %lld слова в минуту"
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Öka hastigheten med %lld ord per minut"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Öka hastigheten med %lld ord per minut"
                 }
               }
             }
@@ -224499,6 +224535,12 @@
             "value" : "В ней есть список страниц, а начало каждой страницы отмечено в тексте."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den har en sidlista, och början på varje sida är markerad i texten."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -224810,6 +224852,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Den har inga rubriker, så innehållsförteckningen har %lld post för dess kapitel och de platser den markerar."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Den har inga rubriker, så innehållsförteckningen har %lld poster för dess kapitel och de platser den markerar."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -224971,6 +225031,12 @@
             "value" : "В ней нет заголовков, поэтому в оглавлении один пункт для всей книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den har inga rubriker, så innehållsförteckningen har en post för hela boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -225076,6 +225142,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В ней нет картинок, звука и видео, а текст описания картинки сохранён как текст."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Den har inga bilder, inget ljud och ingen video, och texten i en bilds beskrivning behålls som text."
           }
         },
         "th" : {
@@ -231554,6 +231626,12 @@
             "value" : "Её заголовки — настоящие заголовки, а оглавление ссылается на них."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dess rubriker är riktiga rubriker, och innehållsförteckningen länkar till dem."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -232958,6 +233036,12 @@
             "value" : "JSON и Markdown"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "JSON och Markdown"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -233178,6 +233262,12 @@
             "value" : "Перейти к странице"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa till sida"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -233285,6 +233375,12 @@
             "value" : "Перейти к проценту"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa till procent"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -233390,6 +233486,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перейти ко времени"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa till tid"
           }
         },
         "th" : {
@@ -235512,6 +235614,12 @@
             "value" : "Хранить эти книги на этом Mac"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Behåll de här böckerna på den här Mac-datorn"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -235964,6 +236072,12 @@
             "value" : "Хранит книги списка загруженными на этом Mac; каждый Mac выбирает сам. Снятие флажка не удаляет загруженное."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Behåller listans böcker hämtade på den här Mac-datorn; varje Mac väljer själv. Om du avmarkerar det tas ingen nedladdning bort."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -236069,6 +236183,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохраняет порядок, заданный командами «Переместить книгу вверх» и «Переместить книгу вниз» или перетаскиванием."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Behåller ordningen du ställt in med Flytta boken uppåt, Flytta boken nedåt eller genom att dra."
           }
         },
         "th" : {
@@ -236495,6 +236615,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -236855,6 +236993,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Сохранены все озвученные главы (%lld) до выхода из TextMouth, начала другого экспорта озвученного аудио или изменения голоса, текста, замен или пауз книги. Чтобы создать из них аудиофайл, экспортируйте тот же диапазон с теми же скоростью и высотой тона."
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               }
             }
@@ -237257,6 +237413,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Озвученная глава сохранена до выхода из TextMouth, начала другого экспорта озвученного аудио или изменения голоса, текста, замен или пауз книги. Чтобы создать из неё аудиофайл, экспортируйте тот же диапазон с теми же скоростью и высотой тона."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Behöll det upplästa kapitlet tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
           }
         },
         "th" : {
@@ -239214,6 +239376,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Пропустить"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Utelämna"
           }
         },
         "th" : {
@@ -242934,6 +243102,12 @@
             "value" : "Концы строк"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Radslut"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243039,6 +243213,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Строк на странице"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rader per sida"
           }
         },
         "th" : {
@@ -243493,6 +243673,12 @@
             "value" : "Время прослушивания"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lyssningstid"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243838,6 +244024,12 @@
             "value" : "Время прослушивания на этой неделе"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lyssningstid den här veckan"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243943,6 +244135,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Время прослушивания сегодня"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lyssningstid i dag"
           }
         },
         "th" : {
@@ -248420,6 +248618,12 @@
             "value" : "Загрузка"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läser in"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252798,6 +253002,12 @@
             "value" : "Markdown"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Markdown"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255696,6 +255906,12 @@
             "value" : "Защита разметки: строгая, все угловые скобки не читаются, с символа %1$@ по %2$@ озвучиваемого текста."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Märkningsskydd: strikt, alla vinkelparenteser tystas, från tecken %1$@ till %2$@ i den upplästa texten."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255801,6 +256017,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Защита разметки: обычная, не читает только скобки текста в виде тегов."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Märkningsskydd: det vanliga, som bara tystar parenteserna i text som ser ut som taggar."
           }
         },
         "th" : {
@@ -256731,6 +256953,12 @@
             "value" : "Элементы управления медиа не освобождены: эта книга их не удерживает."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mediekontrollerna släpptes inte: den här boken har dem inte."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256836,6 +257064,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Элементы управления медиа освобождены"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Mediekontrollerna har släppts"
           }
         },
         "th" : {
@@ -257520,6 +257754,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Метаданные обновлены"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Metadata uppdaterade"
           }
         },
         "th" : {
@@ -258718,6 +258958,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Минуты"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Minuter"
           }
         },
         "th" : {
@@ -268443,6 +268689,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Flyttar bakåt eller framåt %lld sekund."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Flyttar bakåt eller framåt %lld sekunder."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -268604,6 +268868,12 @@
             "value" : "Переходит назад или вперёд по закладкам."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar bakåt eller framåt per bokmärke."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268709,6 +268979,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переходит назад или вперёд по заголовкам."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar bakåt eller framåt per rubrik."
           }
         },
         "th" : {
@@ -268818,6 +269094,12 @@
             "value" : "Переходит назад или вперёд по страницам."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar bakåt eller framåt per sida."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268923,6 +269205,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переходит назад или вперёд по абзацам."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar bakåt eller framåt per stycke."
           }
         },
         "th" : {
@@ -269032,6 +269320,12 @@
             "value" : "Переходит назад или вперёд по предложениям."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar bakåt eller framåt per mening."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269137,6 +269431,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переходит назад или вперёд по подзаголовкам."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar bakåt eller framåt per underrubrik."
           }
         },
         "th" : {
@@ -272709,6 +273009,12 @@
             "value" : "Переходит к следующему заголовку, сохраняя единицу навигации."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar till nästa rubrik och behåller navigeringsenheten."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272814,6 +273120,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переходит к предыдущему заголовку, сохраняя единицу навигации."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Flyttar till föregående rubrik och behåller navigeringsenheten."
           }
         },
         "th" : {
@@ -275805,6 +276117,12 @@
             "value" : "Единица навигации для аудиокниг"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigeringsenhet för ljudböcker"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275910,6 +276228,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Единица навигации для текстовых книг"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Navigeringsenhet för textböcker"
           }
         },
         "th" : {
@@ -276487,6 +276811,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Никогда не сворачивать: читать каждый символ"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Komprimera aldrig: läs varje symbol"
           }
         },
         "th" : {
@@ -278099,6 +278429,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Новый таймер"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ny timer"
           }
         },
         "th" : {
@@ -280272,6 +280608,12 @@
             "value" : "Следующая книга не начата из-за таймера сна"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nästa bok startades inte på grund av insomningstimern"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280944,6 +281286,12 @@
             "value" : "Следующая дорожка"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nästa spår"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281168,6 +281516,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Нет открытого окна библиотеки или книги, поэтому экспортировать нечего."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget biblioteksfönster eller ingen bok är öppen, så det finns inget att exportera."
           }
         },
         "th" : {
@@ -281854,6 +282208,12 @@
             "value" : "Закладок пока нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga bokmärken än."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282078,6 +282438,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Книги не найдены."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga böcker matchar."
           }
         },
         "th" : {
@@ -284929,6 +285295,12 @@
             "value" : "В папке больше нет книг"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga fler böcker i mappen"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285657,6 +286029,12 @@
             "value" : "В списке для чтения нет следующей книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen nästa bok i läslistan."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285762,6 +286140,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В списке для чтения нет следующей книги: все книги ниже завершены."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen nästa bok i läslistan: alla böcker nedanför den här är avslutade."
           }
         },
         "th" : {
@@ -285871,6 +286255,12 @@
             "value" : "Следующей закладки нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget nästa bokmärke."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285976,6 +286366,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Следующего заголовка нет."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen nästa rubrik."
           }
         },
         "th" : {
@@ -286085,6 +286481,12 @@
             "value" : "Следующей страницы нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen nästa sida."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286190,6 +286592,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Следующего абзаца нет."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget nästa stycke."
           }
         },
         "th" : {
@@ -286299,6 +286707,12 @@
             "value" : "Следующего предложения нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen nästa mening."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286404,6 +286818,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Следующего подзаголовка нет."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen nästa underrubrik."
           }
         },
         "th" : {
@@ -287304,6 +287724,12 @@
             "value" : "В списке для чтения нет предыдущей книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen föregående bok i läslistan."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287409,6 +287835,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В списке для чтения нет предыдущей книги: все книги выше завершены."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen föregående bok i läslistan: alla böcker ovanför den här är avslutade."
           }
         },
         "th" : {
@@ -287518,6 +287950,12 @@
             "value" : "Предыдущей закладки нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget föregående bokmärke."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287623,6 +288061,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Предыдущего заголовка нет."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen föregående rubrik."
           }
         },
         "th" : {
@@ -287732,6 +288176,12 @@
             "value" : "Предыдущей страницы нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen föregående sida."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287837,6 +288287,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Предыдущего абзаца нет."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget föregående stycke."
           }
         },
         "th" : {
@@ -288065,6 +288521,12 @@
             "value" : "Предыдущего предложения нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen föregående mening."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288172,6 +288634,12 @@
             "value" : "Нет предыдущего таймера сна для перезапуска."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen tidigare insomningstimer att starta om."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288277,6 +288745,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Предыдущего подзаголовка нет."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen föregående underrubrik."
           }
         },
         "th" : {
@@ -288618,6 +289092,12 @@
             "value" : "Нет правил для экспорта: в лексикон можно записать только включённые правила обычного текста."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga regler att exportera: bara vanliga textregler som är på kan skrivas i ett lexikon."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288723,6 +289203,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Из «%@» не добавлено ни одного правила."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga regler lades till från ”%@”."
           }
         },
         "th" : {
@@ -290871,6 +291357,12 @@
             "value" : "Голос не установлен. Добавьте его в «Системные настройки», «Универсальный доступ», «Речь», затем экспортируйте снова."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen röst är installerad. Lägg till en i Systeminställningar, Hjälpmedel, Uppläst innehåll och exportera sedan igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290976,6 +291468,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Голоса не установлены. Добавьте голоса в «Настройки», «Универсальный доступ», «Речь»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inga röster är installerade. Lägg till röster i Inställningar, Hjälpmedel, Uppläst innehåll."
           }
         },
         "th" : {
@@ -292125,6 +292623,12 @@
             "value" : "Ни одной из %lld выбранных книг нет в списке для чтения."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ingen av de %lld markerade böckerna finns i läslistan."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -292637,6 +293141,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Обычная (1,0×)"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Normal (1,0x)"
           }
         },
         "th" : {
@@ -295217,6 +295727,12 @@
             "value" : "Не перезапущено из-за таймера сна"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startades inte om på grund av insomningstimern"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295324,6 +295840,12 @@
             "value" : "Заметка"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anteckning"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295429,6 +295951,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Заметка (необязательно)"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Anteckning (valfri)"
           }
         },
         "th" : {
@@ -297162,6 +297690,12 @@
             "value" : "Ничего не экспортировано."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inget exporterades."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297493,6 +298027,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сейчас воспроизводится: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelas nu: %@"
           }
         },
         "th" : {
@@ -298969,6 +299509,12 @@
             "value" : "Выкл."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Av"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299758,6 +300304,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "При добавлении код меняется только у книги, которая явно написана кодом English Braille, American Edition. В окне «Сведения о книге» указано, что код определён предположительно, и можно выбрать другой."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. Bokinformation säger att koden gissades och kan välja en annan."
           }
         },
         "th" : {
@@ -302796,6 +303348,12 @@
             "value" : "Открывать следующую статью в"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppna nästa artikel i"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302901,6 +303459,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывать следующую книгу в"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppna nästa bok i"
           }
         },
         "th" : {
@@ -303010,6 +303574,12 @@
             "value" : "Открывать следующий выпуск в"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppna nästa avsnitt i"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303115,6 +303685,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывать следующий элемент в"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppna nästa objekt i"
           }
         },
         "th" : {
@@ -303581,6 +304157,12 @@
             "value" : "Открывается: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303918,6 +304500,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывает настройки TextMouth."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar inställningarna för TextMouth."
           }
         },
         "th" : {
@@ -304495,6 +305083,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывает поиск по тексту книги."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar en sökning i bokens text."
           }
         },
         "th" : {
@@ -305395,6 +305989,12 @@
             "value" : "Открывает варианты: открыть книгу или импортировать папку."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar alternativ för att öppna en bok eller importera en mapp."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -305500,6 +306100,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывает диалог экспорта: аудио книги, её текст или сам файл."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar exportrutan: bokens ljud, dess text eller dess egen fil."
           }
         },
         "th" : {
@@ -306781,6 +307387,12 @@
             "value" : "Открывает список закладок."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar listan med bokmärken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306888,6 +307500,12 @@
             "value" : "Открывает список заголовков."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar listan med rubriker."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306993,6 +307611,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Открывает таймер сна."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Öppnar insomningstimern."
           }
         },
         "th" : {
@@ -307679,6 +308303,12 @@
             "value" : "Исходное аудио (до правок)"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalljud (före redigeringar)"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307897,6 +308527,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Исходный файл"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalfil"
           }
         },
         "th" : {
@@ -308242,6 +308878,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Исходная запись"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originalinspelning"
           }
         },
         "th" : {
@@ -308970,6 +309612,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Переопределяет стиль."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Åsidosätter stilen"
           }
         },
         "th" : {
@@ -309761,6 +310409,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Страницы"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sidor"
           }
         },
         "th" : {
@@ -311086,6 +311740,12 @@
             "value" : "Частично сокращённый"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Delvis kortskrift"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311191,6 +311851,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Пропускает завершённые книги, когда книга из списка заканчивается."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppar över avslutade böcker när en bok från listan tar slut."
           }
         },
         "th" : {
@@ -312579,6 +313245,12 @@
             "value" : "Пауза"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausa"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313029,6 +313701,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Приостановить воспроизведение через:"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pausa uppspelningen efter:"
           }
         },
         "th" : {
@@ -314550,6 +315228,12 @@
             "value" : "Безвозвратно удаляет книгу и её файлы с этого iPhone."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Raderar boken och dess filer permanent från den här iPhone."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314776,6 +315460,12 @@
             "value" : "Высота тона"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tonhöjd"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314881,6 +315571,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Высота тона %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tonhöjd %@"
           }
         },
         "th" : {
@@ -315335,6 +316031,12 @@
             "value" : "Воспроизвести"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315781,6 +316483,12 @@
             "value" : "Воспроизвести статью выше"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp artikeln ovanför"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315886,6 +316594,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизвести статью ниже"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp artikeln nedanför"
           }
         },
         "th" : {
@@ -315995,6 +316709,12 @@
             "value" : "Воспроизвести книгу выше"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp boken ovanför"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316100,6 +316820,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизвести книгу ниже"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp boken nedanför"
           }
         },
         "th" : {
@@ -316209,6 +316935,12 @@
             "value" : "Воспроизвести выпуск выше"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp avsnittet ovanför"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316314,6 +317046,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизвести выпуск ниже"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp avsnittet nedanför"
           }
         },
         "th" : {
@@ -316423,6 +317161,12 @@
             "value" : "Воспроизвести элемент выше"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp objektet ovanför"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316530,6 +317274,12 @@
             "value" : "Воспроизвести элемент ниже"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spela upp objektet nedanför"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316635,6 +317385,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизведение/пауза"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Växla mellan Spela upp och Pausa"
           }
         },
         "th" : {
@@ -318106,6 +318862,12 @@
             "value" : "Воспроизводит отсюда."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp härifrån."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318439,6 +319201,12 @@
             "value" : "Воспроизводит короткие звуки при действиях воспроизведения."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp korta ljud vid uppspelningsåtgärder"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318544,6 +319312,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизводит книгу и ставит на паузу перед тем, как она начнётся снова."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp boken och pausar innan den startar om."
           }
         },
         "th" : {
@@ -318653,6 +319427,12 @@
             "value" : "Воспроизводит книгу и ставит на паузу перед следующей книгой."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp boken och pausar före nästa bok."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318758,6 +319538,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизводит книгу до следующего заголовка."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp boken till nästa rubrik."
           }
         },
         "th" : {
@@ -318867,6 +319653,12 @@
             "value" : "Воспроизводит книгу."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318972,6 +319764,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Воспроизводит книгу; она и так останавливается в конце."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelar upp boken; den stannar ändå vid slutet."
           }
         },
         "th" : {
@@ -319194,6 +319992,12 @@
             "value" : "Звучит, когда «Где я?» заканчивает говорить."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelas upp när Var är jag? har läst klart"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319299,6 +320103,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Звучит, когда «Где я?» начинает говорить."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelas upp när Var är jag? börjar läsa upp"
           }
         },
         "th" : {
@@ -319408,6 +320218,12 @@
             "value" : "Звучит при паузе чтения."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelas upp när du pausar läsningen"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319513,6 +320329,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Звучит при перемотке назад."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelas upp när du hoppar bakåt"
           }
         },
         "th" : {
@@ -319622,6 +320444,12 @@
             "value" : "Звучит при перемотке вперёд."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelas upp när du hoppar framåt"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319727,6 +320555,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Звучит при начале чтения."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spelas upp när du börjar läsa"
           }
         },
         "th" : {
@@ -320354,6 +321188,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Portable Embosser Format: страницы Брайля Unicode в XML для эмбоссеров."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Portable Embosser Format: sidor med Unicode-punktskrift i XML, för punktskriftsskrivare."
           }
         },
         "th" : {
@@ -321853,6 +322693,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Прослушать звук: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Förhandslyssna på ljud för %@"
           }
         },
         "th" : {
@@ -323774,6 +324620,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Предыдущая дорожка"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Föregående spår"
           }
         },
         "th" : {
@@ -328725,6 +329577,12 @@
             "value" : "Панель инструментов окна чтения"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läsarens verktygsfält"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328945,6 +329803,12 @@
             "value" : "Чтение"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läsning"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329052,6 +329916,12 @@
             "value" : "Список для чтения"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läslista"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329157,6 +330027,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Порядок списка для чтения"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läslistans ordning"
           }
         },
         "th" : {
@@ -329385,6 +330261,12 @@
             "value" : "Статистика чтения"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lässtatistik"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329496,6 +330378,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Список для чтения, книга %1$lld из %2$lld"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läslista, bok %1$lld av %2$lld"
           }
         },
         "th" : {
@@ -331258,6 +332146,12 @@
             "value" : "Чтение заголовков книги…"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läser bokens rubriker…"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332535,6 +333429,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Недавно завершённые"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nyligen avslutade"
           }
         },
         "th" : {
@@ -336869,6 +337769,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Avvisad här: %lld gång medan det här fönstret har varit öppet."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Avvisad här: %lld gånger medan det här fönstret har varit öppet."
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -337736,6 +338654,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Убрать"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta bort"
           }
         },
         "th" : {
@@ -338813,6 +339737,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta bort %lld bok från läslistan"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta bort %lld böcker från läslistan"
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -339585,6 +340527,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta bort %lld bok från läslistan"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta bort %lld böcker från läslistan"
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -339863,6 +340823,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Убрать закладку %@?"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta bort bokmärke %@?"
           }
         },
         "th" : {
@@ -340835,6 +341801,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Убирать книги после завершения"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta bort böcker när de är avslutade"
           }
         },
         "th" : {
@@ -342116,6 +343088,12 @@
             "value" : "Из списка для чтения убрано книг: %lld."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld böcker togs bort från läslistan."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -342221,6 +343199,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Убрано из списка для чтения: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Borttagen från läslistan: %@"
           }
         },
         "th" : {
@@ -343264,6 +344248,12 @@
             "value" : "Повторять каждый символ"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Upprepa varje symbol"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -343371,6 +344361,12 @@
             "value" : "Повторяющиеся символы"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Upprepade symboler"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -343476,6 +344472,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стиль повторяющихся символов"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stil för upprepade symboler"
           }
         },
         "th" : {
@@ -346119,6 +347121,12 @@
             "value" : "Сбросить таймер"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återställ timern"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346458,6 +347466,12 @@
             "value" : "Сбросить все звуковые эффекты к значениям по умолчанию"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återställ alla ljudeffekter till standard"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346563,6 +347577,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сбросить символы к значениям по умолчанию"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återställ symboler till standard"
           }
         },
         "th" : {
@@ -348052,6 +349072,12 @@
             "value" : "Перезапуск: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startar om: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -348276,6 +349302,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перезапускает таймер с полной длительности и воспроизводит книгу."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startar om timern med full längd och spelar upp boken."
           }
         },
         "th" : {
@@ -349216,6 +350248,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Восстанавливает стандартный список: символы ASCII, маркеры, тире, многоточие и линии для рисования рамок."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återställer standardlistan: ASCII-symboler, punkter, tankstreck, ellipsen och ramlinjer"
           }
         },
         "th" : {
@@ -351520,6 +352558,12 @@
             "value" : "Возврат на прежнюю позицию"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återgick till föregående position"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -351625,6 +352669,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Возвращает к книге."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Återgår till boken."
           }
         },
         "th" : {
@@ -353295,6 +354345,12 @@
             "value" : "Форматированный текст, где каждый заголовок на своём уровне структуры, для Word, Pages и TextEdit."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Formaterad text, med varje rubrik på sin dispositionsnivå, för Word, Pages och TextEdit."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -353973,6 +355029,12 @@
             "value" : "Правила экспортированы"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regler exporterade"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354078,6 +355140,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Правила импортированы"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Regler importerade"
           }
         },
         "th" : {
@@ -355564,6 +356632,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Сохранить"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara"
           }
         },
         "th" : {
@@ -357719,6 +358793,12 @@
             "value" : "Сохраните свои правила как файл лексикона произношения."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Spara dina regler som en uttalslexikonfil."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359087,6 +360167,12 @@
             "value" : "Сохраняет включённые правила обычного текста; правила с регулярными выражениями пропускаются."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sparar dina vanliga textregler som är på; regler med reguljära uttryck utelämnas"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359650,6 +360736,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Назвать количество"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Säg antal"
           }
         },
         "th" : {
@@ -363476,6 +364568,12 @@
             "value" : "Раздел включён: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sektion inkluderad: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363581,6 +364679,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Раздел пропущен: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sektion överhoppad: %@"
           }
         },
         "th" : {
@@ -367077,6 +368181,12 @@
             "value" : "Предложения"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Meningar"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -367301,6 +368411,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Задать"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ställ in"
           }
         },
         "th" : {
@@ -367852,6 +368968,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ställ in timer på %lld minut"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ställ in timer på %lld minuter"
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -368358,6 +369492,12 @@
             "value" : "Настройки"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inställningar"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -368463,6 +369603,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Настройки применены как глобальные по умолчанию"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Inställningarna tillämpade som globala standardvärden"
           }
         },
         "th" : {
@@ -368929,6 +370075,12 @@
             "value" : "Поделиться журналами…"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dela loggar…"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369034,6 +370186,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Делится недавними журналами как текстовым файлом. Текста книг в них нет."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Delar de senaste loggarna som en textfil. De innehåller ingen boktext."
           }
         },
         "th" : {
@@ -371285,6 +372443,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Показывать «Экспортировать» на панели инструментов окна чтения"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Visa Exportera i läsarens verktygsfält"
           }
         },
         "th" : {
@@ -373663,6 +374827,12 @@
             "value" : "Показывать кнопку «Экспортировать» на панели инструментов окна чтения"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Visa knappen Exportera i läsarens verktygsfält"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -374945,6 +376115,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Показ журналов в Finder пока недоступен на iPhone."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Att visa loggarna i Finder är inte tillgängligt på iPhone än."
           }
         },
         "th" : {
@@ -376797,6 +377973,12 @@
             "value" : "Перемотать назад"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa bakåt"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -377136,6 +378318,12 @@
             "value" : "Пропускать завершённые статьи"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa över avslutade artiklar"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -377241,6 +378429,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Пропускать завершённые книги"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa över avslutade böcker"
           }
         },
         "th" : {
@@ -377350,6 +378544,12 @@
             "value" : "Пропускать завершённые выпуски"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa över avslutade avsnitt"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -377457,6 +378657,12 @@
             "value" : "Пропускать завершённые элементы"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa över avslutade objekt"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -377562,6 +378768,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Перемотать вперёд"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoppa framåt"
           }
         },
         "th" : {
@@ -378486,6 +379698,12 @@
             "value" : "Таймер сна"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimer"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -378706,6 +379924,12 @@
             "value" : "Таймер сна отменён, потому что не удалось открыть следующую книгу."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimern avbröts, eftersom nästa bok inte kunde öppnas."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -378811,6 +380035,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Таймер сна отменён, потому что вы перешли к другой книге, пока звук затухал."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimern avbröts, eftersom du bytte till en annan bok medan ljudet tonades ned."
           }
         },
         "th" : {
@@ -378920,6 +380150,12 @@
             "value" : "Таймер сна отменён."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimern avbröts."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -379025,6 +380261,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Таймер сна сработал"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimern har gått ut"
           }
         },
         "th" : {
@@ -379134,6 +380376,12 @@
             "value" : "Таймер сна сработал в конце заголовка. Воспроизведение приостановлено."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimern har gått ut vid slutet av rubriken. Uppspelningen pausad."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -379239,6 +380487,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Таймер сна сработал. Воспроизведение приостановлено."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimern har gått ut. Uppspelningen pausad."
           }
         },
         "th" : {
@@ -379348,6 +380602,12 @@
             "value" : "Таймер сна: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimer: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -379453,6 +380713,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Таймер сна: %@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimer: %@."
           }
         },
         "th" : {
@@ -379766,6 +381032,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Insomningstimer: %lld minut kvar"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Insomningstimer: %lld minuter kvar"
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -379925,6 +381209,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Таймер сна: осталось секунд: %lld"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Insomningstimer: %lld sekunder kvar"
           }
         },
         "th" : {
@@ -381575,6 +382865,12 @@
             "value" : "Сортировка книг: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sortera böcker efter %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -381801,6 +383097,12 @@
             "value" : "Сортировка: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Sorterat efter %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -381906,6 +383208,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Назначение звуков"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudtilldelningar"
           }
         },
         "th" : {
@@ -382015,6 +383323,12 @@
             "value" : "Громкость звуковых эффектов"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Volym för ljudeffekter"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -382120,6 +383434,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Звуковые эффекты сброшены к значениям по умолчанию"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ljudeffekterna återställda till standard"
           }
         },
         "th" : {
@@ -383032,6 +384352,12 @@
             "value" : "Озвучивание главы %1$@ из %2$@…"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Läser upp kapitel %1$@ av %2$@…"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -383139,6 +384465,12 @@
             "value" : "Речь остановлена"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppläsningen stoppades"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -383244,6 +384576,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Речь голосов Mac предназначена для личного некоммерческого использования по лицензии Apple."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tal från Mac-datorns röster är för personligt, icke-kommersiellt bruk, enligt licensen från Apple."
           }
         },
         "th" : {
@@ -383557,6 +384895,24 @@
             }
           }
         },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Uppläsningslogg, den senaste %lld raden, endast positioner och längder:"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Uppläsningslogg, de senaste %lld raderna, endast positioner och längder:"
+                }
+              }
+            }
+          }
+        },
         "th" : {
           "variations" : {
             "plural" : {
@@ -383718,6 +385074,12 @@
             "value" : "Журнал речи: строк нет."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppläsningslogg: inga rader."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -383823,6 +385185,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Речь приостановлена: голос не запустился. Нажмите «Воспроизвести», чтобы повторить попытку."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppläsningen pausad: rösten startade inte. Välj Spela upp för att försöka igen."
           }
         },
         "th" : {
@@ -383938,6 +385306,12 @@
             "value" : "Речь остановилась на символе %1$@ из %2$@ в главе."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppläsningen stoppade vid tecken %1$@ av %2$@ i kapitlet."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -384043,6 +385417,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Речь остановлена: речевой движок Mac отклонил этот текст."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppläsningen stoppades: Mac-datorns talmotor avvisade den här texten."
           }
         },
         "th" : {
@@ -384152,6 +385532,12 @@
             "value" : "Речь остановлена: речевой движок отклонил этот отрывок. Подробности в окне книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Uppläsningen stoppades: talmotorn avvisade det här stycket. Detaljer finns i bokens fönster."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -384257,6 +385643,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Скорость"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hastighet"
           }
         },
         "th" : {
@@ -385073,6 +386465,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Скорость: %lld слова в минуту; темп %@, высота тона %@, громкость %@"
+                }
+              }
+            }
+          }
+        },
+        "sv" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Hastighet: %lld ord per minut; tempo %@, tonhöjd %@, volym %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Hastighet: %lld ord per minut; tempo %@, tonhöjd %@, volym %@"
                 }
               }
             }
@@ -385929,6 +387339,12 @@
             "value" : "Начало книги."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Början av boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -386034,6 +387450,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Начало списка для чтения"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Början av läslistan"
           }
         },
         "th" : {
@@ -386262,6 +387684,12 @@
             "value" : "Начинается заново: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startar igen: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -386367,6 +387795,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Начинается: %@"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startar: %@"
           }
         },
         "th" : {
@@ -386813,6 +388247,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Статистика"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Statistik"
           }
         },
         "th" : {
@@ -388031,6 +389471,12 @@
             "value" : "Ещё запускается: %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Startar fortfarande: %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -388364,6 +389810,12 @@
             "value" : "Остановить"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -388469,6 +389921,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Остановить на"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa vid"
           }
         },
         "th" : {
@@ -389788,6 +391246,12 @@
             "value" : "Остановить в конце книги"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa vid slutet av boken"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -389893,6 +391357,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Остановить в конце этого заголовка"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppa vid slutet av den här rubriken"
           }
         },
         "th" : {
@@ -392146,6 +393616,12 @@
             "value" : "Останавливает экспорт и сохраняет уже озвученные главы до выхода из TextMouth, начала другого экспорта озвученного аудио или изменения голоса, текста, замен или пауз книги. Экспорт того же диапазона с теми же скоростью и высотой тона продолжится с них."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppar exporten och behåller de redan upplästa kapitlen tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. En export av samma intervall med samma hastighet och tonhöjd fortsätter från dem."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -392251,6 +393727,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Останавливает экспорт. Создаваемый файл не сохраняется."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppar exporten. Filen som skapas behålls inte."
           }
         },
         "th" : {
@@ -392590,6 +394072,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Останавливает весь экспорт. Уже записанные файлы остаются."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stoppar hela exporten. Redan skrivna filer finns kvar."
           }
         },
         "th" : {
@@ -393280,6 +394768,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Стиль:"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stil:"
           }
         },
         "th" : {
@@ -395063,6 +396557,12 @@
             "value" : "Перейдите в окно библиотеки или книги и снова выберите «Экспортировать»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Växla till ett biblioteks- eller bokfönster och välj sedan Exportera igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -395747,6 +397247,12 @@
             "value" : "Символы сброшены к списку по умолчанию"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symbolerna återställda till standardlistan"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -395854,6 +397360,12 @@
             "value" : "Символы, образующие серии"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symboler som bildar följder"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -395959,6 +397471,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Символы:"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Symboler:"
           }
         },
         "th" : {
@@ -396645,6 +398163,12 @@
             "value" : "Допустимо от %1$lld до %2$lld минут."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tar %1$lld till %2$lld minuter."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -396758,6 +398282,12 @@
             "value" : "Допустимо от %1$lld до %2$lld минут. Return запускает таймер и воспроизводит книгу."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tar %1$lld till %2$lld minuter. Retur ställer in timern och spelar upp boken."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -396865,6 +398395,12 @@
             "value" : "Убирает каждую завершённую книгу из списка, когда её окно переходит дальше или закрывается. Книги, завершённые до включения, остаются."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tar bort varje avslutad bok från listan när dess fönster går vidare eller stängs. Böcker som avslutades innan du slår på det finns kvar."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -396970,6 +398506,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Убирает выбранные книги из списка для чтения. В библиотеке они остаются."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tar bort de markerade böckerna från läslistan. De finns kvar i biblioteket."
           }
         },
         "th" : {
@@ -397912,6 +399454,12 @@
             "value" : "Текст как %@"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text som %@"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -398017,6 +399565,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Текст как Markdown"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text som Markdown"
           }
         },
         "th" : {
@@ -398126,6 +399680,12 @@
             "value" : "Текст как обычный текст"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text som vanlig text"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -398231,6 +399791,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Текст как озвученное аудио"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Text som uppläst ljud"
           }
         },
         "th" : {
@@ -401293,6 +402859,12 @@
             "value" : "TextMouth завершил работу для защиты вашего Mac"
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth avslutades för att skydda din Mac"
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -403363,6 +404935,12 @@
             "value" : "TextMouth не может использовать таблицу Брайля, выбранную в настройках, «%1$@», поэтому экспорт начнётся с таблицы %2$@."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kan inte använda punktskriftstabellen som valts i Inställningar, ”%1$@”, så den här exporten börjar från %2$@."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -403474,6 +405052,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth не может использовать таблицу этого Mac «%1$@»: %2$@."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kan inte använda Mac-datorns tabell ”%1$@”: %2$@."
           }
         },
         "th" : {
@@ -403696,6 +405280,12 @@
             "value" : "TextMouth закрылся при открытии книги «%@», поэтому не открывает её снова."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth stängdes medan %@ öppnades, så den öppnades inte igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -403809,6 +405399,12 @@
             "value" : "TextMouth не смог проверить таблицу Брайля этого Mac «%1$@»: %2$@. Повторите попытку."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte kontrollera Mac-datorns punktskriftstabell ”%1$@”: %2$@. Försök igen."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -403920,6 +405516,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth не смог проверить таблицу этого Mac «%1$@»: %2$@. Выберите её снова, чтобы повторить."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte kontrollera Mac-datorns tabell ”%1$@”: %2$@. Välj den igen för att försöka på nytt."
           }
         },
         "th" : {
@@ -404259,6 +405861,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth не смог создать папку для проверки"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte skapa en mapp att kontrollera den i"
           }
         },
         "th" : {
@@ -405546,6 +407154,12 @@
             "value" : "TextMouth не смог прочитать «%@»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte läsa ”%@”."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -406010,6 +407624,12 @@
             "value" : "TextMouth не смог сохранить «%@»."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte spara ”%@”."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -406115,6 +407735,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth не смог перевести этот Брайль."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kunde inte översätta den här punktskriften."
           }
         },
         "th" : {
@@ -409634,6 +411260,12 @@
             "value" : "TextMouth экспортирует озвученное аудио в один файл за раз. Экспортируйте это после завершения текущего."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth exporterar en uppläst ljudfil åt gången. Exportera den här när den pågående är klar."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -409860,6 +411492,12 @@
             "value" : "TextMouth не нашёл таблиц Брайля в своём пакете."
           }
         },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth hittade inga punktskriftstabeller i sitt paket."
+          }
+        },
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -409965,6 +411603,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "В TextMouth нет таблицы Брайля с именем «%@»."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth har ingen punktskriftstabell med namnet ”%@”."
           }
         },
         "th" : {
