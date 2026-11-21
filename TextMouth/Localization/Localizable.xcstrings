@@ -74548,7 +74548,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "파일 형식을 선택합니다. M4B 형식은 오디오북이며, M4A 형식과 MP3 형식은 더 많은 앱에서 재생됩니다. M4B 형식과 M4A 형식에는 표제마다 챕터가 있으며, MP3 형식에는 처음 %@개의 표제에만 있습니다."
+            "value" : "파일 포맷을 선택합니다. M4B는 오디오북이며, M4A와 MP3는 더 많은 앱에서 재생됩니다. M4B와 M4A에는 표제마다 챕터가 있으며, MP3에는 처음 %@개의 표제에만 있습니다."
           }
         },
         "pt-BR" : {
@@ -183877,7 +183877,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Portable Embosser Format: XML 형식의 Unicode 점자 페이지로, 점자 프린터용입니다."
+            "value" : "Portable Embosser Format: XML 기반의 Unicode 점자 페이지로, 점자 프린터용입니다."
           }
         },
         "pt-BR" : {
@@ -231065,7 +231065,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 “%1$@”을(를) %2$@ 형식으로 읽을 수 없습니다. 손상되었거나 다른 형식의 이름이 붙어 있을 수 있습니다."
+            "value" : "TextMouth가 “%1$@”을(를) %2$@ 포맷으로 읽을 수 없습니다. 손상되었거나 다른 포맷의 이름이 붙어 있을 수 있습니다."
           }
         },
         "pt-BR" : {
@@ -291715,7 +291715,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "지원하지 않는 파일 형식: .%@"
+            "value" : "지원하지 않는 파일 포맷: .%@"
           }
         },
         "pt-BR" : {
@@ -291780,7 +291780,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "지원하지 않는 파일 형식: .%@."
+            "value" : "지원하지 않는 파일 포맷: .%@."
           }
         },
         "pt-BR" : {
@@ -307280,7 +307280,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "형식 확인하는 중"
+            "value" : "포맷을 확인하는 중"
           }
         },
         "pt-BR" : {
@@ -324626,7 +324626,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 형식"
+            "value" : "이 포맷"
           }
         },
         "pt-BR" : {
