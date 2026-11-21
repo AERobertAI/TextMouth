@@ -25812,7 +25812,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, %2$@ kalite"
+            "value" : "%1$@, kalite: %2$@"
           }
         },
         "uk" : {
@@ -138650,7 +138650,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sayıyı birer birer değiştirir, 2 ile 99 arasında."
+            "value" : "Sayıyı 2 ile 99 arasında birer birer değiştirir."
           }
         },
         "uk" : {
@@ -138787,7 +138787,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hızı %@ kat adımlarla değiştirir."
+            "value" : "Hızı %@ katlık adımlarla değiştirir."
           }
         },
         "uk" : {
@@ -446990,7 +446990,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Okunan sayfayı, örneğin Sayfa 12 / 300 gibi, yüzdenin yanında gösterir; birden çok sayfası olan kitaplar için."
+            "value" : "Birden çok sayfası olan kitaplarda, Sayfa 12 / 300 gibi okunan sayfayı yüzdenin yanında gösterir."
           }
         },
         "uk" : {
@@ -488501,7 +488501,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth en son kaydı henüz okumadı."
+            "value" : "TextMouth, son kaydedilen metni henüz okumadı."
           }
         },
         "uk" : {
@@ -563579,7 +563579,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu kitapta %@ sayfası yok."
+            "value" : "Bu kitapta %@ numaralı bir sayfa yok."
           }
         },
         "uk" : {
@@ -568554,7 +568554,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu Kindle kitabında çizgi roman ya da baskı kopyası gibi akan metin yok, bu yüzden TextMouth onu okuyamıyor."
+            "value" : "Bu Kindle kitabında, çizgi romanlarda ya da baskı kopyalarında olduğu gibi akan metin yok; bu yüzden TextMouth onu okuyamıyor."
           }
         },
         "uk" : {
@@ -627962,7 +627962,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Başlığı, yazarı, yayıncıyı ve tarihi bu kitabın kitaplıktaki kopyasına yazar."
+            "value" : "Kitap adını, yazarı, yayıncıyı ve tarihi bu kitabın kitaplıktaki kopyasına yazar."
           }
         },
         "uk" : {
@@ -636231,7 +636231,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ sayfasından önce"
+            "value" : "%@ numaralı sayfadan önce"
           }
         },
         "uk" : {
@@ -660390,7 +660390,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ sayfasında"
+            "value" : "%@ numaralı sayfada"
           }
         },
         "uk" : {
@@ -662096,7 +662096,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "sayfalar %@"
+            "value" : "%@ numaralı sayfalar"
           }
         },
         "uk" : {
