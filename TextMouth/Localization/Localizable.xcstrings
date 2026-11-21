@@ -386568,7 +386568,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Taruh folder feed di"
+            "value" : "Tempatkan folder feed di"
           }
         },
         "it" : {
@@ -386705,7 +386705,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Taruh folder feed di"
+            "value" : "Tempatkan folder feed di"
           }
         },
         "it" : {
@@ -387116,7 +387116,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan hanya mempertahankan folder dan posisi salinan yang ada di Daftar Bacaan."
+            "value" : "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan hanya mempertahankan folder serta posisi salinan yang ada di Daftar Bacaan."
           }
         },
         "it" : {
@@ -387253,7 +387253,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan mempertahankan posisi baca, markah, dan pengaturan salinan yang ada."
+            "value" : "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan mempertahankan posisi baca, markah, serta pengaturan salinan yang ada."
           }
         },
         "it" : {
@@ -415578,7 +415578,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlangganan lagi ke %@. Memeriksanya sekarang…"
+            "value" : "Berhasil berlangganan %@ lagi. Memeriksanya sekarang…"
           }
         },
         "it" : {
@@ -468867,7 +468867,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya."
+            "value" : "Berhasil berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya."
           }
         },
         "it" : {
@@ -469010,7 +469010,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlangganan %1$@: %2$@."
+            "value" : "Berhasil berlangganan %1$@: %2$@."
           }
         },
         "it" : {
@@ -469294,7 +469294,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Berlangganan %lld feed."
+                  "value" : "Berhasil berlangganan %lld feed."
                 }
               }
             }
@@ -480446,7 +480446,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth tidak dapat membuka file yang dilindungi hak cipta."
+            "value" : "TextMouth tidak dapat membuka file yang dilindungi dari penyalinan."
           }
         },
         "it" : {
@@ -487025,7 +487025,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi."
+                  "value" : "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi."
                 }
               }
             }
@@ -487345,7 +487345,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi."
+            "value" : "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi."
           }
         },
         "it" : {
@@ -492333,7 +492333,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Notifikasi, TextMouth."
+            "value" : "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Pemberitahuan, TextMouth."
           }
         },
         "it" : {
@@ -549683,7 +549683,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Direktori podcast di %1$@ tidak dapat menjawab pencarian (galat %2$@). Coba lagi nanti."
+            "value" : "Direktori podcast di %1$@ tidak dapat memproses pencarian (kesalahan %2$@). Coba lagi nanti."
           }
         },
         "it" : {
@@ -550247,7 +550247,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Direktori podcast di %1$@ tidak menjawab selama %2$lld detik."
+                  "value" : "Direktori podcast di %1$@ tidak merespons selama %2$lld detik."
                 }
               }
             }
@@ -550704,7 +550704,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Direktori podcast tidak dapat menjawab pencarian. Coba lagi nanti."
+            "value" : "Direktori podcast tidak dapat memproses pencarian. Coba lagi nanti."
           }
         },
         "it" : {
@@ -550978,7 +550978,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Direktori podcast mengirim jawaban yang tidak dapat dibaca TextMouth. Coba lagi nanti."
+            "value" : "Direktori podcast mengirim respons yang tidak dapat dibaca TextMouth. Coba lagi nanti."
           }
         },
         "it" : {
@@ -551115,7 +551115,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jawaban direktori podcast lebih besar dari yang dibaca TextMouth."
+            "value" : "Respons direktori podcast lebih besar dari yang dibaca TextMouth."
           }
         },
         "it" : {
@@ -563245,7 +563245,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak berlangganan."
+            "value" : "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak lagi dilanggan."
           }
         },
         "it" : {
@@ -574783,7 +574783,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat dimulai berikutnya."
+            "value" : "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat peluncuran berikutnya."
           }
         },
         "it" : {
@@ -575605,7 +575605,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Arsip buku komik ini berisi lebih dari %@ gambar yang dibaca TextMouth."
+            "value" : "Arsip buku komik ini berisi lebih dari %@ gambar, batas yang dapat dibaca TextMouth."
           }
         },
         "it" : {
