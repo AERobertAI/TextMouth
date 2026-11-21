@@ -597,6 +597,1056 @@
      "why": "grammar: the feminine odczytywana cannot agree with every title; Książka carries the gender"
     }
    ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ couldn't send the feed (error %@). Try again later.",
+     "english": "%1$@ couldn't send the feed (error %2$@). Try again later.",
+     "before": "%1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później.",
+     "after": "Serwer %1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później.",
+     "why": "grammar: a host name has no gender in Polish, so the masculine verb needs Serwer as its subject"
+    },
+    {
+     "key": "%@ couldn't send the file (error %@). Try again later.",
+     "english": "%1$@ couldn't send the file (error %2$@). Try again later.",
+     "before": "%1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później.",
+     "after": "Serwer %1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później.",
+     "why": "grammar: a host name has no gender in Polish, so the masculine verb needs Serwer as its subject"
+    },
+    {
+     "key": "%@ didn't answer for %lld seconds.",
+     "english": {
+      "one": "%@ didn't answer for %lld second.",
+      "other": "%@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "few": "%@ nie odpowiedział w ciągu %lld sekund.",
+      "many": "%@ nie odpowiedział w ciągu %lld sekund.",
+      "one": "%@ nie odpowiedział w ciągu %lld sekundy.",
+      "other": "%@ nie odpowiedział w ciągu %lld sekundy."
+     },
+     "after": {
+      "one": "Serwer %@ nie odpowiedział w ciągu %lld sekundy.",
+      "few": "Serwer %@ nie odpowiedział w ciągu %lld sekund.",
+      "many": "Serwer %@ nie odpowiedział w ciągu %lld sekund.",
+      "other": "Serwer %@ nie odpowiedział w ciągu %lld sekundy."
+     },
+     "why": "grammar: a host name has no gender in Polish, so the masculine verb needs Serwer as its subject"
+    },
+    {
+     "key": "%@ lists %lld feeds. Each gets its own folder, named after it.",
+     "english": {
+      "one": "%@ lists %lld feed. Each gets its own folder, named after it.",
+      "other": "%@ lists %lld feeds. Each gets its own folder, named after it."
+     },
+     "before": {
+      "few": "Plik %@ zawiera %lld kanały. Każdy dostaje własny folder o tej samej nazwie.",
+      "many": "Plik %@ zawiera %lld kanałów. Każdy dostaje własny folder o tej samej nazwie.",
+      "one": "Plik %@ zawiera %lld kanał. Dostaje własny folder o tej samej nazwie.",
+      "other": "Plik %@ zawiera %lld kanału. Każdy dostaje własny folder o tej samej nazwie."
+     },
+     "after": {
+      "one": "Plik %@ zawiera %lld kanał. Kanał dostaje własny folder o tej samej nazwie.",
+      "few": "Plik %@ zawiera %lld kanały. Każdy dostaje własny folder o tej samej nazwie.",
+      "many": "Plik %@ zawiera %lld kanałów. Każdy dostaje własny folder o tej samej nazwie.",
+      "other": "Plik %@ zawiera %lld kanału. Każdy dostaje własny folder o tej samej nazwie."
+     },
+     "why": "meaning: in the one form the bare Dostaje took the file as its subject, so the file got the folder"
+    },
+    {
+     "key": "%@ moved to position %lld of %lld",
+     "english": "%1$@ moved to position %2$lld of %3$lld",
+     "before": "Przeniesiono %1$@ na pozycję %2$lld z %3$lld",
+     "after": "%1$@: przeniesiono na pozycję %2$lld z %3$lld",
+     "why": "grammar: a preset name the listener types may not take the accusative; it now leads, before a colon"
+    },
+    {
+     "key": "%@ of %@ transcribed",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "Przetranskrybowano %1$@ z %2$@",
+     "after": "Przetranskrybowano: %1$@ (całość: %2$@)",
+     "why": "grammar: a spoken length such as 2 godziny is nominative and cannot be the object or follow z; both now follow colons"
+    },
+    {
+     "key": "%@ on this book",
+     "english": "%@ on this book",
+     "before": "%@ na tej książce",
+     "after": "Import tej książki: %@",
+     "why": "natural: na tej książce is a calque of on this book; Polish names the time spent as a labelled value"
+    },
+    {
+     "key": "%lld of %@ listed",
+     "english": {
+      "one": "%lld of %@ listed",
+      "other": "%lld of %@ listed"
+     },
+     "before": {
+      "few": "%lld z %@ na liście",
+      "many": "%lld z %@ na liście",
+      "one": "%lld z %@ na liście",
+      "other": "%lld z %@ na liście"
+     },
+     "after": {
+      "one": "%lld na liście, łącznie %@",
+      "few": "%lld na liście, łącznie %@",
+      "many": "%lld na liście, łącznie %@",
+      "other": "%lld na liście, łącznie %@"
+     },
+     "why": "grammar: z needs the genitive, which a total such as 23 odcinki is not; łącznie takes the total as it comes"
+    },
+    {
+     "key": "%lld timed passages were too long and cut short.",
+     "english": {
+      "one": "%lld timed passage was too long and cut short.",
+      "other": "%lld timed passages were too long and cut short."
+     },
+     "before": {
+      "few": "%lld fragmenty z czasem były zbyt długie i zostały skrócone.",
+      "many": "%lld fragmentów z czasem było zbyt długich i zostało skróconych.",
+      "one": "%lld fragment z czasem był zbyt długi i został skrócony.",
+      "other": "%lld fragmentów z czasem było zbyt długich i zostało skróconych."
+     },
+     "after": {
+      "one": "%lld fragment ze znacznikiem czasu był zbyt długi i został skrócony.",
+      "few": "%lld fragmenty ze znacznikami czasu były zbyt długie i zostały skrócone.",
+      "many": "%lld fragmentów ze znacznikami czasu było zbyt długich i zostało skróconych.",
+      "other": "%lld fragmentów ze znacznikami czasu było zbyt długich i zostało skróconych."
+     },
+     "why": "meaning: z czasem also means eventually; a timed passage is a fragment ze znacznikiem czasu"
+    },
+    {
+     "key": "%lld timed passages were unreadable and left out.",
+     "english": {
+      "one": "%lld timed passage was unreadable and left out.",
+      "other": "%lld timed passages were unreadable and left out."
+     },
+     "before": {
+      "few": "%lld fragmenty z czasem były nieczytelne i zostały pominięte.",
+      "many": "%lld fragmentów z czasem było nieczytelnych i zostało pominiętych.",
+      "one": "%lld fragment z czasem był nieczytelny i został pominięty.",
+      "other": "%lld fragmentów z czasem było nieczytelnych i zostało pominiętych."
+     },
+     "after": {
+      "one": "%lld fragment ze znacznikiem czasu był nieczytelny i został pominięty.",
+      "few": "%lld fragmenty ze znacznikami czasu były nieczytelne i zostały pominięte.",
+      "many": "%lld fragmentów ze znacznikami czasu było nieczytelnych i zostało pominiętych.",
+      "other": "%lld fragmentów ze znacznikami czasu było nieczytelnych i zostało pominiętych."
+     },
+     "why": "meaning: z czasem also means eventually; a timed passage is a fragment ze znacznikiem czasu"
+    },
+    {
+     "key": "%lld waiting for room on this Mac",
+     "english": {
+      "one": "%lld waiting for room on this Mac",
+      "other": "%lld waiting for room on this Mac"
+     },
+     "before": {
+      "few": "%lld czeka na miejsce na tym komputerze Mac",
+      "many": "%lld czeka na miejsce na tym komputerze Mac",
+      "one": "%lld czeka na miejsce na tym komputerze Mac",
+      "other": "%lld czeka na miejsce na tym komputerze Mac"
+     },
+     "after": {
+      "one": "%lld czeka na miejsce na tym komputerze Mac",
+      "few": "%lld czekają na miejsce na tym komputerze Mac",
+      "many": "%lld czeka na miejsce na tym komputerze Mac",
+      "other": "%lld czeka na miejsce na tym komputerze Mac"
+     },
+     "why": "grammar: 2 to 4 take a plural verb (3 czekają), not czeka"
+    },
+    {
+     "key": "%lld waiting until this Mac is on a network without data limits",
+     "english": {
+      "one": "%lld waiting until this Mac is on a network without data limits",
+      "other": "%lld waiting until this Mac is on a network without data limits"
+     },
+     "before": {
+      "few": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "many": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "one": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "other": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
+     },
+     "after": {
+      "one": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "few": "%lld czekają, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "many": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych",
+      "other": "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
+     },
+     "why": "grammar: 2 to 4 take a plural verb (3 czekają), not czeka"
+    },
+    {
+     "key": "; %@ stay",
+     "english": "; %@ stay",
+     "before": "; zostają %@",
+     "after": "; zachowano %@",
+     "why": "grammar: zostają cannot agree with a count of 5 or more (jego 5 pobranych odcinków zostaje); the impersonal zachowano fits every count"
+    },
+    {
+     "key": "A transcript is being attached to %@. Transcribe it once that finishes.",
+     "english": "A transcript is being attached to %@. Transcribe it once that finishes.",
+     "before": "Do audiobooka %@ jest dołączana transkrypcja. Transkrybuj jego dźwięk po jej zakończeniu.",
+     "after": "Do audiobooka %@ jest dołączana transkrypcja. Transkrybuj jego dźwięk po zakończeniu dołączania.",
+     "why": "meaning: po jej zakończeniu pointed at the transcript, not at the attaching that must finish"
+    },
+    {
+     "key": "About %@ left",
+     "english": "About %@ left",
+     "before": "Pozostało około %@",
+     "after": "Szacowany czas do końca: %@",
+     "why": "grammar: około needs the genitive, which a spoken time such as 4 minuty is not; the time now follows a colon"
+    },
+    {
+     "key": "After a pause of %@, at %@.",
+     "english": "After a pause of %1$@, at %2$@.",
+     "before": "Po przerwie %1$@, czas: %2$@.",
+     "after": "Po przerwie (%1$@), czas: %2$@.",
+     "why": "grammar: przerwie 1 sekunda mixes cases; the length stands in parentheses"
+    },
+    {
+     "key": "Applied %@ to %@.",
+     "english": "Applied %1$@ to %2$@.",
+     "before": "Zastosowano %1$@ do zaznaczenia: %2$@.",
+     "after": "Zastosowano filtr %1$@ do zaznaczenia: %2$@.",
+     "why": "grammar: a preset name such as Wyrównaj poziom cannot stand as the object; filtr carries the case"
+    },
+    {
+     "key": "Applied %@ to all of the audio.",
+     "english": "Applied %@ to all of the audio.",
+     "before": "Zastosowano %@ do całego dźwięku.",
+     "after": "Zastosowano filtr %@ do całego dźwięku.",
+     "why": "grammar: a preset name such as Wyrównaj poziom cannot stand as the object; filtr carries the case"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "Po każdym imporcie audiobooka pyta, czy go transkrybować. Gdy wyłączone, audiobooki są transkrybowane tylko poleceniem Transkrybuj dźwięk.",
+     "after": "Po każdym imporcie audiobooka pyta, czy go transkrybować. Gdy ta opcja jest wyłączona, audiobooki są transkrybowane tylko poleceniem Transkrybuj dźwięk.",
+     "why": "grammar: Gdy wyłączone lacks its subject and verb"
+    },
+    {
+     "key": "Attached “%@” to %@: %@.",
+     "english": "Attached “%1$@” to %2$@: %3$@.",
+     "before": "Dołączono „%1$@” do %2$@: %3$@.",
+     "after": "Dołączono „%1$@” do audiobooka %2$@: %3$@.",
+     "why": "grammar: a bare book title cannot take the genitive here; audiobooka carries the case"
+    },
+    {
+     "key": "Attaching “%@” to %@.",
+     "english": "Attaching “%1$@” to %2$@.",
+     "before": "Dołączanie „%1$@” do %2$@.",
+     "after": "Dołączanie „%1$@” do audiobooka %2$@.",
+     "why": "grammar: a bare book title cannot take the genitive here; audiobooka carries the case"
+    },
+    {
+     "key": "Checking now",
+     "english": "Checking now",
+     "before": "Sprawdzanie teraz",
+     "after": "Trwa sprawdzanie",
+     "why": "natural: Sprawdzanie teraz copies Checking now word for word; Polish says Trwa sprawdzanie"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Sprawdza ten kanał ponownie od teraz i od razu.",
+     "after": "Od teraz znów sprawdza ten kanał, zaczynając od razu.",
+     "why": "natural: od teraz i od razu read as a clumsy pair; the hint now says it resumes checking, starting at once"
+    },
+    {
+     "key": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "english": "Choose a WebVTT (.vtt) or SubRip (.srt) transcript of %@, timed from the start of its audio.",
+     "before": "Wybierz transkrypcję WebVTT (.vtt) lub SubRip (.srt) dla: %@, z czasem liczonym od początku dźwięku.",
+     "after": "Wybierz transkrypcję WebVTT (.vtt) lub SubRip (.srt) audiobooka %@, z czasem liczonym od początku jego dźwięku.",
+     "why": "grammar: a colon after dla is not Polish; audiobooka carries the case"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "Wybierz plik OPML z subskrypcjami, tak jak eksportuje je inny czytnik kanałów.",
+     "after": "Wybierz plik OPML z subskrypcjami, wyeksportowany z innego czytnika kanałów.",
+     "why": "natural: tak jak eksportuje je inny czytnik copied the English clause; Polish names the file as exported from another reader"
+    },
+    {
+     "key": "Cleaned up the transcript of %@: %@.",
+     "english": "Cleaned up the transcript of %1$@: %2$@.",
+     "before": "Oczyszczono transkrypcję %1$@: %2$@.",
+     "after": "Oczyszczono transkrypcję audiobooka %1$@: %2$@.",
+     "why": "grammar: a bare book title cannot take the genitive here; audiobooka carries the case"
+    },
+    {
+     "key": "Clears the selection.",
+     "english": "Clears the selection.",
+     "before": "Odznacza zaznaczenie.",
+     "after": "Anuluje zaznaczenie.",
+     "why": "natural: Odznacza zaznaczenie is a tautology; Polish says Anuluje zaznaczenie"
+    },
+    {
+     "key": "Copied %@.",
+     "english": "Copied %@.",
+     "before": "Skopiowano %@.",
+     "after": "Skopiowano: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Cut %@",
+     "english": "Cut %@",
+     "before": "Wytnij %@",
+     "after": "Wytnij fragment (%@)",
+     "why": "grammar: an edit name with a length such as 1 minuta cannot take the accusative; fragment carries it, as Wstaw ciszę (%@) already does"
+    },
+    {
+     "key": "Cut %@.",
+     "english": "Cut %@.",
+     "before": "Wycięto %@.",
+     "after": "Wycięto: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Download %lld of %lld: “%@” from %@",
+     "english": "Download %1$lld of %2$lld: “%3$@” from %4$@",
+     "before": "Pobieranie %1$lld z %2$lld: „%3$@” z %4$@",
+     "after": "Pobieranie %1$lld z %2$lld: „%3$@” z kanału %4$@",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Downloading the %@ model: %lld percent.",
+     "english": {
+      "one": "Downloading the %@ model: %lld percent.",
+      "other": "Downloading the %@ model: %lld percent."
+     },
+     "before": {
+      "few": "Pobieranie modelu %1$@: %2$lld procent.",
+      "many": "Pobieranie modelu %1$@: %2$lld procent.",
+      "one": "Pobieranie modelu %1$@: %2$lld procent.",
+      "other": "Pobieranie modelu %1$@: %2$lld procent."
+     },
+     "after": {
+      "one": "Pobieranie modelu: %1$@, %2$lld procent.",
+      "few": "Pobieranie modelu: %1$@, %2$lld procent.",
+      "many": "Pobieranie modelu: %1$@, %2$lld procent.",
+      "other": "Pobieranie modelu: %1$@, %2$lld procent."
+     },
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; the name now follows a colon, as the Download button has it"
+    },
+    {
+     "key": "Downloading the %@ model…",
+     "english": "Downloading the %@ model…",
+     "before": "Pobieranie modelu %@…",
+     "after": "Pobieranie modelu: %@…",
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; the name now follows a colon, as the Download button has it"
+    },
+    {
+     "key": "Edits of its audio or of its manifest are not kept.",
+     "english": "Edits of its audio or of its manifest are not kept.",
+     "before": "Edycje jej dźwięku lub manifestu nie są zachowywane.",
+     "after": "Zmiany w jej dźwięku lub manifeście nie są zachowywane.",
+     "why": "natural: Edycje is a calque of edits; Polish says Zmiany w"
+    },
+    {
+     "key": "Every article of %@ is already read.",
+     "english": "Every article of %@ is already read.",
+     "before": "Wszystkie artykuły z %@ są już przeczytane.",
+     "after": "Wszystkie artykuły kanału %@ są już przeczytane.",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Every episode of %@ is already played.",
+     "english": "Every episode of %@ is already played.",
+     "before": "Wszystkie odcinki z %@ są już odtworzone.",
+     "after": "Wszystkie odcinki kanału %@ są już odtworzone.",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Every item of %@ is already played.",
+     "english": "Every item of %@ is already played.",
+     "before": "Wszystkie pozycje z %@ są już odtworzone.",
+     "after": "Wszystkie pozycje kanału %@ są już odtworzone.",
+     "why": "grammar: a feed title after z cannot take the genitive the preposition needs; kanału carries the case"
+    },
+    {
+     "key": "Exported %lld subscriptions to %@.",
+     "english": {
+      "one": "Exported %lld subscription to %@.",
+      "other": "Exported %lld subscriptions to %@."
+     },
+     "before": {
+      "few": "Wyeksportowano %lld subskrypcje do %@.",
+      "many": "Wyeksportowano %lld subskrypcji do %@.",
+      "one": "Wyeksportowano %lld subskrypcję do %@.",
+      "other": "Wyeksportowano %lld subskrypcji do %@."
+     },
+     "after": {
+      "one": "Wyeksportowano %lld subskrypcję do pliku %@.",
+      "few": "Wyeksportowano %lld subskrypcje do pliku %@.",
+      "many": "Wyeksportowano %lld subskrypcji do pliku %@.",
+      "other": "Wyeksportowano %lld subskrypcji do pliku %@."
+     },
+     "why": "grammar: a file name after do cannot take the genitive; pliku carries the case"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "Kanały odświeżają się tylko przy uruchomieniu, jeśli to włączone, i gdy wybierzesz %1$@ lub %2$@.",
+     "after": "Kanały odświeżają się tylko przy uruchomieniu, jeśli ta opcja jest włączona, i gdy wybierzesz %1$@ lub %2$@.",
+     "why": "grammar: jeśli to włączone lacks its verb; Polish says jeśli ta opcja jest włączona"
+    },
+    {
+     "key": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "english": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "before": "Znaleziono w: %@. Gdy włączone, filtry edytora działają przez ffmpeg, ze wszystkimi jego filtrami.",
+     "after": "Znaleziono w: %@. Gdy ta opcja jest włączona, filtry edytora działają przez ffmpeg, ze wszystkimi jego filtrami.",
+     "why": "grammar: Gdy włączone lacks its subject and verb"
+    },
+    {
+     "key": "Import cancelled after %@.",
+     "english": "Import cancelled after %@.",
+     "before": "Import anulowany po: %@.",
+     "after": "Import został anulowany po przetworzeniu %@.",
+     "why": "grammar: a colon after the preposition po is not Polish; the count follows po przetworzeniu"
+    },
+    {
+     "key": "It can be downloaded again.",
+     "english": "It can be downloaded again.",
+     "before": "Można ją pobrać ponownie.",
+     "after": "Można go pobrać ponownie.",
+     "why": "grammar: it follows Usunięto pobrany plik, a masculine noun, so ją was the wrong gender"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "Usuwa %@: jest to usuwane na stałe i nie można tego odzyskać.",
+     "after": "Usuwa %@ na stałe, bez możliwości odzyskania.",
+     "why": "natural: jest to usuwane na stałe is a literal passive; Polish says usuwa na stałe, bez możliwości odzyskania"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "Usuwa %@: zostaje to w folderze biblioteki TextMouth.",
+     "after": "Usuwa %@: zostaje w folderze biblioteki TextMouth.",
+     "why": "natural: zostaje to copied the English it; Polish drops the pronoun"
+    },
+    {
+     "key": "It holds %@, which TextMouth does not import.",
+     "english": "It holds %@, which TextMouth does not import.",
+     "before": "Zawiera %@, czego TextMouth nie importuje.",
+     "after": "Zawiera %@; TextMouth nie importuje takich plików.",
+     "why": "grammar: czego referred to the whole clause, not to the files; takich plików fits every count"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "Nie zawiera żadnej ścieżki audio z początkiem, który TextMouth potrafi odczytać.",
+     "after": "Nie zawiera żadnej ścieżki audio, której początek TextMouth potrafi odczytać.",
+     "why": "natural: z początkiem, który copied the English with a start that; Polish says której początek"
+    },
+    {
+     "key": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "english": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "before": "Nie można zapisać MP3: nie udało się uruchomić kodera TextMouth, a ffmpeg nie jest zainstalowany albo jest wyłączony w ustawieniach pamięci.",
+     "after": "Nie można zapisać MP3: nie udało się uruchomić kodera TextMouth, a ffmpeg nie jest zainstalowany albo jest wyłączony w: Ustawienia, Pamięć.",
+     "why": "term: w ustawieniach pamięci reads as memory settings; the pane is named as the glossary path form gives it"
+    },
+    {
+     "key": "Marked %lld articles of %@ read.",
+     "english": {
+      "one": "Marked %lld article of %@ read.",
+      "other": "Marked %lld articles of %@ read."
+     },
+     "before": {
+      "few": "Oznaczono %lld artykuły z %@ jako przeczytane.",
+      "many": "Oznaczono %lld artykułów z %@ jako przeczytane.",
+      "one": "Oznaczono %lld artykuł z %@ jako przeczytany.",
+      "other": "Oznaczono %lld artykułu z %@ jako przeczytane."
+     },
+     "after": {
+      "one": "Oznaczono %lld artykuł kanału %@ jako przeczytany.",
+      "few": "Oznaczono %lld artykuły kanału %@ jako przeczytane.",
+      "many": "Oznaczono %lld artykułów kanału %@ jako przeczytane.",
+      "other": "Oznaczono %lld artykułu kanału %@ jako przeczytane."
+     },
+     "why": "grammar: a feed title cannot take the genitive after z; kanału carries the case"
+    },
+    {
+     "key": "Marked %lld episodes of %@ played.",
+     "english": {
+      "one": "Marked %lld episode of %@ played.",
+      "other": "Marked %lld episodes of %@ played."
+     },
+     "before": {
+      "few": "Oznaczono %lld odcinki z %@ jako odtworzone.",
+      "many": "Oznaczono %lld odcinków z %@ jako odtworzone.",
+      "one": "Oznaczono %lld odcinek z %@ jako odtworzony.",
+      "other": "Oznaczono %lld odcinka z %@ jako odtworzone."
+     },
+     "after": {
+      "one": "Oznaczono %lld odcinek kanału %@ jako odtworzony.",
+      "few": "Oznaczono %lld odcinki kanału %@ jako odtworzone.",
+      "many": "Oznaczono %lld odcinków kanału %@ jako odtworzone.",
+      "other": "Oznaczono %lld odcinka kanału %@ jako odtworzone."
+     },
+     "why": "grammar: a feed title cannot take the genitive after z; kanału carries the case"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "few": "Oznaczono %lld pozycje z %@ jako odtworzone.",
+      "many": "Oznaczono %lld pozycji z %@ jako odtworzone.",
+      "one": "Oznaczono %lld pozycję z %@ jako odtworzoną.",
+      "other": "Oznaczono %lld pozycji z %@ jako odtworzone."
+     },
+     "after": {
+      "one": "Oznaczono %lld pozycję kanału %@ jako odtworzoną.",
+      "few": "Oznaczono %lld pozycje kanału %@ jako odtworzone.",
+      "many": "Oznaczono %lld pozycji kanału %@ jako odtworzone.",
+      "other": "Oznaczono %lld pozycji kanału %@ jako odtworzone."
+     },
+     "why": "grammar: a feed title cannot take the genitive after z; kanału carries the case"
+    },
+    {
+     "key": "Move %@",
+     "english": "Move %@",
+     "before": "Przenieś %@",
+     "after": "Przenieś fragment (%@)",
+     "why": "grammar: an edit name with a length such as 1 minuta cannot take the accusative; fragment carries it, as Wstaw ciszę (%@) already does"
+    },
+    {
+     "key": "Moved %@ to %@.",
+     "english": "Moved %1$@ to %2$@.",
+     "before": "Przeniesiono %1$@ do: %2$@.",
+     "after": "Przeniesiono fragment (%1$@) do: %2$@.",
+     "why": "grammar: a spoken length such as 1 minuta is nominative and cannot be the object; fragment carries the case and the length stands in parentheses"
+    },
+    {
+     "key": "No audio files were found in %@.",
+     "english": "No audio files were found in %@.",
+     "before": "Nie znaleziono plików dźwiękowych w: %@.",
+     "after": "Nie znaleziono plików dźwiękowych w książce %@.",
+     "why": "grammar: the colon form is for settings paths; a book title after w needs książce to carry the case"
+    },
+    {
+     "key": "No new books in “%@”: all %lld were already in your library.",
+     "english": {
+      "one": "No new books in “%@”: all %lld was already in your library.",
+      "other": "No new books in “%@”: all %lld were already in your library."
+     },
+     "before": {
+      "few": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece.",
+      "many": "Brak nowych książek w „%1$@”: wszystkie %2$lld książek były już w Twojej bibliotece.",
+      "one": "Brak nowych książek w „%1$@”: %2$lld książka była już w Twojej bibliotece.",
+      "other": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece."
+     },
+     "after": {
+      "one": "Brak nowych książek w „%1$@”: %2$lld książka była już w Twojej bibliotece.",
+      "few": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece.",
+      "many": "Brak nowych książek w „%1$@”: każda z %2$lld książek była już w Twojej bibliotece.",
+      "other": "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece."
+     },
+     "why": "grammar: 5 or more books take a singular verb, so wszystkie 5 książek były was wrong; każda z fits"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this comic book archive.",
+     "english": {
+      "one": "No text was found on any of the %lld page of this comic book archive.",
+      "other": "No text was found on any of the %lld pages of this comic book archive."
+     },
+     "before": {
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "one": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+     },
+     "after": {
+      "one": "Nie znaleziono tekstu na jedynej stronie tego archiwum komiksu.",
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+     },
+     "why": "grammar: the one form read żadnej z 1 stron; one page is the only page"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this picture.",
+     "english": {
+      "one": "No text was found on any of the %lld page of this picture.",
+      "other": "No text was found on any of the %lld pages of this picture."
+     },
+     "before": {
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "one": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+     },
+     "after": {
+      "one": "Nie znaleziono tekstu na jedynej stronie tego obrazu.",
+      "few": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "many": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu.",
+      "other": "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+     },
+     "why": "grammar: the one form read żadnej z 1 stron; one page is the only page"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Część pliku %@ nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+     "after": "Część pliku %@ nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+     "why": "natural: zachowana jako cisza copies kept as silence; Polish says zastąpiona ciszą"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "few": "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+      "many": "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+      "one": "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza.",
+      "other": "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+     },
+     "after": {
+      "one": "Część %lld pliku, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+      "few": "Część %lld plików, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+      "many": "Część %lld plików, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą.",
+      "other": "Część %lld pliku, %@, nie mogła zostać zdekodowana i została zastąpiona ciszą."
+     },
+     "why": "natural: zachowana jako cisza copies kept as silence; Polish says zastąpiona ciszą"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "Wklejono %@ z powrotem w miejsce wycięcia.",
+     "after": "Wklejono z powrotem w miejsce wycięcia: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "Wklejono %1$@ w miejsce %2$@.",
+     "after": "Wklejono fragment (%1$@) w miejsce zaznaczenia (%2$@).",
+     "why": "grammar: a spoken length such as 1 minuta is nominative and cannot be the object; fragment carries the case and the length stands in parentheses"
+    },
+    {
+     "key": "Pasted %@.",
+     "english": "Pasted %@.",
+     "before": "Wklejono %@.",
+     "after": "Wklejono: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Nagrywanie do wstawienia w czasie %1$@, z mikrofonu %2$@, po sygnale dźwiękowym. Nagraj w miejscu zaznaczenia albo Zatrzymaj kończy nagrywanie; Odznacz je odrzuca.",
+     "after": "Nagrywanie do wstawienia, czas: %1$@, z mikrofonu %2$@, po sygnale dźwiękowym. Nagraj w miejscu zaznaczenia albo Zatrzymaj kończy nagrywanie; Odznacz je odrzuca.",
+     "why": "grammar: w czasie 1 minuta mixes cases; the time follows czas:, as the editor says it elsewhere"
+    },
+    {
+     "key": "Redo %@",
+     "english": "Redo %@",
+     "before": "Ponów %@",
+     "after": "Ponów: %@",
+     "why": "grammar: the edit names are commands (Wytnij…), so Ponów Wytnij put two imperatives side by side; the colon makes the name a label, as Ponowiono: %@ does"
+    },
+    {
+     "key": "Replace %@",
+     "english": "Replace %@",
+     "before": "Zastąp %@",
+     "after": "Zastąp fragment (%@)",
+     "why": "grammar: an edit name with a length such as 1 minuta cannot take the accusative; fragment carries it, as Wstaw ciszę (%@) already does"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "Zastąpiono %1$@ nowym nagraniem (%2$@), które jest zaznaczone.",
+     "after": "Zastąpiono fragment (%1$@) nowym nagraniem (%2$@), które jest zaznaczone.",
+     "why": "grammar: a spoken length such as 1 minuta is nominative and cannot be the object; fragment carries the case and the length stands in parentheses"
+    },
+    {
+     "key": "Resubscribed to %@. Checking it now…",
+     "english": "Resubscribed to %@. Checking it now…",
+     "before": "Ponownie zasubskrybowano %@. Sprawdzanie teraz…",
+     "after": "Ponownie zasubskrybowano kanał %@. Trwa sprawdzanie…",
+     "why": "grammar: the bare title cannot take the accusative, so kanał carries it; Sprawdzanie teraz becomes Trwa sprawdzanie"
+    },
+    {
+     "key": "Saved %@",
+     "english": "Saved %@",
+     "before": "Zachowano %@",
+     "after": "Zachowano: %@",
+     "why": "grammar: a preset name the listener types may not take the accusative; it follows a colon, as Dodano: %@ does"
+    },
+    {
+     "key": "Saved. The book's audio is now %@ long.",
+     "english": "Saved. The book's audio is now %@ long.",
+     "before": "Zachowano. Dźwięk książki ma teraz długość %@.",
+     "after": "Zachowano. Nowa długość dźwięku książki: %@.",
+     "why": "grammar: ma długość 1 minuta mixes cases; the length follows a colon, as Nowa długość: %@ does"
+    },
+    {
+     "key": "Saves the edits into the book's audio file, in the format the book keeps.",
+     "english": "Saves the edits into the book's audio file, in the format the book keeps.",
+     "before": "Zachowuje edycje w pliku dźwiękowym książki, w formacie, który książka ma.",
+     "after": "Zachowuje edycje w pliku dźwiękowym książki, w jej obecnym formacie.",
+     "why": "natural: w formacie, który książka ma copies the format the book keeps; Polish says w jej obecnym formacie"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "Zachowywanie dźwięku (%1$@) jako %2$@, w formacie, który ma ta książka.",
+     "after": "Zachowywanie dźwięku (%1$@) jako %2$@, w obecnym formacie tej książki.",
+     "why": "natural: w formacie, który ma ta książka copies the English; Polish says w obecnym formacie"
+    },
+    {
+     "key": "Selected %@.",
+     "english": "Selected %@.",
+     "before": "Zaznaczono %@.",
+     "after": "Zaznaczono: %@.",
+     "why": "grammar: a spoken length such as 1 minuta, 4 sekundy is nominative and cannot be the object; it now follows a colon"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "Zaznaczenie od %1$@ do %2$@; długość %3$@.",
+     "after": "Zaznaczenie: początek %1$@, koniec %2$@, długość %3$@.",
+     "why": "grammar: od and do need the genitive, which a spoken time such as 2 minuty is not; each value now follows its own noun"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "Ustawia język transkrybowania. Język oznaczony jako wymaga pobrania można pobrać tylko w arkuszu Transkrybuj dźwięk.",
+     "after": "Ustawia język transkrybowania. Język oznaczony jako „wymaga pobrania” można pobrać tylko w arkuszu Transkrybuj dźwięk.",
+     "why": "punctuation: the status words need quotation marks, or the sentence reads as broken"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Zasubskrybowano %@. Ten kanał używa zwykłego http, więc inne osoby mogą odczytać lub zmienić to, co wysyła; TextMouth mimo to go wczytuje.",
+     "after": "Zasubskrybowano kanał %@. Ten kanał używa zwykłego http, więc inne osoby mogą odczytać lub zmienić to, co wysyła; TextMouth mimo to go wczytuje.",
+     "why": "grammar: a bare feed title cannot take the case the verb needs; the noun kanał carries it"
+    },
+    {
+     "key": "Subscribed to %@: %@.",
+     "english": "Subscribed to %1$@: %2$@.",
+     "before": "Zasubskrybowano %1$@: %2$@.",
+     "after": "Zasubskrybowano kanał %1$@: %2$@.",
+     "why": "grammar: a bare feed title cannot take the case the verb needs; the noun kanał carries it"
+    },
+    {
+     "key": "Subscribing to %@, %lld of %lld…",
+     "english": "Subscribing to %1$@, %2$lld of %3$lld…",
+     "before": "Subskrybowanie %1$@, %2$lld z %3$lld…",
+     "after": "Subskrybowanie kanału %1$@, %2$lld z %3$lld…",
+     "why": "grammar: a bare feed title cannot take the case the verb needs; the noun kanał carries it"
+    },
+    {
+     "key": "Text recognition could not read any of the %lld pages: %@.",
+     "english": {
+      "one": "Text recognition could not read any of the %lld page: %@.",
+      "other": "Text recognition could not read any of the %lld pages: %@."
+     },
+     "before": {
+      "few": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "many": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "one": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "other": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+     },
+     "after": {
+      "one": "Rozpoznawanie tekstu nie mogło odczytać %lld strony: %@.",
+      "few": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "many": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@.",
+      "other": "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+     },
+     "why": "grammar: the one form read żadnej z 1 stron; it now reads nie mogło odczytać 1 strony"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth nie może przekonwertować dźwięku „%@”: jest w rodzaju dźwięku, którego nie odczytuje.",
+     "after": "TextMouth nie może przekonwertować dźwięku „%@”: to rodzaj dźwięku, którego nie odczytuje.",
+     "why": "natural: jest w rodzaju dźwięku copies is in a kind of audio; Polish says to rodzaj dźwięku"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth wciąż wykonuje Twoją ostatnią odpowiedź. Zaczekaj, aż skończy.",
+     "after": "TextMouth wciąż przetwarza Twoją ostatnią odpowiedź. Zaczekaj, aż skończy.",
+     "why": "natural: wykonywać odpowiedź is not a Polish collocation; przetwarza fits"
+    },
+    {
+     "key": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
+     "english": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
+     "before": "Konwerter TextMouth nie mógł się zabezpieczyć przed odczytaniem „%@”, więc nie odczytał pliku.",
+     "after": "Konwerter TextMouth nie zdołał ograniczyć swoich uprawnień przed odczytaniem „%@”, więc nie odczytał pliku.",
+     "why": "meaning: zabezpieczyć się przed odczytaniem reads as protect itself against reading; the converter confines its own access"
+    },
+    {
+     "key": "The %@ file holds no timed text TextMouth can use.",
+     "english": "The %@ file holds no timed text TextMouth can use.",
+     "before": "Plik %@ nie zawiera tekstu z czasem, którego TextMouth mógłby użyć.",
+     "after": "Plik %@ nie zawiera tekstu ze znacznikami czasu, którego TextMouth mógłby użyć.",
+     "why": "meaning: tekst z czasem also reads as text eventually; timed text is tekst ze znacznikami czasu"
+    },
+    {
+     "key": "The %@ model couldn't be downloaded: %@",
+     "english": "The %1$@ model couldn't be downloaded: %2$@",
+     "before": "Nie udało się pobrać modelu %1$@: %2$@",
+     "after": "Nie udało się pobrać modelu (%1$@): %2$@",
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; it now stands in parentheses"
+    },
+    {
+     "key": "The %@ model's download was cancelled.",
+     "english": "The %@ model's download was cancelled.",
+     "before": "Pobieranie modelu %@ zostało anulowane.",
+     "after": "Pobieranie modelu (%@) zostało anulowane.",
+     "why": "grammar: modelu angielski mixes cases, since the language name comes in the nominative; it now stands in parentheses"
+    },
+    {
+     "key": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "english": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "before": "Adres %@ nie zawiera kanału, który TextMouth może odczytać.",
+     "after": "%@: pod tym adresem nie ma kanału, który TextMouth może odczytać.",
+     "why": "grammar: Adres %@ needs the title or server in the genitive; leading with the name keeps it in the nominative"
+    },
+    {
+     "key": "The audio editor for %@ is already open.",
+     "english": "The audio editor for %@ is already open.",
+     "before": "Edytor dźwięku dla: %@ jest już otwarty.",
+     "after": "Edytor dźwięku książki %@ jest już otwarty.",
+     "why": "grammar: a colon after dla is not Polish; książki carries the case"
+    },
+    {
+     "key": "The bookInfo.json file did not read back as it was written.",
+     "english": "The bookInfo.json file did not read back as it was written.",
+     "before": "Plik bookInfo.json nie odczytał się tak, jak został zapisany.",
+     "after": "Odczytana zawartość pliku bookInfo.json różni się od zapisanej.",
+     "why": "natural: plik nie odczytał się is an odd reflexive; Polish says the read content differs from what was written"
+    },
+    {
+     "key": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "english": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "before": "Plik etykiet „%@” nie pasuje z nazwy do żadnego sąsiedniego pliku audio, więc jego nagłówki nie zostały użyte.",
+     "after": "Plik etykiet „%@” nie pasuje nazwą do żadnego sąsiedniego pliku audio, więc jego nagłówki nie zostały użyte.",
+     "why": "grammar: pasować z nazwy is not Polish; it is pasować nazwą"
+    },
+    {
+     "key": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "english": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "before": "Mikrofon, z którego nagrywa Nagraj w miejscu zaznaczenia. TextMouth go zapamiętuje, niezależnie od wejścia macOS.",
+     "after": "Mikrofon, z którego nagrywa funkcja Nagraj w miejscu zaznaczenia. TextMouth go zapamiętuje, niezależnie od wejścia macOS.",
+     "why": "natural: nagrywa Nagraj put a command name right after its verb; funkcja makes it the subject, as Mikrofon dla funkcji… does"
+    },
+    {
+     "key": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "english": "The original is the lossless take a recording is saved from, or a copy of an audiobook's file from before its first edit. Keeping it lets every edit be undone without loss; a recording's costs about 345 MB an hour. A change also applies to originals already kept, and in a cloud library an original syncs with its book.",
+     "before": "Oryginał to bezstratne nagranie, z którego zachowano nagranie, albo kopia pliku audiobooka sprzed jego pierwszej edycji. Jego zachowanie pozwala cofnąć każdą edycję bez straty jakości; oryginał nagrania zajmuje około 345 MB na godzinę. Zmiana dotyczy też oryginałów już zachowanych, a w bibliotece w chmurze oryginał synchronizuje się z książką.",
+     "after": "Oryginał to bezstratny zapis, z którego powstaje zachowane nagranie, albo kopia pliku audiobooka sprzed jego pierwszej edycji. Jego zachowanie pozwala cofnąć każdą edycję bez straty jakości; oryginał nagrania zajmuje około 345 MB na godzinę. Zmiana dotyczy też oryginałów już zachowanych, a w bibliotece w chmurze oryginał synchronizuje się z książką.",
+     "why": "natural: nagranie, z którego zachowano nagranie repeated the word; the take is a bezstratny zapis"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "Nie udało się zachować nagrania: %1$@ Nagranie zostało zachowane; wybierz %2$@ albo %3$@.",
+     "after": "Nie udało się zachować nagrania: %1$@ Nagranie nie zostało utracone; wybierz %2$@ albo %3$@.",
+     "why": "meaning: zachować is both save and keep, so could not be saved, it is kept contradicted itself; it now says the recording was not lost"
+    },
+    {
+     "key": "The refresh of %@ was stopped.",
+     "english": "The refresh of %@ was stopped.",
+     "before": "Odświeżanie %@ zostało zatrzymane.",
+     "after": "Odświeżanie kanału %@ zostało zatrzymane.",
+     "why": "grammar: a bare feed title cannot take the genitive here; kanału carries the case"
+    },
+    {
+     "key": "The server says the file is gone.",
+     "english": "The server says the file is gone.",
+     "before": "Serwer mówi, że pliku już nie ma.",
+     "after": "Serwer zgłasza, że pliku już nie ma.",
+     "why": "natural: Serwer mówi copies the server says; Polish interfaces say zgłasza"
+    },
+    {
+     "key": "The transcript runs to %@, past the audio's end at %@, so it is for other audio.",
+     "english": "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio.",
+     "before": "Transkrypcja sięga do %1$@, poza koniec dźwięku (%2$@), więc dotyczy innego dźwięku.",
+     "after": "Koniec transkrypcji (%1$@) wypada po końcu dźwięku (%2$@), więc dotyczy ona innego dźwięku.",
+     "why": "grammar: sięga do needs the genitive, which a spoken time such as 1 godzina is not; both times now stand in parentheses"
+    },
+    {
+     "key": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "english": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "before": "Tekst utworzony z transkrypcji nie odczytał się jako jeden rozdział na każdy rozdział książki.",
+     "after": "Po odczytaniu tekst utworzony z transkrypcji nie miał jednego rozdziału na każdy rozdział książki.",
+     "why": "natural: tekst nie odczytał się is an odd reflexive for did not read back"
+    },
+    {
+     "key": "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again.",
+     "english": "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again.",
+     "before": "Ten komputer Mac jest offline, więc nie można odświeżyć %@. Połącz się z internetem i spróbuj ponownie.",
+     "after": "Ten komputer Mac jest offline, więc nie można odświeżyć kanału %@. Połącz się z internetem i spróbuj ponownie.",
+     "why": "grammar: a bare feed title cannot take the genitive here; kanału carries the case"
+    },
+    {
+     "key": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "english": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "before": "Ta książka nie ma prawidłowego zarządzanego pakietu. Usuń ją tylko z biblioteki albo napraw jej pamięć przed usunięciem.",
+     "after": "Ta książka nie ma prawidłowego zarządzanego pakietu. Usuń ją tylko z biblioteki albo napraw jej pliki przed usunięciem.",
+     "why": "meaning: napraw jej pamięć reads as repair its memory; the book storage here is its files, not the Storage pane"
+    },
+    {
+     "key": "Too many timed passages: the limit is %lld.",
+     "english": {
+      "one": "Too many timed passages: the limit is %lld.",
+      "other": "Too many timed passages: the limit is %lld."
+     },
+     "before": {
+      "few": "Zbyt wiele fragmentów z czasem: limit to %lld.",
+      "many": "Zbyt wiele fragmentów z czasem: limit to %lld.",
+      "one": "Zbyt wiele fragmentów z czasem: limit to %lld.",
+      "other": "Zbyt wiele fragmentów z czasem: limit to %lld."
+     },
+     "after": {
+      "one": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld.",
+      "few": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld.",
+      "many": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld.",
+      "other": "Zbyt wiele fragmentów ze znacznikami czasu: limit to %lld."
+     },
+     "why": "meaning: z czasem also means eventually; a timed passage is a fragment ze znacznikiem czasu"
+    },
+    {
+     "key": "Transcribed %@: %@ in %@.",
+     "english": "Transcribed %1$@: %2$@ in %3$@.",
+     "before": "Przetranskrybowano %1$@: %2$@ w czasie %3$@.",
+     "after": "Przetranskrybowano audiobook %1$@: %2$@, czas: %3$@.",
+     "why": "grammar: a bare title cannot take the accusative, and w czasie 1 minuta mixes cases; audiobook carries the case and the time follows czas:"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Przycięto do zaznaczenia: zachowano %@.",
+     "after": "Przycięto do zaznaczenia, nowa długość: %@.",
+     "why": "grammar: zachowano 1 minuta makes a nominative length the object; it now follows a colon"
+    },
+    {
+     "key": "Undo %@",
+     "english": "Undo %@",
+     "before": "Cofnij %@",
+     "after": "Cofnij: %@",
+     "why": "grammar: the edit names are commands (Wytnij…), so Cofnij Wytnij put two imperatives side by side; the colon makes the name a label, as Cofnięto: %@ does"
+    },
+    {
+     "key": "Unknown Length",
+     "english": "Unknown Length",
+     "before": "nieznaną długość",
+     "after": "nieznana długość",
+     "why": "grammar: the edit names and announcements now take a length after a colon or in parentheses, so the length is nominative"
+    },
+    {
+     "key": "Unsubscribe from %@?",
+     "english": "Unsubscribe from %@?",
+     "before": "Anulować subskrypcję %@?",
+     "after": "Anulować subskrypcję kanału %@?",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Anulowano subskrypcję %1$@: TextMouth nie sprawdza już nowych artykułów%2$@.",
+     "after": "Anulowano subskrypcję kanału %1$@: TextMouth nie sprawdza go już pod kątem nowych artykułów%2$@.",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case, and go now names what is no longer checked"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Anulowano subskrypcję %1$@: TextMouth nie sprawdza już nowych odcinków%2$@.",
+     "after": "Anulowano subskrypcję kanału %1$@: TextMouth nie sprawdza go już pod kątem nowych odcinków%2$@.",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case, and go now names what is no longer checked"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Anulowano subskrypcję %1$@: TextMouth nie sprawdza już nowych pozycji%2$@.",
+     "after": "Anulowano subskrypcję kanału %1$@: TextMouth nie sprawdza go już pod kątem nowych pozycji%2$@.",
+     "why": "grammar: a bare feed title cannot take the genitive after subskrypcję; kanału carries the case, and go now names what is no longer checked"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "Gdy zaznaczone, ten kanał stosuje ustawienie z Ustawień, %@; odznacz, aby kanał miał własne.",
+     "after": "Po zaznaczeniu ten kanał stosuje ustawienie w: Ustawienia, %@; odznacz, aby kanał miał własne.",
+     "why": "grammar: Gdy zaznaczone lacks its verb; the settings path now follows the glossary form w: Ustawienia"
+    },
+    {
+     "key": "You cleaned it up on %@.",
+     "english": "You cleaned it up on %@.",
+     "before": "Oczyszczone przez Ciebie dnia %@.",
+     "after": "Oczyszczona przez Ciebie dnia %@.",
+     "why": "grammar: it is the transcript, a feminine noun, so the participle is oczyszczona"
+    },
+    {
+     "key": "You edited it on %@.",
+     "english": "You edited it on %@.",
+     "before": "Edytowane przez Ciebie dnia %@.",
+     "after": "Edytowana przez Ciebie dnia %@.",
+     "why": "grammar: it is the transcript, a feminine noun, so the participle is edytowana"
+    },
+    {
+     "key": "You're already subscribed to %@.",
+     "english": "You're already subscribed to %@.",
+     "before": "Już subskrybujesz %@.",
+     "after": "Już subskrybujesz kanał %@.",
+     "why": "grammar: a bare feed title cannot take the accusative; kanał carries the case"
+    },
+    {
+     "key": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "english": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "before": "Nie udało się uruchomić ffmpeg. Sprawdź, czy jest zainstalowany, albo wyłącz Używaj ffmpeg do filtrów w ustawieniach pamięci.",
+     "after": "Nie udało się uruchomić ffmpeg. Sprawdź, czy jest zainstalowany, albo wyłącz opcję Używaj ffmpeg do filtrów w: Ustawienia, Pamięć.",
+     "why": "term: w ustawieniach pamięci reads as memory settings; the pane is named as the glossary path form gives it"
+    },
+    {
+     "key": "keeping the place of your feed downloads for next time",
+     "english": "keeping the place of your feed downloads for next time",
+     "before": "zachowywanie miejsca pobrań z kanałów na następny raz",
+     "after": "zachowywanie postępu pobrań z kanałów na następny raz",
+     "why": "meaning: miejsca pobrań reads as the downloads disk space; what is kept is how far each got"
+    },
+    {
+     "key": "unknown length",
+     "english": "unknown length",
+     "before": "nieznaną długość",
+     "after": "nieznana długość",
+     "why": "grammar: the announcements now take a length after a colon or in parentheses, so the length is nominative"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "Trwa nagrywanie w: „%@”. Zatrzymaj je albo odrzuć poleceniem Odznacz, a potem zakończ działanie.",
+     "after": "W edytorze książki „%@” trwa nagrywanie. Zatrzymaj je albo odrzuć poleceniem Odznacz, a potem zakończ działanie.",
+     "why": "grammar: a colon after w before a book title is not Polish; the recording is in that book editor"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "W „%@” wciąż trwa praca. Zakończ działanie po zakończeniu zmiany.",
+     "after": "W edytorze książki „%@” wciąż trwa praca. Zakończ działanie po zakończeniu zmiany.",
+     "why": "natural: W „tytuł” trwa praca put the work inside the book; it is under way in the book editor, as the quit refusal beside it says"
+    },
+    {
+     "key": "“%@” wasn't attached to %@: %@",
+     "english": "“%1$@” wasn't attached to %2$@: %3$@",
+     "before": "Nie dołączono „%1$@” do %2$@: %3$@",
+     "after": "Nie dołączono „%1$@” do audiobooka %2$@: %3$@",
+     "why": "grammar: a bare book title cannot take the genitive after do; audiobooka carries the case"
+    }
+   ]
   }
  ]
 }
