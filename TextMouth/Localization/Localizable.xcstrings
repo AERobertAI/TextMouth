@@ -113224,7 +113224,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fügt der Symbolleiste jeder Leseansicht eine Taste „Exportieren“ hinzu. „Ablage“ > „Exportieren“ funktioniert in beiden Fällen."
+            "value" : "Fügt der Symbolleiste jeder Leseansicht eine Taste „Exportieren“ hinzu. „Ablage“, „Exportieren“ funktioniert in beiden Fällen."
           }
         },
         "es" : {
@@ -374124,7 +374124,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Es ist keine Stimme installiert. Füge in den Systemeinstellungen unter „Bedienungshilfen“ > „Gesprochene Inhalte“ eine hinzu und exportiere dann erneut."
+            "value" : "Es ist keine Stimme installiert. Füge in den Systemeinstellungen unter „Bedienungshilfen“, „Gesprochene Inhalte“ eine hinzu und exportiere dann erneut."
           }
         },
         "es" : {
@@ -374273,7 +374273,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Es sind keine Stimmen installiert. Füge in „Einstellungen“ > „Bedienungshilfen“ > „Gesprochene Inhalte“ Stimmen hinzu."
+            "value" : "Es sind keine Stimmen installiert. Füge in „Einstellungen“, „Bedienungshilfen“, „Gesprochene Inhalte“ Stimmen hinzu."
           }
         },
         "es" : {
@@ -650296,7 +650296,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gib gerade Anführungszeichen ein: Deaktiviere in TextEdit unter „Bearbeiten“ > „Ersetzungen“ die intelligenten Anführungszeichen."
+            "value" : "Gib gerade Anführungszeichen ein: Deaktiviere in TextEdit unter „Bearbeiten“, „Ersetzungen“ die intelligenten Anführungszeichen."
           }
         },
         "es" : {
