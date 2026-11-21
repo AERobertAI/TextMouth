@@ -528193,7 +528193,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eksport zatrzymano przed pozostałymi."
+            "value" : "Eksport zatrzymano przed zapisaniem pozostałych."
           }
         },
         "pt-BR" : {
@@ -530453,7 +530453,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plik %@ uległ awarii w trakcie."
+            "value" : "Plik %@ uległ awarii w trakcie odtwarzania."
           }
         },
         "pt-BR" : {
@@ -531001,7 +531001,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plik %@ został zatrzymany, ponieważ pamięć TextMouth urosła zbyt bardzo."
+            "value" : "Plik %@ został zatrzymany, ponieważ TextMouth zajął zbyt dużo pamięci."
           }
         },
         "pt-BR" : {
@@ -555454,7 +555454,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odrzucony tekst trwa dalej poza ten fragment, do znaku %@."
+            "value" : "Odrzucony tekst ciągnie się poza ten fragment, do znaku %@."
           }
         },
         "pt-BR" : {
@@ -615773,7 +615773,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -616240,7 +616240,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -616707,7 +616707,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -617174,7 +617174,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -632870,7 +632870,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "około %@"
+            "value" : "mniej więcej %@"
           }
         },
         "pt-BR" : {
@@ -670927,7 +670927,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "plik %@ uległ awarii w trakcie"
+            "value" : "plik %@ uległ awarii w trakcie odtwarzania"
           }
         },
         "pt-BR" : {
@@ -671475,7 +671475,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "plik %@ został zatrzymany, ponieważ pamięć TextMouth urosła zbyt bardzo"
+            "value" : "plik %@ został zatrzymany, ponieważ TextMouth zajął zbyt dużo pamięci"
           }
         },
         "pt-BR" : {
@@ -678846,7 +678846,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„%1$@” to Personal Voice, którego macOS nie może nagrać do pliku. Wybierz inny głos przyciskiem %2$@ w czytniku, a potem wyeksportuj ponownie."
+            "value" : "„%1$@” to Głos osobisty, którego macOS nie może nagrać do pliku. Wybierz inny głos przyciskiem %2$@ w czytniku, a potem wyeksportuj ponownie."
           }
         },
         "pt-BR" : {
