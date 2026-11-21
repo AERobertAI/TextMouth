@@ -12014,7 +12014,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ decorridos"
+            "value" : "Tempo decorrido: %@"
           }
         },
         "ru" : {
@@ -19626,7 +19626,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ restantes"
+            "value" : "Tempo restante: %@"
           }
         },
         "ru" : {
@@ -19763,7 +19763,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ restantes na velocidade atual"
+            "value" : "Tempo restante na velocidade atual: %@"
           }
         },
         "ru" : {
@@ -19900,7 +19900,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ restantes neste cabeçalho"
+            "value" : "Tempo restante neste cabeçalho: %@"
           }
         },
         "ru" : {
@@ -22402,7 +22402,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tenta novamente, %2$@ sai sem salvar, %3$@ mantém o TextMouth aberto."
+            "value" : "%1$@ tenta novamente, %2$@ encerra sem salvar, %3$@ mantém o TextMouth aberto."
           }
         },
         "ru" : {
@@ -224577,7 +224577,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Esmaecendo"
+            "value" : "Diminuindo o volume"
           }
         },
         "ru" : {
@@ -280169,19 +280169,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Foram mantidos %@ de %lld de capítulos até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+                  "value" : "O TextMouth guarda %@ de %lld de capítulos até encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Foram mantidos %@ de %lld capítulo até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+                  "value" : "O TextMouth guarda %@ de %lld capítulo até encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Foram mantidos %@ de %lld capítulos até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+                  "value" : "O TextMouth guarda %@ de %lld capítulos até encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para continuar a partir do capítulo %@, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
                 }
               }
             }
@@ -280636,19 +280636,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Foram mantidos todos os %lld de capítulos falados até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+                  "value" : "Foram mantidos todos os %lld de capítulos falados até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Foi mantido todo o %lld capítulo falado até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+                  "value" : "Foi mantido o %lld capítulo falado até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Foram mantidos todos os %lld capítulos falados até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+                  "value" : "Foram mantidos todos os %lld capítulos falados até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir deles, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
                 }
               }
             }
@@ -281158,7 +281158,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Foi mantido o capítulo falado até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
+            "value" : "Foi mantido o capítulo falado até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Para criar o arquivo de áudio a partir dele, exporte o mesmo intervalo com a mesma velocidade e o mesmo tom."
           }
         },
         "ru" : {
@@ -318051,19 +318051,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Move para trás ou para a frente em %lld de segundos."
+                  "value" : "Retrocede ou avança %lld de segundos."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Move para trás ou para a frente em %lld segundo."
+                  "value" : "Retrocede ou avança %lld segundo."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Move para trás ou para a frente em %lld segundos."
+                  "value" : "Retrocede ou avança %lld segundos."
                 }
               }
             }
@@ -318299,7 +318299,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Move para trás ou para a frente por marcador."
+            "value" : "Retrocede ou avança por marcador."
           }
         },
         "ru" : {
@@ -318436,7 +318436,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Move para trás ou para a frente por cabeçalho."
+            "value" : "Retrocede ou avança por cabeçalho."
           }
         },
         "ru" : {
@@ -318573,7 +318573,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Move para trás ou para a frente por página."
+            "value" : "Retrocede ou avança por página."
           }
         },
         "ru" : {
@@ -318710,7 +318710,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Move para trás ou para a frente por parágrafo."
+            "value" : "Retrocede ou avança por parágrafo."
           }
         },
         "ru" : {
@@ -318847,7 +318847,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Move para trás ou para a frente por frase."
+            "value" : "Retrocede ou avança por frase."
           }
         },
         "ru" : {
@@ -318984,7 +318984,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Move para trás ou para a frente por subcabeçalho."
+            "value" : "Retrocede ou avança por subcabeçalho."
           }
         },
         "ru" : {
@@ -377083,7 +377083,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reprodução interrompida: o áudio parou de responder. Pressione Reproduzir para tentar novamente; se parar outra vez, saia do TextMouth e abra-o novamente."
+            "value" : "Reprodução interrompida: o áudio parou de responder. Pressione Reproduzir para tentar novamente; se parar outra vez, encerre o TextMouth e abra-o de novo."
           }
         },
         "ru" : {
@@ -387974,7 +387974,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sair mesmo assim"
+            "value" : "Encerrar mesmo assim"
           }
         },
         "ru" : {
@@ -388659,7 +388659,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Saindo do TextMouth"
+            "value" : "Encerrando o TextMouth"
           }
         },
         "ru" : {
@@ -388796,7 +388796,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sair agora deixa estas alterações sem salvar:"
+            "value" : "Encerrar agora deixa estas alterações sem salvar:"
           }
         },
         "ru" : {
@@ -400415,19 +400415,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Recusado aqui: %lld de vezes enquanto esta janela esteve aberta."
+                  "value" : "Recusado aqui: %lld de vezes desde que esta janela foi aberta."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Recusado aqui: %lld vez enquanto esta janela esteve aberta."
+                  "value" : "Recusado aqui: %lld vez desde que esta janela foi aberta."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Recusado aqui: %lld vezes enquanto esta janela esteve aberta."
+                  "value" : "Recusado aqui: %lld vezes desde que esta janela foi aberta."
                 }
               }
             }
@@ -466711,7 +466711,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Interrompe a exportação e mantém os capítulos já falados até o TextMouth fechar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Exportar o mesmo intervalo com a mesma velocidade e o mesmo tom continua a partir deles."
+            "value" : "Interrompe a exportação e mantém os capítulos já falados até o TextMouth encerrar, outra exportação de áudio falado começar ou a voz, o texto, as substituições ou as pausas do livro mudarem. Exportar o mesmo intervalo com a mesma velocidade e o mesmo tom continua a partir deles."
           }
         },
         "ru" : {
@@ -480619,7 +480619,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth fechou ao abrir %@, então ele não foi reaberto."
+            "value" : "O TextMouth fechou ao abrir %@, então o livro não foi reaberto."
           }
         },
         "ru" : {
@@ -489629,7 +489629,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth está concluindo antes de sair: %@. Ele sai quando isso terminar."
+            "value" : "O TextMouth está concluindo antes de encerrar: %@. Ele encerra quando isso terminar."
           }
         },
         "ru" : {
@@ -578655,7 +578655,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este arquivo não é um arquivo da web que o TextMouth consiga ler. Ele pode estar danificado ou ser de outro tipo."
+            "value" : "Este arquivo não é um arquivo web que o TextMouth consiga ler. Ele pode estar danificado ou ser de outro tipo."
           }
         },
         "ru" : {
@@ -582808,7 +582808,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este arquivo da web contém um arquivo do tipo “%@”, não uma página da web nem texto, então não há nada para ler."
+            "value" : "Este arquivo web contém um arquivo do tipo “%@”, não uma página da web nem texto, então não há nada para ler."
           }
         },
         "ru" : {
