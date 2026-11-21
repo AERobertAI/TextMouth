@@ -103824,7 +103824,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Registrando atalho. Pressione uma tecla com Command ou Control."
+            "value" : "Registrando atalho. Pressione uma tecla com Comando ou Controle."
           }
         }
       }
@@ -164518,7 +164518,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o atalho de um comando de menu é um único pressionamento de uma tecla com Command ou Control"
+            "value" : "o atalho de um comando de menu é um único pressionamento de uma tecla com Comando ou Controle"
           }
         }
       }
