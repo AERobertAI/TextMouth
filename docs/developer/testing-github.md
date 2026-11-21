@@ -270,6 +270,7 @@ These failed on the runner in some runs and not others, and nobody found the cau
 Xcode runs a failing test again, up to three tries in all (`RETRY_ARGUMENTS` in `Scripts/agents/test_command.py`, for the suite and the trains), and the run passes when one try does.
 The result lists each test that needed a second try as RETRIED (`test_tries.py` reads them from the log), so one that fails now and then stays visible.
 The ones named in the skip list are left out there, the others are expected now and then in a remote result, and one that appears twice in a row on a quiet change deserves a look on this Mac.
+To prove a flaky test fixed, a request's `test_iterations` (2 to 100) runs every test that many times, on the Mac and on the iPhone, with Xcode's retry off so a second try cannot hide a failure (`Scripts/agents/test_command.py`, `run-on-runner.py`, `run-ios-ui-tests.py`).
 
 - Rebalanced shards change which classes share a test host, and that brings out order dependencies that a fixed order hid.
 - **Left out, cause not found:**
@@ -285,13 +286,7 @@ The ones named in the skip list are left out there, the others are expected now 
     Every settings service a test makes comes from `makeConfigService(fileURL:)` now, whose teardown drops the waiting save, and `ConfigTestWorldTeardownTests` fails for one made another way.
     The flake was never reproduced, before or after: a test shows the mechanism, and the train after the fix passed (see [the hosted-test sandbox](../architecture/state/hosted-test-sandbox.md)).
   - `LibrarySessionLeaseTests`: a lease ended during a refresh did not wait for the refresh's events; it waits for them now, up to 30 seconds, since the end needs a task-pool thread and the runner has three.
-- **Not left out:** The unexplained ones of the earlier list did not appear in the ten runs after the fixes.
-  That list:
-  - `PreferenceStoreTests.testChangeFromAnotherThreadReachesTheHandlerOnTheMainThread`,
-  - `MigrationStagingLeftoversTests.testTheBackgroundSweepRunsOnlyOutsideHostedTests`,
-  - `ReaderLifecycleAuditTests.testNegativeSavedReadingPositionIsClampedWhenContentLoads`,
-  - `NowPlayingOwnershipTests.testCommandsAreReceivedOnWhicheverThreadMediaPlayerChooses`,
-  - `HostedTestIsolationTests.testSoundEffectsDefaultToThisProcessPreferences`.
+  - `BookManifestEditTests`' hand-edit test (Q16): a taken edit queued a write-back of the title it read, which could land on the test's next save; a take writes nothing back now (20 of 20 failed unfixed, run 44841797810; 2,450 of 2,450 passed, run 44843120549).
 - **Not the tests:**
   - GitHub did not give one of the four shards a machine for 15 minutes in run 42867725014 ("The job was not acquired by Runner of type hosted even after multiple attempts": the join named the shard as having reported nothing, and the run failed with no test failed);
   - `xcodebuild -downloadPlatform iOS` failed once with "Unable to connect to simulator."

@@ -372,6 +372,17 @@ class TheCommandTests(unittest.TestCase):
         """The command for a simulator and the given classes."""
         return uitests.test_command("UDID-1", "build/dd", "build/out/result.xcresult", list(classes))
 
+    def test_a_request_repeats_each_test_only_with_a_sensible_number(self):
+        self.assertNotIn("-test-iterations", self.command())
+        for odd in (None, True, 1, 0, 101, "50", 50.0):
+            with self.subTest(odd=odd):
+                self.assertEqual(uitests.iterations_of({"test_iterations": odd}), 1)
+        self.assertEqual(uitests.iterations_of({}), 1)
+        self.assertEqual(uitests.iterations_of({"test_iterations": 50}), 50)
+        command = uitests.test_command("UDID-1", "build/dd", "build/out/result.xcresult", ["A"], iterations=50)
+        self.assertEqual(command[command.index("-test-iterations") + 1], "50")
+        self.assertNotIn("-retry-tests-on-failure", command)
+
     def test_it_tests_without_building_in_the_simulator_by_id(self):
         command = self.command()
         self.assertEqual(command[:2], ["xcodebuild", "test-without-building"])
@@ -600,6 +611,15 @@ class TheUnitTestsMakeNoSoundTests(unittest.TestCase):
                        "import Speech", "node.play(at: nil)", "player.play(at: time + 1)", "let m = ReaderViewModel()"):
             self.assertIsNotNone(self.SOUNDS.search(source), source)
         self.assertIsNone(self.SOUNDS.search("XCTAssertEqual(button.accessibilityLabel, \"Play\")"))
+
+    def test_a_wording_types_text_and_a_named_continuation_are_not_sound(self):
+        """The two allowances: a `…Wording` type's play… text and `continuation.resume()`; the same calls on anything else still count."""
+        for quiet in ("XCTAssertEqual(PhoneReaderWording.playHint(movingBy: .sentence), \"Moves back.\")",
+                      "let hint = ReaderWording.speakHint(for: unit)", "DispatchQueue.main.async { continuation.resume() }"):
+            self.assertIsNone(self.SOUNDS.search(quiet), quiet)
+        for loud in ("reader.playHint(movingBy: .sentence)", "playHint(movingBy: .sentence)", "Wordings.play(book)",
+                     "DispatchQueue.main.async { turn.resume() }"):
+            self.assertIsNotNone(self.SOUNDS.search(loud), loud)
 
     # A stopped reader built the way PhoneTextFieldScalingTests builds one: the one helper the rule lets name ReaderViewModel.
     HELPER = (
@@ -1053,9 +1073,9 @@ class RunningTheScriptTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for, and builds the real command."""
-            seen.append(real(udid, derived, bundle, classes))
+            seen.append(real(udid, derived, bundle, classes, iterations))
             return [sys.executable, "-c", self.BOTH_PASS]
 
         with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
@@ -1093,9 +1113,9 @@ class RunningTheScriptTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for, and builds the real command."""
-            seen.append(real(udid, derived, bundle, classes))
+            seen.append(real(udid, derived, bundle, classes, iterations))
             return [sys.executable, "-c", self.BOTH_PASS.split("; ")[0] + "; " + self.BOTH_PASS.split("; ")[1] + "; print('** TEST EXECUTE SUCCEEDED **')"]
 
         with mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \
@@ -1113,10 +1133,10 @@ class RunningTheScriptTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for."""
             seen.append(classes)
-            return real(udid, derived, bundle, classes)
+            return real(udid, derived, bundle, classes, iterations)
 
         with mock.patch.object(uitests, "test_command", spy), mock.patch.object(uitests, "run_tests", return_value=(0, False)):
             fake = io.StringIO()
@@ -1145,10 +1165,10 @@ class ShardedRunTests(unittest.TestCase):
         seen = []
         real = uitests.test_command
 
-        def spy(udid, derived, bundle, classes):
+        def spy(udid, derived, bundle, classes, iterations=1):
             """Records the classes the command is made for."""
             seen.append(classes)
-            return real(udid, derived, bundle, classes)
+            return real(udid, derived, bundle, classes, iterations)
 
         with mock.patch.object(uitests, "test_command", spy), mock.patch.object(uitests, "run_tests", return_value=(0, False)), \
                 mock.patch.object(uitests, "ROOT", self.root), mock.patch.object(uitests, "ready_simulator", return_value=("U", "sim")), \

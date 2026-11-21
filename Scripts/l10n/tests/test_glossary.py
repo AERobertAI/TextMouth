@@ -36,6 +36,17 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(glossary_.missing_names("Use VoiceOver in TextMouth", "Usa VoiceOver en la aplicación"), ["TextMouth"])
         self.assertEqual(glossary_.missing_names("Use VoiceOver", "Usa VoiceOver"), [])
 
+    def test_a_name_with_a_japanese_chinese_or_korean_particle_against_it_is_kept(self):
+        """Those scripts write the next word or particle straight against a name; a Latin or Cyrillic letter still joins."""
+        glossary_ = make()
+        english = "TextMouth reads EPUB with VoiceOver"
+        for translation in ("TextMouthはVoiceOverでEPUBを読みます", "TextMouth가 VoiceOver로 EPUB를 읽습니다",
+                            "TextMouth通过VoiceOver读取EPUB", "ｔ：TextMouthは、VoiceOverとEPUB。"):
+            self.assertEqual(glossary_.missing_names(english, translation), [], translation)
+        self.assertEqual(glossary_.missing_names(english, "TextMouthy читает EPUBа с VoiceOver"), ["TextMouth", "EPUB"])
+        self.assertEqual(glossary_.names_in("この TextMouthの本とEPUBファイル"), ["TextMouth", "EPUB"])
+        self.assertEqual(glossary_.names_in("MyTextMouth와 EPUBs"), ["EPUB"], "a Latin letter before a name still joins")
+
     def test_a_text_of_names_numbers_and_placeholders_has_nothing_to_translate(self):
         glossary_ = make()
         for text in ("TextMouth", "%lld", "%1$@ %2$lld", "EPUB 3", "…", "TextMouth 2.0", "%@ / %@"):
@@ -147,6 +158,17 @@ class OrdinaryWordTests(unittest.TestCase):
         self.assertEqual(self.terms("Windows-1252 (Western)"), [], "the name Windows, not the term Window")
         self.assertEqual(self.terms("Close Windows-1252"), ["Close"])
         self.assertEqual(self.terms("Window"), ["Window"], "the term alone is still the term")
+
+    def test_masking_is_the_same_as_masking_each_name_in_turn_and_is_kept(self):
+        """mask_names passes over a name the text lacks and remembers each answer (`check` masks one English once for each
+        term it looks for); the text it gives is the one masking every name in turn gives."""
+        glossary_ = glossary.Glossary(["TextMouth", "Windows", "EPUBs", "EPUB"], [])
+        for text in ("Open EPUBs in TextMouth", "Windows-1252 (Western) EPUB", "textmouth", "", "EPUBEPUB TextMouths"):
+            expected = text
+            for name in glossary_.names:
+                expected = glossary._word_pattern(name).sub(" ", expected)
+            self.assertEqual(glossary_.mask_names(text), expected, text)
+            self.assertIs(glossary_.mask_names(text), glossary_.mask_names(text), "the answer is kept")
 
     def test_title_case_and_whole_labels(self):
         self.assertTrue(glossary.is_title_case("Open Recent"))

@@ -40,19 +40,25 @@ class ShippedGlossaryTests(unittest.TestCase):
         terms = {term["term"] for term in self.glossary.terms}
         self.assertEqual(sorted(terms & set(self.glossary.names)), [])
 
-    def test_spanish_has_the_first_terms_and_each_term_has_a_spanish_text(self):
+    def test_spanish_has_the_first_terms_and_each_term_has_a_translation(self):
+        """The seed terms (the first MINIMUM_TERMS) each have Spanish; a term a later language's pass added (FR36) may cover
+        only the languages that needed it, but never none."""
         self.assertGreaterEqual(len(self.glossary.terms), MINIMUM_TERMS)
-        for term in self.glossary.terms:
+        for term in self.glossary.terms[:MINIMUM_TERMS]:
             self.assertIn("es", term["translations"], term["term"])
+        for term in self.glossary.terms:
+            self.assertTrue(term["translations"], term["term"])
 
     def test_a_translation_of_a_term_uses_the_term(self):
-        """A term's own Spanish text must pass the check that warns about translations not using it (a typo in `match`)."""
+        """A term's own text, in each language it has, must pass the check that warns about translations not using it (a
+        typo in `match`)."""
         for term in self.glossary.terms:
-            entry = term["translations"]["es"]
-            self.assertEqual(self.glossary.unused_terms(term["term"], entry["text"], "es"), [], term["term"])
+            for language, entry in term["translations"].items():
+                with self.subTest(term=term["term"], language=language):
+                    self.assertEqual(self.glossary.unused_terms(term["term"], entry["text"], language), [])
 
     def test_the_terms_a_native_speaker_should_look_at_are_marked(self):
-        marked = [term["term"] for term in self.glossary.terms if term["translations"]["es"].get("check")]
+        marked = [term["term"] for term in self.glossary.terms if term["translations"].get("es", {}).get("check")]
         self.assertTrue(marked, "the seed holds words that are not certain")
         self.assertLess(len(marked), len(self.glossary.terms), "not every term is in doubt")
 
@@ -80,7 +86,7 @@ class ShippedGlossaryTests(unittest.TestCase):
         self.assertEqual(self.glossary.warnings(), [])
 
     def test_the_terms_whose_apple_spanish_is_not_confirmed_stay_marked_with_what_the_review_believes(self):
-        entries = {term["term"]: term["translations"]["es"] for term in self.glossary.terms}
+        entries = {term["term"]: term["translations"]["es"] for term in self.glossary.terms if "es" in term["translations"]}
         self.assertTrue(entries["Settings"]["check"])
         self.assertIn("Configuración del Sistema", entries["Settings"]["note"])
         self.assertTrue(entries["Keyboard Shortcut"]["check"])

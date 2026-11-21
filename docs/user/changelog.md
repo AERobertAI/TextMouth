@@ -4,6 +4,19 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.6 (November 20, 2026)
+
+### TextMouth in nine more languages
+- TextMouth's menus, buttons, messages, and VoiceOver hints are now also in Italian, French, Brazilian Portuguese, German, Russian, Ukrainian, Simplified Chinese, Japanese, and Korean, besides English and Spanish.
+- TextMouth appears in the first of your Mac's or iPhone's languages that it has. To choose its language alone, use System Settings, General, Language & Region, Applications on the Mac, or Settings, TextMouth, Language on the iPhone.
+- Each new language is a machine translation, which a native speaker will review.
+
+### A manifest edit is never lost
+- When you saved a book of tracks' manifest twice in quick succession, TextMouth could put the first save's title back over the second. It no longer writes anything back when it takes your edit.
+
+### A smaller audio converter
+- The converter that reads the audio formats macOS and iOS can't is about 0.6 MB smaller. It converts somewhat more slowly, still hundreds of times faster than the audio plays.
+
 ## 0.5.5 (November 20, 2026)
 
 ### Smaller apps

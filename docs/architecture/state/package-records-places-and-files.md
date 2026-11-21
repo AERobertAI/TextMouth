@@ -209,7 +209,8 @@ A recording's origin record (FR04): origin.json, only in the package of a book r
 
 A book of tracks' manifest (FR17): BookManifestEditSessions checks each edited manifest on one serial queue as storage work, and a taken edit's index, with the transcript layer, and its moved places (TrackPlaces) are committed by saveContentAnalysis.
 BookManifestFile.write is TextMouth's one write of a manifest, and tells an open session.
-LibraryViewModel.setTitleAndAuthor(ofManifestBook:title:author:) is the one write of a book of tracks' title and author, into the row and the manifest together.
+LibraryViewModel.setTitleAndAuthor(ofManifestBook:title:author:) is the one write of a book of tracks' title and author into the row and the manifest together, for a metadata editor's save.
+A taken edit (commitManifestEdit) gives only the row the manifest's title and author (setRowTitleAndAuthor) and writes nothing back, since a write queued after the take would land on a save made meanwhile and erase it (Q16).
 
 ## Title or author a manifest is owed
 <!-- id: title-author-manifest-owed; keys: manifest cloud, deferred write, manifest.json, title author sync; src: TextMouth/Services/BookManifestEditing.swift, TextMouth/ViewModels/LibraryViewModel+ManifestEdits.swift -->
@@ -219,6 +220,7 @@ LibraryViewModel.setTitleAndAuthor gives the fields it changes to BookManifestEd
 That writes the row's current title and author for each field owed (BookManifestFile.keepTitleAndAuthor), logging a failure as MANIFEST_NOT_WRITTEN unless it was a refusal to download.
 It records what is still owed in ManifestOwedFields: nothing once BookManifestFile.holds(_:of:isDataless:) finds the manifest holding the row's values, which is also so for a book whose audio is no folder of tracks.
 The fields are still owed while the folder or the manifest is only in the cloud, the folder is not there at all, there is no manifest, or it cannot be read.
+A take adds nothing owed; a field already owed stays owed until a look or a retitle writes it.
 ManifestOwedFields is an @unchecked Sendable struct over the preferences (the manifestOwedFields key: each book ID to the names of its owed fields, only title and author, never a title), one record for every library, so it is this Mac's alone and another Mac opening the library does not know it.
 While a field is owed, the manifest's value for it is neither compared nor adopted: check passes owed to take, and look to manifest(_:at:arranges:as:tracks:showingPauses:owed:) and take, whose BookManifestEdit then carries no title or author for an owed field, so the row's value stands.
 

@@ -144,10 +144,27 @@ def parallel_arguments(request):
             "-maximum-parallel-testing-workers", str(workers)]
 
 
+# The fewest and most times a request may ask for every test to run (a flaky test hunt, sent by hand).
+MIN_TEST_ITERATIONS = 2
+MAX_TEST_ITERATIONS = 100
+
+
+def iteration_arguments(request):
+    """The xcodebuild arguments that run every test the request's "test_iterations" times (MIN_TEST_ITERATIONS to
+    MAX_TEST_ITERATIONS), or none for any other value. A failure in any iteration fails the run, since a run that repeats
+    its tests takes no retry (`test_command.retry_arguments`). A request sent by hand asks for it to prove a fix for a
+    flaky test; no train or suite sets it."""
+    count = request.get("test_iterations")
+    if isinstance(count, bool) or not isinstance(count, int) or not MIN_TEST_ITERATIONS <= count <= MAX_TEST_ITERATIONS:
+        return []
+    return ["-test-iterations", str(count)]
+
+
 def runner_arguments(request, skips):
     """Every extra xcodebuild argument the runner adds: the time limit, the clones of the test host a hand-sent request
-    asks for, and the tests left out."""
-    return time_limit_arguments(request) + parallel_arguments(request) + skip_arguments(selected_skips(request, skips))
+    asks for, the repeats a hand-sent request asks for, and the tests left out."""
+    return (time_limit_arguments(request) + parallel_arguments(request) + iteration_arguments(request)
+            + skip_arguments(selected_skips(request, skips)))
 
 
 def read_request(path):

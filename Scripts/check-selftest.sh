@@ -125,8 +125,10 @@ write_stubs() {
 #                               Contents/Resources/planted.txt
 #   STUB_LPROJ=<form>           the language files build packages in the app, in
 #                               Contents/Resources/es.lproj: compact (the default),
-#                               xml-strings (a .strings left as XML), xml-dict (a
-#                               .stringsdict left as XML), or none
+#                               binary-strings (a .strings written as a binary list,
+#                               the other compact form, TL18), xml-strings (a
+#                               .strings left as XML), xml-dict (a .stringsdict left
+#                               as XML), or none
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 # In the log and output files, @ROOT@ stands for the repository root, since
@@ -146,6 +148,7 @@ plant_language_files() {
   mkdir -p "$1/es.lproj"
   case $2 in
     xml-strings) printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist/>' > "$1/es.lproj/Localizable.strings" ;;
+    binary-strings) printf 'bplist0012345678' > "$1/es.lproj/Localizable.strings" ;;
     *) printf '"a"="b";' > "$1/es.lproj/Localizable.strings" ;;
   esac
   case $2 in
@@ -265,7 +268,7 @@ import sys
 with open(os.environ["STUB_LOG"], "a") as log:
     log.write("app-size " + " ".join(sys.argv[1:]) + "\n")
 # The iPhone app the real tool builds, with the language files STUB_IOS_LPROJ names:
-# compact (the default), xml-strings, xml-dict, or none.
+# compact (the default), binary-strings, xml-strings, xml-dict, or none.
 form = os.environ.get("STUB_IOS_LPROJ", "compact")
 app = "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app"
 os.makedirs(app, exist_ok=True)
@@ -274,7 +277,7 @@ if form != "none":
     os.makedirs(folder, exist_ok=True)
     xml = b'<?xml version="1.0" encoding="UTF-8"?>\n<plist/>'
     with open(folder + "/Localizable.strings", "wb") as out:
-        out.write(xml if form == "xml-strings" else b'"a"="b";')
+        out.write(xml if form == "xml-strings" else b"bplist00" + b"12345678" if form == "binary-strings" else b'"a"="b";')
     with open(folder + "/Localizable.stringsdict", "wb") as out:
         out.write(xml if form == "xml-dict" else b"bplist00" + b"12345678")
 if os.environ.get("STUB_IOS_SIZE_OUTPUT"):
@@ -881,6 +884,20 @@ real_run_cases() {
   expect_verdict "check: PASSED"
   end_case
 
+  begin_case "a Mac app whose .strings is a binary property list passes, and the gate reports its form (TL18)"
+  run_gate STUB_LPROJ=binary-strings
+  expect_status 0
+  expect_report "16 bytes  binary es.lproj/Localizable.strings"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "an iPhone app whose .strings is a binary property list passes too (TL18)"
+  run_gate STUB_IOS_LPROJ=binary-strings
+  expect_status 0
+  expect_report "16 bytes  binary es.lproj/Localizable.strings"
+  expect_verdict "check: PASSED"
+  end_case
+
   begin_case "the iPhone app's language files are reported too, after its size"
   run_gate
   expect_status 0
@@ -892,7 +909,7 @@ real_run_cases() {
   run_gate STUB_LPROJ=xml-strings
   expect_status 1
   expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
-  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text"
+  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text or binary"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact (the build phase \"Compact language files\", Scripts/l10n/compact_packs.py, did not write it)"
   end_case
 
@@ -920,7 +937,7 @@ real_run_cases() {
   begin_case "an iPhone app whose .strings is still XML fails the gate, naming the file"
   run_gate STUB_IOS_LPROJ=xml-strings
   expect_status 1
-  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text"
+  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text or binary"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a language file that is not compact"
   end_case
 

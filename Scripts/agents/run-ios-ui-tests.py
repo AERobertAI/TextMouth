@@ -264,16 +264,27 @@ def only_testing(classes):
     return [f"-only-testing:{ios_ui_tests.bundle_of(name, ROOT)}/{name}" for name in classes]
 
 
-def test_command(udid, derived_data, result_bundle, classes):
+def test_command(udid, derived_data, result_bundle, classes, iterations=1):
     """The argv of the run: `test-without-building` of the scheme, in the simulator `udid`, on both test bundles (or only
-    `classes` of them, each as -only-testing), with a time limit for any one test."""
+    `classes` of them, each as -only-testing), with a time limit for any one test, and each test run `iterations` times
+    when that is more than one (a request's "test_iterations", for a flaky test hunt)."""
     only = only_testing(classes)
+    repeats = ["-test-iterations", str(iterations)] if iterations > 1 else []
     return ["xcodebuild", "test-without-building", "-project", "TextMouth.xcodeproj", "-scheme", SCHEME,
             "-destination", f"id={udid}", "-derivedDataPath", str(derived_data), *only,
-            "-resultBundlePath", str(result_bundle), *parallel_arguments(), "-test-timeouts-enabled", "YES",
+            "-resultBundlePath", str(result_bundle), *parallel_arguments(), *repeats, "-test-timeouts-enabled", "YES",
             "-default-test-execution-time-allowance", str(TEST_SECONDS),
             "-maximum-test-execution-time-allowance", str(TEST_SECONDS),
             "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO"]
+
+
+def iterations_of(request):
+    """How many times the request's "test_iterations" asks each test to run: 2 to 100, else 1 (as the Mac's runner
+    reads it, `run-on-runner.py`'s `iteration_arguments`)."""
+    count = request.get("test_iterations") if isinstance(request, dict) else None
+    if isinstance(count, bool) or not isinstance(count, int) or not 2 <= count <= 100:
+        return 1
+    return count
 
 
 def on_github_runner(environment):
@@ -535,7 +546,8 @@ def main(argv):
             return finish(not_run_lines("FAILED", f"the simulator's set-up took {setup_seconds / 60:.1f} minutes, leaving "
                                         f"{left:.1f} of the step's {STEP_BUDGET_MINUTES} for the tests"), 1)
         limit_minutes = min(args.limit_minutes, left)
-        command = test_command(udid, ROOT / args.derived_data, out / "ios-ui-result.xcresult", named)
+        command = test_command(udid, ROOT / args.derived_data, out / "ios-ui-result.xcresult", named,
+                               iterations=iterations_of(request))
         print("command:", " ".join(command), flush=True)
         began = time.monotonic()
         status, timed_out = run_tests(command, log, limit_minutes)

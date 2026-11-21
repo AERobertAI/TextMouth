@@ -218,7 +218,7 @@ So "can" in "can't", which contracted EBAE reads as one rule from ⠉⠄⠞, is 
 The check of this Mac's tables: MacBrailleTableCheck decides whether one of this Mac's tables is used, because the Mac's tables are written for its own liblouis and the helper runs the bundled one.
 It runs when BrailleTablePickers takes a choice (verdictOffTheMainThread, in a TextMouth-textutil- working folder) and before a Mac table's first use in a session (requireUsable).
 
-- Runs: three measured runs through BrailleTranslator.RunMeasure, which has the watchdog read memory every millisecond:
+- Runs: three measured runs through BrailleTranslator.RunMeasure, with memory read at the start and each millisecond:
   - loading the table,
   - printing timingLines (120) lines of sample, which holds capitals, lowercase letters, digits, and punctuation, typographic punctuation included, and
   - reading the braille back.
