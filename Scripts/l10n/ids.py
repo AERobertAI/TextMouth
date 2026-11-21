@@ -105,11 +105,13 @@ def declarations_at(lines: Sequence[str], line: int) -> Tuple[List[str], Optiona
     types: List[str] = []
     members: List[str] = []
     cases: List[str] = []
-    indent = _indent(lines[line - 1]) + 1  # the literal's own line counts as an enclosing declaration
+    # The literal's own line counts as an enclosing declaration (`static var x = String(localized: …)`, or an arm
+    # written `case .a: return String(localized: …)`), so the walk starts just above its indentation.
+    indent = _indent(lines[line - 1]) + 1
     for index in range(line, 0, -1):
         row = lines[index - 1]
         stripped = row.strip()
-        if not stripped or stripped.startswith("//") or stripped.startswith("*") or stripped.startswith("/*"):
+        if not stripped or stripped.startswith(("//", "*", "/*")):
             continue
         level = _indent(row)
         if level >= indent:
@@ -117,12 +119,11 @@ def declarations_at(lines: Sequence[str], line: int) -> Tuple[List[str], Optiona
         indent = level
         type_match = _TYPE.match(row)
         if type_match and type_match.group(1) not in _NOT_TYPE_NAMES:
+            # Every type that encloses the line is kept, innermost first, to name the outer type for a generic owner.
             types.append(type_match.group(1))
-            if not members:
-                continue
-            # The innermost type is found; the walk goes on only to name the outer types for a generic owner.
             continue
         if types:
+            # Inside a type already found, the lines above it are the outer types' own members and cases.
             continue
         case_match = _CASE.match(row)
         if case_match:
@@ -135,26 +136,6 @@ def declarations_at(lines: Sequence[str], line: int) -> Tuple[List[str], Optiona
         if member_match:
             members.append(member_match.group(1) or "init")
     return types, (members[-1] if members else None), (cases[-1] if cases and members else None)
-
-
-# A `case .name:` arm on the literal's own line (`case .a: return String(localized: …)`) is also an arm.
-_OWN_CASE = re.compile(r"^\s*case\s+(?:(?:let|var)\s+)?\.?(?!(?:let|var)\b)([A-Za-z_]\w*)[^:]*:\s*\S")
-
-
-def site_declarations(lines: Sequence[str], line: int) -> Tuple[List[str], Optional[str], Optional[str]]:
-    """`declarations_at`, also reading a case written on the literal's own line."""
-    types, member, case = declarations_at(lines, line)
-    own = _OWN_CASE.match(lines[line - 1])
-    if own and member is not None and case is None:
-        case = own.group(1)
-    elif own and member is not None:
-        # An arm on the literal's own line is the innermost one; the outermost still names the member's switch.
-        pass
-    # The member declared on the literal's own line (`static var x = String(localized: …)`) is the member too.
-    own_member = _MEMBER.match(lines[line - 1])
-    if own_member and member is None:
-        member = own_member.group(1) or "init"
-    return types, member, case
 
 
 # ---------------------------------------------------------------------------------------------- finding the keys
@@ -228,7 +209,7 @@ def collect_sites(root: Path, strings: Iterable[str], locations: Optional[Dict[s
             key = pick_by_note(candidates, note) if candidates else None
             if key is None:
                 key = by_spot.get((lit.file, lit.line))
-        types, member, case = site_declarations(lines, lit.line)
+        types, member, case = declarations_at(lines, lit.line)
         owner = owner_type(types, lit.file)
         sites.append(Site(lit.file, lit.line, key, owner, member or "init", case))
     return sites
@@ -367,11 +348,6 @@ def member_segment(member: str) -> str:
 
 
 # ---------------------------------------------------------------------------------------------- forming the IDs
-
-
-def english_of(cat: "catalog.Catalog", key: str) -> str:
-    """The English text of a key: the key itself, which is its English today."""
-    return key
 
 
 def first_forms(by_key: Dict[str, List[Site]]) -> Dict[str, Tuple[List[str], str]]:
@@ -660,7 +636,8 @@ def split_problems(root: Path, cat: "catalog.Catalog", ids: Dict[str, str], spli
     """What is wrong with the splits: a key not in the catalog, one ID that is not the key's own, a use naming no site, a
     site no use covers, and a site two uses cover."""
     problems: List[str] = []
-    sites = collect_sites(root, cat.strings, load_locations(main_locations(root)))
+    # The translators' notes settle every site, so the check needs nothing outside the repository it is given.
+    sites = collect_sites(root, cat.strings)
     by_key: Dict[str, List[Site]] = defaultdict(list)
     for site in sites:
         if site.key:
@@ -724,7 +701,7 @@ def suggest(root: Path, spot: str) -> str:
                 break
     if english is None:
         raise SystemExit(f"error: no localized call on {file}:{line}")
-    types, member, case = site_declarations(lines, line)
+    types, member, case = declarations_at(lines, line)
     owner = owner_type(types, file)
     parts, _how = first_forms({english: [Site(file, line, english, owner, member or "init", case)]})[english]
     table = load_table(table_path(root))
