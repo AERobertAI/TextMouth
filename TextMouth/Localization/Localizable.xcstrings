@@ -104129,7 +104129,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每次匯入有聲書後詢問是否要轉錄。關閉時，只有使用「轉錄音訊」才會轉錄有聲書。"
+            "value" : "每次輸入有聲書後詢問是否要轉錄。關閉時，只有使用「轉錄音訊」才會轉錄有聲書。"
           }
         }
       }
@@ -105956,7 +105956,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "於 %2$@ 匯入時，由 %1$@ 檔案附加。"
+            "value" : "於 %2$@ 輸入時，由 %1$@ 檔案附加。"
           }
         }
       }
@@ -106319,7 +106319,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "於 %@ 匯入時，由檔案附加。"
+            "value" : "於 %@ 輸入時，由檔案附加。"
           }
         }
       }
@@ -106444,7 +106444,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "於 %2$@ 匯入時，由「%1$@」附加。"
+            "value" : "於 %2$@ 輸入時，由「%1$@」附加。"
           }
         }
       }
@@ -146409,7 +146409,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請將它轉換為 16 位元或 24 位元整數取樣，再重新匯入。"
+            "value" : "請將它轉換為 16 位元或 24 位元整數取樣，再重新輸入。"
           }
         }
       }
@@ -314175,7 +314175,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "匯入有聲書後提供轉錄"
+            "value" : "輸入有聲書後提供轉錄"
           }
         }
       }
@@ -602754,7 +602754,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已匯入「%1$@」，音訊長度 %2$@。"
+            "value" : "已輸入「%1$@」，音訊長度 %2$@。"
           }
         }
       }
@@ -602873,7 +602873,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已匯入「%@」。"
+            "value" : "已輸入「%@」。"
           }
         }
       }
