@@ -19316,7 +19316,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ memutar bagian yang merupakan potongan dari trek-nya, sehingga trek-nya belum dapat diedit."
+            "value" : "%@ memutar bagian yang merupakan potongan dari treknya, sehingga treknya belum dapat diedit."
           }
         },
         "it" : {
@@ -598886,7 +598886,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik judul atau penerbit podcast, lalu menekan Return untuk mencari di direktori Apple."
+            "value" : "Ketik judul atau penerbit podcast, lalu tekan Return untuk mencari di direktori Apple."
           }
         },
         "it" : {
@@ -599297,7 +599297,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik atau menempel alamat feed atau halaman web, lalu menekan Return."
+            "value" : "Ketik atau tempel alamat feed atau halaman web, lalu tekan Return."
           }
         },
         "it" : {
@@ -672958,7 +672958,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "server tidak mengirim jawaban"
+            "value" : "server tidak mengirim respons"
           }
         },
         "it" : {
@@ -673095,7 +673095,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "bagian teratas pustaka Anda"
+            "value" : "tingkat atas pustaka Anda"
           }
         },
         "it" : {
@@ -679090,7 +679090,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” sudah sedang ditambahkan ke pustaka."
+            "value" : "“%@” sedang ditambahkan ke pustaka."
           }
         },
         "it" : {
