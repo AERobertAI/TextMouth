@@ -150,7 +150,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» reproduce el siguiente libro de la misma carpeta, en orden de clasificación."
+            "value" : "“%@” reproduce el siguiente libro de la misma carpeta, en orden de clasificación."
           }
         },
         "fr" : {
@@ -10369,7 +10369,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en otro momento."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada en otro momento."
           }
         },
         "fr" : {
@@ -10506,7 +10506,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada el %3$@."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada el %3$@."
           }
         },
         "fr" : {
@@ -10643,7 +10643,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@» el %4$@."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@” el %4$@."
           }
         },
         "fr" : {
@@ -10780,7 +10780,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ guarda una versión en conflicto de %2$@, guardada en «%3$@»."
+            "value" : "%1$@ tiene una versión en conflicto de %2$@, guardada en “%3$@”."
           }
         },
         "fr" : {
@@ -18923,7 +18923,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ apartó una copia en conflicto de %2$@: «%3$@», en %4$@."
+            "value" : "%1$@ apartó una copia en conflicto de %2$@: “%3$@”, en %4$@."
           }
         },
         "fr" : {
@@ -32169,7 +32169,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: Hay cambios sin guardar, y cambiar de biblioteca los perdería."
+            "value" : "%@: hay cambios sin guardar, y se perderían al cambiar de biblioteca."
           }
         },
         "fr" : {
@@ -74341,19 +74341,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld de reglas (%2$@ activadas)"
+                  "value" : "%1$lld de reglas (activadas: %2$@)"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld regla (%2$@ activadas)"
+                  "value" : "%1$lld regla (activadas: %2$@)"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld reglas (%2$@ activadas)"
+                  "value" : "%1$lld reglas (activadas: %2$@)"
                 }
               }
             }
@@ -103176,7 +103176,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Responde esta cuando termine el traslado."
+            "value" : "Responde a esta cuando termine el traslado."
           }
         },
         "fr" : {
@@ -115946,7 +115946,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bloquea la orden de reproducir falsa que macOS envía al quitarse unos audífonos Bluetooth."
+            "value" : "Bloquea la falsa orden de reproducción que macOS envía al quitarse unos auriculares Bluetooth."
           }
         },
         "fr" : {
@@ -124410,7 +124410,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cancelar movimiento"
+            "value" : "Cancelar traslado"
           }
         },
         "fr" : {
@@ -125946,7 +125946,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Coincidencia que distingue mayúsculas y minúsculas"
+            "value" : "Distinguir mayúsculas y minúsculas"
           }
         },
         "fr" : {
@@ -128900,7 +128900,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cambios en los libros guardados."
+            "value" : "Se guardaron los cambios de los libros."
           }
         },
         "fr" : {
@@ -129037,7 +129037,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudieron guardar los cambios del canal «%1$@»: %2$@"
+            "value" : "No se pudieron guardar los cambios del canal “%1$@”: %2$@"
           }
         },
         "fr" : {
@@ -129174,7 +129174,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudieron guardar los cambios de «%1$@»: %2$@"
+            "value" : "No se pudieron guardar los cambios de “%1$@”: %2$@"
           }
         },
         "fr" : {
@@ -138801,7 +138801,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Elige ningún control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder"
+            "value" : "Elige entre no tener control por libro, un selector compartido o un menú con selectores separados para avanzar y retroceder"
           }
         },
         "fr" : {
@@ -176155,7 +176155,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Descarga no quitada"
+            "value" : "No se quitó la descarga"
           }
         },
         "fr" : {
@@ -396012,7 +396012,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Buscados %1$@ de %2$@…"
+            "value" : "Buscado en %1$@ de %2$@…"
           }
         },
         "fr" : {
@@ -410298,7 +410298,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Muestra los libros en el orden que tú organizas"
+            "value" : "Muestra los libros en el orden que les das"
           }
         },
         "fr" : {
@@ -416825,7 +416825,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ordenar ascendente"
+            "value" : "Ordenar de forma ascendente"
           }
         },
         "fr" : {
@@ -417075,7 +417075,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ordenar descendente"
+            "value" : "Ordenar de forma descendente"
           }
         },
         "fr" : {
@@ -465187,19 +465187,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Los %1$@ de %2$lld de ellas se conservan."
+                  "value" : "De %2$lld de ellas se conservan: %1$@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Los %1$@ de %2$lld de ellas se conservan."
+                  "value" : "De %2$lld de ellas se conservan: %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Los %1$@ de %2$lld de ellas se conservan."
+                  "value" : "De %2$lld de ellas se conservan: %1$@."
                 }
               }
             }
@@ -493632,7 +493632,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres significan la misma carpeta en este disco."
+            "value" : "Las carpetas %1$@ y %2$@ no pueden moverse juntas a %3$@: sus nombres se refieren a la misma carpeta en este disco."
           }
         },
         "fr" : {
@@ -518569,19 +518569,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "No hay vista %1$@. Ir a vista llega a %2$lld de vistas."
+                  "value" : "No existe la vista %1$@. Ir a la vista llega hasta %2$lld de vistas."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "No hay vista %1$@. Ir a vista llega a %2$lld vista."
+                  "value" : "No existe la vista %1$@. Ir a la vista llega hasta %2$lld vista."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "No hay vista %1$@. Ir a vista llega a %2$lld vistas."
+                  "value" : "No existe la vista %1$@. Ir a la vista llega hasta %2$lld vistas."
                 }
               }
             }
@@ -529328,7 +529328,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este braille parece braille inglés, edición estadounidense. Elige su código braille en Información del libro."
+            "value" : "Este braille parece English Braille, American Edition. Elige su código braille en Información del libro."
           }
         },
         "fr" : {
@@ -575800,7 +575800,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con Mover el contenido fuera, la carpeta del canal se mueve con el resto."
+            "value" : "Con Sacar el contenido, la carpeta del canal se mueve con el resto."
           }
         },
         "fr" : {
@@ -575925,7 +575925,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con Mover el contenido fuera, sus carpetas se mueven con el resto."
+            "value" : "Con Sacar el contenido, sus carpetas se mueven con el resto."
           }
         },
         "fr" : {
@@ -576050,7 +576050,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con Mover el contenido fuera, permanecen en la biblioteca y solo se elimina la carpeta."
+            "value" : "Con Sacar el contenido, permanecen en la biblioteca y solo se elimina la carpeta."
           }
         },
         "fr" : {
@@ -576675,7 +576675,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cantidad de palabras"
+            "value" : "Recuento de palabras"
           }
         },
         "fr" : {
