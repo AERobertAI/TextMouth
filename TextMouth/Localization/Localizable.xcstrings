@@ -228936,7 +228936,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "파일 %1$lld/%2$lld"
+            "value" : "파일 %2$lld개 중 %1$lld번째"
           }
         },
         "nl" : {
@@ -236821,7 +236821,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 %lld개를 %@ 아래에서 찾았습니다. 각각 저장하거나 폐기하십시오."
+                  "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 %lld개를 찾아 %@ 아래에 표시했습니다. 각각 저장하거나 폐기하십시오."
                 }
               }
             }
@@ -237111,7 +237111,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 1개를 %@ 아래에서 찾았습니다. 저장하거나 폐기하십시오."
+            "value" : "TextMouth가 마지막으로 종료되기 전의 녹음 1개를 찾아 %@ 아래에 표시했습니다. 저장하거나 폐기하십시오."
           }
         },
         "nl" : {
@@ -237248,7 +237248,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@에 있습니다. 켜면 편집기의 필터가 ffmpeg를 통해 실행되며, ffmpeg의 모든 필터를 사용할 수 있습니다."
+            "value" : "%@에 있습니다. 켜면 편집기의 필터가 ffmpeg을 통해 실행되며, ffmpeg의 모든 필터를 사용할 수 있습니다."
           }
         },
         "nl" : {
@@ -269776,7 +269776,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ffmpeg로만 실행할 수 있습니다."
+            "value" : "ffmpeg으로만 실행할 수 있습니다."
           }
         },
         "nl" : {
@@ -281688,7 +281688,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "레이블과 세미콜론은 ffmpeg가 필요합니다. TextMouth의 자체 필터는 쉼표로 구분한 체인 하나만 사용합니다."
+            "value" : "레이블과 세미콜론에는 ffmpeg이 필요합니다. TextMouth의 자체 필터는 쉼표로 구분한 체인 하나만 사용합니다."
           }
         },
         "nl" : {
@@ -296140,7 +296140,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "MP3 파일을 쓸 수 없습니다. TextMouth의 인코더를 시작할 수 없고, ffmpeg가 없거나 저장 공간 설정에서 꺼져 있습니다."
+            "value" : "MP3 파일을 쓸 수 없습니다. TextMouth의 인코더를 시작할 수 없고, ffmpeg이 없거나 저장 공간 설정에서 꺼져 있습니다."
           }
         },
         "nl" : {
@@ -334951,7 +334951,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "챕터 마커나 마커가 없어서 레이블 파일이 쓰이지 않습니다."
+            "value" : "챕터 마커나 마커가 없어서 레이블 파일을 쓰지 않습니다."
           }
         },
         "nl" : {
@@ -356279,7 +356279,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "오디오북만 대본을 만들 수 있습니다."
+            "value" : "대본은 오디오북에 대해서만 만들 수 있습니다."
           }
         },
         "nl" : {
@@ -396187,7 +396187,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%3$@ 마이크로 신호음 뒤에 %2$@ 지점의 %1$@ 구간에 덮어 녹음합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다."
+            "value" : "신호음 뒤에 %3$@(으)로 %2$@ 지점의 %1$@ 구간에 덮어 녹음합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다."
           }
         },
         "nl" : {
@@ -396741,7 +396741,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ 마이크로 신호음 뒤에 %1$@ 지점에 삽입할 녹음을 합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다."
+            "value" : "신호음 뒤에 %2$@(으)로 %1$@ 지점에 삽입할 녹음을 합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다."
           }
         },
         "nl" : {
@@ -398528,7 +398528,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 실행: %@"
+            "value" : "%@ 다시 실행"
           }
         },
         "nl" : {
@@ -404898,7 +404898,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "낮은 소음 제거"
+            "value" : "저주파 잡음 제거"
           }
         },
         "nl" : {
@@ -416144,7 +416144,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 시작"
+            "value" : "재개"
           }
         },
         "nl" : {
@@ -416281,7 +416281,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 시작합니다."
+            "value" : "재개합니다."
           }
         },
         "nl" : {
@@ -500326,7 +500326,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth의 자체 필터에는 “%1$@”이(가) 없습니다. 자체 필터는 %2$@입니다. ffmpeg를 설치하면 ffmpeg의 모든 필터를 사용할 수 있습니다."
+            "value" : "TextMouth의 자체 필터에는 “%1$@”이(가) 없습니다. 자체 필터는 %2$@입니다. ffmpeg을 설치하면 ffmpeg의 모든 필터를 사용할 수 있습니다."
           }
         },
         "nl" : {
@@ -516637,7 +516637,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@의 오디오를 편집하려고 열 수 없습니다."
+            "value" : "%@의 오디오를 편집용으로 열 수 없습니다."
           }
         },
         "nl" : {
@@ -601644,7 +601644,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "실행 취소: %@"
+            "value" : "%@ 실행 취소"
           }
         },
         "nl" : {
@@ -641824,7 +641824,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ffmpeg를 시작할 수 없습니다. 설치되어 있는지 확인하거나 저장 공간 설정에서 ffmpeg 사용을 끄십시오."
+            "value" : "ffmpeg을 시작할 수 없습니다. 설치되어 있는지 확인하거나 저장 공간 설정에서 ffmpeg 사용을 끄십시오."
           }
         },
         "nl" : {
@@ -641961,7 +641961,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ffmpeg가 필터를 실행할 수 없습니다: %@"
+            "value" : "ffmpeg이 필터를 실행할 수 없습니다: %@"
           }
         },
         "nl" : {
@@ -642098,7 +642098,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ffmpeg가 설치되어 있지 않아 TextMouth의 자체 필터를 사용합니다."
+            "value" : "ffmpeg이 설치되어 있지 않아 TextMouth의 자체 필터를 사용합니다."
           }
         },
         "nl" : {
@@ -642378,7 +642378,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "파일 %1$lld/%2$lld"
+            "value" : "파일 %2$lld개 중 %1$lld번째"
           }
         },
         "nl" : {
