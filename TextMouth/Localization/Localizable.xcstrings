@@ -55617,7 +55617,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Text bearbeiten wurde für %@ beendet, weil eine neue Kopie ihn ersetzt hat."
+            "value" : "„Text bearbeiten“ wurde für %@ beendet, weil eine neue Kopie ihn ersetzt hat."
           }
         },
         "es" : {
@@ -55652,7 +55652,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Text bearbeiten wurde für %@ beendet, weil die Datei erneut gelesen wurde."
+            "value" : "„Text bearbeiten“ wurde für %@ beendet, weil die Datei erneut gelesen wurde."
           }
         },
         "es" : {
@@ -55722,7 +55722,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Das Bearbeiten des Texts endet für dieses Buch; wähle erneut „Text bearbeiten“, um den neu eingelesenen Text zu bearbeiten."
+            "value" : "„Text bearbeiten“ endet für dieses Buch; wähle erneut „Text bearbeiten“, um den neu eingelesenen Text zu bearbeiten."
           }
         },
         "es" : {
@@ -118085,7 +118085,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beschreibung zeigen…"
+            "value" : "Beschreibung anzeigen…"
           }
         },
         "es" : {
@@ -118537,7 +118537,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Buchinformationen zeigen"
+            "value" : "Buchinformationen anzeigen"
           }
         },
         "es" : {
@@ -172431,7 +172431,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es lässt sich nicht in der liblouis-Version %@ von TextMouth laden"
+            "value" : "sie lässt sich nicht in der liblouis-Version %@ von TextMouth laden"
           }
         },
         "es" : {
@@ -172892,13 +172892,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "es benötigt mehr als %lld MB Speicher"
+                  "value" : "sie benötigt mehr als %lld MB Speicher"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "es benötigt mehr als %lld MB Speicher"
+                  "value" : "sie benötigt mehr als %lld MB Speicher"
                 }
               }
             }
@@ -173064,13 +173064,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "es übersetzt zu langsam, unter %lld KB pro Sekunde"
+                  "value" : "sie übersetzt zu langsam, unter %lld KB pro Sekunde"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "es übersetzt zu langsam, unter %lld KB pro Sekunde"
+                  "value" : "sie übersetzt zu langsam, unter %lld KB pro Sekunde"
                 }
               }
             }
@@ -173198,7 +173198,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es schreibt Achtpunkt-Braille, und TextMouth verwendet nur Sechspunkt-Braille"
+            "value" : "sie schreibt Achtpunkt-Braille, und TextMouth verwendet nur Sechspunkt-Braille"
           }
         },
         "es" : {
