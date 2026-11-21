@@ -43055,13 +43055,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld bok behålls på den här Mac:en"
+                  "value" : "%lld bok behålls på den här Mac-datorn"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld böcker behålls på den här Mac:en"
+                  "value" : "%lld böcker behålls på den här Mac-datorn"
                 }
               }
             }
@@ -49263,13 +49263,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld bok behållen på den här Mac:en"
+                  "value" : "%lld bok behållen på den här Mac-datorn"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld böcker behållna på den här Mac:en"
+                  "value" : "%lld böcker behållna på den här Mac-datorn"
                 }
               }
             }
@@ -95812,7 +95812,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ett bibliotek i molnet kan ta en stund: filer som bara finns i molnet hämtas till den här Mac:en för att kunna läsas."
+            "value" : "Ett bibliotek i molnet kan ta en stund: filer som bara finns i molnet hämtas till den här Mac-datorn för att kunna läsas."
           }
         },
         "th" : {
@@ -96634,7 +96634,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ett tal från 2 till 99"
+            "value" : "Ett tal från 2 till 99."
           }
         },
         "th" : {
@@ -105003,7 +105003,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till eller tar bort ett bokmärke vid den aktuella positionen"
+            "value" : "Lägger till eller tar bort ett bokmärke vid den aktuella positionen."
           }
         },
         "th" : {
@@ -105140,7 +105140,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till hastighetsknappar och den aktuella hastigheten"
+            "value" : "Lägger till hastighetsknappar och den aktuella hastigheten."
           }
         },
         "th" : {
@@ -105277,7 +105277,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till lexikonets poster efter dina regler; poster med enbart fonetisk stavning lämnas utanför"
+            "value" : "Lägger till lexikonets poster efter dina regler; poster med enbart fonetisk stavning lämnas utanför."
           }
         },
         "th" : {
@@ -106379,7 +106379,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Efter en automatisk uppdatering nämns varje flöde med nya avsnitt och artiklar i en avisering"
+            "value" : "Efter en automatisk uppdatering nämns varje flöde med nya avsnitt och artiklar i en avisering."
           }
         },
         "th" : {
@@ -106516,7 +106516,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Efter en automatisk uppdatering nämns flödena med nya avsnitt och artiklar i en varning"
+            "value" : "Efter en automatisk uppdatering nämns flödena med nya avsnitt och artiklar i en varning."
           }
         },
         "th" : {
@@ -106653,7 +106653,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Därefter försöker Spela upp stycket igen"
+            "value" : "Därefter försöker Spela upp stycket igen."
           }
         },
         "th" : {
@@ -108079,7 +108079,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla böcker av samma författare"
+            "value" : "Alla böcker av samma författare."
           }
         },
         "th" : {
@@ -109038,7 +109038,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv även märkena som Audacity-etiketter"
+            "value" : "Skriv även ljudmärkena som Audacity-etiketter"
           }
         },
         "th" : {
@@ -113042,7 +113042,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till ett nytt steg sist i gestsekvensen"
+            "value" : "Lägger till ett nytt steg sist i gestsekvensen."
           }
         },
         "th" : {
@@ -113870,7 +113870,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillämpar reglerna på text innan den läses upp"
+            "value" : "Tillämpar reglerna på text innan den läses upp."
           }
         },
         "th" : {
@@ -114007,7 +114007,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gäller när lyssningen fortsätter till en annan artikel"
+            "value" : "Gäller när lyssningen fortsätter till en annan artikel."
           }
         },
         "th" : {
@@ -114144,7 +114144,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gäller när lyssningen fortsätter till en annan bok"
+            "value" : "Gäller när lyssningen fortsätter till en annan bok."
           }
         },
         "th" : {
@@ -114281,7 +114281,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gäller när lyssningen fortsätter till ett annat avsnitt"
+            "value" : "Gäller när lyssningen fortsätter till ett annat avsnitt."
           }
         },
         "th" : {
@@ -114418,7 +114418,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gäller när lyssningen fortsätter till ett annat objekt"
+            "value" : "Gäller när lyssningen fortsätter till ett annat objekt."
           }
         },
         "th" : {
@@ -115103,7 +115103,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Använd filter…"
+            "value" : "Tillämpa filter…"
           }
         },
         "th" : {
@@ -117681,7 +117681,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Frågar först och raderar sedan det här flödet, dess nedladdningar och det som finns kvar av nedladdningar du har tagit bort"
+            "value" : "Frågar först och raderar sedan det här flödet, dess nedladdningar och det som finns kvar av nedladdningar du har tagit bort."
           }
         },
         "th" : {
@@ -118229,7 +118229,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Frågar först och slutar sedan kontrollera; flödet och dess nedladdningar finns kvar"
+            "value" : "Frågar först och slutar sedan kontrollera; flödet och dess nedladdningar finns kvar."
           }
         },
         "th" : {
@@ -123664,7 +123664,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets artiklar går vidare till en annan artikel när en tar slut"
+            "value" : "Tillgänglig bara när det här flödets artiklar går vidare till en annan artikel när en tar slut."
           }
         },
         "th" : {
@@ -123801,7 +123801,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut"
+            "value" : "Tillgänglig bara när det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut."
           }
         },
         "th" : {
@@ -123938,7 +123938,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets objekt går vidare till ett annat objekt när ett tar slut"
+            "value" : "Tillgänglig bara när det här flödets objekt går vidare till ett annat objekt när ett tar slut."
           }
         },
         "th" : {
@@ -124075,7 +124075,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när den här mappens böcker går vidare till en annan bok när en tar slut"
+            "value" : "Tillgänglig bara när den här mappens böcker går vidare till en annan bok när en tar slut."
           }
         },
         "th" : {
@@ -126821,7 +126821,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "boken"
+            "value" : "Bok"
           }
         },
         "th" : {
@@ -132000,7 +132000,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Böcker med samma titel, oavsett författare"
+            "value" : "Böcker med samma titel, oavsett författare."
           }
         },
         "th" : {
@@ -138638,7 +138638,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ändrar talet med ett, från 2 till 99"
+            "value" : "Ändrar talet med ett, från 2 till 99."
           }
         },
         "th" : {
@@ -138775,7 +138775,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ändrar hastigheten i steg om %@ gånger"
+            "value" : "Ändrar hastigheten i steg om %@ gånger."
           }
         },
         "th" : {
@@ -144906,7 +144906,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kontrollerar alla flöden du prenumererar på och säger vad som kom in"
+            "value" : "Kontrollerar alla flöden du prenumererar på och säger vad som kom in."
           }
         },
         "th" : {
@@ -145043,7 +145043,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kontrollerar alla flöden du prenumererar på när biblioteket har öppnats"
+            "value" : "Kontrollerar alla flöden du prenumererar på när biblioteket har öppnats."
           }
         },
         "th" : {
@@ -145317,7 +145317,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kontrollerar det här flödet igen från och med nu, och direkt"
+            "value" : "Kontrollerar det här flödet igen från och med nu, och direkt."
           }
         },
         "th" : {
@@ -151077,7 +151077,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Välj ingen kontroll per bok, en gemensam väljare eller en meny med separata väljare för framåt och bakåt"
+            "value" : "Välj ingen kontroll per bok, en gemensam väljare eller en meny med separata väljare för framåt och bakåt."
           }
         },
         "th" : {
@@ -151351,7 +151351,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väljer separata navigeringsenheter framåt och bakåt för den här boken"
+            "value" : "Väljer separata navigeringsenheter framåt och bakåt för den här boken."
           }
         },
         "th" : {
@@ -153269,7 +153269,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väljer vad som händer när en av det här flödets artiklar tar slut"
+            "value" : "Väljer vad som händer när en av det här flödets artiklar tar slut."
           }
         },
         "th" : {
@@ -153406,7 +153406,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väljer vad som händer när ett av det här flödets avsnitt tar slut"
+            "value" : "Väljer vad som händer när ett av det här flödets avsnitt tar slut."
           }
         },
         "th" : {
@@ -153543,7 +153543,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väljer vad som händer när ett av det här flödets objekt tar slut"
+            "value" : "Väljer vad som händer när ett av det här flödets objekt tar slut."
           }
         },
         "th" : {
@@ -153680,7 +153680,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väljer vad som händer när en av den här mappens böcker tar slut"
+            "value" : "Väljer vad som händer när en av den här mappens böcker tar slut."
           }
         },
         "th" : {
@@ -157391,7 +157391,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stänger rubrikarket och återgår till boken"
+            "value" : "Stänger rubrikarket och återgår till boken."
           }
         },
         "th" : {
@@ -158076,7 +158076,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stänger den här bokens fönster"
+            "value" : "Stänger den här bokens fönster."
           }
         },
         "th" : {
@@ -166594,7 +166594,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kopierar hela rapporten som vanlig text"
+            "value" : "Kopierar hela rapporten som vanlig text."
           }
         },
         "th" : {
@@ -167279,7 +167279,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kopiera alla TextMouth-data till %@, kontrollera dem och börja använda den nya platsen?"
+            "value" : "Vill du kopiera alla TextMouth-data till %@, kontrollera dem och börja använda den nya platsen?"
           }
         },
         "th" : {
@@ -173355,7 +173355,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skapa en mapp för de importerade böckerna?"
+            "value" : "Vill du skapa en mapp för de importerade böckerna?"
           }
         },
         "th" : {
@@ -176643,7 +176643,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Antal dagar efter att ett avsnitt har spelats klart innan dess nedladdning raderas, från 0 (direkt) till 365; en som är öppen i en läsare väntar tills den stängs"
+            "value" : "Antal dagar efter att ett avsnitt har spelats klart innan dess nedladdning raderas, från 0 (direkt) till 365; en som är öppen i en läsare väntar tills den stängs."
           }
         },
         "th" : {
@@ -178810,7 +178810,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Standardtonhöjd för nya böcker. 1,0 är normalt. Varje bok kan åsidosätta den."
+            "value" : "Standardtonhöjd för nya böcker. 1.0 är normalt. Varje bok kan åsidosätta den."
           }
         },
         "th" : {
@@ -181743,7 +181743,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera mappen?"
+            "value" : "Vill du radera mappen?"
           }
         },
         "th" : {
@@ -182017,7 +182017,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera originalfilen permanent?"
+            "value" : "Vill du radera originalfilen permanent?"
           }
         },
         "th" : {
@@ -182839,7 +182839,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera transkriptionen för %@?"
+            "value" : "Vill du radera transkriptionen för %@?"
           }
         },
         "th" : {
@@ -182976,7 +182976,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera flödet ”%@”?"
+            "value" : "Vill du radera flödet ”%@”?"
           }
         },
         "th" : {
@@ -183113,7 +183113,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera originalfilen permanent?"
+            "value" : "Vill du radera originalfilen permanent?"
           }
         },
         "th" : {
@@ -183250,7 +183250,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera originalfilen ”%@” permanent?"
+            "value" : "Vill du radera originalfilen ”%@” permanent?"
           }
         },
         "th" : {
@@ -183387,7 +183387,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera vyn ”%@”?"
+            "value" : "Vill du radera vyn ”%@”?"
           }
         },
         "th" : {
@@ -183524,7 +183524,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Radera ”%@”?"
+            "value" : "Vill du radera ”%@”?"
           }
         },
         "th" : {
@@ -192285,7 +192285,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av nästa artikel avbröts, så uppspelningen stoppades."
+            "value" : "Hämtningen av nästa artikel avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -192422,7 +192422,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av nästa artikel avbröts."
+            "value" : "Hämtningen av nästa artikel avbröts."
           }
         },
         "th" : {
@@ -192559,7 +192559,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av nästa avsnitt avbröts, så uppspelningen stoppades."
+            "value" : "Hämtningen av nästa avsnitt avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -192696,7 +192696,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av nästa avsnitt avbröts."
+            "value" : "Hämtningen av nästa avsnitt avbröts."
           }
         },
         "th" : {
@@ -192833,7 +192833,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av föregående artikel avbröts, så uppspelningen stoppades."
+            "value" : "Hämtningen av föregående artikel avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -192970,7 +192970,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av föregående artikel avbröts."
+            "value" : "Hämtningen av föregående artikel avbröts."
           }
         },
         "th" : {
@@ -193107,7 +193107,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av föregående avsnitt avbröts, så uppspelningen stoppades."
+            "value" : "Hämtningen av föregående avsnitt avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -193244,7 +193244,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nedladdningen av föregående avsnitt avbröts."
+            "value" : "Hämtningen av föregående avsnitt avbröts."
           }
         },
         "th" : {
@@ -198904,7 +198904,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtar det igen och öppnar det sedan där du slutade"
+            "value" : "Hämtar det igen och öppnar det sedan där du slutade."
           }
         },
         "th" : {
@@ -199041,7 +199041,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtar det och öppnar det sedan"
+            "value" : "Hämtar det och öppnar det sedan."
           }
         },
         "th" : {
@@ -199178,7 +199178,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtar boken igen"
+            "value" : "Hämtar boken igen."
           }
         },
         "th" : {
@@ -200411,7 +200411,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "EPUB-böcker med samma ISBN-identifierare"
+            "value" : "EPUB-böcker med samma ISBN-identifierare."
           }
         },
         "th" : {
@@ -201507,7 +201507,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Varje rubriks titel och start, som ett CUE sheet som namnger ljudet så som Ljud exporterar det."
+            "value" : "Varje rubriks titel och start, som en CUE-fil som namnger ljudet så som Ljud exporterar det."
           }
         },
         "th" : {
@@ -205224,7 +205224,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redigera manifestet för %@?"
+            "value" : "Vill du redigera manifestet för %@?"
           }
         },
         "th" : {
@@ -205361,7 +205361,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redigera texten i %@?"
+            "value" : "Vill du redigera texten i %@?"
           }
         },
         "th" : {
@@ -210019,7 +210019,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv eller klistra in texten för den nya boken"
+            "value" : "Skriv eller klistra in texten för den nya boken."
           }
         },
         "th" : {
@@ -216059,7 +216059,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exakt filinnehållsmatchning – den starkaste indikatorn"
+            "value" : "Exakt filinnehållsmatchning – den starkaste indikatorn."
           }
         },
         "th" : {
@@ -228269,7 +228269,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flöden listas alltid efter titel"
+            "value" : "Flöden listas alltid efter titel."
           }
         },
         "th" : {
@@ -228686,7 +228686,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flöden uppdateras bara vid start, om det är på, och när du väljer %1$@ eller %2$@"
+            "value" : "Flöden uppdateras bara vid start, om det är på, och när du väljer %1$@ eller %2$@."
           }
         },
         "th" : {
@@ -240292,7 +240292,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ge biblioteket en ny identitet?"
+            "value" : "Vill du ge biblioteket en ny identitet?"
           }
         },
         "th" : {
@@ -241251,7 +241251,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Går tillbaka till där du var innan du bläddrade bland rubriker eller bokmärken"
+            "value" : "Går tillbaka till där du var innan du bläddrade bland rubriker eller bokmärken."
           }
         },
         "th" : {
@@ -247752,7 +247752,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Döljer kontrollerna för att hoppa till en sida"
+            "value" : "Döljer kontrollerna för att hoppa till en sida."
           }
         },
         "th" : {
@@ -247889,7 +247889,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Döljer kontrollerna för att hoppa till en procentsats"
+            "value" : "Döljer kontrollerna för att hoppa till en procentsats."
           }
         },
         "th" : {
@@ -248026,7 +248026,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Döljer kontrollerna för att hoppa till en tidpunkt"
+            "value" : "Döljer kontrollerna för att hoppa till en tidpunkt."
           }
         },
         "th" : {
@@ -248574,7 +248574,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Timmar mellan uppdateringar medan TextMouth körs, från 1 till 168"
+            "value" : "Timmar mellan uppdateringar medan TextMouth körs, från 1 till 168."
           }
         },
         "th" : {
@@ -249944,7 +249944,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hur rösten läser en symbol som skrivs flera gånger i rad"
+            "value" : "Hur rösten läser en symbol som skrivs flera gånger i rad."
           }
         },
         "th" : {
@@ -285024,7 +285024,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Längd på tystnaden som ska infogas: sekunder (2,5) eller minuter och sekunder (1:30)."
+            "value" : "Längd på tystnaden som ska infogas: sekunder (2.5) eller minuter och sekunder (1:30)."
           }
         },
         "th" : {
@@ -295485,7 +295485,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Söker efter boken igen"
+            "value" : "Söker efter boken igen."
           }
         },
         "th" : {
@@ -298374,7 +298374,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Manuell ordning har ingen riktning"
+            "value" : "Manuell ordning har ingen riktning."
           }
         },
         "th" : {
@@ -313399,7 +313399,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flytta biblioteket hit?"
+            "value" : "Vill du flytta biblioteket hit?"
           }
         },
         "th" : {
@@ -313536,7 +313536,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägga originalfilen i papperskorgen?"
+            "value" : "Vill du lägga originalfilen i papperskorgen?"
           }
         },
         "th" : {
@@ -314084,7 +314084,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägga originalfilen i papperskorgen?"
+            "value" : "Vill du lägga originalfilen i papperskorgen?"
           }
         },
         "th" : {
@@ -314221,7 +314221,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägga originalfilen ”%@” i papperskorgen?"
+            "value" : "Vill du lägga originalfilen ”%@” i papperskorgen?"
           }
         },
         "th" : {
@@ -319133,7 +319133,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flyttar data tillbaka till standardplatsen ~/.TextMouth"
+            "value" : "Flyttar data tillbaka till standardplatsen ~/.TextMouth."
           }
         },
         "th" : {
@@ -330871,7 +330871,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De senaste artiklarna som behålls hämtade eller listade, från 1 till 2 000"
+            "value" : "De senaste artiklarna som behålls hämtade eller listade, från 1 till 2 000."
           }
         },
         "th" : {
@@ -331008,7 +331008,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De senaste avsnitten och artiklarna som behålls hämtade eller listade, från 1 till 2 000"
+            "value" : "De senaste avsnitten och artiklarna som behålls hämtade eller listade, från 1 till 2 000."
           }
         },
         "th" : {
@@ -331145,7 +331145,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De senaste avsnitten som behålls hämtade eller listade, från 1 till 2 000"
+            "value" : "De senaste avsnitten som behålls hämtade eller listade, från 1 till 2 000."
           }
         },
         "th" : {
@@ -331282,7 +331282,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De senaste objekten som behålls hämtade eller listade, från 1 till 2 000"
+            "value" : "De senaste objekten som behålls hämtade eller listade, från 1 till 2 000."
           }
         },
         "th" : {
@@ -339832,7 +339832,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inget original behålls för den här boken, så sparade redigeringar kan inte ångras."
+            "value" : "Inget originalljud behålls för den här boken, så sparade redigeringar kan inte ångras."
           }
         },
         "th" : {
@@ -347236,7 +347236,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Normal (1,0x)"
+            "value" : "Normal (1.0x)"
           }
         },
         "th" : {
@@ -356583,7 +356583,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spola bara tillbaka om pausen var längre än tröskeln"
+            "value" : "Spola bara tillbaka om pausen var längre än tröskeln."
           }
         },
         "th" : {
@@ -359242,7 +359242,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppna biblioteket utan dess index?"
+            "value" : "Vill du öppna biblioteket utan dess index?"
           }
         },
         "th" : {
@@ -361571,7 +361571,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar ett ark där du kan öppna en bok, importera en mapp, skapa en bok av text, spela in ljud eller lägga till ett flöde"
+            "value" : "Öppnar ett ark där du kan öppna en bok, importera en mapp, skapa en bok av text, spela in ljud eller lägga till ett flöde."
           }
         },
         "th" : {
@@ -361708,7 +361708,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar ett ark där du skriver ett flödes adress och väljer dess mapp"
+            "value" : "Öppnar ett ark där du skriver ett flödes adress och väljer dess mapp."
           }
         },
         "th" : {
@@ -361845,7 +361845,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar det"
+            "value" : "Öppnar det."
           }
         },
         "th" : {
@@ -361982,7 +361982,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar dess bok i ditt bibliotek"
+            "value" : "Öppnar dess bok i ditt bibliotek."
           }
         },
         "th" : {
@@ -362119,7 +362119,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar kontrollerna för att hoppa till en sida"
+            "value" : "Öppnar kontrollerna för att hoppa till en sida."
           }
         },
         "th" : {
@@ -362256,7 +362256,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar kontrollerna för att hoppa till en procentsats"
+            "value" : "Öppnar kontrollerna för att hoppa till en procentsats."
           }
         },
         "th" : {
@@ -362393,7 +362393,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar kontrollerna för att hoppa till en tidpunkt"
+            "value" : "Öppnar kontrollerna för att hoppa till en tidpunkt."
           }
         },
         "th" : {
@@ -363215,7 +363215,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar flödets mapp"
+            "value" : "Öppnar flödets mapp."
           }
         },
         "th" : {
@@ -366833,7 +366833,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Åsidosätter stilen"
+            "value" : "Åsidosätter stilen."
           }
         },
         "th" : {
@@ -377369,7 +377369,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelade nedladdningar behålls tills du raderar dem"
+            "value" : "Spelade nedladdningar behålls tills du raderar dem."
           }
         },
         "th" : {
@@ -378328,7 +378328,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelar upp korta ljud vid uppspelningsåtgärder"
+            "value" : "Spelar upp korta ljud vid uppspelningsåtgärder."
           }
         },
         "th" : {
@@ -379287,7 +379287,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när Var är jag? har läst klart"
+            "value" : "Spelas upp när Var är jag? har läst klart."
           }
         },
         "th" : {
@@ -379424,7 +379424,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när Var är jag? börjar läsa upp"
+            "value" : "Spelas upp när Var är jag? börjar läsa upp."
           }
         },
         "th" : {
@@ -379561,7 +379561,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när du pausar läsningen"
+            "value" : "Spelas upp när du pausar läsningen."
           }
         },
         "th" : {
@@ -379698,7 +379698,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när du hoppar bakåt"
+            "value" : "Spelas upp när du hoppar bakåt."
           }
         },
         "th" : {
@@ -379835,7 +379835,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när du hoppar framåt"
+            "value" : "Spelas upp när du hoppar framåt."
           }
         },
         "th" : {
@@ -379972,7 +379972,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när du börjar läsa"
+            "value" : "Spelas upp när du börjar läsa."
           }
         },
         "th" : {
@@ -390458,7 +390458,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Läsa ”%@” igen som %@?"
+            "value" : "Vill du läsa ”%@” igen som %@?"
           }
         },
         "th" : {
@@ -390595,7 +390595,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Läsa ”%@” igen automatiskt?"
+            "value" : "Vill du läsa ”%@” igen automatiskt?"
           }
         },
         "th" : {
@@ -398147,7 +398147,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återskapar katalogstrukturen och migrerar böcker som använder gammal lagring"
+            "value" : "Återskapar katalogstrukturen och migrerar böcker som använder gammal lagring."
           }
         },
         "th" : {
@@ -398832,7 +398832,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Extrahera texten igen?"
+            "value" : "Vill du extrahera texten igen?"
           }
         },
         "th" : {
@@ -403240,13 +403240,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ta bort %lld bok?"
+                  "value" : "Vill du ta bort %lld bok?"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ta bort %lld böcker?"
+                  "value" : "Vill du ta bort %lld böcker?"
                 }
               }
             }
@@ -403913,7 +403913,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta bort boken?"
+            "value" : "Vill du ta bort boken?"
           }
         },
         "th" : {
@@ -404050,7 +404050,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta bort bokmärke %@?"
+            "value" : "Vill du ta bort bokmärke %@?"
           }
         },
         "th" : {
@@ -408907,7 +408907,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ersätta transkriptionen för %@?"
+            "value" : "Vill du ersätta transkriptionen för %@?"
           }
         },
         "th" : {
@@ -411379,7 +411379,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställa textreglerna till standard?"
+            "value" : "Vill du återställa textreglerna till standard?"
           }
         },
         "th" : {
@@ -412475,7 +412475,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställa till standardplatsen?"
+            "value" : "Vill du återställa till standardplatsen?"
           }
         },
         "th" : {
@@ -413434,7 +413434,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställer den här boken till %@"
+            "value" : "Återställer den här boken till %@."
           }
         },
         "th" : {
@@ -413982,7 +413982,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Startar om den senaste insomningstimern med en sekvens av mediakontrolltryck"
+            "value" : "Startar om den senaste insomningstimern med en sekvens av mediakontrolltryck."
           }
         },
         "th" : {
@@ -414804,7 +414804,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställa bibliotekets identitet?"
+            "value" : "Vill du återställa bibliotekets identitet?"
           }
         },
         "th" : {
@@ -414941,7 +414941,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställa ”%@” till standard?"
+            "value" : "Vill du återställa ”%@” till standard?"
           }
         },
         "th" : {
@@ -415215,7 +415215,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställer standardlistan: ASCII-symboler, punkter, tankstreck, ellipsen och ramlinjer"
+            "value" : "Återställer standardlistan: ASCII-symboler, punkter, tankstreck, ellipsen och ramlinjer."
           }
         },
         "th" : {
@@ -415352,7 +415352,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställer den här åtgärdens standardgenvägar, som följer senare utgåvors ändringar"
+            "value" : "Återställer den här åtgärdens standardgenvägar, som följer senare utgåvors ändringar."
           }
         },
         "th" : {
@@ -418777,7 +418777,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återgå till originalljudet?"
+            "value" : "Vill du återgå till originalljudet?"
           }
         },
         "th" : {
@@ -424699,7 +424699,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spara redigeringarna av ”%@”?"
+            "value" : "Vill du spara redigeringarna av ”%@”?"
           }
         },
         "th" : {
@@ -424979,7 +424979,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spara inspelningen?"
+            "value" : "Vill du spara inspelningen?"
           }
         },
         "th" : {
@@ -427034,7 +427034,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sparar dina vanliga textregler som är på; regler med reguljära uttryck utelämnas"
+            "value" : "Sparar dina vanliga textregler som är på; regler med reguljära uttryck utelämnas."
           }
         },
         "th" : {
@@ -428410,7 +428410,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Söker i biblioteket efter böcker med matchande filer, titlar eller författare"
+            "value" : "Söker i biblioteket efter böcker med matchande filer, titlar eller författare."
           }
         },
         "th" : {
@@ -431075,7 +431075,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Söker i hela biblioteket efter böcker som matchar de valda kriterierna"
+            "value" : "Söker i hela biblioteket efter böcker som matchar de valda kriterierna."
           }
         },
         "th" : {
@@ -446567,7 +446567,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Visar alternativen för att återställa biblioteksindexet"
+            "value" : "Visar alternativen för att återställa biblioteksindexet."
           }
         },
         "th" : {
@@ -449867,7 +449867,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hoppar över träffar bredvid bokstäver, siffror eller understreck"
+            "value" : "Hoppar över träffar bredvid bokstäver, siffror eller understreck."
           }
         },
         "th" : {
@@ -456704,7 +456704,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Uppläsningen pausad: rösten startade inte. Välj Spela upp för att försöka igen."
+            "value" : "Uppläsningen pausad: rösten startade inte. Tryck på Spela upp för att försöka igen."
           }
         },
         "th" : {
@@ -459014,7 +459014,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Starta ett nytt bibliotek?"
+            "value" : "Vill du starta ett nytt bibliotek?"
           }
         },
         "th" : {
@@ -463784,7 +463784,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stoppa och spara inspelningen?"
+            "value" : "Vill du stoppa och spara inspelningen?"
           }
         },
         "th" : {
@@ -465490,7 +465490,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slutar kontrollera; flödet och dess nedladdningar finns kvar"
+            "value" : "Slutar kontrollera; flödet och dess nedladdningar finns kvar."
           }
         },
         "th" : {
@@ -466038,7 +466038,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hindrar att uppspelningen återupptas när hörlurar kopplas från"
+            "value" : "Hindrar att uppspelningen återupptas när hörlurar kopplas från."
           }
         },
         "th" : {
@@ -467545,7 +467545,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slutar vänta på nedladdningen"
+            "value" : "Slutar vänta på nedladdningen."
           }
         },
         "th" : {
@@ -469662,7 +469662,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Prenumererar på den här podcasten och fyller i adressfältet"
+            "value" : "Prenumererar på den här podcasten och fyller i adressfältet."
           }
         },
         "th" : {
@@ -470353,7 +470353,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Byter till kontrollerna för att hoppa till en sida"
+            "value" : "Byter till kontrollerna för att hoppa till en sida."
           }
         },
         "th" : {
@@ -470490,7 +470490,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Byter till kontrollerna för att hoppa till en procentsats"
+            "value" : "Byter till kontrollerna för att hoppa till en procentsats."
           }
         },
         "th" : {
@@ -470627,7 +470627,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Byter till kontrollerna för att hoppa till en tidpunkt"
+            "value" : "Byter till kontrollerna för att hoppa till en tidpunkt."
           }
         },
         "th" : {
@@ -592054,7 +592054,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkribera den nu?"
+            "value" : "Vill du transkribera den nu?"
           }
         },
         "th" : {
@@ -592191,7 +592191,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkribera ljudboken?"
+            "value" : "Vill du transkribera ljudboken?"
           }
         },
         "th" : {
@@ -595497,7 +595497,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Försöker spara varje ändring som inte kunde sparas igen"
+            "value" : "Försöker spara varje ändring som inte kunde sparas igen."
           }
         },
         "th" : {
@@ -595771,7 +595771,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Försöker hämta boken igen"
+            "value" : "Försöker hämta boken igen."
           }
         },
         "th" : {
@@ -598797,7 +598797,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv en procentsats från 0 till 100, till exempel 47,5."
+            "value" : "Skriv en procentsats från 0 till 100, till exempel 47.5."
           }
         },
         "th" : {
@@ -598934,7 +598934,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv titeln eller utgivaren för en podcast och tryck sedan på Retur för att söka i Apples katalog"
+            "value" : "Skriv titeln eller utgivaren för en podcast och tryck sedan på Retur för att söka i Apples katalog."
           }
         },
         "th" : {
@@ -599071,7 +599071,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv en tid, till exempel 12:04,3, 1:02:03 eller 75,5."
+            "value" : "Skriv en tid, till exempel 12:04.3, 1:02:03 eller 75.5."
           }
         },
         "th" : {
@@ -599345,7 +599345,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv eller klistra in adressen till ett flöde eller en webbsida och tryck sedan på Retur"
+            "value" : "Skriv eller klistra in adressen till ett flöde eller en webbsida och tryck sedan på Retur."
           }
         },
         "th" : {
@@ -600852,7 +600852,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fullskrift"
+            "value" : "Helskrift"
           }
         },
         "th" : {
@@ -600989,7 +600989,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fullskrift (grad %@)"
+            "value" : "Helskrift (grad %@)"
           }
         },
         "th" : {
@@ -604538,7 +604538,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avsluta prenumerationen på %@?"
+            "value" : "Vill du avsluta prenumerationen på %@?"
           }
         },
         "th" : {
@@ -607439,7 +607439,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Använda det här biblioteket?"
+            "value" : "Vill du använda det här biblioteket?"
           }
         },
         "th" : {
@@ -614158,7 +614158,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vad som händer när en bok har spelats klart"
+            "value" : "Vad som händer när en bok har spelats klart."
           }
         },
         "th" : {
@@ -614295,7 +614295,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vad som händer när du håller ned Skift och hoppar bakåt"
+            "value" : "Vad som händer när du håller ned Skift och hoppar bakåt."
           }
         },
         "th" : {
@@ -614432,7 +614432,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vad som händer när du håller ned Skift och hoppar framåt"
+            "value" : "Vad som händer när du håller ned Skift och hoppar framåt."
           }
         },
         "th" : {
@@ -614569,7 +614569,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vad som händer när du hoppar bakåt"
+            "value" : "Vad som händer när du hoppar bakåt."
           }
         },
         "th" : {
@@ -614706,7 +614706,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vad som händer när du hoppar framåt"
+            "value" : "Vad som händer när du hoppar framåt."
           }
         },
         "th" : {
@@ -614843,7 +614843,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vad som ska göras med originalfilen efter import av en bok"
+            "value" : "Vad som ska göras med originalfilen efter import av en bok."
           }
         },
         "th" : {
@@ -615845,13 +615845,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minut eller mindre återstår hämtas nästa artikel om den inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minut eller mindre återstår hämtas nästa artikel om den inte finns på den här Mac-datorn än."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minuter eller mindre återstår hämtas nästa artikel om den inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minuter eller mindre återstår hämtas nästa artikel om den inte finns på den här Mac-datorn än."
                 }
               }
             }
@@ -616312,13 +616312,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minut eller mindre återstår hämtas nästa bok om den inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minut eller mindre återstår hämtas nästa bok om den inte finns på den här Mac-datorn än."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minuter eller mindre återstår hämtas nästa bok om den inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minuter eller mindre återstår hämtas nästa bok om den inte finns på den här Mac-datorn än."
                 }
               }
             }
@@ -616779,13 +616779,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minut eller mindre återstår hämtas nästa avsnitt om det inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minut eller mindre återstår hämtas nästa avsnitt om det inte finns på den här Mac-datorn än."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minuter eller mindre återstår hämtas nästa avsnitt om det inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minuter eller mindre återstår hämtas nästa avsnitt om det inte finns på den här Mac-datorn än."
                 }
               }
             }
@@ -617246,13 +617246,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minut eller mindre återstår hämtas nästa objekt om det inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minut eller mindre återstår hämtas nästa objekt om det inte finns på den här Mac-datorn än."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "När %lld minuter eller mindre återstår hämtas nästa objekt om det inte finns på den här Mac-datorn än"
+                  "value" : "När %lld minuter eller mindre återstår hämtas nästa objekt om det inte finns på den här Mac-datorn än."
                 }
               }
             }
@@ -618959,7 +618959,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När det är markerat följer det här flödet inställningen i Inställningar, %@; avmarkera det för att ge flödet en egen"
+            "value" : "När det är markerat följer det här flödet inställningen i Inställningar, %@; avmarkera det för att ge flödet en egen."
           }
         },
         "th" : {
@@ -619096,7 +619096,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När det är aktiverat börjar uppspelningen automatiskt efter ett hopp till en rubrik, ett bokmärke eller ett sökresultat"
+            "value" : "När det är aktiverat börjar uppspelningen automatiskt efter ett hopp till en rubrik, ett bokmärke eller ett sökresultat."
           }
         },
         "th" : {
@@ -619370,7 +619370,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När det är aktiverat, använd \\b i mönstret för ordgränser"
+            "value" : "När det är aktiverat, använd \\b i mönstret för ordgränser."
           }
         },
         "th" : {
@@ -619781,7 +619781,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När det är av förblir arket öppet och visar återstående tid och en återställningsknapp"
+            "value" : "När det är av förblir arket öppet och visar återstående tid och en återställningsknapp."
           }
         },
         "th" : {
@@ -620329,7 +620329,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När uppspelningen återupptas, spola tillbaka till början av den här enheten"
+            "value" : "När uppspelningen återupptas, spola tillbaka till början av den här enheten."
           }
         },
         "th" : {
