@@ -1215,8 +1215,8 @@
      "key": "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
      "english": "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
      "before": "此 Kindle 图书受版权保护，TextMouth 无法读取受版权保护的图书。",
-     "after": "此 Kindle 图书受拷贝保护，TextMouth 无法读取受拷贝保护的图书。",
-     "why": "meaning: 受版权保护 means under copyright, as nearly every book is; this is copy protection (DRM), as the Audible message says"
+     "after": "此 Kindle 图书受复制保护，TextMouth 无法读取受复制保护的图书。",
+     "why": "meaning: 受版权保护 means under copyright, as nearly every book is; this is copy protection (DRM), as the Audible message says; then 受复制保护, as part 2's review settled for the other copy-protection message (拷贝 is the Copy command)"
     },
     {
      "key": "This book has no pages.",
