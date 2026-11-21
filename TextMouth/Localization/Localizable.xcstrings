@@ -192776,6 +192776,12 @@
             "value" : "%@을(를) 삭제합니다. 영구적으로 삭제되며 복구할 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwa %@: jest to usuwane na stałe i nie można tego odzyskać."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192869,6 +192875,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@을(를) 삭제합니다. TextMouth 보관함 폴더에 그대로 남습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwa %@: zostaje to w folderze biblioteki TextMouth."
           }
         },
         "pt-BR" : {
@@ -192966,6 +192978,12 @@
             "value" : "%@을(를) 삭제합니다. 영구적으로 삭제되며 복구할 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwa %@: są usuwane na stałe i nie można ich odzyskać."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193061,6 +193079,12 @@
             "value" : "%@을(를) 삭제합니다. 휴지통으로 이동하며, 휴지통을 비우기 전에는 복구할 수 있습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwa %@: trafiają do kosza, skąd można je odzyskać, dopóki kosz nie zostanie opróżniony."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -193154,6 +193178,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@을(를) 삭제합니다. TextMouth 보관함 폴더에 그대로 남습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Usuwa %@: zostają w folderze biblioteki TextMouth."
           }
         },
         "pt-BR" : {
@@ -193972,6 +194002,12 @@
             "value" : "포함된 항목: %@. TextMouth는 이를 가져오지 않습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zawiera %@, czego TextMouth nie importuje."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194362,6 +194398,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "파일이 하나도 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie zawiera żadnych plików."
           }
         },
         "pt-BR" : {
@@ -195065,6 +195107,12 @@
             "value" : "웹 오디오용 스트리밍 재생 목록입니다. TextMouth는 이를 가져오지 않습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "To playlista strumieniowa dla dźwięku z internetu, której TextMouth nie importuje."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195362,6 +195410,12 @@
             "value" : "TextMouth가 읽을 수 있는 시작 위치가 있는 오디오 트랙이 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie zawiera żadnej ścieżki audio z początkiem, który TextMouth potrafi odczytać."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195455,6 +195509,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "웹 주소만 나열되어 있으며, TextMouth는 이 Mac에 있는 파일만 가져옵니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zawiera tylko adresy internetowe, a TextMouth importuje tylko pliki na tym komputerze Mac."
           }
         },
         "pt-BR" : {
@@ -195651,6 +195711,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "손상되었거나 다른 종류의 파일일 수 있습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Plik może być uszkodzony lub innego rodzaju."
           }
         },
         "pt-BR" : {
@@ -195936,6 +196002,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 가져올 수 있는, 자체 폴더 안의 오디오 파일이 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie wskazuje żadnego pliku audio w swoim folderze, który TextMouth może zaimportować."
           }
         },
         "pt-BR" : {
@@ -196285,6 +196357,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "항목 %1$lld개를 건너뛰었습니다: %2$@."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pominięto %lld pozycje: %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pominięto %lld pozycji: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pominięto %lld pozycję: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pominięto %lld pozycji: %@."
                 }
               }
             }
@@ -196653,6 +196755,12 @@
             "value" : "항목"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pozycje"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -196905,6 +197013,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "항목(%1$lld개 나열, 전체 %2$@)"
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld z %@ na liście)"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld z %@ na liście)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld z %@ na liście)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld z %@ na liście)"
                 }
               }
             }
@@ -197245,6 +197383,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld)"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Pozycje (%lld)"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -197418,6 +197586,12 @@
             "value" : "%@은(는) 다시 다운로드할 때를 위해 유지됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachowane do ponownego pobrania: %@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197511,6 +197685,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@은(는) 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachowane: %@."
           }
         },
         "pt-BR" : {
@@ -197608,6 +197788,12 @@
             "value" : "%@은(는) 다시 다운로드할 때를 위해 유지됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachowane do ponownego pobrania: %@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197701,6 +197887,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@은(는) 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachowane: %@."
           }
         },
         "pt-BR" : {
@@ -198810,6 +199002,12 @@
             "value" : "다른 항목이 없으면 폴더 “%@”도 함께 삭제됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jego folder „%@” też zostanie usunięty, jeśli nie ma w nim niczego innego."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198903,6 +199101,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "폴더 “%@”은(는) 비어 있지만 삭제할 수 없었습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jego folder „%@” jest pusty, ale nie udało się go usunąć."
           }
         },
         "pt-BR" : {
@@ -199000,6 +199204,12 @@
             "value" : "폴더 “%@”도 삭제되었습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jego folder „%@” też został usunięty."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199093,6 +199303,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다른 항목이 있어 폴더 “%@”은(는) 그대로 남습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jego folder „%@” zostaje, bo są w nim inne rzeczy."
           }
         },
         "pt-BR" : {
@@ -200269,6 +200485,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "트랙이 지정된 오디오의 끝을 넘어서므로 다른 오디오 사본용으로 만들어진 것입니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jego ścieżki wykraczają poza koniec wskazanego dźwięku, więc powstał dla innej kopii tego dźwięku."
           }
         },
         "pt-BR" : {
@@ -201990,6 +202212,12 @@
             "value" : "둘 다 유지"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachowaj oba"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202471,6 +202699,12 @@
             "value" : "변환된 오디오의 원본 유지"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachowaj oryginały przekonwertowanego dźwięku"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202754,6 +202988,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "가져올 때 변환하는 각 오디오 파일(Ogg 또는 AC-3 등)을 책 패키지 안에 보관합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachowuje każdy plik audio konwertowany przy imporcie, na przykład Ogg lub AC-3, w pakiecie książki."
           }
         },
         "pt-BR" : {
@@ -204388,6 +204628,12 @@
             "value" : "레이블 %@"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Etykieta %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205077,6 +205323,12 @@
             "value" : "마지막 확인"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ostatnie sprawdzenie"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205170,6 +205422,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "마지막 확인 실패: %@"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ostatnie sprawdzenie nie powiodło się: %@"
           }
         },
         "pt-BR" : {
@@ -205360,6 +205618,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "마지막으로 연 시간"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ostatnio otwarta"
           }
         },
         "pt-BR" : {
@@ -205944,6 +206208,12 @@
             "value" : "가져온 책을 그대로 둡니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zostawia zaimportowane książki tam, gdzie są."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206037,6 +206307,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "원본 파일을 그대로 둡니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zostawia oryginalny plik tam, gdzie jest."
           }
         },
         "pt-BR" : {
@@ -207041,6 +207317,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "1분 미만 남음"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pozostało mniej niż minuta"
           }
         },
         "pt-BR" : {
@@ -209090,6 +209372,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "목록 및 다운로드"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Lista i pobieranie"
           }
         },
         "pt-BR" : {
@@ -211489,6 +211777,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -211660,6 +211978,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "모든 기사를 나열합니다. 자동으로 다운로드되는 항목은 없으며, 직접 삭제하거나 재생 후 일수가 지날 때까지 다운로드는 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wyświetla każdy artykuł; nic nie pobiera się samo, a pobrany plik zostaje, dopóki go nie usuniesz lub nie upłynie liczba dni po odtworzeniu."
           }
         },
         "pt-BR" : {
@@ -211919,6 +212243,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek i artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek i artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek i artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek i artykuł, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -212090,6 +212444,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "모든 에피소드와 기사를 나열합니다. 자동으로 다운로드되는 항목은 없으며, 직접 삭제하거나 재생 후 일수가 지날 때까지 다운로드는 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wyświetla każdy odcinek i artykuł; nic nie pobiera się samo, a pobrany plik zostaje, dopóki go nie usuniesz lub nie upłynie liczba dni po odtworzeniu."
           }
         },
         "pt-BR" : {
@@ -212349,6 +212709,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla każdy odcinek, zachowuje pobrane najnowsze (%lld) i usuwa starsze pobrane przez siebie pliki, zachowując ich miejsce, zakładki i ustawienia."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -212520,6 +212910,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "모든 에피소드를 나열합니다. 자동으로 다운로드되는 항목은 없으며, 직접 삭제하거나 재생 후 일수가 지날 때까지 다운로드는 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wyświetla każdy odcinek; nic nie pobiera się samo, a pobrany plik zostaje, dopóki go nie usuniesz lub nie upłynie liczba dni po odtworzeniu."
           }
         },
         "pt-BR" : {
@@ -212975,6 +213371,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieodtworzone (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieodtworzone (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieodtworzone (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieodtworzone (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -213305,6 +213731,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "읽지 않은 최신 %lld개와 모든 다운로드를 나열합니다. 요청한 항목만 다운로드하며, 나머지는 기록을 유지하고 더 많이 나열하면 다시 나타납니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieprzeczytane (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieprzeczytane (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieprzeczytane (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyświetla najnowsze nieprzeczytane (%lld) i każdy pobrany plik. Pobiera tylko to, o co poprosisz; pozostałe zachowują swoje zapisy i wracają, gdy wyświetlisz więcej."
                 }
               }
             }
@@ -215740,6 +216196,12 @@
             "value" : "붙여넣거나 입력한 텍스트로 책을 만듭니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tworzy książkę z tekstu, który wkleisz lub wpiszesz."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216542,6 +217004,12 @@
             "value" : "모두 재생됨으로 표시"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznacz wszystkie jako odtworzone"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -216635,6 +217103,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "모두 읽음으로 표시"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznacz wszystkie jako przeczytane"
           }
         },
         "pt-BR" : {
@@ -216934,6 +217408,12 @@
             "value" : "재생됨으로 표시"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznacz jako odtworzone"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217027,6 +217507,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "읽음으로 표시"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznacz jako przeczytane"
           }
         },
         "pt-BR" : {
@@ -217124,6 +217610,12 @@
             "value" : "재생하지 않음으로 표시"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznacz jako nieodtworzone"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -217217,6 +217709,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "읽지 않음으로 표시"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznacz jako nieprzeczytane"
           }
         },
         "pt-BR" : {
@@ -217571,6 +218069,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld artykuły z %@ jako przeczytane."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld artykułów z %@ jako przeczytane."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld artykuł z %@ jako przeczytany."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld artykułu z %@ jako przeczytane."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -217901,6 +218429,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "%2$@의 에피소드 %1$lld개를 재생됨으로 표시했습니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld odcinki z %@ jako odtworzone."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld odcinków z %@ jako odtworzone."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld odcinek z %@ jako odtworzony."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld odcinka z %@ jako odtworzone."
                 }
               }
             }
@@ -218241,6 +218799,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld pozycje z %@ jako odtworzone."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld pozycji z %@ jako odtworzone."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld pozycję z %@ jako odtworzoną."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Oznaczono %lld pozycji z %@ jako odtworzone."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -218414,6 +219002,12 @@
             "value" : "“%@”을(를) 재생됨으로 표시했습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznaczono odcinek „%@” jako odtworzony."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218507,6 +219101,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@”을(를) 읽음으로 표시했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznaczono artykuł „%@” jako przeczytany."
           }
         },
         "pt-BR" : {
@@ -218604,6 +219204,12 @@
             "value" : "“%@”을(를) 재생하지 않음으로 표시했습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznaczono odcinek „%@” jako nieodtworzony."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -218697,6 +219303,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@”을(를) 읽지 않음으로 표시했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Oznaczono artykuł „%@” jako nieprzeczytany."
           }
         },
         "pt-BR" : {
@@ -220452,6 +221064,12 @@
           }
         },
         "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Matroska"
+          }
+        },
+        "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Matroska"
@@ -224354,6 +224972,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld artykuły do biblioteki"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld artykułów do biblioteki"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld artykuł do biblioteki"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld artykułu do biblioteki"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -225395,6 +226043,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld odcinki do biblioteki"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld odcinków do biblioteki"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld odcinek do biblioteki"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld odcinka do biblioteki"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -225725,6 +226403,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "항목 %lld개를 보관함으로 이동"
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld pozycje do biblioteki"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld pozycji do biblioteki"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld pozycję do biblioteki"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenieś %lld pozycji do biblioteki"
                 }
               }
             }
@@ -227355,6 +228063,12 @@
             "value" : "원본 파일을 휴지통으로 이동하시겠습니까?"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenieść oryginalny plik do kosza?"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227747,6 +228461,12 @@
             "value" : "원본 파일을 휴지통으로 이동하시겠습니까?"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenieść oryginalny plik do kosza?"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227840,6 +228560,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "원본 파일 “%@”을(를) 휴지통으로 이동하시겠습니까?"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenieść oryginalny plik „%@” do kosza?"
           }
         },
         "pt-BR" : {
@@ -228434,6 +229160,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@”을(를) 보관함으로 이동"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenieś „%@” do biblioteki"
           }
         },
         "pt-BR" : {
@@ -229109,6 +229841,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld artykuły do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld artykułów do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld artykuł do: %@. Jest teraz książką w bibliotece, a jego kanał pokazuje go jako: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld artykułu do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -229444,6 +230206,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld odcinki do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld odcinków do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld odcinek do: %@. Jest teraz książką w bibliotece, a jego kanał pokazuje go jako: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld odcinka do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -229774,6 +230566,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "항목 %1$lld개를 %2$@(으)로 이동했습니다. 이제 보관함의 책이며, 피드에는 “%3$@” 메모가 표시됩니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld pozycje do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld pozycji do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld pozycję do: %@. Jest teraz książką w bibliotece, a jej kanał pokazuje ją jako: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przeniesiono %lld pozycji do: %@. To teraz książki w bibliotece, a ich kanały pokazują je jako: %@."
                 }
               }
             }
@@ -230366,6 +231188,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%1$@”을(를) %2$@(으)로 이동했습니다. 이제 보관함의 책이며, 피드에는 “%3$@” 메모가 표시됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przeniesiono „%1$@” do: %2$@. To teraz książka w bibliotece, a kanał pokazuje ją jako: %3$@."
           }
         },
         "pt-BR" : {
@@ -232900,6 +233728,12 @@
             "value" : "가져온 책을 이 이름의 새 폴더로 이동합니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenosi zaimportowane książki do nowego folderu o tej nazwie."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -233152,6 +233986,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "이 기사 %lld개를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld artykuły do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld artykułów do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi ten %lld artykuł do folderu biblioteki jako książkę, którą można edytować; opuszcza kanał"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld artykułu do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
                 }
               }
             }
@@ -233492,6 +234356,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld odcinki do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld odcinków do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi ten %lld odcinek do folderu biblioteki jako książkę, którą można edytować; opuszcza kanał"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld odcinka do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -233827,6 +234721,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld pozycje do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld pozycji do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi tę %lld pozycję do folderu biblioteki jako książkę, którą można edytować; opuszcza kanał"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Przenosi te %lld pozycji do folderu biblioteki jako książki, które można edytować; opuszczają swoje kanały"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -234000,6 +234924,12 @@
             "value" : "이 기사를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenosi ten artykuł do folderu biblioteki jako książkę, którą można edytować; opuszcza kanał"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -234095,6 +235025,12 @@
             "value" : "이 에피소드를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenosi ten odcinek do folderu biblioteki jako książkę, którą można edytować; opuszcza kanał"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -234188,6 +235124,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이 항목을 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przenosi tę pozycję do folderu biblioteki jako książkę, którą można edytować; opuszcza kanał"
           }
         },
         "pt-BR" : {
@@ -235785,6 +236727,12 @@
           }
         },
         "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Musepack"
+          }
+        },
+        "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Musepack"
@@ -237548,6 +238496,12 @@
             "value" : "재생한 다운로드를 삭제하지 않음"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nigdy nie usuwaj odtworzonych pobranych plików"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237643,6 +238597,12 @@
             "value" : "신규"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nowe"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237736,6 +238696,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "새 기사"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nowe artykuły"
           }
         },
         "pt-BR" : {
@@ -237932,6 +238898,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "새 에피소드"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nowe odcinki"
           }
         },
         "pt-BR" : {
@@ -238534,6 +239506,12 @@
             "value" : "새 항목"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nowe pozycje"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239122,6 +240100,12 @@
             "value" : "새 기사: “%@”"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nowy artykuł: „%@”"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239215,6 +240199,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "새 에피소드: “%@”"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nowy odcinek: „%@”"
           }
         },
         "pt-BR" : {
@@ -239514,6 +240504,12 @@
             "value" : "새 항목: “%@”"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nowa pozycja: „%@”"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239710,6 +240706,12 @@
             "value" : "다운로드 상태로 유지하거나 나열하는 최신 기사 수(1~2,000)."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Liczba najnowszych artykułów, które zostają pobrane lub wyświetlone, od 1 do 2000"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239803,6 +240805,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다운로드 상태로 유지하거나 나열하는 최신 에피소드와 기사 수(1~2,000)."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Liczba najnowszych odcinków i artykułów, które zostają pobrane lub wyświetlone, od 1 do 2000"
           }
         },
         "pt-BR" : {
@@ -239900,6 +240908,12 @@
             "value" : "다운로드 상태로 유지하거나 나열하는 최신 에피소드 수(1~2,000)."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Liczba najnowszych odcinków, które zostają pobrane lub wyświetlone, od 1 do 2000"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -239993,6 +241007,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다운로드 상태로 유지하거나 나열하는 최신 항목 수(1~2,000)."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Liczba najnowszych pozycji, które zostają pobrane lub wyświetlone, od 1 do 2000"
           }
         },
         "pt-BR" : {
@@ -241581,6 +242601,12 @@
             "value" : "괜찮습니다"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie, dziękuję"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -242357,6 +243383,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@”에서 책을 찾을 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie znaleziono żadnych książek w „%@”."
           }
         },
         "pt-BR" : {
@@ -243517,6 +244549,12 @@
             "value" : "진행 중인 피드 다운로드가 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Żadne pobieranie z kanałów nie trwa."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243610,6 +244648,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "구독한 피드가 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie zasubskrybowano żadnego kanału."
           }
         },
         "pt-BR" : {
@@ -243996,6 +245040,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "진행 중인 가져오기가 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Żaden import nie trwa."
           }
         },
         "pt-BR" : {
@@ -244932,6 +245982,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Brak nowych książek w „%1$@”: wszystkie %2$lld książek były już w Twojej bibliotece."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Brak nowych książek w „%1$@”: %2$lld książka była już w Twojej bibliotece."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Brak nowych książek w „%1$@”: wszystkie %2$lld książki były już w Twojej bibliotece."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -245105,6 +246185,12 @@
             "value" : "“%@”에 새 책이 없습니다. 두 권 모두 이미 보관함에 있습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Brak nowych książek w „%@”: obie były już w Twojej bibliotece."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245198,6 +246284,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@”에 새 책이 없습니다. 하나뿐인 책이 이미 보관함에 있습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Brak nowych książek w „%@”: jedyna książka była już w Twojej bibliotece."
           }
         },
         "pt-BR" : {
@@ -246623,6 +247715,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@”에 대한 팟캐스트를 찾을 수 없습니다. 다른 단어로 검색하거나 피드 주소를 입력하십시오."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie znaleziono podcastów dla „%@”. Spróbuj użyć innych słów lub wpisz adres kanału."
           }
         },
         "pt-BR" : {
@@ -248745,6 +249843,12 @@
             "value" : "이 만화책 압축 파일에서 텍스트를 읽을 수 없습니다. OCR을 실행할 수 없습니다(%@)."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie udało się odczytać tekstu z tego archiwum komiksu: nie można było uruchomić OCR (%@)."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248838,6 +249942,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이 이미지에서 텍스트를 읽을 수 없습니다. OCR을 실행할 수 없습니다(%@)."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie udało się odczytać tekstu z tego obrazu: nie można było uruchomić OCR (%@)."
           }
         },
         "pt-BR" : {
@@ -248935,6 +250045,12 @@
             "value" : "이 만화책 압축 파일의 이미지 하나에서 텍스트를 찾지 못했습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie znaleziono tekstu na jedynym obrazie tego archiwum komiksu."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249028,6 +250144,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이 이미지에서 텍스트를 찾지 못했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie znaleziono tekstu na tym obrazie."
           }
         },
         "pt-BR" : {
@@ -249282,6 +250404,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "이 만화책 압축 파일의 %lld페이지 어디에서도 텍스트를 찾지 못했습니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego archiwum komiksu."
                 }
               }
             }
@@ -249617,6 +250769,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "이 이미지의 %lld페이지 어디에서도 텍스트를 찾지 못했습니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie znaleziono tekstu na żadnej z %lld stron tego obrazu."
                 }
               }
             }
@@ -251483,6 +252665,12 @@
             "value" : "다운로드되지 않음"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niepobrane"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251576,6 +252764,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오를 변환할 공간이 부족함"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Za mało miejsca na konwersję dźwięku"
           }
         },
         "pt-BR" : {
@@ -251970,6 +253164,12 @@
             "value" : "이 윈도우에서는 사용할 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niedostępne w tym oknie."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252063,6 +253263,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "확인한 적 없음"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie sprawdzono"
           }
         },
         "pt-BR" : {
@@ -252160,6 +253366,12 @@
             "value" : "%@ 이후 확인하지 않음"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie sprawdzono od %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -252253,6 +253465,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "아직 확인하지 않음"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jeszcze nie sprawdzono"
           }
         },
         "pt-BR" : {
@@ -252507,6 +253725,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "추출되지 않음: TextMouth는 압축 파일 안의 압축 파일을 %lld단계까지만 추출합니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie rozpakowano: TextMouth rozpakowuje archiwa w archiwum tylko do %lld poziomów."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie rozpakowano: TextMouth rozpakowuje archiwa w archiwum tylko do %lld poziomów."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie rozpakowano: TextMouth rozpakowuje archiwa w archiwum tylko do %lld poziomu."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Nie rozpakowano: TextMouth rozpakowuje archiwa w archiwum tylko do %lld poziomu."
                 }
               }
             }
@@ -253752,6 +255000,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "가져온 항목 없음"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nic nie zaimportowano"
           }
         },
         "pt-BR" : {
@@ -256889,6 +258143,12 @@
             "value" : "Ogg"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ogg"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257077,6 +258337,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "한 사본은 녹음에서 재생되고 다른 사본은 텍스트에서 소리 내어 읽으므로, 대체하면 기존 사본의 폴더와 읽기 목록 위치만 유지되고 읽기 위치, 북마크와 메모, 설정은 유지되지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Jedna kopia jest odtwarzana z nagrania, a druga czytana na głos z tekstu, więc zastąpienie zachowuje tylko folder istniejącej kopii i jej miejsce na liście czytelniczej, a nie jej pozycję czytania, zakładki z notatkami ani ustawienia."
           }
         },
         "pt-BR" : {
@@ -257566,6 +258832,12 @@
             "value" : "피드에서 다운로드한 에피소드나 기사만 보관함으로 이동할 수 있습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Do biblioteki można przenieść tylko odcinek lub artykuł pobrany z kanału."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257659,6 +258931,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "실행할 때와 요청할 때만"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Tylko przy uruchomieniu i na życzenie"
           }
         },
         "pt-BR" : {
@@ -258310,6 +259588,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Tylko najnowsze (%lld) na liście"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Tylko najnowsze (%lld) na liście"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Tylko najnowsze (%lld) na liście"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Tylko najnowsze (%lld) na liście"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -258481,6 +259789,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "열기"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otwórz"
           }
         },
         "pt-BR" : {
@@ -261500,6 +262814,12 @@
             "value" : "책 열기, 폴더 가져오기, 텍스트로 책 만들기, 오디오 녹음, 피드 추가를 위한 시트를 엽니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otwiera arkusz, w którym można otworzyć książkę, zaimportować folder, utworzyć książkę z tekstu, nagrać dźwięk lub dodać kanał"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261593,6 +262913,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "피드 주소를 입력하고 폴더를 선택하는 시트를 엽니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otwiera arkusz do wpisania adresu kanału i wyboru jego folderu"
           }
         },
         "pt-BR" : {
@@ -261690,6 +263016,12 @@
             "value" : "엽니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otwiera go"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261783,6 +263115,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "보관함에서 해당 책을 엽니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otwiera jego książkę w Twojej bibliotece"
           }
         },
         "pt-BR" : {
@@ -262668,6 +264006,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "피드의 폴더를 엽니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Otwiera folder kanału"
           }
         },
         "pt-BR" : {
@@ -265529,6 +266873,12 @@
             "value" : "페이지 %@"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Strona %@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266426,6 +267776,12 @@
             "value" : "%@의 일부를 디코딩할 수 없어 무음으로 유지됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Część pliku %@ nie mogła zostać zdekodowana i jest zachowana jako cisza."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266773,6 +268129,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "파일 %1$lld개(%2$@)의 일부를 디코딩할 수 없어 무음으로 유지됩니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Część %lld plików, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Część %lld pliku, %@, nie mogła zostać zdekodowana i jest zachowana jako cisza."
                 }
               }
             }
@@ -270600,6 +271986,12 @@
             "value" : "암호화되지 않은 http: 다른 사람이 이 피드가 보내는 내용을 읽거나 바꿀 수 있습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zwykły http: inni mogą odczytać lub zmienić to, co wysyła ten kanał."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272643,6 +274035,12 @@
             "value" : "재생됨"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odtworzone"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272736,6 +274134,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "재생한 다운로드는 직접 삭제할 때까지 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odtworzone pobrane pliki są zachowywane, dopóki ich nie usuniesz"
           }
         },
         "pt-BR" : {
@@ -275571,6 +276975,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "새 에피소드가 있는 각 피드에 대해 알림 보내기"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wyświetlaj powiadomienie dla każdego kanału z nowymi odcinkami"
           }
         },
         "pt-BR" : {
@@ -278745,6 +280155,12 @@
             "value" : "게시자"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wydawca"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279327,6 +280743,12 @@
             "value" : "피드 폴더를 넣을 위치"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Umieść folder kanału w"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279420,6 +280842,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "피드 폴더를 넣을 위치"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Umieść foldery kanałów w"
           }
         },
         "pt-BR" : {
@@ -279707,6 +281135,12 @@
             "value" : "새 사본을 보관함의 기존 사본 대신 넣고, 기존 사본의 폴더와 읽기 목록 위치만 유지합니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wstawia nową kopię w miejsce tej, która jest już w bibliotece, zachowując tylko folder istniejącej kopii i jej miejsce na liście czytelniczej."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279800,6 +281234,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "새 사본을 보관함의 기존 사본 대신 넣고, 기존 사본의 읽기 위치, 북마크, 설정을 유지합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wstawia nową kopię w miejsce tej, która jest już w bibliotece, zachowując pozycję czytania, zakładki i ustawienia istniejącej kopii."
           }
         },
         "pt-BR" : {
@@ -281649,6 +283089,12 @@
             "value" : "읽음"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przeczytane"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281944,6 +283390,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "웹에서 읽기:"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Czytaj w internecie:"
           }
         },
         "pt-BR" : {
@@ -284784,6 +286236,12 @@
             "value" : "RealMedia"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RealMedia"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287011,6 +288469,12 @@
             "value" : "마이크로 새 오디오북에 녹음합니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nagrywa z mikrofonu do nowego audiobooka."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288252,6 +289716,12 @@
             "value" : "모든 피드 새로 고침"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odśwież wszystkie kanały"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288345,6 +289815,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "지금 모든 피드 새로 고침"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odśwież teraz wszystkie kanały"
           }
         },
         "pt-BR" : {
@@ -288442,6 +289918,12 @@
             "value" : "TextMouth를 열 때 모든 피드 새로 고침"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odświeżaj wszystkie kanały po otwarciu TextMouth"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288535,6 +290017,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "피드 새로 고침 간격"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odświeżaj kanały co"
           }
         },
         "pt-BR" : {
@@ -288638,6 +290126,12 @@
             "value" : "%1$@ 새로 고침 완료: %2$@"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odświeżono %1$@: %2$@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288733,6 +290227,12 @@
             "value" : "새로 고침"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odświeżanie"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288826,6 +290326,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "모든 피드를 새로 고치는 중…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Odświeżanie wszystkich kanałów…"
           }
         },
         "pt-BR" : {
@@ -294527,6 +296033,12 @@
             "value" : "RAR 만화의 페이지를 CBZ 만화로 다시 묶은 다음 가져오십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przepakuj strony komiksów RAR jako komiksy CBZ, a potem zaimportuj je."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295000,6 +296512,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "기존 항목 대체"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zastąp istniejącą"
           }
         },
         "pt-BR" : {
@@ -295875,6 +297393,12 @@
             "value" : "대체하면 기존 사본의 읽기 위치와 북마크(새 텍스트에서 해당 단어를 찾으면 그 위치로 옮김), 설정, 폴더, 읽기 목록 위치가 유지됩니다. 텍스트 편집 내용은 적용되지 않고 새 텍스트 옆에 사본으로 보관됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zastąpienie zachowuje pozycję czytania i zakładki istniejącej kopii, przeniesione do ich słów w nowym tekście, jeśli je znaleziono, a także jej ustawienia, folder i miejsce na liście czytelniczej. Edycja jej tekstu jest zachowana jako kopia obok nowego tekstu i nie jest stosowana."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295968,6 +297492,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "대체하면 기존 사본의 읽기 위치, 북마크, 설정, 폴더, 읽기 목록 위치가 유지되며, 오디오가 같으면 새 사본의 오디오 옆에 있는 대본 파일 대신 기존 사본의 대본이 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zastąpienie zachowuje pozycję czytania, zakładki, ustawienia, folder i miejsce na liście czytelniczej istniejącej kopii oraz jej transkrypcję, gdy dźwięk jest taki sam, a nie plik transkrypcji znaleziony obok dźwięku nowej kopii."
           }
         },
         "pt-BR" : {
@@ -296065,6 +297595,12 @@
             "value" : "대체하면 기존 사본의 읽기 위치, 북마크, 설정, 폴더, 읽기 목록 위치가 유지되며, 오디오가 같으면 대본도 유지됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zastąpienie zachowuje pozycję czytania, zakładki, ustawienia, folder i miejsce na liście czytelniczej istniejącej kopii oraz jej transkrypcję, gdy dźwięk jest taki sam."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296158,6 +297694,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "대체하면 기존 사본의 읽기 위치, 북마크, 설정, 폴더, 읽기 목록 위치가 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zastąpienie zachowuje pozycję czytania, zakładki, ustawienia, folder i miejsce na liście czytelniczej istniejącej kopii."
           }
         },
         "pt-BR" : {
@@ -296348,6 +297890,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@” 대체 중입니다. 잠시 걸릴 수 있습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zastępowanie „%@”. To może chwilę potrwać."
           }
         },
         "pt-BR" : {
@@ -299872,6 +301420,12 @@
             "value" : "다시 구독"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Subskrybuj ponownie"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299965,6 +301519,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 구독을 다시 시작했습니다. 지금 확인하는 중…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ponownie zasubskrybowano %@. Sprawdzanie teraz…"
           }
         },
         "pt-BR" : {
@@ -305325,6 +306885,12 @@
             "value" : "WordPerfect 문서를 LibreOffice 같은 해당 파일을 읽는 프로그램에서 Word 또는 HTML 파일로 저장한 다음 가져오십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zapisz dokumenty WordPerfect jako pliki Word lub HTML w programie, który je odczytuje, takim jak LibreOffice, a potem zaimportuj je."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306998,6 +308564,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다른 피드 리더가 가져올 수 있는 OPML 파일로 구독 목록을 저장합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zapisz subskrypcje jako plik OPML, który importują inne czytniki kanałów."
           }
         },
         "pt-BR" : {
@@ -309209,6 +310781,12 @@
             "value" : "검색"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Szukaj"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309706,6 +311284,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "팟캐스트 검색"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Szukaj podcastu"
           }
         },
         "pt-BR" : {
@@ -310459,6 +312043,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "검색 결과, 팟캐스트 %lld개"
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyniki wyszukiwania, %lld podcasty"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyniki wyszukiwania, %lld podcastów"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyniki wyszukiwania, %lld podcast"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Wyniki wyszukiwania, %lld podcastu"
                 }
               }
             }
@@ -311394,6 +313008,12 @@
             "value" : "팟캐스트 검색 중…"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wyszukiwanie podcastów…"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311968,6 +313588,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "보안"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bezpieczeństwo"
           }
         },
         "pt-BR" : {
@@ -318326,6 +319952,12 @@
             "value" : "설명 보기…"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pokaż opis…"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319362,6 +320994,12 @@
             "value" : "새로 고침으로 새 에피소드가 생기면 경고 표시"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pokaż alert, gdy odświeżenie przyniesie nowe odcinki"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319556,6 +321194,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책 정보 보기"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pokaż informacje o książce"
           }
         },
         "pt-BR" : {
@@ -326235,6 +327879,12 @@
             "value" : "일부 파일을 가져오지 못함"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niektóre pliki nie zostały zaimportowane"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330490,6 +332140,12 @@
           }
         },
         "ko" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speex"
+          }
+        },
+        "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Speex"
@@ -334783,6 +336439,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zatrzymano %lld pobrania z kanałów."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zatrzymano %lld pobrań z kanałów."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zatrzymano %lld pobranie z kanału."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zatrzymano %lld pobrania z kanałów."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -335061,6 +336747,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@” 다운로드를 중지했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zatrzymano pobieranie „%@”."
           }
         },
         "pt-BR" : {
@@ -335443,6 +337135,12 @@
             "value" : "확인을 중단합니다. 피드와 다운로드는 그대로 유지됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Przestaje sprawdzać; kanał i jego pobrane pliki zostają"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335637,6 +337335,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "대기 중인 다운로드를 포함해 모든 피드 다운로드를 중지하고, 다운로드된 내용을 삭제합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zatrzymuje wszystkie pobrania z kanałów, także oczekujące, i usuwa to, co pobrały."
           }
         },
         "pt-BR" : {
@@ -336498,6 +338202,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "진행 중인 가져오기와 대기 중인 가져오기를 중지합니다. 이미 가져온 책은 그대로 유지됩니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zatrzymuje trwający import i oczekujące. Już zaimportowane książki zostają."
           }
         },
         "pt-BR" : {
@@ -337563,6 +339273,12 @@
             "value" : "구독"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Subskrybuj"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337656,6 +339372,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 구독"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Subskrybuj: %@"
           }
         },
         "pt-BR" : {
@@ -337753,6 +339475,12 @@
             "value" : "구독함"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zasubskrybowano"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337846,6 +339574,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 구독을 시작했습니다. 이 피드는 암호화되지 않은 http를 사용하므로 다른 사람이 보내는 내용을 읽거나 바꿀 수 있습니다. TextMouth는 그래도 불러옵니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zasubskrybowano %@. Ten kanał używa zwykłego http, więc inne osoby mogą odczytać lub zmienić to, co wysyła; TextMouth mimo to go wczytuje."
           }
         },
         "pt-BR" : {
@@ -337947,6 +339681,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ 구독을 시작했습니다: %2$@."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zasubskrybowano %1$@: %2$@."
           }
         },
         "pt-BR" : {
@@ -338206,6 +339946,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zasubskrybowano %lld kanały."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zasubskrybowano %lld kanałów."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zasubskrybowano %lld kanał."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Zasubskrybowano %lld kanału."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -338379,6 +340149,12 @@
             "value" : "이 팟캐스트를 구독하고 주소 필드를 채웁니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Subskrybuje ten podcast i wypełnia pole adresu"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338478,6 +340254,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ 구독 중, %3$lld개 중 %2$lld번째…"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Subskrybowanie %1$@, %2$lld z %3$lld…"
           }
         },
         "pt-BR" : {
@@ -343024,6 +344806,12 @@
             "value" : "텍스트 인식이 일부 페이지를 읽지 못했습니다(%1$@): %2$@."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rozpoznawanie tekstu nie mogło odczytać %1$@: %2$@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -343281,6 +345069,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Rozpoznawanie tekstu nie mogło odczytać żadnej z %lld stron: %@."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -343452,6 +345270,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "텍스트 인식이 유일한 페이지를 읽지 못했습니다: %@."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Rozpoznawanie tekstu nie mogło odczytać jedynej strony: %@."
           }
         },
         "pt-BR" : {
@@ -344232,6 +346056,12 @@
             "value" : "TextMouth Subscriptions"
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Subskrypcje TextMouth"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -344422,6 +346252,12 @@
             "value" : "변환기가 앱에 없으므로 TextMouth가 %@ 파일을 변환할 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może konwertować plików %@, ponieważ w aplikacji brakuje jego konwertera."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -344515,6 +346351,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 “%@”의 사운드를 변환할 수 없습니다. 지원하지 않는 종류의 오디오입니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może przekonwertować dźwięku „%@”: jest w rodzaju dźwięku, którego nie odczytuje."
           }
         },
         "pt-BR" : {
@@ -344612,6 +346454,12 @@
             "value" : "TextMouth가 “%@”을(를) 변환할 수 없습니다. 중간에 샘플 속도나 채널 수가 따라갈 수 없을 만큼 바뀝니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może przekonwertować „%@”: jego dźwięk w trakcie zmienia częstotliwość lub liczbę kanałów bardziej, niż TextMouth potrafi śledzić."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -344707,6 +346555,12 @@
             "value" : "TextMouth가 “%@”을(를) 변환할 수 없습니다. 사운드의 일부가 한 번에 디코딩하기에 너무 큰 조각입니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może przekonwertować „%@”: część jego dźwięku jest w jednym kawałku zbyt dużym do zdekodowania."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -344800,6 +346654,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 이 종류의 파일(%@)을 재생할 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może odtworzyć tego rodzaju pliku (%@)."
           }
         },
         "pt-BR" : {
@@ -345105,6 +346965,12 @@
             "value" : "TextMouth가 이 종류의 이미지(%@)를 읽을 수 없습니다. PNG 또는 JPEG으로 저장한 다음 그 사본을 가져오십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może odczytać tego rodzaju obrazu (%@). Zapisz go jako PNG lub JPEG, a potem zaimportuj tę kopię."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345204,6 +347070,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 “%1$@”을(를) %2$@ 포맷으로 읽을 수 없습니다. 손상되었거나 다른 포맷의 이름이 붙어 있을 수 있습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie może odczytać „%1$@” jako %2$@. Plik może być uszkodzony lub mieć nazwę innego formatu."
           }
         },
         "pt-BR" : {
@@ -346121,6 +347993,12 @@
             "value" : "TextMouth는 복사 방지된 파일을 열 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie otwiera plików chronionych przed kopiowaniem."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346608,6 +348486,12 @@
             "value" : "TextMouth가 “%@”의 새 사본을 유지하지 못했습니다. 취소를 선택해 사본을 버린 다음 파일을 다시 가져오십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał zachować nowej kopii „%@”. Wybierz Anuluj, aby odrzucić kopię, a potem zaimportuj plik jeszcze raz."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346988,6 +348872,12 @@
             "value" : "TextMouth가 큐 시트 “%@”을(를) 읽을 수 없어 해당 표제를 사용하지 않았습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał odczytać pliku CUE „%@”, więc jego nagłówki nie zostały użyte."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -347081,6 +348971,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 레이블 파일 “%@”을(를) 읽을 수 없어 해당 표제를 사용하지 않았습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał odczytać pliku etykiet „%@”, więc jego nagłówki nie zostały użyte."
           }
         },
         "pt-BR" : {
@@ -348419,6 +350315,12 @@
             "value" : "TextMouth가 새 다운로드 옆에 이전 텍스트를 보관하지 못해 기사는 그대로 유지됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał zachować wcześniejszego tekstu obok nowego pobrania, więc artykuł pozostaje bez zmian."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -348714,6 +350616,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 이 피드의 폴더를 만들 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał utworzyć folderu dla tego kanału."
           }
         },
         "pt-BR" : {
@@ -349467,6 +351375,12 @@
             "value" : "TextMouth가 이 피드의 다운로드 목록을 저장하지 못해 다운로드가 유지되었습니다. 보관함을 저장할 수 있게 되면 다시 시도하십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał zapisać swojej listy pobrań tego kanału, więc pobrany plik został zachowany. Spróbuj ponownie, gdy biblioteka będzie mogła zostać zapisana."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349562,6 +351476,12 @@
             "value" : "TextMouth가 피드의 항목 목록을 저장하지 못해 아무것도 이동하지 않았습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał zapisać listy pozycji kanału, więc nic nie zostało przeniesione."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349655,6 +351575,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 피드 “%@”을(를) 삭제하기 전에 보관함을 저장하지 못해 아무것도 삭제하지 않았습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie zdołał zapisać biblioteki przed usunięciem kanału „%@”, więc nic nie zostało usunięte."
           }
         },
         "pt-BR" : {
@@ -350243,6 +352169,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth는 RAR 압축 파일을 열지 않습니다. 압축을 푼 다음 안에 든 파일을 가져오십시오."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie otwiera archiwów RAR. Rozpakuj je, a potem zaimportuj ich zawartość."
           }
         },
         "pt-BR" : {
@@ -350837,6 +352769,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pobierze ponownie %lld z nich przy następnych sprawdzeniach ich kanałów lub przy następnym otwarciu."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pobierze ponownie %lld z nich przy następnych sprawdzeniach ich kanałów lub przy następnym otwarciu."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pobierze ponownie %lld z nich przy następnych sprawdzeniach ich kanałów lub przy następnym otwarciu."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pobierze ponownie %lld z nich przy następnych sprawdzeniach ich kanałów lub przy następnym otwarciu."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -351010,6 +352972,12 @@
             "value" : "TextMouth가 이 중 1개를 피드의 다음 확인 때 또는 다음에 열릴 때 다시 다운로드합니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pobierze 1 z nich ponownie przy następnym sprawdzeniu jego kanału lub przy następnym otwarciu."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -351103,6 +353071,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 각 피드의 최신 항목을 다음 확인 때 또는 다음에 열릴 때 다시 다운로드합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pobierze najnowsze z każdego kanału ponownie przy jego następnym sprawdzeniu lub przy następnym otwarciu."
           }
         },
         "pt-BR" : {
@@ -353958,6 +355932,12 @@
             "value" : "TextMouth가 “%@”을(를) 새 사본으로 대체하는 중입니다. 완료되면 다시 시도하십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth zastępuje „%@” nową kopią. Spróbuj ponownie, gdy to się skończy."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354053,6 +356033,12 @@
             "value" : "TextMouth가 마지막 응답을 아직 처리하는 중입니다. 끝날 때까지 기다리십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth wciąż wykonuje Twoją ostatnią odpowiedź. Zaczekaj, aż skończy."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354146,6 +356132,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 아직 저장하는 중입니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth wciąż je zapisuje."
           }
         },
         "pt-BR" : {
@@ -354528,6 +356520,12 @@
             "value" : "TextMouth가 알림을 보낼 수 없도록 설정되어 있습니다. 시스템 설정, 알림, TextMouth 순으로 이동해 켜십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth nie ma zezwolenia na wyświetlanie powiadomień. Włącz je w: Ustawienia systemowe, Powiadomienia, TextMouth."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354716,6 +356714,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth는 가져올 때 변환하는 오디오의 원본 파일을 보관합니다. 원본은 변환된 파일과 비슷한 디스크 공간을 차지하며, 압축되지 않은 경우 두 배를 차지합니다. 내보내기에서 원본 파일로 제공됩니다. 피드 에피소드의 원본은 다시 다운로드할 수 있으므로 보관하지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth zachowuje oryginalny plik dźwięku konwertowanego przy imporcie. Oryginał zajmuje mniej więcej tyle miejsca na dysku co przekonwertowany plik, a gdy jest nieskompresowany, dwa razy tyle. Eksport oferuje go jako „Oryginalny plik”. Oryginał odcinka z kanału nie jest zachowywany: można go pobrać ponownie."
           }
         },
         "pt-BR" : {
@@ -355009,6 +357013,12 @@
             "value" : "TextMouth가 읽을 수 있는 소리가 없는 %@을(를) 제외했습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pominął: %@. Te pliki nie zawierają dźwięku, który może odczytać."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355102,6 +357112,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 읽을 수 있는 소리가 없는 %@을(를) 제외했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pominął: %@. Ten plik nie zawiera dźwięku, który może odczytać."
           }
         },
         "pt-BR" : {
@@ -355199,6 +357215,12 @@
             "value" : "앱에 없는 TextMouth 자체 변환기가 필요한 %@을(를) 제외했습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pominął: %@. Te pliki wymagają konwertera TextMouth, którego brakuje w aplikacji."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355292,6 +357314,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "앱에 없는 TextMouth 자체 변환기가 필요한 %@을(를) 제외했습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth pominął: %@. Ten plik wymaga konwertera TextMouth, którego brakuje w aplikacji."
           }
         },
         "pt-BR" : {
@@ -355482,6 +357510,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 %@ 안에 피드 이름으로 폴더를 만들고, 에피소드와 기사를 그 안에 다운로드합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth tworzy folder nazwany jak kanał w: %@, a jego odcinki i artykuły są pobierane do niego."
           }
         },
         "pt-BR" : {
@@ -356026,6 +358060,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth przeniósł do kosza %lld nowe kopie zduplikowanych książek, ponieważ pytania, czy zachować je jako duplikaty, pozostały bez odpowiedzi przed zamknięciem TextMouth. Aby je odzyskać, otwórz kosz i wybierz Odłóż z powrotem."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth przeniósł do kosza %lld nowych kopii zduplikowanych książek, ponieważ pytania, czy zachować je jako duplikaty, pozostały bez odpowiedzi przed zamknięciem TextMouth. Aby je odzyskać, otwórz kosz i wybierz Odłóż z powrotem."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth przeniósł do kosza %lld nową kopię zduplikowanych książek, ponieważ pytania, czy zachować je jako duplikaty, pozostały bez odpowiedzi przed zamknięciem TextMouth. Aby je odzyskać, otwórz kosz i wybierz Odłóż z powrotem."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth przeniósł do kosza %lld nowej kopii zduplikowanych książek, ponieważ pytania, czy zachować je jako duplikaty, pozostały bez odpowiedzi przed zamknięciem TextMouth. Aby je odzyskać, otwórz kosz i wybierz Odłóż z powrotem."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -356199,6 +358263,12 @@
             "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 %@의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth przeniósł do kosza nowe kopie: %@, ponieważ pytania, czy zachować je jako duplikaty, pozostały bez odpowiedzi przed zamknięciem TextMouth. Aby je odzyskać, otwórz kosz i wybierz Odłóż z powrotem."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356292,6 +358362,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 “%@”의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth przeniósł do kosza nową kopię „%@”, ponieważ pytanie, czy zachować ją jako duplikat, pozostało bez odpowiedzi przed zamknięciem TextMouth. Aby ją odzyskać, otwórz kosz i wybierz Odłóż z powrotem."
           }
         },
         "pt-BR" : {
@@ -358012,6 +360088,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pominął %1$lld pozycje z „%2$@”: %3$@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pominął %1$lld pozycji z „%2$@”: %3$@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pominął %1$lld pozycję z „%2$@”: %3$@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth pominął %1$lld pozycji z „%2$@”: %3$@."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -358381,6 +360487,12 @@
             "value" : "TextMouth가 이 문서 읽기를 중단했습니다. 이유: %@."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth przestał czytać ten dokument, ponieważ %@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358571,6 +360683,12 @@
             "value" : "TextMouth가 이 피드에서 새 기사 확인을 중단합니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth przestaje sprawdzać ten kanał pod kątem nowych artykułów."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358666,6 +360784,12 @@
             "value" : "TextMouth가 이 피드에서 새 에피소드 확인을 중단합니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth przestaje sprawdzać ten kanał pod kątem nowych odcinków."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358759,6 +360883,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 이 피드에서 새 항목 확인을 중단합니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth przestaje sprawdzać ten kanał pod kątem nowych pozycji."
           }
         },
         "pt-BR" : {
@@ -359735,6 +361865,12 @@
             "value" : "TextMouth의 변환기가 “%@”을(를) 읽기 전에 스스로 안전하게 만들지 못해 파일을 읽지 않았습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Konwerter TextMouth nie mógł się zabezpieczyć przed odczytaniem „%@”, więc nie odczytał pliku."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -359828,6 +361964,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth의 변환기가 만든 “%@”의 오디오를 TextMouth가 읽을 수 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Konwerter TextMouth zwrócił dźwięk „%@”, którego TextMouth nie mógł odczytać."
           }
         },
         "pt-BR" : {
@@ -359925,6 +362067,12 @@
             "value" : "TextMouth의 변환기가 “%@”의 끝까지 가기 전에 멈춰 가져올 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Konwerter TextMouth zatrzymał się przed końcem „%@”, więc nie można go zaimportować."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -360018,6 +362166,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth의 변환기가 “%@”을(를) 읽는 중 예기치 않게 멈췄습니다. 파일이 손상되었을 수 있습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Konwerter TextMouth nieoczekiwanie zatrzymał się podczas odczytu „%@”. Plik może być uszkodzony."
           }
         },
         "pt-BR" : {
@@ -360602,6 +362756,12 @@
             "value" : "OPML 파일의 %1$@번째 줄이 손상되었습니다: %2$@."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ten plik OPML jest uszkodzony w wierszu %1$@: %2$@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -360695,6 +362855,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "OPML 파일에 피드가 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ten plik OPML nie wymienia żadnych kanałów."
           }
         },
         "pt-BR" : {
@@ -360792,6 +362958,12 @@
             "value" : "TextMouth가 열 수 있는 웹 주소가 아닙니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ten adres nie jest adresem internetowym, który TextMouth może otworzyć."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -360885,6 +363057,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "파일이 비어 있습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ten plik jest pusty."
           }
         },
         "pt-BR" : {
@@ -360982,6 +363160,12 @@
             "value" : "OPML 구독 목록 파일이 아닙니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ten plik nie jest listą subskrypcji OPML."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -361075,6 +363259,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "웹 주소가 아닙니다. 피드 주소 또는 피드를 알려 주는 페이지의 주소를 입력하십시오."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "To nie jest adres internetowy. Wpisz adres kanału lub adres strony, która go wskazuje."
           }
         },
         "pt-BR" : {
@@ -361463,6 +363653,12 @@
             "value" : "이 페이지는 피드를 알려 주지 않습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ta strona nie wskazuje żadnego kanału."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -361715,6 +363911,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "이 페이지에는 피드 %lld개가 있습니다. 하나를 선택한 다음 구독을 선택하십시오."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta strona wskazuje %lld kanały. Wybierz jeden, a potem Subskrybuj."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta strona wskazuje %lld kanałów. Wybierz jeden, a potem Subskrybuj."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta strona wskazuje %lld kanał. Wybierz go, a potem Subskrybuj."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Ta strona wskazuje %lld kanału. Wybierz jeden, a potem Subskrybuj."
                 }
               }
             }
@@ -363204,6 +365430,36 @@
             }
           }
         },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętych pobrań: %1$@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętych pobrań: %1$@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętego pobrania: %1$@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętego pobrania: %1$@."
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -363534,6 +365790,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "제거한 다운로드 %2$lld개를 위해 보관한 %1$@이(가) 삭제되었습니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętych pobrań: %1$@."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętych pobrań: %1$@."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętego pobrania: %1$@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Usunięto, co zachowano dla %2$lld usuniętego pobrania: %1$@."
                 }
               }
             }
@@ -368481,6 +370767,12 @@
             "value" : "%@의 주소에 TextMouth가 읽을 수 있는 피드가 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Adres %@ nie zawiera kanału, który TextMouth może odczytać."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -368733,6 +371025,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "압축 파일에 가져오지 않은 다른 책 %lld권이 더 있습니다. 압축을 풀어 가져오십시오."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Archiwum zawiera też %lld inne książki, które nie zostały zaimportowane; rozpakuj je, aby je zaimportować."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Archiwum zawiera też %lld innych książek, które nie zostały zaimportowane; rozpakuj je, aby je zaimportować."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Archiwum zawiera też %lld inną książkę, która nie została zaimportowana; rozpakuj je, aby ją zaimportować."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Archiwum zawiera też %lld innej książki, która nie została zaimportowana; rozpakuj je, aby ją zaimportować."
                 }
               }
             }
@@ -369315,6 +371637,12 @@
             "value" : "압축 파일에 경로가 바깥으로 이어지는 파일이 있으며, 이 파일은 추출되지 않습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Archiwum zawiera plik, którego ścieżka prowadzi poza nie; taki plik nigdy nie jest rozpakowywany."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369408,6 +371736,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "압축 파일에 바깥의 파일을 가리키는 링크가 있으며, 이 링크는 추출되지 않습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Archiwum zawiera dowiązanie do pliku poza archiwum; taki plik nigdy nie jest rozpakowywany."
           }
         },
         "pt-BR" : {
@@ -369598,6 +371932,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "압축 파일이 손상되었거나 불완전하거나 ZIP 압축 파일이 아닙니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Archiwum jest uszkodzone, niekompletne lub nie jest archiwum ZIP."
           }
         },
         "pt-BR" : {
@@ -369796,6 +372136,12 @@
             "value" : "기사가 목록에서 완전히 사라지며, 다운로드가 있으면 함께 삭제됩니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Artykuł znika z listy na stałe, a jego pobrany plik, jeśli jest, zostaje usunięty."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369889,6 +372235,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "기사가 목록에서 완전히 사라지지만, 보관함에서 책이 된 항목은 그대로 남습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Artykuł znika z listy na stałe; książka, którą się stał w Twojej bibliotece, zostaje."
           }
         },
         "pt-BR" : {
@@ -370081,6 +372433,12 @@
             "value" : "%@에서 변환한 오디오에 이름을 지정할 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie można było nadać nazwy dźwiękowi przekonwertowanemu z %@."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370182,6 +372540,12 @@
             "value" : "%1$@에서 변환한 오디오를 쓸 수 없습니다(%2$@)."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie można było zapisać dźwięku przekonwertowanego z %1$@ (%2$@)."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370281,6 +372645,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@에서 변환한 오디오가 검사를 통과하지 못했습니다: %2$@."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dźwięk przekonwertowany z %1$@ nie przeszedł sprawdzenia: %2$@."
           }
         },
         "pt-BR" : {
@@ -370764,6 +373134,12 @@
             "value" : "변환하기 위해 오디오 파일 %@을(를) 읽을 수 없습니다."
           }
         },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nie można było odczytać pliku audio %@ do konwersji."
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -371117,6 +373493,36 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "오디오 파일 %1$@에 채널이 %2$lld개 있지만 각 채널이 무엇인지 알 수 없어 TextMouth가 스테레오로 믹스할 수 없습니다."
+                }
+              }
+            }
+          }
+        },
+        "pl" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Plik audio %@ ma %lld kanały, ale nie określa, który jest który, więc TextMouth nie może zmiksować go do stereo."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Plik audio %@ ma %lld kanałów, ale nie określa, który jest który, więc TextMouth nie może zmiksować go do stereo."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Plik audio %@ ma %lld kanał, ale nie określa, który jest który, więc TextMouth nie może zmiksować go do stereo."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Plik audio %@ ma %lld kanału, ale nie określa, który jest który, więc TextMouth nie może zmiksować go do stereo."
                 }
               }
             }
@@ -372564,6 +374970,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책에 텍스트를 담을 패키지가 없습니다."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Książka nie ma pakietu na swój tekst."
           }
         },
         "pt-BR" : {
