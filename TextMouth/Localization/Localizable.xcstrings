@@ -110972,7 +110972,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "スキップ中に Shift キーを押したままにすると、もう1つのスキップ量を使います。"
+            "value" : "スキップ中にシフトキーを押したままにすると、もう1つのスキップ量を使います。"
           }
         },
         "pt-BR" : {
@@ -194796,7 +194796,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift+巻き戻しの単位"
+            "value" : "シフト+巻き戻しの単位"
           }
         },
         "pt-BR" : {
@@ -194855,7 +194855,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift+早送りの単位"
+            "value" : "シフト+早送りの単位"
           }
         },
         "pt-BR" : {
@@ -194914,7 +194914,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift+巻き戻し／早送り（補助）"
+            "value" : "シフト+巻き戻し／早送り（補助）"
           }
         },
         "pt-BR" : {
@@ -194973,7 +194973,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift+巻き戻し"
+            "value" : "シフト+巻き戻し"
           }
         },
         "pt-BR" : {
@@ -195032,7 +195032,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift+早送り"
+            "value" : "シフト+早送り"
           }
         },
         "pt-BR" : {
@@ -204422,7 +204422,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "比較を続けています：これまでに%lld秒。停止するには Escape キーを押してください。"
+                  "value" : "比較を続けています：これまでに%lld秒。停止するには エスケープキーを押してください。"
                 }
               }
             }
@@ -247483,7 +247483,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示後に文字起こしが変更されました。「文字起こしを整理」を開き直して、変更内容を確認してください。"
+            "value" : "表示後に文字起こしが変更されました。「文字起こしを整理（実験的）…」を開き直して、変更内容を確認してください。"
           }
         },
         "pt-BR" : {
@@ -271557,7 +271557,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift を押しながら巻き戻したときの動作です。"
+            "value" : "シフトを押しながら巻き戻したときの動作です。"
           }
         },
         "pt-BR" : {
@@ -271616,7 +271616,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift を押しながら早送りしたときの動作です。"
+            "value" : "シフトを押しながら早送りしたときの動作です。"
           }
         },
         "pt-BR" : {
