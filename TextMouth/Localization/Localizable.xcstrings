@@ -525822,7 +525822,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Disk terlalu penuh untuk menyimpan audio ini untuk ditempel."
+            "value" : "Disk terlalu penuh untuk menyimpan audio ini agar dapat ditempel."
           }
         },
         "it" : {
@@ -547834,7 +547834,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio asli adalah hasil rekaman tanpa kehilangan kualitas tempat sebuah rekaman disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya."
+            "value" : "Audio asli adalah rekaman mentah tanpa kehilangan kualitas yang menjadi sumber rekaman saat disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya."
           }
         },
         "it" : {
@@ -554191,7 +554191,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rekaman tidak dapat disimpan: %1$@ Rekaman tetap disimpan; pilih %2$@ atau %3$@."
+            "value" : "Rekaman tidak dapat disimpan: %1$@ Rekaman masih ada; pilih %2$@ atau %3$@."
           }
         },
         "it" : {
@@ -602174,7 +602174,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengurungkan setiap edit, kembali ke audio asli; Ulangi mengembalikannya."
+            "value" : "Mengurungkan setiap edit, kembali ke audio asli; pilih Ulangi untuk mengembalikannya."
           }
         },
         "it" : {
