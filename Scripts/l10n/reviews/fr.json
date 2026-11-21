@@ -1499,6 +1499,444 @@
      "why": "meaning: la position read as a reading position; it is how far each download got"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "english": "%@ does the same for every such chapter of this export, without asking again.",
+     "before": "%@ fait de même pour tous les chapitres de ce type dans cet export, sans redemander.",
+     "after": "%@ fait de même pour tous les chapitres de ce type dans cette exportation, sans redemander.",
+     "why": "term: the rest of the French interface calls an export 'exportation'"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%@ a pris sa touche par défaut, %@",
+     "after": "%@ a pris la touche par défaut, %@",
+     "why": "meaning: 'sa touche' pointed at the other action's own key; it took this action's default key"
+    },
+    {
+     "key": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "english": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "before": "%@ n’est pas un livre audio en pistes, il n’a donc aucun manifeste à modifier.",
+     "after": "%@ n’est pas un livre audio composé de pistes, il n’a donc aucun manifeste à modifier.",
+     "why": "natural: 'livre audio en pistes' is a calque of 'audiobook of tracks'"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "many": "Lecture impossible pour %@ des %lld de chapitres",
+      "one": "Lecture impossible pour %@ des %lld chapitre",
+      "other": "Lecture impossible pour %@ des %lld chapitres"
+     },
+     "after": {
+      "one": "Lecture impossible pour %@ chapitre sur %lld",
+      "many": "Lecture impossible pour %@ des %lld de chapitres",
+      "other": "Lecture impossible pour %@ des %lld chapitres"
+     },
+     "why": "grammar: the one form paired the plural 'des' with a singular 'chapitre'"
+    },
+    {
+     "key": "%@ stops the whole export. Files already written stay.",
+     "english": "%@ stops the whole export. Files already written stay.",
+     "before": "%@ arrête tout l’export. Les fichiers déjà écrits sont conservés.",
+     "after": "%@ arrête toute l’exportation. Les fichiers déjà écrits sont conservés.",
+     "why": "term: the rest of the French interface calls an export 'exportation'"
+    },
+    {
+     "key": "%lld text books",
+     "english": {
+      "one": "%lld text book",
+      "other": "%lld text books"
+     },
+     "before": {
+      "many": "%lld de livres de texte",
+      "one": "%lld livre de texte",
+      "other": "%lld livres de texte"
+     },
+     "after": {
+      "one": "%lld livre texte",
+      "many": "%lld de livres texte",
+      "other": "%lld livres texte"
+     },
+     "why": "term: 'livre texte' pairs with 'livre audio' and is the word the other strings of this part use"
+    },
+    {
+     "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "before": "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés de Où suis-je ? pour les livres de plus d’une page.",
+     "after": "Ajoute la page, par exemple « Page 12 sur 300 », aux résumés d’Où suis-je ? pour les livres de plus d’une page.",
+     "why": "grammar: 'de' elides before the vowel of Où suis-je"
+    },
+    {
+     "key": "Backslash",
+     "english": "Backslash",
+     "before": "Barre oblique inverse",
+     "after": "Barre oblique inversée",
+     "why": "term: the backslash's French name, as Unicode's French names and VoiceOver say it"
+    },
+    {
+     "key": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "english": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "before": "Braille Ready Format : pages de braille, pour les afficheurs braille et les embosseuses.",
+     "after": "Braille Ready Format : pages de braille, pour les plages braille et les embosseuses.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Break",
+     "english": "Break",
+     "before": "Pause",
+     "after": "Attn",
+     "why": "meaning: 'Pause' is also the Pause key's name; French keyboards label the Break key Attn"
+    },
+    {
+     "key": "CR LF suits most braille displays and embossers.",
+     "english": "CR LF suits most braille displays and embossers.",
+     "before": "CR LF convient à la plupart des afficheurs braille et des embosseuses.",
+     "after": "CR LF convient à la plupart des plages braille et des embosseuses.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "Modifier le texte s’est arrêté pour %@, car une nouvelle copie l’a remplacé.",
+     "after": "La modification du texte de %@ s’est arrêtée, car une nouvelle copie l’a remplacé.",
+     "why": "grammar: the infinitive command name cannot be the subject of 's’est arrêté'"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since its file was read again.",
+     "english": "Edit Text has stopped for %@, since its file was read again.",
+     "before": "Modifier le texte s’est arrêté pour %@, car son fichier a été relu.",
+     "after": "La modification du texte de %@ s’est arrêtée, car son fichier a été relu.",
+     "why": "grammar: the infinitive command name cannot be the subject of 's’est arrêté'"
+    },
+    {
+     "key": "For trying out with a braille display.",
+     "english": "For trying out with a braille display.",
+     "before": "Pour essayer avec un afficheur braille.",
+     "after": "Pour essayer avec une plage braille.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Go to Time…",
+     "english": "Go to Time…",
+     "before": "Aller à l’instant…",
+     "after": "Aller à un instant…",
+     "why": "meaning: 'à l’instant' is the idiom for 'right away'; the hints already say 'aller à un instant'"
+    },
+    {
+     "key": "Goes to a page, a percent, or a time.",
+     "english": "Goes to a page, a percent, or a time.",
+     "before": "Va à une page, un pourcentage ou un temps.",
+     "after": "Va à une page, à un pourcentage ou à un instant.",
+     "why": "natural: 'aller à un temps' is not French for a point in time; the other hints say 'un instant'"
+    },
+    {
+     "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "before": "Comment le BRF écrit chaque cellule braille. La plupart des afficheurs braille et des embosseuses lisent le braille ASCII nord-américain ; ceux réglés pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF.",
+     "after": "Comment le BRF écrit chaque cellule braille. La plupart des plages braille et des embosseuses lisent le braille ASCII nord-américain ; celles réglées pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF.",
+     "why": "term: Apple's French calls a braille display a 'plage braille'"
+    },
+    {
+     "key": "Its headings are real headings, and the contents list links them.",
+     "english": "Its headings are real headings, and the contents list links them.",
+     "before": "Ses en-têtes sont de vrais en-têtes, et la table des matières les relie.",
+     "after": "Ses en-têtes sont de vrais en-têtes, et la table des matières y renvoie.",
+     "why": "meaning: 'les relie' says the list joins the headings to one another; it links to them"
+    },
+    {
+     "key": "Jump to time",
+     "english": "Jump to time",
+     "before": "Aller au temps",
+     "after": "Aller à cet instant",
+     "why": "natural: 'aller au temps' is not French for a point in time"
+    },
+    {
+     "key": "Make Double Press",
+     "english": "Make Double Press",
+     "before": "Faire un double appui",
+     "after": "Passer en double appui",
+     "why": "meaning: 'Faire un double appui' reads as pressing twice, not as changing the key into a double press"
+    },
+    {
+     "key": "Make Single Press",
+     "english": "Make Single Press",
+     "before": "Faire un appui simple",
+     "after": "Passer en appui simple",
+     "why": "meaning: 'Faire un appui simple' reads as pressing once, not as changing the key back to a single press"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "Commandes multimédia non libérées : ce livre ne les détient pas.",
+     "after": "Commandes multimédias non libérées : ce livre ne les détient pas.",
+     "why": "grammar: 'multimédias' agrees with 'commandes', as in the command Libérer les commandes multimédias"
+    },
+    {
+     "key": "Media controls released",
+     "english": "Media controls released",
+     "before": "Commandes multimédia libérées",
+     "after": "Commandes multimédias libérées",
+     "why": "grammar: 'multimédias' agrees with 'commandes', as in the command Libérer les commandes multimédias"
+    },
+    {
+     "key": "Minimize",
+     "english": "Minimize",
+     "before": "Réduire",
+     "after": "Placer dans le Dock",
+     "why": "term: the name macOS's French Window menu gives Minimize (Command-M)"
+    },
+    {
+     "key": "Minimize All",
+     "english": "Minimize All",
+     "before": "Tout réduire",
+     "after": "Tout placer dans le Dock",
+     "why": "term: the name macOS's French Window menu gives Minimize All"
+    },
+    {
+     "key": "Move to Folder",
+     "english": "Move to Folder",
+     "before": "Déplacer vers le dossier",
+     "after": "Déplacer vers un dossier",
+     "why": "natural: the folder is chosen after, so the definite 'le dossier' copies the English"
+    },
+    {
+     "key": "Navigation unit for text books",
+     "english": "Navigation unit for text books",
+     "before": "Unité de navigation des livres de texte",
+     "after": "Unité de navigation des livres texte",
+     "why": "term: 'livre texte' pairs with 'livre audio' and is the word the other strings of this part use"
+    },
+    {
+     "key": "No more books in folder",
+     "english": "No more books in folder",
+     "before": "Plus de livre dans le dossier",
+     "after": "Aucun autre livre dans le dossier",
+     "why": "meaning: spoken aloud, 'Plus de livre' can be heard as 'more books'"
+    },
+    {
+     "key": "None of the %lld chapters could be read",
+     "english": {
+      "one": "None of the %lld chapter could be read",
+      "other": "None of the %lld chapters could be read"
+     },
+     "before": {
+      "many": "Aucun des %lld de chapitres n’a pu être lu",
+      "one": "Aucun des %lld chapitre n’a pu être lu",
+      "other": "Aucun des %lld chapitres n’a pu être lu"
+     },
+     "after": {
+      "one": "Aucun chapitre sur %lld n’a pu être lu",
+      "many": "Aucun des %lld de chapitres n’a pu être lu",
+      "other": "Aucun des %lld chapitres n’a pu être lu"
+     },
+     "why": "grammar: the one form paired the plural 'des' with a singular 'chapitre'"
+    },
+    {
+     "key": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on %@ of %lld page, so text found only in their images is missing: %@.",
+      "other": "OCR could not run on %@ of %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "many": "L’OCR n’a pas pu s’exécuter sur %@ des %lld de pages, donc le texte présent seulement dans les images est absent : %@.",
+      "one": "L’OCR n’a pas pu s’exécuter sur %@ des %lld page, donc le texte présent seulement dans les images est absent : %@.",
+      "other": "L’OCR n’a pas pu s’exécuter sur %@ des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+     },
+     "after": {
+      "one": "L’OCR n’a pas pu s’exécuter pour %@ page sur %lld, donc le texte présent seulement dans ses images est absent : %@.",
+      "many": "L’OCR n’a pas pu s’exécuter sur %@ des %lld de pages, donc le texte présent seulement dans les images est absent : %@.",
+      "other": "L’OCR n’a pas pu s’exécuter sur %@ des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+     },
+     "why": "grammar: the one form paired the plural 'des' with a singular 'page'"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "many": "L’OCR n’a pas pu s’exécuter sur la totalité des %lld de pages, donc le texte présent seulement dans les images est absent : %@.",
+      "one": "L’OCR n’a pas pu s’exécuter sur la totalité des %lld page, donc le texte présent seulement dans les images est absent : %@.",
+      "other": "L’OCR n’a pas pu s’exécuter sur la totalité des %lld pages, donc le texte présent seulement dans les images est absent : %@."
+     },
+     "after": {
+      "one": "L’OCR n’a pas pu s’exécuter sur %lld page, donc le texte présent seulement dans ses images est absent : %@.",
+      "many": "L’OCR n’a pu s’exécuter sur aucune des %lld de pages, donc le texte présent seulement dans leurs images est absent : %@.",
+      "other": "L’OCR n’a pu s’exécuter sur aucune des %lld pages, donc le texte présent seulement dans leurs images est absent : %@."
+     },
+     "why": "meaning: 'pas sur la totalité des pages' says some pages failed; the message is that every page failed"
+    },
+    {
+     "key": "Paste and Match Style",
+     "english": "Paste and Match Style",
+     "before": "Coller en adaptant le style",
+     "after": "Coller et adapter le style",
+     "why": "term: the name macOS's French Edit menu gives Paste and Match Style"
+    },
+    {
+     "key": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "english": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "before": "Retirez-les : un livre audio en pistes est organisé avec des pistes.",
+     "after": "Retirez-les : un livre audio composé de pistes s’organise par pistes.",
+     "why": "natural: 'livre audio en pistes' and 'est organisé avec des pistes' copy the English"
+    },
+    {
+     "key": "Reset %@ to Default",
+     "english": "Reset %@ to Default",
+     "before": "Rétablir %@ par défaut",
+     "after": "Rétablir les raccourcis par défaut de %@",
+     "why": "natural: an action's name between 'Rétablir' and 'par défaut' is hard to follow by ear; matches the hint 'Rétablit les raccourcis par défaut de cette action'"
+    },
+    {
+     "key": "Shortcuts reset to defaults.",
+     "english": "Shortcuts reset to defaults.",
+     "before": "Raccourcis rétablis par défaut.",
+     "after": "Raccourcis par défaut rétablis.",
+     "why": "natural: 'rétablis par défaut' reads as 'restored by default'; the default shortcuts are what was restored"
+    },
+    {
+     "key": "Sound effects reset to defaults",
+     "english": "Sound effects reset to defaults",
+     "before": "Effets sonores réinitialisés par défaut",
+     "after": "Effets sonores réinitialisés",
+     "why": "natural: 'réinitialisés par défaut' reads as 'reset by default'; 'réinitialisés' already says back to the defaults"
+    },
+    {
+     "key": "Speak Import Progress",
+     "english": "Speak Import Progress",
+     "before": "Lire à voix haute la progression des imports",
+     "after": "Lire à voix haute la progression des importations",
+     "why": "term: the rest of the French interface calls an import 'importation'"
+    },
+    {
+     "key": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "english": "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay.",
+     "before": "Retire chaque livre terminé de la liste quand sa fenêtre passe à autre chose ou se ferme. Les livres terminés avant l’activation restent.",
+     "after": "Retire chaque livre terminé de la liste quand sa fenêtre passe à un autre livre ou se ferme. Les livres terminés avant l’activation restent.",
+     "why": "natural: 'passer à autre chose' is the idiom for a person moving on; the window moves on to another book"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc Modifier le texte s’est arrêté pour lui.",
+     "after": "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc la modification de son texte s’est arrêtée.",
+     "why": "grammar: the infinitive command name cannot be the subject of 's’est arrêté'"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter en démarre un BRF avec eux. Un livre garde ses caractères d’import, que la fenêtre Informations sur le livre peut modifier.",
+     "after": "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter les présélectionne pour un BRF. Un livre garde ses caractères d’importation, que la fenêtre Informations sur le livre peut modifier.",
+     "why": "grammar: 'en démarre un BRF' gave the verb two objects; 'importation' is the noun the rest of the interface uses"
+    },
+    {
+     "key": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each.",
+     "english": {
+      "one": "The MP3 has chapters for the first %@ of its %lld heading; export as M4B for a chapter for each.",
+      "other": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each."
+     },
+     "before": {
+      "many": "Le MP3 a des chapitres pour les %@ premiers de ses %lld d’en-têtes ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "one": "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "other": "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête."
+     },
+     "after": {
+      "one": "Le MP3 n’a de chapitres que pour %@ en-tête sur %lld ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "many": "Le MP3 a des chapitres pour les %@ premiers de ses %lld d’en-têtes ; exportez en M4B pour avoir un chapitre par en-tête.",
+      "other": "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête."
+     },
+     "why": "grammar: the one form said 'ses 1 en-têtes'"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "many": "Les %lld d’autres chapitres n’ont aucun texte.",
+      "one": "Les %lld autres chapitres n’ont aucun texte.",
+      "other": "Les %lld autres chapitres n’ont aucun texte."
+     },
+     "after": {
+      "one": "%lld autre chapitre n’a aucun texte.",
+      "many": "Les %lld d’autres chapitres n’ont aucun texte.",
+      "other": "Les %lld autres chapitres n’ont aucun texte."
+     },
+     "why": "grammar: the one form was plural ('Les 1 autres chapitres n’ont')"
+    },
+    {
+     "key": "The voice changed its kind of audio partway through “%@”.",
+     "english": "The voice changed its kind of audio partway through “%@”.",
+     "before": "La voix a changé de type d’audio en cours de « %@ ».",
+     "after": "La voix a changé de type d’audio pendant la lecture de « %@ ».",
+     "why": "grammar: 'en cours de' needs a noun of action, not a title"
+    },
+    {
+     "key": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "english": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "before": "La voix s’est arrêtée en cours de « %@ », et TextMouth a cessé d’attendre.",
+     "after": "La voix s’est arrêtée pendant la lecture de « %@ », et TextMouth a cessé d’attendre.",
+     "why": "grammar: 'en cours de' needs a noun of action, not a title"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "english": "Toggle Bookmark",
+     "before": "Basculer le signet",
+     "after": "Ajouter ou retirer un signet",
+     "why": "natural: 'Basculer le signet' copies 'toggle'; the command adds a bookmark or removes the one there"
+    },
+    {
+     "key": "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track.",
+     "english": "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track.",
+     "before": "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en gardant votre place dans sa piste.",
+     "after": "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en conservant votre position dans sa piste.",
+     "why": "natural: 'garder votre place' is keeping a seat; a listener's place in a book is 'votre position'"
+    },
+    {
+     "key": "When you save, the book updates and keeps your place as near as it can.",
+     "english": "When you save, the book updates and keeps your place as near as it can.",
+     "before": "À l’enregistrement, le livre se met à jour et garde votre place au plus près.",
+     "after": "À l’enregistrement, le livre se met à jour et conserve votre position au plus près.",
+     "why": "natural: 'garder votre place' is keeping a seat; a listener's place in a book is 'votre position'"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cet export en paragraphes simples de lignes, sans redemander.",
+     "after": "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cette exportation en paragraphes simples de lignes, sans redemander.",
+     "why": "term: the rest of the French interface calls an export 'exportation'"
+    },
+    {
+     "key": "the book's own file changed too. Open the book again to read its text from that file.",
+     "english": "the book's own file changed too. Open the book again to read its text from that file.",
+     "before": "le fichier propre du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier.",
+     "after": "le propre fichier du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier.",
+     "why": "meaning: 'propre' after the noun means clean; the book's own file is 'le propre fichier du livre'"
+    },
+    {
+     "key": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "english": "the book's record can't be changed now. TextMouth tries again when you next save or return.",
+     "before": "l’enregistrement du livre ne peut pas être modifié pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour.",
+     "after": "la fiche du livre ne peut pas être modifiée pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour.",
+     "why": "meaning: 'enregistrement' is the app's word for a recording; the book's library record is its 'fiche'"
+    }
+   ]
   }
  ]
 }
