@@ -254558,6 +254558,12 @@
             "value" : "Le livre a été importé."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक आयात हो गई।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255273,6 +255279,12 @@
             "value" : "Le paquet et les chemins de contenu du livre ne correspondent pas à un emplacement géré de la bibliothèque."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पुस्तक के पैकेज और सामग्री के पथ किसी प्रबंधित लाइब्रेरी स्थान से मेल नहीं खाते।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255856,6 +255868,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier bookInfo.json n’a pas été relu tel qu’il avait été écrit."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "bookInfo.json फ़ाइल वैसी वापस नहीं पढ़ी गई जैसी लिखी गई थी।"
           }
         },
         "it" : {
@@ -256638,6 +256656,12 @@
             "value" : "La copie qui vient d’être importée est incomplète."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अभी आयात की गई प्रति अधूरी है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256904,6 +256928,12 @@
             "value" : "Le fichier CUE « %@ » est trop volumineux pour être lu."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "क्यू शीट “%@” पढ़ने के लिए बहुत बड़ी है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256967,6 +256997,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier CUE « %@ » ne désigne aucun des fichiers audio voisins, donc ses en-têtes n’ont pas été utilisés."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "क्यू शीट “%@” अपने पास के किसी ऑडियो का नाम नहीं लेती, इसलिए उसके हेडिंग उपयोग में नहीं लाए गए।"
           }
         },
         "it" : {
@@ -257891,6 +257927,12 @@
             "value" : "Le téléchargement a été arrêté."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "डाउनलोड रोक दिया गया था।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258482,6 +258524,12 @@
             "value" : "L’épisode quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "एपिसोड हमेशा के लिए सूची से हट जाता है, और उसका डाउनलोड, यदि है, मिटा दिया जाता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258545,6 +258593,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’épisode quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "एपिसोड हमेशा के लिए सूची से हट जाता है; वह जो पुस्तक बन गया था, आपकी लाइब्रेरी में बनी रहती है।"
           }
         },
         "it" : {
@@ -258612,6 +258666,12 @@
             "value" : "Les fichiers de la copie existante sont supprimés définitivement et ne peuvent pas être récupérés."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मौजूदा प्रति की फ़ाइलें स्थायी रूप से मिट जाती हैं और वापस नहीं पाई जा सकतीं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258675,6 +258735,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les fichiers de la copie existante vont dans la corbeille, mais les remettre ne ramènera pas cette copie dans votre bibliothèque."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मौजूदा प्रति की फ़ाइलें ट्रैश में जाती हैं, लेकिन उन्हें वापस रखने से वह प्रति आपकी लाइब्रेरी में वापस नहीं आएगी।"
           }
         },
         "it" : {
@@ -258872,6 +258938,12 @@
             "value" : "Le flux de %@ est vide."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ पर मौजूद फ़ीड खाली है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258998,6 +259070,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Le flux de %@ dépasse les %lld Mo que TextMouth lit."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ पर मौजूद फ़ीड उस %lld MB से बड़ा है जिसे TextMouth पढ़ता है।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ पर मौजूद फ़ीड उन %lld MB से बड़ा है जिन्हें TextMouth पढ़ता है।"
                 }
               }
             }
@@ -259176,6 +259266,12 @@
             "value" : "Le flux est endommagé à la ligne %1$@ : %2$@."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड पंक्ति %1$@ पर क्षतिग्रस्त है: %2$@।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259239,6 +259335,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux quitte votre bibliothèque, avec sa liste d’articles et ses réglages."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड आपकी लाइब्रेरी से हट जाता है, अपनी लेखों की सूची और अपनी सेटिंग के साथ।"
           }
         },
         "it" : {
@@ -259306,6 +259408,12 @@
             "value" : "Le flux quitte votre bibliothèque, avec sa liste d’épisodes et ses réglages."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड आपकी लाइब्रेरी से हट जाता है, अपनी एपिसोड की सूची और अपनी सेटिंग के साथ।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259369,6 +259477,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux quitte votre bibliothèque, avec sa liste d’éléments et ses réglages."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड आपकी लाइब्रेरी से हट जाता है, अपनी आइटम की सूची और अपनी सेटिंग के साथ।"
           }
         },
         "it" : {
@@ -259442,6 +259556,12 @@
             "value" : "Le flux reste dans votre bibliothèque avec ses réglages et %1$@, et la commande %2$@ le vérifie de nouveau."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड अपनी सेटिंग और %1$@ के साथ आपकी लाइब्रेरी में बना रहता है, और “%2$@” उसे फिर से जाँचता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259505,6 +259625,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux reste dans votre bibliothèque avec ses réglages, et la commande %@ le vérifie de nouveau."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड अपनी सेटिंग के साथ आपकी लाइब्रेरी में बना रहता है, और “%@” उसे फिर से जाँचता है।"
           }
         },
         "it" : {
@@ -259572,6 +259698,12 @@
             "value" : "Le flux « %@ » reste avec lui."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड “%@” उसके साथ बना रहता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259635,6 +259767,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux « %@ » reste avec eux."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड “%@” उनके साथ बना रहता है।"
           }
         },
         "it" : {
@@ -261115,6 +261253,12 @@
             "value" : "L’adresse du fichier n’est pas une adresse web que TextMouth peut ouvrir."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ाइल का पता ऐसा वेब पता नहीं है जिसे TextMouth खोल सके।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261178,6 +261322,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les fichiers de la nouvelle copie de « %@ » ne sont plus dans la bibliothèque, donc elle ne peut pas être conservée. Choisissez Annuler, puis importez de nouveau le fichier."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” की नई प्रति की फ़ाइलें अब लाइब्रेरी में नहीं हैं, इसलिए उसे रखा नहीं जा सकता। “रद्द करें” चुनें, फिर फ़ाइल को फिर से आयात करें।"
           }
         },
         "it" : {
@@ -262004,6 +262154,12 @@
             "value" : "Le dossier choisi pour ce flux n’est plus dans la bibliothèque. Choisissez un autre dossier."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस फ़ीड के लिए चुना गया फ़ोल्डर अब लाइब्रेरी में नहीं है। दूसरा फ़ोल्डर चुनें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -262067,6 +262223,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier choisi n’est plus dans la bibliothèque. Choisissez un autre dossier."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "चुना गया फ़ोल्डर अब लाइब्रेरी में नहीं है। दूसरा फ़ोल्डर चुनें।"
           }
         },
         "it" : {
@@ -262134,6 +262296,12 @@
             "value" : "Le dossier choisi pour contenir le dossier du flux n’est plus dans la bibliothèque. Choisissez-en un autre."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड का फ़ोल्डर रखने के लिए चुना गया फ़ोल्डर अब लाइब्रेरी में नहीं है। दूसरा चुनें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -262197,6 +262365,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier de ce flux n’est plus dans la bibliothèque. Choisissez-en un autre pour lui."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस फ़ीड का फ़ोल्डर अब लाइब्रेरी में नहीं है। उसके लिए दूसरा फ़ोल्डर चुनें।"
           }
         },
         "it" : {
@@ -262822,6 +262996,12 @@
             "value" : "Le dossier de %@ n’est plus dans la bibliothèque."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ का फ़ोल्डर अब लाइब्रेरी में नहीं है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263023,6 +263203,12 @@
             "value" : "Les en-têtes de %@ dépassent la fin de l’audio, donc les pistes ont été importées sans eux."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ के हेडिंग ऑडियो के अंत से आगे जाते हैं, इसलिए ट्रैक उनके बिना आयात किए गए।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263086,6 +263272,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’importation a été arrêtée avant la fin."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आयात अपने अंत से पहले रोक दिया गया था।"
           }
         },
         "it" : {
@@ -263224,6 +263416,12 @@
             "value" : "Le fichier d’étiquettes « %@ » ne correspond par son nom à aucun fichier audio voisin, donc ses en-têtes n’ont pas été utilisés."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "लेबल फ़ाइल “%@” नाम से अपने पास की किसी ऑडियो फ़ाइल से मेल नहीं खाती, इसलिए उसके हेडिंग उपयोग में नहीं लाए गए।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263287,6 +263485,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les étiquettes du fichier d’étiquettes « %@ » dépassent la fin de son audio, donc ses en-têtes n’ont pas été utilisés."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "लेबल फ़ाइल “%@” के लेबल उसके ऑडियो के अंत से आगे जाते हैं, इसलिए उसके हेडिंग उपयोग में नहीं लाए गए।"
           }
         },
         "it" : {
@@ -263620,6 +263824,12 @@
             "value" : "La bibliothèque est inaccessible, donc TextMouth ne peut pas conserver la nouvelle copie de « %@ ». Répondez de nouveau quand elle sera de retour."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "लाइब्रेरी तक पहुँचा नहीं जा सकता, इसलिए TextMouth “%@” की नई प्रति नहीं रख सकता। उसके वापस आने पर फिर से उत्तर दें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263683,6 +263893,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La bibliothèque ne peut pas déplacer de livres pour le moment. Réessayez quand elle sera disponible."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "लाइब्रेरी अभी पुस्तकें नहीं ले जा सकती। उपलब्ध होने पर फिर से प्रयास करें।"
           }
         },
         "it" : {
@@ -265190,6 +265406,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La liste suit tout de suite un changement de %@ ; ce qui se télécharge ou disparaît attend que le changement soit resté dix secondes, puis VoiceOver l’annonce."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सूची %@ के बदलाव का तुरंत पालन करती है; क्या डाउनलोड होता है या हटता है, यह तब होता है जब बदलाव दस सेकंड तक बना रहे, और VoiceOver तब उसकी घोषणा करता है।"
           }
         },
         "it" : {
@@ -267273,6 +267495,12 @@
             "value" : "Le fichier d’origine n’a pas pu être supprimé : %@"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल मिटाई नहीं जा सकी: %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267336,6 +267564,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine n’a pas pu être placé dans la corbeille : %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल ट्रैश में नहीं भेजी जा सकी: %@"
           }
         },
         "it" : {
@@ -267468,6 +267702,12 @@
             "value" : "Le fichier d’origine a été conservé."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल रखी गई।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267537,6 +267777,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine a été conservé : TextMouth n’a importé que le livre DAISY « %1$@ » de l’archive « %2$@ »."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल रखी गई: TextMouth ने संग्रह “%2$@” से केवल DAISY पुस्तक “%1$@” आयात की।"
           }
         },
         "it" : {
@@ -267610,6 +267856,12 @@
             "value" : "Le fichier d’origine a été conservé : TextMouth a importé l’audio de « %1$@ » depuis l’archive « %2$@ », et l’archive est la seule copie de son texte."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल रखी गई: TextMouth ने संग्रह “%2$@” से “%1$@” का ऑडियो आयात किया, और उसके टेक्स्ट की एकमात्र प्रति वही संग्रह है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267673,6 +267925,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine a été conservé : c’est un dossier, et une importation ne supprime jamais un dossier."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल रखी गई: वह एक फ़ोल्डर है, और आयात कभी फ़ोल्डर नहीं मिटाता।"
           }
         },
         "it" : {
@@ -267740,6 +267998,12 @@
             "value" : "Le fichier d’origine sera placé dans la corbeille après une importation réussie."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सफल आयात के बाद मूल फ़ाइल ट्रैश में भेज दी जाएगी।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267803,6 +268067,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine sera supprimé définitivement après une importation réussie."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सफल आयात के बाद मूल फ़ाइल स्थायी रूप से मिटा दी जाएगी।"
           }
         },
         "it" : {
@@ -268071,6 +268341,12 @@
             "value" : "Le fichier d’origine « %1$@ » n’a pas pu être supprimé : %2$@"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल “%1$@” मिटाई नहीं जा सकी: %2$@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268140,6 +268416,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine « %1$@ » n’a pas pu être placé dans la corbeille : %2$@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "मूल फ़ाइल “%1$@” ट्रैश में नहीं भेजी जा सकी: %2$@"
           }
         },
         "it" : {
@@ -268570,6 +268852,12 @@
             "value" : "La page de %@ est plus volumineuse que ce que TextMouth lit."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ पर मौजूद पृष्ठ उस सीमा से बड़ा है जिसे TextMouth पढ़ता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268836,6 +269124,12 @@
             "value" : "La position, les signets et la transcription conservés pour lui sont aussi supprimés."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "उसके लिए रखा गया स्थान, बुकमार्क और ट्रांसक्रिप्ट भी मिटा दिए जाते हैं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -268899,6 +269193,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La playlist « %@ » n’est pas un fichier de playlist complet et valide."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "प्लेलिस्ट “%@” पूरी, मान्य प्लेलिस्ट फ़ाइल नहीं है।"
           }
         },
         "it" : {
@@ -269031,6 +269331,12 @@
             "value" : "La playlist « %@ » utilise ses propres entités XML, que TextMouth ne lit pas."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "प्लेलिस्ट “%@” अपनी खुद की XML एंटिटी का उपयोग करती है, जिन्हें TextMouth नहीं पढ़ता।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269102,6 +269408,12 @@
             "value" : "L’annuaire de podcasts de %1$@ n’a pas pu répondre à la recherche (erreur %2$@). Réessayez plus tard."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ पर मौजूद पॉडकास्ट डायरेक्टरी खोज का उत्तर नहीं दे सकी (त्रुटि %2$@)। बाद में फिर से प्रयास करें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269165,6 +269477,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’annuaire de podcasts de %@ est introuvable."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ पर मौजूद पॉडकास्ट डायरेक्टरी नहीं मिली।"
           }
         },
         "it" : {
@@ -269236,6 +269554,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’annuaire de podcasts de %1$@ est injoignable : %2$@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ पर मौजूद पॉडकास्ट डायरेक्टरी तक पहुँचा नहीं जा सका: %2$@"
           }
         },
         "it" : {
@@ -269364,6 +269688,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "L’annuaire de podcasts de %@ n’a pas répondu pendant %lld secondes."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ पर मौजूद पॉडकास्ट डायरेक्टरी ने %lld सेकंड तक उत्तर नहीं दिया।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ पर मौजूद पॉडकास्ट डायरेक्टरी ने %lld सेकंड तक उत्तर नहीं दिया।"
                 }
               }
             }
@@ -269536,6 +269878,12 @@
             "value" : "L’annuaire de podcasts ne peut pas être interrogé sur ce réseau, qui limite les données."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस नेटवर्क पर पॉडकास्ट डायरेक्टरी में खोज नहीं की जा सकती, जो डेटा सीमित करता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269599,6 +269947,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’annuaire de podcasts n’a pas pu répondre à la recherche. Réessayez plus tard."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पॉडकास्ट डायरेक्टरी खोज का उत्तर नहीं दे सकी। बाद में फिर से प्रयास करें।"
           }
         },
         "it" : {
@@ -269666,6 +270020,12 @@
             "value" : "L’annuaire de podcasts a refusé la recherche ; il en autorise environ 20 par minute. Attendez une minute et réessayez."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पॉडकास्ट डायरेक्टरी ने खोज अस्वीकार कर दी; वह लगभग 20 प्रति मिनट की अनुमति देती है। एक मिनट प्रतीक्षा करें और फिर से प्रयास करें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269731,6 +270091,12 @@
             "value" : "L’annuaire de podcasts a envoyé une réponse que TextMouth ne peut pas lire. Réessayez plus tard."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पॉडकास्ट डायरेक्टरी ने ऐसा उत्तर भेजा जिसे TextMouth नहीं पढ़ सकता। बाद में फिर से प्रयास करें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269794,6 +270160,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La réponse de l’annuaire de podcasts est plus volumineuse que ce que TextMouth lit."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पॉडकास्ट डायरेक्टरी का उत्तर उस सीमा से बड़ा है जिसे TextMouth पढ़ता है।"
           }
         },
         "it" : {
@@ -270316,6 +270688,12 @@
             "value" : "L’éditeur a retiré ce flux."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "प्रकाशक ने इस फ़ीड को हटा दिया है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270379,6 +270757,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’éditeur a retiré ce fichier."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "प्रकाशक ने इस फ़ाइल को हटा दिया है।"
           }
         },
         "it" : {
@@ -271595,6 +271979,12 @@
             "value" : "L’actualisation de %@ a été arrêtée."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ का रीफ़्रेश रोक दिया गया था।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271985,6 +272375,12 @@
             "value" : "La recherche n’a pas pu être envoyée, car l’adresse de l’annuaire n’est pas une adresse web."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "खोज भेजी नहीं जा सकी, क्योंकि डायरेक्टरी का पता वेब पता नहीं है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272048,6 +272444,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La recherche a été arrêtée."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "खोज रोक दी गई थी।"
           }
         },
         "it" : {
@@ -272245,6 +272647,12 @@
             "value" : "Le serveur %@ est introuvable."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सर्वर %@ नहीं मिला।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272310,6 +272718,12 @@
             "value" : "Le serveur %@ est introuvable. Vérifiez l’adresse."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सर्वर %@ नहीं मिला। पता जाँचें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272373,6 +272787,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le serveur indique que le fichier n’existe plus."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सर्वर कहता है कि फ़ाइल अब नहीं है।"
           }
         },
         "it" : {
@@ -272633,6 +273053,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les abonnements n’ont pas pu être enregistrés : %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सदस्यताएँ सहेजी नहीं जा सकीं: %@"
           }
         },
         "it" : {
@@ -273291,6 +273717,12 @@
             "value" : "Les pistes du fichier CUE « %@ » dépassent la fin de son audio, donc ses en-têtes n’ont pas été utilisés."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "क्यू शीट “%@” के ट्रैक उसके ऑडियो के अंत से आगे जाते हैं, इसलिए उसके हेडिंग उपयोग में नहीं लाए गए।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273679,6 +274111,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier de transcription trouvé à côté de l’audio de la nouvelle copie remplace la transcription de la copie existante."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "नई प्रति के ऑडियो के बगल में मिली ट्रांसक्रिप्ट फ़ाइल मौजूदा प्रति की ट्रांसक्रिप्ट की जगह ले लेती है।"
           }
         },
         "it" : {
@@ -275442,6 +275880,12 @@
             "value" : "Il n’y a aucun flux à actualiser."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "रीफ़्रेश करने के लिए कोई फ़ीड नहीं है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275507,6 +275951,12 @@
             "value" : "Il n’y a aucun abonnement à exporter."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "निर्यात करने के लिए कोई सदस्यता नहीं है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275570,6 +276020,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a aucun abonnement à exporter : vous êtes désabonné de tous les flux de votre bibliothèque."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "निर्यात करने के लिए कोई सदस्यता नहीं है: आपकी लाइब्रेरी के हर फ़ीड की सदस्यता रद्द है।"
           }
         },
         "it" : {
@@ -276004,6 +276460,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a pas assez d’espace disque libre pour convertir %1$@ : il faut %2$@ de libre."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ को बदलने के लिए डिस्क पर पर्याप्त खाली जगह नहीं है: उसे %2$@ खाली चाहिए।"
           }
         },
         "it" : {
@@ -276673,6 +277135,12 @@
             "value" : "Il n’y a pas de place sur ce Mac pour cet épisode (%@)."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस Mac पर इस एपिसोड (%@) के लिए जगह नहीं है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -276736,6 +277204,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a pas assez d’espace libre sur le disque."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "डिस्क पर पर्याप्त खाली जगह नहीं है।"
           }
         },
         "it" : {
@@ -276931,6 +277405,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a plus de flux à cette adresse."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "उस पते पर अब कोई फ़ीड नहीं है।"
           }
         },
         "it" : {
@@ -277973,6 +278453,12 @@
             "value" : "Ce flux utilise http simple"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ीड सादे http का उपयोग करता है"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278036,6 +278522,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Réglages propres à ce flux"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस फ़ीड की सेटिंग"
           }
         },
         "it" : {
@@ -278688,6 +279180,12 @@
             "value" : "Ce Mac est hors ligne, donc %@ ne peut pas être actualisé. Connectez-vous à Internet et réessayez."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह Mac ऑफ़लाइन है, इसलिए %@ रीफ़्रेश नहीं हो सकता। इंटरनेट से कनेक्ट करें और फिर से प्रयास करें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278818,6 +279316,12 @@
             "value" : "Ce Mac est hors ligne, donc l’annuaire ne peut pas être interrogé. Connectez-vous à Internet et réessayez."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह Mac ऑफ़लाइन है, इसलिए डायरेक्टरी में खोज नहीं की जा सकती। इंटरनेट से कनेक्ट करें और फिर से प्रयास करें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278881,6 +279385,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce Mac est hors ligne, donc « %@ » ne peut pas être téléchargé. Connectez-vous à Internet et réessayez."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह Mac ऑफ़लाइन है, इसलिए “%@” डाउनलोड नहीं हो सकता। इंटरनेट से कनेक्ट करें और फिर से प्रयास करें।"
           }
         },
         "it" : {
@@ -279415,6 +279925,12 @@
             "value" : "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls XML que TextMouth lit."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह XML फ़ाइल DTBook पुस्तक, Word 2003 XML दस्तावेज़ या PEF ब्रेल फ़ाइल नहीं है, जो TextMouth के पढ़ने योग्य एकमात्र XML हैं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279478,6 +279994,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cet article n’a pas de description."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस लेख का कोई विवरण नहीं है।"
           }
         },
         "it" : {
@@ -280428,6 +280950,12 @@
             "value" : "Ce livre n’a pas de paquet géré valide. Retirez-le seulement de la bibliothèque, ou réparez son stockage avant de le supprimer."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस पुस्तक का कोई मान्य प्रबंधित पैकेज नहीं है। उसे केवल लाइब्रेरी से हटाएँ, या मिटाने से पहले उसका संग्रहण सुधारें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281116,6 +281644,12 @@
             "value" : "L’audio de ce livre n’a pas pu être converti d’Ogg en AAC. TextMouth réessaiera au prochain démarrage."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस पुस्तक का ऑडियो Ogg से AAC में नहीं बदला जा सका। TextMouth अगली बार शुरू होने पर फिर से प्रयास करता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281181,6 +281715,12 @@
             "value" : "L’audio de ce livre est en cours de conversion d’Ogg en AAC. Il sera lu à la fin de la conversion."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस पुस्तक का ऑडियो Ogg से AAC में बदला जा रहा है। वह पूरा होने पर चलेगा।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281244,6 +281784,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’audio de ce livre doit être converti d’Ogg en AAC. TextMouth le convertit maintenant, et il sera lu à la fin de la conversion."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस पुस्तक के ऑडियो को Ogg से AAC में बदलना ज़रूरी है। TextMouth उसे अभी बदल रहा है, और वह पूरा होने पर चलेगा।"
           }
         },
         "it" : {
@@ -281506,6 +282052,12 @@
             "value" : "Cette archive de bande dessinée contient plus de %@ images, le maximum que TextMouth lit."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस कॉमिक बुक संग्रह में उन %@ चित्रों से अधिक हैं जिन्हें TextMouth पढ़ता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281569,6 +282121,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cette archive de bande dessinée ne contient aucune image que TextMouth peut lire."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस कॉमिक बुक संग्रह में कोई ऐसा चित्र नहीं है जिसे TextMouth पढ़ सके।"
           }
         },
         "it" : {
@@ -281766,6 +282324,12 @@
             "value" : "Ce téléchargement n’est pas dans le dossier de son flux, donc TextMouth a laissé ses fichiers tels quels."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह डाउनलोड अपने फ़ीड के फ़ोल्डर में नहीं है, इसलिए TextMouth ने उसकी फ़ाइलें जैसी थीं वैसी ही रहने दीं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281829,6 +282393,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cet épisode n’a pas de description."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस एपिसोड का कोई विवरण नहीं है।"
           }
         },
         "it" : {
@@ -281961,6 +282531,12 @@
             "value" : "Ce flux n’est plus dans votre bibliothèque."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ीड अब आपकी लाइब्रेरी में नहीं है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282024,6 +282600,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce flux demande un mot de passe, que TextMouth ne peut pas encore envoyer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस फ़ीड के लिए पासवर्ड चाहिए, जिसे TextMouth अभी नहीं भेज सकता।"
           }
         },
         "it" : {
@@ -282156,6 +282738,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme un document XML Word 2003."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ाइल Word 2003 XML दस्तावेज़ के रूप में नहीं पढ़ी जा सकी।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282219,6 +282807,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier n’a pas pu être lu comme un document Word 97-2003."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ाइल Word 97-2003 दस्तावेज़ के रूप में नहीं पढ़ी जा सकी।"
           }
         },
         "it" : {
@@ -282286,6 +282880,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme une archive de bande dessinée. Il est peut-être endommagé, ou d’un autre type de fichier."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ाइल कॉमिक बुक संग्रह के रूप में नहीं पढ़ी जा सकी। यह क्षतिग्रस्त हो सकती है, या किसी दूसरी तरह की फ़ाइल हो सकती है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282349,6 +282949,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier n’a pas pu être lu comme une image. Il est peut-être endommagé, ou d’un autre type de fichier."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ाइल चित्र के रूप में नहीं पढ़ी जा सकी। यह क्षतिग्रस्त हो सकती है, या किसी दूसरी तरह की फ़ाइल हो सकती है।"
           }
         },
         "it" : {
@@ -282416,6 +283022,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme un document de texte enrichi avec pièces jointes."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ाइल अटैचमेंट वाले रिच टेक्स्ट दस्तावेज़ के रूप में नहीं पढ़ी जा सकी।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282479,6 +283091,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier n’a pas pu être lu comme un document de texte enrichi."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ाइल रिच टेक्स्ट दस्तावेज़ के रूप में नहीं पढ़ी जा सकी।"
           }
         },
         "it" : {
@@ -282546,6 +283164,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme un document texte OpenDocument."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह फ़ाइल OpenDocument टेक्स्ट दस्तावेज़ के रूप में नहीं पढ़ी जा सकी।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282609,6 +283233,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier ne contient aucun texte à lire."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस फ़ाइल में पढ़ने के लिए कोई टेक्स्ट नहीं है।"
           }
         },
         "it" : {
@@ -282999,6 +283629,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier demande un mot de passe, que TextMouth ne peut pas encore envoyer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस फ़ाइल के लिए पासवर्ड चाहिए, जिसे TextMouth अभी नहीं भेज सकता।"
           }
         },
         "it" : {
@@ -283917,6 +284553,12 @@
             "value" : "Cette image n’a pas pu être décodée. Elle est peut-être endommagée."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह चित्र डीकोड नहीं किया जा सका। यह क्षतिग्रस्त हो सकता है।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284043,6 +284685,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Cette image contient %lld pages, plus que les %@ que TextMouth lit."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इस चित्र में %1$lld पृष्ठ है, जो TextMouth के पढ़ने की सीमा %2$@ से अधिक है।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इस चित्र में %1$lld पृष्ठ हैं, जो TextMouth के पढ़ने की सीमा %2$@ से अधिक हैं।"
                 }
               }
             }
@@ -284276,6 +284936,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Cette image fait %@, soit plus que la limite de %lld mégapixels que TextMouth lit."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "यह चित्र %1$@ का है, जो TextMouth के पढ़ने की %2$lld मेगापिक्सेल की सीमा से बड़ा है।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "यह चित्र %1$@ का है, जो TextMouth के पढ़ने की %2$lld मेगापिक्सेल की सीमा से बड़ा है।"
                 }
               }
             }
@@ -286805,6 +287483,12 @@
             "value" : "Pour le télécharger de nouveau, choisissez %@ sur sa ligne."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसे फिर से डाउनलोड करने के लिए उसकी पंक्ति पर “%@” चुनें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286931,6 +287615,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Pour télécharger de nouveau les %lld autres, choisissez %@ sur leurs lignes."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "बाकी %lld को फिर से डाउनलोड करने के लिए उसकी पंक्ति पर “%@” चुनें।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "बाकी %lld को फिर से डाउनलोड करने के लिए उनकी पंक्तियों पर “%@” चुनें।"
                 }
               }
             }
@@ -287103,6 +287805,12 @@
             "value" : "Pour télécharger l’autre de nouveau, choisissez %@ sur sa ligne."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "बाकी एक को फिर से डाउनलोड करने के लिए उसकी पंक्ति पर “%@” चुनें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287166,6 +287874,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour les télécharger de nouveau, choisissez %@ sur leurs lignes."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "उन्हें फिर से डाउनलोड करने के लिए उनकी पंक्तियों पर “%@” चुनें।"
           }
         },
         "it" : {
@@ -287298,6 +288012,12 @@
             "value" : "Pour conserver un article, choisissez d’abord %@ sur sa ligne."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "लेख को रखने के लिए पहले उसकी पंक्ति पर “%@” चुनें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287363,6 +288083,12 @@
             "value" : "Pour conserver un épisode, choisissez d’abord %@ sur sa ligne."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "एपिसोड को रखने के लिए पहले उसकी पंक्ति पर “%@” चुनें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -287426,6 +288152,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour conserver un élément, choisissez d’abord %@ sur sa ligne."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आइटम को रखने के लिए पहले उसकी पंक्ति पर “%@” चुनें।"
           }
         },
         "it" : {
@@ -287757,6 +288489,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour l’utiliser, choisissez %@ dans l’onglet Texte des Réglages."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका उपयोग करने के लिए सेटिंग में टेक्स्ट टैब पर “%@” चुनें।"
           }
         },
         "it" : {
@@ -288853,6 +289591,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Piste %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ट्रैक %@"
           }
         },
         "it" : {
@@ -292655,6 +293399,12 @@
             "value" : "Saisissez le titre ou l’éditeur d’un podcast, puis appuyez sur Retour pour rechercher dans l’annuaire d’Apple."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पॉडकास्ट का शीर्षक या प्रकाशक टाइप करें, फिर Apple की डायरेक्टरी में खोजने के लिए रिटर्न दबाएँ"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -292848,6 +293598,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Saisissez ou collez l’adresse d’un flux ou d’une page web, puis appuyez sur Retour."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड या वेब पृष्ठ का पता टाइप करें या पेस्ट करें, फिर रिटर्न दबाएँ"
           }
         },
         "it" : {
@@ -294475,6 +295231,12 @@
             "value" : "Durée inconnue"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अवधि अज्ञात"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295278,6 +296040,12 @@
             "value" : "Se désabonner"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सदस्यता रद्द करें"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295343,6 +296111,12 @@
             "value" : "Se désabonner de %@ ?"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ की सदस्यता रद्द करें?"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295406,6 +296180,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Désabonné"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सदस्यता रद्द"
           }
         },
         "it" : {
@@ -295479,6 +296259,12 @@
             "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux articles%2$@."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ की सदस्यता रद्द की गई: TextMouth अब उसमें नए लेख नहीं जाँचता%2$@।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295548,6 +296334,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux épisodes%2$@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ की सदस्यता रद्द की गई: TextMouth अब उसमें नए एपिसोड नहीं जाँचता%2$@।"
           }
         },
         "it" : {
@@ -295621,6 +296413,12 @@
             "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux éléments%2$@."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ की सदस्यता रद्द की गई: TextMouth अब उसमें नए आइटम नहीं जाँचता%2$@।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295684,6 +296482,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se désabonner…"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सदस्यता रद्द करें…"
           }
         },
         "it" : {
@@ -295816,6 +296620,12 @@
             "value" : "Format de fichier non pris en charge : .%@"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "असमर्थित फ़ाइल फ़ॉर्मैट: .%@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295879,6 +296689,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Format de fichier non pris en charge : .%@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "असमर्थित फ़ाइल फ़ॉर्मैट: .%@।"
           }
         },
         "it" : {
@@ -298623,6 +299439,12 @@
             "value" : "WMA"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WMA"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298686,6 +299508,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "vidéo WMV"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WMV वीडियो"
           }
         },
         "it" : {
@@ -298753,6 +299581,12 @@
             "value" : "Attendez la fin de l’exportation"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "निर्यात समाप्त होने तक प्रतीक्षा करें"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298816,6 +299650,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Attendez la fin de la transcription, ou annulez-la"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ट्रांसक्रिप्शन समाप्त होने तक प्रतीक्षा करें, या उसे रद्द करें"
           }
         },
         "it" : {
@@ -299403,6 +300243,12 @@
             "value" : "En attente de la fin du déplacement du dossier de données..."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "डेटा फ़ोल्डर का स्थानांतरण पूरा होने की प्रतीक्षा है..."
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299466,6 +300312,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En attente de téléchargement"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "डाउनलोड की प्रतीक्षा में"
           }
         },
         "it" : {
@@ -299663,6 +300515,12 @@
             "value" : "Page web"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "वेब पृष्ठ"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299728,6 +300586,12 @@
             "value" : "Site web"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "वेब साइट"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299788,6 +300652,12 @@
           }
         },
         "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WebM"
+          }
+        },
+        "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "WebM"
@@ -300439,6 +301309,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Ce qui était conservé pour %lld téléchargements retirés a été supprimé."
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld हटाए गए डाउनलोड के लिए जो रखा गया था, वह मिटा दिया गया।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld हटाए गए डाउनलोड के लिए जो रखा गया था, वह मिटा दिया गया।"
                 }
               }
             }
@@ -301608,6 +302496,12 @@
             "value" : "À l’arrivée de nouveaux épisodes"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "नए एपिसोड आने पर"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302256,6 +303150,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui en donner un propre."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "चुना होने पर यह फ़ीड सेटिंग के %@ का पालन करता है; उसे अपनी सेटिंग देने के लिए चुनाव हटाएँ"
           }
         },
         "it" : {
@@ -304648,6 +305548,12 @@
             "value" : "Windows Media"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows Media"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306226,6 +307132,12 @@
             "value" : "Nombre de mots"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "शब्दों की संख्या"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306941,6 +307853,12 @@
             "value" : "Vous pouvez le récupérer dans la corbeille jusqu’à ce qu’elle soit vidée."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आप उसे ट्रैश खाली होने तक ट्रैश से वापस पा सकते हैं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307331,6 +308249,12 @@
             "value" : "On vous demandera après chaque importation si le fichier d’origine doit être supprimé définitivement."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "हर आयात के बाद आपसे पूछा जाएगा कि मूल फ़ाइल को स्थायी रूप से मिटाना है या नहीं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307396,6 +308320,12 @@
             "value" : "On vous demandera après chaque importation si le fichier d’origine doit être placé dans la corbeille."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "हर आयात के बाद आपसे पूछा जाएगा कि मूल फ़ाइल को ट्रैश में भेजना है या नहीं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307459,6 +308389,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Vous êtes déjà abonné à %@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आपने %@ की सदस्यता पहले से ले रखी है।"
           }
         },
         "it" : {
@@ -308637,6 +309573,12 @@
             "value" : "un type que le système ne nomme pas"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ऐसा प्रकार जिसका सिस्टम नाम नहीं देता"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -308830,6 +309772,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "un paquet de ce nom se trouve à la fois dans son dossier de la bibliothèque et dans celui de son flux"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसके नाम का पैकेज इसके लाइब्रेरी फ़ोल्डर और इसके फ़ीड के फ़ोल्डर, दोनों में है"
           }
         },
         "it" : {
@@ -309390,6 +310338,12 @@
             "value" : "ajout à la bibliothèque"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसे लाइब्रेरी में जोड़ा जा रहा है"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309453,6 +310407,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ajout au dossier de la bibliothèque"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसे लाइब्रेरी फ़ोल्डर में जोड़ा जा रहा है"
           }
         },
         "it" : {
@@ -310388,6 +311348,12 @@
             "value" : "immédiatement"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "तुरंत"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -310581,6 +311547,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "signets"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "बुकमार्क"
           }
         },
         "it" : {
@@ -310906,6 +311878,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "de %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ द्वारा"
           }
         },
         "it" : {
@@ -311381,6 +312359,12 @@
             "value" : "vérification de son format"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका फ़ॉर्मैट जाँचना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311446,6 +312430,12 @@
             "value" : "vérification du paquet"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "पैकेज जाँचना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311509,6 +312499,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "choisissez de nouveau %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” फिर से चुनें"
           }
         },
         "it" : {
@@ -311901,6 +312897,12 @@
             "value" : "conversion de son audio DAISY"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका DAISY ऑडियो बदलना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311964,6 +312966,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "conversion de son audio"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका ऑडियो बदलना"
           }
         },
         "it" : {
@@ -312031,6 +313039,12 @@
             "value" : "copie dans la bibliothèque"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसे लाइब्रेरी में कॉपी करना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312094,6 +313108,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "création de son paquet"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका पैकेज बनाना"
           }
         },
         "it" : {
@@ -312419,6 +313439,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "supprimer son téléchargement"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका डाउनलोड मिटाना"
           }
         },
         "it" : {
@@ -312939,6 +313965,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "extraction de l’archive"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "संग्रह निकालना"
           }
         },
         "it" : {
@@ -315565,6 +316597,12 @@
             "value" : "est en cours d’exportation, et %@ maintenant l’interromprait"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "निर्यात किया जा रहा है, और अभी %@ निर्यात को रोक देगा"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315630,6 +316668,12 @@
             "value" : "est en cours de transcription, et %@ maintenant ferait perdre la transcription"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ट्रांसक्राइब किया जा रहा है, और अभी %@ ट्रांसक्रिप्ट खो देगा"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315693,6 +316737,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "est ouvert dans un lecteur"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "रीडर में खुला है"
           }
         },
         "it" : {
@@ -316085,6 +317135,12 @@
             "value" : "il se téléchargera quand ce Mac sera sur un réseau sans limite de données"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह तब डाउनलोड होगा जब यह Mac डेटा सीमा रहित नेटवर्क पर होगा"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316417,6 +317473,24 @@
             }
           }
         },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "यह %1$@ है, जो %2$lld मेगापिक्सेल से बड़ा है"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "यह %1$@ है, जो %2$lld मेगापिक्सेल से बड़ा है"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -316582,6 +317656,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "c’est un type d’image que TextMouth ne peut pas lire (%@)"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "यह ऐसा चित्र प्रकार है जिसे TextMouth नहीं पढ़ सकता (%@)"
           }
         },
         "it" : {
@@ -316777,6 +317857,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "sa durée est nulle"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसकी अवधि शून्य है"
           }
         },
         "it" : {
@@ -317075,6 +318161,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il lui faut de la place pour %@ sur ce Mac"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसके लिए इस Mac पर %@ की जगह चाहिए"
           }
         },
         "it" : {
@@ -317506,6 +318598,24 @@
             }
           }
         },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इसका %lld डाउनलोड किया हुआ लेख"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इसके %lld डाउनलोड किए हुए लेख"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -317739,6 +318849,24 @@
             }
           }
         },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इसका %lld डाउनलोड किया हुआ एपिसोड"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इसके %lld डाउनलोड किए हुए एपिसोड"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -317967,6 +319095,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "ses %lld éléments téléchargés"
+                }
+              }
+            }
+          }
+        },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इसका %lld डाउनलोड किया हुआ आइटम"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "इसके %lld डाउनलोड किए हुए आइटम"
                 }
               }
             }
@@ -318281,6 +319427,12 @@
             "value" : "son contenu ne correspond pas à la somme de contrôle enregistrée avec lui"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसकी सामग्री उसके साथ संग्रहीत चेकसम से मेल नहीं खाती"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318344,6 +319496,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son article téléchargé"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका डाउनलोड किया हुआ लेख"
           }
         },
         "it" : {
@@ -318411,6 +319569,12 @@
             "value" : "son épisode téléchargé"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका डाउनलोड किया हुआ एपिसोड"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318474,6 +319638,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son élément téléchargé"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका डाउनलोड किया हुआ आइटम"
           }
         },
         "it" : {
@@ -318541,6 +319711,12 @@
             "value" : "son fichier n’a pas pu être lu comme une image"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसकी फ़ाइल को चित्र के रूप में नहीं पढ़ा जा सका"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318604,6 +319780,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son fichier est endommagé ou incomplet : %@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसकी फ़ाइल क्षतिग्रस्त या अधूरी है: %@"
           }
         },
         "it" : {
@@ -318866,6 +320048,12 @@
             "value" : "son paquet n’est ni dans son dossier de la bibliothèque ni dans celui de son flux"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका पैकेज न तो इसके लाइब्रेरी फ़ोल्डर में है और न ही इसके फ़ीड के फ़ोल्डर में"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318929,6 +320117,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son image n’a pas pu être décodée"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका चित्र डीकोड नहीं किया जा सका"
           }
         },
         "it" : {
@@ -318996,6 +320190,12 @@
             "value" : "sa ligne ne désigne aucun paquet géré par la bibliothèque"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसकी पंक्ति किसी ऐसे पैकेज का नाम नहीं लेती जिसे लाइब्रेरी प्रबंधित करती है"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319059,6 +320259,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "enregistrement de la position de vos téléchargements de flux pour la prochaine fois"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आपके फ़ीड डाउनलोड का स्थान अगली बार के लिए रखना"
           }
         },
         "it" : {
@@ -319814,6 +321020,12 @@
             "value" : "plus de %@"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ से अधिक"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320308,6 +321520,24 @@
             }
           }
         },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "उद्धरण, सूचियों या ज़ोर को %lld स्तर से अधिक गहराई तक एक-दूसरे के भीतर रखता है"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "उद्धरण, सूचियों या ज़ोर को %lld स्तर से अधिक गहराई तक एक-दूसरे के भीतर रखता है"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -320473,6 +321703,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "jamais"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "कभी नहीं"
           }
         },
         "it" : {
@@ -321161,6 +322397,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "aucun téléchargé"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "कोई डाउनलोड नहीं हुआ"
           }
         },
         "it" : {
@@ -321954,6 +323196,12 @@
             "value" : "rien de nouveau."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "कुछ नया नहीं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322283,6 +323531,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "seulement au lancement et à votre demande"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "केवल लॉन्च पर और जब आप कहें"
           }
         },
         "it" : {
@@ -322843,6 +324097,12 @@
             "value" : "réglages propres"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "अपनी सेटिंग"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323103,6 +324363,12 @@
             "value" : "position"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "स्थान"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323166,6 +324432,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "positions"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "स्थान"
           }
         },
         "it" : {
@@ -323363,6 +324635,12 @@
             "value" : "lecture de son audio"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका ऑडियो पढ़ना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323428,6 +324706,12 @@
             "value" : "lecture de son manifeste"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका मैनिफ़ेस्ट पढ़ना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323491,6 +324775,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "lecture de son texte"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसका टेक्स्ट पढ़ना"
           }
         },
         "it" : {
@@ -323686,6 +324976,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "lecture du fichier"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ाइल पढ़ना"
           }
         },
         "it" : {
@@ -324116,6 +325412,12 @@
             "value" : "retour à la bibliothèque"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसे लाइब्रेरी में लौटाना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324181,6 +325483,12 @@
             "value" : "enregistrement de son fichier bookInfo.json"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इसकी bookInfo.json फ़ाइल सहेजना"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324244,6 +325552,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "enregistrement des modifications de vos abonnements aux flux"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आपकी फ़ीड सदस्यताओं के बदलाव सहेजना"
           }
         },
         "it" : {
@@ -325954,6 +327268,24 @@
             }
           }
         },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld हटाए गए डाउनलोड के लिए रखे गए %1$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%2$lld हटाए गए डाउनलोड के लिए रखे गए %1$@"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -326901,6 +328233,12 @@
             "value" : "le téléchargement s’est terminé sans fichier"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "डाउनलोड बिना फ़ाइल के समाप्त हो गया"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327094,6 +328432,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le flux « %@ »"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फ़ीड “%@”"
           }
         },
         "it" : {
@@ -328142,6 +329486,12 @@
             "value" : "le serveur"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सर्वर"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328207,6 +329557,12 @@
             "value" : "le serveur n’a envoyé aucune réponse"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "सर्वर ने कोई उत्तर नहीं भेजा"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328270,6 +329626,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le haut de votre bibliothèque"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आपकी लाइब्रेरी का शीर्ष स्तर"
           }
         },
         "it" : {
@@ -328727,6 +330089,12 @@
             "value" : "ce format"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "इस फ़ॉर्मैट"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328922,6 +330290,12 @@
             "value" : "aujourd’hui à %@"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "आज %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329052,6 +330426,12 @@
             "value" : "transcription"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ट्रांसक्रिप्ट"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329117,6 +330497,12 @@
             "value" : "transcriptions"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ट्रांसक्रिप्ट"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329180,6 +330566,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "réessayez"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "फिर से प्रयास करें"
           }
         },
         "it" : {
@@ -329703,6 +331095,24 @@
             }
           }
         },
+        "hi" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld हटाए गए डाउनलोड के लिए जो रखा गया था"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld हटाए गए डाउनलोड के लिए जो रखा गया था"
+                }
+              }
+            }
+          }
+        },
         "it" : {
           "variations" : {
             "plural" : {
@@ -330000,6 +331410,12 @@
             "value" : "hier à %@"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "कल %@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330199,6 +331615,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %1$@ » (%2$@)"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” (%2$@)"
           }
         },
         "it" : {
@@ -330550,6 +331972,12 @@
             "value" : "« %@ » a changé pendant son remplacement, donc TextMouth a laissé les deux copies telles quelles. Choisissez de nouveau Remplacer l’existant."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” बदले जाने के दौरान बदल गई, इसलिए TextMouth ने दोनों प्रतियाँ जैसी थीं वैसी ही रहने दीं। “मौजूदा को बदलें” फिर से चुनें।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330822,6 +332250,12 @@
             "value" : "« %@ » se téléchargera quand ce Mac sera sur un réseau sans limite de données."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” तब डाउनलोड होगा जब यह Mac डेटा सीमा रहित नेटवर्क पर होगा।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330887,6 +332321,12 @@
             "value" : "« %@ » ne contient ni livre DAISY ni piste audio à importer comme un seul livre."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” में कोई DAISY पुस्तक या ऑडियो ट्रैक नहीं है जिसे एक पुस्तक के रूप में आयात किया जा सके।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330950,6 +332390,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %@ » ne contient aucun son à importer."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” में आयात करने के लिए कोई ध्वनि नहीं है।"
           }
         },
         "it" : {
@@ -331088,6 +332534,12 @@
             "value" : "« %@ » est un lexique de prononciation, pas une playlist."
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” उच्चारण लेक्सिकॉन है, प्लेलिस्ट नहीं।"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331151,6 +332603,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %@ » est déjà en cours d’ajout à la bibliothèque."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” को पहले से लाइब्रेरी में जोड़ा जा रहा है।"
           }
         },
         "it" : {
@@ -331892,6 +333350,12 @@
             "value" : "« %1$@ » correspond à « %2$@ », déjà dans votre bibliothèque. Remplacer la copie existante, ou conserver les deux comme livres distincts ?"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” “%2$@” से मेल खाती है, जो आपकी लाइब्रेरी में पहले से है। मौजूदा प्रति को बदलें, या दोनों को अलग पुस्तकों के रूप में रखें?"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331963,6 +333427,12 @@
             "value" : "« %1$@ » nécessite %2$@ d’espace libre"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” को %2$@ खाली जगह चाहिए"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332032,6 +333502,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %1$@ » n’attend plus pour se télécharger ; il se téléchargera quand vous choisirez %2$@."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” अब डाउनलोड के लिए प्रतीक्षा में नहीं है; “%2$@” चुनने पर वह डाउनलोड होता है।"
           }
         },
         "it" : {
@@ -332513,6 +333989,12 @@
             "value" : "« %1$@ », %2$@"
           }
         },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”, %2$@"
+          }
+        },
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332582,6 +334064,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %1$@ », %2$@ : %3$@"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”, %2$@: %3$@"
           }
         },
         "it" : {
