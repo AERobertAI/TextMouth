@@ -447,7 +447,7 @@ final class ReaderRefreshTests: XCTestCase {
     /// not playing and played the chapter from the moving files, with the
     /// play sound (REV13 2).
     func testASleepTimerStartingPlaybackDuringAMoveLeavesTheAudioToTheMovesEnd() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let playing = try openPlayingAudiobook("Reader Refresh Timer During Move")
         let reader = playing.reader
         let generationBefore = reader.chapterPlaybackGeneration
@@ -592,7 +592,7 @@ final class ReaderRefreshTests: XCTestCase {
     /// stopped; Play/Pause even played the chapter from the moving files
     /// (open after the where-am-i-followups merge).
     func testWhatStopsTheAudioDuringAMoveKeepsItStoppedAfterTheMove() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         for way in StopDuringMove.allCases {
             let context = "\(way.name) during the move"
             let playing = try openPlayingAudiobook("Reader Refresh Stopped During Move \(way)")

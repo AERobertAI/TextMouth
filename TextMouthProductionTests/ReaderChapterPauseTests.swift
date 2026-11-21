@@ -196,7 +196,7 @@ final class ReaderChapterPauseTests: XCTestCase {
     /// This reader's sleep timer running out during the pause pauses the
     /// book, as anywhere: the next track never starts.
     func testASleepTimerRunningOutDuringThePauseStartsNothing() throws {
-        preserveSharedSleepTimer()
+        preserveSleepTimers()
         let world = try makeIntegrationWorld("Chapter Pause Timer")
         world.settings.sleepFadeOutDuration = 0
         let reader = try openBook(in: world, title: "Harbor Plays", trackDurations: [0.4, 3], manifest: Self.pausing)
@@ -205,7 +205,8 @@ final class ReaderChapterPauseTests: XCTestCase {
         reader.startSleepTimer(duration: .minutes(30))
         try playIntoThePause(reader)
 
-        SleepTimerService.shared._expireForTesting()
+        // The timer is the reader's window's.
+        reader.sleepTimerService._expireForTesting()
 
         XCTAssertFalse(reader.isWaitingOutChapterPause)
         XCTAssertTrue(reader.isCurrentlyPaused)

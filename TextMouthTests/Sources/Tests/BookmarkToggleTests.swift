@@ -502,6 +502,7 @@ test("Every ShortcutAction has a default binding entry") {
             .releaseMediaControls, .addToReadingList, .removeFromReadingList,
             .nextInReadingList, .previousInReadingList, .speakImportProgress,
             .speakDownloadProgress, .moveToLibrary, .folderOrFeedSettings,
+            .nextInFolder, .previousInFolder,
         ].contains(action) {
             try assertTrue(!bindings!.isEmpty, "\(action.rawValue) should have at least one default binding")
         }

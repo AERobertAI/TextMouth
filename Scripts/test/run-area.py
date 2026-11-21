@@ -61,6 +61,9 @@ Options:
   --log FILE          log file;     default <tempdir>/TextMouth-area-<suffix>.log
                       (<suffix> is $BBS_AGENT when set, else "area")
   --jobs N            xcodebuild -jobs (default 4)
+  --xcodebuild-arg=ARG  one more argument for xcodebuild (repeatable; give it with an equals sign,
+                      as --xcodebuild-arg=-test-timeouts-enabled, since it starts with a hyphen);
+                      not used by --repeat
   --no-slot           do not hold a build slot (for a Mac with no agents running)
   --clean             unregister the build folder's app and delete the folder
   -h, --help          this text
@@ -125,6 +128,7 @@ def parse_args(argv):
     parser.add_argument("--derived-data")
     parser.add_argument("--log")
     parser.add_argument("--jobs", type=int, default=4)
+    parser.add_argument("--xcodebuild-arg", action="append", default=[])
     parser.add_argument("--no-slot", action="store_true")
     parser.add_argument("--clean", action="store_true")
     parser.add_argument("--changed", action="store_true")
@@ -370,15 +374,16 @@ def score_test_classes(changed_names, changed_test_paths, classes, words_by_path
     return [(key[0], key[3]) for key in keyed], dropped, matches
 
 
-def changed_files(base: str, root: Path):
-    """The files changed since the merge-base of `base` and HEAD, as {path: text or None}.
+def changed_files(base: str, root: Path, scopes=None):
+    """The files changed since the merge-base of `base` and HEAD, as {path: text or None}. `scopes` are the folders that
+    count (default: the app's, the hosted tests', and TestData's); `l10n.py reach` adds the iPhone tests'.
 
     Tracked changes (staged, unstaged and committed) and untracked files under
     TextMouth/, TextMouthProductionTests/ and TestData/. A deleted file is read
     from the merge-base, so the types it declared still count; a file that
     cannot be read as text maps to None. Raises difflint.GitError.
     """
-    scopes = ["--", CHANGED_APP, CHANGED_TESTS, CHANGED_DATA]
+    scopes = ["--"] + list(scopes or (CHANGED_APP, CHANGED_TESTS, CHANGED_DATA))
     merge_base = difflint.run_git(["merge-base", base, "HEAD"], cwd=str(root)).strip()
     tracked = difflint.run_git(["diff", "--name-only", "--no-color", merge_base] + scopes, cwd=str(root))
     untracked = difflint.run_git(["ls-files", "--others", "--exclude-standard"] + scopes, cwd=str(root))
@@ -416,10 +421,10 @@ def names_of_changes(changes):
     return names, test_paths
 
 
-def test_file_words(root: Path):
-    """{path: words} for every Swift file of the hosted test folder."""
+def test_file_words(root: Path, folder: str = testkit.TESTS_FOLDER):
+    """{path: words} for every Swift file of the hosted test folder (or another test folder, such as the iPhone bundle's)."""
     return {str(source.relative_to(root)): file_words(source.read_text(encoding="utf-8", errors="replace"))
-            for source in sorted((root / testkit.TESTS_FOLDER).glob("*.swift"))}
+            for source in sorted((root / folder).glob("*.swift"))}
 
 
 def changed_report(ranked, dropped, matches, areas, explain=False, limit=None):
@@ -674,6 +679,13 @@ def selftest() -> int:
         "-destination", "platform=macOS", "-parallel-testing-enabled", "NO", "-jobs", "3",
         "CODE_SIGNING_ALLOWED=NO", "COMPILER_INDEX_STORE_ENABLE=NO", "-derivedDataPath", "/tmp/D",
         "-only-testing:TextMouthProductionTests/A", "-only-testing:TextMouthProductionTests/B"], command)
+    extra = testkit.build_command(Path("/r"), ["A"], "/tmp/D", use_slot=False, extra=["-test-timeouts-enabled", "YES"])
+    check("extra arguments go before the classes", extra[-3:] == ["-test-timeouts-enabled", "YES", "-only-testing:TextMouthProductionTests/A"],
+          extra[-3:])
+    parallel = testkit.build_command(Path("/r"), ["A"], "/tmp/D", use_slot=False,
+                                     extra=["-parallel-testing-enabled", "YES", "-parallel-testing-worker-count", "2"])
+    check("an extra -parallel-testing-enabled replaces the default, never repeats it",
+          parallel.count("-parallel-testing-enabled") == 1 and parallel[parallel.index("-parallel-testing-enabled") + 1] == "YES", parallel)
     slotted = testkit.build_command(Path("/r"), ["A"], "/tmp/D")
     check("the wrapper goes first", slotted[0] == "/r/" + testkit.SLOT_WRAPPER and slotted[1] == "xcodebuild", slotted[:2])
 
@@ -703,6 +715,13 @@ def selftest() -> int:
     listed = testkit.format_summary(summary(many))
     check("errors are capped at 20 then 'and N more'",
           sum(l.startswith("ERROR ") for l in listed) == 20 and "and 5 more" in listed, listed)
+
+    # A printed NSError that two processes' interleaved output cut at the front ("... proxy " lost, "error: Error
+    # Domain=..." left at the start of a line) is no compile error: it failed a clean run of 11,849 tests (November 10).
+    noise = summary(_LOG_PASS + "error: Error Domain=NSCocoaErrorDomain Code=4099 \"The connection ... was invalidated\"\n")
+    check("an NSError cut at the front is no error", not noise.errors and noise.passed, noise.errors)
+    real = summary(_LOG_PASS + "error: Unable to find a destination\n")
+    check("a bare error line is still an error", bool(real.errors), real.errors)
 
     warned = testkit.format_summary(summary(_LOG_WARNING))
     check("a repository warning is listed once, a package's not",
@@ -1020,7 +1039,8 @@ def main(argv) -> int:
         command, steps = repeat_plan(root, selected, derived_data, args.jobs, args.repeat, log_path,
                                      env_vars, use_slot=not args.no_slot)
     else:
-        command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot)
+        command = testkit.build_command(root, selected, derived_data, jobs=args.jobs, use_slot=not args.no_slot,
+                                        extra=args.xcodebuild_arg)
 
     if args.dry_run:
         if args.repeat:

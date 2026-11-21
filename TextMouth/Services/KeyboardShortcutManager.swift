@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 
 /// Manages customizable keyboard shortcuts using NSEvent monitoring.
@@ -35,7 +39,9 @@ final class KeyboardShortcutManager: ObservableObject {
     /// config.json, is published, and the next key press goes by it.
     private(set) var doublePressTime: TimeInterval
 
+#if os(macOS)
     private var eventMonitor: Any?
+#endif
     /// The store holding the record.
     private let userDefaults: UserDefaults
     /// Where the actions' notifications are posted: the app's own center,
@@ -100,9 +106,11 @@ final class KeyboardShortcutManager: ObservableObject {
                 self?.takeEditsFromStore()
             }
         }
+#if os(macOS)
         if installsEventMonitor {
             startMonitoring()
         }
+#endif
     }
 
     // MARK: - Persistence
@@ -329,7 +337,7 @@ final class KeyboardShortcutManager: ObservableObject {
         ShortcutEdits.log(moved.sharedKeys, source: storeLogSource, field: editsPreference.key)
         let sources = [
             savedMap.map { "\(savedMapKey) (\($0.edits.keysByEditedAction.count) actions)" },
-            fileLists.map { "config.json (\($0.count) actions)" },
+            fileLists.map { "config.json (\($0.count) actions)" }, // l10n: no (log text)
         ].compactMap { $0 }
         let edited = moved.edits.editedActions.map(\.rawValue)
         DiagnosticLog.event(
@@ -425,7 +433,7 @@ final class KeyboardShortcutManager: ObservableObject {
 
     /// Display string for the primary binding of an action
     func primaryDisplayString(for action: ShortcutAction) -> String {
-        bindings[action]?.first?.displayString ?? "None"
+        bindings[action]?.first?.displayString ?? ShortcutAction.noneName
     }
 
     /// An action's keys in force in words, as VoiceOver and a braille
@@ -563,6 +571,7 @@ final class KeyboardShortcutManager: ObservableObject {
 
     // MARK: - Event Monitoring
 
+#if os(macOS)
     private func startMonitoring() {
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self = self else { return event }
@@ -606,6 +615,15 @@ final class KeyboardShortcutManager: ObservableObject {
         if let trial {
             return trial.take(stroke, at: event.timestamp, isRepeat: event.isARepeat)
         }
+        // A Space while the Library list types a title that goes on with one
+        // ("the h", the Leading articles setting), the list still having
+        // the keyboard, is the list's, as letters are there; at any other
+        // time it is Play or Pause.
+        // Judged by the list's own clock, as the list judges it next.
+        if stroke == KeyBinding(key: "space"), firstResponder is NSTableView,
+           TitleTypingSpaceClaim.shared.takesSpace(in: keyWindow) {
+            return false
+        }
         return dispatcher.handle(ShortcutPressDispatcher.Press(
             stroke: stroke,
             time: event.timestamp,
@@ -637,6 +655,7 @@ final class KeyboardShortcutManager: ObservableObject {
             || window === NSApp.modalWindow
     }
 
+#endif
     /// Posts the action `trigger` names, with the window it was pressed in,
     /// so that only that window acts (`WindowCommandRouting`), and whether
     /// Shift was held beyond the binding's own modifiers.
@@ -648,6 +667,7 @@ final class KeyboardShortcutManager: ObservableObject {
         if let window = trigger.window {
             userInfo["sourceWindow"] = window
         }
+#if os(macOS)
         if trigger.action == .restartSleepTimer {
             let windowNumber = trigger.window.map { String($0.windowNumber) } ?? "none"
             SleepTimerService.log(
@@ -656,9 +676,11 @@ final class KeyboardShortcutManager: ObservableObject {
                     + "sourceWindow=\(windowNumber)"
             )
         }
+#endif
         notificationCenter.post(name: trigger.action.notificationName, object: nil, userInfo: userInfo)
     }
 
+#if os(macOS)
     /// The kind of window a key pressed while `keyWindow` is key is pressed
     /// in, whose scopes' shortcuts match it (FR12's branch E): a sheet's
     /// window's kind (`pressKind(window:sheetParent:)`), and `.other` with no
@@ -670,13 +692,30 @@ final class KeyboardShortcutManager: ObservableObject {
     /// which counts as a Library window (REV11): a reader's shortcuts did not
     /// work there, the Library's did, and over an audio editor they matched
     /// where none should.
+    ///
+    /// The Search Library window is neither: no shortcut matches in it, nor
+    /// in a sheet over it (nil, as over an audio editor), so its list and
+    /// field take every key, Return opening a match and Space and the
+    /// letters going to VoiceOver and the list rather than playing a book.
+    /// Menu key equivalents still act there, as menus handle them.
     static func windowKind(ofKeyWindow keyWindow: NSWindow?) -> ShortcutWindowKind? {
         guard let keyWindow else { return .other }
         let underneath = WindowCommandRouting.rootWindow(for: keyWindow)
+        if isLibrarySearchWindow(underneath) {
+            return nil
+        }
         return pressKind(
             window: windowKind(of: keyWindow),
             sheetParent: underneath === keyWindow ? nil : windowKind(of: underneath)
         )
+    }
+
+    /// Whether `window`, or the window under its sheets, is the Search
+    /// Library window, named by its identifier
+    /// (`LibrarySearchWindowController.windowIdentifier`) as the Record
+    /// window and the audio editors are.
+    static func isLibrarySearchWindow(_ window: NSWindow) -> Bool {
+        WindowCommandRouting.rootWindow(for: window).identifier?.rawValue == LibrarySearchWindowController.windowIdentifier
     }
 
     /// The kind of window `window` is, apart from any sheet it is: an audio
@@ -701,6 +740,7 @@ final class KeyboardShortcutManager: ObservableObject {
         }
     }
 
+#endif
     /// The kind whose shortcuts a key pressed in a window of `kind` matches,
     /// a sheet over a window of `parentKind` when it is one: a sheet counts
     /// as its window, so a reader's shortcuts work in a sheet over a reader,
@@ -744,6 +784,7 @@ final class KeyboardShortcutManager: ObservableObject {
         eventHasShift && !bindingRequiresShift
     }
 
+#if os(macOS)
     /// Whether `responder`, as the key window's first responder, takes
     /// text from the keyboard: a text view, editable or only selectable
     /// (a feed item's description is read and copied from one); the field
@@ -754,6 +795,7 @@ final class KeyboardShortcutManager: ObservableObject {
     static func isTextInput(_ responder: NSResponder?) -> Bool {
         responder is NSTextView || responder is NSTextField
     }
+#endif
 }
 
 /// A default key an action following its defaults goes without, and the

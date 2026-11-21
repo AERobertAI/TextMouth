@@ -56,6 +56,7 @@ final class KeyboardReachabilityTests: XCTestCase {
         "BookManifestEditWording.editWithTitle": "A Book menu command that edits the book's manifest with another app; it has no shortcut action and is reached from the menu bar.",
         "TranscriptionWording.transcribeCommandTitle(hasTranscript: canDeleteBookTranscript == true)":
             "A Book menu command that transcribes a book's audio, or retranscribes it once it has a transcript; it has no shortcut action and is reached from the menu bar.",
+        "TranscriptionWording.attachCommandTitle": "A Book menu command that attaches a transcript file to an audiobook; it has no shortcut action and is reached from the menu bar.",
         "TranscriptCleanupWording.commandTitle": "A Book menu command that cleans up a transcript; it has no shortcut action and is reached from the menu bar.",
         "TranscriptionWording.deleteCommandTitle": "A Book menu command that deletes a book's transcript; it has no shortcut action and is reached from the menu bar.",
         "AudioEditorWording.editAudioCommand": "A Book menu command that opens the audio editor; it has no shortcut action and is reached from the menu bar.",
@@ -133,11 +134,22 @@ final class KeyboardReachabilityTests: XCTestCase {
         return name
     }
 
+    /// The menu's `MenuWording` titles that name a shortcut action with an
+    /// ellipsis its title lacks: the menu writes "Move to Folder..." where the
+    /// action is named "Move to Folder" (`withoutEllipsis(_:)`).
+    static let menuWordingActions: [String: ShortcutAction] = [
+        "MenuWording.moveToFolder": .moveToFolder,
+    ]
+
     /// What `argument` is: `ShortcutAction.<case>.title` or `.rawValue`, or a
     /// string literal equal to some action's raw value or title (an ellipsis at the
-    /// end counting for nothing, as `withoutEllipsis(_:)` says), or
+    /// end counting for nothing, as `withoutEllipsis(_:)` says), or a
+    /// `MenuWording` title that names an action (`menuWordingActions`), or
     /// else `.other`.
     static func source(ofMenuButton argument: String) -> MenuButtonSource {
+        if let action = menuWordingActions[argument] {
+            return .action(action)
+        }
         // ShortcutAction.<case>.title and ShortcutAction.<case>.rawValue.
         for ending in [".title", ".rawValue"] where argument.hasPrefix("ShortcutAction.") && argument.hasSuffix(ending) {
             let caseName = String(argument.dropFirst("ShortcutAction.".count).dropLast(ending.count))

@@ -448,7 +448,15 @@ extension FileImportService {
         } else {
             throw FileImportError.unsupportedFormat(content.pathExtension.lowercased())
         }
-        let metadata = isTracksFolder ? nil : ImportedFileMetadata.read(from: content, format: format)
+        // A braille book's title page is read with the table and characters
+        // the marker kept, so adding a book back runs no fresh guess
+        // (brfguess); a marker that kept no table reads with the setting's.
+        let brailleReading = format == .braille
+            ? (table: marker.brailleTable ?? BraillePreferences.importTable(), fileCode: marker.brailleFileCode)
+            : nil
+        let metadata = isTracksFolder
+            ? nil
+            : ImportedFileMetadata.read(from: content, format: format, brailleReading: brailleReading)
 
         return Book(
             id: marker.bookID,
@@ -491,7 +499,9 @@ extension FileImportService {
             // record held as well. Without it the book would be read by the
             // fallback, and its text would change.
             textEncoding: format.usesTextFileDecoder ? marker.textEncoding : nil,
-            textEncodingSource: format.usesTextFileDecoder ? marker.textEncodingSource : nil
+            textEncodingSource: format.usesTextFileDecoder ? marker.textEncodingSource : nil,
+            // Who chose the braille table goes with it (brfguess).
+            brailleTableOrigin: format == .braille ? marker.brailleTableOrigin : nil
         )
     }
 
@@ -520,8 +530,9 @@ extension FileImportService {
     /// recording's origin record and its original take (`BookOrigin`), the
     /// audio edit history's folder (`AudioEditPackage`), an audiobook's
     /// transcript and the copies kept of an unusable one
-    /// (`TextMouthPaths.isTranscriptFile`), the cachedAudio folder, and the
-    /// removal marker).
+    /// (`TextMouthPaths.isTranscriptFile`), a podcast episode's chapters
+    /// (`TextMouthPaths.podcastChaptersFileName`), the cachedAudio folder,
+    /// and the removal marker).
     static func isPackageContentName(_ name: String) -> Bool {
         !name.hasPrefix(".")
             && name != TextMouthPaths.bookInfoFileName
@@ -532,6 +543,7 @@ extension FileImportService {
             && name != AudioEditPackage.folderName
             && name != TextMouthPaths.cachedAudioFolderName
             && name != TextMouthPaths.removedFromLibraryMarkerName
+            && name != TextMouthPaths.podcastChaptersFileName
             && !TextMouthPaths.isKeptTextCopy(name)
             && !TextMouthPaths.isTranscriptFile(name)
     }

@@ -289,7 +289,7 @@ final class MacBrailleTableCheckTests: XCTestCase {
         // the print, and the reading back, then the same again.
         let times = OSAllocatedUnfairLock(initialState: [0, 0.01, 1, 1.02, 2, 3, 10, 10.01, 11, 11.02, 12, 13])
         var tool = echoing("\u{2801}")
-        tool.uptime = { times.withLock { $0.isEmpty ? 0 : $0.removeFirst() } }
+        tool.clock = RunningClock(countingWhole: { times.withLock { $0.isEmpty ? 0 : $0.removeFirst() } })
         let verdicts = MacBrailleTableCheck.Verdicts()
         try MacBrailleTableCheck.$verdicts.withValue(verdicts) {
             try BrailleTranslator.$tool.withValue(tool) {
@@ -299,6 +299,44 @@ final class MacBrailleTableCheckTests: XCTestCase {
         }
         XCTAssertNil(verdicts.verdict(for: table), "a table found too slow was kept for the session")
         assertWorkFolderEmpty()
+    }
+
+    /// A measured run of a helper that ends at once is still read once (Q15):
+    /// the stand-in exits within a few milliseconds, long before the
+    /// watchdog's first look (a tenth of a second), and the one reading
+    /// taken as the child starts is kept. Before the fix the peak was 0, and
+    /// `testFrenchGermanAndSpanishPassAndRoundTrip` failed on a Mac that
+    /// started the reaper slower than a small table loaded.
+    func testAHelperThatEndsAtOnceIsStillMeasuredOnce() throws {
+        let table = try anyOfferedMacTable()
+        let readings = OSAllocatedUnfairLock(initialState: 0)
+        var tool = shell("exit 0")
+        // A stand-in reading, so the test does not depend on the child
+        // being alive when the reading is taken.
+        tool.residentMemory = { _ in
+            readings.withLock { $0 += 1 }
+            return 4_096
+        }
+        // The measure asks to be read every 10 seconds: the stand-in's own
+        // limits (a tenth of a second) are the shorter, and stay.
+        let measure = BrailleTranslator.RunMeasure(memoryCeiling: MacBrailleTableCheck.memoryCeilingBytes, pollInterval: 10)
+        try isolated(tool: tool) {
+            try BrailleTranslator.check(table: table, workingIn: work, measure: measure)
+        }
+        XCTAssertGreaterThanOrEqual(readings.withLock { $0 }, 1, "a child that ended at once was never read")
+        XCTAssertEqual(measure.peakResidentBytes, 4_096)
+        assertWorkFolderEmpty()
+    }
+
+    /// A need measured as 0 bytes (no reading came) never sets a limit: a
+    /// run's memory limit stays what the tool gives, and a measured need
+    /// raises it to twice the need and no further.
+    func testAMeasuredNeedOfZeroBytesNeverSetsTheMemoryLimit() {
+        let today = WatchedProcess.Limits(maximumSeconds: 5, maximumResidentBytes: 16 << 20, maximumStalledSeconds: 5)
+        let unmeasured = MacBrailleTableCheck.TableNeeds(loadSeconds: 0, forwardSecondsPerMB: 0, backSecondsPerMB: 0, peakResidentBytes: 0)
+        XCTAssertEqual(unmeasured.limits(raising: today, direction: nil, bytes: 0).maximumResidentBytes, 16 << 20)
+        let measured = MacBrailleTableCheck.TableNeeds(loadSeconds: 0, forwardSecondsPerMB: 0, backSecondsPerMB: 0, peakResidentBytes: 20 << 20)
+        XCTAssertEqual(measured.limits(raising: today, direction: nil, bytes: 0).maximumResidentBytes, 40 << 20)
     }
 
     /// A run of a table found usable gets the limits its needs call for: a

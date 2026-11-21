@@ -1,0 +1,14 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-nonInlinePageBreakFirstLine.doc
+macOS: 26.3
+format: doc
+title: libreoffice-nonInlinePageBreakFirstLine
+author: Administrator
+chapters: 1
+words: 5
+text length: 30
+text checksum: a117e62b75ae198f
+first 300: First line\n\nShould be indented
+last 300: First line\n\nShould be indented
+page: 1 | 0:0 | First line\n\nShould be in
+page: 2 | 0:12 | Should be indented

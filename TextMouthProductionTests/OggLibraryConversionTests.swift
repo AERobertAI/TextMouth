@@ -189,7 +189,7 @@ final class OggLibraryConversionTests: XCTestCase {
 
         XCTAssertFalse(reader.chapterAudioIsClearOfOgg())
         XCTAssertEqual(reader.errorMessage, ReaderOggWording.beingConverted)
-        XCTAssertEqual(reader.errorMessage, "This book's audio is being converted from Ogg to AAC. It plays once the conversion ends.")
+        XCTAssertEqual(reader.errorMessage, "This book's audio is being converted from Ogg to AAC. It plays when that ends.")
         XCTAssertFalse(reader.isCurrentlyPlaying)
     }
 
@@ -212,7 +212,7 @@ final class OggLibraryConversionTests: XCTestCase {
         XCTAssertFalse(reader.chapterAudioIsClearOfOgg())
         XCTAssertEqual(
             reader.errorMessage,
-            "This book's audio needs converting from Ogg to AAC before it plays. TextMouth is converting it now, and it plays once the conversion ends."
+            "This book's audio needs converting from Ogg to AAC. TextMouth is converting it now, and it plays when that ends."
         )
         XCTAssertTrue(world.library.oggConversion.isConverting(book.id))
 

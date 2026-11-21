@@ -290,16 +290,16 @@ enum TranscriptAccuracy {
         /// The class's name in a table.
         var title: String {
             switch self {
-            case .passage: return "Passages not in both"
-            case .announcement: return "Pages and chapters announced"
-            case .number: return "Numbers"
-            case .name: return "Proper names"
-            case .hyphenation: return "Hyphenation and compounds"
-            case .spelling: return "American and British spelling"
-            case .archaic: return "Archaic words"
-            case .homophone: return "Homophones"
-            case .smallWords: return "Small words"
-            case .other: return "Other words"
+            case .passage: return "Passages not in both"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .announcement: return "Pages and chapters announced"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .number: return "Numbers"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .name: return "Proper names"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .hyphenation: return "Hyphenation and compounds"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .spelling: return "American and British spelling"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .archaic: return "Archaic words"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .homophone: return "Homophones"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .smallWords: return "Small words"  // l10n: no (a developer measurement's table, never shown in the app)
+            case .other: return "Other words"  // l10n: no (a developer measurement's table, never shown in the app)
             }
         }
 
@@ -677,7 +677,7 @@ enum TranscriptAccuracy {
                 }
             }
             .map { (pair: $0.key, count: $0.value) }
-            .sorted { ($1.count, $0.pair.heard, $0.pair.written) < ($0.count, $1.pair.heard, $1.pair.written) }
+            .sortedStably { ($1.count, $0.pair.heard, $0.pair.written) < ($0.count, $1.pair.heard, $1.pair.written) }
             .prefix(limit)
             .map { $0 }
         }
@@ -759,7 +759,7 @@ enum TranscriptAccuracy {
                 }
             }
         }
-        return tallied(Array(found.values), over: measured).sorted {
+        return tallied(Array(found.values), over: measured).sortedStably {
             ($1.evidence, $1.fixes, $0.conflicts, $0.pattern, $0.replacement)
                 < ($0.evidence, $0.fixes, $1.conflicts, $1.pattern, $1.replacement)
         }

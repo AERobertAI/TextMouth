@@ -133,6 +133,21 @@ final class PlaybackSettingsAuditTests: XCTestCase {
         XCTAssertEqual(text.speedStepButtonLabel(forward: false), "Decrease speed by 25 words per minute")
     }
 
+    /// What VoiceOver hears as the voice, speed, pitch, and skipped sections
+    /// change: each is one whole localized sentence (FR34), in English word
+    /// for word as before.
+    func testVoiceAndSpeedAnnouncementsAreWholeSentences() {
+        typealias Words = VoiceAndSpeedWording
+        XCTAssertEqual(Words.speedAnnouncement(wordsPerMinute: 225), "225 words per minute")
+        XCTAssertEqual(Words.pitchAnnouncement("1.2"), "Pitch 1.2")
+        XCTAssertEqual(Words.voiceChanged(to: "Samantha"), "Voice changed to Samantha")
+        XCTAssertEqual(Words.appliedAsGlobalDefaults, "Settings applied as global defaults")
+        XCTAssertEqual(Words.audioSpeedReset(to: "1.0 times speed"), "Audio speed reset to 1.0 times speed")
+        XCTAssertEqual(Words.sectionIncluded("Prologue"), "Section included: Prologue")
+        XCTAssertEqual(Words.sectionSkipped("Prologue"), "Section skipped: Prologue")
+        XCTAssertEqual(AudioSpeed.spokenLabel(for: 1.25), "1.25 times speed")
+    }
+
     /// Preserve the existing 25 WPM increment for text books.
     func testTextSpeedCommandsKeepWPMUnits() {
         let reader = makeReader(format: .txt)

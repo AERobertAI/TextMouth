@@ -1,6 +1,11 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
+import os
 import SwiftUI
 
 // MARK: - The Export Setting
@@ -51,8 +56,14 @@ struct BookExportChoice: Equatable, Identifiable {
     }
 
     /// The checkbox's label while its text is converted to the writer named
-    /// `conversionName` (nil: as it is), as in "Text as HTML, about 12 KB".
-    func label(convertedTo conversionName: String?) -> String {
+    /// `conversionName` (nil: as it is), as in "Text as HTML, about 12 KB",
+    /// or while its transcript is written as `transcriptConversionName`, a
+    /// format of captions or a text writer (FMT23; nil: as TextMouth keeps
+    /// it), as in "Transcript as WebVTT".
+    func label(
+        convertedTo conversionName: String?,
+        transcriptAs transcriptConversionName: String? = nil
+    ) -> String {
         let available = availableItems
         return BookExportWording.choiceLabel(
             kind: kind,
@@ -61,14 +72,17 @@ struct BookExportChoice: Equatable, Identifiable {
             fileCount: available.reduce(0) { $0 + $1.files.count },
             byteCount: available.reduce(0) { $0 + $1.byteCount },
             inCloudCount: inCloudCount,
-            convertedTo: conversionName
+            convertedTo: conversionName,
+            transcriptAs: transcriptConversionName
         )
     }
 
     /// The choices `offers` give: one for each kind any of their books
-    /// holds, in the dialog's order.
+    /// holds, in the dialog's order. Spoken audio (FMT43) is offered for one
+    /// book alone, since its range and sliders are that book's.
     static func choices(for offers: [BookExportOffer]) -> [BookExportChoice] {
         BookExportKind.allCases.compactMap { kind in
+            if kind == .spokenAudio && offers.count != 1 { return nil }
             let items = offers.compactMap { $0.item(kind) }
             return items.isEmpty ? nil : BookExportChoice(kind: kind, items: items, bookCount: offers.count)
         }
@@ -78,9 +92,13 @@ struct BookExportChoice: Equatable, Identifiable {
 // MARK: - One Choice of the Convert To Picker
 
 /// One choice of the Convert to picker (FMT18): Markdown, the export without
-/// a conversion, or a text writer.
+/// a conversion, or a text writer. Beside the Transcript checkbox (FMT23):
+/// JSON and Markdown, the export without a conversion, a text writer for the
+/// transcript's text, or a format of captions.
 struct BookExportConversionChoice: Identifiable, Equatable {
-    /// The writer's `id`, or `TextExportWriters.markdownID` for Markdown.
+    /// The writer's `id`, or `TextExportWriters.markdownID` for Markdown;
+    /// beside Transcript, also `TranscriptExportFormat.jsonAndMarkdownChoiceID`
+    /// or a format's `choiceID`.
     let id: String
     /// The choice's name, as the picker lists it and VoiceOver speaks it.
     let name: String
@@ -99,6 +117,19 @@ struct BookExportConversionChoice: Identifiable, Equatable {
 /// it is. The export runs off the main thread too, with its progress here,
 /// and ends with one announcement naming how many items went where, and
 /// anything that could not be exported, in the cloud included.
+///
+/// A chapter that nests quotes, lists, or emphasis past the reader's limit is
+/// put to the person while the export runs (FR24, `DeepChapterPrompt`): write
+/// it as plain paragraphs of its lines, do so for every such chapter of the
+/// export, or cancel the whole export, which ends as Stop does. The export's
+/// thread waits for the answer, and Stop takes the question down as a cancel.
+///
+/// For one text book the dialog also offers its text as spoken audio (FMT43):
+/// the options are made the first time the kind is checked (`speechOptions`),
+/// since that reads the book's whole text for its headings, which no other
+/// kind needs; an export that takes the kind runs `SpeechExportJob` with them,
+/// showing which chapter is being spoken, and saying at its end what it kept
+/// for the next export.
 @MainActor
 final class BookExportModel: ObservableObject, Identifiable {
     /// Where the dialog is.
@@ -132,8 +163,34 @@ final class BookExportModel: ObservableObject, Identifiable {
     @Published private(set) var summary: String?
     /// The Convert to picker's choice for each kind that has one: a writer's
     /// `id`. A kind not here is on Markdown, so a dialog nobody touched
-    /// exports as it always has.
+    /// exports as it always has. The transcript's picker (FMT23) keeps its
+    /// choice here too, and is on JSON and Markdown until one is made.
     @Published private(set) var conversionIDs: [BookExportKind: String] = [:]
+    /// How far spoken audio's options are made.
+    enum SpeechOptionsMaking {
+        /// Not yet: the kind has not been checked.
+        case notMade
+        /// The book's text is being read for its headings.
+        case making
+        /// Made, as they stand now.
+        case made(SpeechExportOptionsState)
+        /// The book's text can't be read, so it can't be spoken.
+        case unreadable
+    }
+
+    /// How far spoken audio's options are made: they are made the first time
+    /// the kind is checked (`setChecked(_:for:)`).
+    @Published private(set) var speechOptionsMaking = SpeechOptionsMaking.notMade
+
+    /// The spoken audio options, once made: nil until the kind is first
+    /// checked, and for a book whose text can't be read.
+    var speechOptions: SpeechExportOptionsState? {
+        if case .made(let options) = speechOptionsMaking { return options }
+        return nil
+    }
+    /// How far a speech export has come while it speaks or encodes; nil before
+    /// and after it.
+    @Published private(set) var speechProgress: SpeechExportProgress?
 
     /// How files are checked and read without downloading (FR02).
     private let access: MaintenanceFileAccess
@@ -148,6 +205,56 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// dialog's life so that choosing another writer and coming back finds
     /// them as they were.
     private var optionsStates: [String: any TextExportOptionsEditing] = [:]
+    /// What a speech export reaches: the synthesizer, the voices, the power
+    /// assertion, the disks, and the folder its chapters are kept in.
+    private let speechEnvironment: SpeechExportEnvironment
+    /// The preferences holding the global voice, speed, pitch, and pause
+    /// level, which a book without its own speaks with.
+    private let speechDefaults: UserDefaults
+    /// The substitution rules and repeated-symbol settings speech is prepared
+    /// with.
+    private let substitutionService: TextSubstitutionService
+    /// The speech exports under way, which a quit stops cleanly first.
+    private let speechExportsUnderWay: SpeechExportsUnderWay
+    /// How the question about a chapter nested too deeply (FR24) is put to
+    /// the person; nil where nobody can be asked, when such a chapter fails
+    /// its book's file as it did before the question.
+    private let deepChapterPrompt: DeepChapterPrompt?
+
+    /// How the question about a chapter nested too deeply is put to the
+    /// person: shown over the dialog's window, and taken down by Stop. Both
+    /// run on the main actor, while the export's thread waits for the answer.
+    struct DeepChapterPrompt: Sendable {
+        /// Shows `question`, over `window` (the Export dialog's own, if it
+        /// is known), and returns the answer.
+        let ask: @MainActor @Sendable (ExportDeepChapterQuestion, PlatformWindow?) async -> ExportDeepChapterAnswer
+        /// Takes the question down if it is showing, answered as Cancel
+        /// Export.
+        let dismiss: @MainActor @Sendable () -> Void
+
+        /// A prompt that asks through `ask` and is taken down by `dismiss`
+        /// (which a scripted prompt, with nothing on screen, leaves to do
+        /// nothing).
+        init(
+            ask: @escaping @MainActor @Sendable (ExportDeepChapterQuestion, PlatformWindow?) async -> ExportDeepChapterAnswer,
+            dismiss: @escaping @MainActor @Sendable () -> Void = {}
+        ) {
+            self.ask = ask
+            self.dismiss = dismiss
+        }
+    }
+
+    /// Who puts the question about a chapter nested too deeply.
+    enum DeepChapterPrompting {
+        /// The app's way: an alert over the dialog on the Mac, and nobody on
+        /// the iPhone, which has no export.
+        case standard
+        /// Nobody can be asked: such a chapter fails its book's file.
+        case unavailable
+        /// A prompt of the caller's own, which a test scripts so that no
+        /// alert is shown.
+        case custom(DeepChapterPrompt)
+    }
 
     /// The folder an export went to last this session, which the next
     /// dialog starts in.
@@ -174,17 +281,56 @@ final class BookExportModel: ObservableObject, Identifiable {
     ///   - writers: The text writers the picker offers. The app always
     ///     passes all of them (`TextExportWriters.all`); a test passes
     ///     writers of its own, such as one with options.
+    ///   - speechEnvironment: What a speech export reaches; tests pass fakes,
+    ///     so that nothing speaks and nothing keeps the Mac awake.
+    ///   - speechDefaults: The preferences holding the global voice, speed,
+    ///     pitch, and pause level; the sandbox's under hosted tests.
+    ///   - substitutionService: The substitution rules speech is prepared
+    ///     with.
+    ///   - speechExportsUnderWay: Where a speech export says it begins and
+    ///     ends, so that a quit stops it cleanly first; the app's own unless a
+    ///     test gives one.
+    ///   - deepChapterPrompting: Who puts the question about a chapter nested
+    ///     too deeply; the standard way asks with an alert, on the Mac. A
+    ///     test passes a scripted answer.
     init(
         books: [Book],
         library: LibraryViewModel? = nil,
         destination: URL? = nil,
         access: MaintenanceFileAccess = .live,
-        writers: [any TextExportWriter] = TextExportWriters.all
+        writers: [any TextExportWriter] = TextExportWriters.all,
+        speechEnvironment: SpeechExportEnvironment = .live,
+        speechDefaults: UserDefaults = TextMouthRuntime.current.preferences,
+        substitutionService: TextSubstitutionService = .shared,
+        speechExportsUnderWay: SpeechExportsUnderWay = .shared,
+        deepChapterPrompting: DeepChapterPrompting = .standard
     ) {
+        switch deepChapterPrompting {
+        case .standard:
+            #if os(macOS)
+            // The alert is this model's own, so that Stop can take it down.
+            let alert = ExportDeepChapterAlert()
+            deepChapterPrompt = DeepChapterPrompt(
+                ask: { question, window in await alert.ask(question, in: window) },
+                dismiss: { alert.dismiss() }
+            )
+            #else
+            // The iPhone has no export and nobody to ask.
+            deepChapterPrompt = nil
+            #endif
+        case .unavailable:
+            deepChapterPrompt = nil
+        case .custom(let prompt):
+            deepChapterPrompt = prompt
+        }
         self.books = books
         self.destination = destination ?? Self.defaultDestination
         self.access = access
         self.writers = writers
+        self.speechEnvironment = speechEnvironment
+        self.speechDefaults = speechDefaults
+        self.substitutionService = substitutionService
+        self.speechExportsUnderWay = speechExportsUnderWay
         currentBooks = { [weak library] chosen in
             chosen.map { library?.bookByID($0.id) ?? $0 }
         }
@@ -193,11 +339,14 @@ final class BookExportModel: ObservableObject, Identifiable {
     // MARK: Listing
 
     /// Lists what the books hold, off the main thread, and shows the
-    /// checkboxes, the first kind that can be exported checked.
+    /// checkboxes, the first kind that can be exported checked. Nothing reads
+    /// a book's text here: spoken audio's options are made once the kind is
+    /// checked.
     func load() async {
         phase = .listing
         let listed = await Self.offers(for: books, access: access)
         offers = listed
+        speechOptionsMaking = .notMade
         choices = BookExportChoice.choices(for: listed)
         if let first = choices.first(where: \.isAvailable) {
             checked = [first.kind]
@@ -212,6 +361,38 @@ final class BookExportModel: ObservableObject, Identifiable {
         }
     }
 
+    /// The spoken audio options of the one book `offers` list: its headings,
+    /// read off the main thread as the reader parses them, and the voice,
+    /// speed, and pitch it is read with now, as the library holds it. Nil when
+    /// its text cache cannot be read.
+    private func makeSpeechOptions(from offers: [BookExportOffer]) async -> SpeechExportOptionsState? {
+        guard let offer = offers.first, let markdown = offer.item(.spokenAudio)?.files.first?.source.url else {
+            return nil
+        }
+        let access = self.access
+        let title = offer.book.title
+        let headings = await OffMainWork.run { () -> [Heading]? in
+            try? access.read(markdown) {
+                let bytes = try Data(contentsOf: markdown)
+                return try BookExportService.readingContent(fromMarkdown: bytes, at: markdown, title: title).allHeadings
+            }
+        }
+        guard let headings else { return nil }
+        let book = currentBooks([offer.book]).first ?? offer.book
+        let environment = speechEnvironment
+        let settings = SpeechExportVoiceSettings.of(
+            book,
+            defaults: speechDefaults,
+            isInstalled: { environment.voiceInfo($0) != nil }
+        )
+        return SpeechExportOptionsState(
+            headings: headings,
+            skippedHeadingIDs: Set(book.skippedHeadingIDs ?? []),
+            voice: settings.voiceIdentifier.flatMap { environment.voiceInfo($0) },
+            settings: settings
+        )
+    }
+
     // MARK: State the Dialog Shows
 
     /// The dialog's title (`BookExportWording.title(bookTitles:)`).
@@ -224,12 +405,33 @@ final class BookExportModel: ObservableObject, Identifiable {
         checked.contains(kind)
     }
 
-    /// Checks or unchecks the checkbox of `kind`.
+    /// Checks or unchecks the checkbox of `kind`. Spoken audio checked for
+    /// the first time, and on this Mac, has its options made.
     func setChecked(_ isChecked: Bool, for kind: BookExportKind) {
         if isChecked {
             checked.insert(kind)
+            if kind == .spokenAudio {
+                makeSpeechOptionsOnce()
+            }
         } else {
             checked.remove(kind)
+        }
+    }
+
+    /// Makes spoken audio's options, off the main thread, unless they are
+    /// made or being made, or the kind is not on this Mac: reading the book's
+    /// whole text for its headings takes up to a second for a large book,
+    /// which only someone who wants spoken audio waits for.
+    private func makeSpeechOptionsOnce() {
+        guard case .notMade = speechOptionsMaking,
+              choices.contains(where: { $0.kind == .spokenAudio && $0.isAvailable }) else { return }
+        speechOptionsMaking = .making
+        let listed = offers
+        Task {
+            let made = await makeSpeechOptions(from: listed)
+            // A dialog listed again meanwhile makes them afresh.
+            guard case .making = speechOptionsMaking else { return }
+            speechOptionsMaking = made.map(SpeechOptionsMaking.made) ?? .unreadable
         }
     }
 
@@ -240,13 +442,16 @@ final class BookExportModel: ObservableObject, Identifiable {
     }
 
     /// Whether Export can be pressed: the books are listed, nothing is
-    /// being exported, and a checked kind has something on this Mac.
+    /// being exported, and a checked kind has something on this Mac, spoken
+    /// audio only once its options are made.
     var canExport: Bool {
         switch phase {
         case .listing, .exporting:
             return false
         case .ready, .finished:
-            return choices.contains { checked.contains($0.kind) && $0.isAvailable }
+            return choices.contains { choice in
+                checked.contains(choice.kind) && choice.isAvailable && (choice.kind != .spokenAudio || speechOptions != nil)
+            }
         }
     }
 
@@ -260,27 +465,98 @@ final class BookExportModel: ObservableObject, Identifiable {
     }
 
     /// The export's progress as the dialog shows and speaks it, while one
-    /// is under way.
+    /// is under way: which chapter is being spoken, or that the audio file is
+    /// being encoded, while a speech export works; otherwise how many items
+    /// are done.
     var progressText: String? {
         guard case .exporting(let done, let total) = phase else { return nil }
+        if let speechProgress, let words = SpeechExportWording.progress(speechProgress) {
+            return words
+        }
         return BookExportWording.progress(done: done, total: total)
+    }
+
+    /// How full the progress bar is, from 0 to 1, while an export is under
+    /// way: the speech export's own fraction while it works, otherwise the
+    /// items done of all; nil before the items have been counted, when the
+    /// bar says only that something is happening.
+    var progressFraction: Double? {
+        guard case .exporting(let done, let total) = phase else { return nil }
+        if let fraction = speechProgress?.fraction {
+            return fraction
+        }
+        return total > 0 ? Double(done) / Double(total) : nil
+    }
+
+    /// Whether the export under way takes spoken audio, whose Stop keeps the
+    /// chapters already spoken. The checkboxes are disabled while an export
+    /// runs, so the kinds checked are the kinds it took.
+    var isExportingSpeech: Bool {
+        isExporting && isChecked(.spokenAudio)
     }
 
     // MARK: Converting
 
     /// The choices of the Convert to picker beside the checkbox of `kind`:
     /// Markdown, then each text writer in order, for a kind whose text a
-    /// writer can convert; none for any other kind.
+    /// writer can convert; JSON and Markdown, each text writer, then each
+    /// format of captions, for the transcript (FMT23,
+    /// `transcriptConversionChoices`); none for any other kind.
     func conversionChoices(for kind: BookExportKind) -> [BookExportConversionChoice] {
+        if kind == .transcript {
+            return transcriptConversionChoices
+        }
+        // An audiobook's headings and bookmarks are always written in a
+        // format chosen here (FMT24, FMT06), the first until another is. A
+        // kind of one format (bookmarks, as Audacity labels) has no pop-up:
+        // its checkbox names the format ("Bookmarks as Audacity labels").
+        if let source = kind.chapterListSource {
+            let formats = ChapterListFormat.formats(for: source)
+            guard formats.count > 1 else { return [] }
+            return formats.map { format in
+                BookExportConversionChoice(
+                    id: format.choiceID,
+                    name: format.name,
+                    hint: BookExportWording.chapterListChoiceHint(for: format, source: source)
+                )
+            }
+        }
         guard kind.convertsText else { return [] }
         let markdown = BookExportConversionChoice(
             id: TextExportWriters.markdownID,
             name: BookExportWording.markdownChoiceName,
             hint: BookExportWording.markdownChoiceHint
         )
-        return [markdown] + writers.map {
+        return [markdown] + writerChoices
+    }
+
+    /// The text writers as choices of a picker, in order, each by its `id`,
+    /// name, and hint, the same beside Text as Markdown and beside
+    /// Transcript.
+    private var writerChoices: [BookExportConversionChoice] {
+        writers.map {
             BookExportConversionChoice(id: $0.id, name: $0.name, hint: $0.hint)
         }
+    }
+
+    /// The choices of the Convert transcript to picker beside the Transcript
+    /// checkbox (FMT23): JSON and Markdown, the transcript as TextMouth keeps
+    /// it (the default, today's export); each text writer, which writes the
+    /// transcript's text (TODO 3984); then each format of captions.
+    private var transcriptConversionChoices: [BookExportConversionChoice] {
+        let asKept = BookExportConversionChoice(
+            id: TranscriptExportFormat.jsonAndMarkdownChoiceID,
+            name: BookExportWording.transcriptJSONChoiceName,
+            hint: BookExportWording.transcriptJSONChoiceHint
+        )
+        let captions = TranscriptExportFormat.allCases.map { format in
+            BookExportConversionChoice(
+                id: format.choiceID,
+                name: format.name,
+                hint: BookExportWording.transcriptChoiceHint(for: format)
+            )
+        }
+        return [asKept] + writerChoices + captions
     }
 
     /// The writer whose `id` is `id` among the picker's writers; nil for
@@ -289,10 +565,12 @@ final class BookExportModel: ObservableObject, Identifiable {
         writers.first { $0.id == id }
     }
 
-    /// The `id` of the picker's choice for `kind`: Markdown until another is
-    /// chosen.
+    /// The `id` of the picker's choice for `kind`: its first choice until
+    /// another is chosen, which is Markdown, or JSON and Markdown beside
+    /// Transcript (FMT23). A kind with no picker gives Markdown's `id`, as it
+    /// always did.
     func conversionID(for kind: BookExportKind) -> String {
-        conversionIDs[kind] ?? TextExportWriters.markdownID
+        conversionIDs[kind] ?? conversionChoices(for: kind).first?.id ?? TextExportWriters.markdownID
     }
 
     /// Chooses `id` in the picker beside the checkbox of `kind`. A kind with
@@ -315,26 +593,82 @@ final class BookExportModel: ObservableObject, Identifiable {
     }
 
     /// The name of the writer `kind`'s text is converted to; nil on Markdown
-    /// and for a kind with no picker, which the checkbox says as it is.
+    /// and for a kind with no picker, which the checkbox says as it is, and
+    /// for the transcript, whose checkbox names its own conversion
+    /// (`transcriptFormat(for:)`, `transcriptWriter(for:)`).
     private func conversionName(for kind: BookExportKind) -> String? {
+        if let format = chapterListFormat(for: kind) {
+            return format.name
+        }
         guard kind.convertsText else { return nil }
         return writer(id: conversionID(for: kind))?.name
     }
 
+    /// The format an audiobook's headings or bookmarks are written in
+    /// (FMT24, FMT06): the one chosen beside the checkbox, the kind's first
+    /// until another is; nil for every other kind.
+    private func chapterListFormat(for kind: BookExportKind) -> ChapterListFormat? {
+        guard let source = kind.chapterListSource else { return nil }
+        let formats = ChapterListFormat.formats(for: source)
+        return formats.first { $0.choiceID == conversionID(for: kind) } ?? formats.first
+    }
+
+    /// The format of captions the transcript is written in (FMT23): the one
+    /// chosen beside the Transcript checkbox; nil on JSON and Markdown, on a
+    /// text writer, and for every other kind.
+    private func transcriptFormat(for kind: BookExportKind) -> TranscriptExportFormat? {
+        guard kind == .transcript else { return nil }
+        return TranscriptExportFormat(choiceID: conversionID(for: kind))
+    }
+
+    /// The text writer the transcript's text is written by (TODO 3984): the
+    /// one chosen beside the Transcript checkbox; nil on JSON and Markdown,
+    /// on a format of captions, and for every other kind.
+    private func transcriptWriter(for kind: BookExportKind) -> (any TextExportWriter)? {
+        guard kind == .transcript else { return nil }
+        return writer(id: conversionID(for: kind))
+    }
+
     /// The label of `choice`'s checkbox, saying the conversion chosen.
     func label(for choice: BookExportChoice) -> String {
-        choice.label(convertedTo: conversionName(for: choice.kind))
+        let transcriptConversion = transcriptFormat(for: choice.kind)?.name ?? transcriptWriter(for: choice.kind)?.name
+        return choice.label(convertedTo: conversionName(for: choice.kind), transcriptAs: transcriptConversion)
     }
 
     /// The hint of the checkbox of `kind`, saying the conversion chosen.
     func hint(for kind: BookExportKind) -> String {
-        BookExportWording.hint(for: kind, convertedTo: conversionName(for: kind))
+        if let format = transcriptFormat(for: kind) {
+            return BookExportWording.transcriptHint(as: format)
+        }
+        if let format = chapterListFormat(for: kind), let source = kind.chapterListSource {
+            return BookExportWording.chapterListChoiceHint(for: format, source: source)
+        }
+        if let textWriter = transcriptWriter(for: kind) {
+            return BookExportWording.transcriptTextHint(as: textWriter.name)
+        }
+        return BookExportWording.hint(for: kind, convertedTo: conversionName(for: kind))
     }
 
-    /// The options view of the writer chosen for `kind`, to show under the
-    /// picker; nil while the kind is unchecked, on Markdown, or when the
-    /// writer takes no options.
+    /// The options view to show under the checkbox of `kind`: spoken audio's
+    /// own, or the one of the writer chosen in the kind's picker; nil while
+    /// the kind is unchecked, on Markdown, or when the writer takes no
+    /// options. Beside Transcript, the same: nil too on JSON and Markdown and
+    /// on captions. A writer chosen beside both checkboxes has one options
+    /// state, which both views set.
     func optionsView(for kind: BookExportKind) -> AnyView? {
+        if kind == .spokenAudio {
+            guard isChecked(kind) else { return nil }
+            switch speechOptionsMaking {
+            case .notMade:
+                return nil
+            case .making:
+                return AnyView(ProgressView(SpeechExportWording.readingHeadings).progressViewStyle(.linear))
+            case .made(let options):
+                return AnyView(SpeechExportOptionsView(state: options))
+            case .unreadable:
+                return AnyView(Text(SpeechExportWording.unreadableText).fixedSize(horizontal: false, vertical: true))
+            }
+        }
         guard isChecked(kind), let state = optionsStates[conversionID(for: kind)], state.hasOptions else {
             return nil
         }
@@ -345,14 +679,54 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// writer, that writer with its options as they are. Markdown has no
     /// options state, so a kind on Markdown has no conversion here: its
     /// files stay as the offer lists them, the Markdown the offer writes.
+    /// Spoken audio, while checked, is the speech its options ask for. The
+    /// transcript, checked and on a format of captions, is written as
+    /// captions (FMT23), and on a writer, its text by that writer, as a text
+    /// book's is (TODO 3984); on JSON and Markdown, it has no conversion
+    /// either.
     var conversions: [BookExportKind: BookExportConversion] {
         var made: [BookExportKind: BookExportConversion] = [:]
         for kind in checked {
             if let state = optionsStates[conversionID(for: kind)] {
                 made[kind] = .text(state.conversion())
             }
+            if let format = transcriptFormat(for: kind) {
+                made[kind] = .timedText(format)
+            }
+            if let format = chapterListFormat(for: kind), let source = kind.chapterListSource {
+                made[kind] = .chapterList(format, of: source)
+            }
+        }
+        if isChecked(.spokenAudio), let request = speechRequest {
+            made[.spokenAudio] = .speech(request)
         }
         return made
+    }
+
+    /// What a speech export of the one book speaks, as the library holds the
+    /// book now and the options stand now; nil without options.
+    private var speechRequest: SpeechExportRequest? {
+        guard let options = speechOptions, let book = currentBooks(books).first else { return nil }
+        let choices = options.choices
+        let fileTitle = options.fileTitle(bookTitle: book.title)
+        return SpeechExportRequest(
+            bookID: book.id,
+            bookTitle: book.title,
+            fileTitle: fileTitle,
+            // A range is titled as its file is named, so that a player's list
+            // tells it from the whole book and from the book's other ranges.
+            titleTag: choices.range.isWholeBook ? book.title : fileTitle,
+            author: ExportBookDetails(book).author,
+            format: choices.format,
+            range: choices.range,
+            voice: SpeechExportVoiceSettings(
+                voiceIdentifier: options.voice?.identifier,
+                wordsPerMinute: choices.wordsPerMinute,
+                pitch: choices.pitch
+            ),
+            skippedHeadingIDs: Set(book.skippedHeadingIDs ?? []),
+            preparation: SpeechPreparationSettings.current(substitutions: substitutionService, defaults: speechDefaults)
+        )
     }
 
     // MARK: Exporting
@@ -360,10 +734,16 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// Exports the checked kinds of the books, as the library holds them
     /// now, into `destination`, off the main thread, and announces how it
     /// ended from `window`. The dialog keeps the summary when anything
-    /// could not be exported.
+    /// could not be exported. An export that ends without its spoken audio
+    /// file says too what it kept for the next export.
+    /// `dialog` is the Export dialog's own window, which the question about a
+    /// chapter nested too deeply is shown over (FR24).
     /// - Returns: What the export did; nil when it could not start.
     @discardableResult
-    func export(announcingFrom window: NSWindow? = nil) async -> BookExportOutcome? {
+    func export(
+        announcingFrom window: PlatformWindow? = nil,
+        presentingFrom dialog: PlatformWindow? = nil
+    ) async -> BookExportOutcome? {
         guard canExport else { return nil }
         let earlier = (phase: phase, summary: summary)
         let cancellation = BookExportCancellation()
@@ -386,12 +766,28 @@ final class BookExportModel: ObservableObject, Identifiable {
         // The conversions are read here, on the main actor, with the options
         // as they are now; the export takes the copy off the main thread.
         let conversions = self.conversions
+        let speechFormat: SpeechExportFormat?
+        if case .speech(let request)? = conversions[.spokenAudio] {
+            speechFormat = request.format
+        } else {
+            speechFormat = nil
+        }
         let folder = destination
         guard !Self.isInsideDataDirectory(folder) else {
             self.cancellation = nil
             phase = earlier.phase
             summary = BookExportWording.destinationInLibrary
             VoiceOverAnnouncer.announce(BookExportWording.destinationInLibrary, from: window)
+            return nil
+        }
+        // The folder speech exports keep their chapters in is emptied when a
+        // speech export finishes, and at the next launch, so nothing is
+        // exported into it.
+        guard !Self.isFolder(folder, inside: speechEnvironment.storeRoot) else {
+            self.cancellation = nil
+            phase = earlier.phase
+            summary = SpeechExportWording.destinationInKeptChapters
+            VoiceOverAnnouncer.announce(SpeechExportWording.destinationInKeptChapters, from: window)
             return nil
         }
         let access = self.access
@@ -409,6 +805,33 @@ final class BookExportModel: ObservableObject, Identifiable {
                 self?.showProgress(done: done, total: total)
             }
         }
+        // The speech export's progress is kept as it is told, on the export's
+        // own threads, so the end below reads the last of it for certain, and
+        // shown on the main actor, always the latest, however the tasks that
+        // show it interleave.
+        let speechRecord = SpeechProgressRecord()
+        let speech = SpeechExportContext(environment: speechEnvironment, progress: { [weak self] progress in
+            speechRecord.keep(progress)
+            Task { @MainActor in
+                self?.showSpeechProgress(speechRecord.latest)
+            }
+        })
+        // A chapter nested too deeply is put to the person (FR24): the export's
+        // thread waits while the main actor asks. Stop or Close may come between
+        // the thread's asking and the main actor's turn, when there is no alert
+        // to take down yet, so the main actor looks again before it asks. With
+        // nobody to ask, there is no question and such a chapter fails its file.
+        let askAboutDeepChapters: ExportDeepChapterQuestioner.Ask? = deepChapterPrompt.map { prompt -> ExportDeepChapterQuestioner.Ask in
+            return { question in
+                let answer = try? AsyncBridge.waitForResult {
+                    await Self.put(question, through: prompt, over: dialog, unless: cancellation)
+                }
+                return answer ?? .cancelExport
+            }
+        }
+        // While spoken audio is made, a quit stops it cleanly first, with its
+        // chapters kept, rather than cutting a chapter off midway.
+        let underWay = speechFormat == nil ? nil : speechExportsUnderWay.begin(cancellation)
         let outcome = await OffMainWork.run {
             let offers = books.map { BookExportService.offer(for: $0, access: access) }
             return BookExportService.export(
@@ -418,12 +841,27 @@ final class BookExportModel: ObservableObject, Identifiable {
                 to: folder,
                 access: access,
                 cancellation: cancellation,
-                progress: report
+                progress: report,
+                speech: speech,
+                askAboutDeepChapters: askAboutDeepChapters
             )
         }
+        if let underWay {
+            speechExportsUnderWay.ended(underWay)
+        }
         self.cancellation = nil
+        speechProgress = nil
         phase = .finished(outcome)
-        let words = BookExportWording.finished(outcome, folderName: BookExportWording.folderName(of: folder))
+        var words = BookExportWording.finished(outcome, folderName: BookExportWording.folderName(of: folder))
+        if case .ended(let kept, let total)? = speechRecord.latest,
+           let keptWords = SpeechExportWording.kept(done: kept, total: total) {
+            words += " " + keptWords
+        }
+        // An MP3 made of more chapters than it has chapters for says so.
+        if speechFormat == .mp3, case .ended(_, let chapters)? = speechRecord.latest, chapters > MP3Tag.maximumChapters,
+           outcome.exported.contains(where: { $0.pathExtension == SpeechExportFormat.mp3.fileExtension }) {
+            words += " " + SpeechExportWording.mp3ChaptersKept(of: chapters)
+        }
         summary = Self.didEverything(outcome) ? nil : words
         VoiceOverAnnouncer.announce(words, from: window)
         return outcome
@@ -436,9 +874,40 @@ final class BookExportModel: ObservableObject, Identifiable {
         phase = .exporting(done: done, total: total)
     }
 
-    /// Stops the export under way before its next file.
+    /// Shows how far the speech export has come, while the export is still
+    /// under way: a report arriving after it ended changes nothing, and once
+    /// the speech export has ended the bar goes back to the items done.
+    /// (Not private so that a test can show each stage while it holds an
+    /// export at a chosen place.)
+    func showSpeechProgress(_ progress: SpeechExportProgress?) {
+        guard isExporting else { return }
+        speechProgress = progress?.fraction == nil ? nil : progress
+    }
+
+    /// Puts `question` to the person through `prompt`, over `dialog`, on the
+    /// main actor, unless `cancellation` says the export has stopped: Stop or
+    /// Close may come between the export thread's asking and the main actor's
+    /// turn, when there is no alert yet for `stop()` to take down, and a
+    /// question for a stopped export would then be shown, over the Library
+    /// window if the dialog had closed. A stopped export answers Cancel Export.
+    @MainActor
+    static func put(
+        _ question: ExportDeepChapterQuestion,
+        through prompt: DeepChapterPrompt,
+        over dialog: PlatformWindow?,
+        unless cancellation: BookExportCancellation
+    ) async -> ExportDeepChapterAnswer {
+        guard !cancellation.isCancelled else { return .cancelExport }
+        return await prompt.ask(question, dialog)
+    }
+
+    /// Stops the export under way before its next file, or within a moment
+    /// while a chapter is spoken or the audio file encoded. A question about a
+    /// chapter nested too deeply that is on screen is answered Cancel Export,
+    /// so the export, which waits for it, ends too.
     func stop() {
         cancellation?.cancel()
+        deepChapterPrompt?.dismiss()
     }
 
     // MARK: Books Being Exported
@@ -477,8 +946,12 @@ final class BookExportModel: ObservableObject, Identifiable {
     /// Whether `folder` is TextMouth's data directory or inside it, where
     /// exported files would sit among the library's own folders and files.
     static func isInsideDataDirectory(_ folder: URL) -> Bool {
-        let root = TextMouthPaths.root
-        return folder.standardizedFileURL.path == root.standardizedFileURL.path
+        isFolder(folder, inside: TextMouthPaths.root)
+    }
+
+    /// Whether `folder` is `root` or inside it.
+    private static func isFolder(_ folder: URL, inside root: URL) -> Bool {
+        folder.standardizedFileURL.path == root.standardizedFileURL.path
             || MaintenanceFileAccess.isItem(folder, inside: root)
     }
 
@@ -490,6 +963,7 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     // MARK: Choosing the Folder
 
+    #if os(macOS)
     /// The folder chooser of the dialog's Choose Folder… button: one folder,
     /// with a button that makes a new one, starting in `folder`.
     static func makeDestinationPanel(startingIn folder: URL) -> NSOpenPanel {
@@ -508,7 +982,7 @@ final class BookExportModel: ObservableObject, Identifiable {
 
     /// Opens the folder chooser, as a sheet on `window` when there is one,
     /// and makes the folder chosen the destination.
-    func chooseDestination(from window: NSWindow?) {
+    func chooseDestination(from window: PlatformWindow?) {
         let panel = Self.makeDestinationPanel(startingIn: destination)
         let take: (NSApplication.ModalResponse) -> Void = { [weak self] response in
             guard response == .OK, let folder = panel.url else { return }
@@ -519,5 +993,31 @@ final class BookExportModel: ObservableObject, Identifiable {
         } else {
             panel.begin(completionHandler: take)
         }
+    }
+    #else
+    /// Phase 0 stand-in: the Mac opens a folder chooser here; iOS has no
+    /// folder panel yet (phase 1 brings the document picker), so choosing
+    /// does nothing and the destination stays as it was.
+    func chooseDestination(from window: PlatformWindow?) {}
+    #endif
+}
+
+// MARK: - A Speech Export's Latest Progress
+
+/// The latest progress a speech export has told, kept in a lock: the export
+/// tells it on its own threads, the synthesizer's and the encoder's, and the
+/// dialog reads it on the main actor.
+private final class SpeechProgressRecord: Sendable {
+    /// The latest progress, nil before the first.
+    private let progress = OSAllocatedUnfairLock<SpeechExportProgress?>(initialState: nil)
+
+    /// The latest progress told, nil before the first.
+    var latest: SpeechExportProgress? {
+        progress.withLock { $0 }
+    }
+
+    /// Keeps `progress` as the latest.
+    func keep(_ progress: SpeechExportProgress) {
+        self.progress.withLock { $0 = progress }
     }
 }

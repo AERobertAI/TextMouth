@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 // MARK: - What the Library Shows of Feeds (FR03)
@@ -146,15 +147,26 @@ struct FeedRowContent: Equatable, Identifiable {
     let counts: FeedItemCounts
     /// The last check.
     let check: FeedWording.Check
+    /// The title the row shows and speaks in place of the feed's own while
+    /// the Leading articles setting shows titles with their articles after
+    /// them ("Digital Antiquarian, The"); nil shows the title as written.
+    /// Commands and announcements name the feed by `title`.
+    var shownTitle: String? = nil
+
+    /// The title the row shows and speaks.
+    var rowTitle: String {
+        shownTitle ?? title
+    }
 
     /// The items counted, as the row shows them.
     var countsText: String {
         FeedWording.countsPhrase(counts)
     }
 
-    /// The row as VoiceOver speaks it, in one sentence.
+    /// The row as VoiceOver speaks it, in one sentence, beginning with the
+    /// title as the row shows it.
     var label: String {
-        FeedWording.feedRowLabel(title: title, counts: counts, check: check, folderMissing: folderPath == nil)
+        FeedWording.feedRowLabel(title: rowTitle, counts: counts, check: check, folderMissing: folderPath == nil)
     }
 }
 
@@ -232,18 +244,38 @@ enum LibraryFeedsSectionRows {
         )
     }
 
-    /// The rows of the Feeds section at `location`, in order.
+    /// The rows of the Feeds section at `location`, in order: by title, as
+    /// the feeds are kept; or, while the Leading articles setting has sorting
+    /// pass over articles (`articles`), by each title without its leading
+    /// article, ties keeping the feeds' order, each row showing its title
+    /// with its article after it ("Digital Antiquarian, The"), as a book's
+    /// row does. A feed names no language, so English's articles count.
     @MainActor
-    static func rows(at location: LibraryLocation, center: FeedCenter, now: Date = Date()) -> [FeedRowContent] {
-        feeds(at: location, center: center).map { feed in
+    static func rows(
+        at location: LibraryLocation,
+        center: FeedCenter,
+        now: Date = Date(),
+        articles: LeadingArticles = .partOfTitle
+    ) -> [FeedRowContent] {
+        let rows = feeds(at: location, center: center).map { feed in
             FeedRowContent(
                 id: feed.id,
                 title: feed.title,
                 folderPath: center.folderPath(of: feed),
                 counts: center.counts(of: feed.id),
-                check: center.checkWording(of: feed.id, now: now)
+                check: center.checkWording(of: feed.id, now: now),
+                shownTitle: articles.sortsWithoutArticles ? articles.shownTitle(feed.title, language: nil) : nil
             )
         }
+        guard articles.sortsWithoutArticles else { return rows }
+        // Each key read once; the feeds' own order breaks ties.
+        let keys = rows.map { articles.sortKey(of: $0.title, language: nil) }
+        return rows.indices
+            .sortedStably { first, second in
+                let order = keys[first].localizedStandardCompare(keys[second])
+                return order == .orderedSame ? first < second : order == .orderedAscending
+            }
+            .map { rows[$0] }
     }
 }
 
@@ -276,21 +308,62 @@ struct FeedItemRowContent: Equatable, Identifiable {
     let dateText: String?
     /// How long it plays, when the feed says.
     let duration: TimeInterval?
+    /// The title the row shows and speaks in place of the item's own while
+    /// the Leading articles setting shows titles with their articles after
+    /// them, as the book rows beside it do; nil shows the title as written.
+    /// Commands and announcements name the item by `title`.
+    let shownTitle: String?
+    /// The row's tag in the Library list's selection, whose tags are UUIDs
+    /// (`selectionID(feedID:itemID:)`). With it the row holds the selection
+    /// as a book's row does, so Return and Speak Info act on this item.
+    /// Without a tag, the selection stayed on the nearest book's row, and
+    /// Return opened that book instead (returnrow).
+    let selectionID: UUID
+
+    /// The title the row shows and speaks.
+    var rowTitle: String {
+        shownTitle ?? title
+    }
 
     /// The row as VoiceOver speaks it.
     var label: String {
         FeedWording.itemRowLabel(self)
     }
 
+    /// The selection tag of the row of the item `itemID` of the feed
+    /// `feedID`: the first 16 bytes of the SHA-256 digest of the two
+    /// identities, marked as a version 8 UUID (RFC 9562) with the standard
+    /// variant. It is the same at every drawing and every launch. It never
+    /// equals the ID of a book, folder, or feed, which are random version 4
+    /// UUIDs.
+    nonisolated static func selectionID(feedID: UUID, itemID: FeedItem.ID) -> UUID {
+        // A UUID string is always 36 characters long, so no two pairs of
+        // identities are written the same way.
+        let name = "TextMouth feed item row \(feedID.uuidString) \(itemID)" // l10n: no (a name hashed into an identifier, never shown)
+        var bytes = Array(SHA256.hash(data: Data(name.utf8)).prefix(16))
+        // The version in the high half of byte 6, and the variant (binary
+        // 10) in the top two bits of byte 8.
+        bytes[6] = (bytes[6] & 0x0F) | 0x80
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (
+            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
+        ))
+    }
+
     /// The row's content for `item` of `feed` in `center`, an article's
-    /// time left estimated at `wordsPerMinute`, as a book row's is.
+    /// time left estimated at `wordsPerMinute`, as a book row's is, its
+    /// title shown as `articles`, the Leading articles setting, shows a
+    /// book's (a feed names no language, so English's articles count).
     @MainActor
-    init(_ item: FeedItem, of feed: Feed, in center: FeedCenter, wordsPerMinute: Double) {
+    init(_ item: FeedItem, of feed: Feed, in center: FeedCenter, wordsPerMinute: Double, articles: LeadingArticles = .partOfTitle) {
         let state = center.state(of: item, in: feed.id)
         let isPlayed = item.playedDate != nil
         feedID = feed.id
         id = item.id
+        selectionID = Self.selectionID(feedID: feed.id, itemID: item.id)
         title = item.title
+        shownTitle = articles.sortsWithoutArticles ? articles.shownTitle(item.title, language: nil) : nil
         self.state = state
         isNew = center.isNew(item, of: feed)
         self.isPlayed = isPlayed
@@ -414,7 +487,10 @@ struct FeedFolderListing: Equatable {
     /// a book does; a downloaded item shows as its book when the folder holds
     /// it, so the search narrows it as it narrows the book. An item row
     /// estimates an article's time left at `wordsPerMinute`, the library's
-    /// reading speed, as a book row does.
+    /// reading speed, as a book row does, and shows its title as
+    /// `articles`, the Leading articles setting, shows a book's; while that
+    /// shows titles inverted, the search finds an item by its title as its
+    /// row shows it too.
     @MainActor
     static func make(
         feedID: UUID,
@@ -422,7 +498,8 @@ struct FeedFolderListing: Equatable {
         shownBooks: [Book],
         folderBooks: [Book],
         search: String,
-        wordsPerMinute: Double
+        wordsPerMinute: Double,
+        articles: LeadingArticles = .partOfTitle
     ) -> FeedFolderListing {
         guard let record = center.store.record(of: feedID) else {
             return FeedFolderListing(otherBooks: shownBooks)
@@ -467,15 +544,22 @@ struct FeedFolderListing: Equatable {
                     continue
                 }
             }
-            guard query.isEmpty || Self.matches(item, query: query) else { continue }
-            listing.entries.append(.item(FeedItemRowContent(item, of: record.feed, in: center, wordsPerMinute: wordsPerMinute)))
+            guard query.isEmpty || Self.matches(item, query: query, articles: articles) else { continue }
+            listing.entries.append(.item(FeedItemRowContent(
+                item, of: record.feed, in: center, wordsPerMinute: wordsPerMinute, articles: articles
+            )))
         }
         listing.otherBooks = shownBooks.filter { !itemBookIDs.contains($0.id) }
         return listing
     }
 
-    /// Whether `item`'s title or author contains `query`, already lower case.
-    private static func matches(_ item: FeedItem, query: String) -> Bool {
-        item.title.lowercased().contains(query) || (item.author?.lowercased().contains(query) ?? false)
+    /// Whether `item`'s title or author contains `query`, already lower
+    /// case, or, while `articles` shows titles inverted, its title as its
+    /// row shows it does ("one about x, the").
+    private static func matches(_ item: FeedItem, query: String, articles: LeadingArticles) -> Bool {
+        if item.title.lowercased().contains(query) || (item.author?.lowercased().contains(query) ?? false) {
+            return true
+        }
+        return articles.sortsWithoutArticles && articles.shownTitle(item.title, language: nil).lowercased().contains(query)
     }
 }

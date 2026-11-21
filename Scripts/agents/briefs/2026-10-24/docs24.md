@@ -5,7 +5,7 @@ You are `docs24`, a Sonnet documentation agent. You build nothing and run no tes
 ## Setup
 Run `git checkout -b docs/oct24 integrate/oct24`, then check that `git merge-base --is-ancestor b1077e0c HEAD` succeeds. `integrate/oct24` holds four merges that are not on main yet. Reviews of them are still running, so a sentence may still change: the code on your branch wins, and the orchestrator will message you about any change that lands later.
 
-The agents' reports are in `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/`: `pagespolish-report.md`, `pg12-report.md`, `braillereading-report.md`, and `st04-report.md`.
+The agents' reports are in `<main checkout>/build/orchestrator/`: `pagespolish-report.md`, `pg12-report.md`, `braillereading-report.md`, and `st04-report.md`.
 
 ## What to document (one commit per numbered part)
 1. **The pages follow-ups** (merge 7d0e0794, `pagespolish-report.md`).

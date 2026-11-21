@@ -157,7 +157,7 @@ struct ThresholdSettingRule: Sendable {
 
     /// The supported values, for log lines.
     var supportedDescription: String {
-        "\(offValue) (off), or \(range.lowerBound)...\(range.upperBound)"
+        "\(offValue) (off), or \(range.lowerBound)...\(range.upperBound)" // l10n: no (debug log text)
     }
 
     /// Validates a threshold. Any value at or below `offValue` is the off
@@ -346,7 +346,7 @@ where Case: RawRepresentable & Hashable & Sendable, Case.RawValue == String,
     /// order, so one file always asks for the same values.
     func requestedValues(fromConfig entries: [String: FileValue]) -> [Case: Value] {
         var requested: [Case: Value] = [:]
-        for (name, fileValue) in entries.sorted(by: { $0.key < $1.key }) {
+        for (name, fileValue) in entries.sortedStably(by: { $0.key < $1.key }) {
             guard let named = caseNamed(name), let value = parse(fileValue) else { continue }
             if requested[named] == nil || name == named.rawValue {
                 requested[named] = value
@@ -431,6 +431,10 @@ enum SettingsPolicy {
     static let rewindOnResumeUnit = EnumSettingRule(key: "rewindOnResumeUnit", defaultValue: RewindUnit.none)
     /// What happens when a book ends (Playback settings picker).
     static let endOfBookBehavior = EnumSettingRule(key: "endOfBookBehavior", defaultValue: EndOfBookBehavior.stop)
+    /// Where the next book opens when listening goes on from one book to
+    /// another: in the window the listener is in, or in a new one (Playback
+    /// settings pop-up button, 0.2.5).
+    static let nextBookWindow = EnumSettingRule(key: "nextBookWindow", defaultValue: NextBookWindow.thisWindow)
     /// Which per-book navigation menus the playback bar shows.
     static let playbackNavigationUnitControlMode = EnumSettingRule(
         key: "playbackNavigationUnitControlMode", defaultValue: PlaybackNavigationUnitControlMode.none
@@ -517,6 +521,13 @@ enum SettingsPolicy {
     /// Logs folder.
     static let logLocation = EnumSettingRule(key: "logLocation", defaultValue: LogLocation.dataDirectory)
 
+    // MARK: Library
+
+    /// What a title's leading article does in the Library's lists (Library
+    /// settings, Leading Articles pop-up): part of the title until the user
+    /// picks another, so nothing changes until then (November 13, 2026).
+    static let leadingArticles = EnumSettingRule(key: "leadingArticles", defaultValue: LeadingArticles.partOfTitle)
+
     // MARK: Keyed by enum cases
 
     /// The sound each playback event plays (Sounds settings pickers): one of
@@ -524,7 +535,7 @@ enum SettingsPolicy {
     /// written as the pickers name it, or None for no sound.
     static let soundEffectAssignments = KeyedSettingRule<SoundEvent, String, String>(
         key: "soundEffectAssignments",
-        supportedDescription: "playback events as Settings names them, each with a system sound's name or \"None\"",
+        supportedDescription: "playback events as Settings names them, each with a system sound's name or \"None\"", // l10n: no (debug log text)
         parse: { name in
             SoundEffectService.availableSounds().first { $0.caseInsensitiveCompare(name) == .orderedSame }
         },
@@ -544,10 +555,10 @@ enum SettingsPolicy {
     /// (`ShortcutEdits.adopting(_:)`).
     static let keyboardShortcuts = KeyedSettingRule<ShortcutAction, ShortcutListing, ShortcutListing>(
         key: "keyboardShortcuts",
-        supportedDescription: "actions as Settings names them, in any letter case, each with a list of shortcuts "
-            + "such as [\"shift+command+b\"], an object such as {\"keys\": [\"shift+command+t\"], "
-            + "\"worksIn\": \"Every window\"} naming where they work (every window, Library windows, "
-            + "or reader windows), or text beginning with \"default\"",
+        supportedDescription: "actions as Settings names them, in any letter case, each with a list of shortcuts " // l10n: no (debug log text)
+            + "such as [\"shift+command+b\"], an object such as {\"keys\": [\"shift+command+t\"], " // l10n: no (debug log text)
+            + "\"worksIn\": \"Every window\"} naming where they work (every window, Library windows, " // l10n: no (debug log text)
+            + "or reader windows), or text beginning with \"default\"", // l10n: no (debug log text)
         caseNamed: { ShortcutAction.named($0) },
         parse: { $0.validated },
         format: { $0 }
@@ -581,7 +592,7 @@ extension SettingsPolicy {
 
 extension SettingsPolicy {
     /// Names saved book data (`library.json` and `bookInfo.json`) in log lines.
-    static let bookStateSource = "saved book state"
+    static let bookStateSource = "saved book state" // l10n: no (debug log text)
 
     /// Validates a per-book speed saved in `localWPM`, or returns nil when the
     /// value cannot be a speed, so the book follows the global setting (normal

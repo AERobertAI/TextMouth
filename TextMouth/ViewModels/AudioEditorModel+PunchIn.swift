@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 
 // MARK: - A Punch-In
@@ -46,7 +50,9 @@ struct AudioEditorRecorder {
 
     /// The count-in: one short system sound, and a moment for it to end.
     static func beep() async {
+        #if os(macOS)
         NSSound(contentsOfFile: "/System/Library/Sounds/Tink.aiff", byReference: true)?.play()
+        #endif
         try? await Task.sleep(for: .milliseconds(600))
     }
 }

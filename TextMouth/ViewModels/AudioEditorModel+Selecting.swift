@@ -114,7 +114,7 @@ extension AudioEditorModel {
 
     /// The markers in time order, as the list shows and numbers them.
     var orderedMarkers: [AudioEditMarker] {
-        markers.sorted { ($0.time, $0.id.uuidString) < ($1.time, $1.id.uuidString) }
+        markers.sortedStably { ($0.time, $0.id.uuidString) < ($1.time, $1.id.uuidString) }
     }
 
     /// The number the list gives `marker`, counting from 1 in time order.

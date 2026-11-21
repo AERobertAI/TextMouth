@@ -2,6 +2,59 @@ import CryptoKit
 import XCTest
 @testable import TextMouth
 
+// MARK: - The Machine's Speed
+
+/// How much longer than on the development Mac a test that times the app may let it take, for the few timing tests
+/// that cannot compare the app with itself on the same machine (the cancel tests do, and need no scale).
+///
+/// The factor is 1 everywhere except on a GitHub runner, whose script (`Scripts/agents/run-on-runner.py`) hands
+/// `TEXTMOUTH_TEST_TIME_SCALE` to the test host as `TEST_RUNNER_TEXTMOUTH_TEST_TIME_SCALE`: a limit that holds on this
+/// Mac with room to spare, and a virtual machine's slower cores (a hostile index read took 1.35 s there against
+/// its limit of 1.0) would otherwise fail a test that checks only that the app does not run away. A value below 1, or one that is
+/// not a number, is read as 1, so the scale can only widen a limit, and nothing on the development Mac sets it.
+enum TestMachine {
+    /// The factor the limits of timing tests are multiplied by.
+    static let timeScale: Double = scale(from: ProcessInfo.processInfo.environment["TEXTMOUTH_TEST_TIME_SCALE"])
+
+    /// The factor `text` (the environment's value, or nil) stands for: the number when it is one of 1 or more, else 1.
+    static func scale(from text: String?) -> Double {
+        guard let text, let scale = Double(text), scale.isFinite, scale >= 1 else { return 1 }
+        return scale
+    }
+
+    /// `seconds` as a limit on this machine: the same on the development Mac, longer where the scale says.
+    static func allowed(_ seconds: TimeInterval) -> TimeInterval {
+        seconds * timeScale
+    }
+
+    /// Whether this test host runs on one of GitHub's runners, and not on the user's Mac.
+    ///
+    /// It keys on `TEXTMOUTH_TEST_TIME_SCALE`, which `Scripts/agents/run-on-runner.py` hands to every test
+    /// host it starts, on GitHub's runners only, and which nothing sets on the development Mac. The iPhone
+    /// tests share this file and run only on GitHub, so there it is always true.
+    static var isGitHubRunner: Bool {
+        #if os(macOS)
+        return ProcessInfo.processInfo.environment["TEXTMOUTH_TEST_TIME_SCALE"] != nil
+        #else
+        return true
+        #endif
+    }
+
+    /// Skips the test that calls it anywhere but on a GitHub runner: the one way every test that may crash
+    /// the test host, or a helper process, is kept off the user's Mac.
+    ///
+    /// A test that raises an Objective-C exception on purpose leaves only the code under test to catch it.
+    /// Were that code broken by a later change, the exception would end the host, and macOS would put a
+    /// crash report on the user's screen; on a runner the same crash is only a failed run. So such a test
+    /// proves its catch on GitHub, and the Mac's suite runs the rest.
+    ///
+    /// - Parameter reason: Why the test runs on GitHub only, as the skip says it.
+    /// - Throws: `XCTSkip` on the development Mac.
+    static func skipUnlessGitHubRunner(_ reason: String) throws {
+        guard isGitHubRunner else { throw XCTSkip("\(reason), so it runs on GitHub's runner only") }
+    }
+}
+
 // MARK: - The User's Real Account
 
 /// Facts about the real user account running the suite, looked up without
@@ -61,7 +114,9 @@ struct UserPreferenceFingerprint: Equatable, CustomStringConvertible {
         "logLocation",
         "transcriptionLocale",
         "offerTranscriptionAfterImport",
-        "brailleTable"
+        "brailleTable",
+        "brailleGuessesTable",
+        "leadingArticles"
     ]
 
     /// Each key's digest, or "absent" when the user has no value for it.

@@ -200,7 +200,7 @@ enum MigrationStagingLeftovers {
     /// at the same moment keep their order).
     private static func newest(_ entries: [Entry]) -> [Entry] {
         let ordered = entries.enumerated()
-            .sorted { ($0.element.noted, $0.offset) < ($1.element.noted, $1.offset) }
+            .sortedStably { ($0.element.noted, $0.offset) < ($1.element.noted, $1.offset) }
             .map(\.element)
         return Array(ordered.suffix(journalLimit))
     }

@@ -115,6 +115,32 @@ final class HeadingAnnouncementTests: XCTestCase {
         XCTAssertEqual(reader.lastAnnouncement, "Heading: Season Two, King Nine Will Not Return")
     }
 
+    /// The jumps and the heading measures read the reader's published
+    /// `headings` instead of rebuilding the book's (the audit's C17), so the
+    /// two must be the same list whenever the book's text is replaced: the
+    /// jumps and the sizes then follow the new headings, not the old.
+    func testTheJumpsAndMeasuresFollowTheHeadingsOfTheContentShown() {
+        let reader = makeReader()
+        defer { reader.close() }
+        XCTAssertEqual(reader.headings, reader.content?.allHeadings)
+        XCTAssertEqual(reader.estimatedCharsInHeading(Self.groupedHeadings[0]), 100)
+
+        // The book's text is replaced by one with a single heading.
+        let only = Heading(level: 1, text: "Only", chapterIndex: 2, characterOffset: 10)
+        let chapters = (0..<4).map { index in
+            Chapter(title: "Part \(index + 1)", text: String(repeating: "x", count: 100), headings: index == 2 ? [only] : [])
+        }
+        reader.content = DocumentContent(title: "Replaced", author: "", chapters: chapters)
+
+        XCTAssertEqual(reader.headings, [only])
+        reader.currentChapterIndex = 0
+        reader.currentCharacterOffset = 0
+        reader.nextHeading()
+        XCTAssertEqual(place(of: reader), "2:10")
+        XCTAssertEqual(reader.lastAnnouncement, "Heading: Only")
+        XCTAssertEqual(reader.estimatedCharsInHeading(only), 190)
+    }
+
     // MARK: - Fixtures
 
     /// The headings of a book arranged as an audiobook's manifest arranges

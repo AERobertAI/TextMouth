@@ -115,7 +115,7 @@ enum TextEncodingGuesser {
             readings.append(Reading(entry: entry, text: text, plausibility: TextPlausibility(reading: text, judging: .rival)))
         }
         // The fewest surprises first; readings with as many keep the catalog's order.
-        let ranked = readings.enumerated().sorted { first, second in
+        let ranked = readings.enumerated().sortedStably { first, second in
             let (a, b) = (first.element.plausibility.surprise, second.element.plausibility.surprise)
             return a != b ? a < b : first.offset < second.offset
         }.map(\.element)
@@ -152,7 +152,7 @@ enum TextEncodingGuesser {
     /// through, so it is not trusted to decide that.
     /// - Returns: nil for any other file.
     static func guessSevenBit(_ data: Data) -> Guess? {
-        guard data.contains(0x1B),
+        guard data.containsByte(0x1B),
               let entry = TextEncodingCatalog.entry(forIdentifier: "iso-2022-jp"),
               TextEncodingByteGrammar.isWellFormedISO2022JP(data, requiringAShift: true),
               let text = TextFileDecoder.decodedText(data, in: entry.encoding),

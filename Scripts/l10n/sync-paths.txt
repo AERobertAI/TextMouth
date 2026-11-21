@@ -1,0 +1,8 @@
+# The globs of the files whose text is converted to the String Catalog (FR34), read by `l10n.py sync` and `check`.
+# One repository-relative glob per line, kept sorted; blank lines and whole-line # comments are skipped. `**` matches
+# any folders, `*` any name within one folder. A glob that matches no file is refused.
+# Each conversion wave adds its own lines here. Git merges this file by union (.gitattributes: merge=union), so two
+# waves that add lines never conflict; keep the file sorted when you add yours. The last wave adds "TextMouth/**".
+# Every file is converted (November 19, 2026, after round 3 of the conversion waves), so the whole app is synced:
+# a new string anywhere is extracted, and check refuses it without a comment.
+TextMouth/**

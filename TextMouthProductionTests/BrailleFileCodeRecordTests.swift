@@ -564,4 +564,29 @@ final class BrailleFileCodeRecordTests: XCTestCase {
         XCTAssertEqual(reader.brailleFileCode, "ascii-eurobraille")
         XCTAssertEqual(reader.readingPosition?.characterOffset, 9, "the reader keeps its own place")
     }
+
+    /// The braille table, with the version it was read under, is a library
+    /// field too (FMT21): a Braille Code re-read changes them, and an open
+    /// reader that takes them follows the new table (its Book Information
+    /// opens on it, and a regeneration in the reader translates with it),
+    /// keeping its own place.
+    func testTheTableAndItsVersionAreLibraryFieldsTheReaderTakes() {
+        var open = book(code: "ascii-na")
+        open.brailleTable = "en-ueb-g1.ctb"
+        var reread = open
+        reread.brailleTable = "mac:fr-bfu-g2.ctb"
+        reread.brailleTableVersion = "3.34.0"
+        XCTAssertNotEqual(reread.libraryFields, open.libraryFields)
+
+        var versionOnly = open
+        versionOnly.brailleTableVersion = "3.34.0"
+        XCTAssertNotEqual(versionOnly.libraryFields, open.libraryFields)
+
+        var reader = open
+        reader.readingPosition = ReadingPosition(chapterIndex: 0, characterOffset: 9)
+        reader.libraryFields = reread.libraryFields
+        XCTAssertEqual(reader.brailleTable, "mac:fr-bfu-g2.ctb")
+        XCTAssertEqual(reader.brailleTableVersion, "3.34.0")
+        XCTAssertEqual(reader.readingPosition?.characterOffset, 9, "the reader keeps its own place")
+    }
 }

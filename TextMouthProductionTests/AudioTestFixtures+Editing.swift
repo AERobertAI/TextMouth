@@ -73,6 +73,237 @@ extension AudioTestFixtures {
         }
     }
 
+    /// `frames` frames of a 440 Hz tone at three tenths of full scale, at
+    /// `sampleRate`: compressed audio to decode, whose every sample differs
+    /// from its neighbours, so a sample missing or out of place shows.
+    static func tone(frames: Int, sampleRate: Double) -> [Float] {
+        (0..<frames).map { 0.3 * Float(sin(2 * Double.pi * 440 * Double($0) / sampleRate)) }
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url`
+    /// as an MP3 at `kilobitsPerSecond`, with the LAME built in, as TextMouth
+    /// writes an MP3 book's file: its ID3 tag titled "Canal Survey" and its
+    /// gapless records.
+    static func writeToneMP3(to url: URL, frames: Int = 24_000, sampleRate: Double = 8_000, kilobitsPerSecond: Int = 32) throws {
+        let encoder = try MP3Encoder(
+            writingTo: url,
+            settings: MP3EncoderSettings(sampleRate: Int(sampleRate), channels: 1, kilobitsPerSecond: kilobitsPerSecond),
+            tag: MP3Tag(title: "Canal Survey")
+        )
+        try tone(frames: frames, sampleRate: sampleRate).withUnsafeBufferPointer { try encoder.encode(interleaved: $0) }
+        try encoder.finish()
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url`
+    /// as AAC in an MPEG-4 audio file, at the bit rate Core Audio chooses.
+    static func writeToneAAC(to url: URL, frames: Int = 24_000, sampleRate: Double = 8_000) throws {
+        try writeTone(to: url, frames: frames, sampleRate: sampleRate, settings: [AVFormatIDKey: kAudioFormatMPEG4AAC])
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url`
+    /// through AVAudioFile, stored as `settings` say beside the rate and
+    /// the one channel (Apple Lossless, FLAC, big-endian PCM, ...), in a
+    /// file of the type the extension names.
+    static func writeTone(to url: URL, frames: Int, sampleRate: Double, settings: [String: Any]) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let format = try XCTUnwrap(AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: sampleRate, channels: 1, interleaved: false))
+        let buffer = try XCTUnwrap(AVAudioPCMBuffer(pcmFormat: format, frameCapacity: AVAudioFrameCount(frames)))
+        buffer.frameLength = AVAudioFrameCount(frames)
+        let channel = try XCTUnwrap(buffer.floatChannelData)[0]
+        for (index, sample) in tone(frames: frames, sampleRate: sampleRate).enumerated() {
+            channel[index] = sample
+        }
+        let file = try AVAudioFile(
+            forWriting: url,
+            settings: settings.merging([AVSampleRateKey: sampleRate, AVNumberOfChannelsKey: 1]) { _, new in new },
+            commonFormat: .pcmFormatFloat32,
+            interleaved: false
+        )
+        try file.write(from: buffer)
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a WAVE file of 64-bit floating-point samples (format tag 3), the
+    /// header written here byte by byte: the depth AVAudioFile and
+    /// AVAssetWriter won't write a WAVE file in, and AVAssetReader's
+    /// outputs, which take 8, 16, 24, and 32 bits only, refuse to be given.
+    static func writeToneFloat64WAVE(to url: URL, frames: Int, sampleRate: Double) throws {
+        try writeToneWAVE(to: url, frames: frames, sampleRate: sampleRate, bits: 64, isFloat: true)
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a WAVE file of `bits`-bit samples, floating-point (format tag 3) or
+    /// integer (tag 1), the header and every sample written here byte by byte:
+    /// a depth, such as 64 or 48 bits, that no AVFoundation writer makes. A
+    /// float of a depth but 32 and 64 (a 16-bit float, which only some Macs
+    /// have a Swift type for) holds silence: such a file is meant to be
+    /// refused by its header, whose samples are never read.
+    static func writeToneWAVE(to url: URL, frames: Int, sampleRate: Double, bits: Int, isFloat: Bool) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let samples = toneSamples(frames: frames, sampleRate: sampleRate, bits: bits, isFloat: isFloat)
+        let bytesPerFrame = (bits + 7) / 8
+        // The "fmt " chunk: 16 bytes, as a float WAVE file of one or two
+        // channels needs no more.
+        var format = Data()
+        format.append(littleEndianBytes(UInt16(isFloat ? 3 : 1)))     // IEEE floating point, or integer PCM
+        format.append(littleEndianBytes(UInt16(1)))                   // one channel
+        format.append(littleEndianBytes(UInt32(sampleRate)))          // frames a second
+        format.append(littleEndianBytes(UInt32(sampleRate) * UInt32(bytesPerFrame))) // bytes a second
+        format.append(littleEndianBytes(UInt16(bytesPerFrame)))       // bytes a frame
+        format.append(littleEndianBytes(UInt16(bits)))                // bits a sample
+        var file = Data("RIFF".utf8)
+        file.append(littleEndianBytes(UInt32(4 + 8 + format.count + 8 + samples.count)))
+        file.append(Data("WAVEfmt ".utf8))
+        file.append(littleEndianBytes(UInt32(format.count)))
+        file.append(format)
+        file.append(Data("data".utf8))
+        file.append(littleEndianBytes(UInt32(samples.count)))
+        file.append(samples)
+        try file.write(to: url)
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a CAF file of 64-bit samples, floats or integers (little-endian, a
+    /// full-scale integer being 2^63), written byte by byte: AVAudioFile
+    /// wrote a file of 64-bit floats as 32-bit floats, and refused one of
+    /// 64-bit integers.
+    static func writeToneCAF64(to url: URL, frames: Int, sampleRate: Double, isFloat: Bool) throws {
+        try writeToneCAF(to: url, frames: frames, sampleRate: sampleRate, bits: 64, isFloat: isFloat)
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// a CAF file of `bits`-bit samples, floats or integers (little-endian, a
+    /// full-scale integer being 2^(bits-1)), written byte by byte. As for
+    /// `writeToneWAVE(to:frames:sampleRate:bits:isFloat:)`, a float of a
+    /// depth but 32 and 64 holds silence.
+    static func writeToneCAF(to url: URL, frames: Int, sampleRate: Double, bits: Int, isFloat: Bool) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let samples = toneSamples(frames: frames, sampleRate: sampleRate, bits: bits, isFloat: isFloat)
+        let bytesPerFrame = (bits + 7) / 8
+        // The "desc" chunk: the stream description, big-endian as every
+        // CAF field is, flagged little-endian (2) and float (1) or neither.
+        var description = Data()
+        description.append(bigEndianBytes(sampleRate.bitPattern))
+        description.append(Data("lpcm".utf8))
+        description.append(bigEndianBytes(UInt32(isFloat ? 3 : 2)))
+        description.append(bigEndianBytes(UInt32(bytesPerFrame)))     // bytes a packet
+        description.append(bigEndianBytes(UInt32(1)))                 // frames a packet
+        description.append(bigEndianBytes(UInt32(1)))                 // one channel
+        description.append(bigEndianBytes(UInt32(bits)))              // bits a sample
+        var file = Data("caff".utf8)
+        file.append(bigEndianBytes(UInt16(1)))                        // version
+        file.append(bigEndianBytes(UInt16(0)))                        // flags
+        file.append(Data("desc".utf8))
+        file.append(bigEndianBytes(Int64(description.count)))
+        file.append(description)
+        file.append(Data("data".utf8))
+        file.append(bigEndianBytes(Int64(4 + samples.count)))         // the edit count and the samples
+        file.append(bigEndianBytes(UInt32(0)))
+        file.append(samples)
+        try file.write(to: url)
+    }
+
+    /// The samples of `tone(frames:sampleRate:)` as `bits`-bit little-endian
+    /// numbers, one after another: 32 and 64-bit floats as they are, any other
+    /// float as silence, and integers scaled so that full scale is
+    /// 2^(bits-1), in as many bytes as the depth needs.
+    private static func toneSamples(frames: Int, sampleRate: Double, bits: Int, isFloat: Bool) -> Data {
+        let bytesPerSample = (bits + 7) / 8
+        var samples = Data()
+        for sample in tone(frames: frames, sampleRate: sampleRate) {
+            if isFloat {
+                switch bits {
+                case 32: samples.append(littleEndianBytes(sample.bitPattern))
+                case 64: samples.append(littleEndianBytes(Double(sample).bitPattern))
+                default: samples.append(Data(count: bytesPerSample))
+                }
+            } else {
+                // The low bytes of the two's-complement integer are its samples' bytes, least significant first.
+                let scaled = Int64(Double(sample) * pow(2, Double(bits - 1)))
+                samples.append(littleEndianBytes(scaled).prefix(bytesPerSample))
+            }
+        }
+        return samples
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// an AIFF-C file of 64-bit floating-point samples (compression type
+    /// "fl64"), written byte by byte: the only way a 64-bit float AIFF file
+    /// comes about. `sampleRate` must be a whole number of hertz.
+    static func writeToneFloat64AIFC(to url: URL, frames: Int, sampleRate: Double) throws {
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        var samples = Data()
+        for sample in tone(frames: frames, sampleRate: sampleRate) {
+            samples.append(bigEndianBytes(Double(sample).bitPattern))
+        }
+        // The sample rate as AIFF holds it, an 80-bit extended float: a
+        // 15-bit exponent biased by 16,383, and a mantissa whose top bit is 1.
+        let rate = UInt64(sampleRate)
+        let exponent = 63 - rate.leadingZeroBitCount
+        var extended = bigEndianBytes(UInt16(16_383 + exponent))
+        extended.append(bigEndianBytes(rate << UInt64(63 - exponent)))
+        let name = "64-bit floating point"
+        var common = Data()
+        common.append(bigEndianBytes(Int16(1)))                       // one channel
+        common.append(bigEndianBytes(UInt32(frames)))
+        common.append(bigEndianBytes(Int16(64)))                      // bits a sample
+        common.append(extended)
+        common.append(Data("fl64".utf8))
+        common.append(UInt8(name.utf8.count))                         // a Pascal string, 22 bytes in all
+        common.append(Data(name.utf8))
+        var version = Data()
+        version.append(bigEndianBytes(UInt32(0xA280_5140)))           // AIFF-C version 1
+        var sound = Data()
+        sound.append(bigEndianBytes(UInt32(0)))                       // offset
+        sound.append(bigEndianBytes(UInt32(0)))                       // block size
+        sound.append(samples)
+        var chunks = Data("AIFC".utf8)
+        for (id, body) in [("FVER", version), ("COMM", common), ("SSND", sound)] {
+            chunks.append(Data(id.utf8))
+            chunks.append(bigEndianBytes(UInt32(body.count)))
+            chunks.append(body)
+        }
+        var file = Data("FORM".utf8)
+        file.append(bigEndianBytes(UInt32(chunks.count)))
+        file.append(chunks)
+        try file.write(to: url)
+    }
+
+    /// The bytes of `value`, least significant first, as WAVE headers and
+    /// samples store integers.
+    private static func littleEndianBytes<T: FixedWidthInteger>(_ value: T) -> Data {
+        withUnsafeBytes(of: value.littleEndian) { Data($0) }
+    }
+
+    /// The bytes of `value`, most significant first, as CAF and AIFF files
+    /// store their integers.
+    private static func bigEndianBytes<T: FixedWidthInteger>(_ value: T) -> Data {
+        withUnsafeBytes(of: value.bigEndian) { Data($0) }
+    }
+
+    /// Writes `frames` frames of `tone(frames:sampleRate:)`, mono, to `url` as
+    /// Apple Lossless of a 24-bit source (flag 3 after `alac/`, as the import
+    /// makes such files), by `afconvert` in a child process from a 24-bit CAF
+    /// tone made beside it: AVAudioFile's own Apple Lossless takes only a
+    /// hint of the depth. The Mac's own tool, so no sound is made.
+    static func writeToneAppleLossless24(to url: URL, frames: Int, sampleRate: Double) throws {
+        let source = url.deletingLastPathComponent().appendingPathComponent(".alac-source.caf")
+        try writeTone(to: source, frames: frames, sampleRate: sampleRate, settings: [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVLinearPCMBitDepthKey: 24,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsNonInterleaved: false,
+        ])
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/afconvert")
+        process.arguments = ["-f", "m4af", "-d", "alac/3", source.path, url.path]
+        try process.run()
+        process.waitUntilExit()
+        // A file that is not there fails the test that asked for it.
+        guard process.terminationStatus == 0 else { throw CocoaError(.fileWriteUnknown) }
+    }
+
     /// What `sample`, read from an edited identity ramp, is.
     static func rampSample(_ sample: Float) -> RampSample {
         if sample == 0 { return .silence }

@@ -27,6 +27,33 @@ enum XMLEscaping {
         escape(text, replacing: attributeReplacements)
     }
 
+    /// `text` made safe for markup that is read by an HTML or an XML parser,
+    /// in element content or in a double-quoted attribute, where a tab or a
+    /// line break may stay as it is: what `text(_:)` does, and `"` as
+    /// `&quot;`. Not for an attribute whose line breaks must read back
+    /// (`attribute(_:)`, which writes them as character references).
+    static func markup(_ text: String) -> String {
+        escape(text, replacing: markupReplacements)
+    }
+
+    /// `text` with only what XML 1.0 forbids dealt with, as `text(_:)` deals
+    /// with it, and nothing escaped: for a writer that tidies a name before it
+    /// escapes it.
+    static func cleaned(_ text: String) -> String {
+        escape(text, replacing: [:])
+    }
+
+    /// Whether `text` has a character a person can see or hear: one that is
+    /// neither white space nor a format character (a zero-width space, joiner,
+    /// non-joiner, or byte order mark, which take no room), once the
+    /// characters XML forbids are gone. A heading or a name with none is
+    /// nothing to a screen reader, and is written as if empty.
+    static func hasVisibleText(_ text: String) -> Bool {
+        cleaned(text).unicodeScalars.contains { scalar in
+            !scalar.properties.isWhitespace && scalar.properties.generalCategory != .format
+        }
+    }
+
     // MARK: Private
 
     /// What `text(_:)` writes in place of the characters it escapes.
@@ -35,6 +62,12 @@ enum XMLEscaping {
         "<": "&lt;",
         ">": "&gt;",
     ]
+
+    /// What `markup(_:)` writes in place of the characters it escapes: those
+    /// of `text(_:)` and the quote.
+    private static let markupReplacements: [Unicode.Scalar: String] = textReplacements.merging([
+        "\"": "&quot;",
+    ]) { _, new in new }
 
     /// What `attribute(_:)` writes in place of the characters it escapes:
     /// those of `text(_:)` and the quote and the three white-space scalars.
@@ -73,7 +106,10 @@ enum XMLEscaping {
                 continue
             }
             if let replacement = replacements[scalar] {
-                result.append(contentsOf: replacement.unicodeScalars)
+                // One scalar at a time: `append(contentsOf:)` on a scalar view
+                // copies the whole result for each call, so a text of many
+                // ampersands took time that grew with the square of its length.
+                for part in replacement.unicodeScalars { result.append(part) }
             } else {
                 result.append(scalar)
             }

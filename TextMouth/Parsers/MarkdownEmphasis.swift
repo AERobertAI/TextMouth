@@ -1,5 +1,5 @@
 /// Writes one line of text whose characters carry emphasis as Markdown that
-/// TextMouth's own reader (swift-markdown, through `MarkdownDocParser`)
+/// TextMouth's own reader (cmark, through `MarkdownDocParser`)
 /// reads back as exactly those characters, with that emphasis: italic as
 /// `*…*`, strong as `**…**`, and both as `***…***`. The braille reader
 /// writes the emphasis liblouis reports with it (`BrailleBookReader`).
@@ -33,7 +33,7 @@
 /// So the reader's text is the input text, scalar for scalar, no character
 /// gains emphasis, and a letter's emphasis is kept but where it changes
 /// straight to another inside a word. `MarkdownEmphasisTests` checks that
-/// against swift-markdown itself for every mix of styles.
+/// against the parser itself for every mix of styles.
 enum MarkdownEmphasis {
     /// The emphasis Markdown holds: emphasis, strong, both, or neither.
     struct Style: OptionSet, Hashable, Sendable {

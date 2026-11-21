@@ -200,7 +200,7 @@ final class TranscriptionSheetTests: XCTestCase {
 
         await model.load()
 
-        let sentence = "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        let sentence = "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         XCTAssertEqual(model.phase, .ready, "the sheet started a transcription it would have to throw away")
         XCTAssertNil(center.current)
         XCTAssertTrue(model.isBookInCloud)
@@ -226,7 +226,7 @@ final class TranscriptionSheetTests: XCTestCase {
     /// be replaced, so it says to download the book first, in a sentence of
     /// the transcript's own, once.
     func testABookWhoseTranscriptIsOnlyInICloudIsDownloadedBeforeItIsTranscribedAgain() async {
-        let sentence = "The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+        let sentence = "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         let transcriptOnly = await loadedSheet(transcript: .inCloud)
         let both = await loadedSheet(transcript: .inCloud, textInCloud: true)
 
@@ -296,11 +296,11 @@ final class TranscriptionSheetTests: XCTestCase {
     func testTheCloudSentencesArePinned() {
         XCTAssertEqual(
             TranscriptionWording.textInCloud,
-            "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(
             TranscriptionWording.transcriptInCloud,
-            "The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(TranscriptTextError.textOnlyInCloud.errorDescription, TranscriptionWording.textInCloud)
     }
@@ -316,8 +316,8 @@ final class TranscriptionSheetTests: XCTestCase {
 
         XCTAssertEqual(TranscriptionRequest(books: [audiobook]), .book(audiobook))
         XCTAssertEqual(TranscriptionRequest(books: [audiobook, other]), .refused(TranscriptionWording.oneBookAtATime))
-        XCTAssertEqual(TranscriptionRequest(books: [textBook]), .refused("Lock Keeper isn't an audiobook. "
-            + "Only an audiobook's audio can be transcribed."))
+        XCTAssertEqual(TranscriptionRequest(books: [textBook]), .refused("Lock Keeper isn't an audiobook; "
+            + "only audiobooks can be transcribed."))
 
         let announcements = SheetAnnouncements()
         let model = TranscriptionSheetModel(
@@ -768,7 +768,7 @@ final class TranscriptionSheetTests: XCTestCase {
         XCTAssertEqual(TranscriptionEstimate.words(forAudio: 3_060), "about 1 minute", "51 minutes of audio")
         XCTAssertEqual(TranscriptionEstimate.words(forAudio: 22_320), "about 6 minutes", "6 hours, 12 minutes")
         XCTAssertEqual(TranscriptionEstimate.words(forAudio: 234_000), "about 1 hour", "65 hours")
-        XCTAssertEqual(TranscriptionWording.estimateLine(forAudio: nil), "Time to transcribe: not known until the audio's length is.")
+        XCTAssertEqual(TranscriptionWording.estimateLine(forAudio: nil), "Time to transcribe: not known yet.")
         XCTAssertEqual(TranscriptionWording.audioLength(nil), "Audio: length not known yet.")
         XCTAssertEqual(TranscriptionWording.audioLength(22_324), "Audio: 6 hours, 12 minutes, 4 seconds.")
     }

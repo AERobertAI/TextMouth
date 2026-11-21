@@ -1,5 +1,5 @@
 /// Writes text into Markdown as literal characters: the cache reader
-/// (swift-markdown, which parses CommonMark with GitHub tables, strikethrough,
+/// (cmark, which parses CommonMark with GitHub tables, strikethrough,
 /// and task lists, plus smart punctuation) reads the result back as exactly
 /// the input's characters, in order. Both Markdown writers whose output the
 /// cache reader parses use it: `PlainTextParser.markdown(text:)` and

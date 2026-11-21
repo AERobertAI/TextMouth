@@ -1,6 +1,8 @@
 import Foundation
 import Combine
+#if os(macOS)
 import AppKit
+#endif
 
 /// Tracks reading/listening statistics.
 ///
@@ -52,6 +54,15 @@ final class ReadingStatsService: ObservableObject {
     /// put this session's listening in place of all it holds: each save
     /// reads it again first, and once it is on this Mac, adds the stand-ins
     /// to what it holds and saves the sum.
+    ///
+    /// In a cloud location a file not on this Mac at all is waited for the
+    /// same way (risk 5 of the local-first research,
+    /// `SavedFile.mayStillArrive(_:)`): a sync service can bring the
+    /// library's other files down first. It is read again as it may arrive
+    /// and before each save, and taken up with the stand-ins added once it
+    /// is here; only a save, which comes once there is listening to keep,
+    /// writes the stand-ins while it is still missing, as substitutions.json
+    /// is written only once a rule changes.
     private(set) var statsAwaitFileInCloud = false
 
     /// Whether `stats` hold what reading_stats.json held when this service
@@ -137,7 +148,7 @@ final class ReadingStatsService: ObservableObject {
     private var activeSession: ActiveSession?
 
     /// Fires every `checkpointInterval` to checkpoint the open session.
-    private var checkpointTimer: Timer?
+    private(set) var checkpointTimer: Timer?
 
     /// When the Mac said it was going to sleep, by the wall clock and by the
     /// awake clock (`awakeClock`), which stops while the Mac sleeps, so the
@@ -211,7 +222,15 @@ final class ReadingStatsService: ObservableObject {
         userCalendar: @escaping () -> Calendar = ReadingStatsService.systemCalendar,
         readFile: @escaping SavedFile.Reader = SavedFile.readWithoutDownloading,
         awakeClock: @escaping () -> TimeInterval = ReadingStatsService.systemAwakeTime,
-        workspaceNotifications: NotificationCenter = NSWorkspace.shared.notificationCenter
+        workspaceNotifications: NotificationCenter = {
+            #if os(macOS)
+            NSWorkspace.shared.notificationCenter
+            #else
+            // iOS has no workspace and no sleep or wake notices for now: an
+            // unshared center, which nothing posts to, stands in.
+            NotificationCenter()
+            #endif
+        }()
     ) {
         precondition(checkpointInterval > 0, "The checkpoint interval must be positive")
         customFileURL = fileURL
@@ -222,12 +241,14 @@ final class ReadingStatsService: ObservableObject {
         // The time the Mac sleeps is never listening (`SleepNote`). AppKit
         // posts both notices on the main thread, the first before the Mac
         // sleeps, so its checkpoint is made while the app still runs.
+        #if os(macOS)
         sleepSubscription = workspaceNotifications
             .publisher(for: NSWorkspace.willSleepNotification)
             .sink { [weak self] _ in self?.noteSystemWillSleep(at: Date()) }
         wakeSubscription = workspaceNotifications
             .publisher(for: NSWorkspace.didWakeNotification)
             .sink { [weak self] _ in self?.noteSystemDidWake(at: Date()) }
+        #endif
         if fileURL == nil {
             // Nothing is read from a data directory the library model found
             // unavailable (FR02): fresh statistics stand in until it is back.
@@ -291,7 +312,9 @@ final class ReadingStatsService: ObservableObject {
     private enum SavedStats {
         /// The statistics the file holds.
         case saved(ReadingStats)
-        /// None: there is no file yet, or it can't be used.
+        /// None: there is no file yet.
+        case missing
+        /// None: the file can't be used, and was preserved beside itself.
         case none
         /// The file is only in the cloud, so it was not read.
         case inCloud
@@ -300,8 +323,10 @@ final class ReadingStatsService: ObservableObject {
     /// Reads reading_stats.json into `stats`: its statistics, or fresh ones
     /// when there is none yet or it can't be used, or, when it is only in
     /// the cloud, fresh ones that stand in for it until a save finds it on
-    /// this Mac (`statsAwaitFileInCloud`), the sync service asked for it.
-    /// Only the file's own statistics count as read (`statsReadFromFile`).
+    /// this Mac (`statsAwaitFileInCloud`), the sync service asked for it. A
+    /// file missing from a cloud location may not have arrived yet, and
+    /// fresh statistics stand in for it the same way (risk 5). Only the
+    /// file's own statistics count as read (`statsReadFromFile`).
     private func loadStatsFile() {
         statsAwaitFileInCloud = false
         statsReadFromFile = false
@@ -309,6 +334,17 @@ final class ReadingStatsService: ObservableObject {
         case .saved(let saved):
             stats = saved
             statsReadFromFile = true
+        case .missing:
+            stats = ReadingStats()
+            if SavedFile.mayStillArrive(fileURL) {
+                statsAwaitFileInCloud = true
+                DiagnosticLog.event(
+                    .statistics,
+                    "READING_STATS_FILE: \(fileURL.lastPathComponent) isn't on this Mac, and the library is in the "
+                        + "cloud, so it may not have arrived yet; this session's listening is kept in memory, and "
+                        + "added to the file once it is here"
+                )
+            }
         case .none:
             stats = ReadingStats()
         case .inCloud:
@@ -332,7 +368,7 @@ final class ReadingStatsService: ObservableObject {
     private func readSavedStats() -> SavedStats {
         switch SavedFile.read(fileURL, using: readFile) {
         case .missing:
-            return .none
+            return .missing
         case .inCloud:
             return .inCloud
         case .contents(let data):
@@ -358,8 +394,18 @@ final class ReadingStatsService: ObservableObject {
             because: reason,
             logging: "READING_STATS_FILE",
             in: .statistics,
-            standIn: "the statistics start afresh"
+            standIn: "the statistics start afresh" // l10n: no (written to the debug log)
         )
+    }
+
+    /// Reads reading_stats.json again once it may be on this Mac, after it was
+    /// found only in the cloud (`statsAwaitFileInCloud`), without waiting for
+    /// a save: the listening credited meanwhile is added to what the file
+    /// holds, as a save would do. Does nothing unless the file was waiting;
+    /// while it still is, nothing is read or written.
+    func fileMayHaveArrived() {
+        guard statsAwaitFileInCloud else { return }
+        _ = mayReplaceStatsFile(forSave: false)
     }
 
     /// Whether a save may replace reading_stats.json now: always, unless
@@ -367,17 +413,23 @@ final class ReadingStatsService: ObservableObject {
     /// again first: once it is on this Mac, the listening credited meanwhile
     /// is added to what it holds, the wait ends, and the save goes on with
     /// the sum; while it is still in the cloud, nothing is written over it.
-    /// The statistics count as read from the file (`statsReadFromFile`) only
-    /// when the file held some.
-    private func mayReplaceStatsFile() -> Bool {
+    /// A file still missing ends the wait only for a save (`forSave`), whose
+    /// stand-ins are then all there is: a look as the file may have arrived
+    /// leaves the wait as it is (risk 5). The statistics count as read from
+    /// the file (`statsReadFromFile`) only when the file held some.
+    private func mayReplaceStatsFile(forSave: Bool = true) -> Bool {
         guard statsAwaitFileInCloud else { return true }
         let saved: ReadingStats
         let readFromFile: Bool
-        switch readSavedStats() {
+        let read = readSavedStats()
+        switch read {
         case .inCloud:
             return false
-        case .none:
-            // The file went, or can't be used: the stand-ins are all there is.
+        case .missing where !forSave:
+            return false
+        case .missing, .none:
+            // The file went, never came, or can't be used: the stand-ins are
+            // all there is.
             saved = ReadingStats()
             readFromFile = false
         case .saved(let found):
@@ -388,19 +440,28 @@ final class ReadingStatsService: ObservableObject {
         stats = saved.adding(standIn)
         statsAwaitFileInCloud = false
         statsReadFromFile = readFromFile
-        DiagnosticLog.event(
-            .statistics,
-            "READING_STATS_FILE: read the statistics now that the file is on this Mac, adding "
-                + "\(Int(standIn.totalListeningSeconds.rounded())) seconds listened while it was in the cloud"
-        )
+        let seconds = Int(standIn.totalListeningSeconds.rounded())
+        if case .missing = read {
+            DiagnosticLog.event(
+                .statistics,
+                "READING_STATS_FILE: \(fileURL.lastPathComponent) still isn't on this Mac, so the statistics "
+                    + "kept in memory, \(seconds) seconds listened, are saved as the file"
+            )
+        } else {
+            DiagnosticLog.event(
+                .statistics,
+                "READING_STATS_FILE: read the statistics now that the file is on this Mac, adding "
+                    + "\(seconds) seconds listened while it was in the cloud"
+            )
+        }
         return true
     }
 
-    /// Decodes reading_stats.json's bytes, as `write` encodes them.
+    /// Decodes reading_stats.json's bytes, as `write` encodes them, with the
+    /// top-level keys this TextMouth does not know (`ReadingStats.unknownKeys`,
+    /// V04).
     private static func decodeStats(_ data: Data) throws -> ReadingStats {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode(ReadingStats.self, from: data)
+        try ReadingStats.decodeFile(data)
     }
 
     /// Stops the checkpoint timer. At termination this follows
@@ -718,6 +779,12 @@ final class ReadingStatsService: ObservableObject {
     /// from the main thread — the actual encoding and file write
     /// are dispatched asynchronously. Nothing is written while the file
     /// waits in the cloud (`mayReplaceStatsFile()`).
+    ///
+    /// A save made while a data-directory move copies the library is
+    /// provisional (`StorageBoundary.isProvisionalSave(of:rewrite:)`): it
+    /// writes the file where the move copies from, which the copy may have
+    /// passed, so it does not settle an earlier failure, and the move saves
+    /// the statistics again once it has ended, in the moved library.
     func save() {
         guard mayReplaceStatsFile() else { return }
         // Snapshot the stats value type on the calling thread so
@@ -726,8 +793,11 @@ final class ReadingStatsService: ObservableObject {
         let snapshot = stats
         let url = fileURL
         let retry = retryAfterFailure
+        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: url.lastPathComponent) { [weak self] in
+            self?.save()
+        }
         Self.saveQueue.async {
-            Self.write(snapshot, to: url, retry: retry)
+            Self.write(snapshot, to: url, retry: retry, isProvisional: isProvisional)
         }
     }
 
@@ -759,23 +829,35 @@ final class ReadingStatsService: ObservableObject {
     /// Writes `snapshot` to `url` and reports the outcome to the failure
     /// center (TODO S09): a file written settles any earlier failed save of
     /// the statistics, and a failure is reported with `retry`, so it is
-    /// never known only to the console. Must run on saveQueue.
+    /// never known only to the console. The retry writes from the main
+    /// thread, so it waits while an operation holds the storage work, such
+    /// as a data-directory move copying this file
+    /// (`PersistenceFailure.waitsForStorageWork`). A provisional write,
+    /// made during a move's copy, settles nothing: the move saves the
+    /// statistics again once it has ended, and that write does. Must run on
+    /// saveQueue.
     nonisolated private static func write(
         _ snapshot: ReadingStats,
         to url: URL,
-        retry: @escaping PersistenceFailure.Retry
+        retry: @escaping PersistenceFailure.Retry,
+        isProvisional: Bool = false
     ) {
         do {
             try TextMouthPaths.ensureDirectoryStructure()
-            let encoder = JSONEncoder()
-            encoder.dateEncodingStrategy = .iso8601
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            let data = try encoder.encode(snapshot)
+            let data = try snapshot.fileData()
             try data.write(to: url, options: .atomic)
-            PersistenceFailureCenter.shared.recordSuccess(.statistics)
+            if !isProvisional {
+                PersistenceFailureCenter.shared.recordSuccess(.statistics)
+            }
         } catch {
             print("Failed to save reading stats: \(error)")
-            PersistenceFailureCenter.shared.recordFailure(.statistics, path: url.path, error: error, retry: retry)
+            PersistenceFailureCenter.shared.recordFailure(
+                .statistics,
+                path: url.path,
+                error: error,
+                waitsForStorageWork: true,
+                retry: retry
+            )
         }
     }
 
@@ -816,6 +898,8 @@ final class ReadingStatsService: ObservableObject {
         }
         // The common modes keep checkpoints coming while a menu is open or a
         // modal panel runs; a timer in the default mode would wait for them.
+        // A checkpoint is bookkeeping nobody hears: let macOS coalesce it.
+        TimerCoalescing.loosen(timer)
         RunLoop.main.add(timer, forMode: .common)
         checkpointTimer = timer
     }
@@ -823,7 +907,7 @@ final class ReadingStatsService: ObservableObject {
 
 // MARK: - Data Model
 
-struct ReadingStats: Codable {
+struct ReadingStats: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     /// Daily listening time in seconds, keyed by local day as
     /// `ListeningDays` writes keys: "yyyy-MM-dd", Gregorian, ASCII digits.
     /// A key from an earlier version that names no day is kept under
@@ -846,6 +930,39 @@ struct ReadingStats: Codable {
     /// decodes with none, since its keys followed the system's calendar;
     /// the service migrates them once when it loads the file.
     var dayKeyVersion: Int? = ListeningDays.keyVersion
+    /// The top-level keys of reading_stats.json that this TextMouth does
+    /// not know (V04, `UnknownKeys`), as a total a later TextMouth keeps
+    /// is, written back as they were; none in statistics begun here.
+    /// Listening is added to the statistics in place, and the statistics
+    /// of a file that arrives from the cloud are the file's with this
+    /// Mac's added (`adding(_:)`), so both keep them. The synthesized
+    /// coding passes them over: `decodeFile(_:)` and `fileData()` read and
+    /// write them beside the fields (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of reading_stats.json that this version
+    /// knows (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
+
+    /// The statistics reading_stats.json's bytes hold, with the keys this
+    /// TextMouth does not know.
+    static func decodeFile(_ data: Data) throws -> ReadingStats {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(WithUnknownKeys<ReadingStats>.self, from: data).value
+    }
+
+    /// The bytes reading_stats.json holds for these statistics: readable,
+    /// with sorted keys and ISO 8601 dates, the unknown keys among its own.
+    /// Statistics without any are the same bytes as before V04.
+    func fileData() throws -> Data {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(WithUnknownKeys(self))
+    }
 
     /// Adds `seconds` of listening to `bookID` on the day `dayKey` names,
     /// keeping the grand, per-book, and daily totals in step.

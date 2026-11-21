@@ -277,6 +277,33 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(reader.currentChapterIndex, 0)
     }
 
+    /// `goToSearchResult` takes the transcript's move for a transcript's
+    /// result, to the sentence holding the match with "Moved to" waiting, and
+    /// the text book's move otherwise, to the match itself with nothing waiting.
+    func testGoToSearchResultChoosesTheMoveByTheBookSearched() async throws {
+        let reader = try await transcribedReader("Search Go To Result")
+        let transcript = try XCTUnwrap(reader.content?.transcript)
+        let corpus = try XCTUnwrap(reader.searchCorpus)
+        let ferry = try XCTUnwrap(matches("ferry", in: corpus).first)
+
+        reader.goToSearchResult(chapterIndex: ferry.chapterIndex, characterOffset: ferry.characterOffset, inTranscript: true)
+
+        XCTAssertEqual(
+            reader.currentCharacterOffset,
+            transcript.audioOffset(atTextOffset: ferry.characterOffset, inChapter: ferry.chapterIndex),
+            "A transcript result didn't move the audio to its sentence"
+        )
+        XCTAssertNotNil(reader.pendingJumpAnnouncement, "A transcript result left no \"Moved to\" waiting")
+        XCTAssertTrue(reader.hasSavedPosition)
+        reader.announcePendingJump()
+
+        reader.goToSearchResult(chapterIndex: 0, characterOffset: 7, inTranscript: false)
+
+        XCTAssertEqual(reader.currentChapterIndex, 0)
+        XCTAssertEqual(reader.currentCharacterOffset, 7, "A text result moved by the transcript's text-to-audio map")
+        XCTAssertNil(reader.pendingJumpAnnouncement)
+    }
+
     /// Without a transcript, a transcript result moves nothing and says
     /// nothing; announcing with none pending says nothing either.
     func testWithoutATranscriptNothingMoves() async throws {
@@ -405,11 +432,11 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(said(nil), lead + ".")
         XCTAssertEqual(
             said(.textInCloud),
-            lead + ". The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            lead + ". The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(
             said(.transcriptInCloud),
-            lead + ". The book's transcript is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            lead + ". The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(
             said(.audioChanged),
@@ -419,12 +446,12 @@ final class TranscriptSearchTests: XCTestCase {
         XCTAssertEqual(
             said(.editHeld(.headingChanged, keptCopy: copy)),
             lead + ", because its edited text can't be used: it changes a chapter's heading, which comes from the audio. "
-                + "Put the heading back as it was and save again, and the text shows. "
+                + "Put it back and save again, and the text shows. "
                 + "Your edited text was also kept as content.md.edited-20261023T093000Z, in the book's package."
         )
         XCTAssertEqual(
             said(.editHeld(.notText, keptCopy: nil)),
-            lead + ", because its edited text can't be used: it isn't UTF-8 text. Save it as UTF-8 in your editor, "
+            lead + ", because its edited text can't be used: it isn't UTF-8 text. Save it as UTF-8, "
                 + "and the text shows. No copy of your edited text could be kept, so TextMouth leaves content.md as it is."
         )
         // None of them names a command: a book with a transcript offers
@@ -439,8 +466,8 @@ final class TranscriptSearchTests: XCTestCase {
         // other sentences are those sentences' own.
         XCTAssertEqual(
             BookTextEditWording.held(.noChapters, bookTitle: "Breakwater Notes", keptCopy: nil),
-            "Breakwater Notes can't open while its edited text can't be used: it has no chapter left with anything in it. "
-                + "Undo the change in your editor and save again, and the book opens. "
+            "Breakwater Notes can't open while its edited text can't be used: it has no chapter with any text. "
+                + "Undo the change and save again, and the book opens. "
                 + "No copy of your edited text could be kept, so TextMouth leaves content.md as it is."
         )
         XCTAssertEqual(

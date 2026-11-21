@@ -942,11 +942,11 @@ final class TranscriptTextTests: XCTestCase {
     func testTheTextErrorsAreWordedExactly() {
         XCTAssertEqual(
             TranscriptTextError.textOnlyInCloud.errorDescription,
-            "The book's text is only in iCloud, so TextMouth leaves it as it is. Download the book, then try again."
+            "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again."
         )
         XCTAssertEqual(
             TranscriptTextError.textNotKept.errorDescription,
-            "The book's text holds changes TextMouth couldn't keep a copy of, so it leaves the text as it is."
+            "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is."
         )
         XCTAssertTrue(TranscriptTextError.textOnlyInCloud.leavesTextAsItIs)
         XCTAssertTrue(TranscriptTextError.textNotKept.leavesTextAsItIs)

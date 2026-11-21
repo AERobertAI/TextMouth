@@ -473,6 +473,7 @@ final class ShortcutConfigFileTests: XCTestCase {
             "Add Feed…": "default in Library windows: shift+command+f",
             "Copy Reading Position": "default in reader windows: shift+command+p",
             "Search in Book": "default in reader windows: command+f",
+            "Search Library…": "default: option+command+f",
             "New Recording: Record": "default: command+r",
             "New Recording: Pause or Resume": "default: command+p",
             "New Recording: Stop": "default: command+.",
@@ -736,7 +737,7 @@ final class ShortcutConfigFileTests: XCTestCase {
     /// reconciles the two, moving the shortcuts to the record when the store
     /// holds none, and starts the watcher, which stops when the test ends.
     private func launch(_ url: URL, store: UserDefaults) -> (service: ConfigService, settings: SettingsViewModel) {
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         addTeardownBlock { service.shutdown() }
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(),

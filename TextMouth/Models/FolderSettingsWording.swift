@@ -11,33 +11,60 @@ import Foundation
 enum FolderSettingsWording {
 
     /// The sheet's navigation title (the window's title while it is open).
-    static let title = "Folder Settings"
+    static var title: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The sheet's navigation title (the window's title while it is open).
+        String(localized: "Folder Settings")
+    }
 
     /// The label of the folder's place: the folder that holds it.
-    static let locationLabel = "Location"
+    static var locationLabel: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's place: the folder that holds it.
+        String(localized: "Location")
+    }
 
     /// The label of the books in the folder and every folder below it.
-    static let booksLabel = "Books"
+    static var booksLabel: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the books in the folder and every folder below it.
+        String(localized: "Books")
+    }
 
     /// The label of the folder's own subfolders, shown only when it has any.
-    static let subfoldersLabel = "Subfolders"
+    static var subfoldersLabel: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the folder's own subfolders, shown only when it has any.
+        String(localized: "Subfolders")
+    }
 
     /// The label of the feeds inside the folder, shown only when it has any.
-    static let feedsLabel = "Feeds"
+    static var feedsLabel: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the feeds inside the folder, shown only when it has any.
+        String(localized: "Feeds")
+    }
 
     /// The label of the time left in all the folder's books, shown only
     /// when it is known.
-    static let timeRemainingLabel = "Time remaining"
+    static var timeRemainingLabel: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The label of the time left in all the folder's books, shown only when it is known.
+        String(localized: "Time remaining")
+    }
 
     /// The heading over the listening options.
-    static let listeningHeading = "Listening"
+    static var listeningHeading: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The heading over the listening options.
+        String(localized: "Listening")
+    }
 
     /// The title of the button that closes the sheet.
-    static let done = "Done"
+    static var done: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.
+        String(localized: "Done")
+    }
 
     /// What the sheet says in place of the folder, when the folder was
     /// deleted in another window while the sheet was open.
-    static let folderGone = "This folder is no longer in the library."
+    static var folderGone: String {
+        // Translators: Text of the Folder Settings sheet, which shows one library folder's facts and its listening options. What the sheet says in place of the folder, when the folder was deleted in another window while the sheet was open.
+        String(localized: "This folder is no longer in the library.")
+    }
 
     /// One labelled fact of a folder: what it is and its value.
     struct Fact: Equatable {

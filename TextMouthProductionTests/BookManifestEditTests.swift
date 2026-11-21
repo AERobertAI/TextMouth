@@ -1275,7 +1275,14 @@ final class BookManifestEditTests: XCTestCase {
         let second = await launch(world, editor: editor, preferences: preferences)
 
         XCTAssertNil(second, "The one-time pass was made again")
-        XCTAssertEqual(world.library.bookByID(edited.id)?.title, "Harbour Pilots, Second Edition", "The later manifest edit was not taken")
+        // The manifest's title says whether something wrote over the later
+        // edit (Q16) or the look did not take what the manifest holds.
+        let manifestTitleNow = (try? AudioManifest.decoded(from: Data(contentsOf: editedManifest)).title) ?? "none, or unreadable"
+        XCTAssertEqual(
+            world.library.bookByID(edited.id)?.title,
+            "Harbour Pilots, Second Edition",
+            "The later manifest edit was not taken; the manifest's title is \(manifestTitleNow)"
+        )
     }
 
     /// Makes the launch's one-time pass and then its look at every book of
@@ -1293,6 +1300,50 @@ final class BookManifestEditTests: XCTestCase {
             }
         }
         return outcome
+    }
+
+    // MARK: - A Save Made While the Save Before It Is Taken (Q16)
+
+    /// A save of the manifest made while TextMouth still acts on the save it
+    /// took just before stands, and the next look takes it: taking an edit
+    /// writes nothing back into the manifest (Q16). The manifest queues,
+    /// the app's and the editor's, are held from the take until the later
+    /// save is made, as the queue is held at launch behind the looks at the
+    /// other books. So any write the take queued can only land after that
+    /// save, over it, every time.
+    func testASaveMadeWhileTheSaveBeforeItIsTakenIsNotWrittenOver() async throws {
+        let world = try makeIntegrationWorld("Outside Manifest Quick Saves")
+        let book = try world.makeSilentAudioBook(title: "Harbour Pilots", trackDurations: [0.2, 0.2], manifest: #"{"title": "Harbour Pilots"}"#)
+        let editor = makeEditor()
+        defer { editor.editor.endAll() }
+        let announcements = AnnouncementCapture()
+        defer { announcements.stop() }
+        let manifest = try XCTUnwrap(AudioManifestLocation.find(in: book.bookFileURL)).url
+        try save(#"{"title": "Harbour Pilots, Revised"}"#, to: manifest)
+        let first = editor.sessions.look(at: try row(book.id, in: world))
+        guard case .adopted = first else { return XCTFail("The first save was not taken: \(first)") }
+
+        let held = holdQueues([BookManifestEditSessions.shared.queue, editor.sessions.queue])
+        editor.editor.handle(first, for: book.id, in: world.library)
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Harbour Pilots, Revised", "The first save's title was not taken")
+        try save(#"{"title": "Harbour Pilots, Second Edition"}"#, to: manifest)
+        await held.letGoAndWait()
+
+        XCTAssertEqual(try manifestTitle(of: book), "Harbour Pilots, Second Edition", "TextMouth wrote the title it took over the later save")
+        let second = editor.sessions.look(at: try row(book.id, in: world))
+        guard case .adopted = second else { return XCTFail("The later save was not taken: \(second)") }
+        editor.editor.handle(second, for: book.id, in: world.library)
+        XCTAssertEqual(world.library.bookByID(book.id)?.title, "Harbour Pilots, Second Edition", "The later save's title was not taken")
+        XCTAssertEqual(announcements.messages, [BookManifestEditWording.updated, BookManifestEditWording.updated])
+    }
+
+    /// Holds each of `queues` from now until the test lets them go
+    /// (`HeldQueues.letGoAndWait()`), and lets them go when the test ends
+    /// at the latest.
+    private func holdQueues(_ queues: [DispatchQueue]) -> HeldQueues {
+        let held = HeldQueues(queues)
+        addTeardownBlock { held.letGo() }
+        return held
     }
 
     // MARK: - A Title or Author the Manifest Is Owed (REV17b, Finding 3)
@@ -1586,5 +1637,49 @@ final class BookManifestEditTests: XCTestCase {
 
         let reordered = #"{"title": "Night Pilots", "tracks": ["02.wav", "01.wav"]}"#
         XCTAssertFalse(matches(reordered, owed: [.title, .author]), "An owed field hid a new arrangement")
+    }
+}
+
+/// Serial queues a test holds (`BookManifestEditTests.holdQueues(_:)`): a
+/// block put on each waits at a gate, so whatever is queued on a queue after
+/// the hold waits until the test lets it go.
+private final class HeldQueues: Sendable {
+    /// The queues held.
+    private let queues: [DispatchQueue]
+    /// The gate each queue's first block waits at, in the same order.
+    private let gates: [DispatchSemaphore]
+
+    /// Holds each of `queues` with a gate of its own.
+    init(_ queues: [DispatchQueue]) {
+        self.queues = queues
+        gates = queues.map { queue in
+            let gate = DispatchSemaphore(value: 0)
+            queue.async {
+                // A hold never let go ends by itself after 30 seconds, so a
+                // test gone wrong fails on what it checks instead of holding
+                // a queue of the app.
+                _ = gate.wait(timeout: .now() + 30)
+            }
+            return gate
+        }
+    }
+
+    /// Opens every gate. Opening them again changes nothing, since each
+    /// gate's block has stopped waiting by then.
+    func letGo() {
+        for gate in gates {
+            gate.signal()
+        }
+    }
+
+    /// Opens every gate, then waits until each queue has run everything
+    /// queued on it so far.
+    func letGoAndWait() async {
+        letGo()
+        for queue in queues {
+            await withCheckedContinuation { (ran: CheckedContinuation<Void, Never>) in
+                queue.async { ran.resume() }
+            }
+        }
     }
 }

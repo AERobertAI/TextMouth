@@ -318,12 +318,12 @@ final class FolderSafetyTests: XCTestCase {
             FolderOperationConflict.namesCollide(
                 firstPath: "Old/Reports", secondPath: "Old/reports", parentPath: "Target"
             ).message,
-            "The folders \"Reports\" and \"reports\" cannot both be moved into \"Target\", "
-                + "because their names refer to the same folder on this disk."
+            "The folders \"Reports\" and \"reports\" can't both move into \"Target\": "
+                + "their names mean the same folder on this disk."
         )
         XCTAssertEqual(
             FolderOperationConflict.tooDeep("A/B/C/D/E").message,
-            "That would place \"A/B/C/D/E\" 5 levels deep, but folders can be nested at most 4 levels."
+            "That would put \"A/B/C/D/E\" 5 levels deep, but folders nest at most 4 levels."
         )
         XCTAssertEqual(
             FolderOperationConflict.destinationInsideFolder(folderPath: "A", destinationPath: "A/B").message,

@@ -76,12 +76,12 @@ enum FeedTextConverter {
         var line = text
         if isHTML {
             // SwiftSoup reads a fragment's text with references undone.
-            line = (try? SwiftSoup.parseBodyFragment(text).text()) ?? text
+            line = (try? MarkupGuard.parseBodyFragment(text).text()) ?? text
         } else if text.contains("&") {
             // Escaping every "<" first keeps plain text from being read as
             // tags, so only the references are undone.
             let escapedTags = text.replacingOccurrences(of: "<", with: "&lt;")
-            line = (try? SwiftSoup.parseBodyFragment(escapedTags).text()) ?? text
+            line = (try? MarkupGuard.parseBodyFragment(escapedTags).text()) ?? text
         }
         return line
             .split(whereSeparator: { $0.isWhitespace })
@@ -139,19 +139,11 @@ enum FeedTextConverter {
         }.joined(separator: "\n")
     }
 
-    /// `text` with the characters HTML gives meaning to escaped.
+    /// `text` with the characters HTML gives meaning to escaped, by the shared
+    /// writer (`XMLEscaping.markup(_:)`): it walks scalars, as a parser reads,
+    /// so an "&" or "<" with a combining accent after it is escaped too, and
+    /// leaves out what XML forbids (a form feed or vertical tab becomes a space).
     static func escaped(_ text: String) -> String {
-        var result = ""
-        result.reserveCapacity(text.count)
-        for character in text {
-            switch character {
-            case "&": result += "&amp;"
-            case "<": result += "&lt;"
-            case ">": result += "&gt;"
-            case "\"": result += "&quot;"
-            default: result.append(character)
-            }
-        }
-        return result
+        XMLEscaping.markup(text)
     }
 }

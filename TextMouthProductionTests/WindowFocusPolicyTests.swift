@@ -85,7 +85,7 @@ final class WindowFocusPolicyTests: XCTestCase {
     func testEmptyBookmarkControlHasInteractiveFocusMetadata() {
         XCTAssertEqual(voiceOverFocusID, "vo-focus-target")
         XCTAssertTrue(StandardVoiceOverFocusTriggerView.acceptsFallback(
-            role: "AXButton", label: "Add bookmark at current position", isScrollerPart: false
+            role: "AXButton", label: "Add Bookmark", isScrollerPart: false
         ))
     }
 

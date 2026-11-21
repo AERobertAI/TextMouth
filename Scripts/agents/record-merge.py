@@ -12,19 +12,33 @@
    that begins "**Open follow-ups noted on October 3 afternoon and evening**".
 4. Optional: a feature request or bug entry (FR09, B01, ...) is ticked and
    given "Merged <hash>, <date> (see the merge entry above)."
+5. Optional: an issue file (Issues/B16.md) is closed as done, merged <hash> on
+   the merge's date, with a comment that says so, and its pointer line in the
+   TODO ("- [ ] **B16** moved to Issues/B16.md") is ticked. --close may be
+   given more than once. The issue-library skill makes the change, so its
+   rules hold: the issue must be open, and the change is the orchestrator's.
 
-Every anchor must be found exactly where expected, or nothing is written.
+Every anchor must be found exactly where expected, and every issue must close,
+or nothing is written.
 
 Usage:
   record-merge.py --entry ENTRY.md --counts "After the reading-list merge: **4700 tests, 56 skipped, 0 failures**."
                   [--followups FOLLOWUPS.txt] [--tick FR09 --hash 1a2b3c4d --date "October 7"]
-                  [--todo PATH]
+                  [--close B16 --hash 1a2b3c4d --date "November 16"] [--todo PATH]
   record-merge.py --entry ENTRY.md --note "The October 7 documentation pass changed only README.md and ARCHITECTURE.md."
 """
 import argparse
+import datetime
 import re
 import sys
 from pathlib import Path
+
+# No bytecode beside the issue-library skill, whose modules --close imports by path.
+sys.dont_write_bytecode = True
+# The issue-library skill's scripts, in the same checkout as this script.
+ISSUE_SCRIPTS = Path(__file__).resolve().parents[2] / ".claude" / "skills" / "issue-library" / "scripts"
+# The date --tick writes when --date is not given, as it always has.
+TICK_DATE = "October 7"
 
 ENTRY_ANCHOR = "**Open follow-ups noted by the September 28 agents**"
 FOLLOWUPS_ANCHOR = "**Open follow-ups noted on October 3 afternoon and evening**"
@@ -102,7 +116,54 @@ def tick(text, item, merge_hash, date):
     return pattern.sub(replacement, text, count=1)
 
 
+def issue_library():
+    """The issue-library skill's issuestore module, found by path; fail when this checkout has none."""
+    if not (ISSUE_SCRIPTS / "issuestore.py").is_file():
+        fail(f"--close needs the issue-library skill, and {ISSUE_SCRIPTS} is missing")
+    if str(ISSUE_SCRIPTS) not in sys.path:
+        sys.path.insert(1, str(ISSUE_SCRIPTS))
+    import issuestore  # noqa: E402  (the skill's own module, found by path)
+    return issuestore
+
+
+def iso_date(text, today):
+    """The merge's date as YYYY-MM-DD, from "2026-11-16", "November 16, 2026", or "November 16" (issuedates.py)."""
+    import issuedates  # noqa: E402  (the issue-library skill's, on the path once issue_library() ran)
+    date = issuedates.parse_date(text, today)
+    if date is None:
+        fail(f"--date {text!r} is not a date: write 2026-11-16, November 16, 2026, or November 16")
+    return date
+
+
+def close_issues(text, todo_path, issues, merge_hash, date_text):
+    """Close each issue at the merge, and tick its pointer lines in `text`.
+
+    Returns the TODO's new text, the issue files' changes, and the lines to print
+    (one for an issue that has no pointer line, and one for each doc section that
+    cites a closed issue, for the next docs pass), written by the caller only once
+    everything has passed; fails on the first issue that cannot close (missing,
+    closed already, or a file the skill refuses to change).
+    """
+    issuestore = issue_library()
+    store = issuestore.Store(todo_path.resolve().parent, todo=todo_path.resolve())
+    try:
+        today = datetime.date.fromisoformat(store.today())
+        date = iso_date(date_text, today) if date_text is not None else today.isoformat()
+        changes = [issuestore.close(store, issue_id, issuestore.ORCHESTRATOR, merged=merge_hash, date=date)
+                   for issue_id in issues]
+    except (issuestore.UsageError, issuestore.Refused) as error:
+        fail(f"--close: {error}")
+    notes = []
+    for issue_id in issues:
+        text, count = issuestore.issueids.set_pointers(text, issue_id, closed=True)
+        if not count:
+            notes.append(f"{issue_id} has no pointer line in {todo_path.name}, so only its issue file changed")
+        notes.extend(issuestore.citing_notes(store, issue_id))
+    return text, changes, notes
+
+
 def main():
+    """Read the command line, make every edit in memory, check them all, and only then write the TODO and the issues."""
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--todo", default=str(Path(__file__).resolve().parents[2] / "TODO-2026-09-04.md"))
     parser.add_argument("--entry", required=True, help="file holding the merge's '- [x]' entry")
@@ -111,14 +172,22 @@ def main():
     sentence.add_argument("--note", help="a plain sentence, for a merge that ran no suite")
     parser.add_argument("--followups", help="file holding sentences for the open follow-ups paragraph")
     parser.add_argument("--tick", help="a feature or bug entry to tick, such as FR09")
-    parser.add_argument("--hash", help="the merge commit, with --tick")
-    parser.add_argument("--date", default="October 7", help="the merge's date, with --tick")
+    parser.add_argument("--close", action="append", default=[], metavar="ID",
+                        help="an issue file (Issues/ID.md) to close at this merge; more than one may be given")
+    parser.add_argument("--hash", help="the merge commit, with --tick or --close")
+    parser.add_argument("--date", default=None,
+                        help=f"the merge's date: with --tick as the TODO writes it (default {TICK_DATE}); "
+                             "with --close 2026-11-16 or November 16 (default today)")
     args = parser.parse_args()
 
     if args.counts is not None and not COUNTS_PATTERN.search(args.counts):
         fail("the counts sentence must read 'After the ... merge: **N tests, S skipped, F failures**'")
     if args.tick and not args.hash:
         fail("--tick needs --hash")
+    if args.close and not args.hash:
+        fail("--close needs --hash")
+    if len(set(args.close)) != len(args.close):
+        fail("--close names an issue twice")
 
     path = Path(args.todo)
     text = path.read_text(encoding="utf-8")
@@ -127,9 +196,17 @@ def main():
     if args.followups:
         text = append_followups(text, Path(args.followups).read_text(encoding="utf-8"))
     if args.tick:
-        text = tick(text, args.tick, args.hash, args.date)
+        text = tick(text, args.tick, args.hash, args.date if args.date is not None else TICK_DATE)
+    changes, notes = [], []
+    if args.close:
+        text, changes, notes = close_issues(text, path, args.close, args.hash, args.date)
     path.write_text(text, encoding="utf-8")
-    print(f"record-merge: recorded in {path.name}" + (f"; ticked {args.tick}" if args.tick else ""))
+    for change in changes:
+        change.path.write_text(change.text, encoding="utf-8")
+    print(f"record-merge: recorded in {path.name}" + (f"; ticked {args.tick}" if args.tick else "")
+          + "".join(f"; {change.message}" for change in changes))
+    for note in notes:
+        print(f"record-merge: {note}")
 
 
 if __name__ == "__main__":

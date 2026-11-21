@@ -53,7 +53,7 @@ extension DAISYParser {
 
         let entryNames = names
             .filter { !$0.hasPrefix(".") && isPackageEntryName($0) && isFile($0) }
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            .sortedStably { $0.localizedStandardCompare($1) == .orderedAscending }
         let books = entryNames.first(where: isNCCFileName).map { [$0] } ?? entryNames
         return books.map { directory.appendingPathComponent($0) }
     }
@@ -112,7 +112,7 @@ final class EntryFirstFileProvider: DAISYFileProvider {
 
 /// Why a DAISY book kept as loose files cannot be imported with its files
 /// (TODO I02).
-enum DAISYPackageError: LocalizedError, Equatable {
+enum DAISYPackageError: LocalizedError, LogDescribing, Equatable {
     /// A file of the book refers to `reference`, which lies outside the
     /// book's folder, or is a symbolic link leading out of it. `file` is the
     /// referring file's path inside the folder.
@@ -127,13 +127,37 @@ enum DAISYPackageError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case let .referenceOutsidePackage(reference, file):
-            return "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's "
-                + "folder. Only files inside the folder can be imported."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a DAISY book kept as loose files could not be imported: one of its files refers to a file outside the book's folder. %1$@ is the referring file's path inside the folder and %2$@ the reference, as the file writes it.
+                String(localized: "The file “\(file)” in this DAISY book refers to “\(reference)”, outside the book's folder."),
+                // Translators: Last sentence of why a DAISY book kept as loose files could not be imported: the rule about files outside its folder.
+                String(localized: "Only files inside the folder can be imported."),
+            ])
         case .notAPackage:
-            return "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level."
+            // Translators: Why a folder could not be imported as a DAISY book: it holds no navigation file (ncc.html) and no package file (.opf) at its top level. ncc.html and .opf are file names and stay as they are.
+            return String(localized: "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.")
         case .severalPackages(let names):
-            return "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))). "
-                + "Import each book's .opf file on its own."
+            return SentenceWording.joined([
+                // Translators: First sentence of why a folder could not be imported as one DAISY book: its top level holds several books' package files. %lld is how many books, always two or more, and %@ their file names, separated by commas.
+                String(localized: "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", ")))."),
+                // Translators: Last sentence of why a folder of several DAISY books could not be imported as one: what to do. .opf is a file extension and stays as it is.
+                String(localized: "Import each book's .opf file on its own."),
+            ])
+        }
+    }
+
+    /// The error in English for the debug log, which stays English whatever
+    /// language the interface speaks (FR34).
+    var logDescription: String {
+        switch self {
+        case let .referenceOutsidePackage(reference, file):
+            return "The file “\(file)” in this DAISY book refers to “\(reference)”, which is outside the book's " // l10n: no (debug log)
+                + "folder. Only files inside the folder can be imported." // l10n: no (debug log)
+        case .notAPackage:
+            return "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level." // l10n: no (debug log)
+        case .severalPackages(let names):
+            return "The folder holds \(names.count) DAISY books (\(names.joined(separator: ", "))). " // l10n: no (debug log)
+                + "Import each book's .opf file on its own." // l10n: no (debug log)
         }
     }
 }
@@ -192,8 +216,8 @@ struct DAISYPackageInventory {
     private init(root: URL, entryPath: String, files: [File], missingPaths: [String], wholeFolderReason: String?) {
         self.root = root
         self.entryPath = entryPath
-        self.files = files.sorted { Self.pathPrecedes($0.path, $1.path) }
-        self.missingPaths = missingPaths.sorted { Self.pathPrecedes($0, $1) }
+        self.files = files.sortedStably { Self.pathPrecedes($0.path, $1.path) }
+        self.missingPaths = missingPaths.sortedStably { Self.pathPrecedes($0, $1) }
         self.wholeFolderReason = wholeFolderReason
     }
 
@@ -308,7 +332,7 @@ struct DAISYPackageInventory {
         var text = try FileImportService.md5Hash(of: files.first { $0.path == entryPath }?.source ?? entryURL)
         let ordered = files
             .map { (path: $0.path.precomposedStringWithCanonicalMapping, size: $0.size) }
-            .sorted { Self.pathPrecedes($0.path, $1.path) }
+            .sortedStably { Self.pathPrecedes($0.path, $1.path) }
         for file in ordered {
             text += "\u{0}\(file.path)\u{0}\(file.size)"
         }
@@ -429,9 +453,9 @@ struct DAISYPackageInventory {
         // folder for one (`DAISYParser.extractMarkdown`), so the copy must
         // hold everything that search would see.
         guard package.manifest.values.contains(where: { $0.mediaType.contains("dtbook") }) else {
-            return "the manifest of “\(entryPath)” lists no DTBook content file"
+            return "the manifest of “\(entryPath)” lists no DTBook content file" // l10n: no (a parser's damage reason)
         }
-        for href in package.manifest.values.map(\.href).sorted() {
+        for href in package.manifest.values.map(\.href).sortedStably() {
             try collector.add(href, in: entryPath)
         }
         return nil
@@ -454,7 +478,7 @@ struct DAISYPackageInventory {
             // Read as the reader reads it first, so a copy cut short counts
             // as damaged here as well.
             _ = try DAISY202NCCParser(html: html, file: entryPath).parse()
-            navigation = try SwiftSoup.parse(html)
+            navigation = try MarkupGuard.parse(html)
         } catch {
             return error.localizedDescription
         }
@@ -502,7 +526,7 @@ struct DAISYPackageInventory {
             let textData = try Data(contentsOf: text)
             let document: SwiftSoup.Document
             do {
-                document = try SwiftSoup.parse(decodedText(textData))
+                document = try MarkupGuard.parse(decodedText(textData))
             } catch {
                 return error.localizedDescription
             }

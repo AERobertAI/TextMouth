@@ -80,6 +80,39 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(waitingQuestions(of: scene.model), ["duplicate: Bestiary of Knots"])
     }
 
+    /// A book Move to Library… made the library's own, replaced by the same
+    /// file, keeps the note in its record (risk 4 of the local-first
+    /// research), which is what stops a stale record of a feed taking it
+    /// back into its feed at a launch
+    /// (`testABookItsRecordSaysMovedToLibraryStaysWhereItIs`). A book never
+    /// moved gains none.
+    func testReplaceExistingKeepsMoveToLibrarysNote() throws {
+        let scene = try makeScene()
+        let moved = try existingBookAndCopy("Atlas of Tides", in: scene)
+        let plain = try existingBookAndCopy("Bestiary of Knots", in: scene)
+        scene.model.library = Library(books: [moved.existing, plain.existing])
+        useAfterImportingBehavior(.keepOriginal)
+        // The first book's record says Move to Library… made it the library's own.
+        let movedAt = Date(timeIntervalSince1970: 1_790_000_000)
+        var record = moved.existing.makeBookInfo()
+        record.metadata.movedToLibrary = movedAt
+        try record.save(to: moved.existing.tmbDirectory)
+
+        scene.model.importFiles(urls: [moved.copy, plain.copy], toFolder: scene.folder.path)
+        drainImports(of: scene.model)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+        XCTAssertTrue(scene.model.answerCurrentImportDecision(.replaceExisting).succeeded)
+
+        let replacedMoved = try XCTUnwrap(scene.model.bookByID(moved.existing.id))
+        XCTAssertNotEqual(replacedMoved.tmbDirectoryName, moved.existing.tmbDirectoryName, "the book was not replaced")
+        XCTAssertEqual(
+            try BookInfo.load(from: replacedMoved.tmbDirectory).metadata.movedToLibrary, movedAt,
+            "Replace Existing dropped Move to Library's note"
+        )
+        let replacedPlain = try XCTUnwrap(scene.model.bookByID(plain.existing.id))
+        XCTAssertNil(try BookInfo.load(from: replacedPlain.tmbDirectory).metadata.movedToLibrary)
+    }
+
     /// Two files imported while "After Importing a Book" asks each time are
     /// each offered for deletion, the first first, and each answer reaches
     /// its own file.
@@ -141,6 +174,34 @@ final class ImportDecisionFlowTests: XCTestCase {
         scene.model.answerCurrentImportDecision(.keepBoth)
 
         XCTAssertEqual(scene.opened.ids, [copy.id])
+    }
+
+    /// A WebVTT file opened from Finder (or the Dock) together with the audio
+    /// it sits beside is not refused as a book: the audio's import attaches it,
+    /// and the import shows no error. Opened without the audio, it is refused
+    /// as before.
+    func testATranscriptOpenedFromFinderWithItsAudioIsAttachedNotRefused() throws {
+        let scene = try makeScene()
+        useAfterImportingBehavior(.keepOriginal)
+        let audio = scene.sources.appendingPathComponent("Tide.wav")
+        try AudioTestFixtures.writeSilence(to: audio, duration: 1)
+        let captions = scene.sources.appendingPathComponent("Tide.vtt")
+        try Data("WEBVTT\n\n00:00.000 --> 00:00.800\nThe slip is clear.\n".utf8).write(to: captions)
+
+        scene.model.importAndOpenFiles(urls: [captions, audio])
+        drainImports(of: scene.model)
+
+        XCTAssertFalse(scene.model.showError, "the transcript was refused as a book: \(scene.model.errorMessage ?? "-")")
+        let books = scene.model.library.books
+        XCTAssertEqual(books.map(\.title), ["Tide"], "the transcript file was imported as a book of its own, or the audio was not")
+        let book = try XCTUnwrap(books.first)
+        XCTAssertTrue(TranscriptStore.hasTranscript(of: book), "the audio's import did not attach the transcript")
+
+        // Alone, the same file is still refused, with the way to attach it.
+        scene.model.importAndOpenFiles(urls: [captions])
+        drainImports(of: scene.model)
+        XCTAssertTrue(scene.model.showError)
+        XCTAssertEqual(scene.model.library.books.count, 1)
     }
 
     // MARK: - Questions of Every Kind
@@ -692,7 +753,7 @@ final class ImportDecisionFlowTests: XCTestCase {
         )
         XCTAssertEqual(
             whileEdited.failureMessage,
-            "The audio of “Earlier Atlas of Tides” is being edited. Close the audio editor, or wait until it has saved, "
+            "The audio of “Earlier Atlas of Tides” is being edited. Close the audio editor or wait for it to save, "
                 + "then choose Replace Existing again."
         )
         XCTAssertEqual(scene.model.importDecisions.current?.id, asked.id)
@@ -841,8 +902,8 @@ final class ImportDecisionFlowTests: XCTestCase {
         XCTAssertEqual(relaunched.books.filter { $0.id == existing.id }.map(\.tmbDirectoryName), [copy.tmbDirectoryName])
         XCTAssertEqual(
             scene.model.errorMessage,
-            "The new copy took the place of “Earlier Atlas of Tides”, but the old copy's files could not be deleted, "
-                + "so they stay in its folder: \(refusal.localizedDescription)"
+            "The new copy replaced “Earlier Atlas of Tides”, but the old copy's files could not be deleted "
+                + "and stay in its folder: \(refusal.localizedDescription)"
         )
     }
 
@@ -1348,8 +1409,8 @@ final class ImportDecisionFlowTests: XCTestCase {
         let copy = try XCTUnwrap(scene.model.importDecisions.current?.duplicate?.book)
         // The drive drops off: the copy cannot be found where it was.
         scene.model.noteDataDirectoryUnavailable(.driveNotConnected(volume: "Spare Disk", folder: "/Volumes/Spare Disk/TextMouth"))
-        let unreachable = "The library can't be reached right now, so TextMouth can't keep the new copy of “Atlas of Tides”. "
-            + "Answer again once the library is back."
+        let unreachable = "The library can't be reached, so TextMouth can't keep the new copy of “Atlas of Tides”. "
+            + "Answer again once it is back."
 
         XCTAssertEqual(scene.model.answerCurrentImportDecision(.keepBoth).failureMessage, unreachable)
         XCTAssertEqual(scene.model.answerCurrentImportDecision(.replaceExisting).failureMessage, unreachable)

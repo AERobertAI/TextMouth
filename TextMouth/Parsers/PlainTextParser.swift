@@ -62,7 +62,7 @@ enum PlainTextParser {
 
     /// Parse plain text into a single chapter. Its text and headings are
     /// exactly those `MarkdownDocParser` reads back from `markdown(text:)`.
-    static func parse(text: String, title: String = "Untitled") -> DocumentContent {
+    static func parse(text: String, title: String = "Untitled") -> DocumentContent { // l10n: no (stored id: the placeholder title a book is saved with, question 9)
         let reading = readingContent(of: blocks(in: text))
         let chapter = Chapter(title: title, text: reading.text, headings: reading.headings)
 
@@ -198,9 +198,7 @@ enum PlainTextParser {
         // A file's text arrives normalized already; text from anywhere else
         // is normalized the same way, so CR LF never ends two lines.
         let normalized = TextFileDecoder.normalizingLineEndings(text)
-        let lines = normalized
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
+        let lines = PlainTextLines.trimmedLines(of: normalized)
         let underlines = Set(lines.indices.filter { isSetextUnderline(lines[$0]) })
         // The lines a form feed begins, in order, when pages are asked for,
         // and the next of them to meet.
@@ -276,7 +274,7 @@ enum PlainTextParser {
     /// cut makes it. Empty for a text without a form feed, found without
     /// counting its lines.
     private static func linesAfterFormFeeds(in text: String) -> [Int] {
-        guard text.utf8.contains(0x0C) else { return [] }
+        guard text.containsUTF8Byte(0x0C) else { return [] }
         var lines: [Int] = []
         var lineIndex = 0
         for unit in text.utf16 where isLineEnding(unit) {

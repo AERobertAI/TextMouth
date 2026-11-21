@@ -173,7 +173,7 @@ extension AudioManifestEntry: Codable {
         default:
             throw DecodingError.dataCorrupted(DecodingError.Context(
                 codingPath: decoder.codingPath,
-                debugDescription: "An entry of tracks names a file or a heading, never both or neither."
+                debugDescription: "An entry of tracks names a file or a heading, never both or neither." // l10n: no (a parser's damage reason)
             ))
         }
     }

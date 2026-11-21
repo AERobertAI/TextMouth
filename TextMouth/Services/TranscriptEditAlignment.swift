@@ -300,7 +300,7 @@ enum TranscriptEditAlignment {
                 pending.append((nextA..<highA, nextB..<highB))
             }
         }
-        return found.sorted { $0.0 < $1.0 }
+        return found.sortedStably { $0.0 < $1.0 }
     }
 
     /// The words found once in each of the stretches `rangeA` of `a` and
@@ -322,7 +322,7 @@ enum TranscriptEditAlignment {
                 candidates.append((indexA, indexB))
             }
         }
-        candidates.sort { $0.0 < $1.0 }
+        candidates.sortStably { $0.0 < $1.0 }
         return longestIncreasingRun(of: candidates)
     }
 

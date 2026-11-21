@@ -337,7 +337,7 @@ enum StoredValueRepair {
     ) -> T? {
         let validated = validate(value)
         if validated != value {
-            let replacement = validated.map { describe($0) } ?? "no value"
+            let replacement = validated.map { describe($0) } ?? "no value" // l10n: no (debug log text)
             log(source: source, codingPath: codingPath,
                 detail: "replaced unsupported value \(describe(value)) with \(replacement)",
                 supported: supported)

@@ -144,7 +144,7 @@ final class TranscriptDeletionTests: XCTestCase {
         XCTAssertEqual(presenter.notice?.title, "Delete Transcript")
         XCTAssertEqual(
             presenter.notice?.message,
-            "Long Pier Recordings is being transcribed. Cancel the transcription first, or delete the transcript once it finishes."
+            "Long Pier Recordings is being transcribed. Cancel it, or delete the transcript once it finishes."
         )
         center.cancel()
         let ended = await eventuallyHolds { center.current == nil }

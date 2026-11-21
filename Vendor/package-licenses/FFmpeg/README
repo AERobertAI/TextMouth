@@ -1,0 +1,54 @@
+FFmpeg in TextMouth
+
+This software uses libraries from the FFmpeg project under the LGPLv2.1.
+
+TextMouth converts the audio of the formats macOS and iOS cannot read (Windows Media,
+Matroska and WebM, AVI, Flash video, RealMedia, Musepack, and Speex) with FFmpeg's
+libavformat, libavcodec, libswresample, and libavutil, linked statically, under the GNU
+Lesser General Public License, version 2.1 or later (COPYING.LGPLv2.1 and LICENSE.md, beside
+this file). No part of FFmpeg under the GPL is built: configure was not given --enable-gpl,
+--enable-nonfree, or --enable-version3, and its summary says "License: LGPL version 2.1 or
+later".
+
+The release: FFmpeg 9.0.2, from https://ffmpeg.org/releases/ffmpeg-9.0.2.tar.xz
+Its SHA-256: 8c3850283eb25fa026482078a04051e0be17347b09ef81a0849bec15a96e002e
+It is signed by FFmpeg's release key, fingerprint FCF986EA15E6E293A5644F10B4322F04D67658D8.
+When ffmpeg.org cannot be reached, the build takes FFmpeg's own mirror's archive of the tag n9.0.2
+instead, from https://github.com/FFmpeg/FFmpeg/archive/refs/tags/n9.0.2.tar.gz
+Its SHA-256: 6e374ed621e48faa40639307dff48ba6fe574a509977956d2cce9669b7cc27e9
+The two hold the same files, but for the release's VERSION file, which the tag's archive lacks, and
+git's own files (.gitattributes and .gitignore files), which the tarball lacks.
+
+TextMouth changes the release in one way: FFmpeg 9.0.2 with 5 upstream patches. Each is a commit
+of FFmpeg's own development branch (https://github.com/FFmpeg/FFmpeg/commit/<commit>.patch), kept
+unchanged in Scripts/vendor/ffmpeg/patches/<commit>.patch, and applied, in this order, to the
+unpacked release by Scripts/vendor/ffmpeg/build.py before FFmpeg is built. Each fixes a CVE that the
+National Vulnerability Database lists as open in 9.0.2; the patches are dropped when a release includes them.
+
+CVE-2026-125104: 968e9e948ed8c9ba90dbc875e60b843c755cf4ba
+    SHA-256 of the patch file: 6e3c7995b54e7e2de339943c742857fc86183780abff662001ab512dbfd57ff7
+CVE-2026-125171: 5d59b7c45d7142bddd13ddc8891e72c5c7dc991b
+    SHA-256 of the patch file: 11dcff0ca39589a65dab61f843b2505a9667a98e4cc1e59ae7000dd63dee7ec0
+CVE-2026-125182: 7145d13201c9f9c5253f40295714faa4f4ada1a0
+    SHA-256 of the patch file: 70e16648e035f26e6f940f088e313ea3d7027c22fd8801973ece85b8582f5d30
+CVE-2026-125221: 972fe1ccd326538fe9a6b5d5094b7880b5443429
+    SHA-256 of the patch file: c186bd41f88746877d429613fdbdafa37d18442953092b6af664db3e24b63031
+CVE-2026-125224: 90f5e61a1da2dcc0050169af8ca593530f26071b
+    SHA-256 of the patch file: aa28951df1335a46ed12f2324f0bd54a0bb530e1c07e7b62274b96e29079b0fe
+
+TextMouth's own source, which is public under the MIT License, holds the script that
+downloads, checks, and builds this release (Scripts/vendor/ffmpeg/build.py), so anyone can
+build the app with a changed FFmpeg. The configure line of each platform, run by that
+script, where tmff-cc is Xcode's clang given the platform's SDK:
+
+The Mac (macOS 14.0, arm64):
+
+configure --disable-everything --disable-autodetect --disable-network --disable-programs --disable-doc --disable-avdevice --disable-swscale --disable-avfilter --enable-static --disable-shared --disable-debug --enable-zlib '--cc=tmff-cc --target=arm64-apple-macos14.0' '--as=tmff-cc --target=arm64-apple-macos14.0' --enable-small --enable-demuxer=asf --enable-demuxer=matroska --enable-demuxer=flv --enable-demuxer=avi --enable-demuxer=rm --enable-demuxer=mpc --enable-demuxer=mpc8 --enable-demuxer=ogg --enable-decoder=wmav1 --enable-decoder=wmav2 --enable-decoder=wmapro --enable-decoder=wmalossless --enable-decoder=wmavoice --enable-decoder=speex --enable-decoder=mpc7 --enable-decoder=mpc8 --enable-decoder=cook --enable-decoder=sipr --enable-decoder=atrac3 --enable-decoder=ralf --enable-decoder=ra_144 --enable-decoder=ra_288 --enable-decoder=aac --enable-decoder=mp3float --enable-decoder=mp2float --enable-decoder=ac3 --enable-decoder=eac3 --enable-decoder=opus --enable-decoder=vorbis --enable-decoder=dca --enable-decoder=flac --enable-decoder=alac --enable-decoder=truehd --enable-decoder=mlp --enable-decoder=tta --enable-decoder=wavpack --enable-decoder=ape --enable-decoder=pcm_s16le --enable-decoder=pcm_s16be --enable-decoder=pcm_s24le --enable-decoder=pcm_s24be --enable-decoder=pcm_s32le --enable-decoder=pcm_s32be --enable-decoder=pcm_f32le --enable-decoder=pcm_f32be --enable-decoder=pcm_f64le --enable-decoder=pcm_f64be --enable-decoder=pcm_u8 --enable-decoder=pcm_s8 --enable-decoder=pcm_alaw --enable-decoder=pcm_mulaw --enable-decoder=adpcm_ms --enable-decoder=adpcm_ima_wav --enable-decoder=adpcm_swf --enable-decoder=nellymoser --enable-decoder=gsm_ms --enable-parser=aac --enable-parser=ac3 --enable-parser=cook --enable-parser=dca --enable-parser=flac --enable-parser=gsm --enable-parser=mlp --enable-parser=mpegaudio --enable-parser=opus --enable-parser=sipr --enable-parser=vorbis
+
+The iPhone (iOS 26.0, arm64):
+
+configure --disable-everything --disable-autodetect --disable-network --disable-programs --disable-doc --disable-avdevice --disable-swscale --disable-avfilter --enable-static --disable-shared --disable-debug --enable-zlib '--cc=tmff-cc --target=arm64-apple-ios26.0' '--as=tmff-cc --target=arm64-apple-ios26.0' --enable-cross-compile --target-os=darwin --arch=aarch64 --enable-small --enable-demuxer=asf --enable-demuxer=matroska --enable-demuxer=flv --enable-demuxer=avi --enable-demuxer=rm --enable-demuxer=mpc --enable-demuxer=mpc8 --enable-demuxer=ogg --enable-decoder=wmav1 --enable-decoder=wmav2 --enable-decoder=wmapro --enable-decoder=wmalossless --enable-decoder=wmavoice --enable-decoder=speex --enable-decoder=mpc7 --enable-decoder=mpc8 --enable-decoder=cook --enable-decoder=sipr --enable-decoder=atrac3 --enable-decoder=ralf --enable-decoder=ra_144 --enable-decoder=ra_288 --enable-decoder=aac --enable-decoder=mp3float --enable-decoder=mp2float --enable-decoder=ac3 --enable-decoder=eac3 --enable-decoder=opus --enable-decoder=vorbis --enable-decoder=dca --enable-decoder=flac --enable-decoder=alac --enable-decoder=truehd --enable-decoder=mlp --enable-decoder=tta --enable-decoder=wavpack --enable-decoder=ape --enable-decoder=pcm_s16le --enable-decoder=pcm_s16be --enable-decoder=pcm_s24le --enable-decoder=pcm_s24be --enable-decoder=pcm_s32le --enable-decoder=pcm_s32be --enable-decoder=pcm_f32le --enable-decoder=pcm_f32be --enable-decoder=pcm_f64le --enable-decoder=pcm_f64be --enable-decoder=pcm_u8 --enable-decoder=pcm_s8 --enable-decoder=pcm_alaw --enable-decoder=pcm_mulaw --enable-decoder=adpcm_ms --enable-decoder=adpcm_ima_wav --enable-decoder=adpcm_swf --enable-decoder=nellymoser --enable-decoder=gsm_ms --enable-parser=aac --enable-parser=ac3 --enable-parser=cook --enable-parser=dca --enable-parser=flac --enable-parser=gsm --enable-parser=mlp --enable-parser=mpegaudio --enable-parser=opus --enable-parser=sipr --enable-parser=vorbis
+
+The iPhone simulator (iOS 26.0, arm64):
+
+configure --disable-everything --disable-autodetect --disable-network --disable-programs --disable-doc --disable-avdevice --disable-swscale --disable-avfilter --enable-static --disable-shared --disable-debug --enable-zlib '--cc=tmff-cc --target=arm64-apple-ios26.0-simulator' '--as=tmff-cc --target=arm64-apple-ios26.0-simulator' --enable-cross-compile --target-os=darwin --arch=aarch64 --enable-small --enable-demuxer=asf --enable-demuxer=matroska --enable-demuxer=flv --enable-demuxer=avi --enable-demuxer=rm --enable-demuxer=mpc --enable-demuxer=mpc8 --enable-demuxer=ogg --enable-decoder=wmav1 --enable-decoder=wmav2 --enable-decoder=wmapro --enable-decoder=wmalossless --enable-decoder=wmavoice --enable-decoder=speex --enable-decoder=mpc7 --enable-decoder=mpc8 --enable-decoder=cook --enable-decoder=sipr --enable-decoder=atrac3 --enable-decoder=ralf --enable-decoder=ra_144 --enable-decoder=ra_288 --enable-decoder=aac --enable-decoder=mp3float --enable-decoder=mp2float --enable-decoder=ac3 --enable-decoder=eac3 --enable-decoder=opus --enable-decoder=vorbis --enable-decoder=dca --enable-decoder=flac --enable-decoder=alac --enable-decoder=truehd --enable-decoder=mlp --enable-decoder=tta --enable-decoder=wavpack --enable-decoder=ape --enable-decoder=pcm_s16le --enable-decoder=pcm_s16be --enable-decoder=pcm_s24le --enable-decoder=pcm_s24be --enable-decoder=pcm_s32le --enable-decoder=pcm_s32be --enable-decoder=pcm_f32le --enable-decoder=pcm_f32be --enable-decoder=pcm_f64le --enable-decoder=pcm_f64be --enable-decoder=pcm_u8 --enable-decoder=pcm_s8 --enable-decoder=pcm_alaw --enable-decoder=pcm_mulaw --enable-decoder=adpcm_ms --enable-decoder=adpcm_ima_wav --enable-decoder=adpcm_swf --enable-decoder=nellymoser --enable-decoder=gsm_ms --enable-parser=aac --enable-parser=ac3 --enable-parser=cook --enable-parser=dca --enable-parser=flac --enable-parser=gsm --enable-parser=mlp --enable-parser=mpegaudio --enable-parser=opus --enable-parser=sipr --enable-parser=vorbis

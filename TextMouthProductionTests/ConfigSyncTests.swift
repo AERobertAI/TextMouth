@@ -854,7 +854,7 @@ final class ConfigSyncTests: XCTestCase {
     func testALogLocationChosenAnywhereIsSavedToConfigJSON() throws {
         let store = try isolatedDefaults()
         let url = try makeConfigFileURL()
-        let service = ConfigService(fileURL: url)
+        let service = makeConfigService(fileURL: url)
         let viewModel = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,
@@ -904,7 +904,7 @@ final class ConfigSyncTests: XCTestCase {
         for (key, value) in samples {
             original.set(value, forKey: key)
         }
-        let writer = ConfigService(fileURL: url)
+        let writer = makeConfigService(fileURL: url)
         writer.config.importDeleteBehavior = .askEachTime
         writer.config.confirmBeforeDelete = false
         writer.config.moveToTrashInsteadOfDeleting = false
@@ -923,7 +923,7 @@ final class ConfigSyncTests: XCTestCase {
         let sounds = SoundEffectService(preferences: reset)
         let substitutions = TextSubstitutionService(rules: [], preferences: reset)
         let shortcuts = KeyboardShortcutManager(userDefaults: reset, installsEventMonitor: false)
-        let reader = ConfigService(fileURL: url)
+        let reader = makeConfigService(fileURL: url)
         let restored = SettingsViewModel(
             notificationCenter: NotificationCenter(),
             initializeServices: false,
@@ -1167,6 +1167,7 @@ final class ConfigSyncTests: XCTestCase {
             "punctuationPauseLevel": 2.0,
             "autoPlayOnNavigate": true,
             "endOfBookBehavior": EndOfBookBehavior.continueNext.rawValue,
+            "nextBookWindow": NextBookWindow.newWindow.rawValue,
             "sleepFadeOutDuration": 6.0,
             "sleepTimerAutoClose": false,
             "playbackNavigationUnitControlMode": PlaybackNavigationUnitControlMode.separate.rawValue,
@@ -1222,6 +1223,8 @@ final class ConfigSyncTests: XCTestCase {
             // Library: the Library window's views, as the views store keeps
             // them, a JSON array in data.
             LibraryViewDefinitionList.fileKey: try JSONEncoder().encode(ConfigService.AppConfig.customizedLibraryViews),
+            // And what a title's leading article does in its lists.
+            SettingsPolicy.leadingArticles.key: LeadingArticles.ignoredWhenTypingAndSorting.rawValue,
             // Braille: the table braille files are read and written with, and
             // the braille file characters an import reads a BRF or BRL file
             // with (braillecodes).

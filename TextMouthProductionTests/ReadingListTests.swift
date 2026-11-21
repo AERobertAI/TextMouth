@@ -33,6 +33,7 @@ final class ReadingListTests: XCTestCase {
             XCTAssertEqual(list.bookIDs, [])
             XCTAssertEqual(list.continuation, .playBookBelow)
             XCTAssertTrue(list.skipsFinished)
+            XCTAssertFalse(list.removesFinished, "a finished book leaves the list only when asked")
         }
     }
 
@@ -422,6 +423,191 @@ final class ReadingListTests: XCTestCase {
         XCTAssertFalse(saved.readingList.skipsFinished)
     }
 
+    // MARK: - Removing Finished Books
+
+    /// The option is saved under a key of its own, with the list, and read
+    /// back as it was.
+    @MainActor
+    func testRemoveFinishedIsSavedWithTheListAndReadBack() throws {
+        let shelf = Self.shelf(["Almanac", "Bestiary"])
+        let list = ReadingList(bookIDs: shelf.ids("Bestiary"), continuation: .stop, skipsFinished: false, removesFinished: true)
+        let library = Library(books: shelf.books, readingList: list)
+
+        let saved = try XCTUnwrap(try JSONSerialization.jsonObject(with: LibraryIndexSandbox.encoded(library)) as? [String: Any])
+        let savedList = try XCTUnwrap(saved["readingList"] as? [String: Any])
+        XCTAssertEqual(savedList["removesFinished"] as? Bool, true)
+
+        let reread = try LibrarySortStateTests.reread(library)
+        XCTAssertEqual(reread.readingList, list)
+        XCTAssertTrue(reread.readingList.removesFinished)
+        // A list that keeps its finished books round trips as well.
+        let keeping = try LibrarySortStateTests.reread(Library(books: shelf.books))
+        XCTAssertFalse(keeping.readingList.removesFinished)
+    }
+
+    /// A list saved before the option existed has no key for it, and reads
+    /// as off, with its other options and its books as they were; so does a
+    /// key of the wrong kind, which never makes the index unreadable.
+    @MainActor
+    func testAListSavedBeforeRemoveFinishedReadsItAsOff() throws {
+        let shelf = Self.shelf(["Almanac", "Bestiary"])
+        let list = ReadingList(
+            bookIDs: shelf.ids("Bestiary", "Almanac"),
+            continuation: .playBookAbove,
+            skipsFinished: false,
+            removesFinished: true
+        )
+        let library = Library(books: shelf.books, readingList: list)
+
+        let older = try Self.index(of: library) { index in
+            var savedList = (index["readingList"] as? [String: Any]) ?? [:]
+            savedList.removeValue(forKey: "removesFinished")
+            index["readingList"] = savedList
+        }
+        let read = try Self.decode(older).readingList
+        XCTAssertFalse(read.removesFinished)
+        XCTAssertEqual(read.bookIDs, shelf.ids("Bestiary", "Almanac"))
+        XCTAssertEqual(read.continuation, .playBookAbove)
+        XCTAssertFalse(read.skipsFinished)
+
+        for nonsense: Any in ["yes", 3, NSNull(), ["on"]] {
+            let damaged = try Self.index(of: library) { index in
+                var savedList = (index["readingList"] as? [String: Any]) ?? [:]
+                savedList["removesFinished"] = nonsense
+                index["readingList"] = savedList
+            }
+            let reread = try Self.decode(damaged)
+            XCTAssertFalse(reread.readingList.removesFinished, "\(nonsense)")
+            XCTAssertEqual(reread.readingList.bookIDs, shelf.ids("Bestiary", "Almanac"), "\(nonsense)")
+        }
+    }
+
+    /// A TextMouth older than the option decodes the list with the keys it
+    /// knew (`bookIDs`, `continuation`, `skipsFinished`) and ignores the
+    /// new one, so a library saved by this version opens there. The older
+    /// reading is stood in for by a type whose synthesized decoder names
+    /// only the older keys, as `ReadingList`'s did.
+    @MainActor
+    func testAnOlderReaderIgnoresTheNewKey() throws {
+        /// `ReadingList` as it was before `removesFinished`.
+        struct OlderReadingList: Decodable {
+            let bookIDs: [UUID]
+            let continuation: String
+            let skipsFinished: Bool
+        }
+        let shelf = Self.shelf(["Almanac", "Bestiary"])
+        let list = ReadingList(bookIDs: shelf.ids("Almanac"), continuation: .stop, skipsFinished: false, removesFinished: true)
+
+        let json = try JSONEncoder().encode(list)
+        let older = try JSONDecoder().decode(OlderReadingList.self, from: json)
+
+        XCTAssertEqual(older.bookIDs, shelf.ids("Almanac"))
+        XCTAssertEqual(older.continuation, "stop")
+        XCTAssertFalse(older.skipsFinished)
+    }
+
+    /// Choosing the option saves it once with the list, in one change of
+    /// library; choosing the choice already made saves nothing. Turning it
+    /// on takes no book off the list, the finished ones included: it acts
+    /// on books finished from then on.
+    @MainActor
+    func testChoosingRemoveFinishedSavesItOnceAndTakesNoBookOff() throws {
+        let shelf = Self.shelf(["Almanac", "Bestiary"], listed: ["Almanac", "Bestiary"])
+        shelf.model.finishedBookIDs = { Set(shelf.ids("Almanac")) }
+        let changes = LibraryChangeCounter(shelf.model)
+
+        shelf.model.setReadingListRemovesFinished(true)
+        shelf.model.setReadingListRemovesFinished(true)
+
+        XCTAssertEqual(changes.count, 1)
+        XCTAssertTrue(shelf.model.readingList.removesFinished)
+        XCTAssertEqual(shelf.model.readingList.bookIDs, shelf.ids("Almanac", "Bestiary"), "the finished book left at once")
+        LibraryPersistenceService.flushPendingSave()
+        let saved = try Self.decode(Data(contentsOf: sandbox.indexURL))
+        XCTAssertTrue(saved.readingList.removesFinished)
+    }
+
+    /// With the option on, a finished book on the list is taken off it, by
+    /// the removal Remove from Reading List makes: the others keep their
+    /// order and the options stay, the book stays in the library, and the
+    /// index is saved. Nothing is said.
+    @MainActor
+    func testAFinishedBookOnTheListIsTakenOffWhenTheOptionIsOn() throws {
+        let shelf = Self.shelf(["Almanac", "Bestiary", "Chronicle"], listed: ["Almanac", "Bestiary", "Chronicle"])
+        shelf.model.setReadingListRemovesFinished(true)
+        shelf.model.setReadingListContinuation(.playBookAbove)
+        let changes = LibraryChangeCounter(shelf.model)
+
+        let recorder = recordingAnnouncements {
+            XCTAssertTrue(shelf.model.removeFinishedBookFromReadingList(shelf.id("Bestiary")))
+        }
+
+        XCTAssertEqual(shelf.model.readingList.bookIDs, shelf.ids("Almanac", "Chronicle"))
+        XCTAssertEqual(shelf.model.readingList.continuation, .playBookAbove)
+        XCTAssertTrue(shelf.model.readingList.removesFinished)
+        XCTAssertEqual(shelf.model.library.books.count, 3, "the book left the library")
+        XCTAssertEqual(changes.count, 1)
+        LibraryPersistenceService.flushPendingSave()
+        let saved = try Self.decode(Data(contentsOf: sandbox.indexURL))
+        XCTAssertEqual(saved.readingList.bookIDs, shelf.ids("Almanac", "Chronicle"))
+        XCTAssertEqual(recorder.announcements.map(\.message), [], "the removal said something")
+    }
+
+    /// With the option off, which is how a list starts, a finished book
+    /// stays on the list; and with it on, a finished book that is not on
+    /// the list, or is not in the library, changes nothing and saves
+    /// nothing.
+    @MainActor
+    func testAFinishedBookIsKeptWhenTheOptionIsOffOrTheBookIsNotListed() {
+        let shelf = Self.shelf(["Almanac", "Bestiary"], listed: ["Almanac"])
+        let changes = LibraryChangeCounter(shelf.model)
+
+        XCTAssertFalse(shelf.model.removeFinishedBookFromReadingList(shelf.id("Almanac")), "removed with the option off")
+        XCTAssertEqual(shelf.model.readingList.bookIDs, shelf.ids("Almanac"))
+
+        shelf.model.setReadingListRemovesFinished(true)
+        let afterOption = changes.count
+        XCTAssertFalse(shelf.model.removeFinishedBookFromReadingList(shelf.id("Bestiary")), "a book not on the list")
+        XCTAssertFalse(shelf.model.removeFinishedBookFromReadingList(UUID()), "a book not in the library")
+        XCTAssertEqual(shelf.model.readingList.bookIDs, shelf.ids("Almanac"))
+        XCTAssertEqual(changes.count, afterOption, "a change that changed nothing was made")
+    }
+
+    /// The library hears of a finished book from the statistics service it
+    /// observes, and acts one turn of the main queue after it is told,
+    /// never within the telling: a reader that asks the list what follows
+    /// its book in the same turn still finds the book there. Only the
+    /// service it observes is heard, and only a book on the list leaves it.
+    @MainActor
+    func testTheLibraryTakesAFinishedBookOffOnTheTurnAfterItIsTold() throws {
+        let shelf = Self.shelf(["Almanac", "Bestiary", "Chronicle"], listed: ["Almanac", "Bestiary", "Chronicle"])
+        shelf.model.setReadingListRemovesFinished(true)
+        let statistics = try makeStatistics("RemoveFinished")
+        let other = try makeStatistics("RemoveFinishedOther")
+        shelf.model.observeFinishedBooks(of: statistics)
+
+        statistics.markBookFinished(bookID: shelf.id("Bestiary"), title: "Bestiary")
+        XCTAssertEqual(shelf.model.readingList.bookIDs, shelf.ids("Almanac", "Bestiary", "Chronicle"), "removed within the telling")
+        XCTAssertTrue(eventually { shelf.model.readingList.bookIDs == shelf.ids("Almanac", "Chronicle") }, "never removed")
+
+        // Another service's finished book is none of this library's business.
+        other.markBookFinished(bookID: shelf.id("Almanac"), title: "Almanac")
+        // A book not on the list changes nothing.
+        statistics.markBookFinished(bookID: UUID(), title: "Elsewhere")
+        spinMainRunLoop(for: 0.2)
+        XCTAssertEqual(shelf.model.readingList.bookIDs, shelf.ids("Almanac", "Chronicle"))
+    }
+
+    /// A statistics service over a file of its own in a sandbox folder
+    /// named for `label`, shut down when the test ends.
+    @MainActor
+    private func makeStatistics(_ label: String) throws -> ReadingStatsService {
+        let file = try makeSandboxDirectory(label).appendingPathComponent("reading_stats.json")
+        let service = ReadingStatsService(fileURL: file)
+        addTeardownBlock { @MainActor in service.shutdown() }
+        return service
+    }
+
     // MARK: - Neighbors
 
     /// Down is the book below, up the book above, and nothing lies beyond
@@ -567,6 +753,7 @@ final class ReadingListTests: XCTestCase {
 
         shelf.model.setReadingListContinuation(.stop)
         shelf.model.setReadingListSkipsFinished(false)
+        shelf.model.setReadingListRemovesFinished(true)
         XCTAssertEqual(shelf.model.listCache.listRevision, revision, "an option")
 
         shelf.model.removeFromReadingList(shelf.ids("Almanac"))

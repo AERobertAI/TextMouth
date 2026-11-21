@@ -6,9 +6,10 @@ import Foundation
 /// VoiceOver announcement for the latest query only.
 @MainActor
 final class BookSearchModel: ObservableObject {
-    /// Runs one complete search. Called off the main actor, and expected to
-    /// throw `CancellationError` once the task running it is cancelled.
-    typealias Search = @Sendable (_ query: String, _ useRegex: Bool) throws -> BookSearchOutcome
+    /// Runs one complete search with the options chosen. Called off the
+    /// main actor, and expected to throw `CancellationError` once the task
+    /// running it is cancelled.
+    typealias Search = @Sendable (_ query: String, _ options: TextSearchOptions) throws -> BookSearchOutcome
 
     /// How long typing must pause before a search starts: long enough to
     /// skip the partial words of steady typing, short enough to feel
@@ -35,19 +36,15 @@ final class BookSearchModel: ObservableObject {
         var text: String {
             switch self {
             case .idle:
-                return "Enter a search term above."
+                return BookSearchWording.statusIdle
             case .searching:
-                return "Searching…"
+                return BookSearchWording.statusSearching
             case .found(let count):
-                switch count {
-                case 0: return "No matches"
-                case 1: return "1 match"
-                default: return "\(count.formatted()) matches"
-                }
+                return BookSearchWording.statusFound(count: count)
             case .truncated(let shown):
-                return "Showing the first \(shown.formatted()) matches; refine your search"
+                return BookSearchWording.statusTruncated(shown: shown)
             case .invalidPattern(let message):
-                return "Invalid regular expression: \(message)"
+                return LibrarySearchWording.invalidPattern(message)
             }
         }
 
@@ -68,6 +65,18 @@ final class BookSearchModel: ObservableObject {
     /// checkbox. Every change starts over.
     @Published var useRegex = false {
         didSet { if useRegex != oldValue { restartSearch() } }
+    }
+
+    /// Whether a match must have the query's letters in the query's case,
+    /// bound to the Match Case checkbox; off, as Search in Book always
+    /// searched, so the search ignores case. Every change starts over.
+    @Published var matchCase = false {
+        didSet { if matchCase != oldValue { restartSearch() } }
+    }
+
+    /// The options the next search runs with: the two checkboxes.
+    var options: TextSearchOptions {
+        TextSearchOptions(matchCase: matchCase, isRegularExpression: useRegex)
     }
 
     /// Matches from the latest completed search, in reading order. They stay
@@ -94,11 +103,18 @@ final class BookSearchModel: ObservableObject {
     private let search: Search
 
     /// A model that searches `corpus` with `BookSearchEngine`.
-    /// - Parameter announce: Speaks each completed search's status through
-    ///   VoiceOver.
-    convenience init(corpus: BookSearchCorpus, announce: @escaping @MainActor (String) -> Void) {
-        self.init(debounceInterval: Self.debounceInterval, announce: announce) { query, useRegex in
-            try BookSearchEngine.search(query: query, useRegex: useRegex, in: corpus)
+    /// - Parameters:
+    ///   - debounceInterval: How long typing must pause before a search
+    ///     starts; the Mac's by default, and the phone's longer one.
+    ///   - announce: Speaks each completed search's status through
+    ///     VoiceOver.
+    convenience init(
+        corpus: BookSearchCorpus,
+        debounceInterval: Duration = BookSearchModel.debounceInterval,
+        announce: @escaping @MainActor (String) -> Void
+    ) {
+        self.init(debounceInterval: debounceInterval, announce: announce) { query, options in
+            try BookSearchEngine.search(query: query, options: options, in: corpus)
         }
     }
 
@@ -149,7 +165,7 @@ final class BookSearchModel: ObservableObject {
         status = .searching
         let generation = generation
         let query = query
-        let useRegex = useRegex
+        let options = options
         let search = search
         let debounceInterval = debounceInterval
         searchTask = Task { [weak self] in
@@ -157,7 +173,7 @@ final class BookSearchModel: ObservableObject {
                 // The debounce: the next edit cancels this task during the
                 // sleep, so steady typing runs one search for the final text.
                 try await Task.sleep(for: debounceInterval)
-                let outcome = try await Self.runDetached { try search(query, useRegex) }
+                let outcome = try await Self.runDetached { try search(query, options) }
                 self?.publish(outcome, generation: generation)
             } catch {
                 // Cancelled by a newer edit or by the sheet closing. Searches

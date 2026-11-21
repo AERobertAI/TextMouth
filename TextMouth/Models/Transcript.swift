@@ -56,10 +56,18 @@ struct Transcript: Codable, Equatable, Sendable {
     /// for a transcript never cleaned up. transcript.json leaves it out
     /// until then, as it leaves out `editedAt`.
     var cleanedUp: TranscriptCleanupNote? = nil
+    /// Where the transcript came from when TextMouth's recognizer did not
+    /// make it: a timed-text file attached or found at import, or a
+    /// podcast's own transcript (FMT23, FMT25). Nil for a transcript
+    /// recognition made. transcript.json leaves it out until then, so a
+    /// recognized transcript is written byte for byte as before, and an
+    /// earlier TextMouth reads a transcript with a source as any other
+    /// (JSONDecoder passes over keys it does not know).
+    var source: TranscriptSource? = nil
 
     /// What a book's record notes about this transcript (`BookState.transcript`).
     var note: TranscriptNote {
-        TranscriptNote(version: version, locale: locale, createdAt: createdAt)
+        TranscriptNote(version: version, locale: locale, createdAt: createdAt, source: source)
     }
 
     /// The file whose path, relative to the book's audio folder, is `path`,
@@ -253,15 +261,197 @@ extension Transcript {
 /// What a transcribed audiobook's record, bookInfo.json, notes about its
 /// transcript (`BookState.transcript`), so that knowing whether a book has
 /// one, and which, never means reading transcript.json or the content
-/// index: the transcript's layout version, its language, and when it was
-/// made.
-struct TranscriptNote: Codable, Hashable, Sendable {
+/// index: the transcript's layout version, its language, when it was
+/// made, and, for one TextMouth's recognizer did not make, where it came
+/// from.
+struct TranscriptNote: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The layout version of the book's transcript.json.
     var version: Int
     /// The language the book was transcribed in (`Transcript.locale`).
     var locale: String
     /// When the transcription finished (`Transcript.createdAt`).
     var createdAt: Date
+    /// Where the transcript came from (`Transcript.source`); nil for one
+    /// recognition made, and then left out of the record, as before.
+    var source: TranscriptSource? = nil
+    /// The keys of the stored note that this TextMouth does not know (V04),
+    /// written back as they were; none in a note made here, as one made
+    /// from a new transcript is.
+    var unknownKeys = UnknownKeys()
+}
+
+// The coding is in an extension, so the struct keeps its memberwise
+// initializer.
+extension TranscriptNote {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case version, locale, createdAt, source
+    }
+
+    /// The names of a note's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored note holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames, objects: ["source": TranscriptSource.keySchema])
+
+    /// Reads a note as the synthesized decoder read it (its version,
+    /// language, and date required; its source optional), and keeps every
+    /// other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        version = try container.decode(Int.self, forKey: .version)
+        locale = try container.decode(String.self, forKey: .locale)
+        createdAt = try container.decode(Date.self, forKey: .createdAt)
+        source = try container.decodeIfPresent(TranscriptSource.self, forKey: .source)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the note as the synthesized encoder wrote it (the source is
+    /// left out when nil), after the keys this version does not know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(version, forKey: .version)
+        try container.encode(locale, forKey: .locale)
+        try container.encode(createdAt, forKey: .createdAt)
+        try container.encodeIfPresent(source, forKey: .source)
+    }
+}
+
+// MARK: - Where a Transcript Came From
+
+/// Where a transcript that TextMouth's recognizer did not make came from
+/// (FMT23, FMT25): how it reached the book, the format of the file it was
+/// read from, and that file's name. transcript.json keeps it with the
+/// transcript (`Transcript.source`), and the book's record notes it
+/// (`TranscriptNote.source`), so the Transcribe Audio sheet can say where
+/// the book's transcript came from before transcribing replaces it.
+///
+/// The origin and the format are kept as the strings written, not as
+/// enumerations: a value a later TextMouth writes, such as an origin this
+/// one does not know, then neither fails the whole transcript.json (an
+/// unknown case would throw as it decodes, and a transcript.json that
+/// cannot be decoded is set aside unread) nor is lost when this TextMouth
+/// saves the transcript again, as an edit or a cleanup does.
+/// `knownOrigin` and `knownFormat` read them as this TextMouth knows them.
+struct TranscriptSource: Codable, Hashable, Sendable, KeepsUnknownKeys {
+    /// How a transcript reached its book. The raw values are kept in
+    /// transcript.json and bookInfo.json, so they never change.
+    enum Origin: String, Sendable {
+        /// The listener attached it with Book > Attach Transcript….
+        case attached
+        /// A file found beside the audio when the book was imported.
+        case imported
+        /// The podcast's own transcript, downloaded with the episode.
+        case podcast
+    }
+
+    /// How the transcript reached its book: an `Origin`'s raw value, or a
+    /// later TextMouth's, kept as it was written.
+    var origin: String
+    /// The format of the file it was read from: a `TimedTextFormat`'s raw
+    /// value, or a later TextMouth's, kept as it was written.
+    var format: String
+    /// The name of the file it was read from, when one file was read, as
+    /// "lecture.vtt"; nil when several were, or when it has no name worth
+    /// showing. Never a path, never an address: it is shown to the
+    /// listener, and kept in files that sync with the library.
+    var fileName: String?
+    /// The formats of every file it was read from, each once, in the order
+    /// the files were read, when files of more than one format were read (a
+    /// track's 01.vtt and another's 02.srt): `TimedTextFormat` raw values or
+    /// a later TextMouth's. Nil when all the files were of `format`, which is
+    /// then the one format of the transcript, and in every transcript an
+    /// earlier TextMouth wrote, which cannot read this field and keeps
+    /// `format` as the first file's.
+    var formats: [String]?
+    /// The keys of the stored source that this TextMouth does not know
+    /// (V04), in transcript.json and in the book's record alike, written
+    /// back as they were; none in a source made here.
+    var unknownKeys = UnknownKeys()
+
+    private enum CodingKeys: String, CodingKey, CaseIterable {
+        case origin, format, fileName, formats
+    }
+
+    /// The names of a source's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored source holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
+
+    /// Reads a source as the synthesized decoder read it (its origin and
+    /// format required; its file name and formats optional), and keeps
+    /// every other key as it is (V04).
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        origin = try container.decode(String.self, forKey: .origin)
+        format = try container.decode(String.self, forKey: .format)
+        fileName = try container.decodeIfPresent(String.self, forKey: .fileName)
+        formats = try container.decodeIfPresent([String].self, forKey: .formats)
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the source as the synthesized encoder wrote it (its file name
+    /// and formats left out when nil), after the keys this version does not
+    /// know (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(origin, forKey: .origin)
+        try container.encode(format, forKey: .format)
+        try container.encodeIfPresent(fileName, forKey: .fileName)
+        try container.encodeIfPresent(formats, forKey: .formats)
+    }
+
+    /// The source of a transcript that reached its book by `origin`, read
+    /// from a file of `format` named `fileName`. A name given with folders
+    /// before it keeps only its last part, so no folder of the listener's
+    /// is ever kept or shown; a name of nothing but white space is no name.
+    ///
+    /// For a transcript read from files of several formats, `format` is the
+    /// first file's and `otherFormats` are the formats of the rest; those
+    /// the same as one named already are not repeated.
+    init(origin: Origin, format: TimedTextFormat, fileName: String? = nil, otherFormats: [TimedTextFormat] = []) {
+        self.origin = origin.rawValue
+        self.format = format.rawValue
+        self.fileName = fileName.flatMap(Self.lastPathComponent(of:))
+        var distinct = [format]
+        for other in otherFormats where !distinct.contains(other) {
+            distinct.append(other)
+        }
+        formats = distinct.count > 1 ? distinct.map(\.rawValue) : nil
+    }
+
+    /// The origin, when it is one this TextMouth knows; nil for one a later
+    /// TextMouth wrote.
+    var knownOrigin: Origin? {
+        Origin(rawValue: origin)
+    }
+
+    /// The format, when it is one this TextMouth knows; nil for one a later
+    /// TextMouth wrote.
+    var knownFormat: TimedTextFormat? {
+        TimedTextFormat(rawValue: format)
+    }
+
+    /// Every format the transcript's files were of, in the order the files
+    /// were read, when this TextMouth knows them all; nil when a later
+    /// TextMouth wrote a format it does not know, whatever the others are.
+    var knownFormats: [TimedTextFormat]? {
+        let known = (formats ?? [format]).compactMap(TimedTextFormat.init(rawValue:))
+        return known.count == (formats?.count ?? 1) ? known : nil
+    }
+
+    /// The last part of `name` after any slashes ("lecture.vtt" of
+    /// "Talks/2026/lecture.vtt"), or nil when there is none or it is
+    /// nothing but white space.
+    private static func lastPathComponent(of name: String) -> String? {
+        guard let last = name.split(separator: "/").last,
+              !last.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return String(last)
+    }
 }
 
 // MARK: - Validation
@@ -282,10 +472,10 @@ extension Transcript {
     /// log line holds book text (`DiagnosticLog`).
     func validationFailure() -> String? {
         if version != Self.currentVersion {
-            return "version \(version) is not the supported \(Self.currentVersion)"
+            return "version \(version) is not the supported \(Self.currentVersion)"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         if locale.trimmingCharacters(in: .whitespaces).isEmpty {
-            return "locale is empty"
+            return "locale is empty"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         var paths = Set<String>()
         for (number, file) in files.enumerated() {
@@ -294,10 +484,10 @@ extension Transcript {
                 return failure
             }
             if !paths.insert(file.path).inserted {
-                return "\(field).path names a file listed before it"
+                return "\(field).path names a file listed before it"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if file.durationMilliseconds < 0 {
-                return "\(field).durationMilliseconds is \(file.durationMilliseconds), below 0"
+                return "\(field).durationMilliseconds is \(file.durationMilliseconds), below 0"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if let failure = Self.sentencesFailure(file.sentences, field: field) {
                 return failure
@@ -311,13 +501,13 @@ extension Transcript {
     /// nil when it is a relative path inside the folder.
     private static func pathFailure(_ path: String, field: String) -> String? {
         if path.isEmpty {
-            return "\(field) is empty"
+            return "\(field) is empty"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         if path.hasPrefix("/") {
-            return "\(field) is absolute"
+            return "\(field) is absolute"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         if path.split(separator: "/").contains("..") {
-            return "\(field) contains a \"..\" component"
+            return "\(field) contains a \"..\" component"  // l10n: no (a validation reason for the debug log, English by question 3)
         }
         return nil
     }
@@ -329,25 +519,25 @@ extension Transcript {
         for (number, sentence) in sentences.enumerated() {
             let field = "\(field).sentences[\(number)]"
             if sentence.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return "\(field).text is blank"
+                return "\(field).text is blank"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if sentence.startMilliseconds < previousStart {
-                return "\(field).startMilliseconds is \(sentence.startMilliseconds), "
-                    + "before the previous sentence's \(previousStart)"
+                return "\(field).startMilliseconds is \(sentence.startMilliseconds), "  // l10n: no (a validation reason for the debug log, English by question 3)
+                    + "before the previous sentence's \(previousStart)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if sentence.endMilliseconds < sentence.startMilliseconds {
-                return "\(field).endMilliseconds is \(sentence.endMilliseconds), "
-                    + "before its startMilliseconds \(sentence.startMilliseconds)"
+                return "\(field).endMilliseconds is \(sentence.endMilliseconds), "  // l10n: no (a validation reason for the debug log, English by question 3)
+                    + "before its startMilliseconds \(sentence.startMilliseconds)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             // The order is checked, so no time is below 0; each also lies
             // no later than the maximum. The words, which lie inside their
             // sentence's time, are held to it by `wordsFailure`.
             let maximum = Self.maximumMilliseconds
             if !(0...maximum).contains(sentence.startMilliseconds) {
-                return "\(field).startMilliseconds is \(sentence.startMilliseconds), outside 0 through \(maximum)"
+                return "\(field).startMilliseconds is \(sentence.startMilliseconds), outside 0 through \(maximum)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if !(0...maximum).contains(sentence.endMilliseconds) {
-                return "\(field).endMilliseconds is \(sentence.endMilliseconds), outside 0 through \(maximum)"
+                return "\(field).endMilliseconds is \(sentence.endMilliseconds), outside 0 through \(maximum)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if let failure = wordsFailure(sentence.words, of: sentence, field: field) {
                 return failure
@@ -371,21 +561,21 @@ extension Transcript {
         for (number, word) in words.enumerated() {
             let field = "\(field).words[\(number)]"
             if word.characterCount <= 0 {
-                return "\(field) is \(word.characterCount) characters long"
+                return "\(field) is \(word.characterCount) characters long"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             // Ranges are formed only from offsets known to be in bounds.
             if word.characterOffset < previousEnd || word.characterOffset > textLength - word.characterCount {
                 // The two numbers came from a file: they are worded, never added.
-                return "\(field) starts at character \(word.characterOffset) and is \(word.characterCount) long, "
-                    + "outside \(previousEnd) through \(textLength)"
+                return "\(field) starts at character \(word.characterOffset) and is \(word.characterCount) long, "  // l10n: no (a validation reason for the debug log, English by question 3)
+                    + "outside \(previousEnd) through \(textLength)"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             if word.startMilliseconds < previousStart || word.endMilliseconds < word.startMilliseconds
                 || word.endMilliseconds > sentence.endMilliseconds {
-                return "\(field) runs from \(word.startMilliseconds) to \(word.endMilliseconds) ms, outside "
+                return "\(field) runs from \(word.startMilliseconds) to \(word.endMilliseconds) ms, outside "  // l10n: no (a validation reason for the debug log, English by question 3)
                     + "\(previousStart) through \(sentence.endMilliseconds)"
             }
             if let confidence = word.confidence, !(confidence.isFinite && (0...1).contains(confidence)) {
-                return "\(field) has a confidence of \(confidence), outside 0 through 1"
+                return "\(field) has a confidence of \(confidence), outside 0 through 1"  // l10n: no (a validation reason for the debug log, English by question 3)
             }
             previousEnd = word.characterOffset + word.characterCount
             previousStart = word.startMilliseconds

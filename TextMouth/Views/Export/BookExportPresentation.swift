@@ -19,7 +19,7 @@ struct LibraryExportSupport: ViewModifier {
     /// The books selected in the window, in list order.
     let selectedBooks: () -> [Book]
     /// The window, which VoiceOver hears a refusal from.
-    let hostWindow: NSWindow?
+    let hostWindow: PlatformWindow?
 
     func body(content: Content) -> some View {
         content
@@ -50,7 +50,7 @@ enum ExportCommandRouting {
     static func exportFromWindowInFront() {
         let router = LibraryWindowRouter.shared
         perform(
-            keyWindow: NSApp.keyWindow,
+            keyWindow: PlatformApplication.keyWindow,
             libraryWindows: openWindows(router.registeredLibraryWindows),
             readerWindows: openWindows(router.registeredReaderWindows),
             post: { NotificationCenter.default.post(name: .exportBooks, object: nil) }
@@ -61,9 +61,9 @@ enum ExportCommandRouting {
     /// and otherwise announces why nothing can be exported
     /// (`refusal(keyWindow:libraryWindows:readerWindows:)`).
     static func perform(
-        keyWindow: NSWindow?,
-        libraryWindows: [NSWindow],
-        readerWindows: [NSWindow],
+        keyWindow: PlatformWindow?,
+        libraryWindows: [PlatformWindow],
+        readerWindows: [PlatformWindow],
         post: () -> Void
     ) {
         if let refusal = refusal(keyWindow: keyWindow, libraryWindows: libraryWindows, readerWindows: readerWindows) {
@@ -78,7 +78,7 @@ enum ExportCommandRouting {
     /// windows or reader windows given: that none is open
     /// (`BookExportWording.noWindowOpen`), or, when one is open behind, to
     /// switch to it (`BookExportWording.noWindowInFront`).
-    static func refusal(keyWindow: NSWindow?, libraryWindows: [NSWindow], readerWindows: [NSWindow]) -> String? {
+    static func refusal(keyWindow: PlatformWindow?, libraryWindows: [PlatformWindow], readerWindows: [PlatformWindow]) -> String? {
         let windows = libraryWindows + readerWindows
         if let keyWindow {
             let front = WindowCommandRouting.rootWindow(for: keyWindow)
@@ -91,7 +91,12 @@ enum ExportCommandRouting {
 
     /// The windows of `windows` still open, on screen or in the Dock: a
     /// window closed but kept by SwiftUI counts as none.
-    static func openWindows(_ windows: [NSWindow]) -> [NSWindow] {
+    static func openWindows(_ windows: [PlatformWindow]) -> [PlatformWindow] {
+        #if os(macOS)
         windows.filter { $0.isVisible || $0.isMiniaturized }
+        #else
+        // Phase 0 iOS body: a UIKit window has no Dock; open means not hidden.
+        windows.filter { !$0.isHidden }
+        #endif
     }
 }

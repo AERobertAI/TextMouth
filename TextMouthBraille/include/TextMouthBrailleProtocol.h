@@ -1,10 +1,12 @@
 /*
  * TextMouthBrailleProtocol.h: the line protocol between TextMouth and its
- * braille helper, TextMouthBraille, in the one place both sides read it.
+ * braille translation, in the one place both sides read it.
  *
- * The helper's main.c includes this file, and the app imports it as the
- * Clang module TextMouthBrailleProtocol (module.modulemap beside it), so the
- * app's BrailleTranslator and the helper cannot disagree about the
+ * The translation, TextMouthBraille/TextMouthBrailleLibrary.c, which the
+ * Mac's helper program TextMouthBraille runs and the iPhone calls in its own
+ * process (DR34), includes this file, and the app imports it as the Clang
+ * module TextMouthBrailleProtocol (module.modulemap beside it), so the app's
+ * BrailleTranslator and the translation cannot disagree about the
  * protocol's version, its emphasis flags, or how they are written. A change
  * to the protocol is made here, with a new version in TMB_PROTOCOL_HEADER.
  *

@@ -1,0 +1,39 @@
+# Task `chapters`: a podcast's chapters as an episode's headings (FMT25, step 5a)
+
+Slug `podcastext-chapters`, branch `podcastext/chapters` (from `team/podcastext`, which by now holds `PodcastChapters`). Read `common.md` beside this brief first.
+
+## Goal
+An audiobook of one file may keep a podcast's chapters beside its audio in its package, as `podcastChapters.json` (written by the fetch task after this one, in the normalized form `PodcastChapters.normalizedJSON()` writes). When the book's audio is analyzed (at import, and whenever its index is made again), those chapters become its chapters, and so its headings, but only when the audio has no chapters of its own, and only when they fit the audio (a last chapter beginning more than 5 seconds past the end means another edition: none is used). The file is TextMouth's own, never taken for the book's content; it goes with the audio when an episode's download is deleted; and an edit of the audio drops it, since its times no longer fit.
+
+Read first (by line): `TextMouth/Parsers/AudioBookParser.swift:150-200` (one file's chapters), `TextMouth/Services/BookContentAnalysisService.swift:545-594` (`analyzeAudio`), `TextMouth/Services/TextMouthPaths.swift:276-360` (a package's files), `TextMouth/Services/FileImportService+Packages.swift:455-482` (`isPackageContentName`), `TextMouth/Services/Feeds/FeedItemPackage.swift:60-76, 165-186` (what stays when an episode's file goes), `TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift:245-290` (`renderAndAnalyze`), and `TextMouth/Parsers/PodcastChapters.swift`.
+
+## Files
+- `TextMouth/Services/TextMouthPaths.swift`: the name and the path.
+- `TextMouth/Services/FileImportService+Packages.swift`: ONE condition in `isPackageContentName` and its comment line. The `braillecodes-record` worker claims this file; the lead told them on the board (#4057). Claim it yourself (`bbs claim`) only for that function, read `bbs inbox` for their answer, and edit only those lines.
+- `TextMouth/Parsers/AudioBookParser.swift`: the fallback.
+- `TextMouth/Services/BookContentAnalysisService.swift`: reading the file for `analyzeAudio`.
+- `TextMouth/ViewModels/LibraryViewModel+AudioEditing.swift`: dropping it on an edit of a book of one file.
+- New `TextMouthProductionTests/PodcastChaptersHeadingsTests.swift`.
+
+## Behavior
+1. `TextMouthPaths`: `static let podcastChaptersFileName = "podcastChapters.json"` and `static func podcastChaptersPath(in tmbDir: URL) -> URL`, documented as the others are: a podcast episode's chapters, kept beside its audio by its download (FMT25), read when the audio is analyzed; TextMouth's own file, never part of the book.
+2. `isPackageContentName` (`FileImportService+Packages.swift:469`) also refuses `TextMouthPaths.podcastChaptersFileName`, and its comment lists it.
+3. `AudioBookParser.parse(url:prober:)` gains `fallbackChapters: PodcastChapters? = nil`. Where it takes the file's own chapters (`:167-168`): when those are empty and a fallback is given, it takes `fallbackChapters.bookChapters(fileDuration: totalSeconds)` instead (which is empty when they do not fit the audio, `PodcastChapters.swift`), and builds the chapters exactly as it does from the file's own (`:181-197`), one heading each. Nothing else in the parser changes; the file's own chapters always win.
+4. `BookContentAnalysisService.analyzeAudio(book:url:prober:)`: for a book of one file (the `else` branch, `:565-569`) whose package is its own (`!book.tmbDirectoryName.isEmpty`), read `TextMouthPaths.podcastChaptersPath(in: book.tmbDirectory)` (the staged package during an import, since `Book.tmbDirectory` names it then) and pass what it holds as `fallbackChapters`:
+   - read without downloading (`DatalessFiles.withoutDownloading`), and at most `TimedTextLimits.podcastChaptersBytes + 1` bytes (a `FileHandle`'s `read(upToCount:)`); more than the limit is refused;
+   - no file: nil, silently. A file only in the cloud, unreadable, too large, or that `PodcastChapters.read` refuses: nil, with one line, `DiagnosticLog.event(.storage, "PODCAST_CHAPTERS_UNUSED: \(book.title): \(reason)")` (the reason in plain words, or `PodcastChaptersError.description`; never a title from the file, never a path);
+   - fallback chapters given but none fitting the audio: the same line, saying "its last chapter begins past the end of the audio".
+5. **An edit drops it.** In `renderAndAnalyze` (`LibraryViewModel+AudioEditing.swift:249-287`), for a book of one file (`isOneFile`) whose render wrote new audio, remove the package's `podcastChapters.json` before `analyzeAudio` (a file not there is no error; another failure is logged and the analysis goes on), with one line, `PODCAST_CHAPTERS_DROPPED: \(book.title): the audio was edited, so the podcast's chapters no longer fit it`. (An episode in its feed cannot be edited; one moved to the library can. Carrying the chapters through an edit is a follow-up.)
+6. **The download's file going.** `FeedItemPackage.staysWithoutTheFile(_:)` does not list the file, so it already goes with an episode's audio when its download is deleted and its package kept; make no change, but prove it with a test (item 7). A package moved with Move to Library or a data-directory move carries it, as every package file.
+
+## Tests (PodcastChaptersHeadingsTests)
+- the name, the path, and `isPackageContentName("podcastChapters.json") == false`;
+- the parser: a silent WAV of 4 s (`AudioTestFixtures.writeSilence(to:duration:)` in a `makeSandboxDirectory` folder) with `fallbackChapters` read from a copy of the sample (`copyOfFormatSample("podcast-chapters-json/chapters.json")` through `PodcastChapters.read`) gives four chapters titled "Intro — 440 Hz", "Second: café", "Third, with a place", "Outro", each heading its chapter, their placeholder lengths `AudioBookParser.placeholderLength(for:)` of 1, 1.5, 0.7, and 0.8 s; a file with chapters of its own (`AudioTestFixtures.writeChapteredAAC(to:duration:chapters:)`, `TextMouthProductionTests/AudioTestFixtures.swift:95-150`) keeps its own; chapters whose last start lies past the end plus 5 s give the one chapter of today; nil gives today's result exactly;
+- `analyzeAudio` through a book: `world.makeOneFileAudioBook(title:fileName:write:)` (`IntegrationTestSupport.swift:240-262`) whose `write` closure writes the silence and, beside it in the same package folder, the sample's `normalizedJSON()` as `podcastChapters.json`, so the book is indexed with them: its index has four chapters with those titles; with an unparseable `podcastChapters.json` instead, one chapter and the `PODCAST_CHAPTERS_UNUSED` line (read the debug log as other tests do: `debugLogLines(containing:)`); with a file larger than the limit, the same;
+- an episode's download deleted keeping its package removes `podcastChapters.json` and keeps the transcript files: call `FeedItemPackage.removeWhatTheFileMade(of:from:)` on a package folder you fill by hand (a book file, `bookInfo.json`, `transcript.json`, `podcastChapters.json`), then list it;
+- the edit: if `LibraryFeedAudioEditTests` or the audio editor's save tests give a way to save an edit of a one-file book in a test, use it to show the file goes and the line is written; if none does without a window, test the removal through the smallest function you factor out of `renderAndAnalyze` for it, and say so in your report.
+
+Run: `PodcastChaptersHeadingsTests PodcastChaptersTests AudioBookParserTests AudioMediaImportTests LibraryFeedAudioEditTests ContentAnalysisMergeTests` (check each class exists with `grep -l "class <Name>" TextMouthProductionTests/*.swift`; drop one that does not, and run the `analysis` area instead of a missing parser class).
+
+## Not yours
+Fetching, the feed download, the transcript. Do not change `PodcastChapters.swift` (ask the lead), `NeroChapterReader.swift`, or `FeedItemPackage.swift`.

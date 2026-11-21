@@ -15,7 +15,8 @@ extension TextutilInputFormat {
         case .doc: self = .doc
         case .odt: self = .odt
         case .wordml: self = .wordml
-        case .epub, .txt, .markdown, .html, .webarchive, .ssml, .docx, .braille, .daisy, .pdf, .audio: return nil
+        case .epub, .txt, .markdown, .html, .webarchive, .ssml, .docx, .braille, .daisy, .pdf, .audio, .mobi, .kfx,
+             .picture, .comic: return nil
         }
     }
 }
@@ -83,17 +84,21 @@ enum TextutilDocumentReader {
         guard !source.isWebPage else {
             // A web page is converted as an .html file is, and names its
             // own title and author in its head.
-            let named = metadata(in: try SwiftSoup.parse(headOf(source.html)))
+            let named = metadata(in: try MarkupGuard.parse(headOf(source.html)))
             return Extraction(
-                markdown: try HTMLToMarkdownConverter.convert(source.html, stripDuplicateNavigation: true),
+                markdown: try HTMLToMarkdownConverter.convert(
+                    source.html, stripDuplicateNavigation: true, includesPages: includesPages),
                 named: named
             )
         }
         let html = source.html
-        let document = try SwiftSoup.parse(html)
+        // Cancel is heard between the steps of a very large document's reading
+        try ImportCancellation.throwIfCancelled()
+        let document = try MarkupGuard.parse(html)
         // The names are read before `markdown(from:source:fileName:includesPages:)`, which restores
         // the structure in the document and so changes it.
         let named = metadata(in: document)
+        try ImportCancellation.throwIfCancelled()
         return Extraction(
             markdown: try markdown(from: document, source: source, fileName: url.lastPathComponent, includesPages: includesPages),
             named: named,
@@ -114,7 +119,7 @@ enum TextutilDocumentReader {
             return try HTMLParser.parse(html: source.html, title: fileName)
         }
         let html = source.html
-        let document = try SwiftSoup.parse(html)
+        let document = try MarkupGuard.parse(html)
         let named = metadata(in: document)
         // The metadata is read before `markdown(from:source:fileName:includesPages:)`, which restores
         // the structure in the document and so changes it.
@@ -133,7 +138,7 @@ enum TextutilDocumentReader {
     static func readMetadata(from url: URL, bookFormat: BookFormat) throws -> (title: String, author: String) {
         // The names are in the HTML alone: no plain-text run for pages.
         let html = try htmlText(of: url, bookFormat: bookFormat, includesPages: false).html
-        return metadata(in: try SwiftSoup.parse(headOf(html)))
+        return metadata(in: try MarkupGuard.parse(headOf(html)))
     }
 
     // MARK: HTML
@@ -153,6 +158,10 @@ enum TextutilDocumentReader {
         /// Whether pages were asked for and the plain-text run failed or was
         /// stopped (PG16).
         var pageRunFailed = false
+        /// True for HTML that TextMouth's own reader made
+        /// (`OwnDocumentReaders`), whose headings, lists, and page breaks
+        /// are in its markup already, so nothing is restored or lined up.
+        var isOwnReading = false
     }
 
     /// How a document is read, decided from its first bytes
@@ -199,7 +208,11 @@ enum TextutilDocumentReader {
         case .webPage:
             // The page's bytes are held to the same limit as a document's.
             let bytes = try DocumentByteLimit.contents(of: url)
-            let page = try TextFileDecoder.decode(bytes, fileName: url.lastPathComponent, format: .html)
+            // The old evidence, as the web archive reader reads: a .doc keeps its
+            // version, so what it reads does not change (`TextFileDecoder.Evidence.legacy`).
+            let page = try TextFileDecoder.decode(
+                bytes, fileName: url.lastPathComponent, format: .html, evidence: .legacy
+            )
             return Source(html: page.text, isWebPage: true)
         case let .textutil(chosen):
             format = chosen
@@ -214,6 +227,18 @@ enum TextutilDocumentReader {
         case .rtf, .rtfd, .doc, .odt, .wordml:
             break
         }
+
+        // A format this platform reads with TextMouth's own reader never
+        // reaches textutil (`OwnDocumentReaders`).
+        if let own = try OwnDocumentReaders.html(of: url, as: format, includesPages: includesPages) {
+            return Source(html: own, isOwnReading: true)
+        }
+
+        #if os(iOS)
+        // iOS has no textutil: a Word document TextMouth's own reader leaves
+        // to it is a Word 6 or Word 95 one, refused in the phone's words.
+        if format == .doc { throw PhoneImportRefusal.wordSixOrNinetyFive }
+        #endif
 
         return try withWorkingFolder(for: url) { folder in
             let html = try TextutilConverter.html(of: url, as: format, workingIn: folder)
@@ -300,6 +325,15 @@ enum TextutilDocumentReader {
         fileName: String,
         includesPages: Bool
     ) throws -> String {
+        // TextMouth's own reader wrote its structure and its pages into its
+        // markup, so its HTML goes to the shared converter as it is.
+        guard !source.isOwnReading else {
+            return try HTMLToMarkdownConverter.convert(
+                document: document,
+                readingFlow: PublicationSemantics.ReadingFlow(source: source.html),
+                includesPages: includesPages
+            )
+        }
         // The page breaks go in while the field instructions are still in the
         // text, as the plain text holds them too (ST10); see
         // `TextutilHTMLStructure.restore(in:beforeFieldRemoval:)`.

@@ -287,8 +287,8 @@ final class LibraryMoveTransactionTests: XCTestCase {
 
         XCTAssertEqual(
             message,
-            "Could not delete \"\(old)\" and move its contents: That would place "
-                + "\"\(deep)/Y/Z/B/C\" 5 levels deep, but folders can be nested at most 4 levels."
+            "Could not delete \"\(old)\" and move its contents: That would put "
+                + "\"\(deep)/Y/Z/B/C\" 5 levels deep, but folders nest at most 4 levels."
         )
     }
 

@@ -45,9 +45,18 @@ struct FeedIndexNewerLayout: Error, Equatable {
 
 extension FeedIndex: Codable {
     /// The index's keys: its layout's version, its feed, and its rows.
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case formatVersion, feedID, books
     }
+
+    /// What a feed's index holds, for the scan that says whether the file
+    /// can hold unknown keys (`StoredKeyScan`): its rows keep them (V04).
+    /// The index's own top level keeps none, so a key added there only
+    /// makes the decode look through the rows.
+    static let keySchema = StoredKeySchema(
+        names: CodingKeys.names,
+        objects: [CodingKeys.books.stringValue: Book.keySchema]
+    )
 
     /// Reads an index: its layout's version first, so one a newer TextMouth
     /// wrote is never read as this layout (`FeedIndexNewerLayout`); an index
@@ -98,6 +107,10 @@ enum FeedIndexFiles {
     /// a save that changed nothing of a feed writes nothing for it.
     static func encoded(_ index: FeedIndex) throws -> Data {
         var ordered = index
+        // The standard sort, specialized, as LibraryBookSorter keeps it: this
+        // sorts every row of a feed's index at each library save, a list of
+        // whole books large enough that the shared helper's unspecialized
+        // comparison would cost more than its share of the app's size.
         ordered.books.sort(by: isInIndexOrder)
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
@@ -116,9 +129,14 @@ enum FeedIndexFiles {
 
     /// The index `data` holds. Throws when it holds none, or
     /// `FeedIndexNewerLayout` for one a newer TextMouth wrote.
+    ///
+    /// The bytes are scanned first for a key a row does not know
+    /// (`StoredKeyScan`); only an index that may hold one is looked through
+    /// for them as it is decoded (V04).
     static func decoded(_ data: Data) throws -> FeedIndex {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        decoder.userInfo = StoredKeyScan.userInfo(forDecoding: data, schema: FeedIndex.keySchema)
         return try decoder.decode(FeedIndex.self, from: data)
     }
 
@@ -143,7 +161,7 @@ enum FeedIndexFiles {
     /// data-directory move's staged copy, whose rows are placed in the new
     /// location (`DataDirectoryMigrator`).
     static func encodedIndexes(of library: Library, placedIn root: URL) throws -> [EncodedIndex] {
-        try library.feedIndexRows.sorted { $0.key.uuidString < $1.key.uuidString }.map { feedID, rows in
+        try library.feedIndexRows.sortedStably { $0.key.uuidString < $1.key.uuidString }.map { feedID, rows in
             let placedRows = rows.map { placed($0, in: root, of: feedID) }
             // The rows this version cannot read are written back as they
             // were read, and count as rows: an index holding only them is
@@ -202,7 +220,7 @@ enum FeedIndexFiles {
             (try? FileManager.default.contentsOfDirectory(atPath: feedsFolder.path)) ?? []
         }
         var contents: [UUID: Contents] = [:]
-        for name in names.sorted() {
+        for name in names.sortedStably() {
             guard let feedID = FeedPaths.feedID(ofItemsFolderNamed: name),
                   isFolder(feedsFolder.appendingPathComponent(name, isDirectory: true)) else { continue }
             contents[feedID] = read(feedID: feedID, in: root, fromPackages: fromPackages, reader: reader)
@@ -294,7 +312,7 @@ enum FeedIndexFiles {
         if indexBytes != nil, !unlisted.isEmpty {
             DiagnosticLog.event(
                 .feeds,
-                "FEED_INDEX: \(feedID.uuidString.prefix(8)): took \(CountWording.phrase(unlisted.count, singular: "package", plural: "packages")) "
+                "FEED_INDEX: \(feedID.uuidString.prefix(8)): took \(CountWording.phrase(unlisted.count, singular: "package", plural: "packages")) " // l10n: no (debug log text, which stays English)
                     + "its index did not list from their records"
             )
         }
@@ -324,11 +342,14 @@ enum FeedIndexFiles {
             (try? FileManager.default.contentsOfDirectory(atPath: folder.path)) ?? []
         }
         var rows: [Book] = []
-        for name in names.sorted() where name.hasSuffix(".tmb") && !name.hasPrefix(".") && !listed.contains(name)
+        for name in names.sortedStably() where name.hasSuffix(".tmb") && !name.hasPrefix(".") && !listed.contains(name)
             && !keptRows.owns(tmbDirectoryName: name) {
             let package = folder.appendingPathComponent(name, isDirectory: true)
             let marker = TextMouthPaths.removedFromLibraryMarkerPath(in: package)
-            guard !FileManager.default.fileExists(atPath: marker.path),
+            // The marker is looked up with downloads refused, since a package
+            // only in the cloud would be downloaded on the main thread; the
+            // record read below is refused too, and skips the package.
+            guard !DatalessFiles.withoutDownloading({ FileManager.default.fileExists(atPath: marker.path) }),
                   let record = try? DatalessFiles.withoutDownloading({ try StoredBookRecord.read(from: package) }).info else {
                 continue
             }
@@ -352,7 +373,7 @@ enum FeedIndexFiles {
             because: reason,
             logging: "FEED_INDEX_UNREADABLE",
             in: .feeds,
-            standIn: "the rows of feed \(feedID.uuidString) are read from its packages"
+            standIn: "the rows of feed \(feedID.uuidString) are read from its packages" // l10n: no (debug log text, which stays English)
         )
     }
 
@@ -368,9 +389,15 @@ enum FeedIndexFiles {
     /// that feed's folder in the data directory at `root`: a feed item of
     /// that feed, whatever feed its row named (the folder decides), with no
     /// library folder, and its file at its place in the package.
+    ///
+    /// A row that already names this feed keeps its link as it is, with the
+    /// keys a later TextMouth keeps in it (V04); a link made anew here, for
+    /// a row that named another feed or none, has none.
     static func placed(_ row: Book, in root: URL, of feedID: UUID) -> Book {
         var placed = row
-        placed.feedLink = FeedBookLink(feedID: feedID, itemID: row.feedLink?.itemID ?? "")
+        if row.feedLink?.feedID != feedID {
+            placed.feedLink = FeedBookLink(feedID: feedID, itemID: row.feedLink?.itemID ?? "")
+        }
         placed.folderPath = ""
         placed.filePath = path(row.filePath, inPackageNamed: row.tmbDirectoryName, at: placed.packageDirectory(inDataDirectory: root))
         return placed

@@ -69,7 +69,7 @@ extension AudioEditorModel {
     /// next applies it. With the setting off, it applies at once.
     func chooseApply(_ preset: AudioFilterPreset, to target: AudioEditorFilterTarget) async {
         if applyWouldPreview(preset, on: target) {
-            await previewFilter(preset, on: target, saying: AudioEditorWording.previewingBeforeApplying(preset.name))
+            await previewFilter(preset, on: target, saying: AudioEditorWording.previewingBeforeApplying(preset.title))
             return
         }
         await applyFilter(preset, to: target)
@@ -88,7 +88,7 @@ extension AudioEditorModel {
         guard beginWork() else { return }
         defer { isWorking = false }
         stopPlayingForEdit()
-        announce(sentence ?? AudioEditorWording.previewingFilter(preset.name))
+        announce(sentence ?? AudioEditorWording.previewingFilter(preset.title))
         do {
             let preview = try await session.makePreview(applying: .filter(chain: preset.chain, range: stretch))
             // The processed stretch may be longer or shorter, as a change of
@@ -126,14 +126,14 @@ extension AudioEditorModel {
         // A preview playing stops as the edit begins (`stopPlayingForEdit`),
         // and the edit reloads the edited audio.
         sheet = nil
-        announce(AudioEditorWording.applyingFilter(preset.name))
+        announce(AudioEditorWording.applyingFilter(preset.title))
         await applyEdit({ try await session.perform(.filter(chain: preset.chain, range: range)) }) { outcome in
             if let range {
                 let length = range.duration + outcome.after - outcome.before
                 selectQuietly(AudioTimeRange(start: range.start, end: range.start + length))
                 cursor = range.start
             }
-            return AudioEditorWording.appliedFilter(preset.name, to: range?.duration, now: outcome.after)
+            return AudioEditorWording.appliedFilter(preset.title, to: range?.duration, now: outcome.after)
         }
     }
 }

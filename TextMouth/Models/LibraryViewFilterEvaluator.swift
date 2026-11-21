@@ -136,19 +136,21 @@ enum LibraryViewFilterEvaluator {
     /// section 4): the rows of the kinds it lists that match its conditions;
     /// then, with `onePerFeed`, of each feed's items the one opened last; then
     /// at most its limit's count, chosen by the limit's order. A limit chosen
-    /// by the view's sort keeps the first of `sorted(rows)`. The rows come in
-    /// no order the caller may rely on; the caller sorts them by the view's
-    /// sort. No rows when the filter lists none of these kinds.
+    /// by the view's sort keeps the first of `sorted(rows)`; the other
+    /// limits break ties by title as `articles` reads titles. The rows come
+    /// in no order the caller may rely on; the caller sorts them by the
+    /// view's sort. No rows when the filter lists none of these kinds.
     static func items(
         of filter: LibraryViewFilter,
         in rows: [Book],
         context: LibraryViewFilterContext,
-        sorted: ([Book]) -> [Book]
+        sorted: ([Book]) -> [Book],
+        articles: LeadingArticles = .partOfTitle
     ) -> [Book] {
         let conditionsByKind = itemConditions(of: filter)
         guard !conditionsByKind.isEmpty else { return [] }
         let matched = rows.filter { isListed($0, conditionsByKind, filter.match, context: context) }
-        return chosen(from: matched, by: filter, sorted: sorted)
+        return chosen(from: matched, by: filter, sorted: sorted, articles: articles)
     }
 
     /// Whether `filter` lists any of `rows`, as `items` would (review of
@@ -380,31 +382,38 @@ enum LibraryViewFilterEvaluator {
     /// shipped Recently Opened view lists exactly what
     /// `LibraryBookSorter.recent(_:limit:)` does. Otherwise, with
     /// `onePerFeed`, of each feed's items the one opened last; then, with a
-    /// limit, at most its count.
-    private static func chosen(from matched: [Book], by filter: LibraryViewFilter, sorted: ([Book]) -> [Book]) -> [Book] {
+    /// limit, at most its count. Ties fall by title as `articles` reads
+    /// titles, as they do in the list.
+    private static func chosen(
+        from matched: [Book],
+        by filter: LibraryViewFilter,
+        sorted: ([Book]) -> [Book],
+        articles: LeadingArticles
+    ) -> [Book] {
         guard let limit = filter.limit else {
-            return latestPerFeed(of: matched, if: filter.onePerFeed)
+            return latestPerFeed(of: matched, if: filter.onePerFeed, articles: articles)
         }
         // A count below 1, which only code could make, keeps nothing.
         let count = max(limit.count, 0)
         switch limit.chosenBy {
         case .lastOpened:
-            return LibraryBookSorter.latestOpened(matched, limit: count, onePerFeed: filter.onePerFeed)
+            return LibraryBookSorter.latestOpened(matched, limit: count, onePerFeed: filter.onePerFeed, articles: articles)
         case .dateAdded:
             // Added last first, by the comparator every list sorts with, so
             // ties fall as they do in a list sorted by Date Added.
-            return atMost(count, of: latestPerFeed(of: matched, if: filter.onePerFeed)) {
-                LibraryBookSorter.sorted($0, by: .dateAdded, ascending: false)
+            return atMost(count, of: latestPerFeed(of: matched, if: filter.onePerFeed, articles: articles)) {
+                LibraryBookSorter.sorted($0, by: .dateAdded, ascending: false, articles: articles)
             }
         case .viewSort:
-            return atMost(count, of: latestPerFeed(of: matched, if: filter.onePerFeed), rankedBy: sorted)
+            return atMost(count, of: latestPerFeed(of: matched, if: filter.onePerFeed, articles: articles), rankedBy: sorted)
         }
     }
 
     /// `rows`, or, when `onePerFeed`, the books among them and, of each
-    /// feed's items, only the one opened last.
-    private static func latestPerFeed(of rows: [Book], if onePerFeed: Bool) -> [Book] {
-        onePerFeed ? LibraryBookSorter.latestOpened(rows, limit: nil, onePerFeed: true) : rows
+    /// feed's items, only the one opened last, ties falling by title as
+    /// `articles` reads titles.
+    private static func latestPerFeed(of rows: [Book], if onePerFeed: Bool, articles: LeadingArticles) -> [Book] {
+        onePerFeed ? LibraryBookSorter.latestOpened(rows, limit: nil, onePerFeed: true, articles: articles) : rows
     }
 
     /// At most `count` of `rows`: every one, unsorted, when they are within

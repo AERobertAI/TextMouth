@@ -45,7 +45,7 @@ extension ReaderViewModel {
         guard let content, content.totalCharacterCount > 0,
               let clock = placeClock, clock.length > 0 else { return }
         let time = seconds.isNaN ? 0 : min(max(0, seconds), clock.length)
-        let target = clock.place(forTypedTime: time, headings: content.allHeadings)
+        let target = clock.place(forTypedTime: time, headings: headings)
         // The shared departure-point helper keeps the Return affordance
         // heading and bookmark jumps have.
         navigatePreservingReturnPosition(chapterIndex: target.chapterIndex, characterOffset: target.characterOffset)

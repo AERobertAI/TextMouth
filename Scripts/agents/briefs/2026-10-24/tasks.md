@@ -1,6 +1,6 @@
 # The October 24 tasks
 
-Read `common.md` beside this file first. The TODO is gitignored, so read it in the main checkout at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/TODO-2026-09-04.md`, by grep and line range.
+Read `common.md` beside this file first. The TODO is gitignored, so read it in the main checkout at `<main checkout>/TODO-2026-09-04.md`, by grep and line range.
 
 ## A. `braillereading` (Opus), branch `braille/reading`: braille emphasis read back for EBAE and UEB
 From the braille emphasis merge's follow-ups (`grep -n "From brailleemphasis" TODO-2026-09-04.md`):

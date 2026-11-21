@@ -10,6 +10,18 @@ final class HostedTestIsolationTests: XCTestCase {
 
     // MARK: - The Isolation Switch
 
+    /// The time scale of timing tests can only widen a limit: a number of 1 or more is taken, anything else is 1, so a
+    /// stray value never tightens a limit, and a Mac with nothing set keeps every limit as written.
+    func testTheTimeScaleOnlyWidensALimit() {
+        XCTAssertEqual(TestMachine.scale(from: "2.5"), 2.5)
+        XCTAssertEqual(TestMachine.scale(from: "1"), 1)
+        for odd in [nil, "", "0.5", "0", "-3", "many", "nan", "inf"] as [String?] {
+            XCTAssertEqual(TestMachine.scale(from: odd), 1, "\(String(describing: odd)) should mean no scale")
+        }
+        XCTAssertEqual(TestMachine.allowed(2), 2 * TestMachine.timeScale)
+        XCTAssertGreaterThanOrEqual(TestMachine.timeScale, 1)
+    }
+
     /// This process hosts the tests, so its runtime is the isolated one: a
     /// home in the temporary directory named after the process, and
     /// preferences that are not the user's.

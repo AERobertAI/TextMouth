@@ -200,9 +200,9 @@ final class FeedRefresherTests: XCTestCase {
             boundary: .shared,
             isUnavailable: { unavailable.value }
         )
-        // Nothing below throws once this engine has a write to wait for, so
-        // it always reaches the quit that stops it and lands its writes.
-        let first = FeedCenter(environment: environment)
+        // The quit below stops it and lands its writes; should the test end
+        // before then, its teardown does.
+        let first = world.engine(self, on: environment)
         await first.start(library: world.library)?.value
         let outcome = try await first.subscribe(to: world.server.url("/feed.xml").absoluteString, folderID: world.bookFolder.id)
         guard case .subscribed(let feed) = outcome else { return XCTFail("subscribing ended with \(outcome)") }

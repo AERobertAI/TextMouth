@@ -120,9 +120,9 @@ enum LibraryPersistenceService {
         var skippedWriteNote: String {
             switch self {
             case .unreadableIndex:
-                return "skipped writing the library index because it could not be read"
+                return "skipped writing the library index because it could not be read" // l10n: no (debug log text)
             case .dataDirectoryUnavailable:
-                return "skipped writing the library index because the data directory isn't available"
+                return "skipped writing the library index because the data directory isn't available" // l10n: no (debug log text)
             }
         }
     }
@@ -579,7 +579,7 @@ enum LibraryPersistenceService {
             let root = TextMouthPaths.root
             let read = FeedIndexFiles.readAll(in: root, fromPackages: fromPackages, reader: reader)
             feedIndexesOnDisk = SavedFile.OnDiskMemory(rootPath: root.path, bytes: read.compactMapValues(\.indexBytes))
-            let rows = read.keys.sorted { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
+            let rows = read.keys.sortedStably { $0.uuidString < $1.uuidString }.flatMap { read[$0]?.rows ?? [] }
             return FeedShelf(
                 rows: rows,
                 indexedFeedIDs: Set(read.keys),
@@ -654,11 +654,19 @@ enum LibraryPersistenceService {
     /// between the latest state and the record
     /// (`BrailleFileCodeRecord.standing(row:recorded:)`).
     ///
-    /// The book returned holds what the record now holds of both decisions,
-    /// the encoding and the braille file code, even when the latest state it
-    /// was merged into (a waiting snapshot, a lagging row) held others, so
-    /// the row that takes it catches up (the review of October 30, finding
-    /// 2).
+    /// `brailleTable` is the braille table the content.md was translated to
+    /// print with, and the liblouis version of this Mac's tables when it is
+    /// one of them, which a re-read of a braille book with another braille
+    /// code passes (`Book.brailleTable`, FMT21), so the record never holds
+    /// the new text beside the old table. Like the other two it is a
+    /// decision, which replaces the table the latest state holds; nil keeps
+    /// it.
+    ///
+    /// The book returned holds what the record now holds of the three
+    /// decisions, the encoding, the braille file code, and the braille table,
+    /// even when the latest state it was merged into (a waiting snapshot, a
+    /// lagging row) held others, so the row that takes it catches up (the
+    /// review of October 30, finding 2).
     ///
     /// A result is dropped, with one CONTENT_ANALYSIS_DROPPED line in the
     /// debug log, when the latest state describes other content than was
@@ -685,7 +693,8 @@ enum LibraryPersistenceService {
         editedText: EditedText? = nil,
         pageReaderVersion: String?? = nil,
         textEncoding: TextEncodingRecord? = nil,
-        brailleFileCode: String? = nil
+        brailleFileCode: String? = nil,
+        brailleTable: BrailleTableDecision? = nil
     ) throws -> Book? {
         guard !analyzed.tmbDirectoryName.isEmpty else { return nil }
 
@@ -717,6 +726,14 @@ enum LibraryPersistenceService {
             // The braille file characters the new text was read in.
             if let brailleFileCode {
                 merged.brailleFileCode = brailleFileCode
+            }
+            // The braille table the new text was translated with, which the
+            // record takes from the row it is written from
+            // (`Book.bookInfo(replacing:...)`), with its version.
+            if let brailleTable {
+                merged.brailleTable = brailleTable.table
+                merged.brailleTableVersion = brailleTable.version
+                merged.brailleTableOrigin = brailleTable.origin
             }
             // The places a rebuild moved, each only where the latest state
             // still holds it as it was when the old text was copied aside.
@@ -890,17 +907,34 @@ enum LibraryPersistenceService {
     }
 
     /// `book` with the decisions the record just written holds, its text
-    /// encoding and who decided it, and its braille file code, which a
-    /// merge into a lagging row or a waiting snapshot may not hold: the
-    /// record keeps the one that stands (`Book.bookInfo(replacing:...)`),
-    /// and a book returned to the library must say what was written, so
-    /// a rebuild's summary brings the row up to date (the review of
-    /// October 30, finding 2).
+    /// encoding and who decided it, its braille file code, and its braille
+    /// table with the version it was read under, which a merge into a lagging
+    /// row or a waiting snapshot may not hold: the record keeps the one that
+    /// stands (`Book.bookInfo(replacing:...)`), and a book returned to the
+    /// library must say what was written, so a rebuild's summary brings the
+    /// row up to date (the review of October 30, finding 2).
     private static func takingDecisions(of written: BookMetadata, into book: Book) -> Book {
         var book = book
         book.textEncodingRecord = written.textEncodingRecord
         book.brailleFileCode = written.brailleFileCode
+        book.brailleTable = written.brailleTable
+        book.brailleTableVersion = written.brailleTableVersion
+        book.brailleTableOrigin = written.brailleTableOrigin
         return book
+    }
+
+    /// The braille table a re-read of a braille book with another braille
+    /// code decides (`saveContentAnalysis`): the table's stored value, and
+    /// the liblouis version of this Mac's tables when it is one of them, nil
+    /// for a bundled table (`BrailleTableCatalog.versionToRecord(forTable:)`).
+    struct BrailleTableDecision: Equatable, Sendable {
+        /// The table's stored value (`Book.brailleTable`).
+        let table: String
+        /// The version the book is read under (`Book.brailleTableVersion`).
+        let version: String?
+        /// Who chose it (`Book.brailleTableOrigin`): nil, since a re-read
+        /// with a table is the listener's choice, which replaces a guess.
+        var origin: BrailleTableOrigin? = nil
     }
 
     /// What changed about the content of `analyzed` by the time its analysis
@@ -911,17 +945,17 @@ enum LibraryPersistenceService {
     /// they live, whose package also holds the text cache it wrote.
     private static func contentChange(from analyzed: Book, to latest: Book) -> String? {
         if latest.id != analyzed.id {
-            return "the record in its package belongs to book \(latest.id.uuidString.prefix(8))"
+            return "the record in its package belongs to book \(latest.id.uuidString.prefix(8))" // l10n: no (debug log text)
         }
         if latest.md5Hash != analyzed.md5Hash {
-            return "its source was replaced (MD5 \(analyzed.md5Hash) is now \(latest.md5Hash))"
+            return "its source was replaced (MD5 \(analyzed.md5Hash) is now \(latest.md5Hash))" // l10n: no (debug log text)
         }
         if latest.format != analyzed.format {
-            return "its format changed from \(analyzed.format.displayName) to \(latest.format.displayName)"
+            return "its format changed from \(analyzed.format.logName) to \(latest.format.logName)" // l10n: no (debug log text)
         }
         if latest.filePath != analyzed.filePath {
-            return "its source file moved from \(DiagnosticLog.loggablePath(analyzed.filePath)) "
-                + "to \(DiagnosticLog.loggablePath(latest.filePath))"
+            return "its source file moved from \(DiagnosticLog.loggablePath(analyzed.filePath)) " // l10n: no (debug log text)
+                + "to \(DiagnosticLog.loggablePath(latest.filePath))" // l10n: no (debug log text)
         }
         return nil
     }
@@ -1215,7 +1249,7 @@ enum LibraryPersistenceService {
             guard named.insert(bookID).inserted else { return }
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.sortedKeys]
-            let contents = Contents(books: named.sorted { $0.uuidString < $1.uuidString })
+            let contents = Contents(books: named.sortedStably { $0.uuidString < $1.uuidString })
             try? encoder.encode(contents).write(to: TextMouthPaths.readingCheckpointsFile, options: .atomic)
         }
 
@@ -1467,18 +1501,32 @@ enum LibraryPersistenceService {
     /// rows this version cannot read (V03) logs once how many it keeps; the
     /// log never names them.
     private static func decodeLibrary(from data: Data) throws -> Library {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let library = try decoder.decode(Library.self, from: data)
+        let library = try decodeIndex(from: data)
         let kept = library.unreadableRows.count
         if kept > 0 {
             DiagnosticLog.event(
                 .storage,
-                "LIBRARY_ROWS_KEPT: \(CountWording.phrase(kept, singular: "row", plural: "rows")) of library.json "
-                    + "need a newer TextMouth; kept as they are and not shown"
+                "LIBRARY_ROWS_KEPT: \(CountWording.phrase(kept, singular: "row", plural: "rows")) of library.json " // l10n: no (debug log text)
+                    + "need a newer TextMouth; kept as they are and not shown" // l10n: no (debug log text)
             )
         }
         return library
+    }
+
+    /// Decodes the bytes of a library index as every read of one does, and
+    /// does nothing else: no log line, no memory of the bytes, no
+    /// protection of an index that fails. Compare Libraries reads another
+    /// copy's index this way, so reading it leaves no trace in this library.
+    ///
+    /// The bytes are scanned first for a key some part of the index does
+    /// not know (`StoredKeyScan`), and only an index that may hold one is
+    /// looked through for them, row by row, as it is decoded (V04): an
+    /// index this TextMouth or an earlier one wrote holds none.
+    static func decodeIndex(from data: Data) throws -> Library {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        decoder.userInfo = StoredKeyScan.userInfo(forDecoding: data, schema: Library.keySchema)
+        return try decoder.decode(Library.self, from: data)
     }
 
     // MARK: - Unreadable Index Protection

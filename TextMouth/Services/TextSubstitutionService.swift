@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 
@@ -91,8 +95,10 @@ enum SubstitutionRuleMoveDirection {
 
 /// Result of applying substitutions: modified text + bidirectional offset mapping.
 /// Uses OffsetMap internally for offset conversion, and exposes it for pipeline composition.
+///
+/// It holds no copy of the original text: nothing reads one, and a cached
+/// speech would keep a source chapter alive by it (the audit's C17, M5).
 struct TextTransformation {
-    let originalText: String
     let modifiedText: String
     /// The offset map for this substitution stage (modified↔original).
     /// Exposed so it can be composed with other pipeline stages.
@@ -100,15 +106,14 @@ struct TextTransformation {
 
     /// Each rule works in the previous rule's output coordinates. Retain the
     /// stages so subsequent edits cannot invalidate earlier breakpoints.
-    init(originalText: String, modifiedText: String, offsetMaps: [OffsetMap]) {
-        self.originalText = originalText
+    init(modifiedText: String, offsetMaps: [OffsetMap]) {
         self.modifiedText = modifiedText
         self.offsetMap = ComposedOffsetMap(stages: offsetMaps)
     }
 
     /// Identity transformation (no changes).
     static func identity(_ text: String) -> TextTransformation {
-        TextTransformation(originalText: text, modifiedText: text, offsetMaps: [])
+        TextTransformation(modifiedText: text, offsetMaps: [])
     }
 
     /// Convert an offset in the modified text to the corresponding offset in the original text.
@@ -120,8 +125,6 @@ struct TextTransformation {
     func toModifiedOffset(_ original: Int) -> Int {
         offsetMap.toModified(original)
     }
-
-    var hasChanges: Bool { originalText != modifiedText }
 }
 
 /// The substitution rules in force at one moment, each compiled and ready
@@ -185,7 +188,7 @@ struct SubstitutionPass: Equatable, Sendable {
             stages.append(stage.offsetMap)
         }
 
-        return TextTransformation(originalText: text, modifiedText: current, offsetMaps: stages)
+        return TextTransformation(modifiedText: current, offsetMaps: stages)
     }
 
     /// Every match of `rule` in `text`, in text order.
@@ -474,7 +477,7 @@ final class TextSubstitutionService: ObservableObject {
             .publisher(for: .dataDirectoryDidBecomeAvailable)
             .sink { [weak self] _ in self?.dataDirectoryBecameAvailable() }
         activationSubscription = NotificationCenter.default
-            .publisher(for: NSApplication.didBecomeActiveNotification)
+            .publisher(for: PlatformApplication.didBecomeActiveNotification)
             .sink { [weak self] _ in
                 self?.readFileWaitingInTheCloud()
                 self?.readFileThatArrived()
@@ -694,13 +697,21 @@ final class TextSubstitutionService: ObservableObject {
 
     /// Writes the rules to the substitutions file. A failure is reported to
     /// the failure center with a retry that saves the rules as they are
-    /// then, and the next save that succeeds settles it (TODO S09). While
+    /// then, and the next save that succeeds settles it (TODO S09); the
+    /// retry writes on the main thread, so it waits while an operation holds
+    /// the storage work, such as a move copying the file. While
     /// the file waits in the cloud, nothing is written over it
     /// (`saveWhileFileInCloud()`). While the standard rules stand in for a
     /// file that wasn't there, a file the sync service has brought down
     /// since is taken up instead, and nothing is written over its rules
     /// (`readFileThatArrived()`); otherwise this save is the first to write
     /// the file.
+    ///
+    /// A save made while a data-directory move copies the library is
+    /// provisional (`StorageBoundary.isProvisionalSave(of:rewrite:)`): it
+    /// writes the file where the move copies from, which the copy may have
+    /// passed, so it does not settle an earlier failure, and the move saves
+    /// the rules again once it has ended, in the moved library.
     func saveRules() {
         if readFileThatArrived() {
             return
@@ -709,6 +720,9 @@ final class TextSubstitutionService: ObservableObject {
             saveWhileFileInCloud()
             return
         }
+        let isProvisional = StorageBoundary.shared.isProvisionalSave(of: TextMouthPaths.substitutionsFile.lastPathComponent) { [weak self] in
+            self?.saveRules()
+        }
         do {
             try TextMouthPaths.ensureDirectoryStructure()
             let encoder = JSONEncoder()
@@ -716,13 +730,16 @@ final class TextSubstitutionService: ObservableObject {
             let data = try encoder.encode(rules)
             try data.write(to: TextMouthPaths.substitutionsFile, options: .atomic)
             rulesStandInForMissingFile = false
-            PersistenceFailureCenter.shared.recordSuccess(.substitutions)
+            if !isProvisional {
+                PersistenceFailureCenter.shared.recordSuccess(.substitutions)
+            }
         } catch {
             print("Failed to save substitutions: \(error)")
             PersistenceFailureCenter.shared.recordFailure(
                 .substitutions,
                 path: TextMouthPaths.substitutionsFile.path,
-                error: error
+                error: error,
+                waitsForStorageWork: true
             ) { [weak self] _ in
                 self?.saveRules()
             }
@@ -738,10 +755,14 @@ final class TextSubstitutionService: ObservableObject {
         readFileWaitingInTheCloud()
         guard rulesAwaitFileInCloud else { return }
         let url = TextMouthPaths.substitutionsFile
+        // Its retry writes on the main thread once the file is here, so it
+        // waits while an operation holds the storage work, as a failed
+        // save's does.
         PersistenceFailureCenter.shared.recordFailure(
             .substitutions,
             path: url.path,
-            error: SavedFile.InCloudError(fileName: url.lastPathComponent)
+            error: SavedFile.InCloudError(fileName: url.lastPathComponent),
+            waitsForStorageWork: true
         ) { [weak self] _ in
             self?.saveRules()
         }
@@ -862,7 +883,7 @@ final class TextSubstitutionService: ObservableObject {
             because: reason,
             logging: "SUBSTITUTIONS_FILE",
             in: .storage,
-            standIn: "the standard rules stand in"
+            standIn: "the standard rules stand in" // l10n: no (written to the debug log)
         )
         rules = Self.defaultRules
     }
@@ -875,8 +896,18 @@ final class TextSubstitutionService: ObservableObject {
     /// still in the cloud, nothing changes.
     func readFileWaitingInTheCloud() {
         guard rulesAwaitFileInCloud else { return }
+        // A change made to the stand-ins is reported unsaved (never the
+        // rules themselves): the file's rules replace them, so say so.
+        let hadChanges = PersistenceFailureCenter.shared.outstandingFailures().contains { $0.subject == .substitutions }
         loadRules()
         guard !rulesAwaitFileInCloud else { return }
+        if hadChanges {
+            DiagnosticLog.event(
+                .storage,
+                "SUBSTITUTIONS_FILE: changes made to the standard rules while the file was in the cloud "
+                    + "were dropped for the file's own rules"
+            )
+        }
         clearCompiledRules()
         PersistenceFailureCenter.shared.withdraw(.substitutions)
         DiagnosticLog.event(
@@ -918,30 +949,30 @@ final class TextSubstitutionService: ObservableObject {
 
     static let defaultRules: [SubstitutionRule] = [
         // Common abbreviations
-        SubstitutionRule(name: "Mr.", pattern: "\\bMr\\.", replacement: "Mister", isRegex: true),
-        SubstitutionRule(name: "Mrs.", pattern: "\\bMrs\\.", replacement: "Missus", isRegex: true),
-        SubstitutionRule(name: "Dr.", pattern: "\\bDr\\.", replacement: "Doctor", isRegex: true),
-        SubstitutionRule(name: "Prof.", pattern: "\\bProf\\.", replacement: "Professor", isRegex: true),
-        SubstitutionRule(name: "St.", pattern: "\\bSt\\.", replacement: "Saint", isRegex: true),
+        SubstitutionRule(name: "Mr.", pattern: "\\bMr\\.", replacement: "Mister", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Mrs.", pattern: "\\bMrs\\.", replacement: "Missus", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Dr.", pattern: "\\bDr\\.", replacement: "Doctor", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Prof.", pattern: "\\bProf\\.", replacement: "Professor", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "St.", pattern: "\\bSt\\.", replacement: "Saint", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
         SubstitutionRule(name: "vs.", pattern: "\\bvs\\.", replacement: "versus", isRegex: true),
         SubstitutionRule(name: "etc.", pattern: "\\betc\\.", replacement: "etcetera", isRegex: true),
-        SubstitutionRule(name: "e.g.", pattern: "\\be\\.g\\.", replacement: "for example", isRegex: true),
-        SubstitutionRule(name: "i.e.", pattern: "\\bi\\.e\\.", replacement: "that is", isRegex: true),
+        SubstitutionRule(name: "e.g.", pattern: "\\be\\.g\\.", replacement: "for example", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "i.e.", pattern: "\\bi\\.e\\.", replacement: "that is", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Skip URLs
-        SubstitutionRule(name: "Skip URLs", pattern: "https?://\\S+", replacement: "link", isRegex: true),
+        SubstitutionRule(name: "Skip URLs", pattern: "https?://\\S+", replacement: "link", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Skip email addresses
-        SubstitutionRule(name: "Skip emails", pattern: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b", replacement: "email address", isRegex: true),
+        SubstitutionRule(name: "Skip emails", pattern: "\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b", replacement: "email address", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Footnote markers
-        SubstitutionRule(name: "Skip footnote brackets", pattern: "\\[\\d+\\]", replacement: "", isRegex: true),
-        SubstitutionRule(name: "Skip footnote parens", pattern: "\\(see note \\d+\\)", replacement: "", isRegex: true, caseSensitive: false),
+        SubstitutionRule(name: "Skip footnote brackets", pattern: "\\[\\d+\\]", replacement: "", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
+        SubstitutionRule(name: "Skip footnote parens", pattern: "\\(see note \\d+\\)", replacement: "", isRegex: true, caseSensitive: false), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Normalize dashes to pauses
-        SubstitutionRule(name: "Em dash to pause", pattern: "—", replacement: " — ", isRegex: false),
+        SubstitutionRule(name: "Em dash to pause", pattern: "—", replacement: " — ", isRegex: false), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
 
         // Collapse repeated whitespace
-        SubstitutionRule(name: "Collapse whitespace", pattern: "[ \\t]{3,}", replacement: "  ", isRegex: true),
+        SubstitutionRule(name: "Collapse whitespace", pattern: "[ \\t]{3,}", replacement: "  ", isRegex: true), // l10n: no (a default rule, stored as written in the user's rules file; its words are spoken by the voice and stay English)
     ]
 }

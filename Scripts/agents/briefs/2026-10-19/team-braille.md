@@ -108,7 +108,7 @@ Report after Phase A, and again after Phase B. The orchestrator may merge Phase 
     - Add one round-trip test: export a book to BRF Grade 2, import it, and compare the text, naming liblouis's own differences.
 
 ## Size (the user asked)
-Before the first liblouis commit, build main's Release app once with your own derived data folder through the build wrapper (`xcodebuild build -configuration Release -scheme TextMouth -project TextMouth.xcodeproj CODE_SIGNING_ALLOWED=NO -derivedDataPath /var/folders/zl/r86mh72d0j3d1gsypcj1928m0000gn/T/TextMouth-DerivedData-braille-size`). Record:
+Before the first liblouis commit, build main's Release app once with your own derived data folder through the build wrapper (`xcodebuild build -configuration Release -scheme TextMouth -project TextMouth.xcodeproj CODE_SIGNING_ALLOWED=NO -derivedDataPath $TMPDIR/TextMouth-DerivedData-braille-size`). Record:
 - `du -sk` of the .app;
 - the main executable's bytes.
 Build again once the helper and the English tables are in, and report both, with:

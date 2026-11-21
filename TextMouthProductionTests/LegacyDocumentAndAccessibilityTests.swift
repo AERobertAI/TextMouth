@@ -1,3 +1,4 @@
+import os
 import XCTest
 @testable import TextMouth
 
@@ -109,14 +110,46 @@ final class LegacyDocumentContentModelTests: XCTestCase {
         XCTAssertEqual(TimeFormatting.spoken(3_661), "1 hour, 1 minute, 1 second")
     }
 
+    /// Runs `work` off the test's thread and waits at most `seconds` for it,
+    /// failing with a message that names `what` it waited for when it does
+    /// not come back (Q-HANG). The test below once started and never
+    /// finished in an iPhone run, and a hang names nothing; a stall here
+    /// now fails in a minute and says which lookup stalled. Returns whether
+    /// `work` finished.
+    private func finishes(within seconds: TimeInterval, waitingFor what: String, _ work: @escaping @Sendable () -> Void) -> Bool {
+        let done = DispatchSemaphore(value: 0)
+        DispatchQueue.global(qos: .userInitiated).async {
+            work()
+            done.signal()
+        }
+        let finished = done.wait(timeout: .now() + seconds) == .success
+        if !finished { XCTFail("Waited \(seconds) seconds for \(what), which never came back") }
+        return finished
+    }
+
     func testSleepTimerDurationNamesAndPresetsComeFromProductionModel() {
-        XCTAssertEqual(SleepTimerDuration.minutes(10).displayName, "10 minutes")
-        XCTAssertEqual(SleepTimerDuration.endOfHeading.displayName, "End of heading")
-        XCTAssertEqual(SleepTimerDuration.endOfBook.displayName, "End of book")
+        // The names are localized lookups (the String Catalog's first use in
+        // a process loads the bundle's tables), the presets a list; each
+        // stage is bounded and named, so a stall says where it stopped.
+        let names = OSAllocatedUnfairLock(initialState: [String]())
+        guard finishes(within: 60, waitingFor: "the sleep timer names' localized lookups", {
+            names.withLock {
+                $0 = [
+                    SleepTimerDuration.minutes(10).displayName,
+                    SleepTimerDuration.endOfHeading.displayName,
+                    SleepTimerDuration.endOfBook.displayName,
+                ]
+            }
+        }) else { return }
+        XCTAssertEqual(names.withLock { $0 }, ["10 minutes", "End of heading", "End of book"])
+        let presets = OSAllocatedUnfairLock(initialState: [SleepTimerDuration]())
+        guard finishes(within: 60, waitingFor: "SleepTimerDuration.presets", { presets.withLock { $0 = SleepTimerDuration.presets } })
+        else { return }
         // The sheet's minute presets, then its Stop At timers: End of heading,
         // the one place-based timer for any document, then End of book.
-        XCTAssertEqual(SleepTimerDuration.presets.count, 7)
-        XCTAssertEqual(Array(SleepTimerDuration.presets.suffix(2)), [.endOfHeading, .endOfBook])
+        let list = presets.withLock { $0 }
+        XCTAssertEqual(list.count, 7)
+        XCTAssertEqual(Array(list.suffix(2)), [.endOfHeading, .endOfBook])
     }
 
     func testGlobalLocationRoundTripsAcrossChapters() {

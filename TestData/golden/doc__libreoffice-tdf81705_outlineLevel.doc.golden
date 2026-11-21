@@ -10,5 +10,7 @@ text length: 25
 text checksum: 658db01949d4d8ef
 first 300: A\n\nB\n\nC\n\nD\n\nContents\n\nD 1
 last 300: A\n\nB\n\nC\n\nD\n\nContents\n\nD 1
-heading: 1 | Contents
+heading: 1 | A
+heading: 1 | B
+heading: 1 | D
 page: 1 | 0:0 | A\n\nB\n\nC\n\nD\n\nContents\n\nD 

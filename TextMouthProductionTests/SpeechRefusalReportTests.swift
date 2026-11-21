@@ -148,7 +148,7 @@ final class SpeechRefusalReportTests: XCTestCase {
         XCTAssertEqual(SpeechRefusalWording.heading, "Speech Stopped")
         XCTAssertEqual(
             SpeechRefusalWording.summary,
-            "The Mac's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place."
+            "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place."
         )
         XCTAssertEqual(
             SpeechRefusalWording.announcement,
@@ -156,10 +156,10 @@ final class SpeechRefusalReportTests: XCTestCase {
         )
         XCTAssertEqual(SpeechRefusalWording.detailsLabel, "Details")
         XCTAssertEqual(SpeechRefusalWording.copyTitle, "Copy Details")
-        XCTAssertEqual(SpeechRefusalWording.copyHint, "Copies the whole report as plain text, to paste where it helps find the cause")
+        XCTAssertEqual(SpeechRefusalWording.copyHint, "Copies the whole report as plain text")
         XCTAssertEqual(SpeechRefusalWording.copiedAnnouncement, "Details copied")
         XCTAssertEqual(SpeechRefusalWording.closeTitle, "Close")
-        XCTAssertEqual(SpeechRefusalWording.closeHint, "Closes the report; Play tries the passage again")
+        XCTAssertEqual(SpeechRefusalWording.closeHint, "Afterwards, Play tries the passage again")
     }
 
     /// A text book's report, line by line: the chapter's spoken text leaves
@@ -171,7 +171,7 @@ final class SpeechRefusalReportTests: XCTestCase {
 
         XCTAssertEqual(report.lines, [
             "Speech Stopped",
-            "The Mac's speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+            "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
             "",
             "Where",
             "Book: Quay Ledger (Plain Text)",
@@ -449,5 +449,48 @@ final class SpeechRefusalReportTests: XCTestCase {
         let speech = SpeechService(userDefaults: makeSandboxedPreferences("speech-refusal-report"))
         speech._directUtteranceRecorderForTesting = { _ in }
         return speech
+    }
+
+    // MARK: - The iPhone's Words
+
+    /// The summary names no device (the spec, "Words that say Mac"); the
+    /// device heading and the system line have an iPhone version, and the
+    /// Mac's stay as they were.
+    func testTheIPhoneHasItsOwnWordsAndTheMacKeepsItsOwn() {
+        // One sentence for both devices, which names neither.
+        XCTAssertFalse(SpeechRefusalWording.summary.contains("Mac"))
+        XCTAssertFalse(SpeechRefusalWording.summary.contains("iPhone"))
+        XCTAssertEqual(SpeechRefusalWording.deviceHeading(onPhone: false), "This Mac")
+        XCTAssertEqual(SpeechRefusalWording.deviceHeading(onPhone: true), "This iPhone")
+        XCTAssertEqual(SpeechRefusalWording.systemLine(version: "Version 1", onPhone: false), "macOS: Version 1")
+        XCTAssertEqual(SpeechRefusalWording.systemLine(version: "Version 1", onPhone: true), "iOS: Version 1")
+    }
+
+    /// A character offset or a chapter number names a place the speech log
+    /// gives by the same digits, so it is never grouped for the region: 12345
+    /// is "12345", not "12,345" (FR34, the identifier rule).
+    func testOffsetsAndChapterNumbersAreWrittenWithoutDigitGrouping() {
+        let passage = SpeechRefusalPassage(of: String(repeating: "a", count: 30_000), around: 12_345, refused: 12_345..<20_001)
+        let lines = SpeechRefusalWording.passageLines(passage).joined(separator: "\n")
+        XCTAssertTrue(lines.contains("The refused text begins here, at character 12345."), lines)
+        XCTAssertTrue(lines.contains("to character 20001") || lines.contains("at character 20001"), lines)
+        XCTAssertEqual(
+            SpeechRefusalWording.stoppedInChapter(offset: 12_345, of: 30_000),
+            "Speech stopped at character 12345 of 30000 in the chapter."
+        )
+        XCTAssertEqual(
+            SpeechRefusalWording.chapter(index: 1_233, of: 2_000, title: nil),
+            "Chapter 1234 of 2000 (chapter=1233 in the logs)"
+        )
+        XCTAssertEqual(
+            SpeechRefusalWording.bookPassageHeading(range: 12_000..<13_000, chapterNumber: 1_234),
+            "The passage as the book has it, characters 12000 to 13000 of chapter 1234:"
+        )
+    }
+
+    /// This build uses the version for the platform it runs on, and the
+    /// Mac's test host is the Mac.
+    func testTheBuildUsesItsOwnPlatformsWords() {
+        XCTAssertFalse(SpeechRefusalWording.runsOnPhone)
     }
 }

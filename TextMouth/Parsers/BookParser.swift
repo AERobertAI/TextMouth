@@ -78,6 +78,16 @@ enum BookParser {
             return try DAISYParser.parse(url: url)
         case .pdf:
             return try PDFTextParser.parse(url: url)
+        case .mobi:
+            // A Kindle book, read by TextMouth's own reader (FMT42).
+            return try MOBIParser.parse(url: url)
+        case .kfx:
+            // A DRM-free Kindle KFX book, read by TextMouth's own reader (FMT52).
+            return try KFXParser.parse(url: url)
+        case .picture, .comic:
+            // A picture of a page, or a comic book archive, read by text
+            // recognition as the Markdown cache reads it (FMT34).
+            return try PageImageReader.parse(url: url, format: format)
         case .audio:
             // Audio parsing is async, so wait for it through the shared bridge.
             return try AsyncBridge.waitForResult(reading: url, timeLimit: AsyncBridge.audioAnalysisTimeLimit) {
@@ -104,9 +114,13 @@ extension WebArchiveReader.MainPage {
     /// archive has no page reader (`PageReaderVersions`, V07), so no book of
     /// it is read again for pages, and its text gains none by this way in
     /// either (the review of October 24).
-    func markdown() throws -> String {
+    ///
+    /// - Parameter includesPages: Whether an HTML page's page-break elements
+    ///   become page markers, as `HTMLToMarkdownConverter.convert` does; false
+    ///   reads the page as it was read before pages (PG09).
+    func markdown(includesPages: Bool = true) throws -> String {
         isHTML
-            ? try HTMLToMarkdownConverter.convert(text, stripDuplicateNavigation: true)
+            ? try HTMLToMarkdownConverter.convert(text, stripDuplicateNavigation: true, includesPages: includesPages)
             : PlainTextParser.markdown(text: text, includesPages: false)
     }
 }

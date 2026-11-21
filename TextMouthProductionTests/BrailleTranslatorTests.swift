@@ -79,6 +79,8 @@ final class BrailleTranslatorTests: XCTestCase {
         return Array(lines.dropLast(lines.last == "" ? 1 : 0))  // the empty string after the last LF
     }
 
+    // Mac only: stand-in children (a sleep, false) are processes, which the iPhone cannot start.
+    #if os(macOS)
     /// Limits that keep a test short: the watchdog looks every 0.1 second.
     private func limits(seconds: TimeInterval = 5) -> WatchedProcess.Limits {
         WatchedProcess.Limits(
@@ -102,6 +104,7 @@ final class BrailleTranslatorTests: XCTestCase {
     private func with<T>(_ tool: BrailleTranslator.Tool, _ body: () throws -> T) throws -> T {
         try BrailleTranslator.$tool.withValue(tool, operation: body)
     }
+    #endif
 
     // MARK: - Grade 1 and Grade 2 With the Real Helper
 
@@ -270,6 +273,8 @@ final class BrailleTranslatorTests: XCTestCase {
         )
     }
 
+    // Mac only: these tests watch for a stand-in child or run the helper from another folder; the iPhone reads only its bundled folder, whose name holds no comma.
+    #if os(macOS)
     /// A file of the tables folder that the catalog does not offer is
     /// refused by name, from translate and from check (review finding L2):
     /// an edited record naming an include file such as `spaces.uti` would
@@ -355,6 +360,7 @@ final class BrailleTranslatorTests: XCTestCase {
         }
         assertWorkFolderEmpty()
     }
+    #endif
 
     // MARK: - Long Texts and Line Breaks
 
@@ -424,6 +430,8 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertTrue(result == expected, "the joined translations differ from the expected ones")
     }
 
+    // Mac only: the input file and the stand-in that copies it are the helper's; the iPhone sends its records in memory, in batches.
+    #if os(macOS)
     /// The input file holds the protocol's header and then every piece's
     /// record (its text, a line feed, and the empty code line of a piece with
     /// no emphasis), written through a buffer, and the size the watchdog's
@@ -474,6 +482,7 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertTrue(result.contains { $0.contains(" ") }, "no long text was cut")
         assertWorkFolderEmpty()
     }
+    #endif
 
     /// The preparation of a text: every line break one word break, NUL
     /// gone, and in braille an ASCII space the blank cell.
@@ -536,6 +545,8 @@ final class BrailleTranslatorTests: XCTestCase {
         )
     }
 
+    // Mac only: the stops, failures, and Cancel of the helper's stand-in children; the iPhone's are its engine's (InProcessEngineTests, BrailleLibraryTests).
+    #if os(macOS)
     // MARK: - No Work, Failures, Stops, and Cancel
 
     /// An empty list, and a list of empty texts, run no helper: a stand-in
@@ -698,6 +709,7 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: url.path))
         assertWorkFolderEmpty()
     }
+    #endif
 
     // MARK: - Limits
 
@@ -726,6 +738,8 @@ final class BrailleTranslatorTests: XCTestCase {
         XCTAssertEqual(BrailleTranslator.limits(for: .printToBraille, bytes: 1_000).maximumOutputBytes, 32 * 1_000 + 1_048_576)
     }
 
+    // Mac only: the helper and Contents/Resources are the Mac app's.
+    #if os(macOS)
     /// The real tool names the helper and the tables inside the app bundle.
     func testTheRealToolIsTheBundledHelper() throws {
         let tool = BrailleTranslator.Tool.helper
@@ -740,4 +754,5 @@ final class BrailleTranslatorTests: XCTestCase {
             ["back", tables.path, "x.ctb", "/tmp/in", "/tmp/out"]
         )
     }
+    #endif
 }

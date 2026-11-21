@@ -45,7 +45,7 @@ final class AudioMediaImportTests: XCTestCase {
         assertImportFails(
             of: archive,
             with: FileImportService.importAudioZipWithReport(from:toFolder:observer:),
-            because: "The file “\(name)/02.mp3” in this audiobook is damaged or incomplete: "
+            because: "The file “\(name)/02.mp3” in this book is damaged or incomplete: "
                 + "it cannot be opened as audio. " + AudioMediaAdvice.damage
         )
     }
@@ -61,7 +61,7 @@ final class AudioMediaImportTests: XCTestCase {
         assertImportFails(
             of: archive,
             with: FileImportService.importAudioZipWithReport(from:toFolder:observer:),
-            because: "The file “02.m4a” in this audiobook is damaged or incomplete: "
+            because: "The file “02.m4a” in this book is damaged or incomplete: "
                 + "its audio breaks off before the length the file declares. "
                 + AudioMediaAdvice.damage
         )
@@ -105,7 +105,7 @@ final class AudioMediaImportTests: XCTestCase {
         assertImportFails(
             of: archive,
             with: FileImportService.importAudioZipWithReport(from:toFolder:observer:),
-            because: "The heading “Chapter 12” starts 5 seconds into its file “a.wav”, which is only 2 seconds long. "
+            because: "The heading “Chapter 12” starts 5 seconds into “a.wav”, which is only 2 seconds long. "
                 + AudioMediaAdvice.mismatch
         )
     }
@@ -118,7 +118,7 @@ final class AudioMediaImportTests: XCTestCase {
         assertImportFails(
             of: book,
             with: FileImportService.importDAISYAudioZipWithReport(from:toFolder:observer:),
-            because: "The heading “Leadline Readings” ends 9 seconds into its file “part1.wav”, "
+            because: "The heading “Leadline Readings” ends 9 seconds into “part1.wav”, "
                 + "which is only 2 seconds long. "
                 + AudioMediaAdvice.mismatch
         )

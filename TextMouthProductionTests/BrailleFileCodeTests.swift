@@ -5,7 +5,8 @@ import XCTest
 /// catalog of the ways a BRF or BRL file writes braille cells as characters.
 /// Each seven-bit table is checked by its own facts and against liblouis's
 /// display table for it, vendored unchanged from liblouis 3.39.0 and read
-/// from the app's tables folder, so the test also proves the files ship.
+/// from the app's tables folder, so the test also proves the files ship, in
+/// both apps since the iPhone bundles liblouis's tables too (DR34).
 final class BrailleFileCodeTests: XCTestCase {
     /// The two seven-bit tables, by name for the failure messages.
     private let tables: [(name: String, table: SevenBitBrailleTable)] = [

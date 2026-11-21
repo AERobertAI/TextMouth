@@ -85,6 +85,7 @@ protocol RecordingCaptureBackend: Sendable {
     func snapshot() async -> RecordingCaptureSnapshot
 }
 
+#if os(macOS)
 // MARK: - AVFoundation's Capture Session
 
 /// Records through AVFoundation: an `AVCaptureSession` holding the chosen
@@ -132,7 +133,7 @@ actor CaptureSessionRecordingBackend: RecordingCaptureBackend {
         writingTo url: URL,
         events: @escaping @Sendable (RecordingCaptureEvent) -> Void
     ) async throws {
-        guard session == nil else { throw RecordingCaptureError.setupFailed("a recording is already under way") }
+        guard session == nil else { throw RecordingCaptureError.setupFailed("a recording is already under way") } // l10n: no (debug log text)
         guard let device = AVCaptureDevice(uniqueID: deviceID), device.isConnected else {
             throw RecordingCaptureError.deviceUnavailable
         }
@@ -144,17 +145,17 @@ actor CaptureSessionRecordingBackend: RecordingCaptureBackend {
         } catch {
             throw RecordingCaptureError.setupFailed(Self.describe(error))
         }
-        guard session.canAddInput(input) else { throw RecordingCaptureError.setupFailed("the session refused the microphone") }
+        guard session.canAddInput(input) else { throw RecordingCaptureError.setupFailed("the session refused the microphone") } // l10n: no (debug log text)
         session.addInput(input)
         let output = AVCaptureAudioFileOutput()
         output.minFreeDiskSpaceLimit = Self.minimumFreeDiskSpace
-        guard session.canAddOutput(output) else { throw RecordingCaptureError.setupFailed("the session refused the file output") }
+        guard session.canAddOutput(output) else { throw RecordingCaptureError.setupFailed("the session refused the file output") } // l10n: no (debug log text)
         session.addOutput(output)
 
         // Blocks this queue until the session runs or fails.
         session.startRunning()
         guard session.isRunning else {
-            throw RecordingCaptureError.didNotStart("the capture session did not start")
+            throw RecordingCaptureError.didNotStart("the capture session did not start") // l10n: no (debug log text)
         }
         self.session = session
         self.output = output
@@ -219,7 +220,7 @@ actor CaptureSessionRecordingBackend: RecordingCaptureBackend {
         with settings: [String: Any]?,
         events: @escaping @Sendable (RecordingCaptureEvent) -> Void
     ) async throws {
-        guard let output else { throw RecordingCaptureError.didNotStart("no file output") }
+        guard let output else { throw RecordingCaptureError.didNotStart("no file output") } // l10n: no (debug log text)
         output.audioSettings = settings
         let delegate = FileRecordingDelegate(events: events)
         self.delegate = delegate
@@ -241,7 +242,7 @@ actor CaptureSessionRecordingBackend: RecordingCaptureBackend {
         })
         observers.append(center.addObserver(forName: AVCaptureSession.runtimeErrorNotification, object: session, queue: nil) { notification in
             let error = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError
-            events(.failed(error.map { "\($0.domain) \($0.code)" } ?? "the capture session failed"))
+            events(.failed(error.map { "\($0.domain) \($0.code)" } ?? "the capture session failed")) // l10n: no (debug log text)
         })
     }
 
@@ -342,7 +343,7 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
             // Whichever comes first, the start or the timeout, ends the wait.
             Task { [weak self] in
                 try? await Task.sleep(for: timeout)
-                self?.resumeStart(with: .failure(RecordingCaptureError.didNotStart("recording did not begin in time")))
+                self?.resumeStart(with: .failure(RecordingCaptureError.didNotStart("recording did not begin in time"))) // l10n: no (debug log text)
             }
         }
     }
@@ -435,7 +436,7 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
         /// without being stopped.
         var event: RecordingCaptureEvent? {
             switch self {
-            case .finished: return .failed("recording ended on its own")
+            case .finished: return .failed("recording ended on its own") // l10n: no (debug log text)
             case .deviceDisconnected: return .deviceDisconnected
             case .diskFull: return .diskFull
             case .failed(let reason): return .failed(reason)
@@ -446,8 +447,8 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
         var description: String {
             switch self {
             case .finished: return "finished"
-            case .deviceDisconnected: return "the microphone was disconnected"
-            case .diskFull: return "the disk was full"
+            case .deviceDisconnected: return "the microphone was disconnected" // l10n: no (debug log text)
+            case .diskFull: return "the disk was full" // l10n: no (debug log text)
             case .failed(let reason): return reason
             }
         }
@@ -473,3 +474,50 @@ final class FileRecordingDelegate: NSObject, AVCaptureFileOutputRecordingDelegat
         return .failed("\(nsError.domain) \(nsError.code)")
     }
 }
+#else
+
+// MARK: - iOS Stand-In
+
+// Phase 0 stand-in: the Mac's `CaptureSessionRecordingBackend` records through
+// an `AVCaptureSession` and `AVCaptureAudioFileOutput`, which iOS does not
+// have. On iOS this backend records nothing: `start` throws
+// `IOSUnavailable`, and the other members report an idle capture. Phase 1
+// replaces it with a backend built on `AVAudioEngine`.
+
+/// The iOS stand-in for the Mac's capture-session backend, so that shared code
+/// naming `CaptureSessionRecordingBackend` compiles. It never records.
+actor CaptureSessionRecordingBackend: RecordingCaptureBackend {
+    /// A backend that records nothing.
+    init() {}
+
+    /// Always throws: recording is not available on iPhone yet.
+    func start(
+        deviceID: String,
+        writingTo url: URL,
+        events: @escaping @Sendable (RecordingCaptureEvent) -> Void
+    ) async throws {
+        throw IOSUnavailable.feature("Recording") // l10n: no (inside IOSUnavailable's English sentence until that area converts)
+    }
+
+    /// Nothing is recording, so there is nothing to pause.
+    func pause() async {}
+
+    /// Nothing is recording, so there is nothing to resume.
+    func resume() async {}
+
+    /// Nothing is recording, so there is nothing to finish.
+    func stop() async throws {}
+
+    /// An idle capture: nothing recorded and no levels.
+    func snapshot() async -> RecordingCaptureSnapshot {
+        RecordingCaptureSnapshot(recordedDuration: 0, levels: nil)
+    }
+
+    /// An error as the debug log names it: its domain and code, never its
+    /// description, which can hold a path. Shared code calls this by name.
+    static func describe(_ error: Error) -> String {
+        let nsError = error as NSError
+        return "\(nsError.domain) \(nsError.code)"
+    }
+}
+#endif

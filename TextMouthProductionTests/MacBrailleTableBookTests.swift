@@ -145,8 +145,8 @@ final class MacBrailleTableBookTests: XCTestCase {
             }
             XCTAssertEqual(
                 changed.errorDescription,
-                "This Mac's braille table \u{201C}\(french)\u{201D} has changed since the book was read with it, "
-                    + "from liblouis 3.34.0 to 3.35.0, so TextMouth keeps the book's text as it was."
+                "This Mac's braille table \u{201C}\(french)\u{201D} changed from liblouis 3.34.0 to 3.35.0 "
+                    + "since the book was read, so TextMouth keeps the book's text as it was."
             )
             XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable("en-ueb-g2.ctb", recordedVersion: "3.34.0"))
             XCTAssertNoThrow(try BrailleBookReader.requireUnchangedTable(french, recordedVersion: nil))
@@ -158,8 +158,8 @@ final class MacBrailleTableBookTests: XCTestCase {
             XCTAssertThrowsError(try BrailleBookReader.requireUnchangedTable(french, recordedVersion: "3.34.0")) {
                 XCTAssertEqual(
                     ($0 as? LocalizedError)?.errorDescription,
-                    "This Mac's braille table \u{201C}\(french)\u{201D} may have changed since the book was read with "
-                        + "liblouis 3.34.0, so TextMouth keeps the book's text as it was."
+                    "This Mac's braille table \u{201C}\(french)\u{201D} may have changed since liblouis 3.34.0 "
+                        + "read the book, so TextMouth keeps the book's text as it was."
                 )
             }
         }
@@ -335,7 +335,7 @@ final class MacBrailleTableBookTests: XCTestCase {
         XCTAssertEqual(try decoded(gone), gone)
         XCTAssertEqual(try decoded("mac:../escape.ctb"), "")
         let defaults = try isolatedDefaults()
-        let service = ConfigService(fileURL: try makeConfigFileURL())
+        let service = makeConfigService(fileURL: try makeConfigFileURL())
         let settings = SettingsViewModel(
             notificationCenter: NotificationCenter(), initializeServices: false, userDefaults: defaults, configService: service
         )
@@ -370,8 +370,8 @@ final class MacBrailleTableBookTests: XCTestCase {
         let book = ExportBookDetails(title: "Bok", author: nil, language: "sv")
         let quoted = try ExportDocumentWalker.document(fromMarkdown: "Han sa \u{00AB}hej\u{00BB} till dem.\n", book: book)
         let options = BrailleExportOptions(table: swedish)
-        let sentence = "The braille table writes \u{201C}\u{00AB}\u{201D} as an eight-dot cell, "
-            + "and TextMouth writes BRF and PEF files in six-dot braille only."
+        let sentence = "The braille table writes \u{201C}\u{00AB}\u{201D} as an eight-dot cell, but "
+            + "TextMouth's BRF and PEF files are six-dot only."
         try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
             XCTAssertThrowsError(try BRFExportWriter().write(
                 quoted, options: options, to: folder.appendingPathComponent("bok.brf"), cancellation: BookExportCancellation()
@@ -406,8 +406,8 @@ final class MacBrailleTableBookTests: XCTestCase {
             fromMarkdown: "write to info@example.org\n", book: ExportBookDetails(title: "Note", author: nil, language: nil)
         )
         let options = BrailleExportOptions(table: table)
-        let sentence = "The braille table writes \u{201C}@\u{201D} as an eight-dot cell, "
-            + "and TextMouth writes BRF and PEF files in six-dot braille only."
+        let sentence = "The braille table writes \u{201C}@\u{201D} as an eight-dot cell, but TextMouth's BRF "
+            + "and PEF files are six-dot only."
         try MacBrailleTableCheck.$verdicts.withValue(MacBrailleTableCheck.Verdicts()) {
             XCTAssertTrue(try MacBrailleTableCheck.check(table, workingIn: folder).isUsable, "\(table) is not offered")
             XCTAssertThrowsError(try BRFExportWriter().write(

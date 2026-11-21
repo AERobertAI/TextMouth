@@ -113,8 +113,10 @@ final class LibraryFeedItemEditTests: XCTestCase {
             removed.urls.append(url)
             try FileManager.default.removeItem(at: url)
         }
-        let center = FeedCenter(environment: environment)
-        addTeardownBlock { await MainActor.run { center.stop() } }
+        // Ended by the teardown with its record writes landed, while the
+        // world's folders are still there: the Delete Download below writes
+        // the record as the test ends.
+        let center = world.engine(self, on: environment)
         world.library.feedEngine = center
         await center.start(library: world.library)?.value
         let paragraphs = (1...20).map { "<p>Paragraph \($0) of the release notes says what changed.</p>" }

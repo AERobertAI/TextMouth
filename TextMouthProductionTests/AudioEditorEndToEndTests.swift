@@ -81,17 +81,17 @@ final class AudioEditorEndToEndTests: XCTestCase {
         await model.redo()
         XCTAssertEqual(model.duration, 4.9, accuracy: 0.000_1)
 
-        // Save writes every edit into the book's WAV file, which holds no
-        // chapter markers, as it says; the library measures the book again.
-        // The book keeps its original, so its edits, chapter markers and
-        // all, stay to export, whatever the global setting.
+        // Save writes every edit into the book's WAV file, its chapter
+        // markers as the file's own markers (FMT11); the library measures
+        // the book again. The book keeps its original, so its edits stay to
+        // export, whatever the global setting.
         await model.setPolicy(.keep, days: 1)
         let saved = await model.save()
         XCTAssertTrue(saved)
         XCTAssertTrue(harness.announcements.sentences.contains(
-            "Saving 4.9 seconds of audio as WAV, the format this book keeps. "
-                + "WAV files can't hold chapter markers, so its 2 chapter markers are left out of this file."
+            "Saving 4.9 seconds of audio as WAV, the format this book keeps."
         ), "\(harness.announcements.sentences)")
+        XCTAssertEqual(AudioMarkerList.read(at: fixture.book.bookFileURL)?.markers.map(\.name), ["Crossing", "Return"])
         XCTAssertEqual(harness.announcements.sentences.last, "Saved. The book's audio is now 4.9 seconds long.")
         XCTAssertEqual(fixture.library.bookByID(fixture.book.id)?.audioDuration ?? 0, 4.9, accuracy: 0.01)
         let samples = try AudioTestFixtures.floatSamples(of: fixture.book.bookFileURL)

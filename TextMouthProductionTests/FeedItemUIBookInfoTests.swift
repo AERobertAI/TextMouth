@@ -199,7 +199,7 @@ final class FeedItemUIBookInfoTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: makeSandboxedPreferences("FeedItemUIReaderSettings"),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         let reader = ReaderViewModel(
             book: book,

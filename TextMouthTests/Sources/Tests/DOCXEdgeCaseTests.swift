@@ -99,8 +99,8 @@ test("DOCX bold-italic wraps in triple asterisks") {
     try assertTrue(result.contains("***bold italic***"), "Should wrap bold-italic text, got: \(result)")
 }
 
-// Strikethrough
-test("DOCX strikethrough wraps in tildes") {
+// Strikethrough: written as plain text, since an unpaired "~~" would be read aloud
+test("DOCX strikethrough is written as plain text") {
     let xml = """
     <w:p>
     <w:r>
@@ -110,7 +110,7 @@ test("DOCX strikethrough wraps in tildes") {
     </w:p>
     """
     let result = try convertDOCXSnippet(xml)
-    try assertTrue(result.contains("~~deleted~~"), "Should wrap strikethrough text, got: \(result)")
+    try assertTrue(result.contains("deleted") && !result.contains("~"), "Should write struck text plain, got: \(result)")
 }
 
 // Bold explicitly disabled with val="0"

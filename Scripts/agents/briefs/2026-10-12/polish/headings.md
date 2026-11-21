@@ -57,7 +57,7 @@ Add one hosted test that the Duration shown changes after a speed change, but on
 - The redraw count in `ViewsAndWindowsReaderSheetTests` must not rise, since the timing does not change while a book plays. That count is load-sensitive: if it fails, rerun that class alone and report both results.
 - Start each build in the background and check on it no more often than every 4 minutes.
 - `-jobs 4` is required (the orchestrator's #2107).
-- Scratch files go in `/private/tmp/claude-501/-Users-roberteggleston-programming-ai-claude-swift-TextMouth/d79ccbfe-f907-4768-bef3-66390cef7d23/scratchpad/`, each named `polish-headings-…`.
+- Scratch files go in `<session folder>/scratchpad/`, each named `polish-headings-…`.
 
     BBS_AGENT=polish-headings .claude/skills/agent-bbs/scripts/build-slot-with-bbs.sh xcodebuild test -project TextMouth.xcodeproj -scheme TextMouth -destination 'platform=macOS' -parallel-testing-enabled NO -jobs 4 CODE_SIGNING_ALLOWED=NO COMPILER_INDEX_STORE_ENABLE=NO -derivedDataPath "${TMPDIR}TextMouth-DerivedData-polish-headings" -only-testing:TextMouthProductionTests/SpeedBesideTimesTests -only-testing:TextMouthProductionTests/HeadingSheetRecordingTimeTests -only-testing:TextMouthProductionTests/ViewsAndWindowsReaderSheetTests > <scratchpad>/polish-headings-build-1.log 2>&1
 

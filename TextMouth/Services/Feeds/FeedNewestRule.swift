@@ -135,7 +135,7 @@ extension FeedCenter {
         }
         guard !due.isEmpty else { return report }
 
-        let outcome = await removeDue(due, from: library, by: "the newest-N rule", at: environment.now(), putOffEvent: "FEED_RULE_PUT_OFF")
+        let outcome = await removeDue(due, from: library, by: "the newest-N rule", at: environment.now(), putOffEvent: "FEED_RULE_PUT_OFF") // l10n: no (debug log text, which stays English)
         report.leftInCloudBookIDs = outcome.leftInCloud
         report.inUseBookIDs += outcome.inUse
         report.removedBookIDs = outcome.removed.map(\.row.id)
@@ -240,7 +240,7 @@ extension FeedCenter {
                 continue
             }
             guard book.isFeedItem else { continue }
-            due.append(FeedDueRemoval(feedID: record.feed.id, itemID: item.id, book: book, reason: "outside the newest \(count)"))
+            due.append(FeedDueRemoval(feedID: record.feed.id, itemID: item.id, book: book, reason: "outside the newest \(count)")) // l10n: no (debug log text, which stays English)
             excess -= 1
         }
         return due

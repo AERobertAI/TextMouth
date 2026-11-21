@@ -131,6 +131,24 @@ final class StorageDestinationSettingsTests: XCTestCase {
         }
     }
 
+    /// Compare Libraries is among Storage settings' labelled buttons beside
+    /// Change Location, where SwiftUI exposes them, with the words that say
+    /// what it does and that it changes nothing.
+    func testStorageSettingsOfferCompareLibraries() throws {
+        try skipUnlessSwiftUIExposesItsOwnElements()
+        let view = makeStorageSettingsShowingAMove(copiedPercent: 60)
+
+        try withHostedControls(view) { controls in
+            let buttons = controls.filter { $0.role == .button && !$0.label.isEmpty }
+            guard !buttons.isEmpty else {
+                throw XCTSkip("SwiftUI exposed no AppKit button to accessibility in this run")
+            }
+            XCTAssertTrue(buttons.map(\.label).contains(LibraryComparisonWording.title), "\(buttons.map(\.label))")
+        }
+        XCTAssertEqual(LibraryComparisonWording.buttonTitle, "Compare Libraries…")
+        XCTAssertTrue(LibraryComparisonWording.buttonHint.hasSuffix("Nothing in either copy is changed."))
+    }
+
     // MARK: - Fixtures
 
     /// Storage settings for a library moving to a drive, `copiedPercent`

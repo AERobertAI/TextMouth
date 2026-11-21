@@ -68,7 +68,7 @@ enum RecordingTakeFiles {
     static let fileExtension = "caf"
 
     /// What every take's name starts with, before when it started.
-    private static let namePrefix = "Take "
+    private static let namePrefix = "Take " // l10n: no (a take's file name, which is matched when takes are found again)
 
     /// How a take's name gives when it started: to the second, in this Mac's
     /// time zone, with dots between the hours, minutes, and seconds, as a
@@ -134,11 +134,11 @@ enum RecordingTakeFiles {
         let ownedPaths = Set(owned.map(path(of:)))
         return names
             .filter { !$0.hasPrefix(".") && ($0 as NSString).pathExtension.lowercased() == fileExtension }
-            .sorted()
+            .sortedStably()
             .map { folder.appendingPathComponent($0) }
             .filter { !ownedPaths.contains(path(of: $0)) }
             .map { RecoveredTake(url: $0, startedAt: startDate(of: $0), duration: duration(of: $0)) }
-            .sorted { $0.startedAt < $1.startedAt }
+            .sortedStably { $0.startedAt < $1.startedAt }
     }
 
     /// `leftovers(in:excluding:)`, read on a thread of its own, so the main

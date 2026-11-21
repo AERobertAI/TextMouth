@@ -1,0 +1,83 @@
+<!-- page: 1 -->
+
+# Demo of bug
+
+OpenOffice 2\.2\.0 on Windows XP crashes when this file is closed\, or when the bibliography is deleted\, or when an attempt is made to delete forward from the end of the next paragraph\.
+
+Paragraph preceding footnote\:
+
+- Text preceding the footnote
+
+1. Footnote text\.
+
+# References
+
+Bishop \(1967\/1990\)\: Bishop\, Errett\, Foundations of Constructive Analysis\, 1967\, quoted in Epstein\, R and Carnelli\, W\, Computability\: computable functions\, logic\, and the foundations of mathematics\, CRC Press\, 1990
+
+Blackmore \(1999\)\: Susan Blackmore\, The Meme Machine\, Oxford University Press
+
+Jackendoff \(2002\)\: Ray Jackendoff\, Foundations of Language\, Oxford University Press
+
+Nisbett and Wilson \(1977\)\: Nisbett\, Richard E and Wilson\, Timonty DeCamp\, Telling more than we can know\: verbal reports on mental processes\, 
+
+Churchland\, P\.M\. \(1995\)\. *The Engine of Reason\, the Seat of the Soul*\, MIT Press\, Cambridge\, Mass
+
+Bechtel\, W\. \(in press\)\. Reducing psychology while maintaining its autonomy via mechanistic explanation\. In M\. Schouten and H\. Looren de Jong \(Eds\.\)\. *The Matter of the Mind\: Philosophical Essays on Psychology\, Neuroscience and Reduction*\. Oxford\: Basil Blackwell\. 
+
+Dawkins \{check\}\. *The Selfish Gene*\.
+
+Dennett\, Daniel \(1987\)\. *The Intentional Stance*\, MIT Press
+
+\-\- \(1991\)\. *Consciousness Explained*
+
+Egan\, Greg \(1994\)\. *Permutation City*
+
+Eliasmith\, Chris \(2000\)\. Is the Brain Analog or Digital\, *Cognitive Science Quarterly\. 1\(2*\)\, 147\-170
+
+Fodor\, Jerry \(1983\)\. *The Modularity of Mind*
+
+Gibson\, William \(1984\)\. *Neuromancer*
+
+Goodman\, N\. \(1976\)\. *Languages of Art*\, Hackett Publishing Company\, Indianapolis\/Cambridge
+
+Jackendoff\, Ray \(Forthcoming\)\. *Language\, Consciousness\, Culture\: Essays on Mental Structure*\, MIT Press\. Draft chapters at http\:\/\/people\.brandeis\.edu\/\~jackendo\/ 
+
+Kuhn\, Thomas \(1962\/1970\)\. *The Structure of Scientific Revolutions*\, 2nd edition\, University of Chicago Press\.
+
+McDowell \(1996\)\. *Mind and World*\, Harvard University Press
+
+Nagel \(1986\)\. *The View from Nowhere*\, Oxford University Press
+
+Pylyshyn\, Zenon \(2004\)\. *Seeing and Visualising \- it\'s not what you think*\, MIT Press
+
+Schwitzgebel\, Eric and Gordon\, Michael S\. \(2006\) *How Well Do We Know Our Own Conscious Experience\? The Case of Human Echolocation*\, *Philosophical Topics\, 28* \(2000\)\, 235\-246 
+
+Stevens\, Wallace \(1955\)\. *The Collected Poems of Wallace Stevens*\, Faber and Faber
+
+Uexküll\, Jakob von \(1934\/1965\)\. *Mondes animaux et monde humain* \(1965\) – translation of *Streifzüge durch die Umwelten von Tieren und Menschen* \(1934\)
+
+W3C \(1998\)\: World\-Wide\-Web Consortium\, Document Object Model \(DOM\) Level 1 Specification\, Version 1\.0 – at http\:\/\/www\.w3\.org\/TR\/1998\/REC\-DOM\-Level\-1\-19981001\/ 
+
+# Main index
+
+Blister spaces 3\.7\.16
+
+Influence 3\.8\.2
+
+Joins 
+
+Natural 4\.3\.4
+
+2\.4
+
+Neuroscope\, toy 3\.6\.8
+
+Primary space 1\.1\.1
+
+2\.Scopes 2
+
+Abstracting 2\.7\.7
+
+Search 3\.7\.12
+
+Subnets 3\.6\.11

@@ -1,8 +1,10 @@
 import Foundation
+import XCTest
 @testable import TextMouth
 
 // Fixtures shared by the log tests (`LogWriteSafetyTests` and
-// `LogLocationTests`), so each exists once.
+// `LogLocationTests`), so each exists once, and the reader of the debug log
+// that tests on both platforms ask (`debugLogLines(containing:)`).
 
 extension LogWriter.Environment {
     /// An environment that writes every line into the folder `folder`
@@ -61,5 +63,32 @@ final class LockedValue<Value: Sendable>: @unchecked Sendable {
     var value: Value {
         get { lock.withLock { stored } }
         set { lock.withLock { stored = newValue } }
+    }
+}
+
+extension XCTestCase {
+    /// The debug log's lines that contain `text`, waiting first for every
+    /// queued log write. Lines go to the data directory's Logs folder, or to
+    /// this Mac's while the data directory can't take them, so both debug
+    /// logs are read, each line being in one of them only. The rotated
+    /// generations are read too, in case one of the lines started a new file.
+    /// It is here, beside the other log fixtures the iPhone's unit bundle
+    /// shares, so that the tests both platforms run can read the log (FMT54).
+    func debugLogLines(containing text: String) -> [String] {
+        TextMouthPaths.flushLogs()
+        let folders = [
+            TextMouthPaths.root.appendingPathComponent(TextMouthPaths.logsFolderName, isDirectory: true),
+            MachineLocalPaths.logs,
+        ]
+        return folders
+            .flatMap { folder -> [URL] in
+                let logFile = folder.appendingPathComponent(DiagnosticLog.File.debug.rawValue, isDirectory: false)
+                return [logFile.appendingPathExtension(TextMouthPaths.rotatedLogExtension), logFile]
+            }
+            .compactMap { try? String(contentsOf: $0, encoding: .utf8) }
+            .joined(separator: "\n")
+            .split(separator: "\n")
+            .map(String.init)
+            .filter { $0.contains(text) }
     }
 }

@@ -63,22 +63,22 @@ extension TranscriptCleanupRule {
     /// nothing more.
     func validationFailure() -> String? {
         if pattern.isEmpty {
-            return "pattern is empty"
+            return "pattern is empty"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         if !pattern.contains(where: { $0.isLetter || $0.isNumber }) {
-            return "pattern holds no letter or figure"
+            return "pattern holds no letter or figure"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         if wholeWord, pattern.split(separator: " ").contains(where: { word in !word.contains { $0.isLetter || $0.isNumber } }) {
-            return "pattern holds a word with no letter or figure, which no whole word matches"
+            return "pattern holds a word with no letter or figure, which no whole word matches"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         if replacement.isEmpty {
-            return "replacement is empty"
+            return "replacement is empty"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         if evidence < 0 {
-            return "evidence is \(evidence), below 0"
+            return "evidence is \(evidence), below 0"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         if TranscriptCleanup(rules: [self]).cleaned(replacement).corrections.first ?? 0 > 0 {
-            return "replacement holds the pattern itself, so every cleanup would change it again"
+            return "replacement holds the pattern itself, so every cleanup would change it again"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         return nil
     }
@@ -159,13 +159,13 @@ struct TranscriptCleanupRuleSet: Codable, Equatable, Sendable {
     /// can. Never quotes a rule: a log line may carry the reason.
     func validationFailure() -> String? {
         if format != Self.currentFormat {
-            return "format \(format) is not the supported \(Self.currentFormat)"
+            return "format \(format) is not the supported \(Self.currentFormat)"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         if version < 1 {
-            return "version is \(version), below 1"
+            return "version is \(version), below 1"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         if Self.day(date) == nil {
-            return "date is not a day written as 2026-10-04"
+            return "date is not a day written as 2026-10-04"  // l10n: no (a rule file's damage reason, English by question 3)
         }
         for (number, rule) in rules.enumerated() {
             if let failure = rule.validationFailure() {

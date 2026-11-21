@@ -20,7 +20,13 @@ import Foundation
 /// record written since finds no index in it and builds the book's index
 /// once, as for any book without one, keeping it inside bookInfo.json, from
 /// where the next save here moves it out again.
-struct BookInfo: Codable {
+///
+/// A record keeps the keys it does not know (V04, `UnknownKeys`): those of
+/// bookInfo.json's top level here (`unknownKeys`), and those of its
+/// metadata and its state in each of them. A save of a book's state writes
+/// a new record from the book's row, and takes all three from the record it
+/// replaces (`Book.bookInfo(replacing:contentIndex:revisionFloor:)`).
+struct BookInfo: Codable, KeepsUnknownKeys {
     var metadata: BookMetadata
     var state: BookState
     var bookmarks: [Bookmark]
@@ -29,15 +35,38 @@ struct BookInfo: Codable {
     /// On disk it lives in contentIndex.json; bookInfo.json holds it only as
     /// an older version of TextMouth wrote it (see the type's notes).
     var contentIndex: BookContentIndex?
+    /// The top-level keys of bookInfo.json that this TextMouth does not
+    /// know (V04), written back as they were; none in a record made here.
+    var unknownKeys = UnknownKeys()
 
     /// The keys of bookInfo.json. The content index is only ever read under
     /// its key, from a record an older version wrote; it is never written.
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case metadata
         case state
         case bookmarks
         case contentIndex
     }
+
+    /// The names of bookInfo.json's keys that this version knows. The
+    /// content index's is one of them, so an index an older version kept
+    /// inside the record is never kept a second time as an unknown key.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What bookInfo.json holds, for the scan that says whether a record
+    /// can hold unknown keys (`StoredKeyScan`). A content index an older
+    /// version kept inside the record is not described: it holds
+    /// fingerprints, which keep unknown keys, so a record with one is
+    /// always looked through.
+    static let keySchema = StoredKeySchema(
+        names: knownKeyNames,
+        objects: [
+            CodingKeys.metadata.stringValue: BookMetadata.keySchema,
+            CodingKeys.state.stringValue: BookState.keySchema,
+            CodingKeys.bookmarks.stringValue: Bookmark.keySchema,
+        ],
+        undescribed: [CodingKeys.contentIndex.stringValue]
+    )
 
     init(
         metadata: BookMetadata = BookMetadata(),
@@ -54,31 +83,57 @@ struct BookInfo: Codable {
     /// Decodes a package's bookInfo.json. `BookState` repairs what it can
     /// check on its own; the per-book speed also depends on the format, so
     /// its range is applied here, once the metadata is known.
+    ///
+    /// The metadata and the state are read with the keys each does not
+    /// know (`WithUnknownKeys`, V04), and the record's own are kept too.
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        metadata = try container.decode(BookMetadata.self, forKey: .metadata)
-        state = try container.decode(BookState.self, forKey: .state)
+        metadata = try container.decode(WithUnknownKeys<BookMetadata>.self, forKey: .metadata).value
+        state = try container.decode(WithUnknownKeys<BookState>.self, forKey: .state).value
         bookmarks = try container.decode([Bookmark].self, forKey: .bookmarks)
         contentIndex = try container.decodeIfPresent(BookContentIndex.self, forKey: .contentIndex)
         state.applyLocalSpeedRange(
             isAudio: metadata.format.isAudio,
             codingPath: container.codingPath + [CodingKeys.state]
         )
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
     }
 
     /// Encodes the record as bookInfo.json holds it: its metadata, state,
-    /// and bookmarks. The content index is never encoded here; it is written
-    /// to contentIndex.json (`save(to:)` and `saveRecord(to:)`).
+    /// and bookmarks, each after the keys this version does not know (V04).
+    /// The content index is never encoded here; it is written to
+    /// contentIndex.json (`save(to:)` and `saveRecord(to:)`).
     func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(metadata, forKey: .metadata)
-        try container.encode(state, forKey: .state)
+        try container.encode(WithUnknownKeys(metadata), forKey: .metadata)
+        try container.encode(WithUnknownKeys(state), forKey: .state)
         try container.encode(bookmarks, forKey: .bookmarks)
+    }
+
+    /// Takes the keys `stored`, the record this one replaces, holds that
+    /// this TextMouth does not know (V04): the record's own, its
+    /// metadata's, and its state's. This record is made from the book's row
+    /// (`Book.makeBookInfo()`), which knows nothing of them, so without
+    /// this every save of a book would drop what a later TextMouth keeps in
+    /// its record. The places inside (the reading position, the bookmarks,
+    /// the skipped headings) and the other nested records carry their own
+    /// unknown keys with them, from the row.
+    ///
+    /// Nothing is taken from a record of another book, as an old package
+    /// two books shared can hold (`Book.takeStandingReadingState(of:)`
+    /// checks the same): what a later TextMouth noted there is not this
+    /// book's.
+    mutating func keepUnknownKeys(of stored: BookInfo) {
+        guard stored.metadata.bookID == metadata.bookID else { return }
+        unknownKeys = stored.unknownKeys
+        metadata.unknownKeys = stored.metadata.unknownKeys
+        state.unknownKeys = stored.state.unknownKeys
     }
 }
 
 /// Built-in and user-editable metadata for a book
-struct BookMetadata: Codable {
+struct BookMetadata: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     var title: String
     var author: String
     var format: BookFormat
@@ -114,7 +169,10 @@ struct BookMetadata: Codable {
 
     /// Which of the book's metadata fields the user edited by hand, and
     /// since when (`Book.handEdits`); nil in a record written before edits
-    /// were recorded, and for a book with no edit recorded yet.
+    /// were recorded, and for a book made by an import that begins no
+    /// record (a feed's download, a recording, New from Text, an audio or
+    /// DAISY archive) until an edit is recorded. A file imported since then
+    /// begins an empty record (`Book.HandEdits.noneSinceImport`).
     var handEdits: Book.HandEdits?
 
     /// The feed item the book was downloaded from (FR03), for a podcast
@@ -134,6 +192,12 @@ struct BookMetadata: Codable {
     /// (`Book.brailleTableVersion`, review R2); nil for a bundled table and
     /// for a record written before it was kept.
     var brailleTableVersion: String? = nil
+    /// Who chose the braille table (`Book.brailleTableOrigin`, brfguess):
+    /// `.guessed` when the import found the book clearly English Braille,
+    /// American Edition and read it so; nil for every other book and for a
+    /// record written before guesses were kept. A value that cannot be read
+    /// is nil, as the row's is, and does not fail the record.
+    @LenientOptional var brailleTableOrigin: BrailleTableOrigin? = nil
     /// The braille file characters a BRF or BRL book's file writes its cells
     /// in (braillecodes): the row's field (`Book.brailleFileCode`), by the
     /// code's id, kept here too, where it stands over a row that lags behind
@@ -158,8 +222,47 @@ struct BookMetadata: Codable {
     /// is nil, as the row's is, and does not fail the record.
     @LenientOptional var textEncodingSource: TextEncodingSource? = nil
 
+    /// When Move to Library… made this book, a feed's download, a book of
+    /// the library's own (FR11's branch D): the book's own word that it is
+    /// the library's, which no feed's record can contradict (risk 4 of
+    /// LOCAL-FIRST-LIBRARY-RESEARCH-2026-11-13.md). Another Mac's record of
+    /// the feed, written whole from memory, can still call the item
+    /// downloaded; the launch's move of downloads made before FR11 into
+    /// their feeds passes over a book whose record holds this note
+    /// (`LibraryViewModel.downloadsToMoveIntoTheirFeeds(records:access:)`),
+    /// so its file is never its feed's again for a rule to delete. Only Move
+    /// to Library… writes it; every later save of the record carries it
+    /// forward (`Book.bookInfo(replacing:contentIndex:revisionFloor:...)`),
+    /// as the feed link is. Nil for every other book, and left out of the
+    /// file then, so their records are exactly as before; a value that
+    /// cannot be read is nil and does not fail the record. An older
+    /// TextMouth drops it when it next writes the record.
+    @LenientOptional var movedToLibrary: Date? = nil
+
+    /// The keys of the stored metadata that this TextMouth does not know
+    /// (V04), written back as they were; none in metadata made here. The
+    /// synthesized coding passes them over: `BookInfo` reads and writes
+    /// them beside the fields (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of the stored metadata that this version
+    /// knows (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
+
+    /// What stored metadata holds, for the scan that says whether a record
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(
+        isKnown: { BookMetadata.isStoredKey($0) },
+        objects: [
+            "handEdits": Book.HandEdits.keySchema,
+            "feedLink": FeedBookLink.keySchema,
+        ]
+    )
+
     init(
-        title: String = "Untitled",
+        title: String = "Untitled", // l10n: no (stored id: the library keeps this placeholder title as written)
         author: String = Book.unknownAuthor,
         format: BookFormat = .txt,
         md5Hash: String = "",
@@ -206,7 +309,7 @@ struct BookMetadata: Codable {
 }
 
 /// Reading state and computed book data
-struct BookState: Codable {
+struct BookState: Codable, KeepsUnknownKeysBesideSynthesizedCoding {
     var readingPosition: ReadingPosition?
     var totalWordCount: Int?
     var totalCharacterCount: Int?
@@ -281,6 +384,36 @@ struct BookState: Codable {
     /// writes the later carries the higher revision, across restarts too.
     /// Nil in a record written before revisions were kept, which counts as 0.
     var revision: Int?
+
+    /// The keys of the stored state that this TextMouth does not know
+    /// (V04), written back as they were; none in a state made here. The
+    /// synthesized encoder passes them over, and the decoder below does not
+    /// read them: `BookInfo` reads and writes them beside the fields
+    /// (`WithUnknownKeys`).
+    var unknownKeys = UnknownKeys()
+
+    /// Whether `name` is a key of the stored state that this version knows
+    /// (`KeepsUnknownKeysBesideSynthesizedCoding`).
+    static func isCodingKey(_ name: String) -> Bool {
+        CodingKeys(stringValue: name) != nil
+    }
+
+    /// What a stored state holds, for the scan that says whether a record
+    /// can hold unknown keys (`StoredKeyScan`). The members are named as
+    /// the file names them, here and in the metadata: the synthesized
+    /// coding keys cannot be read in this initializer, and
+    /// `UnknownKeysTests` fails for a name that is wrong or missing.
+    static let keySchema = StoredKeySchema(
+        isKnown: { BookState.isStoredKey($0) },
+        objects: [
+            "readingPosition": ReadingPosition.keySchema,
+            "skippedHeadings": SkippedHeading.keySchema,
+            "waitingSkippedHeadings": SkippedHeading.keySchema,
+            "textCacheFingerprint": TextCacheFingerprint.keySchema,
+            "editedText": EditedText.keySchema,
+            "transcript": TranscriptNote.keySchema,
+        ]
+    )
 
     init(
         readingPosition: ReadingPosition? = nil,
@@ -452,6 +585,16 @@ extension BookInfo {
         return d
     }()
 
+    /// The decoder of a bookInfo.json whose bytes a scan found to hold no
+    /// unknown key (`StoredKeyScan`): as `decoder`, and told so, so that
+    /// nothing is looked for object by object.
+    private static let decoderOfRecordsWithoutUnknownKeys: JSONDecoder = {
+        let d = JSONDecoder()
+        d.dateDecodingStrategy = .iso8601
+        d.userInfo[StoredKeyScan.noUnknownKeysInfoKey] = true
+        return d
+    }()
+
     // MARK: Writing
 
     /// Replaces the package's whole record with this one: afterwards
@@ -536,7 +679,19 @@ extension BookInfo {
     /// if any. Throws when it is missing or cannot be read.
     fileprivate static func loadRecordFile(from tmbDir: URL) throws -> BookInfo {
         let data = try Data(contentsOf: TextMouthPaths.bookInfoPath(in: tmbDir))
-        return try decoder.decode(BookInfo.self, from: data)
+        return try decodeRecordFile(data)
+    }
+
+    /// Decodes the bytes of a bookInfo.json as every read of one does, which
+    /// Compare Libraries uses for the records of another copy, read
+    /// without touching the package.
+    ///
+    /// The bytes are scanned first for a key some part of a record does not
+    /// know (`StoredKeyScan`); only a record that may hold one is looked
+    /// through for them as it is decoded (V04).
+    static func decodeRecordFile(_ data: Data) throws -> BookInfo {
+        let mayHoldUnknownKeys = StoredKeyScan.mayHoldUnknownKeys(data, schema: keySchema)
+        return try (mayHoldUnknownKeys ? decoder : decoderOfRecordsWithoutUnknownKeys).decode(BookInfo.self, from: data)
     }
 
     /// The package's contentIndex.json: nil when there is none, or when it

@@ -39,6 +39,8 @@ struct CorpusSettings {
 final class CorpusResultBox<Value: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
     private var stored: Value?
+    /// When the value was set; nil until then.
+    private var storedAt: Date?
 
     /// The value, once set; nil until then.
     var value: Value? {
@@ -47,11 +49,27 @@ final class CorpusResultBox<Value: Sendable>: @unchecked Sendable {
         return stored
     }
 
-    /// Sets the value. A second call is ignored: the first answer stands.
+    /// The value if it was set at or before `deadline`, and nil if it came
+    /// later or has not come. A waiter that wakes late, as one starved of
+    /// the processor on a loaded Mac does, finds a value that missed its
+    /// deadline already there; this keeps such a value from counting as in
+    /// time.
+    func value(setBy deadline: Date) -> Value? {
+        lock.lock()
+        defer { lock.unlock() }
+        guard let setAt = storedAt, setAt <= deadline else { return nil }
+        return stored
+    }
+
+    /// Sets the value and notes when. A second call is ignored: the first
+    /// answer stands.
     func set(_ newValue: Value) {
         lock.lock()
         defer { lock.unlock() }
-        if stored == nil { stored = newValue }
+        if stored == nil {
+            stored = newValue
+            storedAt = Date()
+        }
     }
 }
 
@@ -203,7 +221,9 @@ final class CorpusRunner {
             RunLoop.current.run(mode: .default, before: slice.addingTimeInterval(0.05))
             if Date().timeIntervalSince(slice) < 0.01 { Thread.sleep(forTimeInterval: 0.02) }
         }
-        return box.value
+        // The loop can end on a value that came after the deadline, when this
+        // thread woke late; such a value was not in time.
+        return box.value(setBy: deadline)
     }
 
     /// Imports `copy` as a reader does, reads it back, and records what it

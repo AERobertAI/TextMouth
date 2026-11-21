@@ -31,7 +31,8 @@ extension AudioEditRenderer {
     /// chapter markers, telling `progress` how far it is.
     /// - Throws: `AudioEditError.mp3NeedsFFmpeg` when `route` is nil, there
     ///   being no encoder; the render's errors; or `CancellationError`.
-    ///   Nothing is left at `destination` after a failure.
+    ///   A file already at `destination` stays as it was until every source
+    ///   has been opened; a failure after that leaves nothing there.
     static func renderMP3(
         _ timeline: AudioEditTimeline,
         sources: AudioEditComposition.Sources,
@@ -71,12 +72,12 @@ extension AudioEditRenderer {
     }
 
     /// Encodes `timeline` as MP3 at `destination` with TextMouth's own LAME:
-    /// the composition is decoded to 32-bit floats at the MP3's rate and
-    /// channels, cut at the end of the edits as every render is, and handed
-    /// to the encoder buffer by buffer, so nothing is written but the MP3
-    /// itself, however long it is. The file is tagged with `metadata`'s title
-    /// and author, the chapter markers as ID3 chapter frames, and the gapless
-    /// numbers (`MP3Tag`).
+    /// the edits are decoded stretch by stretch (`readStretches`), as every
+    /// render decodes them, to 32-bit floats at the MP3's rate and channels,
+    /// and handed to the encoder buffer by buffer, so nothing is written but
+    /// the MP3 itself, however long it is. The file is tagged with
+    /// `metadata`'s title and author, the chapter markers as ID3 chapter
+    /// frames, and the gapless numbers (`MP3Tag`).
     private static func encodeMP3(
         _ timeline: AudioEditTimeline,
         sources: AudioEditComposition.Sources,
@@ -84,14 +85,15 @@ extension AudioEditRenderer {
         metadata: AudioRenderMetadata,
         progress: (@Sendable (Double) -> Void)?
     ) async throws -> Outcome {
-        let made = try await AudioEditComposition.make(timeline, sources: sources)
         let settings = AudioRenderSettings.make(.mp3, for: sources.base)
-        let (reader, output, _) = try await makeReader(of: made, settings: settings, copyingSamples: false)
         let tag = MP3Tag(
             title: metadata.title,
             artist: metadata.author,
             chapters: chapterList(of: timeline, leadingTitle: metadata.title)
         )
+        // Every source is opened before the file the render replaces is
+        // removed, as `render` does.
+        let pieces = try await AudioEditStretchSound.pieces(of: timeline, sources: sources)
         try? FileManager.default.removeItem(at: destination)
         let encoder: MP3Encoder
         do {
@@ -99,20 +101,18 @@ extension AudioEditRenderer {
         } catch {
             throw renderFailure(error)
         }
-        guard reader.startReading() else { throw failure(reader.error) }
         // The floats of one buffer, reused for the next.
         var samples: [Float] = []
         do {
-            try await drain(output, of: reader, made: made, settings: settings, cuttingAtTheEnd: true, progress: progress) {
+            try await readStretches(pieces, timelineRate: timeline.sampleRate, settings: settings, progress: progress) {
                 try encode($0, channels: settings.channels, with: encoder, through: &samples)
             }
             try encoder.finish()
         } catch {
-            reader.cancelReading()
             // The encoder removes the file it could not finish as it goes.
             throw renderFailure(error)
         }
-        return Outcome(frames: made.frames, copiedSamples: false)
+        return Outcome(frames: timeline.length, copiedSamples: false)
     }
 
     /// Copies the decoded, interleaved floats of `sample`, of `channels`

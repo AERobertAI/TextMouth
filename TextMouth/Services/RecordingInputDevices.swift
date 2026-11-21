@@ -122,7 +122,13 @@ final class SystemRecordingInputCatalog: RecordingInputCatalog {
             position: .unspecified
         )
         return discovery.devices
+            #if os(macOS)
             .filter { $0.isConnected && Self.isMicrophone(transportType: $0.transportType) }
+            #else
+            // iOS gives no transport type to read, so no device can be told
+            // apart as virtual: every connected device is kept.
+            .filter { $0.isConnected }
+            #endif
             .map { AudioInputDevice(id: $0.uniqueID, name: $0.localizedName) }
     }
 
@@ -130,6 +136,7 @@ final class SystemRecordingInputCatalog: RecordingInputCatalog {
         AVCaptureDevice.default(for: .audio)?.uniqueID
     }
 
+    #if os(macOS)
     /// Whether a device of `transportType` (a Core Audio transport type,
     /// as `AVCaptureDevice.transportType` gives it) can be a microphone.
     /// Virtual devices (Background Music, a conferencing app's audio,
@@ -144,4 +151,5 @@ final class SystemRecordingInputCatalog: RecordingInputCatalog {
             kAudioDeviceTransportTypeAutoAggregate,
         ].contains(transport)
     }
+    #endif
 }

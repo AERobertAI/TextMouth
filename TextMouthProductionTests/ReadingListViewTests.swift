@@ -122,7 +122,7 @@ final class ReadingListViewTests: XCTestCase {
         XCTAssertEqual(ReadingListWording.orderAnnouncement, "Sorted by Reading List Order")
         XCTAssertEqual(
             ReadingListWording.orderHint,
-            "The reading list keeps the order you arrange with Move Book Up, Move Book Down, or dragging"
+            "Keeps the order you set with Move Book Up, Move Book Down, or dragging."
         )
     }
 
@@ -284,6 +284,135 @@ final class ReadingListViewTests: XCTestCase {
     func testAMoveThatCanNoLongerBeMadeSaysSo() {
         XCTAssertEqual(ManualBookOrder.cannotMoveAnnouncement("Dune", direction: -1), "Dune can't move up.")
         XCTAssertEqual(ManualBookOrder.cannotMoveAnnouncement("Dune", direction: 1), "Dune can't move down.")
+    }
+
+    /// Move Book Up and Move Book Down from the Library menu and the
+    /// keyboard never stay silent: with no book or several selected, a
+    /// feed's item, or the book at the edge, the sentence says why, and a
+    /// move that is made says what moved (the follow-up noted with TODO A06:
+    /// "do nothing silently"). What it tells a listener to do where nothing
+    /// can move is the next test's.
+    @MainActor
+    func testMoveCommandsAlwaysSayWhatHappened() {
+        let shelf = Self.shelf()
+        shelf.model.addToReadingList(shelf.ids("Field Notes", "Loose Pages"))
+        let fieldNotes = shelf.id("Field Notes")
+        let loosePages = shelf.id("Loose Pages")
+        let readingList = LibraryLocation(category: .readingList, folderPath: "")
+        let sort = shelf.model.library.sortState(at: readingList)
+
+        // Nothing selected, and several selected.
+        XCTAssertEqual(
+            shelf.model.moveSelection([], direction: 1, at: readingList, sortedBy: sort),
+            ManualBookOrder.noBookToMoveAnnouncement
+        )
+        XCTAssertEqual(
+            shelf.model.moveSelection([fieldNotes, loosePages], direction: 1, at: readingList, sortedBy: sort),
+            ManualBookOrder.severalBooksToMoveAnnouncement
+        )
+        // At the top, the book cannot move up, and the order is unchanged.
+        XCTAssertEqual(
+            shelf.model.moveSelection([fieldNotes], direction: -1, at: readingList, sortedBy: sort),
+            "Field Notes can't move up."
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, loosePages])
+        // A move that can be made says what moved, and does it.
+        XCTAssertEqual(
+            shelf.model.moveSelection([loosePages], direction: -1, at: readingList, sortedBy: sort),
+            "Moved Loose Pages above Field Notes"
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [loosePages, fieldNotes])
+    }
+
+    /// Where the list shows no order to arrange, the sentence sends the
+    /// listener somewhere they can go. A folder in Folders not sorted by
+    /// Manual Order is one Sort menu choice from it. Every other view
+    /// (All Items, Unopened, Recently Opened, Feeds) mixes folders, has no
+    /// Manual Order to choose, and keeps its sort whatever is chosen, so it
+    /// sends the listener to a folder or the Reading List and never to the
+    /// Sort menu. A folder in manual order, and the Reading List, move.
+    @MainActor
+    func testMoveCommandsSendTheListenerSomewhereTheyCanMoveBooks() throws {
+        let shelf = Self.shelf()
+        let book = shelf.id("Field Notes")
+        let byTitle = LibrarySortState(restoring: .defaultSort)
+        let manual = LibrarySortState(restoring: FolderSortSetting(sortField: .manual, sortAscending: true))
+        let feeds = try XCTUnwrap(LibraryViewDefinition.shipped(.feeds))
+        func say(_ location: LibraryLocation, _ sort: LibrarySortState) -> String {
+            shelf.model.moveSelection([book], direction: 1, at: location, sortedBy: sort)
+        }
+
+        // A folder not in manual order: choose Manual Order.
+        let essays = LibraryLocation(category: .folders, folderPath: "Essays")
+        let chooseManual = say(essays, byTitle)
+        XCTAssertTrue(chooseManual.contains("Choose Manual Order in the Sort menu"), chooseManual)
+        // The root of Folders is a folder too.
+        XCTAssertEqual(say(LibraryLocation(category: .folders, folderPath: ""), byTitle), chooseManual)
+
+        // Every other view, in either sort: go to a folder or the Reading List.
+        let elsewhere = "Books can't be moved in this view. Go to a folder in Folders, or to the Reading List, then try again."
+        let views = [
+            LibraryLocation(category: .allItems, folderPath: "Essays"),
+            LibraryLocation(category: .unopened, folderPath: "Essays"),
+            LibraryLocation(category: .recent, folderPath: "Essays"),
+            LibraryLocation(view: feeds, folderPath: "Essays"),
+        ]
+        for location in views {
+            for sort in [byTitle, manual] {
+                XCTAssertEqual(say(location, sort), elsewhere, "\(location.name), \(sort.field)")
+            }
+        }
+        XCTAssertFalse(elsewhere.contains("Sort menu"))
+        XCTAssertFalse(elsewhere.contains("Manual"))
+
+        // A folder in manual order moves its books; the book is first, so
+        // it moves down past the other, and cannot then move down further.
+        let before = shelf.model.library.booksInFolder("Essays").map(\.title).sorted()
+        XCTAssertEqual(before, ["Field Notes", "Unlisted Essay"])
+        XCTAssertEqual(say(essays, manual), "Moved Field Notes below Unlisted Essay")
+        XCTAssertEqual(say(essays, manual), "Field Notes can't move down.")
+    }
+
+    /// A feed's item has no place in a folder's manual order, so the command
+    /// says that instead of "can't move up" and "can't move down". In the
+    /// Reading List, which holds episodes and articles and orders them, it
+    /// moves like any book, as a row's own Move Up and Move Down move it.
+    @MainActor
+    func testMoveCommandsSayAFeedItemCannotMove() {
+        let shelf = Self.shelf()
+        var episode = Self.book("Episode Nine", in: "Essays")
+        episode.feedLink = FeedBookLink(feedID: UUID(), itemID: "guid:nine")
+        shelf.model.library.books.append(episode)
+        let essays = LibraryLocation(category: .folders, folderPath: "Essays")
+        let manual = LibrarySortState(restoring: FolderSortSetting(sortField: .manual, sortAscending: true))
+
+        XCTAssertEqual(
+            shelf.model.moveSelection([episode.id], direction: -1, at: essays, sortedBy: manual),
+            ManualBookOrder.feedItemCannotMoveAnnouncement("Episode Nine")
+        )
+        XCTAssertEqual(
+            ManualBookOrder.feedItemCannotMoveAnnouncement("Episode Nine"),
+            "Episode Nine is an item of a feed, and a feed's items can't be moved."
+        )
+
+        // In the Reading List the same episode moves, for real, up and down.
+        shelf.model.addToReadingList(shelf.ids("Field Notes", "Loose Pages") + [episode.id])
+        let readingList = LibraryLocation(category: .readingList, folderPath: "")
+        let listSort = shelf.model.library.sortState(at: readingList)
+        let fieldNotes = shelf.id("Field Notes")
+        let loosePages = shelf.id("Loose Pages")
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, loosePages, episode.id])
+
+        XCTAssertEqual(
+            shelf.model.moveSelection([episode.id], direction: -1, at: readingList, sortedBy: listSort),
+            "Moved Episode Nine above Loose Pages"
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, episode.id, loosePages])
+        XCTAssertEqual(
+            shelf.model.moveSelection([episode.id], direction: 1, at: readingList, sortedBy: listSort),
+            "Moved Episode Nine below Loose Pages"
+        )
+        XCTAssertEqual(shelf.model.library.readingList.bookIDs, [fieldNotes, loosePages, episode.id])
     }
 
     // MARK: - The Edit-Mode Bar
@@ -611,38 +740,124 @@ final class ReadingListViewTests: XCTestCase {
 
     // MARK: - The Options Bar
 
-    /// The options bar's words: the picker's label and hint, and the
+    /// The options bar's words: the picker's label and hint, and each
     /// checkbox's label and hint, which each control speaks for itself.
     func testTheOptionsBarsWordsArePinned() {
         XCTAssertEqual(ReadingListWording.continuationLabel, "When a book ends")
         XCTAssertEqual(
             ReadingListWording.continuationHint,
-            "For a book opened from the reading list: play the book below it or the book above it when it ends, or stop"
+            "Chooses what a book opened from the list does when it ends."
         )
         XCTAssertEqual(ReadingListWording.skipFinishedLabel, "Skip finished books")
         XCTAssertEqual(
             ReadingListWording.skipFinishedHint,
-            "When a book opened from the reading list ends, pass over the books already finished"
+            "Passes over finished books when a book from the list ends."
         )
+        XCTAssertEqual(ReadingListWording.removeFinishedLabel, "Remove books when finished")
+        XCTAssertEqual(
+            ReadingListWording.removeFinishedHint,
+            "Takes each finished book off the list when its window moves on or closes. Books finished before you turn it on stay."
+        )
+        XCTAssertEqual(ReadingListWording.keepBooksLabel, "Keep these books on this Mac")
+        XCTAssertEqual(
+            ReadingListWording.keepBooksHint,
+            "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download."
+        )
+        // Four controls, each told apart by its own label.
+        XCTAssertEqual(
+            Set([
+                ReadingListWording.continuationLabel, ReadingListWording.skipFinishedLabel,
+                ReadingListWording.removeFinishedLabel, ReadingListWording.keepBooksLabel,
+            ]).count,
+            4
+        )
+    }
+
+    /// The bar's row wraps rather than truncates: when the controls do not
+    /// fit the width, the one that does not starts a second line, in the
+    /// order they were declared, which is the order VoiceOver visits them;
+    /// wide enough, they stay on one line; and a control wider than the
+    /// window keeps its place, alone on its line, however narrow it gets.
+    func testTheOptionsBarWrapsOntoASecondLineInsteadOfTruncating() {
+        // The pop-up, then the three checkboxes of a cloud library.
+        let sizes = [CGSize(width: 140, height: 24), CGSize(width: 160, height: 20),
+                     CGSize(width: 190, height: 20), CGSize(width: 230, height: 20)]
+        func arrange(_ width: CGFloat) -> (origins: [CGPoint], size: CGSize) {
+            WrappingRow.arrange(sizes, width: width, spacing: 16, lineSpacing: 4)
+        }
+
+        let wide = arrange(2_000)
+        XCTAssertEqual(wide.origins, [CGPoint(x: 0, y: 0), CGPoint(x: 156, y: 0), CGPoint(x: 332, y: 0), CGPoint(x: 538, y: 0)])
+        XCTAssertEqual(wide.size, CGSize(width: 768, height: 24))
+
+        // At the window's minimum width the last control starts a second line.
+        let minimum = arrange(600)
+        XCTAssertEqual(minimum.origins, [CGPoint(x: 0, y: 0), CGPoint(x: 156, y: 0), CGPoint(x: 332, y: 0), CGPoint(x: 0, y: 28)])
+        XCTAssertEqual(minimum.size, CGSize(width: 522, height: 48))
+
+        // Narrower than any control, each has a line of its own, in order.
+        let narrow = arrange(100)
+        XCTAssertEqual(narrow.origins.map(\.x), [0, 0, 0, 0])
+        XCTAssertEqual(narrow.origins.map(\.y), [0, 28, 52, 76])
+        XCTAssertEqual(WrappingRow.arrange([], width: 100, spacing: 16, lineSpacing: 4).size, .zero)
+    }
+
+    /// Hosted, the choice to keep the list's books on this Mac is a third
+    /// checkbox, shown only while the library is in the cloud, and checked as
+    /// the choice stands; outside the cloud the bar holds the two checkboxes
+    /// it always held. Read from the AppKit buttons, in layout order, as
+    /// `testTheOptionsBarsControlsSpeakTheirLabelsValuesAndHints` reads
+    /// them.
+    @MainActor
+    func testTheKeepChoiceIsShownOnlyInACloudLibrary() throws {
+        try skipUnlessHostedWindowsExposeAccessibility()
+        for (inCloud, keeps) in [(false, true), (true, true), (true, false)] {
+            let bar = ReadingListOptionsBar(
+                continuation: .playBookBelow,
+                skipsFinished: true,
+                removesFinished: false,
+                keepsBooks: keeps,
+                showsKeepChoice: inCloud,
+                chooseContinuation: { _ in },
+                chooseSkipsFinished: { _ in },
+                chooseRemovesFinished: { _ in },
+                chooseKeepsBooks: { _ in }
+            )
+            withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
+                let checkboxes = Self.checkboxes(in: hostingView, test: self)
+                XCTAssertEqual(checkboxes.count, inCloud ? 3 : 2, "in the cloud: \(inCloud)")
+                if inCloud {
+                    XCTAssertEqual(checkboxes.last?.state, keeps ? .on : .off)
+                }
+            }
+        }
     }
 
     /// Hosted, the picker is a pop-up button VoiceOver reads by its label,
     /// "When a book ends", with the option chosen as its value and its
-    /// hint, for each option; and the checkbox is checked while finished
-    /// books are skipped. SwiftUI exposes the pop-up button to
-    /// accessibility in a hosted window, but not the checkbox, whose state
-    /// is read here from the AppKit button behind it; its label and hint
-    /// are pinned by `testTheOptionsBarsWordsArePinned`.
+    /// hint, for each option; and each checkbox is checked while its option
+    /// is on. SwiftUI exposes the pop-up button to accessibility in a hosted
+    /// window, but not the checkboxes, whose states are read here from the
+    /// AppKit buttons behind them, in the order the bar lays them out
+    /// (Skip finished books, then Remove books when finished); their labels
+    /// and hints are pinned by `testTheOptionsBarsWordsArePinned`.
     @MainActor
     func testTheOptionsBarsControlsSpeakTheirLabelsValuesAndHints() throws {
         try skipUnlessHostedWindowsExposeAccessibility()
-        let choices: [(ReadingList.Continuation, Bool)] = [(.playBookBelow, true), (.playBookAbove, false), (.stop, true)]
-        for (continuation, skipsFinished) in choices {
+        let choices: [(ReadingList.Continuation, Bool, Bool)] = [
+            (.playBookBelow, true, false), (.playBookAbove, false, true), (.stop, true, true), (.stop, false, false),
+        ]
+        for (continuation, skipsFinished, removesFinished) in choices {
             let bar = ReadingListOptionsBar(
                 continuation: continuation,
                 skipsFinished: skipsFinished,
+                removesFinished: removesFinished,
+                keepsBooks: true,
+                showsKeepChoice: false,
                 chooseContinuation: { _ in },
-                chooseSkipsFinished: { _ in }
+                chooseSkipsFinished: { _ in },
+                chooseRemovesFinished: { _ in },
+                chooseKeepsBooks: { _ in }
             )
             try withHostedView(bar, until: { Self.picker(in: self.accessibleControls(in: $0)) != nil }) { hostingView in
                 let picker = try XCTUnwrap(Self.picker(in: accessibleControls(in: hostingView)), "\(continuation)")
@@ -650,8 +865,10 @@ final class ReadingListViewTests: XCTestCase {
                 XCTAssertEqual(picker.element.accessibilityValue() as? String, continuation.title)
                 XCTAssertEqual(picker.hint, ReadingListWording.continuationHint)
 
-                let checkbox = try XCTUnwrap(Self.checkbox(in: hostingView, test: self), "\(continuation)")
-                XCTAssertEqual(checkbox.state, skipsFinished ? .on : .off, "\(continuation)")
+                let checkboxes = Self.checkboxes(in: hostingView, test: self)
+                XCTAssertEqual(checkboxes.count, 2, "\(continuation)")
+                XCTAssertEqual(checkboxes.first?.state, skipsFinished ? .on : .off, "skip finished, \(continuation)")
+                XCTAssertEqual(checkboxes.last?.state, removesFinished ? .on : .off, "remove finished, \(continuation)")
             }
         }
     }
@@ -681,12 +898,12 @@ final class ReadingListViewTests: XCTestCase {
         controls.first { $0.role == .popUpButton && $0.label == ReadingListWording.continuationLabel }
     }
 
-    /// The AppKit button behind the options bar's checkbox in `view`, whose
-    /// state is the checkbox's: the bar's one button that is not the pop-up
-    /// button.
+    /// The AppKit buttons behind the options bar's checkboxes in `view`,
+    /// whose states are the checkboxes', in the order the bar lays them out:
+    /// the bar's buttons that are not the pop-up button.
     @MainActor
-    private static func checkbox(in view: NSView, test: XCTestCase) -> NSButton? {
-        test.descendants(of: view, as: NSButton.self).first { !($0 is NSPopUpButton) }
+    private static func checkboxes(in view: NSView, test: XCTestCase) -> [NSButton] {
+        test.descendants(of: view, as: NSButton.self).filter { !($0 is NSPopUpButton) }
     }
 
     // MARK: - Fixtures

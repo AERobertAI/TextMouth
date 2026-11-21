@@ -198,7 +198,7 @@ enum DiagnosticLog {
         } else if ["/var/", "/tmp/", "/etc/"].contains(where: { path.hasPrefix($0) }) {
             spellings.append("/private" + path)
         }
-        return spellings.map { $0 + "/" }.sorted { $0.count > $1.count }
+        return spellings.map { $0 + "/" }.sortedStably { $0.count > $1.count }
     }
 
     /// The line reporting that `dropped` trace lines of `category` were
@@ -459,7 +459,7 @@ extension DiagnosticLog {
                 }
                 guard admission.writesLine else { return }
                 let line = DiagnosticLog.policed(message(), dataDirectory: dataDirectory())
-                write("TRACE \(category.rawValue): \(line)", file)
+                write("TRACE \(category.rawValue): \(line)", file) // l10n: no (debug log line)
             }
         }
 

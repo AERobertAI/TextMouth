@@ -273,7 +273,7 @@ final class FeedUIAddFeedTests: XCTestCase {
         XCTAssertEqual(presenter.notice?.message, FeedWording.insecureMessage(title: "Open Wire"))
         XCTAssertEqual(
             FeedWording.insecureMessage(title: "Open Wire"),
-            "Subscribed to Open Wire. This feed uses plain http, so what it sends can be read or changed on the way; TextMouth still loads it."
+            "Subscribed to Open Wire. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it."
         )
         // Closing again says nothing more.
         presenter.notice = nil
@@ -797,5 +797,114 @@ final class FeedTestWorldTeardownTests: XCTestCase {
         XCTAssertEqual(finished.calls, [true])
         XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "the teardown went on before the write landed")
         XCTAssertEqual(world.failures.outstandingFailures().map(\.subject), [])
+    }
+
+    /// A refresh still waiting for its feed's answer as the test ends ends
+    /// before the teardown goes on: the teardown waits while the answer is
+    /// held, and the record the refresh merged is on disk once it returns,
+    /// so no write of it can land, and fail, once the world's folders are
+    /// gone.
+    func testTheTeardownWaitsForARefreshStillUnderWay() async throws {
+        let world = try FeedTestWorld(self, label: "FeedWorldTeardownRefresh")
+        world.server.serve("/feed.xml", .feed(FeedXML.rss(items: [FeedXML.Item(guid: "a", title: "A", published: world.day(-2))])))
+        let feed = try await world.subscribe("/feed.xml")
+        let gate = WorkGate()
+        gate.arm()
+        // Let go however the test ends, so the refresh never waits for good.
+        defer { gate.release() }
+        var held = StubResponse.feed(FeedXML.rss(items: [
+            FeedXML.Item(guid: "b", title: "B", published: world.day(-1)),
+            FeedXML.Item(guid: "a", title: "A", published: world.day(-2)),
+        ]))
+        held.answerGate = gate
+        world.server.serve("/feed.xml", held)
+        let refresh = Task { await world.center.refresh(feed.id) }
+        await waitFor("the refresh's answer is held") { gate.wasReached }
+
+        let finished = CallLog<Bool>()
+        let teardown = Task {
+            await world.finishFeedWork()
+            finished.record(true)
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(finished.calls, [], "the teardown went on while a refresh was under way")
+
+        gate.release()
+        await teardown.value
+        _ = await refresh.value
+
+        XCTAssertEqual(finished.calls, [true])
+        let file = FeedPaths.recordFile(of: feed.id, in: world.recordsFolder)
+        let onDisk = try FeedRecordCoding.decoder().decode(FeedRecord.self, from: Data(contentsOf: file))
+        XCTAssertTrue(onDisk.items.contains { $0.id == "guid:b" }, "the teardown went on before the refresh's record landed")
+        XCTAssertEqual(world.failures.outstandingFailures().map(\.subject), [])
+    }
+
+    /// Every feed engine a test makes besides its world's own comes from
+    /// `FeedTestWorld.engine(_:on:)`, whose teardown lands the engine's
+    /// writes before the world's folders go. An engine made by hand, whose
+    /// teardown only stopped it, left a Delete Download's record write to
+    /// fail once the sandbox was gone, and its failure was announced into
+    /// `LibraryFeedMoveToFolderTests` on GitHub's runner. The files of all
+    /// three test folders are read whole, as the policy tests read the
+    /// app's, so such an engine fails here every time, however it is
+    /// spelled (`engineMakings(in:)`), rather than in another test now and
+    /// then.
+    func testEveryOtherEngineComesFromTheWorld() throws {
+        let repository = AppSourceFile.folder.deletingLastPathComponent()
+        // The Mac's tests, and the iPhone's two bundles of a few files each.
+        let folders = [("TextMouthProductionTests", 51), ("TextMouthiOSTests", 1), ("TextMouthiOSUITests", 1)]
+        var madeByHand: [String] = []
+        for (folder, fewest) in folders {
+            let sources = try AppSourceFile.all(in: repository.appendingPathComponent(folder, isDirectory: true), atLeast: fewest)
+            for source in sources where source.name != "FeedTestSupport.swift" {
+                madeByHand += try Self.engineMakings(in: source.text).map { "\(folder)/\(source.path):\($0)" }
+            }
+        }
+        XCTAssertEqual(
+            madeByHand,
+            [],
+            "make each engine with FeedTestWorld.engine(_:on:), whose teardown lands its writes before the world's folders go"
+        )
+    }
+
+    /// The guard finds a FeedCenter made on an environment however Swift
+    /// spells it: with `.init`, with spaces, or with the argument on a line
+    /// of its own, each counted on the line the making begins; and not one
+    /// in a comment, another type's name ending in FeedCenter, or the
+    /// shared engine. The sample is written with a stand-in for the type's
+    /// name, so this file holds no making for the guard to find.
+    func testTheGuardFindsEveryWayOfMakingAnEngine() throws {
+        let sample = """
+        let a = ENGINE(environment: world.environment)
+        let b = ENGINE.init(environment: changed)
+        let c = ENGINE (environment : changed)
+        let d = ENGINE(
+            environment: changed
+        )
+        // ENGINE(environment: in a comment)
+        /// A doc comment naming ENGINE(environment:).
+        let e = MirrorENGINE(environment: changed)
+        let f = ENGINE.shared
+        let g = make() // ENGINE(environment: after code)
+        """.replacingOccurrences(of: "ENGINE", with: "Feed" + "Center")
+
+        XCTAssertEqual(try Self.engineMakings(in: sample), [1, 2, 3, 4])
+    }
+
+    /// The lines, counted from 1, on which `text` makes a FeedCenter on an
+    /// environment: `FeedCenter(environment:` or `FeedCenter.init(environment:`,
+    /// with any spaces or line breaks between the parts, each counted on the
+    /// line where it begins. One after `//` on its line is in a comment and
+    /// is passed over.
+    private static func engineMakings(in text: String) throws -> [Int] {
+        guard text.contains("FeedCenter") else { return [] }
+        let making = try NSRegularExpression(pattern: #"\bFeedCenter\s*(?:\.init)?\s*\(\s*environment\s*:"#)
+        let whole = text as NSString
+        return making.matches(in: text, range: NSRange(location: 0, length: whole.length)).compactMap { match in
+            let linesBefore = whole.substring(to: match.range.location).components(separatedBy: "\n")
+            guard let lineSoFar = linesBefore.last, !lineSoFar.contains("//") else { return nil }
+            return linesBefore.count
+        }
     }
 }

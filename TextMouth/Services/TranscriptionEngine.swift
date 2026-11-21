@@ -198,21 +198,21 @@ struct SpeechAnalyzerEngine: TranscriptionEngine {
             // it, so they are compared rather than switched on.
             let code = speechError.code
             if code == .noModel {
-                return .recognitionFailed("the speech model for the language is not on this Mac")
+                return .recognitionFailed("the speech model for the language is not on this Mac")  // l10n: no (a reason inside a translated sentence, English by question 3; also in the log)
             }
             if code == .insufficientResources {
-                return .recognitionFailed("the speech recognizer is busy with other work; try again in a moment")
+                return .recognitionFailed("the speech recognizer is busy with other work; try again in a moment")  // l10n: no (a reason inside a translated sentence, English by question 3; also in the log)
             }
             if code == .assetLocaleNotAllocated || code == .tooManyAssetLocalesAllocated {
-                return .recognitionFailed("the system did not let TextMouth use the language's speech model")
+                return .recognitionFailed("the system did not let TextMouth use the language's speech model")  // l10n: no (a reason inside a translated sentence, English by question 3; also in the log)
             }
             if [.audioDisordered, .unexpectedAudioFormat, .incompatibleAudioFormats].contains(code) {
                 return .unreadableFile(file: fileName, reason: TranscriptionError.unreadableAudioReason)
             }
-            return .recognitionFailed("the speech recognizer stopped with error \(code.rawValue)")
+            return .recognitionFailed("the speech recognizer stopped with error \(code.rawValue)")  // l10n: no (a reason inside a translated sentence, English by question 3; also in the log)
         }
         let nsError = error as NSError
-        return .recognitionFailed("the speech recognizer stopped with error \(nsError.code) in \(nsError.domain)")
+        return .recognitionFailed("the speech recognizer stopped with error \(nsError.code) in \(nsError.domain)")  // l10n: no (a reason inside a translated sentence, English by question 3; also in the log)
     }
 }
 

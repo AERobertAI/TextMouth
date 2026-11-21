@@ -6,7 +6,7 @@ You are `mactables`, an Opus agent, on the branch `team/mactables`. TextMouth is
 - October 19: "for the braille I want it possible to have multiple braille tables and contracted and uncontracted settings and use the library."
 - Then: "Is there a way to provide a selector for downloading tables from a list? Iether from the Mac or the other library tables?"
 - And: "I gree to keep English as default."
-- `humanQuestions/2026-10-19.md` (gitignored, so read it in the main checkout, `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/humanQuestions/2026-10-19.md`) records question 4 and its recommended answer, which this brief builds: offer the Mac's own braille tables in the Braille tab.
+- `humanQuestions/2026-10-19.md` (gitignored, so read it in the main checkout, `<main checkout>/humanQuestions/2026-10-19.md`) records question 4 and its recommended answer, which this brief builds: offer the Mac's own braille tables in the Braille tab.
 
 ## What exists (merged today, 3996434d)
 - **liblouis 3.39.0** runs only in the `TextMouthBraille` helper (`TextMouthBraille/main.c`, modes check, forward, and back). `BrailleTranslator` is its only caller. The helper changes into the tables folder and loads a table by its bare name, then works in /var/empty. It accepts only the tables the catalog offers.

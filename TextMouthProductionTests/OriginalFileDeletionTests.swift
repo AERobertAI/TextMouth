@@ -152,7 +152,7 @@ final class OriginalFileDeletionTests: XCTestCase {
         XCTAssertEqual(trash.buttonTitle, "Move to Trash")
         XCTAssertEqual(
             trash.confirmationMessage,
-            "The book has been imported successfully. Move the original file “Notes.epub” to the Trash? "
+            "The book was imported. Move the original file “Notes.epub” to the Trash? "
                 + "You can recover it from the Trash until the Trash is emptied."
         )
 
@@ -161,12 +161,12 @@ final class OriginalFileDeletionTests: XCTestCase {
         XCTAssertEqual(permanent.buttonTitle, "Delete Permanently")
         XCTAssertEqual(
             permanent.confirmationMessage,
-            "The book has been imported successfully. Delete the original file “Notes.epub” permanently? "
+            "The book was imported. Delete the original file “Notes.epub” permanently? "
                 + "It cannot be recovered."
         )
         XCTAssertEqual(
             OriginalFileDeletionWording(movesToTrash: false).confirmationMessage,
-            "The book has been imported successfully. Delete the original file permanently? It cannot be recovered."
+            "The book was imported. Delete the original file permanently? It cannot be recovered."
         )
     }
 

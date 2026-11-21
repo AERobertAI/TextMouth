@@ -588,7 +588,7 @@ final class ArchiveImportBoundsTests: XCTestCase {
         assertImportFails(
             book.archive,
             at: .convertingAudio,
-            because: "The file “part1.wav” in this DAISY book is damaged or incomplete: it holds more than the "
+            because: "The file “part1.wav” in this book is damaged or incomplete: it holds more than the "
                 + "\(ArchiveFigures.size(10)) the archive records for it. Get a fresh copy of the book, then import it again."
         ) {
             _ = try FileImportService.importDAISYAudioZipWithReport(from: book.archive, toFolder: folderPath)

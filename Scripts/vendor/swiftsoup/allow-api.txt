@@ -1,0 +1,107 @@
+# allow-api.txt: the names of the declarations of SwiftSoup that stay `public`
+# in Vendor/SwiftSoup, because TextMouth or its tests call them, or Swift
+# requires them to be public beside one that is called. Every other `public`
+# or `open` in the release becomes internal, and the compiler drops what is
+# then unreachable. One name a line; a name stands for every declaration of
+# that name (an override keeps its base's access); `#` starts a comment.
+#
+# To add one: a build or a test says "'x' is inaccessible due to 'internal'
+# protection level"; add x here and run make_vendor.py. To find what the app
+# calls, read every call site of the files that `import SwiftSoup` in
+# TextMouth/ and TextMouthProductionTests/.
+#
+# Types
+Document
+Element
+Node
+TextNode
+Comment
+XmlDeclaration
+DataNode
+Elements
+Attributes
+Attribute
+Tag
+Parser
+Entities
+Exception
+ExceptionType
+OrderedSet
+OrderedSetGenerator
+# Free functions and parser entry points
+parse
+parseHTML
+parseBodyFragment
+xmlParser
+# Reading the tree
+body
+title
+getChildNodes
+tagName
+attr
+hasAttr
+getAttributes
+asList
+getKey
+getValue
+text
+getWholeText
+html
+outerHtml
+parent
+previousSibling
+isBlank
+isBlock
+tag
+preserveWhitespace
+absUrl
+children
+id
+data
+getData
+name
+getWholeDeclaration
+classNames
+getElementById
+unescape
+valueOf
+# Selectors and their results
+select
+first
+array
+isEmpty
+# Changing the tree
+remove
+prependChild
+addChildren
+after
+copy
+init
+# Witnesses of public conformances
+==
+hash
+makeIterator
+next
+description
+debugDescription
+# Witnesses of Elements' and OrderedSet's public collection conformances
+startIndex
+endIndex
+count
+subscript
+index
+Iterator
+<
+ElementsIterator
+# What TextMouth's tests call beyond the app (20 test files import SwiftSoup):
+size
+last
+eachText
+ownText
+getAllElements
+outputSettings
+OutputSettings
+prettyPrint
+StringUtil
+normaliseWhitespace
+getWholeData

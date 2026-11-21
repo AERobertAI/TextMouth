@@ -197,6 +197,54 @@ final class TranscriptionProgressTests: XCTestCase {
         )
     }
 
+    /// A failure's log line is written in English from `failureLog`, never
+    /// from the sentence the interface shows (FR34: the debug log stays
+    /// English whatever language the interface speaks), and every error's
+    /// log words are English sentences that name no title or file.
+    func testTheFailureLogLineIsEnglishWhateverTheInterfaceSays() {
+        XCTAssertEqual(
+            TranscriptionLog.ended(
+                .failed("La transcripción se detuvo."),
+                bookTitle: "Harbor Notes",
+                elapsed: 0.3,
+                failureLog: TranscriptionLog.failureLog(for: TranscriptionError.recognitionFailed("the recognizer stopped"))
+            ),
+            "TRANSCRIPTION_FAILED: Harbor Notes: after 0.3 seconds: Transcription stopped: the recognizer stopped."
+        )
+        let errors: [TranscriptionError] = [
+            .needsNewerSystem, .unavailableOnThisMac, .unsupportedLanguage("Xhosa"), .modelNotInstalled("Xhosa"),
+            .busy("Harbor Notes"), .notAnAudiobook, .noAudio, .fileInCloud("01.mp3"),
+            .unreadableFile(file: "01.mp3", reason: TranscriptionError.unreadableAudioReason), .cancelled,
+            .recognitionFailed("the recognizer stopped"), .audioChanged("the book's audio files are not the ones transcribed"),
+            .bookRemoved
+        ]
+        for error in errors {
+            let line = TranscriptionLog.failureLog(for: error)
+            XCTAssertEqual(line, error.logDescription)
+            XCTAssertFalse(line.isEmpty, "\(error)")
+            XCTAssertFalse(line.contains("Harbor Notes"), "a log line quotes a book title: \(line)")
+            XCTAssertFalse(line.contains("Xhosa"), "a log line holds a localized language name: \(line)")
+        }
+    }
+
+    /// The transcript errors that logs write (an attach's refusal, a feed's
+    /// transcript) word themselves in English for the log, with raw
+    /// milliseconds where the screen says spoken times, and never quote a
+    /// file's version.
+    func testTheTranscriptErrorsWordThemselvesInEnglishForTheLog() {
+        XCTAssertEqual(
+            OutsideTranscriptError.runsPastTheEnd(transcriptEnd: 30_000, audioEnd: 4_000).logDescription,
+            "The transcript runs past the end of the audio: it ends at 30000 ms and the audio at 4000 ms, so it was made for other audio."
+        )
+        XCTAssertEqual(
+            TimedTextError.unsupportedVersion(.podcastJSON, "9.9\nsecret").logDescription,
+            "The file is a Podcasting 2.0 JSON transcript of a version TextMouth doesn't read."
+        )
+        XCTAssertEqual(TimedTextError.tooManyCues(limit: 250_000).logDescription,
+                       "The file holds more than 250000 timed passages, more than TextMouth reads.")
+        XCTAssertEqual(TranscriptionLog.failureLog(for: OutsideTranscriptError.noText), "The transcript holds no text to attach.")
+    }
+
     /// Fails when any of `lines` quotes a word the scripted narration says.
     private func assertQuotesNothingHeard(_ lines: [String], file: StaticString = #filePath, line: UInt = #line) {
         for word in ["Gannet", "breakwater.", "coils", "ferry", "Buoy", "tilts"] {

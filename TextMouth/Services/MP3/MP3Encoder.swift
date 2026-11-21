@@ -18,13 +18,13 @@ enum MP3EncoderError: Error, Equatable, Sendable, CustomStringConvertible {
     var description: String {
         switch self {
         case .unavailable:
-            return "LAME could not start"
+            return "LAME could not start" // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         case .unsupportedSettings(let reason):
-            return "LAME refused the settings: \(reason)"
+            return "LAME refused the settings: \(reason)" // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         case .encodingFailed(let code):
-            return "LAME failed with code \(code)"
+            return "LAME failed with code \(code)" // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         case .writeFailed(let reason):
-            return "the MP3 could not be written: \(reason)"
+            return "the MP3 could not be written: \(reason)" // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         }
     }
 
@@ -69,9 +69,9 @@ struct MP3EncoderSettings: Equatable, Sendable {
 
     /// Why an MP3 can't have these settings, or nil when it can.
     var problem: String? {
-        if !Self.sampleRates.contains(sampleRate) { return "an MP3 can't have a sample rate of \(sampleRate) Hz" }
-        if !(1...2).contains(channels) { return "an MP3 has one channel or two, not \(channels)" }
-        if kilobitsPerSecond <= 0 { return "the bit rate must be above zero" }
+        if !Self.sampleRates.contains(sampleRate) { return "an MP3 can't have a sample rate of \(sampleRate) Hz" } // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
+        if !(1...2).contains(channels) { return "an MP3 has one channel or two, not \(channels)" } // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
+        if kilobitsPerSecond <= 0 { return "the bit rate must be above zero" } // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         return nil
     }
 }
@@ -176,14 +176,14 @@ final class MP3Encoder {
         lame_set_write_id3tag_automatic(flags, 0)
         let status = lame_init_params(flags)
         guard status >= 0 else {
-            throw MP3EncoderError.unsupportedSettings("lame_init_params returned \(status)")
+            throw MP3EncoderError.unsupportedSettings("lame_init_params returned \(status)") // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         }
 
         var firstTag = tag
         firstTag.gapless = writesGaplessInfo ? .unknown : nil
         let tagBytes = firstTag.encoded()
         guard FileManager.default.createFile(atPath: url.path, contents: tagBytes) else {
-            throw MP3EncoderError.writeFailed("the file could not be created")
+            throw MP3EncoderError.writeFailed("the file could not be created") // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         }
         let file: FileHandle
         do {
@@ -223,10 +223,10 @@ final class MP3Encoder {
     ///   not a whole number of frames, or after `finish()`; `.encodingFailed`
     ///   or `.writeFailed`.
     func encode(interleaved samples: UnsafeBufferPointer<Float>) throws {
-        guard !isFinished else { throw MP3EncoderError.unsupportedSettings("the MP3 is already finished") }
+        guard !isFinished else { throw MP3EncoderError.unsupportedSettings("the MP3 is already finished") } // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         let channels = settings.channels
         guard samples.count % channels == 0 else {
-            throw MP3EncoderError.unsupportedSettings("\(samples.count) samples are not a whole number of frames")
+            throw MP3EncoderError.unsupportedSettings("\(samples.count) samples are not a whole number of frames") // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         }
         guard let base = samples.baseAddress else { return }
         let frames = samples.count / channels
@@ -257,7 +257,7 @@ final class MP3Encoder {
     ///   file is removed when the encoder goes.
     @discardableResult
     func finish() throws -> MP3GaplessInfo {
-        guard !isFinished else { throw MP3EncoderError.unsupportedSettings("the MP3 is already finished") }
+        guard !isFinished else { throw MP3EncoderError.unsupportedSettings("the MP3 is already finished") } // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         let flushed = output.withUnsafeMutableBufferPointer { buffer -> Int32 in
             guard let bytes = buffer.baseAddress else { return -1 }
             return lame_encode_flush(flags, bytes, Int32(buffer.count))
@@ -281,7 +281,7 @@ final class MP3Encoder {
         // The numbers are written in fixed widths, so the tag keeps its size
         // and the audio after it stays where it is.
         guard tagBytes.count == tagSize else {
-            throw MP3EncoderError.writeFailed("the ID3 tag changed size")
+            throw MP3EncoderError.writeFailed("the ID3 tag changed size") // l10n: no (a technical reason for the debug log; the listener hears AudioEditError's fixed sentences)
         }
         do {
             if lameTagSize > 0 && lameTagSize <= lameTag.count {

@@ -109,6 +109,29 @@ final class TextAnchorCaptureTests: XCTestCase {
         XCTAssertEqual(try BookInfo.load(from: book.tmbDirectory).state.readingPosition?.anchor, anchor, "the record lacks the words")
     }
 
+    /// A live position, which only moves the rows' time estimates, is
+    /// published without the words around it (the audit's C17): nothing
+    /// reads them, and taking them cuts two strings out of the chapter each
+    /// second. The save that follows still takes them.
+    func testALivePositionIsPublishedWithoutItsWords() throws {
+        let world = try makeIntegrationWorld("Anchor Capture Live")
+        let book = try world.importBook(from: writeOrchardEPUB())
+        let reader = world.openReader(for: book)
+        waitForReaderToLoad(reader)
+        let entry = world.library.livePositions.entry(for: book.id)
+
+        reader.currentChapterIndex = 1
+        reader.currentCharacterOffset = 70
+        XCTAssertTrue(waitUntil(timeout: 5) { entry.position != nil }, "no live position was published")
+
+        let live = try XCTUnwrap(entry.position)
+        XCTAssertEqual(live.chapterIndex, 1)
+        XCTAssertEqual(live.characterOffset, 70)
+        XCTAssertNil(live.anchor, "the live position took the words around it")
+        reader.savePosition()
+        XCTAssertNotNil(world.library.bookByID(book.id)?.readingPosition?.anchor, "the save lacks the words")
+    }
+
     /// The place the book opened at keeps the words it was saved with while
     /// the cursor stays there, even words its text no longer holds there, as
     /// after a change of the text no build could follow yet: the load's save

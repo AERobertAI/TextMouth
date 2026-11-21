@@ -315,12 +315,12 @@ final class DuplicateReplacementTests: XCTestCase {
         )
         XCTAssertEqual(
             Refusal.audioBeingEdited(title: "Atlas of Tides").sentence,
-            "The audio of “Atlas of Tides” is being edited. Close the audio editor, or wait until it has saved, "
+            "The audio of “Atlas of Tides” is being edited. Close the audio editor or wait for it to save, "
                 + "then choose Replace Existing again."
         )
         XCTAssertEqual(
             Refusal.filesInCloud(title: "Atlas of Tides").sentence,
-            "Some of the files of “Atlas of Tides” are only in the cloud, and replacing it now would leave them behind. "
+            "Some files of “Atlas of Tides” are only in the cloud, and replacing it now would leave them behind. "
                 + "Download the book, then choose Replace Existing again."
         )
         XCTAssertEqual(
@@ -460,6 +460,127 @@ final class DuplicateReplacementTests: XCTestCase {
         XCTAssertNotNil(DuplicateReplacement.fitted(carried, to: withTranscript.book, index: index), "the new copy's audio is not the audio described")
         XCTAssertFalse(withoutTranscript.keptTranscript)
         XCTAssertEqual(TranscriptStore.read(from: withoutTranscript.movedTo), .missing)
+    }
+
+    /// A new copy given a transcript at its import, from a file beside its
+    /// audio (FMT23), against the old copy's transcript of the same audio
+    /// (B1): one recognition made is kept, over the file's, as the question
+    /// says, and the file is named as not used; so is one the listener
+    /// edited; one from outside the listener never touched gives way to the
+    /// file's. Whichever stays, the new package holds a transcript, which
+    /// the library row records (S1).
+    func testReplacingKeepsTheListenersTranscriptOverOneBroughtFromAFile() throws {
+        let scene = try makeScene()
+        let sound = scene.sources.appendingPathComponent("Earlier Tide.wav")
+        try AudioTestFixtures.writeSilence(to: sound, duration: 1)
+        let existing = try FileImportService.importFileWithReport(from: sound, toFolder: scene.shelf.path).book
+        let recognized = try TranscriptFixtures.transcript(of: existing, sentences: [
+            "Earlier Tide.wav": [TranscriptFixtures.sentence("The ferry waits at the slip.", from: 0, to: 900)],
+        ])
+        let sameAudio = scene.sources.appendingPathComponent("Tide.wav")
+        try FileManager.default.copyItem(at: sound, to: sameAudio)
+        try Data("WEBVTT\n\n00:00.000 --> 00:00.800\nThe slip is clear.\n".utf8)
+            .write(to: scene.sources.appendingPathComponent("Tide.vtt"))
+        /// The old copy given `old`, then a new copy of the same audio with
+        /// Tide.vtt beside it, replacing it: what the question was told, the
+        /// preparation, and the transcript the new package holds.
+        func replace(
+            withOld old: Transcript
+        ) throws -> (outcome: DuplicateReplacement.TranscriptOutcome, preparation: DuplicateReplacement.Preparation, held: Transcript?) {
+            try TranscriptStore.write(old, into: existing.tmbDirectory)
+            let copy = try FileImportService.importFileWithReport(from: sameAudio, toFolder: scene.imports.path).book
+            XCTAssertTrue(TranscriptStore.hasTranscript(of: copy), "the file beside the new copy was not attached")
+            let outcome = DuplicateReplacement.transcriptOutcome(replacing: existing, with: copy)
+            let preparation = try DuplicateReplacement.prepare(replacing: existing, with: copy)
+            guard case .found(let held) = TranscriptStore.read(from: preparation.movedTo) else { return (outcome, preparation, nil) }
+            return (outcome, preparation, held)
+        }
+
+        // Recognition's: kept, and the file's is named as not used.
+        let keptRecognized = try replace(withOld: recognized)
+        XCTAssertEqual(keptRecognized.outcome, .keepsExisting)
+        XCTAssertEqual(keptRecognized.held?.files.first?.sentences.map(\.text), ["The ferry waits at the slip."])
+        XCTAssertTrue(keptRecognized.preparation.keptTranscript)
+        XCTAssertTrue(keptRecognized.preparation.hasTranscript)
+        XCTAssertEqual(keptRecognized.preparation.broughtTranscriptNotUsed, DuplicateReplacement.BroughtTranscript(fileName: "Tide.vtt"))
+
+        // Edited by the listener, though from outside: kept.
+        var edited = recognized
+        edited.source = TranscriptSource(origin: .attached, format: .subRip, fileName: "Older.srt")
+        edited.editedAt = TranscriptFixtures.date
+        let keptEdited = try replace(withOld: edited)
+        XCTAssertEqual(keptEdited.outcome, .keepsExisting)
+        XCTAssertNotNil(keptEdited.held?.editedAt)
+        XCTAssertEqual(keptEdited.preparation.broughtTranscriptNotUsed, DuplicateReplacement.BroughtTranscript(fileName: "Tide.vtt"))
+
+        // Cleaned up by the listener, though from outside and never edited:
+        // kept as well. This pins the cleanup half of "touched" on the
+        // replacement path (the question reads it from transcript.json, the
+        // replacement from the decoded transcript); losing it there would
+        // make the question promise what the replacement does not do.
+        var cleaned = recognized
+        cleaned.source = TranscriptSource(origin: .attached, format: .subRip, fileName: "Older.srt")
+        cleaned.cleanedUp = TranscriptCleanupNote(
+            cleanedAt: TranscriptFixtures.date, rulesVersion: 1, rulesDate: "2026-10-04", rules: "built-in", corrections: 2
+        )
+        let keptCleaned = try replace(withOld: cleaned)
+        XCTAssertEqual(keptCleaned.outcome, .keepsExisting, "the question did not count a cleanup as touching the transcript")
+        XCTAssertEqual(
+            keptCleaned.held?.files.first?.sentences.map(\.text), ["The ferry waits at the slip."],
+            "Replace Existing gave a cleaned-up transcript way to the file's, though the question said it was kept"
+        )
+        XCTAssertNotNil(keptCleaned.held?.cleanedUp, "the cleanup record was not carried with the transcript")
+        XCTAssertEqual(keptCleaned.preparation.broughtTranscriptNotUsed, DuplicateReplacement.BroughtTranscript(fileName: "Tide.vtt"))
+
+        // From outside and untouched: gives way to the file's.
+        var outside = recognized
+        outside.source = TranscriptSource(origin: .attached, format: .subRip, fileName: "Older.srt")
+        let gaveWay = try replace(withOld: outside)
+        XCTAssertEqual(gaveWay.outcome, .broughtReplacesExisting)
+        XCTAssertEqual(gaveWay.held?.files.first?.sentences.map(\.text), ["The slip is clear."])
+        XCTAssertEqual(gaveWay.held?.source?.origin, TranscriptSource.Origin.imported.rawValue)
+        XCTAssertFalse(gaveWay.preparation.keptTranscript)
+        XCTAssertTrue(gaveWay.preparation.hasTranscript, "the new package's own transcript was not counted")
+        XCTAssertNil(gaveWay.preparation.broughtTranscriptNotUsed)
+    }
+
+    /// What the listener hears when Replace Existing kept the existing
+    /// copy's transcript over the one the new copy brought (B1): the file by
+    /// name, with the way to use it after all; several tracks' files
+    /// together, which Attach Transcript…, taking one file, cannot use.
+    func testTheListenerIsToldOfATranscriptFileReplacingDidNotUse() {
+        XCTAssertEqual(
+            TranscriptionWording.broughtTranscriptNotUsed(fileName: "Tide.vtt"),
+            "“Tide.vtt” beside the audio wasn't attached: "
+                + "Replacing kept the existing copy's transcript. "
+                + "To use it, open the book and choose Attach Transcript… from the Book menu."
+        )
+        XCTAssertEqual(
+            TranscriptionWording.broughtTranscriptNotUsed(fileName: nil),
+            "The transcript files beside the audio weren't attached: "
+                + "Replacing kept the existing copy's transcript."
+        )
+    }
+
+    /// Nothing to choose: a new copy that brought no transcript leaves the
+    /// question as it was, whatever the old copy holds.
+    func testANewCopyWithoutATranscriptFileHasNothingToChoose() throws {
+        let scene = try makeScene()
+        let sound = scene.sources.appendingPathComponent("Earlier Tide.wav")
+        try AudioTestFixtures.writeSilence(to: sound, duration: 1)
+        let existing = try FileImportService.importFileWithReport(from: sound, toFolder: scene.shelf.path).book
+        let recognized = try TranscriptFixtures.transcript(of: existing, sentences: [
+            "Earlier Tide.wav": [TranscriptFixtures.sentence("The ferry waits at the slip.", from: 0, to: 900)],
+        ])
+        try TranscriptStore.write(recognized, into: existing.tmbDirectory)
+        let sameAudio = scene.sources.appendingPathComponent("Tide.wav")
+        try FileManager.default.copyItem(at: sound, to: sameAudio)
+        let copy = try FileImportService.importFileWithReport(from: sameAudio, toFolder: scene.imports.path).book
+
+        XCTAssertEqual(DuplicateReplacement.transcriptOutcome(replacing: existing, with: copy), .asBefore)
+        let preparation = try DuplicateReplacement.prepare(replacing: existing, with: copy)
+        XCTAssertNil(preparation.broughtTranscriptNotUsed)
+        XCTAssertTrue(preparation.hasTranscript)
     }
 
     // MARK: - Analyses on Their Way

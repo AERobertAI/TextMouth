@@ -3,7 +3,7 @@
 You are `brailleemphasis`, an Opus agent, on the branch `braille/emphasis`. TextMouth is a native macOS text-to-speech and audiobook player whose user is blind and reads with VoiceOver and a braille display; braille is the feature they care most about.
 
 ## The request, in the user's words
-Asked "Should exported braille mark italics and bold?" (question 2 of `humanQuestions/2026-10-19.md`, which is gitignored, so read it in the main checkout at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/humanQuestions/2026-10-19.md`), the user answered: "For the italix yes it should try keeping all text formatting extractable from the braille converted to the intermediate format."
+Asked "Should exported braille mark italics and bold?" (question 2 of `humanQuestions/2026-10-19.md`, which is gitignored, so read it in the main checkout at `<main checkout>/humanQuestions/2026-10-19.md`), the user answered: "For the italix yes it should try keeping all text formatting extractable from the braille converted to the intermediate format."
 
 So, both ways:
 - **Reading braille** (BRF, BRL, PEF): keep every piece of text formatting that the braille carries and liblouis can report, such as italic, bold, underline, and script emphasis, in the book's `content.md`, the Markdown that every text book becomes. Today it is read and dropped.

@@ -31,7 +31,7 @@ import Foundation
 /// It is about 220 bytes of JSON for Latin text, in the row and the record
 /// of each place that keeps one. Every field is decoded leniently, so an
 /// older or a damaged file still loads.
-struct TextAnchor: Codable, Hashable, Sendable {
+struct TextAnchor: Codable, Hashable, Sendable, KeepsUnknownKeys {
     /// The most UTF-16 units each quote keeps. The first note measured 32,
     /// 64, and 96: 64 halves 32's unfound places for 66 more bytes a
     /// place, and 96 adds little (TEXT-ANCHORS-RESEARCH-2026-10-10.md,
@@ -74,6 +74,9 @@ struct TextAnchor: Codable, Hashable, Sendable {
     var measuredIn: String?
     /// The anchor's format (`currentVersion`).
     var version: Int
+    /// The keys of the stored anchor that this TextMouth does not know
+    /// (V04), written back as they were; none in an anchor captured here.
+    var unknownKeys = UnknownKeys()
 
     /// An anchor of the given parts, as decoding or a test makes one. A
     /// share outside 0 to 1 is held within it.
@@ -205,9 +208,16 @@ struct TextAnchor: Codable, Hashable, Sendable {
 
     // MARK: - Codable
 
-    private enum CodingKeys: String, CodingKey {
+    private enum CodingKeys: String, CodingKey, CaseIterable {
         case before, after, fraction, measuredIn, version
     }
+
+    /// The names of an anchor's keys that this version knows.
+    private static let knownKeyNames = CodingKeys.names
+
+    /// What a stored anchor holds, for the scan that says whether a file
+    /// can hold unknown keys (`StoredKeyScan`).
+    static let keySchema = StoredKeySchema(names: knownKeyNames)
 
     /// Decodes an anchor leniently: each field missing or of the wrong
     /// type takes its empty value (no quote, a share of 0, no measure,
@@ -215,7 +225,8 @@ struct TextAnchor: Codable, Hashable, Sendable {
     /// the book. An anchor whose quotes are both empty (a place in a
     /// chapter without text, or a damaged anchor) holds no words: it stands
     /// at any place within its chapter, so such a place keeps its numbers,
-    /// and it is found nowhere else.
+    /// and it is found nowhere else. Every other key of the anchor is kept
+    /// as it is (V04).
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         before = (try? container.decodeIfPresent(String.self, forKey: .before)) ?? ""
@@ -223,5 +234,19 @@ struct TextAnchor: Codable, Hashable, Sendable {
         fraction = Self.share((try? container.decodeIfPresent(Double.self, forKey: .fraction)) ?? 0)
         measuredIn = try? container.decodeIfPresent(String.self, forKey: .measuredIn)
         version = (try? container.decodeIfPresent(Int.self, forKey: .version)) ?? Self.currentVersion
+        unknownKeys = UnknownKeys(from: decoder, besides: Self.knownKeyNames)
+    }
+
+    /// Writes the anchor as the synthesized encoder wrote it (the measure
+    /// is left out when nil), after the keys this version does not know
+    /// (V04).
+    func encode(to encoder: Encoder) throws {
+        try unknownKeys.write(to: encoder)
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(before, forKey: .before)
+        try container.encode(after, forKey: .after)
+        try container.encode(fraction, forKey: .fraction)
+        try container.encodeIfPresent(measuredIn, forKey: .measuredIn)
+        try container.encode(version, forKey: .version)
     }
 }

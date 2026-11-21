@@ -49,7 +49,7 @@ struct AudioEditorFilterSheet: View {
             } else {
                 Picker(AudioEditorWording.presetLabel, selection: $presetID) {
                     ForEach(presets.presets) { preset in
-                        Text(preset.name).tag(Optional(preset.id))
+                        Text(preset.title).tag(Optional(preset.id))
                     }
                 }
                 .pickerStyle(.menu)
@@ -57,7 +57,7 @@ struct AudioEditorFilterSheet: View {
                 .modifier(InitialVoiceOverFocusModifier(isTarget: true))
 
                 if let preset {
-                    Text("\(AudioEditorWording.chainLabel): \(preset.chain)")
+                    Text(AudioEditorWording.labeled(AudioEditorWording.chainLabel, preset.chain))
                         .font(.system(.body, design: .monospaced))
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
@@ -71,7 +71,7 @@ struct AudioEditorFilterSheet: View {
                         Text(AudioEditorWording.targetTitle(target)).tag(target)
                     }
                 }
-                .pickerStyle(.radioGroup)
+                .radioGroupPickerStyle()
                 .accessibilityLabel(AudioEditorWording.applyToLabel)
             }
             HStack {

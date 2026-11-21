@@ -5,9 +5,10 @@ import SwiftUI
 /// What a view shows of its reader, republished only when it changes
 /// (PERF30).
 ///
-/// A reader publishes eight times a second while it plays, as its position
-/// moves, and a view observing the whole reader is rebuilt each time,
-/// whatever it shows: the headings sheet rebuilt every row, and the voice
+/// A reader publishes whenever anything its window shows changes, as often as
+/// once a second while it plays (it was eight times a second before the
+/// window's shown state, `ReaderShownState`), and a view observing the whole
+/// reader is rebuilt each time, whatever it shows: the headings sheet rebuilt every row, and the voice
 /// sheet asked the system for its voices twice. A view holding a snapshot
 /// of what it shows is rebuilt only when that changes. The snapshot reads
 /// the reader after each change is stored, since a reader announces a change
@@ -44,7 +45,7 @@ final class ReaderSnapshot<Value: Equatable>: ObservableObject {
 /// shows comes from its own state, its environment, and its snapshot of the
 /// reader, which SwiftUI follows apart from this comparison. So two such
 /// sheets are the same when they show the same reader (PERF30). The reader
-/// view presenting a sheet makes it again each time it draws, eight times a
+/// view presenting a sheet makes it again each time it draws, about once a
 /// second while a book plays, and SwiftUI's own comparison of the new sheet
 /// with the old does not always find them the same: the bookmark panel, once
 /// its focus had moved, drew again every time.

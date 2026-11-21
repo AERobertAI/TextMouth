@@ -35,6 +35,30 @@ struct AudioFileInfo: Equatable, Sendable {
     /// True when afinfo prints no layout at all (nothing is known against
     /// the file).
     var hasChannelLayout = true
+    /// The first track's markers, as afinfo lists them (FMT17): a WAVE
+    /// file's cue points with their labels, an AIFF file's MARK chunk, a CAF
+    /// file's mark chunk, each with its name and its place in sample frames
+    /// at `sampleRate`, in afinfo's order. The import keeps them as the
+    /// chapters of the file it converts (`ImportAudioConverter.SourceInfo`).
+    var markers: [Marker] = []
+    /// How the samples of linear PCM are stored, as afinfo's bit depth and data type say, floating-point depths
+    /// included (`bitsPerSample` has none for floats); nil for any other codec, and for linear PCM that names no
+    /// depth. The import refuses a form no decoder reads before it converts (`AudioSampleForm`, B15).
+    var sampleForm: AudioSampleForm? = nil
+
+    /// One marker afinfo lists.
+    struct Marker: Equatable, Sendable {
+        /// Its name; empty when it has none.
+        let name: String
+        /// Where it is, in sample frames from the start.
+        let frame: Double
+    }
+
+    /// The markers as chapters, each at its frame's time in seconds, in the
+    /// shape every chapter list read by hand takes (`NeroChapterReader.Chapter`).
+    var markerChapters: [NeroChapterReader.Chapter] {
+        markers.map { NeroChapterReader.Chapter(title: $0.name, start: $0.frame / sampleRate) }
+    }
 
     /// Whether the codec keeps every bit of the source: linear PCM, ALAC,
     /// and FLAC.
@@ -110,10 +134,24 @@ struct AudioFileInfo: Equatable, Sendable {
     ///   an empty format.
     static func parse(xml: Data) -> AudioFileInfo? {
         let collector = FactCollector()
-        let parser = XMLParser(data: xml)
+        let parser = XMLParser(data: validUTF8(xml))
         parser.delegate = collector
         guard parser.parse() else { return nil }
         return collector.info()
+    }
+
+    /// `xml` with every byte sequence that is not UTF-8 replaced by U+FFFD,
+    /// every ASCII byte kept. afinfo prints the path it was given as UTF-8
+    /// in `file_name`, and again in the `filename` entry of each alert (a
+    /// property it could not read, such as a mono file's channel layout),
+    /// where a letter outside ASCII ("é", in a book's folder named by its
+    /// title) comes out as bytes that are not UTF-8 at all; XMLParser then
+    /// refuses the whole answer. No alert is read, and the markup is ASCII,
+    /// so the repair changes no fact.
+    private static func validUTF8(_ xml: Data) -> Data {
+        // Valid UTF-8, the common case, is passed on as it came.
+        if String(data: xml, encoding: .utf8) != nil { return xml }
+        return Data(String(decoding: xml, as: UTF8.self).utf8)
     }
 
     /// Collects the few elements `parse` wants from afinfo's XML, by their
@@ -128,9 +166,22 @@ struct AudioFileInfo: Equatable, Sendable {
         /// The track elements read, relative to the track.
         private static let wantedInTrack: Set<String> = [
             "num_channels", "sample_rate", "format_type", "bit_depth", "duration",
-            "pcm_info/data_type", "source_info/bit_depth",
+            "pcm_info/data_type", "pcm_info/interleaved", "max_packet_size", "source_info/bit_depth",
             "channel_layout", "format_list/format/channel_layout",
         ]
+
+        /// Where one of the first track's markers starts, and the two of its
+        /// elements read (FMT17).
+        private static let markerPath = trackPrefix + "audio_markers/audio_marker"
+        private static let markerNamePath = markerPath + "/marker_name"
+        private static let markerFramePath = markerPath + "/marker_frame_pos"
+        /// The most markers read; a track that lists more keeps the first.
+        static let maximumMarkers = 10_000
+
+        /// The marker being read: its name and frame as far as read.
+        private var pendingMarker: (name: String?, frame: Double?)?
+        /// The first track's markers, in afinfo's order.
+        private(set) var markers: [AudioFileInfo.Marker] = []
 
         /// The names of the elements open now, outermost first.
         private var stack: [String] = []
@@ -163,12 +214,15 @@ struct AudioFileInfo: Equatable, Sendable {
             qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]
         ) {
             stack.append(elementName)
-            switch path {
+            let current = path
+            switch current {
             case Self.filePath: fileCount += 1
             case Self.trackPath: trackCount += 1
+            case Self.markerPath where fileCount == 1 && trackCount == 1: pendingMarker = (nil, nil)
             default: break
             }
-            text = keyOfCurrentElement() == nil ? nil : ""
+            let isMarkerField = pendingMarker != nil && (current == Self.markerNamePath || current == Self.markerFramePath)
+            text = keyOfCurrentElement() == nil && !isMarkerField ? nil : ""
         }
 
         func parser(_ parser: XMLParser, foundCharacters string: String) {
@@ -182,8 +236,48 @@ struct AudioFileInfo: Equatable, Sendable {
             if let text, let key = keyOfCurrentElement(), values[key] == nil {
                 values[key] = text
             }
+            collectMarker(endingAt: path)
             text = nil
             stack.removeLast()
+        }
+
+        /// Takes what the element ending at `current` says of the marker
+        /// being read, and keeps the marker once its own element ends: with
+        /// a frame that is a finite number, 0 or more, and while fewer than
+        /// `maximumMarkers` are kept.
+        private func collectMarker(endingAt current: String) {
+            guard pendingMarker != nil else { return }
+            switch current {
+            case Self.markerNamePath:
+                pendingMarker?.name = Self.trimmed(text)
+            case Self.markerFramePath:
+                pendingMarker?.frame = text.flatMap(Self.number)
+            case Self.markerPath:
+                if let frame = pendingMarker?.frame, frame >= 0, markers.count < Self.maximumMarkers {
+                    markers.append(AudioFileInfo.Marker(name: pendingMarker?.name ?? "", frame: frame))
+                }
+                pendingMarker = nil
+            default:
+                break
+            }
+        }
+
+        /// The form of the first track's linear PCM samples, which are `depth` bits deep and in `channels`
+        /// channels, or nil when afinfo's description is not one to name a form from: its data type is neither
+        /// "integer" nor "float" (an afinfo that words it otherwise would have its floats read as integers), or
+        /// the description is not believed (`AudioSampleForm.init(bits:isFloat:bytesPerFrame:channels:interleaved:)`,
+        /// given the bytes of the track's packet, which for linear PCM is one frame).
+        private func linearSampleForm(depth: Int, channels: Int) -> AudioSampleForm? {
+            guard let dataType = Self.trimmed(values["pcm_info/data_type"]), ["integer", "float"].contains(dataType) else {
+                return nil
+            }
+            return AudioSampleForm(
+                bits: depth,
+                isFloat: dataType == "float",
+                bytesPerFrame: values["max_packet_size"].flatMap(Self.integer),
+                channels: channels,
+                interleaved: Self.trimmed(values["pcm_info/interleaved"]) != "false"
+            )
         }
 
         /// The facts as an `AudioFileInfo`, or nil when any is missing or
@@ -196,14 +290,17 @@ struct AudioFileInfo: Equatable, Sendable {
             else { return nil }
             let isLinear = formatID == "lpcm"
             let isFloat = isLinear && Self.trimmed(values["pcm_info/data_type"]) == "float"
+            // Linear PCM's own depth, which a float has too, though `bitsPerSample` keeps none for it.
+            let linearDepth = isLinear ? values["bit_depth"].flatMap(Self.integer) : nil
             let bits: Int?
             if isLinear {
-                bits = isFloat ? nil : values["bit_depth"].flatMap(Self.integer)
+                bits = isFloat ? nil : linearDepth
             } else if formatID == "alac" || formatID == "flac" {
                 bits = values["source_info/bit_depth"].flatMap(Self.integer)
             } else {
                 bits = nil
             }
+            let sampleForm = linearDepth.flatMap { linearSampleForm(depth: $0, channels: channels) }
             return AudioFileInfo(
                 fileType: Self.trimmed(values["file_type"])?.replacingOccurrences(of: "'", with: "") ?? "",
                 formatID: formatID,
@@ -212,7 +309,9 @@ struct AudioFileInfo: Equatable, Sendable {
                 duration: duration,
                 bitsPerSample: bits.flatMap { $0 > 0 ? $0 : nil },
                 isFloat: isFloat,
-                hasChannelLayout: Self.hasChannelLayout(values["channel_layout"], values["format_list/format/channel_layout"])
+                hasChannelLayout: Self.hasChannelLayout(values["channel_layout"], values["format_list/format/channel_layout"]),
+                markers: markers,
+                sampleForm: sampleForm
             )
         }
 

@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import Combine
 import Foundation
 import UserNotifications
@@ -50,13 +54,19 @@ struct FeedArrivalAlert: Identifiable, Equatable {
     var title: String {
         let nouns = Set(arrivals.map(\.noun))
         let noun = nouns.count == 1 ? (nouns.first ?? .item) : .item
-        return "New \(noun.plural.capitalized)"
+        return noun.choose(
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new episodes. Title case.
+            episode: String(localized: "New Episodes"),
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new articles. Title case.
+            article: String(localized: "New Articles"),
+            // Translators: Title of the alert shown after a refresh TextMouth made by itself brought new episodes and articles, or from several kinds of feed. Title case.
+            item: String(localized: "New Items"))
     }
 
     /// The alert's message: a sentence for each feed, "Planet Money: 2 new
     /// episodes."
     var message: String {
-        arrivals.map { FeedWording.arrivalSentence($0) }.joined(separator: " ")
+        SentenceWording.joined(arrivals.map { FeedWording.arrivalSentence($0) })
     }
 }
 
@@ -315,7 +325,15 @@ extension FeedWording {
     /// One feed's arrivals as the alert says them: "Planet Money: 2 new
     /// episodes."
     static func arrivalSentence(_ arrival: FeedArrival) -> String {
-        "\(arrival.feedTitle): \(arrival.count) new \(arrival.count == 1 ? arrival.noun.singular : arrival.noun.plural)."
+        let title = arrival.feedTitle
+        let count = arrival.count
+        return arrival.noun.choose(
+            // Translators: A sentence of the alert after a refresh brought new episodes: one feed's arrivals. %@ is the feed's title; %lld is how many new episodes.
+            episode: String(localized: "\(title): \(count) new episodes."),
+            // Translators: A sentence of the alert after a refresh brought new articles: one feed's arrivals. %@ is the feed's title; %lld is how many new articles.
+            article: String(localized: "\(title): \(count) new articles."),
+            // Translators: A sentence of the alert after a refresh brought new items, episodes and articles: one feed's arrivals. %@ is the feed's title; %lld is how many new items.
+            item: String(localized: "\(title): \(count) new items."))
     }
 
     /// The notification of one feed's arrivals: titled with the feed, and
@@ -325,11 +343,29 @@ extension FeedWording {
         let body: String
         switch (arrival.count, arrival.latestTitle) {
         case (1, let title?):
-            body = "New \(arrival.noun.singular): “\(title)”"
-        case (_, let title?):
-            body = "\(arrival.count) new \(arrival.noun.plural), the newest “\(title)”"
-        case (_, nil):
-            body = "\(arrival.count) new \(arrival.count == 1 ? arrival.noun.singular : arrival.noun.plural)"
+            body = arrival.noun.choose(
+                // Translators: The body of the notification of one new episode. %@ is its title.
+                episode: String(localized: "New episode: “\(title)”"),
+                // Translators: The body of the notification of one new article. %@ is its title.
+                article: String(localized: "New article: “\(title)”"),
+                // Translators: The body of the notification of one new item, an episode or an article. %@ is its title.
+                item: String(localized: "New item: “\(title)”"))
+        case (let count, let title?):
+            body = arrival.noun.choose(
+                // Translators: The body of the notification of new episodes. %lld is how many; %@ is the newest one's title.
+                episode: String(localized: "\(count) new episodes, the newest “\(title)”"),
+                // Translators: The body of the notification of new articles. %lld is how many; %@ is the newest one's title.
+                article: String(localized: "\(count) new articles, the newest “\(title)”"),
+                // Translators: The body of the notification of new items, episodes and articles. %lld is how many; %@ is the newest one's title.
+                item: String(localized: "\(count) new items, the newest “\(title)”"))
+        case (let count, nil):
+            body = arrival.noun.choose(
+                // Translators: The body of the notification of new episodes when the newest one's title is not known. %lld is how many.
+                episode: String(localized: "\(count) new episodes"),
+                // Translators: The body of the notification of new articles when the newest one's title is not known. %lld is how many.
+                article: String(localized: "\(count) new articles"),
+                // Translators: The body of the notification of new items when the newest one's title is not known. %lld is how many.
+                item: String(localized: "\(count) new items"))
         }
         return FeedNotification(
             identifier: "feed-\(arrival.feedID.uuidString)-\(Int(date.timeIntervalSince1970))",
@@ -341,5 +377,8 @@ extension FeedWording {
 
     /// What the notifications setting's help says while notifications are
     /// not allowed.
-    static let notificationsRefused = "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth."
+    static var notificationsRefused: String {
+        // Translators: What the notifications setting's help says while macOS does not allow TextMouth to post notifications. System Settings and Notifications are macOS's own names, in the language of macOS.
+        String(localized: "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.")
+    }
 }

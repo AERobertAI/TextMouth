@@ -1,0 +1,153 @@
+{
+  "bookmarks" : [
+    {
+      "anchor" : {
+        "after" : "bookmark after 5",
+        "before" : "bookmark before 5",
+        "fraction" : 0.5,
+        "measuredIn" : "measure-5",
+        "version" : 5
+      },
+      "chapterIndex" : 5,
+      "characterOffset" : 5,
+      "dateCreated" : "2023-11-14T23:36:40Z",
+      "id" : "01F0A947-2E99-4485-9D96-083BA263461B",
+      "label" : "Mark 5",
+      "number" : 5
+    }
+  ],
+  "metadata" : {
+    "audioAlbum" : "Album 5",
+    "audioGenre" : "Genre 5",
+    "audioYear" : "2005",
+    "author" : "Author 5",
+    "bookID" : "6777E89F-DFA6-4DD1-A767-0D5CA6B7CCE7",
+    "brailleFileCode" : "code-5",
+    "brailleTable" : "table-5.ctb",
+    "brailleTableOrigin" : "guessed",
+    "brailleTableVersion" : "liblouis-5",
+    "dateAdded" : "2023-11-14T23:36:40Z",
+    "epubIdentifier" : "identifier-5",
+    "epubVersion" : "version-5",
+    "feedLink" : {
+      "feedID" : "2C6790B8-2547-41EC-BAB3-17F808DD82B3",
+      "itemID" : "item-5"
+    },
+    "folderPath" : "Folder 5",
+    "format" : "txt",
+    "handEdits" : {
+      "fields" : [
+        "audioGenre"
+      ],
+      "sinceImport" : false
+    },
+    "isbn" : "ISBN 5",
+    "language" : "language-5",
+    "lastOpened" : "2023-11-14T23:36:41Z",
+    "md5Hash" : "hash-5",
+    "metadataReaderVersion" : "reader-5",
+    "movedToLibrary" : "2027-01-15T08:00:00Z",
+    "originalFileName" : "book-5.txt",
+    "publicationDate" : "Published 5",
+    "publisher" : "Publisher 5",
+    "sourceFilePath" : "\/sources\/book-5.txt",
+    "textEncoding" : "encoding-5",
+    "textEncodingSource" : "chosen",
+    "title" : "Title 5"
+  },
+  "state" : {
+    "audioDuration" : 300,
+    "cacheFormatVersion" : "cache-5",
+    "contentIndexVersion" : "index-5",
+    "editedText" : {
+      "cacheDigest" : "cache-5",
+      "takenAt" : "2023-11-14T23:36:44Z"
+    },
+    "isNew" : false,
+    "lastPlaybackStarted" : "2023-11-14T23:36:42Z",
+    "lastPlaybackStopped" : "2023-11-14T23:36:43Z",
+    "localEndOfBookBehavior" : "behavior-5",
+    "localPitch" : 1.5,
+    "localSkipBackwardUnit" : "backward-5",
+    "localSkipForwardUnit" : "forward-5",
+    "localVoiceID" : "voice.5",
+    "localWPM" : 205,
+    "manualSortOrder" : 5,
+    "pageReaderVersion" : "pages-5",
+    "readingPosition" : {
+      "anchor" : {
+        "after" : "position after 5",
+        "before" : "position before 5",
+        "fraction" : 0.5,
+        "measuredIn" : "measure-5",
+        "version" : 5
+      },
+      "chapterIndex" : 5,
+      "characterOffset" : 50,
+      "lastUpdated" : "2026-11-15T20:05:41Z"
+    },
+    "revision" : 1,
+    "skippedHeadingIDs" : [
+      "5-35-6-Heading 5"
+    ],
+    "skippedHeadings" : [
+      {
+        "anchor" : {
+          "after" : "heading after 5",
+          "before" : "heading before 5",
+          "fraction" : 0.5,
+          "measuredIn" : "measure-5",
+          "version" : 5
+        },
+        "chapterIndex" : 5,
+        "characterOffset" : 35,
+        "label" : "Heading 5",
+        "level" : 6
+      }
+    ],
+    "textCacheFingerprint" : {
+      "cache" : {
+        "byteCount" : 10000,
+        "digest" : "cache-5",
+        "modificationTimeNanoseconds" : 10000000055
+      },
+      "source" : {
+        "byteCount" : 5000,
+        "digest" : "source-5",
+        "modificationTimeNanoseconds" : 5000000035
+      }
+    },
+    "tmbDirectoryName" : "Package-5.tmb",
+    "totalCharacterCount" : 2500,
+    "totalWordCount" : 500,
+    "transcript" : {
+      "createdAt" : "2027-01-15T08:00:00Z",
+      "locale" : "en-US",
+      "source" : {
+        "fileName" : "talk.vtt",
+        "format" : "webvtt",
+        "formats" : [
+          "webvtt",
+          "srt"
+        ],
+        "origin" : "attached"
+      },
+      "version" : 1
+    },
+    "waitingSkippedHeadings" : [
+      {
+        "anchor" : {
+          "after" : "waiting heading after 5",
+          "before" : "waiting heading before 5",
+          "fraction" : 0.5,
+          "measuredIn" : "measure-5",
+          "version" : 5
+        },
+        "chapterIndex" : 55,
+        "characterOffset" : 55,
+        "label" : "Waiting 5",
+        "level" : 2
+      }
+    ]
+  }
+}

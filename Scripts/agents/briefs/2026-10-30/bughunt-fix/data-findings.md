@@ -2,7 +2,7 @@
 
 You are `bughunt-datafix` (Sonnet). Read `../teams-common.md` ("The worker's part", "Rules for everyone", "Builds") first; it stands in for AGENTS.md. Work on branch `bughunt/datafix`, made from `team/bughunt` (at 2fd75730) by name: `git checkout -b bughunt/datafix team/bughunt`.
 
-An outside review of the bug hunt's fixes outside the parsers is at `/Users/roberteggleston/programming/ai/claude/swift/TextMouth/build/orchestrator/oct30/review-bughunt-data.md`. Read it whole: each finding gives the files and lines, the scenario, the fix, and the test. Fix all seven, one commit each, each with the test the review names, which must fail without your fix. Read the code it names before changing it.
+An outside review of the bug hunt's fixes outside the parsers is at `<main checkout>/build/orchestrator/oct30/review-bughunt-data.md`. Read it whole: each finding gives the files and lines, the scenario, the fix, and the test. Fix all seven, one commit each, each with the test the review names, which must fail without your fix. Read the code it names before changing it.
 
 ## Decisions, where the review leaves a choice
 1. **Quit saves only readers whose place moved** since their last durable save: keep the last saved chapter and offset beside `lastPersistedCheckpoint`, and add `savePositionIfMoved()`, which `saveEveryOpenReaderPosition()` calls. A reader that played since its last checkpoint counts as moved. `testTheFlushSavesEveryOpenReadersPlaceFirst` must stay green.

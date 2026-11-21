@@ -44,7 +44,7 @@ enum BrailleTableSource: Equatable, Hashable, Sendable {
     /// Whether `storedValue` names a Mac table by a bare file name: the
     /// prefix, then a name that is not empty, does not start with a dot, and
     /// holds no slash or comma, as the helper's own check
-    /// (`is_bare_table_name` in `TextMouthBraille/main.c`) requires. Such a
+    /// (`tmb_is_bare_table_name` in `TextMouthBraille/TextMouthBrailleLibrary.c`) requires. Such a
     /// value is kept by the setting even when this Mac no longer has the
     /// table, so that an import refuses it by name rather than reading the
     /// book with another table (`BraillePreferences`).
@@ -166,12 +166,25 @@ struct BrailleTable: Equatable, Hashable, Sendable, Identifiable {
     /// table that says neither its contraction nor its grade, "As the table
     /// defines". A table with no grade leaves the bracket out.
     var contractionLabel: String {
-        let bracket = grade.map { " (Grade \($0))" } ?? ""
-        switch contraction {
-        case .no: return "Uncontracted" + bracket
-        case .full: return "Contracted" + bracket
-        case .partial: return "Partly contracted"
-        case .unstated: return "As the table defines"
+        switch (contraction, grade) {
+        case (.no, let grade?):
+            // Translators: How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1.
+            return String(localized: "Uncontracted (Grade \(grade))")
+        case (.no, nil):
+            // Translators: How a braille table contracts, for a table with no grade that writes every letter out.
+            return String(localized: "Uncontracted")
+        case (.full, let grade?):
+            // Translators: How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2.
+            return String(localized: "Contracted (Grade \(grade))")
+        case (.full, nil):
+            // Translators: How a braille table contracts, for a table with no grade that shortens words with contractions.
+            return String(localized: "Contracted")
+        case (.partial, _):
+            // Translators: How a braille table contracts: it shortens some words, not all.
+            return String(localized: "Partly contracted")
+        case (.unstated, _):
+            // Translators: How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define.
+            return String(localized: "As the table defines")
         }
     }
 }
@@ -460,7 +473,7 @@ enum BrailleTableCatalog {
         return found
             .filter { !isTrueTwin($0.table.fileName, twins: twins) }
             .map(\.table)
-            .sorted { lhs, rhs in
+            .sortedStably { lhs, rhs in
                 // A tuple of the sort keys, compared in order.
                 (lhs.language, lhs.system, lhs.contraction.rank, lhs.id)
                     < (rhs.language, rhs.system, rhs.contraction.rank, rhs.id)
@@ -659,7 +672,7 @@ enum BrailleTableCatalog {
         }
         return order.compactMap { id in
             guard let members = groups[id], let first = members.first else { return nil }
-            let sorted = members.sorted { lhs, rhs in
+            let sorted = members.sortedStably { lhs, rhs in
                 // A tuple of the sort keys, compared in order: contraction,
                 // then a bundled table (0) before a Mac one (1), then name.
                 (lhs.contraction.rank, lhs.source == .bundled ? 0 : 1, lhs.fileName)
@@ -712,8 +725,9 @@ enum BrailleTableCatalog {
     /// added later, or one of this Mac's, is named with no change here.
     static func codeName(of table: BrailleTable) -> String {
         switch table.system {
-        case "ueb": return "Unified English Braille"
-        case "ebae": return "English Braille, American Edition"
+        // The names of braille codes are their own official names, as liblouis and macOS list them, so they are never translated.
+        case "ueb": return "Unified English Braille" // l10n: no (a braille code's own name, as liblouis and macOS list it)
+        case "ebae": return "English Braille, American Edition" // l10n: no (a braille code's own name, as liblouis and macOS list it)
         default: return withoutContractionWords(table.displayName)
         }
     }
@@ -721,7 +735,7 @@ enum BrailleTableCatalog {
     /// The words that say how far a table contracts, as display names put
     /// them. " partially contracted" holds " contracted", so the phrase that
     /// begins first in the name is the one removed.
-    private static let contractionPhrases = [" uncontracted", " partially contracted", " contracted"]
+    private static let contractionPhrases = [" uncontracted", " partially contracted", " contracted"] // l10n: no (matches the English display names liblouis and macOS give their tables)
 
     /// `name` without the first contraction phrase in it, and its first
     /// letter capitalized.
@@ -753,7 +767,7 @@ enum BrailleTableCatalog {
             let name = languageName(id, indexName: tables.compactMap(\.indexName).first, displayName: tables.first?.displayName)
             return BrailleLanguage(id: id, name: name, codes: members)
         }
-        return languages.sorted { lhs, rhs in
+        return languages.sortedStably { lhs, rhs in
             let (lhsEnglish, rhsEnglish) = (isEnglish(lhs.id), isEnglish(rhs.id))
             if lhsEnglish != rhsEnglish { return lhsEnglish }
             let order = lhs.name.localizedStandardCompare(rhs.name)
@@ -808,9 +822,14 @@ enum BrailleTableCatalog {
         let label = table.contractionLabel
         var words = codeName(of: table)
         if table.contraction != .unstated {
-            words += ", \(label.prefix(1).lowercased() + label.dropFirst())"
+            let contraction = label.prefix(1).lowercased() + label.dropFirst()
+            // Translators: A braille table in words: its code's name, then how it contracts, in lower case. %1$@ is the code's name, such as Unified English Braille, and %2$@ the contraction, such as uncontracted (Grade 1).
+            words = String(localized: "\(words), \(contraction)")
         }
-        return language.map { "\(words), in \($0)" } ?? words
+        return language.map {
+            // Translators: A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.
+            String(localized: "\(words), in \($0)")
+        } ?? words
     }
 }
 
@@ -889,5 +908,22 @@ enum BraillePreferences {
         // A bound id is held to the import's choices as a stored one is:
         // Unicode braille patterns, or an unknown id, reads as the default.
         return BrailleFileCode.importChoice(withID: bound)?.id ?? BrailleFileCode.defaultCode.id
+    }
+
+    /// Whether an import of a BRF or BRL read with a contracted Unified
+    /// English Braille table may read a book clearly written in English
+    /// Braille, American Edition with that code's table instead
+    /// (`BrailleTableGuess`). On unless the listener turns it off in the
+    /// Braille tab; it changes only books not yet imported.
+    static let guessesTable = StoredPreference.flag("brailleGuessesTable", default: true)
+
+    /// Whether imports guess the table in place of the setting, bound by a
+    /// hosted test, as `tableForImports` is.
+    @TaskLocal static var guessesTableForImports: Bool? = nil
+
+    /// Whether this import guesses the table: the one a test bound, else the
+    /// setting in the runtime's preferences store.
+    static func importGuessesTable() -> Bool {
+        guessesTableForImports ?? guessesTable.read(from: TextMouthRuntime.current.preferences)
     }
 }

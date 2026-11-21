@@ -19,8 +19,8 @@ class DOCXRelationshipsParser: DOCXSAXParser {
                 namespaceURI: String?, qualifiedName: String?,
                 attributes: [String: String] = [:]) {
         let localName = ParserUtilities.stripNamespacePrefix(elementName)
-        if localName == "Relationship" {
-            if let id = attributes["Id"], let target = attributes["Target"] {
+        if localName == "Relationship" { // l10n: no (an XML element name, not interface text)
+            if let id = attributes["Id"], let target = attributes["Target"] { // l10n: no (an XML element name, not interface text)
                 relationships[id] = target
             }
         }

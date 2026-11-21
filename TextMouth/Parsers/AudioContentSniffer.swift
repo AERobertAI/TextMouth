@@ -49,6 +49,10 @@ enum AudioContentSniffer {
         case mpegLayerIII
         /// ADTS AAC: MPEG audio framing with layer bits 00.
         case adts
+        /// A format one of TextMouth's own readers decodes (`OwnAudioFormat`:
+        /// True Audio and the rest), told by its signature, which may follow
+        /// an ID3v2 tag.
+        case ownReader(OwnAudioFormat)
         /// Nothing above: unreadable, empty, too short, or not recognized.
         case unknown
     }
@@ -91,6 +95,7 @@ enum AudioContentSniffer {
         let start = audioStart(in: head)
         guard found == .unknown, start >= head.count, text(in: head, at: 0, is: "ID3"),
               let next = firstBytes(of: url, upTo: windowLength, from: start) else { return found }
+        if let format = OwnAudioFormat.starting(next) { return .ownReader(format) }
         return mpegAudioKind(in: next) ?? .unknown
     }
 
@@ -99,6 +104,12 @@ enum AudioContentSniffer {
     /// ever read past their end.
     static func kind(of bytes: [UInt8]) -> Kind {
         if let container = containerKind(of: bytes) { return container }
+        // A format of TextMouth's own readers may follow an ID3v2 tag that
+        // ends inside these bytes; MPEG audio after a tag is looked for next.
+        let start = audioStart(in: bytes)
+        if start > 0, start < bytes.count, let format = OwnAudioFormat.starting(Array(bytes[start...])) {
+            return .ownReader(format)
+        }
         return mpegAudioKind(in: bytes) ?? .unknown
     }
 
@@ -108,7 +119,7 @@ enum AudioContentSniffer {
     /// its codec (a coded WAVE is a question for the user, not decided here).
     static func verdict(for kind: Kind) -> Verdict {
         switch kind {
-        case .ogg, .ac3, .caf, .aifc, .au, .wave64, .amr, .threeGPP, .mpegLayerI, .mpegLayerII:
+        case .ogg, .ac3, .caf, .aifc, .au, .wave64, .amr, .threeGPP, .mpegLayerI, .mpegLayerII, .ownReader:
             return .convert
         case .mpegLayerIII, .adts, .wave, .aiff, .flac:
             return .leave
@@ -181,6 +192,7 @@ enum AudioContentSniffer {
             return .wave
         }
         if bytes.starts(with: Array("fLaC".utf8)) { return .flac }
+        if let format = OwnAudioFormat.starting(bytes) { return .ownReader(format) }
         return nil
     }
 

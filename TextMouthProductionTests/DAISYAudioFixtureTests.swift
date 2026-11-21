@@ -61,6 +61,47 @@ final class DAISYAudioFixtureTests: XCTestCase {
         XCTAssertEqual(clip.endTime, 3.578, accuracy: Self.millisecond / 2)
     }
 
+    // MARK: - SMIL Clock Values
+
+    /// A SMIL timecount counts in the metric it ends with: milliseconds,
+    /// seconds, minutes, or hours, and in seconds with none. "500ms" was read
+    /// as 0, since its trailing "s" was taken off and "500m" is no number.
+    func testTimecountsAreReadInTheirMetric() {
+        let cases: [(String, Double)] = [
+            ("500ms", 0.5), ("1500ms", 1.5), ("2min", 120), ("1.5min", 90), ("1h", 3600), ("0.5h", 1800),
+            ("38.228s", 38.228), ("38.228", 38.228), ("npt=500ms", 0.5), ("npt=38.228s", 38.228),
+            (" 250ms ", 0.25), ("500MS", 0.5), ("2MIN", 120),
+        ]
+        for (value, seconds) in cases {
+            XCTAssertEqual(DAISYAudioSMILParser.parseTime(value), seconds, accuracy: 1e-9, value)
+        }
+    }
+
+    /// The readings from before still read as they did: clock values with
+    /// hours, minutes, and a fraction, with or without a trailing "s", and
+    /// text that is no time at all is 0.
+    func testClockValuesAndNonsenseAreReadAsBefore() {
+        let cases: [(String, Double)] = [
+            ("0:02:43.650", 163.65), ("1:00:00", 3600), ("02:30", 150), ("npt=0:00:05.5", 5.5),
+            ("0:02:43.650s", 163.65), ("", 0), ("soon", 0), ("ms", 0), ("min", 0), ("xms", 0),
+        ]
+        for (value, seconds) in cases {
+            XCTAssertEqual(DAISYAudioSMILParser.parseTime(value), seconds, accuracy: 1e-9, value.debugDescription)
+        }
+    }
+
+    /// A clip whose SMIL file gives its times in milliseconds starts and ends
+    /// where they say.
+    func testAClipGivenInMillisecondsStartsWhereItSays() throws {
+        let smil = """
+        <smil><body><seq><par id="p1"><text src="a.xhtml#t1"/>\
+        <audio src="a.mp3" clipBegin="500ms" clipEnd="2500ms"/></par></seq></body></smil>
+        """
+        let clip = try XCTUnwrap(parseDAISYAudioSMIL(smil).first)
+        XCTAssertEqual(clip.startTime, 0.5, accuracy: Self.rounding)
+        XCTAssertEqual(clip.endTime, 2.5, accuracy: Self.rounding)
+    }
+
     // MARK: - Whole Books
 
     /// Fire Safety, imported as the library imports it, plays every section

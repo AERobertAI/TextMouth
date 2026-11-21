@@ -219,9 +219,8 @@ final class TextFieldEditingKeysTests: XCTestCase {
 
     /// The default keys with Command or Control a field being edited keeps,
     /// by action: the ones it edits with, and the Option-Command arrows of
-    /// Next and Previous Heading, the Option-Command left and right arrows of
-    /// Next and Previous Page, and of the editor's chapter markers, which move
-    /// nothing in a field but are arrows. Every other default key with
+    /// Next and Previous Heading and of the editor's chapter markers, which
+    /// move nothing in a field but are arrows. Every other default key with
     /// Command or Control still acts from a field, and a key with neither,
     /// Shift and Option alone included, is the field's typing, as before.
     func testTheDefaultKeysAFieldKeeps() {
@@ -242,8 +241,6 @@ final class TextFieldEditingKeysTests: XCTestCase {
         var expected = Self.defaultsAFieldEditsWith
         expected[.nextHeading] = ["option+command+downArrow"]
         expected[.previousHeading] = ["option+command+upArrow"]
-        expected[.nextPage] = ["option+command+rightArrow"]
-        expected[.previousPage] = ["option+command+leftArrow"]
         expected[.editorNextChapter] = ["option+command+downArrow"]
         expected[.editorPreviousChapter] = ["option+command+upArrow"]
         XCTAssertEqual(kept, expected)

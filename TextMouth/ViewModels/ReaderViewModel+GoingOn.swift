@@ -7,8 +7,10 @@ enum BookSuccession: Equatable {
     /// This book takes listening over.
     case book(Book)
     /// Nothing follows; the note says why, as the sentence after
-    /// "Finished: <title>." says it.
-    case nothing(note: String)
+    /// "Finished: <title>." says it, in the interface language. The log name
+    /// says the same in English, for the debug log, which stays English
+    /// whatever the interface language is (never log the note).
+    case nothing(note: String, logName: String)
     /// A feed's next episode, whose file is not here: it is downloaded, and
     /// listening goes on once it arrives (FR19). Only
     /// `LibraryViewModel.succession(after:going:skippingFinished:)` gives it.
@@ -19,10 +21,12 @@ extension ReaderViewModel {
 
     /// Goes on from this finished book as `succession` says: the book it names
     /// takes listening over (`handOverToNextBook(to:titled:askingWith:)`),
-    /// unless this reader's sleep timer is in effect, which could never pause
-    /// it, or nothing follows. Then `say` says that the book finished and why
-    /// nothing follows: the succession's note, or that the next book was not
-    /// started because of the sleep timer.
+    /// unless this reader's sleep timer ends listening here (it fades out, or
+    /// waits for the end of a heading or of the book that this end spends), or
+    /// nothing follows. A timer counting minutes goes on with the next book.
+    /// Then `say` says that the book finished and why nothing follows: the
+    /// succession's note, or that the next book was not started because of
+    /// the sleep timer.
     ///
     /// The one copy of the steps that the reading list's end
     /// (`followReadingListPastThisBook`) and Continue to Next Book
@@ -54,8 +58,8 @@ extension ReaderViewModel {
         // must not outlive it and start a book this decision did not.
         nextEpisodeWait = nil
         switch succession {
-        case .nothing(let note):
-            DiagnosticLog.trace(.playback, "end of book: nothing follows in \(place) (\(note))")
+        case .nothing(let note, let logName):
+            DiagnosticLog.trace(.playback, "end of book: nothing follows in \(place) (\(logName))")
             say(EndOfBookWording.finished(book.title, notes: [note], sleepTimerExpired: sleepTimerStoppedHere))
 
         case .book(let next):
@@ -86,9 +90,8 @@ extension ReaderViewModel {
     }
 
     /// Says that the next book was not started because this reader's sleep
-    /// timer is in effect: the next book would play on past it, and the
-    /// timer can pause only the reader that set it. Also what the wait for a
-    /// next episode says when the timer was started after the wait began.
+    /// timer ends listening here: it fades out, or waits for the end of a
+    /// heading or of the book that this end spends.
     func saySleepTimerKeepsNextBookFromStarting(in place: String, saying say: (String) -> Void) {
         DiagnosticLog.trace(.playback, "end of book: this reader's sleep timer is in effect; not starting the next book in \(place)")
         say(EndOfBookWording.finished(book.title, notes: [EndOfBookWording.nextBookNotStartedNote]))

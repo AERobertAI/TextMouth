@@ -467,7 +467,7 @@ struct TextAnchorFinder: Sendable {
                 scores[end + 1] = score(at: end + 1, quote)
             }
         }
-        return scores.map { Spot(word: $0.key, score: $0.value) }.sorted { $0.word < $1.word }
+        return scores.map { Spot(word: $0.key, score: $0.value) }.sortedStably { $0.word < $1.word }
     }
 
     /// The tolerant search's candidates: the quote's words (before the
@@ -493,7 +493,7 @@ struct TextAnchorFinder: Sendable {
         var best: [Int: Int] = [:]
         var stretchesSeen = Set<Int>()
         var table: [Int32] = []
-        for estimate in estimates.sorted() {
+        for estimate in estimates.sortedStably() {
             let low = max(0, estimate - placeIndex - Self.tolerantMargin)
             let high = min(words.count, estimate + (quoteWords.count - placeIndex) + Self.tolerantMargin)
             guard low < high, stretchesSeen.insert(low / 4).inserted else { continue }
@@ -501,7 +501,7 @@ struct TextAnchorFinder: Sendable {
                 best[spot.word] = max(best[spot.word] ?? 0, spot.score)
             }
         }
-        return best.map { Spot(word: $0.key, score: $0.value) }.sorted { $0.word < $1.word }
+        return best.map { Spot(word: $0.key, score: $0.value) }.sortedStably { $0.word < $1.word }
     }
 
     /// Lines the quote's words up with the book's words in `stretch` (a

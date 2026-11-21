@@ -174,11 +174,11 @@ final class AsyncBridgeTests: XCTestCase {
             AsyncBridge.TimeLimitExceeded(limit: limit).errorDescription
         }
 
-        XCTAssertEqual(sentence(.seconds(30)), "Reading the audio took longer than 30 seconds, so TextMouth stopped waiting for it.")
-        XCTAssertEqual(sentence(.seconds(300)), "Reading the audio took longer than 5 minutes, so TextMouth stopped waiting for it.")
-        XCTAssertEqual(sentence(.seconds(60)), "Reading the audio took longer than 1 minute, so TextMouth stopped waiting for it.")
-        XCTAssertEqual(sentence(.seconds(90)), "Reading the audio took longer than 90 seconds, so TextMouth stopped waiting for it.")
-        XCTAssertEqual(sentence(.seconds(1)), "Reading the audio took longer than 1 second, so TextMouth stopped waiting for it.")
+        XCTAssertEqual(sentence(.seconds(30)), "Reading the audio took longer than 30 seconds; TextMouth stopped waiting.")
+        XCTAssertEqual(sentence(.seconds(300)), "Reading the audio took longer than 5 minutes; TextMouth stopped waiting.")
+        XCTAssertEqual(sentence(.seconds(60)), "Reading the audio took longer than 1 minute; TextMouth stopped waiting.")
+        XCTAssertEqual(sentence(.seconds(90)), "Reading the audio took longer than 90 seconds; TextMouth stopped waiting.")
+        XCTAssertEqual(sentence(.seconds(1)), "Reading the audio took longer than 1 second; TextMouth stopped waiting.")
     }
 
     /// The limits the callers use.
@@ -216,7 +216,7 @@ final class AsyncBridgeTests: XCTestCase {
             XCTAssertEqual(error as? AsyncBridge.AbandonedEarlier, AsyncBridge.AbandonedEarlier())
             XCTAssertEqual(
                 error.localizedDescription,
-                "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is opened again."
+                "TextMouth stopped reading this audio earlier because it took too long, and won't try again until TextMouth is closed and opened again."
             )
         }
         XCTAssertLessThan(Date().timeIntervalSince(started), 5, "the second read was not refused at once")

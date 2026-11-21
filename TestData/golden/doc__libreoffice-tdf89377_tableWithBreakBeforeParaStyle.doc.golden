@@ -1,0 +1,13 @@
+# TextMouth document golden, format 2
+file: doc__libreoffice-tdf89377_tableWithBreakBeforeParaStyle.doc
+macOS: 26.3
+format: doc
+title: libreoffice-tdf89377_tableWithBreakBeforeParaStyle
+author: Unknown
+chapters: 1
+words: 10
+text length: 62
+text checksum: 7bf1c401f8c5ab13
+first 300: Paragraph style with PageBreak. Table also has page break set.
+last 300: Paragraph style with PageBreak. Table also has page break set.
+page: 1 | 0:0 | Paragraph style with Pag

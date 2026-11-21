@@ -82,7 +82,7 @@ extension EndBehaviorMatrixTests {
                 chapter: reader.currentChapterIndex,
                 nextAsked: nextAsked,
                 nextRequested: world.autoplayRequests.hasRequest(for: nextBook.id),
-                timerInEffect: SleepTimerService.shared.isActive
+                timerInEffect: reader.sleepTimerService.isActive
             ),
             is: cell, title: book.title, next: nextBook.title, lastChapter: lastChapter, content: content,
             file: file, line: line

@@ -138,7 +138,7 @@ enum PDFPageGeometry {
             return (item, shown.maxY.rounded(), shown.minX)
         }
         return keyed
-            .sorted { $0.top != $1.top ? $0.top > $1.top : $0.left < $1.left }
+            .sortedStably { $0.top != $1.top ? $0.top > $1.top : $0.left < $1.left }
             .map(\.item)
     }
 }

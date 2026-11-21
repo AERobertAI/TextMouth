@@ -12,18 +12,24 @@ struct TranscriptionOfferAcceptance: Equatable, Sendable {
 }
 
 /// When an import offers to transcribe the book it added (FR05): after
-/// importing an audiobook in a package of its own, while "Offer to
-/// transcribe after importing an audiobook" is on and this Mac can
-/// transcribe. The offer is asked as an import question, after the
-/// import's own (`ImportDecision.Kind.transcriptionOffer`), and accepting
-/// it opens the same Transcribe Audio sheet the command opens.
+/// importing an audiobook in a package of its own that has no transcript
+/// yet, while "Offer to transcribe after importing an audiobook" is on and
+/// this Mac can transcribe. The offer is asked as an import question, after
+/// the import's own (`ImportDecision.Kind.transcriptionOffer`), and
+/// accepting it opens the same Transcribe Audio sheet the command opens.
 @MainActor
 enum TranscriptionOffers {
     /// Whether an import offers to transcribe `book`, as the setting in the
-    /// app's preferences store and this Mac's system decide.
+    /// app's preferences store and this Mac's system decide. A book whose
+    /// package holds a transcript already, as one an import gives a
+    /// timed-text file found beside its audio (FMT23), is not offered: a
+    /// transcription would replace that transcript. Whether it has one is a
+    /// look at the package's folder, which never downloads anything
+    /// (`TranscriptStore.hasTranscript(of:)`).
     static func offersTranscription(of book: Book) -> Bool {
         LibraryAudioCommand.isTranscribable(book)
             && TranscriptionPreferences.offerAfterImport.read(from: TextMouthRuntime.current.preferences)
+            && !TranscriptStore.hasTranscript(of: book)
             && TranscriptionAvailability.systemSupport == .available
     }
 

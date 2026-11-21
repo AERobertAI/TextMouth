@@ -133,6 +133,27 @@ final class WebArchiveAndSSMLImportTests: XCTestCase {
 
     // MARK: - Reopening
 
+    /// A web archive's HTML page honors `includesPages` as an .html file does:
+    /// its page-break element is a page marker when pages are included, and
+    /// the page as it was read before pages when they are not (the launch
+    /// re-read's compare), by the cache's own extraction and by the page alone.
+    func testAWebArchiveHonorsIncludesPages() throws {
+        let page = "<html><body><p>One <span role=\"doc-pagebreak\" aria-label=\"12\">12</span>two</p></body></html>"
+        let bytes = try webArchiveBytes(data: Data(page.utf8), mimeType: "text/html")
+        let url = try file(named: "pages.webarchive", holding: bytes)
+        let imported = try importedForTest(url)
+
+        let with = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: imported.book, includesPages: true))
+        XCTAssertTrue(with.contains("<!-- page: 12 -->"), with)
+        let without = try XCTUnwrap(MarkdownCacheService.extractedMarkdown(for: imported.book, includesPages: false))
+        XCTAssertFalse(without.contains("<!--"), without)
+        XCTAssertTrue(without.contains("One 12two"), without)
+
+        let mainPage = try WebArchiveReader.mainPage(of: url)
+        XCTAssertTrue(try mainPage.markdown().contains("<!-- page: 12 -->"), "pages are included by default")
+        XCTAssertFalse(try mainPage.markdown(includesPages: false).contains("<!--"))
+    }
+
     func testBothReopenFromContentAsTheyFirstRead() throws {
         for sample in ["webarchive/headings.webarchive", "ssml/passage.ssml"] {
             let imported = try importedForTest(try copyOfFormatSample(sample))

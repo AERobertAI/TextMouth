@@ -1,0 +1,24 @@
+{
+  "source": "/work/typecheck/ios-strings/src/TextMouth/Views/LibraryView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "The button that plays the book",
+        "key": "Play",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 12
+        }
+      },
+      {
+        "comment": "How many books a folder holds",
+        "key": "%lld books",
+        "location": {
+          "startingColumn": 20,
+          "startingLine": 31
+        }
+      }
+    ]
+  },
+  "version": 1
+}

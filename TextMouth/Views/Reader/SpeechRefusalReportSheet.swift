@@ -1,4 +1,8 @@
+#if os(macOS)
 import AppKit
+#else
+import UIKit
+#endif
 import SwiftUI
 
 // MARK: - The Report's Sheet (B05)
@@ -139,11 +143,20 @@ struct SpeechRefusalReportSheet: SheetOverOneReader {
     /// Copy Details: puts the whole report on `pasteboard` as plain text,
     /// the general pasteboard in the app, and tells VoiceOver whether it
     /// was copied.
+    #if os(macOS)
     static func copyDetails(of report: SpeechRefusalReport, to pasteboard: NSPasteboard) {
         pasteboard.clearContents()
         let copied = pasteboard.setString(report.text, forType: .string)
         VoiceOverAnnouncer.announce(copied ? SpeechRefusalWording.copiedAnnouncement : SpeechRefusalWording.notCopiedAnnouncement)
     }
+    #else
+    /// iOS: the same call on a `UIPasteboard`. Setting its string cannot
+    /// fail, so VoiceOver is always told the report was copied.
+    static func copyDetails(of report: SpeechRefusalReport, to pasteboard: UIPasteboard) {
+        pasteboard.string = report.text
+        VoiceOverAnnouncer.announce(SpeechRefusalWording.copiedAnnouncement)
+    }
+    #endif
 }
 
 /// Presents the report of a speech refusal over the reader while the reader

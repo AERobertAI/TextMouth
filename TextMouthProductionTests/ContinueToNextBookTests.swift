@@ -32,6 +32,15 @@ final class ContinueToNextBookTests: XCTestCase {
     /// Subscriptions a test keeps until it ends.
     private var subscriptions = Set<AnyCancellable>()
 
+    /// Every reader here is in a window of its own, with a sleep timer of its
+    /// own (`makeReader`), so no timer a test starts may outlive the test:
+    /// every timer of the app's registry is stopped when it ends, and the
+    /// duration last used is put back.
+    override func setUp() async throws {
+        try await super.setUp()
+        preserveSleepTimers()
+    }
+
     // MARK: - Starting the next book
 
     /// A reader opened for a waiting request starts playing once it has
@@ -529,7 +538,7 @@ final class ContinueToNextBookTests: XCTestCase {
             )
             waitUntilLoaded(reader)
             if testCase.timer {
-                startSharedSleepTimer(.endOfBook, ownedBy: reader.readerID)
+                startSleepTimer(.endOfBook, for: reader)
             }
 
             let ending = recordingAnnouncements {
@@ -584,22 +593,25 @@ final class ContinueToNextBookTests: XCTestCase {
     // MARK: - Sleep timer
 
     /// The finished book's own sleep timer ends listening while it is in
-    /// effect, whatever it waits for: a timer set for the end of the heading
-    /// or of the book is still in effect as the last chapter ends, since it
-    /// ends there itself. A timer that has ended, or another book's, does
-    /// not.
+    /// effect and fades out or waits for a place: a timer set for the end of
+    /// the heading or of the book is still in effect as the last chapter
+    /// ends, since it ends there itself. A timer counting minutes goes on
+    /// with the next book instead (0.2.5), a timer that has ended does not
+    /// end anything, and another book's never does.
     func testOnlyTheFinishedBooksEffectiveSleepTimerEndsListening() {
-        let cases: [(name: String, owned: Bool, active: Bool, ends: Bool)] = [
-            ("counting down, or waiting for a heading's or the book's end", true, true, true),
-            ("ended: run out, stopped at an earlier heading's end, or cancelled", true, false, false),
-            ("another reader's, in effect", false, true, false),
-            ("another reader's, ended", false, false, false),
+        let cases: [(name: String, owned: Bool, active: Bool, fadesOrWaits: Bool, ends: Bool)] = [
+            ("fading out, or waiting for a heading's or the book's end", true, true, true, true),
+            ("counting minutes: it goes on with the next book", true, true, false, false),
+            ("ended: run out, stopped at an earlier heading's end, or cancelled", true, false, false, false),
+            ("another reader's, in effect", false, true, true, false),
+            ("another reader's, ended", false, false, false, false),
         ]
         for testCase in cases {
             XCTAssertEqual(
                 ReaderViewModel.sleepTimerEndsListening(
                     timerBelongsToThisReader: testCase.owned,
-                    timerIsActive: testCase.active
+                    timerIsActive: testCase.active,
+                    timerFadesOutOrWaitsForAPlace: testCase.fadesOrWaits
                 ),
                 testCase.ends,
                 testCase.name
@@ -607,12 +619,145 @@ final class ContinueToNextBookTests: XCTestCase {
         }
     }
 
-    /// A sleep timer the finished book set could never pause the next book,
-    /// so while it counts down the next book is not started: the finished
-    /// book says why, and asks for nothing.
-    func testFinishedBooksRunningSleepTimerKeepsTheNextBookFromStarting() throws {
-        try assertSleepTimerKeepsTheNextBookFromStarting { finishedReaderID in
-            startSharedSleepTimer(.minutes(30), ownedBy: finishedReaderID)
+    /// A sleep timer counting minutes goes on with the next book (0.2.5): the
+    /// next book starts, "Starting: <title>", and the timer is the next
+    /// reader's from then on, running, with its time left and its duration as
+    /// they were, never restarted. The next reader is in a window of its own,
+    /// so the timer changes windows: the next reader's window's timer has it,
+    /// and the finished reader's window's timer has stopped.
+    func testFinishedBooksRunningSleepTimerGoesOnWithTheNextBook() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        let nextReader = makeReader(for: next, in: world)
+        waitUntilLoaded(finishedReader)
+        waitUntilLoaded(nextReader)
+        startSleepTimer(.minutes(30), for: finishedReader)
+        let before = finishedReader.sleepTimerService.remainingSeconds
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            XCTAssertTrue(eventually { nextReader.isCurrentlyPlaying }, "The next book never started")
+        }
+
+        XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
+        // The next reader's window's timer: the timer changed windows.
+        let timer = nextReader.sleepTimerService
+        XCTAssertFalse(finishedReader.sleepTimerService.isActive, "The finished reader's window kept a timer")
+        XCTAssertTrue(timer.isActive, "The timer ended with the book")
+        XCTAssertEqual(timer.ownerID, nextReader.readerID, "The next reader does not own the timer")
+        XCTAssertEqual(timer.duration, .minutes(30))
+        XCTAssertLessThanOrEqual(timer.remainingSeconds, before)
+        XCTAssertGreaterThan(timer.remainingSeconds, before - 60, "The countdown was reset or lost")
+    }
+
+    /// The finished book's close leaves a timer it handed over running: the
+    /// reader that takes the next book, in a window of its own, takes it
+    /// afterwards into its window's timer, once, and exactly one reader owns
+    /// it throughout. The finished reader's window's timer has stopped by then.
+    func testTheFinishedReadersCloseDoesNotStopAHandedOverTimer() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        waitUntilLoaded(finishedReader)
+        // The finished reader's window's timer, held for the next book.
+        let finishedTimer = startSleepTimer(.minutes(30), for: finishedReader)
+
+        // The ask: a request for the next book to take the timer, as a switch
+        // makes it before the next reader exists.
+        finishedReader.holdSleepTimer(forBook: next.id)
+        finishedTimer.markAsked(forBook: next.id)
+        finishedReader.close()
+        XCTAssertTrue(finishedTimer.isActive, "Closing the reader stopped a timer it handed over")
+        XCTAssertEqual(
+            finishedTimer.ownerID, finishedReader.readerID, "Exactly one owner until the next reader takes it"
+        )
+
+        // The next book opens in a window of its own: its window's timer
+        // takes the running timer, and the finished reader's window's stops.
+        let nextReader = makeReader(for: next, in: world)
+        waitUntilLoaded(nextReader)
+        let timer = nextReader.sleepTimerService
+        XCTAssertTrue(timer.isActive)
+        XCTAssertEqual(timer.ownerID, nextReader.readerID)
+        XCTAssertFalse(finishedTimer.isActive, "The finished reader's window kept a timer")
+        XCTAssertFalse(
+            SleepTimerRegistry.shared.isHeld(forBook: next.id), "The hold was left after the next reader took the timer"
+        )
+    }
+
+    /// The timer runs out in the half second between "Starting" and the ask:
+    /// it has ended listening, so the next book is not asked for or started,
+    /// and the listener hears the timer's own expiry.
+    func testATimerThatRunsOutBeforeTheNextBookIsAskedForEndsListening() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        let nextReader = makeReader(for: next, in: world)
+        waitUntilLoaded(finishedReader)
+        waitUntilLoaded(nextReader)
+        // Started by the reader, so its expiry is heard as the listener hears
+        // it: the finished reader's window's timer.
+        startSleepTimer(.minutes(30), for: finishedReader)
+        finishedReader.startSleepTimer(duration: .minutes(30))
+        let asked = recordContinueRequests(in: world)
+
+        let recorder = recordingAnnouncements {
+            finishedReader.handleEndOfBook()
+            finishedReader.sleepTimerService._expireForTesting()
+            spinMainRunLoop(for: ReaderViewModel.continueToNextBookDelay * 2)
+        }
+
+        XCTAssertEqual(
+            recorder.announcements.map(\.message),
+            ["Starting: Second Volume", ReaderViewModel.sleepTimerExpiredAnnouncement]
+        )
+        XCTAssertTrue(asked().isEmpty, "Asked for the next book after the timer ran out")
+        XCTAssertFalse(world.requests.hasRequest(for: next.id), "A request for the next book was left")
+        XCTAssertFalse(nextReader.isCurrentlyPlaying, "The next book started after the timer ran out")
+    }
+
+    /// A timer that ran out before the next book took it ends listening: the
+    /// reader that loads the next book finds it so, drops the request to
+    /// start it, and does not play.
+    func testATimerThatRanOutBeforeTheNextBookLoadedKeepsItFromStarting() throws {
+        let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
+        let next = try makeAudioBook(title: "Second Volume")
+        let world = try makeWorld(books: [finished, next])
+        let finishedReader = makeReader(for: finished, in: world)
+        waitUntilLoaded(finishedReader)
+        startSleepTimer(.minutes(30), for: finishedReader)
+        finishedReader.holdSleepTimer(forBook: next.id)
+        _ = world.requests.request(for: next.id, from: finished.id)
+        finishedReader.sleepTimerService._expireForTesting()
+
+        let nextReader = makeReader(for: next, in: world)
+        waitUntilLoaded(nextReader)
+        spinMainRunLoop(for: 0.5)
+
+        XCTAssertFalse(nextReader.isCurrentlyPlaying, "The next book started after the timer ran out")
+        XCTAssertFalse(world.requests.hasRequest(for: next.id), "The request to start it was left")
+        // The timer ran out in the finished reader's window and went nowhere.
+        XCTAssertFalse(finishedReader.sleepTimerService.isActive)
+        XCTAssertFalse(nextReader.sleepTimerService.isActive, "The next reader's window took a timer that ran out")
+    }
+
+    /// A timer fading out is putting the listener to sleep: it ends
+    /// listening at the book's end, and the next book is not started, as the
+    /// end says today.
+    func testATimerFadingOutKeepsTheNextBookFromStarting() throws {
+        try assertSleepTimerKeepsTheNextBookFromStarting { finishedReader in
+            // The finished reader's window's timer, started again with a
+            // fade, and run out into it.
+            let timer = startSleepTimer(.minutes(1), for: finishedReader)
+            timer.start(
+                duration: .minutes(1), ownerID: finishedReader.readerID, onExpire: {}, fadeOutDuration: 5
+            )
+            timer._expireForTesting()
+            XCTAssertTrue(timer.isFadingOut)
         }
     }
 
@@ -620,15 +765,17 @@ final class ContinueToNextBookTests: XCTestCase {
     /// book's last chapter ends, which ends the last heading, so the next
     /// book is not started, and the timer ends there.
     func testEndOfHeadingTimerAtTheBooksEndKeepsTheNextBookFromStarting() throws {
-        try assertSleepTimerKeepsTheNextBookFromStarting { finishedReaderID in
-            startSharedSleepTimer(.endOfHeading, ownedBy: finishedReaderID)
+        var finishedTimer: SleepTimerService?
+        try assertSleepTimerKeepsTheNextBookFromStarting { finishedReader in
+            finishedTimer = startSleepTimer(.endOfHeading, for: finishedReader)
         }
-        XCTAssertFalse(SleepTimerService.shared.isActive, "The timer did not end with the book")
+        XCTAssertEqual(finishedTimer?.isActive, false, "The timer did not end with the book")
     }
 
     /// The timer belongs to the reader that set it: one set in another
     /// window of the finished book does not keep this window's book from
-    /// continuing to the next.
+    /// continuing to the next. The two windows have a timer each, and the
+    /// other window's goes on running, untouched by the hand-over.
     func testATimerSetByAnotherReaderOfTheSameBookDoesNotStopContinuing() throws {
         let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
         let next = try makeAudioBook(title: "Second Volume")
@@ -639,7 +786,8 @@ final class ContinueToNextBookTests: XCTestCase {
         waitUntilLoaded(finishedReader)
         waitUntilLoaded(secondWindowOfFinished)
         waitUntilLoaded(nextReader)
-        startSharedSleepTimer(.minutes(30), ownedBy: secondWindowOfFinished.readerID)
+        // Set in the second window of the finished book, whose timer is its own.
+        let otherWindowsTimer = startSleepTimer(.minutes(30), for: secondWindowOfFinished)
 
         let recorder = recordingAnnouncements {
             finishedReader.handleEndOfBook()
@@ -648,7 +796,8 @@ final class ContinueToNextBookTests: XCTestCase {
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
         XCTAssertTrue(nextReader.audioPlaybackService.isPlaying)
-        XCTAssertTrue(SleepTimerService.shared.isActive, "The other window's timer ended")
+        XCTAssertTrue(otherWindowsTimer.isActive, "The other window's timer ended")
+        XCTAssertFalse(finishedReader.sleepTimerService.isActive, "The finished window has a timer it never set")
     }
 
     /// Another book's sleep timer pauses only that book, so it does not
@@ -656,12 +805,16 @@ final class ContinueToNextBookTests: XCTestCase {
     func testAnotherBooksSleepTimerDoesNotStopContinuing() throws {
         let finished = try makeAudioBook(title: "First Volume", endOfBook: .continueNext)
         let next = try makeAudioBook(title: "Second Volume")
-        let world = try makeWorld(books: [finished, next])
+        let otherBook = try makeAudioBook(title: "Third Volume")
+        let world = try makeWorld(books: [finished, next, otherBook])
         let finishedReader = makeReader(for: finished, in: world)
         let nextReader = makeReader(for: next, in: world)
         waitUntilLoaded(finishedReader)
         waitUntilLoaded(nextReader)
-        startSharedSleepTimer(.minutes(30), ownedBy: UUID())
+        // Another book's reader, in a window of its own with a timer of its own.
+        let otherBooksReader = makeReader(for: otherBook, in: world)
+        waitUntilLoaded(otherBooksReader)
+        let otherBooksTimer = startSleepTimer(.minutes(30), for: otherBooksReader)
 
         let recorder = recordingAnnouncements {
             finishedReader.handleEndOfBook()
@@ -670,6 +823,7 @@ final class ContinueToNextBookTests: XCTestCase {
 
         XCTAssertEqual(recorder.announcements.map(\.message), ["Starting: Second Volume"])
         XCTAssertTrue(nextReader.audioPlaybackService.isPlaying)
+        XCTAssertTrue(otherBooksTimer.isActive, "The other book's timer ended")
     }
 
     // MARK: - Counting starts
@@ -801,6 +955,10 @@ final class ContinueToNextBookTests: XCTestCase {
     /// A reader for `book` in `world`, which starts loading at once and is
     /// closed when the test ends.
     ///
+    /// The reader is in a window of its own, as a book opened from the
+    /// Library is, so it has a sleep timer of its own (`sleepTimerService`),
+    /// which no other reader's window shares.
+    ///
     /// - Parameters:
     ///   - requests: The request store, when not the world's own.
     ///   - nowPlaying: The Now Playing coordinator the reader joins, when
@@ -817,7 +975,8 @@ final class ContinueToNextBookTests: XCTestCase {
             settingsViewModel: world.settings,
             autoplayRequests: requests ?? world.requests,
             notificationCenter: world.notifications,
-            nowPlaying: nowPlaying
+            nowPlaying: nowPlaying,
+            sleepTimer: SleepTimerService()
         )
         addTeardownBlock { reader.close() }
         return reader
@@ -878,11 +1037,11 @@ final class ContinueToNextBookTests: XCTestCase {
     /// says it finished and why the next one did not start, leaves no
     /// request, and asks for no window.
     ///
-    /// - Parameter setUpTimer: Arranges the shared sleep timer, given the ID
-    ///   of the finished book's reader, its owner, just before the book
-    ///   ends.
+    /// - Parameter setUpTimer: Arranges the finished book's reader's window's
+    ///   sleep timer, given the finished book's reader, its owner, just
+    ///   before the book ends.
     private func assertSleepTimerKeepsTheNextBookFromStarting(
-        _ setUpTimer: (UUID) -> Void,
+        _ setUpTimer: (ReaderViewModel) -> Void,
         file: StaticString = #filePath,
         line: UInt = #line
     ) throws {
@@ -894,7 +1053,7 @@ final class ContinueToNextBookTests: XCTestCase {
         waitUntilLoaded(finishedReader)
         waitUntilLoaded(nextReader)
         let asked = recordContinueRequests(in: world)
-        setUpTimer(finishedReader.readerID)
+        setUpTimer(finishedReader)
 
         let recorder = recordingAnnouncements {
             finishedReader.handleEndOfBook()
@@ -920,27 +1079,19 @@ final class ContinueToNextBookTests: XCTestCase {
         )
     }
 
-    /// Start the app's one sleep timer for `owner`, and put it back as it
-    /// was when the test ends: stopped, with the user's last-used duration
-    /// and its saved preference restored.
+    /// Start the sleep timer of `reader`'s window for `reader`, which owns it.
+    /// The class's `setUp` (`preserveSleepTimers()`) stops it when the test
+    /// ends and puts back the user's last-used duration and its saved
+    /// preference.
+    ///
+    /// - Returns: The reader's window's timer.
     @discardableResult
-    private func startSharedSleepTimer(
+    private func startSleepTimer(
         _ duration: SleepTimerDuration,
-        ownedBy owner: UUID
+        for reader: ReaderViewModel
     ) -> SleepTimerService {
-        let timer = SleepTimerService.shared
-        let preferenceKey = "sleepTimer.lastUsedDuration"
-        let savedDuration = timer.lastUsedDuration
-        let savedPreference = TextMouthRuntime.current.preferences.object(forKey: preferenceKey)
-        addTeardownBlock {
-            timer._resetForTesting()
-            if let savedDuration {
-                timer.start(duration: savedDuration, ownerID: UUID(), onExpire: {})
-                timer.stop()
-            }
-            TextMouthRuntime.current.preferences.set(savedPreference, forKey: preferenceKey)
-        }
-        timer.start(duration: duration, ownerID: owner, onExpire: {})
+        let timer = reader.sleepTimerService
+        timer.start(duration: duration, ownerID: reader.readerID, onExpire: {})
         return timer
     }
 
@@ -1174,7 +1325,8 @@ final class ContinueToNextBookTests: XCTestCase {
             settingsViewModel: folder.world.settings,
             autoplayRequests: folder.world.requests,
             readingListRequests: requests,
-            notificationCenter: folder.world.notifications
+            notificationCenter: folder.world.notifications,
+            sleepTimer: SleepTimerService()
         )
         addTeardownBlock { reader.close() }
         waitUntilLoaded(reader)

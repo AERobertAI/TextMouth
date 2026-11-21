@@ -84,7 +84,9 @@ final class ImportDecisionSheetTests: XCTestCase {
                 throw XCTSkip("This macOS hands an offscreen window no key equivalents")
             }
             XCTAssertTrue(waitUntil { answers.calls == [.keepBoth] }, "Return answered \(answers.calls)")
-            XCTAssertTrue(pressKeyEquivalent(.escape, in: hostingView))
+            // The choices are dimmed while an answer is carried out, a moment
+            // after it is recorded, so Escape is tried until it is taken.
+            XCTAssertTrue(waitUntil { pressKeyEquivalent(.escape, in: hostingView) }, "Escape was never taken")
             XCTAssertTrue(waitUntil { answers.calls == [.keepBoth, .cancel] }, "Escape answered \(answers.calls)")
         }
     }

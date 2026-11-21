@@ -1,17 +1,32 @@
 import Foundation
 import os
+#if os(iOS)
+// The braille translation, which the iPhone app links and calls in its own
+// process (DR34); the Mac app links none of it.
+import TextMouthBrailleLibrary
+#endif
 
 /// Translates paragraphs between print and braille through liblouis (FMT21).
 ///
 /// liblouis is C that reads untrusted text and braille, it has had
-/// memory-safety bugs, and it is not thread-safe, so TextMouth never calls it
-/// in its own process. This type is the only caller of the helper that does,
-/// `TextMouthBraille` (`TextMouthBraille/main.c`): it writes the paragraphs
-/// to a hidden file, runs the helper on it under the watchdog
+/// memory-safety bugs, and it is not thread-safe, so the Mac app never calls
+/// it in its own process. On the Mac this type is the only caller of the
+/// helper that does, `TextMouthBraille` (`TextMouthBraille/main.c` around the
+/// translation in `TextMouthBraille/TextMouthBrailleLibrary.c`): it writes the
+/// paragraphs to a hidden file, runs the helper on it under the watchdog
 /// (`WatchedProcess`, with a time limit, a memory limit, an output cap, and
 /// an import's Cancel), and reads the translations back. A hang or a crash in
 /// liblouis costs one run of the helper, never the app or the import. This is
 /// the arrangement `TextutilConverter` makes for textutil.
+///
+/// iOS lets an app start no helper program, so the iPhone calls the same
+/// translation in its own process (DR34): the same records, in batches,
+/// through `InProcessEngine`, one call at a time on a thread of its own, with
+/// the bundled tables only, and with the watchdog's limits as nearly as one
+/// process allows (`LibraryBatches`). Both platforms read a book alike, since
+/// the C and the Swift around it are the same. iOS 26's own
+/// `AXBrailleTranslator` is not used: liblouis gives the iPhone the Mac's own
+/// results, the reading passes and the EBAE fixes included.
 ///
 /// Braille, in and out, is Unicode braille patterns (`BrailleCells`), with
 /// the blank cell U+2800 between words and never an ASCII space.
@@ -74,25 +89,41 @@ enum BrailleTranslator {
 
         var errorDescription: String? {
             switch self {
+            // A table's name is liblouis's or macOS's own, and a liblouis
+            // version is a version identifier: neither is translated.
             case let .unknownTable(name):
-                return "TextMouth has no braille table named \u{201C}\(name)\u{201D}."
+                // Translators: Why a braille translation was refused: no braille table has this name. %@ is the table's name as liblouis or macOS gives it.
+                return String(localized: "TextMouth has no braille table named \u{201C}\(name)\u{201D}.")
             case let .stopped(reason):
-                return "TextMouth stopped the braille translation because \(reason)."
+                // Translators: Why a braille translation ended. %@ is the reason, a clause such as "an earlier call was abandoned", which stays English until the engine's sentences convert.
+                return String(localized: "TextMouth stopped the braille translation because \(reason).")
             case .failed:
-                return "TextMouth could not translate this braille."
+                // Translators: Why a braille translation failed, when no more is known.
+                return String(localized: "TextMouth could not translate this braille.")
             case let .uncheckedTable(name, why):
-                return "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again."
+                // Translators: Why a braille translation was refused: one of this Mac's braille tables could not be checked. %1$@ is the table's name as macOS gives it and %2$@ the reason, which stays English.
+                return String(localized: "TextMouth could not check this Mac's braille table \u{201C}\(name)\u{201D}: \(why). Try again.")
             case let .changedTable(name, then, now?):
-                return "This Mac's braille table \u{201C}\(name)\u{201D} has changed since the book was read with it, "
-                    + "from liblouis \(then) to \(now), so TextMouth keeps the book's text as it was."
+                // Translators: Why a book is not read with its braille table again: the table changed. %1$@ is the table's name as macOS gives it, %2$@ the liblouis version the book was read with, and %3$@ the version now.
+                return String(localized: "This Mac's braille table \u{201C}\(name)\u{201D} changed from liblouis \(then) to \(now) since the book was read, so TextMouth keeps the book's text as it was.")
             case let .changedTable(name, then, nil):
-                return "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since the book was read with "
-                    + "liblouis \(then), so TextMouth keeps the book's text as it was."
+                // Translators: Why a book is not read with its braille table again: the table may have changed. %1$@ is the table's name as macOS gives it and %2$@ the liblouis version the book was read with.
+                return String(localized: "This Mac's braille table \u{201C}\(name)\u{201D} may have changed since liblouis \(then) read the book, so TextMouth keeps the book's text as it was.")
             }
         }
     }
 
     // MARK: The Tool
+
+    /// The clock the tool times its runs by unless a test scripts its own
+    /// (`Tool.clock`): on the iPhone the app's, which counts only the time
+    /// TextMouth runs (B18), as the engine it translates on is timed; on the
+    /// Mac the system's uptime, counted whole.
+    #if os(iOS)
+    static let toolClock = RunningClock.app
+    #else
+    static let toolClock = RunningClock.system
+    #endif
 
     /// What runs a translation, and what watches it: the bundled helper in
     /// the app, replaced in tests by a stand-in child (a `sleep`, `false`)
@@ -113,10 +144,12 @@ enum BrailleTranslator {
         /// The folder of braille tables the helper reads, nil when the
         /// bundle lacks it.
         var tablesFolder: URL?
-        /// The clock a measured run is timed by, in seconds, which never runs
-        /// backwards: the system uptime, unless a test scripts its own
-        /// (review F8).
-        var uptime: @Sendable () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+        /// The clock a measured run and the library's own time are timed by,
+        /// which never runs backwards, unless a test scripts its own (review
+        /// F8): on the iPhone the app's, which counts only the time TextMouth
+        /// runs, so a translation frozen while iOS keeps the app suspended has
+        /// spent none of its book's time (B18); on the Mac the system's uptime.
+        var clock: RunningClock = BrailleTranslator.toolClock
 
         /// The helper built into the app: `Contents/MacOS/TextMouthBraille`,
         /// reading the bundled tables in `Contents/Resources/liblouis/tables`
@@ -299,7 +332,7 @@ enum BrailleTranslator {
     /// liblouis misreads, the helper reads itself where it can tell them
     /// from print, keeping the words liblouis reads (October 24, 2026).
     /// Forward carries only the classes liblouis reads back exactly with
-    /// this table (`check_readable` in `TextMouthBraille/main.c`): UEB's,
+    /// this table (`check_readable` in `TextMouthBraille/TextMouthBrailleLibrary.c`): UEB's,
     /// not EBAE's italic and bold, nor most of this Mac's tables', so with
     /// them an export is plain and read back keeps its words (review E2,
     /// October 21, 2026).
@@ -366,6 +399,10 @@ enum BrailleTranslator {
         measure: RunMeasure? = nil
     ) throws -> [EmphasizedText] {
         try requireOfferedTable(table)
+        #if os(iOS)
+        // The iPhone translates in its own process, with no files (DR34).
+        return try translateInProcess(texts, table: table, direction: direction)
+        #else
         let id = UUID().uuidString
         let input = folder.appendingPathComponent(".\(id)\(inputSuffix)")
         let output = folder.appendingPathComponent(".\(id)\(outputSuffix)")
@@ -382,13 +419,9 @@ enum BrailleTranslator {
         // whole-input `Data` (review finding E5: a 32 MB book's translation
         // peaked at 431 MB that way).
         var writer = InputWriter(at: input)
-        var layout = PieceLayout()
+        let layout: PieceLayout
         do {
-            for text in texts {
-                let made = pieces(of: text, direction: direction)
-                for piece in made { try writer.append(piece) }
-                layout.add(made)
-            }
+            layout = try layOut(texts, direction: direction) { try writer.append($0) }
             try writer.finish()
         } catch {
             throw logged(.failed, direction.rawValue, table, "could not write the input: \(error.localizedDescription)")
@@ -406,15 +439,43 @@ enum BrailleTranslator {
 
         // The output has one record for each piece, in order.
         let translated = try outputRecords(of: output, expecting: layout.pieceCount, mode: direction.rawValue, table: table)
+        return joined(translated, layout: layout, direction: direction)
+        #endif
+    }
+
+    /// Cuts each of `texts` into its pieces (`pieces(of:direction:)`) and
+    /// hands each piece to `take`, in order, as it is made, so that the
+    /// pieces are never all in memory at once; returns what joining their
+    /// translations needs.
+    private static func layOut(
+        _ texts: [EmphasizedText],
+        direction: Direction,
+        into take: (Piece) throws -> Void
+    ) rethrows -> PieceLayout {
+        var layout = PieceLayout()
+        for text in texts {
+            let made = pieces(of: text, direction: direction)
+            for piece in made { try take(piece) }
+            layout.add(made)
+        }
+        return layout
+    }
+
+    /// The translation of each text, from `translated`, the translations of
+    /// every text's pieces in order, laid out as `layout` says. Between two
+    /// pieces cut at a word break, the break is back, with the emphasis both
+    /// its neighbours have, so that a passage cut there reads as one.
+    private static func joined(
+        _ translated: [EmphasizedText],
+        layout: PieceLayout,
+        direction: Direction
+    ) -> [EmphasizedText] {
         // The index of the next piece, in `translated` and in the layout.
         var next = 0
         return layout.counts.map { count in
             var result = EmphasizedText()
             for index in 0..<count {
                 result.append(translated[next])
-                // Between two pieces, the word break the cut dropped is back,
-                // with the emphasis both its neighbours have, so that a
-                // passage cut there reads as one.
                 if index < count - 1, layout.endsAtBreak[next] {
                     let shared = translated[next].lastEmphasis.intersection(translated[next + 1].firstEmphasis)
                     result.append(direction.outputBreak, shared)
@@ -432,6 +493,12 @@ enum BrailleTranslator {
     ///   does not compile, as `translate` does, and its other failures.
     static func check(table: String, workingIn folder: URL, measure: RunMeasure? = nil) throws {
         try requireOfferedTable(table)
+        #if os(iOS)
+        // The library loads the table in this process and translates nothing,
+        // within the tool's time for a check, as the Mac's helper does.
+        try requireBundledTable(table)
+        _ = try runLibrary(direction: nil, table: table, input: Data(), seconds: tool.limits(nil, 0).maximumSeconds)
+        #else
         // The watchdog needs a file to watch; a check writes none, so an
         // empty one stands in.
         let watched = folder.appendingPathComponent(".\(UUID().uuidString)\(checkSuffix)")
@@ -443,6 +510,7 @@ enum BrailleTranslator {
             mode: "check", table: table, input: nil, output: nil,
             watching: watched, inputBytes: 0, direction: nil, measure: measure
         )
+        #endif
     }
 
     // MARK: Pieces
@@ -481,6 +549,22 @@ enum BrailleTranslator {
         }
     }
 
+    /// The protocol's header line, with its line feed, which every input and
+    /// every output begins with (`TextMouthBrailleProtocol.h`).
+    private static let headerLine = Data((BrailleEmphasis.protocolHeader + "\n").utf8)
+
+    /// Appends the record of `piece` to `data`, in the helper's protocol:
+    /// its text on one line, then the code of each of its scalars' emphasis
+    /// (`BrailleEmphasis.code`) on the next, or an empty line for a piece
+    /// with none. No piece holds a line feed, and no code is one. The Mac's
+    /// input file and the iPhone's batches hold the same records.
+    private static func appendRecord(of piece: Piece, to data: inout Data) {
+        data.append(contentsOf: piece.text.utf8)
+        data.append(0x0A)
+        data.append(contentsOf: piece.emphasis.lazy.map(\.code))
+        data.append(0x0A)
+    }
+
     /// Writes the helper's input file one piece at a time, through a buffer
     /// of about `bufferBytes`, so that the input is never held whole
     /// (FMT21, review finding E5). The file is made when the first piece
@@ -517,14 +601,10 @@ enum BrailleTranslator {
         /// - Throws: The file system's error for a file that cannot be made or written.
         mutating func append(_ piece: Piece) throws {
             if !hasHeader {
-                buffer.append(contentsOf: BrailleEmphasis.protocolHeader.utf8)
-                buffer.append(0x0A)
+                buffer.append(BrailleTranslator.headerLine)
                 hasHeader = true
             }
-            buffer.append(contentsOf: piece.text.utf8)
-            buffer.append(0x0A)
-            buffer.append(contentsOf: piece.emphasis.lazy.map(\.code))
-            buffer.append(0x0A)
+            BrailleTranslator.appendRecord(of: piece, to: &buffer)
             if buffer.count >= Self.bufferBytes { try flush() }
         }
 
@@ -663,6 +743,274 @@ enum BrailleTranslator {
         guard BrailleTableCatalog.table(withID: table) != nil else { throw Failure.unknownTable(table) }
     }
 
+    // MARK: In This Process (the iPhone)
+
+    #if os(iOS)
+    /// The engine the iPhone's braille translations run on (DR34): liblouis
+    /// and TextMouth's translation around it, called in the app one at a
+    /// time on a thread of their own, since iOS lets an app start no helper
+    /// program. A call past its time is abandoned, and every later
+    /// translation is refused until TextMouth is closed and opened again, in
+    /// the engine's sentences (`InProcessEngineWording`).
+    static let libraryEngine = InProcessEngine(name: "liblouis", work: "the braille translation") // l10n: no (a fragment inside InProcessEngineWording's English sentences until that area converts)
+
+    /// The engine translations run on: `libraryEngine`, unless a test binds
+    /// one of its own with `$engine.withValue(_:operation:)`, so that a test
+    /// that abandons a call refuses no other test's translations. It is read
+    /// on the caller's thread, as `tool` is.
+    @TaskLocal static var engine: InProcessEngine = libraryEngine
+
+    /// Whether braille is read back by liblouis alone, without TextMouth's
+    /// reading passes (the library's `back-liblouis`), which only tests ask
+    /// for, to show what a pass changes: the iPhone's counterpart of the
+    /// Mac's helper run in that mode by a test's stand-in `Tool`. Read on the
+    /// caller's thread, as `engine` is.
+    @TaskLocal static var readsByLiblouisAlone = false
+
+    /// About how many bytes of records one call of the library is sent: a
+    /// quarter of a MiB, so that a call holds little more than its batch and
+    /// its output, which may grow at most to the Mac's cap on that batch (32
+    /// times it and 1 MiB forward, 9 MiB in all), within the 16 MB the Mac's
+    /// watchdog lets its helper hold.
+    static let batchBytes = 262_144
+
+    /// Throws `Failure.unknownTable` unless `table` is one of the bundled
+    /// tables: the iPhone compiles no other, so nothing a person supplies is
+    /// ever read as a table, and the Mac's own tables stay the Mac's.
+    private static func requireBundledTable(_ table: String) throws {
+        guard BrailleTableSource.parse(table).source == .bundled else { throw Failure.unknownTable(table) }
+    }
+
+    /// `translate(_:table:direction:workingIn:checksMacTable:measure:)` on
+    /// the iPhone: the Mac's pieces and records, sent to the library in this
+    /// process in batches (`LibraryBatches`) and joined as the Mac joins
+    /// them. An empty list, or only empty texts, calls nothing.
+    private static func translateInProcess(
+        _ texts: [EmphasizedText],
+        table: String,
+        direction: Direction
+    ) throws -> [EmphasizedText] {
+        try requireBundledTable(table)
+        var batches = LibraryBatches(table: table, direction: direction)
+        let layout = try layOut(texts, direction: direction) { try batches.append($0) }
+        guard layout.pieceCount > 0 else { return texts.map { _ in EmphasizedText() } }
+        return joined(try batches.finish(), layout: layout, direction: direction)
+    }
+
+    /// The records of one translation, sent to the library in this process
+    /// in batches of about `batchBytes`, each one call of the engine with
+    /// the protocol's header of its own, and the translations of their
+    /// records, in order (DR34).
+    ///
+    /// Its limits are the tool's (`BrailleTranslator.tool`, read once, on the
+    /// caller's thread, as `runHelper` reads it), which in the app are the
+    /// Mac's watchdog's (`limits(for:bytes:)`), kept as nearly as one process
+    /// allows; a test binds a stand-in tool with tight ones:
+    /// - **A record** holds at most `maximumPieceScalars` characters, as
+    ///   every piece does; the library refuses a longer one (status 4).
+    /// - **The output** of a batch may grow at most to the Mac's cap on the
+    ///   batch's own input, which the library checks after each record
+    ///   (status 9), and the whole translation's to the Mac's cap on its
+    ///   whole input.
+    /// - **The time** the library takes, over all the batches, is what the
+    ///   Mac allows its helper for the input sent so far: each call is told to
+    ///   stop once that is spent, and the engine abandons one that has not
+    ///   returned its grace later.
+    /// - **The memory** of a call is its batch, about `batchBytes`, and its
+    ///   output, at most its cap, where the Mac's helper may hold 16 MB.
+    private struct LibraryBatches {
+        let table: String
+        let direction: Direction
+        /// The tool's limits for a run in a direction on so many bytes.
+        private let limits: @Sendable (Direction?, Int64) -> WatchedProcess.Limits
+        /// The records of the batch being made, with no header.
+        private var batch = Data()
+        /// How many records `batch` holds.
+        private var batchRecords = 0
+        /// The bytes of the whole translation's input so far, as the Mac's
+        /// input file would hold them: the header once, then every record.
+        private var inputBytes = Int64(BrailleTranslator.headerLine.count)
+        /// The bytes of its output so far, counted the same way.
+        private var outputBytes = Int64(BrailleTranslator.headerLine.count)
+        /// The seconds the library has taken so far, over all the batches.
+        private var librarySeconds: TimeInterval = 0
+        /// The translations of the records sent so far, in order.
+        private var translated: [EmphasizedText] = []
+
+        /// The batches of a translation in `direction` with `table`, within
+        /// the limits of the tool in force on the caller's thread.
+        init(table: String, direction: Direction) {
+            self.table = table
+            self.direction = direction
+            self.limits = BrailleTranslator.tool.limits
+        }
+
+        /// Adds the record of `piece`, and sends the batch once it holds
+        /// `batchBytes` or more.
+        mutating func append(_ piece: Piece) throws {
+            BrailleTranslator.appendRecord(of: piece, to: &batch)
+            batchRecords += 1
+            if batch.count >= BrailleTranslator.batchBytes { try send() }
+        }
+
+        /// Sends what is left, and returns every record's translation, in
+        /// order.
+        mutating func finish() throws -> [EmphasizedText] {
+            try send()
+            return translated
+        }
+
+        /// Sends the batch being made, when it holds a record, within the
+        /// limits the type's comment gives, and keeps its translations.
+        private mutating func send() throws {
+            guard batchRecords > 0 else { return }
+            let mode = direction.rawValue
+            inputBytes += Int64(batch.count)
+            // The limits for the whole input so far.
+            let soFar = limits(direction, inputBytes)
+            var input = BrailleTranslator.headerLine
+            input.append(batch)
+            let (output, seconds) = try BrailleTranslator.runLibrary(
+                direction: direction, table: table, input: input,
+                seconds: max(0, soFar.maximumSeconds - librarySeconds),
+                maximumOutputBytes: limits(direction, Int64(input.count)).maximumOutputBytes ?? 0,
+                timeAllowed: soFar.maximumSeconds
+            )
+            librarySeconds += seconds
+            // Every batch's output begins with the header, which the Mac's
+            // output file holds once.
+            outputBytes += Int64(output.count - BrailleTranslator.headerLine.count)
+            if let cap = soFar.maximumOutputBytes, outputBytes > cap {
+                throw BrailleTranslator.stopped(.wroteTooMuch(bytes: cap), mode, table)
+            }
+            translated += try BrailleTranslator.outputRecords(in: output, expecting: batchRecords, mode: mode, table: table)
+            batch.removeAll(keepingCapacity: true)
+            batchRecords = 0
+        }
+    }
+
+    /// What one call of the library gave: its status, and its output when
+    /// done.
+    private struct LibraryOutcome: Sendable {
+        let status: Int32
+        let output: Data
+        /// How long the library took, on the engine's thread: its own time,
+        /// with no wait behind another call in it.
+        var seconds: TimeInterval = 0
+    }
+
+    /// One call of the braille library in this process, on the engine: the
+    /// mode of `direction` (a check for nil) on `table`, a bundled table,
+    /// with `input` in the protocol, told to stop after `seconds`, and with an
+    /// output of at most `maximumOutputBytes` (0 for no cap). `timeAllowed`
+    /// is the whole translation's time, which a stop for time names.
+    /// - Returns: The output, when the library is done, and the seconds
+    ///   the library took, on the engine's thread.
+    /// - Throws: `Failure.unknownTable` for a table that does not load;
+    ///   `Failure.stopped` past the time or a cap; `ImportCancelled` after the
+    ///   import's Cancel; `Failure.failed` for any other status; and the
+    ///   engine's own failures for a call abandoned past its time, or refused
+    ///   after one was.
+    private static func runLibrary(
+        direction: Direction?,
+        table: String,
+        input: Data,
+        seconds: TimeInterval,
+        maximumOutputBytes: Int64 = 0,
+        timeAllowed: TimeInterval? = nil
+    ) throws -> (output: Data, seconds: TimeInterval) {
+        let mode = direction?.rawValue ?? "check"
+        // The engine, the tool, and the import's cancellation are read here,
+        // on the caller's thread: the engine's thread inherits no
+        // task-locals.
+        let engine = BrailleTranslator.engine
+        let tool = BrailleTranslator.tool
+        let cancellation = ImportCancellation.current
+        // The tool's tables, read in place: the bundle's in the app
+        // (`Tool.helper`).
+        guard let folder = tool.tablesFolder?.path else {
+            throw logged(.failed, mode, table, "the bundled tables are missing")
+        }
+        let libraryMode: UInt32
+        switch direction {
+        case .printToBraille: libraryMode = TMB_MODE_FORWARD.rawValue
+        case .brailleToPrint: libraryMode = (readsByLiblouisAlone ? TMB_MODE_BACK_LIBLOUIS : TMB_MODE_BACK).rawValue
+        case nil: libraryMode = TMB_MODE_CHECK.rawValue
+        }
+        let outcome: LibraryOutcome
+        do {
+            // The library's own time, by the tool's clock, on the engine's
+            // thread, so that no wait behind another call is in it.
+            let clock = tool.clock
+            outcome = try engine.run(limit: seconds, cancelledBy: cancellation) { call in
+                let started = clock.now()
+                var result = callLibrary(
+                    mode: libraryMode, folder: folder, table: table, input: input,
+                    maximumOutputBytes: maximumOutputBytes, call: call
+                )
+                result.seconds = clock.now() - started
+                return result
+            }
+        } catch let failure as InProcessEngine.Failure {
+            let what = failure == .refused(work: engine.work)
+                ? "refused, as an earlier call was abandoned" : "abandoned past its time" // l10n: no (a debug log reason, which stays English)
+            DiagnosticLog.event(.import, "BRAILLE_HELPER_FAILED: \(mode) \(table): the call was \(what)")
+            throw failure
+        }
+        switch Int(outcome.status) {
+        case Int(TMB_EXIT_DONE):
+            return (outcome.output, outcome.seconds)
+        case Int(TMB_EXIT_TABLE):
+            throw Failure.unknownTable(table)
+        case Int(TMB_EXIT_STOPPED):
+            // Told to stop: by the import's Cancel, which ends the import as a
+            // cancelled one ends, or by the time the translation was allowed.
+            if cancellation?.isCancelled == true { throw ImportCancelled() }
+            throw stopped(.tookTooLong(seconds: timeAllowed ?? seconds), mode, table)
+        case Int(TMB_EXIT_OUTPUT_CAP):
+            throw stopped(.wroteTooMuch(bytes: maximumOutputBytes), mode, table)
+        default:
+            throw logged(.failed, mode, table, "the library ended with status \(outcome.status)")
+        }
+    }
+
+    /// Calls `tmb_translate` once, on the engine's thread: the request with
+    /// its limits (at most `maximumPieceScalars` characters a record, the
+    /// output cap, and the call's stop check), and the output it gives, taken
+    /// over without a copy and freed with the `Data`.
+    private static func callLibrary(
+        mode: UInt32,
+        folder: String,
+        table: String,
+        input: Data,
+        maximumOutputBytes: Int64,
+        call: InProcessEngine.Call
+    ) -> LibraryOutcome {
+        folder.withCString { folder in
+            table.withCString { table in
+                input.withUnsafeBytes { bytes in
+                    var request = tmb_request()
+                    request.mode = tmb_mode(rawValue: mode)
+                    request.tables_folder = folder
+                    request.table = table
+                    request.input = bytes.baseAddress
+                    request.input_length = bytes.count
+                    request.limits.max_record_chars = maximumPieceScalars
+                    request.limits.max_output_bytes = Int(clamping: maximumOutputBytes)
+                    request.limits.should_stop = InProcessEngine.Call.stopCheck
+                    request.limits.context = call.context
+                    var response = tmb_response()
+                    tmb_translate(&request, &response)
+                    let output = response.output.map {
+                        Data(bytesNoCopy: $0, count: response.output_length, deallocator: .free)
+                    } ?? Data()
+                    return LibraryOutcome(status: response.status, output: output)
+                }
+            }
+        }
+    }
+    #endif
+
     // MARK: Running
 
     /// Runs the helper in `mode` on `table` under the watchdog, and returns
@@ -704,7 +1052,7 @@ enum BrailleTranslator {
             measure?.note(memory: bytes)
             return bytes
         }
-        let started = tool.uptime()
+        let started = tool.clock.now()
         let outcome: WatchedProcess.Outcome
         do {
             outcome = try AsyncBridge.waitForResult(cancelledBy: cancellation) {
@@ -721,7 +1069,7 @@ enum BrailleTranslator {
             // import ends as a cancelled one does.
             throw ImportCancelled()
         }
-        measure?.note(seconds: tool.uptime() - started)
+        measure?.note(seconds: tool.clock.now() - started)
 
         switch outcome {
         case .exited(status: 0):
@@ -734,9 +1082,8 @@ enum BrailleTranslator {
         case .couldNotStart:
             throw logged(.failed, mode, table, "could not start")
         case let .killed(reason):
-            DiagnosticLog.event(.import, "BRAILLE_HELPER_KILLED: \(mode) \(table): \(reason.words)")
             measure?.note(stop: reason)
-            throw Failure.stopped(reason: reason.words)
+            throw stopped(reason, mode, table)
         }
     }
 
@@ -758,6 +1105,18 @@ enum BrailleTranslator {
         } catch {
             throw logged(.failed, mode, table, "wrote no output")
         }
+        return try outputRecords(in: data, expecting: count, mode: mode, table: table)
+    }
+
+    /// The records of an output in the protocol, `data`, as
+    /// `outputRecords(of:expecting:mode:table:)` reads a file of the
+    /// helper's: the header, then `count` records, or a failure.
+    private static func outputRecords(
+        in data: Data,
+        expecting count: Int,
+        mode: String,
+        table: String
+    ) throws -> [EmphasizedText] {
         // Split at line feed bytes (a CR LF is not a line end of the helper's
         // own), and drop the empty string after the last line feed.
         var lines = data.split(separator: 0x0A, omittingEmptySubsequences: false)
@@ -799,5 +1158,13 @@ enum BrailleTranslator {
     private static func logged(_ failure: Failure, _ mode: String, _ table: String, _ what: String) -> Failure {
         DiagnosticLog.event(.import, "BRAILLE_HELPER_FAILED: \(mode) \(table): \(what)")
         return failure
+    }
+
+    /// The failure of a translation stopped for `reason`, by the Mac's
+    /// watchdog or by the iPhone's own limits, after writing one import
+    /// event for it, which names the mode, the table, and the reason.
+    private static func stopped(_ reason: WatchedProcess.KillReason, _ mode: String, _ table: String) -> Failure {
+        DiagnosticLog.event(.import, "BRAILLE_HELPER_KILLED: \(mode) \(table): \(reason.words)")
+        return Failure.stopped(reason: reason.words)
     }
 }

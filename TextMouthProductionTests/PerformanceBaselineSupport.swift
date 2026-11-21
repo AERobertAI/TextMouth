@@ -168,6 +168,14 @@ extension PerformanceMeasure {
         unit: .milliseconds
     )
 
+    /// Reading a megabyte of Markdown, as every text book's content.md is read.
+    static let markdownRead = PerformanceMeasure(
+        name: "markdown.read",
+        summary: "Reading a 1 MB Markdown document of prose, lists, quotes, tables, code, and page markers "
+            + "into its reading text, headings, and pages.",
+        unit: .milliseconds
+    )
+
     /// One cloud refresh of a library on this Mac, in processor time.
     static let cloudRefresh = PerformanceMeasure(
         name: "cloud.refreshLocalLibrary",
@@ -189,7 +197,7 @@ extension PerformanceMeasure {
         launch, firstSortByFileSize,
     ] + LibrarySortField.allCases.map(listDerivation) + [
         liveReadingPosition, checkpointBytes, openTextBook, openTextBookCached, openAudiobook,
-        speechPreparation, renderPeakMemory, renderKeptMemory, epubExtraction, cloudRefresh,
+        speechPreparation, renderPeakMemory, renderKeptMemory, epubExtraction, markdownRead, cloudRefresh,
         headingSheetPublish,
     ]
 }

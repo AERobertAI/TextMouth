@@ -53,6 +53,10 @@ final class PublishedFileProgress: @unchecked Sendable {
     /// `stop()`.
     static func listen(to item: URL, hearing hear: @escaping @Sendable (Double) -> Void) -> PublishedFileProgress {
         let listening = PublishedFileProgress()
+        // iOS has no subscribing to the progress a sync service publishes for
+        // a file (`addSubscriber` is Mac-only), so there it listens to
+        // nothing and hears nothing; phase 1 may watch the file another way.
+        #if os(macOS)
         let subscriber = Progress.addSubscriber(forFileURL: item) { [weak listening] progress in
             // An upload, or the progress of an item inside a folder
             // listened to, is no part of this item's download.
@@ -64,6 +68,7 @@ final class PublishedFileProgress: @unchecked Sendable {
             return nil
         }
         listening.keep(subscriber)
+        #endif
         return listening
     }
 
@@ -101,7 +106,11 @@ final class PublishedFileProgress: @unchecked Sendable {
         }
         observations.forEach { $0.invalidate() }
         if let subscriber {
+            #if os(macOS)
             Progress.removeSubscriber(subscriber)
+            #else
+            _ = subscriber // never set on iOS: nothing subscribed
+            #endif
         }
     }
 
@@ -114,7 +123,9 @@ final class PublishedFileProgress: @unchecked Sendable {
             return true
         }
         if !kept {
+            #if os(macOS)
             Progress.removeSubscriber(subscriber)
+            #endif
         }
     }
 

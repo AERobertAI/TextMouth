@@ -202,6 +202,50 @@ final class EpisodeSuccessionTests: FeedItemIndexTestCase {
         )
     }
 
+    // MARK: - The debug log stays English
+
+    /// Every "nothing follows" succession carries an English log name beside its (localized) note, for each way a
+    /// folder, a feed, and the reading list end, so the debug log never gets the interface's language (finding 2 of
+    /// the pilot's review).
+    @MainActor
+    func testEveryNothingFollowsCarriesAnEnglishLogName() {
+        let model = shelfModel(["Almanac", "Bestiary", "Chronicle"], finished: ["Almanac", "Chronicle"])
+        func logName(_ direction: ReadingList.Direction, after title: String) -> String? {
+            let succession = model.succession(after: shelfBook(title, in: model), going: direction, skippingFinished: true)
+            if case .nothing(_, let logName) = succession { return logName }
+            return nil
+        }
+        XCTAssertEqual(logName(.down, after: "Bestiary"), "every book after it in the folder is finished")
+        XCTAssertEqual(logName(.up, after: "Bestiary"), "every book before it in the folder is finished")
+        XCTAssertEqual(logName(.down, after: "Chronicle"), "no more books in folder")
+        // The reading list's four ends and its Stop.
+        XCTAssertEqual(ReadingListReaderWording.stopLogName, "the reading list is set to stop when a book ends")
+        let ends: [(ReadingListEnd, ReadingList.Direction, String)] = [
+            (.noBookBeyond, .down, "end of the reading list"),
+            (.noBookBeyond, .up, "start of the reading list"),
+            (.onlyFinishedBooksBeyond, .down, "every book below it in the reading list is finished"),
+            (.onlyFinishedBooksBeyond, .up, "every book above it in the reading list is finished"),
+        ]
+        for (end, direction, english) in ends {
+            XCTAssertEqual(ReadingListReaderWording.endLogName(end, going: direction), english)
+        }
+    }
+
+    /// The two log lines that name why nothing follows write the log name, never the note: the note is the
+    /// interface's sentence and is Spanish in a Spanish Mac's log (source check, since the language cannot change
+    /// inside the test host).
+    func testTheLogLinesWriteTheLogNameNotTheNote() throws {
+        for path in ["ViewModels/ReaderViewModel+GoingOn.swift", "ViewModels/ReaderViewModel+FolderNavigation.swift"] {
+            let source = try String(contentsOf: AppSourceFile.folder.appendingPathComponent(path), encoding: .utf8)
+            let logLines = source.components(separatedBy: "\n").filter { $0.contains("DiagnosticLog") && $0.contains("nothing") }
+            XCTAssertFalse(logLines.isEmpty, "\(path) has its log line")
+            for line in logLines {
+                XCTAssertTrue(line.contains("\\(logName)"), "\(path) must log the English log name: \(line)")
+                XCTAssertFalse(line.contains("\\(note)"), "\(path) logs the localized note: \(line)")
+            }
+        }
+    }
+
     // MARK: - Helpers
 
     /// The manual sort a shelf's folder is in.
@@ -213,7 +257,7 @@ final class EpisodeSuccessionTests: FeedItemIndexTestCase {
         switch succession {
         case .book(let book): return "book \(book.title)"
         case .episodeToDownload(_, let item): return "download \(item.title)"
-        case .nothing(let note): return "nothing \(note)"
+        case .nothing(let note, _): return "nothing \(note)"
         }
     }
 

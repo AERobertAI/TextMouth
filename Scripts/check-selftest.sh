@@ -3,8 +3,9 @@
 # check-selftest.sh: tests Scripts/check.sh in a few seconds, without building.
 #
 # Every case copies check.sh and the committed Package.resolved into a fresh
-# sandbox folder, puts stub make, xcodebuild, xcodegen, xcrun, and swift
-# commands first on PATH, runs the gate there, and checks its exit status, its
+# sandbox folder, with a stub of Scripts/ios/app-size.py (the iPhone app's size
+# tool, which would otherwise build the iPhone app), puts stub make, xcodebuild,
+# xcodegen, xcrun, and swift commands first on PATH, runs the gate there, and checks its exit status, its
 # report, and the commands it ran. Most cases use --dry-run together with the
 # TEXTMOUTH_CHECK_SIMULATE_* variables; the rest run the gate for real against
 # the stubs, which imitate passing and failing Makefile targets. No case can
@@ -40,16 +41,23 @@ readonly RESOLVED="TextMouth.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/
 REAL_MAKE=$(command -v make) || { echo "check-selftest: make is required" >&2; exit 1; }
 readonly REAL_MAKE
 
-# The Release app's size limit, read from check.sh, which defines it once, so
-# these cases follow the limit when it changes. The expected reports below
-# write a size of a whole number of megabytes as "<limit>.0 MB (<limit>,000,000
-# bytes)", which holds for a limit under 1,000 MB.
+# The Release app's two size limits, read from check.sh, which defines each
+# once, so these cases follow them when they change: the gate warns above
+# APP_SIZE_WARNING_MB and fails above APP_SIZE_LIMIT_MB. The expected reports
+# below write a size of a whole number of megabytes as "<limit>.0 MB
+# (<limit>,000,000 bytes)", which holds for a limit under 1,000 MB.
+APP_SIZE_WARNING_MB=$(sed -n -E 's/^readonly APP_SIZE_WARNING_MB=([0-9]+)$/\1/p' "$ROOT/Scripts/check.sh")
 APP_SIZE_LIMIT_MB=$(sed -n -E 's/^readonly APP_SIZE_LIMIT_MB=([0-9]+)$/\1/p' "$ROOT/Scripts/check.sh")
-if [[ ! $APP_SIZE_LIMIT_MB =~ ^[1-9][0-9]{0,2}$ ]]; then
-  echo "check-selftest: Scripts/check.sh must set APP_SIZE_LIMIT_MB to a whole number from 1 to 999" >&2
+if [[ ! $APP_SIZE_WARNING_MB =~ ^[1-9][0-9]{0,2}$ || ! $APP_SIZE_LIMIT_MB =~ ^[1-9][0-9]{0,2}$ ]]; then
+  echo "check-selftest: Scripts/check.sh must set APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB to whole numbers from 1 to 999" >&2
   exit 1
 fi
-readonly APP_SIZE_LIMIT_MB
+if (( APP_SIZE_WARNING_MB >= APP_SIZE_LIMIT_MB )); then
+  echo "check-selftest: Scripts/check.sh must set APP_SIZE_WARNING_MB below APP_SIZE_LIMIT_MB" >&2
+  exit 1
+fi
+readonly APP_SIZE_WARNING_MB APP_SIZE_LIMIT_MB
+readonly APP_SIZE_WARNING_BYTES=$(( APP_SIZE_WARNING_MB * 1000000 ))
 readonly APP_SIZE_LIMIT_BYTES=$(( APP_SIZE_LIMIT_MB * 1000000 ))
 
 # How many installs keep their dSYMs, read from the Makefile, which defines it
@@ -73,6 +81,9 @@ readonly SESSION="selftest-session"           # stands in for a Claude Code sess
 readonly SESSION_SLOT="$CLAUDE_TMP/-selftest-project/$SESSION/scratchpad/build-slot.sh"
 readonly SWIFT_RECORDER="$WORK/swift-recorder" # a swift that records, for the Makefile cases
 readonly SIGNING_STUBS="$WORK/signing-stubs"   # security and codesign, for the signing cases
+readonly IOS_SIZE_STUB="$WORK/app-size-stub.py" # stands in for Scripts/ios/app-size.py in each sandbox
+readonly IOS_SIZE_RUN="python3 -I -B Scripts/ios/app-size.py build --summary --check" # how the gate runs it
+readonly IOS_SIZE_RECORD="app-size build --summary --check"                           # what the stub records
 # The size of the app the make stub packages unless a case says otherwise:
 # within any limit, and a number whose report shows its rounding and digit
 # groups.
@@ -110,6 +121,14 @@ write_stubs() {
 #                               build/xcodebuild-Release.log; empty writes none
 #   STUB_APP_BYTES=<number>     build packages build/TextMouth.app, of <number>
 #                               bytes (at least 600); empty packages none
+#   STUB_APP_TEXT=<text>        build also writes <text> into the app, as
+#                               Contents/Resources/planted.txt
+#   STUB_LPROJ=<form>           the language files build packages in the app, in
+#                               Contents/Resources/es.lproj: compact (the default),
+#                               binary-strings (a .strings written as a binary list,
+#                               the other compact form, TL18), xml-strings (a
+#                               .strings left as XML), xml-dict (a .stringsdict left
+#                               as XML), or none
 #   STUB_TEST_OUTPUT=<file>     test prints <file>
 #   STUB_TEST_STATUS=<number>   test exits with <number> (default 0)
 # In the log and output files, @ROOT@ stands for the repository root, since
@@ -118,6 +137,24 @@ write_stubs() {
 # with_root <file>: prints <file> with the repository root in place of @ROOT@.
 with_root() {
   sed "s#@ROOT@#$(pwd -P)#g" "$1"
+}
+
+# plant_language_files <resources folder> <form>: writes es.lproj's two files
+# there as the build phase leaves them (a text .strings of 8 bytes and a
+# binary .stringsdict of 16), or with one left in XML, or none at all.
+plant_language_files() {
+  mkdir -p "$1"
+  case $2 in none) return 0 ;; esac
+  mkdir -p "$1/es.lproj"
+  case $2 in
+    xml-strings) printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist/>' > "$1/es.lproj/Localizable.strings" ;;
+    binary-strings) printf 'bplist0012345678' > "$1/es.lproj/Localizable.strings" ;;
+    *) printf '"a"="b";' > "$1/es.lproj/Localizable.strings" ;;
+  esac
+  case $2 in
+    xml-dict) printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist/>' > "$1/es.lproj/Localizable.stringsdict" ;;
+    *) printf 'bplist0012345678' > "$1/es.lproj/Localizable.stringsdict" ;;
+  esac
 }
 
 echo "make $*" >> "$STUB_LOG"
@@ -146,8 +183,15 @@ case $target in
       rm -rf build/TextMouth.app
       mkdir -p build/TextMouth.app/Contents/MacOS
       head -c 600 /dev/zero > build/TextMouth.app/Contents/Info.plist
+      # The language files count toward the size, so the executable is sized to leave the total at STUB_APP_BYTES.
+      plant_language_files build/TextMouth.app/Contents/Resources "${STUB_LPROJ:-compact}"
+      language_bytes=$(cat build/TextMouth.app/Contents/Resources/es.lproj/* 2>/dev/null | wc -c)
       dd if=/dev/zero of=build/TextMouth.app/Contents/MacOS/TextMouth bs=1 count=0 \
-        seek=$(( STUB_APP_BYTES - 600 )) 2>/dev/null
+        seek=$(( STUB_APP_BYTES - 600 - language_bytes )) 2>/dev/null
+      if [ -n "${STUB_APP_TEXT:-}" ]; then
+        mkdir -p build/TextMouth.app/Contents/Resources
+        printf '%s' "$STUB_APP_TEXT" | sed "s#@ROOT@#$(pwd -P)#g" > build/TextMouth.app/Contents/Resources/planted.txt
+      fi
     fi
     if [ -n "${STUB_BUILD_WRITES:-}" ]; then cp "$STUB_BUILD_WRITES" "$STUB_RESOLVED"; fi ;;
   test)
@@ -212,6 +256,36 @@ echo "lsregister $*" >> "$STUB_LOG"
 exit 0
 STUB
 
+  # The iPhone size tool, which the gate runs with python3: it records its call
+  # (as "app-size <arguments>"), prints the file STUB_IOS_SIZE_OUTPUT names, and
+  # exits with STUB_IOS_SIZE_STATUS (default 0). The real tool exits 3 for an
+  # app over the strict limit and 1 for a build that failed.
+  cat > "$IOS_SIZE_STUB" <<'STUB'
+"""Stub Scripts/ios/app-size.py for check-selftest.sh."""
+import os
+import sys
+
+with open(os.environ["STUB_LOG"], "a") as log:
+    log.write("app-size " + " ".join(sys.argv[1:]) + "\n")
+# The iPhone app the real tool builds, with the language files STUB_IOS_LPROJ names:
+# compact (the default), binary-strings, xml-strings, xml-dict, or none.
+form = os.environ.get("STUB_IOS_LPROJ", "compact")
+app = "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app"
+os.makedirs(app, exist_ok=True)
+if form != "none":
+    folder = app + "/es.lproj"
+    os.makedirs(folder, exist_ok=True)
+    xml = b'<?xml version="1.0" encoding="UTF-8"?>\n<plist/>'
+    with open(folder + "/Localizable.strings", "wb") as out:
+        out.write(xml if form == "xml-strings" else b"bplist00" + b"12345678" if form == "binary-strings" else b'"a"="b";')
+    with open(folder + "/Localizable.stringsdict", "wb") as out:
+        out.write(xml if form == "xml-dict" else b"bplist00" + b"12345678")
+if os.environ.get("STUB_IOS_SIZE_OUTPUT"):
+    with open(os.environ["STUB_IOS_SIZE_OUTPUT"]) as output:
+        sys.stdout.write(output.read())
+sys.exit(int(os.environ.get("STUB_IOS_SIZE_STATUS", "0")))
+STUB
+
   cat > "$SLOT_STUB" <<'STUB'
 #!/bin/bash
 # Stub build-slot wrapper for check-selftest.sh: records the wrap, runs the command.
@@ -228,6 +302,18 @@ STUB
     ln -s "$STUBS/$tool" "$WORK/stubs-without-xcodegen/$tool"
   done
   ln -s "$(command -v jq)" "$WORK/stubs-without-xcodegen/jq"
+}
+
+# write_ios_size_fixture <file> <verdict> <size> [download verdict]: writes a
+# summary like the one the iPhone size tool prints, for an app of <size> that
+# stands <verdict>; the download estimate stands the same unless told otherwise.
+write_ios_size_fixture() {
+  {
+    printf 'Size: iPhone app: %s in 41 files, %s.\n' "$3" "$2"
+    printf 'Size: iPhone app IPA: 10.0 MB (10,000,000 bytes).\n'
+    printf 'Size: iPhone app App Store download, estimated (Mach-O files at full size): 11.0 MB (11,000,000 bytes), %s.\n' "${4:-$2}"
+    printf 'Size detail: 8.0 MB (8,000,000 bytes)  TextMouth\n'
+  } > "$FIXTURES/$1"
 }
 
 # write_fixtures: derives Package.resolved variants from the committed file
@@ -328,6 +414,15 @@ write_fixtures() {
     printf '** TEST SUCCEEDED **\n'
   } > "$FIXTURES/tests-performance.log"
 
+  # What app-size.py build --summary prints: the three headline lines, then a
+  # detail line, for an app within the limit, one over the warning size, and one
+  # over the strict limit.
+  write_ios_size_fixture ios-size-ok.txt "within the 30 MB limit" "12.3 MB (12,345,678 bytes)"
+  write_ios_size_fixture ios-size-warn.txt "over the 30 MB limit, within the strict 40 MB" "35.0 MB (35,000,000 bytes)"
+  write_ios_size_fixture ios-size-over.txt "over the strict 40 MB limit" "41.0 MB (41,000,000 bytes)"
+  # An app within the limit whose estimated download is over the warning size.
+  write_ios_size_fixture ios-size-download.txt "within the 30 MB limit" "12.3 MB (12,345,678 bytes)" "over the 30 MB limit, within the strict 40 MB"
+
   printf '** TEST SUCCEEDED **\n' > "$FIXTURES/tests-without-totals.log"
   {
     printf "Test Suite 'All tests' passed at 2026-01-01 00:00:00.000.\n"
@@ -344,6 +439,10 @@ begin_case() {
   sandbox="$WORK/case-$(( passed + failed + 1 ))"
   mkdir -p "$sandbox/Scripts" "$sandbox/$(dirname "$RESOLVED")"
   cp "$ROOT/Scripts/check.sh" "$sandbox/Scripts/check.sh"
+  mkdir -p "$sandbox/Scripts/ios"
+  cp "$IOS_SIZE_STUB" "$sandbox/Scripts/ios/app-size.py"
+  mkdir -p "$sandbox/Scripts/l10n"
+  cp "$ROOT/Scripts/l10n/compact_packs.py" "$sandbox/Scripts/l10n/compact_packs.py"
   cp "$ROOT/$RESOLVED" "$sandbox/$RESOLVED"
   stub_log="$sandbox/commands.log"
   : > "$stub_log"
@@ -369,10 +468,10 @@ run_gate() {
   fi
   output=$(cd "$sandbox" && env \
       -u TEXTMOUTH_BUILD_SLOT -u CLAUDE_CODE_SESSION_ID -u TEXTMOUTH_CLAUDE_TMP_ROOT \
-      -u TEXTMOUTH_CHECK_SIMULATE_FAILURE -u TEXTMOUTH_CHECK_SIMULATE_RESOLVED \
+      -u TEXTMOUTH_CHECK_SIMULATE_FAILURE -u TEXTMOUTH_CHECK_SIMULATE_RESOLVED -u GITHUB_ACTIONS \
       PATH="$STUBS:$PATH" STUB_LOG="$stub_log" STUB_RESOLVED="$RESOLVED" \
       STUB_BUILD_LOG="$FIXTURES/build-clean.log" STUB_TEST_OUTPUT="$FIXTURES/tests-pass.log" \
-      STUB_APP_BYTES="$DEFAULT_APP_BYTES" \
+      STUB_APP_BYTES="$DEFAULT_APP_BYTES" STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-ok.txt" \
       ${settings[@]+"${settings[@]}"} "${command[@]}" "$@" 2>&1)
   status=$?
 }
@@ -464,11 +563,14 @@ dry_run_cases() {
   expect_status 0
   expect_report "step 1 of 4: regenerate the Xcode project from project.yml"
   expect_report "would run: make generate"
+  expect_report "would run: make l10n-check"
   expect_report "would run: make resolve-packages"
   expect_report "would remove the compiled code of earlier builds: build/DerivedData/Build and TextMouthTests/.build"
   expect_report "would run: make build"
   expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB"
+  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
+  expect_report "would run: $IOS_SIZE_RUN"
+  expect_report "would require the iPhone app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
   expect_report "would run: make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "would repeat the performance tests' warnings and skips from build/check/test.log"
   expect_report "would require no Swift warnings in build/check/test.log"
@@ -476,6 +578,33 @@ dry_run_cases() {
   expect_report "$first_identity $first_version"
   expect_verdict "check: PASSED (dry run)"
   expect_commands
+  end_case
+
+  begin_case "a dry run with --without-tests reports three steps and never the suite"
+  run_gate -- --dry-run --without-tests
+  expect_status 0
+  expect_report "step 1 of 3: regenerate the Xcode project from project.yml"
+  expect_report "step 3 of 3: build the Release app"
+  expect_report "would run: make build"
+  expect_report "would require no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "would require build/TextMouth.app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
+  expect_report "the hosted XCTest suite is not run by this gate (--without-tests)"
+  expect_report "would run: $IOS_SIZE_RUN"
+  expect_report "would require the iPhone app to be no larger than $APP_SIZE_LIMIT_MB MB, and warn above $APP_SIZE_WARNING_MB MB"
+  expect_report "pins match Package.resolved: "
+  refute_report "step 4"
+  refute_report "make test"
+  refute_report "performance"
+  expect_verdict "check: PASSED (dry run)"
+  expect_commands
+  end_case
+
+  begin_case "a dry run with --without-tests still fails when the resolution changes a version"
+  run_gate TEXTMOUTH_CHECK_SIMULATE_RESOLVED="$FIXTURES/version-drift.resolved" -- --dry-run --without-tests
+  expect_status 1
+  expect_report "resolved to 999.0.0"
+  refute_report "step 3 of 3"
+  expect_verdict "check: FAILED: package resolution does not reproduce the committed Package.resolved"
   end_case
 
   begin_case "a dry run removes no earlier build"
@@ -531,12 +660,29 @@ dry_run_cases() {
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app)"
   end_case
 
+  begin_case "a dry run stops at a failed iPhone size step, before the suite"
+  run_gate TEXTMOUTH_CHECK_SIMULATE_FAILURE=ios-size -- --dry-run
+  expect_status 1
+  expect_report "simulated failure of the ios-size step"
+  refute_report "step 4 of 4"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app)"
+  end_case
+
   begin_case "a dry run stops at a failed resolution and explains how to update"
   run_gate TEXTMOUTH_CHECK_SIMULATE_FAILURE=resolve -- --dry-run
   expect_status 1
   expect_report "make update-packages"
   refute_report "step 3 of 4"
   expect_verdict "check: FAILED: step 2 of 4"
+  end_case
+
+  begin_case "a dry run stops at a failed String Catalog check, before the packages are resolved"
+  run_gate TEXTMOUTH_CHECK_SIMULATE_FAILURE=l10n -- --dry-run
+  expect_status 1
+  expect_report "simulated failure of the l10n step"
+  expect_report "full log: build/check/l10n.log"
+  refute_report "step 2 of 4"
+  expect_verdict "check: FAILED: step 1 of 4 (regenerate the Xcode project from project.yml, then check the String Catalog)"
   end_case
 
   begin_case "a dry run stops at a failed project generation"
@@ -568,7 +714,7 @@ refusal_cases() {
   begin_case "an unknown simulated step is refused"
   run_gate TEXTMOUTH_CHECK_SIMULATE_FAILURE=deploy -- --dry-run
   expect_status 2
-  expect_report "must be generate, resolve, build, or test, not: deploy"
+  expect_report "must be generate, l10n, resolve, build, ios-size, or test, not: deploy"
   end_case
 
   begin_case "a missing simulated Package.resolved is refused"
@@ -628,6 +774,7 @@ build_slot_cases() {
   expect_status 0
   expect_report "build slot: $SLOT_STUB (from TEXTMOUTH_BUILD_SLOT)"
   expect_report "would run: make generate"
+  expect_report "would run: make l10n-check"
   expect_report "would run in a build slot: make resolve-packages"
   expect_report "would run in a build slot: make build"
   expect_report "would run in a build slot: make test"
@@ -660,42 +807,241 @@ real_run_cases() {
   begin_case "a passing run executes each step in order inside the build slot"
   run_gate TEXTMOUTH_BUILD_SLOT="$SLOT_STUB"
   expect_status 0
-  expect_commands "make generate" \
+  expect_commands "make generate" "make l10n-check" \
     "slot make resolve-packages" "make resolve-packages" \
     "slot make build" "make build" \
+    "slot $IOS_SIZE_RUN" "$IOS_SIZE_RECORD" \
     "slot make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1" \
     "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "Executed 3 tests, with 1 test skipped and 0 failures"
   refute_report "Executed 2 tests"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_WARNING_MB MB limit"
+  expect_report "iPhone app: 12.3 MB (12,345,678 bytes) in 41 files, within the $APP_SIZE_WARNING_MB MB limit."
+  expect_report "iPhone app IPA: 10.0 MB (10,000,000 bytes)."
   expect_report "no Swift warnings in build/check/test.log"
   expect_report "Package.resolved still holds the committed pins"
   expect_verdict "check: PASSED"
   end_case
 
-  begin_case "a Release app of exactly the size limit passes"
-  run_gate STUB_APP_BYTES="$APP_SIZE_LIMIT_BYTES"
+  begin_case "a run with --without-tests resolves and builds, checks both sizes, and never runs the suite"
+  run_gate -- --without-tests
   expect_status 0
-  expect_report "build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,000 bytes), within the $APP_SIZE_LIMIT_MB MB limit"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_report "iPhone app: 12.3 MB (12,345,678 bytes) in 41 files, within the $APP_SIZE_WARNING_MB MB limit."
+  expect_report "step 3 of 3: build the Release app"
+  expect_report "no Swift warnings in build/xcodebuild-Release.log"
+  expect_report "build/TextMouth.app is $DEFAULT_APP_TEXT, within the $APP_SIZE_WARNING_MB MB limit"
+  expect_report "the hosted XCTest suite is not run by this gate (--without-tests)"
+  expect_report "Package.resolved still holds the committed pins"
+  refute_report "Executed"
   expect_verdict "check: PASSED"
   end_case
 
-  begin_case "a Release app one byte over the size limit fails the gate before the tests"
+  begin_case "the release gate (--without-tests) fails an iPhone app over the strict limit"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt" STUB_IOS_SIZE_STATUS=3 -- --without-tests
+  expect_status 1
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
+  end_case
+
+  begin_case "on a GitHub runner the iPhone app is neither built nor measured, with or without the suite"
+  run_gate GITHUB_ACTIONS=true -- --without-tests
+  expect_status 0
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
+  expect_report "the iPhone app is not built or measured on a GitHub runner (GITHUB_ACTIONS=true)"
+  refute_report "iPhone app:"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "GITHUB_ACTIONS set to anything but true does not skip the iPhone app"
+  run_gate GITHUB_ACTIONS=false -- --without-tests
+  expect_status 0
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  end_case
+
+  begin_case "a Release app that names no folder of this Mac passes, and says so"
+  run_gate STUB_APP_TEXT="built in /Users/reader/TextMouth"
+  expect_status 0
+  expect_report "build/TextMouth.app holds no folder of this Mac"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app that holds the checkout's folder fails the gate before the tests, naming the file"
+  run_gate STUB_APP_TEXT="built in @ROOT@/TextMouth"
+  expect_status 1
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
+  expect_report "| Contents/Resources/planted.txt"
+  refute_report "holds no folder of this Mac"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app holds a folder of this Mac (its home folder, the checkout, or \$TMPDIR)"
+  end_case
+
+  begin_case "a Release app with compact language files passes, and the gate reports each file's size (TL16)"
+  run_gate
+  expect_status 0
+  expect_report "8 bytes  text   es.lproj/Localizable.strings"
+  expect_report "16 bytes  binary es.lproj/Localizable.stringsdict"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Mac app whose .strings is a binary property list passes, and the gate reports its form (TL18)"
+  run_gate STUB_LPROJ=binary-strings
+  expect_status 0
+  expect_report "16 bytes  binary es.lproj/Localizable.strings"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "an iPhone app whose .strings is a binary property list passes too (TL18)"
+  run_gate STUB_IOS_LPROJ=binary-strings
+  expect_status 0
+  expect_report "16 bytes  binary es.lproj/Localizable.strings"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "the iPhone app's language files are reported too, after its size"
+  run_gate
+  expect_status 0
+  expect_report "build/ios-size-DerivedData/Build/Products/Release-iphoneos/TextMouth.app:"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
+  end_case
+
+  begin_case "a Mac app whose .strings is still XML fails the gate before the iPhone app is built, naming the file"
+  run_gate STUB_LPROJ=xml-strings
+  expect_status 1
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
+  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text or binary"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact (the build phase \"Compact language files\", Scripts/l10n/compact_packs.py, did not write it)"
+  end_case
+
+  begin_case "a Mac app whose .stringsdict is still XML fails the gate, naming the file"
+  run_gate STUB_LPROJ=xml-dict
+  expect_status 1
+  expect_report "NOT COMPACT: es.lproj/Localizable.stringsdict is xml, not binary"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact"
+  end_case
+
+  begin_case "a Mac app with no language files fails the gate"
+  run_gate STUB_LPROJ=none
+  expect_status 1
+  expect_report "NOT COMPACT: no language files found"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app ships a language file that is not compact"
+  end_case
+
+  begin_case "an iPhone app with no language files fails the gate"
+  run_gate STUB_IOS_LPROJ=none
+  expect_status 1
+  expect_report "NOT COMPACT: no language files found"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a language file that is not compact"
+  end_case
+
+  begin_case "an iPhone app whose .strings is still XML fails the gate, naming the file"
+  run_gate STUB_IOS_LPROJ=xml-strings
+  expect_status 1
+  expect_report "NOT COMPACT: es.lproj/Localizable.strings is xml, not text or binary"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app ships a language file that is not compact"
+  end_case
+
+  begin_case "an iPhone app whose .stringsdict is still XML fails the gate, naming the file"
+  run_gate STUB_IOS_LPROJ=xml-dict -- --without-tests
+  expect_status 1
+  expect_report "NOT COMPACT: es.lproj/Localizable.stringsdict is xml, not binary"
+  expect_verdict "check: FAILED: step 3 of 3 (build the Release app): the iPhone app ships a language file that is not compact"
+  end_case
+
+  begin_case "a dry run says it would require every language file to be compact"
+  run_gate -- --dry-run
+  expect_status 0
+  expect_report "would require every language file of build/TextMouth.app to be compact"
+  expect_report "would require every language file of the iPhone app to be compact"
+  end_case
+
+  begin_case "a Release app of exactly the warning size passes with no warning"
+  run_gate STUB_APP_BYTES="$APP_SIZE_WARNING_BYTES"
+  expect_status 0
+  expect_report "build/TextMouth.app is $APP_SIZE_WARNING_MB.0 MB ($APP_SIZE_WARNING_MB,000,000 bytes), within the $APP_SIZE_WARNING_MB MB limit"
+  refute_report "WARNING: build/TextMouth.app"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app one byte over the warning size passes with a warning"
+  run_gate STUB_APP_BYTES=$(( APP_SIZE_WARNING_BYTES + 1 ))
+  expect_status 0
+  expect_report "WARNING: build/TextMouth.app is $APP_SIZE_WARNING_MB.0 MB ($APP_SIZE_WARNING_MB,000,001 bytes), more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
+  refute_report "build/TextMouth.app is $APP_SIZE_WARNING_MB.0 MB ($APP_SIZE_WARNING_MB,000,001 bytes), within the"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app of exactly the strict limit passes with a warning"
+  run_gate STUB_APP_BYTES="$APP_SIZE_LIMIT_BYTES"
+  expect_status 0
+  expect_report "WARNING: build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,000 bytes), more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "a Release app one byte over the strict limit fails the gate before the tests"
   run_gate STUB_APP_BYTES=$(( APP_SIZE_LIMIT_BYTES + 1 ))
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   expect_report "no Swift warnings in build/xcodebuild-Release.log"
-  expect_report "the limit is APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising it"
-  refute_report "within the $APP_SIZE_LIMIT_MB MB limit"
-  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,001 bytes), more than the $APP_SIZE_LIMIT_MB MB limit"
+  expect_report "the limits are APP_SIZE_WARNING_MB and APP_SIZE_LIMIT_MB in Scripts/check.sh; find what grew before raising them"
+  refute_report "build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,001 bytes), within the"
+  refute_report "WARNING: build/TextMouth.app"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is $APP_SIZE_LIMIT_MB.0 MB ($APP_SIZE_LIMIT_MB,000,001 bytes), more than the $APP_SIZE_LIMIT_MB MB strict limit"
+  end_case
+
+  begin_case "an iPhone app over the warning size passes with a warning"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-warn.txt"
+  expect_status 0
+  expect_report "WARNING: the iPhone app is more than the $APP_SIZE_WARNING_MB MB limit; the gate fails above $APP_SIZE_LIMIT_MB MB"
+  expect_report "iPhone app: 35.0 MB (35,000,000 bytes) in 41 files, over the $APP_SIZE_WARNING_MB MB limit, within the strict $APP_SIZE_LIMIT_MB MB."
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "an iPhone app over the strict limit fails the gate before the tests"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt" STUB_IOS_SIZE_STATUS=3
+  expect_status 1
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_report "iPhone app: 41.0 MB (41,000,000 bytes) in 41 files, over the strict $APP_SIZE_LIMIT_MB MB limit."
+  expect_report "the biggest files and libraries are in build/check/ios-size.log"
+  refute_report "Executed"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
+  end_case
+
+  begin_case "a failed iPhone device build fails the gate before the tests, naming the log"
+  run_gate STUB_IOS_SIZE_OUTPUT= STUB_IOS_SIZE_STATUS=1
+  expect_status 1
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD"
+  expect_report "failed with exit status 1"
+  expect_report "full log: build/check/ios-size.log"
+  expect_report "The iPhone device build (Scripts/ios/app-size.py) failed, not the Mac's build."
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app, the iPhone app's device build)"
+  end_case
+
+  begin_case "a download estimate over the warning size does not call a small iPhone app over the limit"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-download.txt"
+  expect_status 0
+  refute_report "WARNING: the iPhone app"
+  expect_verdict "check: PASSED"
+  end_case
+
+  begin_case "an iPhone app whose headline is over the strict limit fails even when the tool exits 0"
+  run_gate STUB_IOS_SIZE_OUTPUT="$FIXTURES/ios-size-over.txt"
+  expect_status 1
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): the iPhone app is more than the $APP_SIZE_LIMIT_MB MB strict limit"
+  end_case
+
+  begin_case "an iPhone size tool that prints no size fails the gate, never passing on silence"
+  run_gate STUB_IOS_SIZE_OUTPUT=
+  expect_status 1
+  expect_report "build/check/ios-size.log has no size lines"
+  expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/check/ios-size.log has no size lines, so the iPhone app's size is unknown"
   end_case
 
   begin_case "a Release build that packages no app fails the gate, never measuring an earlier build's"
   plant_earlier_builds
   run_gate STUB_APP_BYTES=
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   refute_report " MB ("
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/TextMouth.app is missing, so the app's size is unknown"
   end_case
@@ -703,7 +1049,7 @@ real_run_cases() {
   begin_case "a Swift warning in the Release build fails the gate before the tests, naming the first five"
   run_gate STUB_BUILD_LOG="$FIXTURES/build-warnings.log"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   # Six, not seven: the warning reported again for x86_64 counts once.
   expect_report "6 Swift warnings in build/xcodebuild-Release.log; the first 5:"
   expect_report "| TextMouth/Services/Ledger.swift:12:9: warning: capture of 'entry' with non-Sendable type"
@@ -734,7 +1080,7 @@ real_run_cases() {
   printf '%s/TextMouth/Old.swift:1:1: warning: left by an earlier build\n' "$sandbox" > "$sandbox/build/xcodebuild-Release.log"
   run_gate STUB_BUILD_LOG=
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   refute_report "left by an earlier build"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app): build/xcodebuild-Release.log is missing, so the build's Swift warnings are unknown"
   end_case
@@ -744,7 +1090,7 @@ real_run_cases() {
   run_gate
   expect_status 0
   # The make stub would have recorded finding an earlier build.
-  expect_commands "make generate" "make resolve-packages" "make build" \
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" \
     "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "removed the compiled code of earlier builds, so every source compiles: build/DerivedData/Build and TextMouthTests/.build"
   expect_absent build/DerivedData/Build
@@ -768,7 +1114,7 @@ real_run_cases() {
   begin_case "a compile error fails the gate before the tests run"
   run_gate STUB_FAIL_TARGET=build
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build"
   expect_report "error: simulated failure of make build"
   expect_report "make: *** [build] Error 65"
   expect_verdict "check: FAILED: step 3 of 4 (build the Release app)"
@@ -777,7 +1123,7 @@ real_run_cases() {
   begin_case "xcodebuild rejecting the pins fails the gate before the build"
   run_gate STUB_FAIL_TARGET=resolve-packages
   expect_status 1
-  expect_commands "make generate" "make resolve-packages"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages"
   expect_report "make update-packages"
   expect_verdict "check: FAILED: step 2 of 4"
   end_case
@@ -785,7 +1131,7 @@ real_run_cases() {
   begin_case "a resolution that rewrites a pin fails the gate before the build"
   run_gate STUB_RESOLVE_WRITES="$FIXTURES/version-drift.resolved"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages"
+  expect_commands "make generate" "make l10n-check" "make resolve-packages"
   expect_report "$first_identity: pinned at $first_version"
   expect_report "resolved to 999.0.0"
   expect_verdict "check: FAILED: package resolution does not reproduce the committed Package.resolved"
@@ -794,7 +1140,7 @@ real_run_cases() {
   begin_case "a pin changed during the build fails the final check"
   run_gate STUB_BUILD_WRITES="$FIXTURES/revision-drift.resolved"
   expect_status 1
-  expect_commands "make generate" "make resolve-packages" "make build" \
+  expect_commands "make generate" "make l10n-check" "make resolve-packages" "make build" "$IOS_SIZE_RECORD" \
     "make test TEST_DERIVED_DATA=build/DerivedData PERFORMANCE_STRICT=1"
   expect_report "revision 000000000000"
   expect_verdict "check: FAILED: Package.resolved changed during the build or tests"
@@ -867,6 +1213,41 @@ makefile_cases() {
   expect_status 0
   expect_report "-configuration Release"
   expect_report "CLANG_COVERAGE_MAPPING=NO"
+  end_case
+
+  # The Release app is compiled for size, the Swift packages' targets
+  # included, which only a setting on the command line reaches; Debug keeps
+  # its own level, so make debug must not pass it.
+  begin_case "make build compiles the Release app and its packages with -Osize, and make debug does not"
+  cp "$ROOT/Makefile" "$sandbox/Makefile"
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
+  refute_report "SWIFT_COMPILATION_MODE"
+  output=$(cd "$sandbox" && "$REAL_MAKE" -n build CONFIG=Debug 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "-configuration Debug"
+  refute_report "SWIFT_OPTIMIZATION_LEVEL"
+  end_case
+
+  # The once-per-release run of the golden tests against a Release build must
+  # build what ships (Release, -Osize) with testability on and the settings
+  # that would hide the app's symbols from the test bundle switched back.
+  begin_case "release-goldens.sh builds a testable Release app and names the golden classes"
+  output=$("$ROOT/Scripts/test/release-goldens.sh" --dry-run --no-slot 2>&1)
+  status=$?
+  expect_status 0
+  expect_report "-configuration Release"
+  expect_report "SWIFT_OPTIMIZATION_LEVEL=-Osize"
+  expect_report "ENABLE_TESTABILITY=YES"
+  expect_report "LD_EXPORT_SYMBOLS=YES"
+  expect_report "DEAD_CODE_STRIPPING=NO"
+  expect_report "DEPLOYMENT_POSTPROCESSING=NO"
+  expect_report "-only-testing:TextMouthProductionTests/TextPipelineGoldenTests"
+  expect_report "-only-testing:TextMouthProductionTests/DocumentGoldenTests"
+  expect_report "-only-testing:TextMouthProductionTests/MarkupGuardTests"
   end_case
 }
 

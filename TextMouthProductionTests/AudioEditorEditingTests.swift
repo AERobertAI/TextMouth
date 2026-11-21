@@ -224,7 +224,7 @@ final class AudioEditorEditingTests: XCTestCase {
 
         model.select(AudioTimeRange(start: 0, end: 5))
         await model.trimToSelection()
-        XCTAssertEqual(harness.announcements.sentences.last, "The selection is all of the audio, so there's nothing to trim.")
+        XCTAssertEqual(harness.announcements.sentences.last, "The selection is all the audio; nothing to trim.")
     }
 
     /// Insert Silence takes a length typed in its sheet, refusing none at
@@ -236,7 +236,7 @@ final class AudioEditorEditingTests: XCTestCase {
         model.perform(.editorInsertSilence)
         XCTAssertEqual(model.prompt, .insertSilence)
         XCTAssertEqual(model.initialText(for: .insertSilence), "1")
-        XCTAssertEqual(model.answer(.insertSilence, with: "0"), "Silence has to last longer than no time at all.")
+        XCTAssertEqual(model.answer(.insertSilence, with: "0"), "Silence must be longer than zero.")
         XCTAssertEqual(model.answer(.insertSilence, with: "48:00:00"), "Silence can last at most a day.")
 
         XCTAssertNil(model.answer(.insertSilence, with: "1.5"))

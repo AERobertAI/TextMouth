@@ -1,24 +1,71 @@
 # Recordings
+<!-- id: recordings; keys: audio recording, Record window, microphone; src:  -->
 
 Part of [TextMouth's architecture](../../../ARCHITECTURE.md).
 
-- A take being recorded (FR04).
-  - Owner: RecordingService, on the main actor, one for each Record window and each audio editor window, recording one take at a time. Its capture backend, CaptureSessionRecordingBackend, owns the AVCaptureSession, the microphone's input, and the AVCaptureAudioFileOutput, which writes the take into a CAF file in this Mac's Recordings folder (MachineLocalPaths.recordings), named for when it started: 16-bit PCM, one channel, at the microphone's own sample rate, or, should capture refuse that, in the microphone's own PCM format (RECORDING_FORMAT_FALLBACK). A CAF file stays readable when a crash cuts the recording off.
-  - Who may write it: RecordingWindowModel, through start, pause, resume, stop, discard, and reset, and an audio editor's punch-in (AudioEditorModel+PunchIn), which plays a count-in before capture begins and keeps the take as an edit. AudioInputPermission.ensureAccess() runs first, so a refusal records nothing.
-  - How others observe it: the service publishes its state (idle, starting, recording, paused, stopping, finished with its take, or failed with why and the take, if any), the time recorded, pauses left out, and the levels, read every tenth of a second while a take is under way; the window shows them once a second. A lost microphone, a disk with less than 512 MB free (minimumFreeDiskSpace), or a failed capture arrives as a RecordingCaptureEvent: the take ends, kept, and the window says why and saves it. RecordingWording words everything the window shows and speaks, its buttons' hints naming their keys in force (keyboard shortcuts, under preferences, above). A quit asks first: AppDelegate calls RecordingWindowController.holdQuit after the data-directory move and before the audio editors. While the window holds a take (recording, paused, starting, or unsaved), the quit is cancelled and the window, brought forward, asks its close question (CloseQuestion, CloseAnswer); carryOut does the answer (stopAndSave or discard) before TextMouth asks to quit again. A question already on screen answers the quit too, a save that fails keeps TextMouth open, and a start or save under way is waited out (settle). Tests hand in askQuestion and bringForward.
-  - Files: Services/RecordingService.swift, Services/RecordingCaptureBackend.swift, Services/RecordingTake.swift, Services/AudioInputPermission.swift, ViewModels/RecordingWindowModel.swift, Views/Recording/RecordingWindowView.swift, Views/Recording/RecordingWording.swift, Views/Recording/RecordingWindowController.swift, App/AppDelegate.swift.
-- Takes left behind (FR04): takes in this Mac's Recordings folder that no window holds, as a crash, a forced quit, or a save that failed after its window closed leaves them.
-  - Owner: the folder itself. RecordingTakeFiles.leftovers lists, oldest first, the take files no window holds, as RecoveredTake values, each with its start, read from its name, and its length, read from the file (readLeftovers, off the main thread). A take is held while any live recorder has it, starting, under way, or ended and not yet handed on (RecordingService.takesInUse, a weak list of every recorder, the Record window's and each audio editor's), or while the Record window saves it or keeps it to save again (RecordingWindowModel.ownedTakes).
-  - Who may write it: the Record window, which saves one through Stop's save, titled for when it was recorded, or discards it with any encoding beside it, only while nothing records, starts, or is being saved, and no take waits to be saved again (canHandleRecoveredTakes). Nothing deletes them on its own.
-  - How others observe it: the window lists them whenever it opens, saying once how many. RecordingWindowController looks once, as the first Library window attaches the library, and opens the window on them, VoiceOver on the first one's Save as Audiobook (RECORDING_TAKES_RECOVERED; never in a test host). A recovered take's origin.json names no microphone, since its file doesn't say which recorded it.
-  - Files: Services/RecordingTake.swift, Services/RecordingService.swift, ViewModels/RecordingWindowModel.swift, Views/Recording/RecordingWindowController.swift, Views/Recording/RecordingWindowView.swift, Views/Recording/RecordingWording.swift.
-- Microphones, and which one records.
-  - Owner: SystemRecordingInputCatalog, which lists the microphones (an AVCaptureDevice.DiscoverySession of microphones and external devices, less the virtual and aggregate devices, which carry other apps' sound) and hears them connect and disconnect, and RecordingInputChoice, which owns recordingInputDeviceID through StoredPreference and resolves it: the remembered microphone when it is connected, otherwise macOS's default input, never written in its place, so the remembered one is used again once it is back. Microphones of the same name are numbered (distinctlyNamed).
-  - Who may write it: RecordingWindowModel.chooseDevice, from the Microphone pop-up, AudioEditorModel.chooseMicrophone(_:), from the editor's Microphone for Punch In, and config.json.
-  - How others observe it: the Record window lists the microphones and says when it falls back to another; while nothing records, it also says when one connects: that recordings now use it, the remembered one or the first at all, or that others are in the pop-up (refreshDevices(announcingChanges:)); while a take is under way, the list still follows, the microphone in use stays, and the recorder reports a lost one itself.
-  - Files: Services/RecordingInputDevices.swift, Services/RecordingPreferences.swift, ViewModels/RecordingWindowModel.swift.
-- A saved recording.
-  - Owner: the library, as for any import. RecordingWindowModel.librarySaver has RecordingEncoder write the take as an M4A beside it (AAC, one channel, at the highest bit rate up to 64 kbit/s the encoder accepts at the take's sample rate, the title tagged), then LibraryViewModel.saveRecording runs FileImportService.importRecording on the import queue, as storage work: the package is staged and published with one rename, holding the M4A, original-take.caf when the original policy keeps one (audio edits, above), and origin.json (a recording's origin record, above), and the book, whose author is Unknown, is added as any import's book is.
-  - Who may write it: the Record window, on Stop, on Save Again, when a take ends on its own, and on a take left behind's Save as Audiobook (takes left behind, above).
-  - How others observe it: the window announces the saved book and offers Open in Reader. The take and its encoding then leave the Recordings folder; a save that fails keeps the take. Each save writes a RECORDING_SAVED line and starts a sweep of the originals (AudioOriginalSweep).
-  - Files: ViewModels/LibraryViewModel+Recording.swift, Services/RecordingEncoder.swift, Services/FileImportService+Recording.swift, ViewModels/RecordingWindowModel.swift.
+## A take being recorded
+<!-- id: take-being-recorded; keys: Record window, microphone permission, AVCaptureSession, RecordingLevels, level meter, punch-in, audio recorder, microphone capture; src: TextMouth/Services/RecordingService.swift, TextMouth/Services/RecordingCaptureBackend.swift, TextMouth/Services/RecordingTake.swift, TextMouth/Services/AudioInputPermission.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Views/Recording/RecordingWindowView.swift, TextMouth/Views/Recording/RecordingWording.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Platform/macOS/App/AppDelegate.swift, TextMouth/ViewModels/AudioEditorModel+PunchIn.swift -->
+
+A take being recorded (FR04).
+
+- Owner: RecordingService, on the main actor, one for each Record window and each audio editor window, recording one take at a time.
+  Its capture backend, CaptureSessionRecordingBackend, owns the AVCaptureSession, the microphone's input, and the AVCaptureAudioFileOutput, which writes the take into a CAF file in this Mac's Recordings folder (MachineLocalPaths.recordings), named for when it started.
+  The file is 16-bit PCM, one channel, at the microphone's own sample rate, or, should capture refuse that, in the microphone's own PCM format (RECORDING_FORMAT_FALLBACK).
+  A CAF file stays readable when a crash cuts the recording off.
+- Who may write it: RecordingWindowModel, through start, pause, resume, stop, discard, and reset, and an audio editor's punch-in (AudioEditorModel+PunchIn), which plays a count-in before capture begins and keeps the take as an edit.
+  AudioInputPermission.ensureAccess() runs first, so a refusal records nothing.
+- How others observe it: the service publishes its state (idle, starting, recording, paused, stopping, finished with its take, or failed with why and the take, if any), the time recorded, pauses left out, and the levels, read every tenth of a second while a take is under way.
+  The window shows them once a second.
+  A lost microphone, a disk with less than 512 MB free (minimumFreeDiskSpace), or a failed capture arrives as a RecordingCaptureEvent: the take ends, kept, and the window says why and saves it.
+  RecordingWording words everything the window shows and speaks, its buttons' hints naming their keys in force (the keyboard shortcuts, in [Preferences: keyboard shortcuts](preferences-shortcuts.md)).
+  A quit asks first: AppDelegate calls RecordingWindowController.holdQuit after the data-directory move and before the audio editors.
+  While the window holds a take (recording, paused, starting, or unsaved), the quit is cancelled and the window, brought forward, asks its close question (CloseQuestion, CloseAnswer); carryOut does the answer (stopAndSave or discard) before TextMouth asks to quit again.
+  A question already on screen answers the quit too, a save that fails keeps TextMouth open, and a start or save under way is waited out (settle).
+  Tests hand in askQuestion and bringForward.
+
+## Takes left behind
+<!-- id: takes-left-behind; keys: crash recovery, recovered takes, Recordings folder, Save as Audiobook, orphaned take, leftover take; src: TextMouth/Services/RecordingTake.swift, TextMouth/Services/RecordingService.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Platform/macOS/Views/Recording/RecordingWindowController.swift, TextMouth/Views/Recording/RecordingWindowView.swift, TextMouth/Views/Recording/RecordingWording.swift -->
+
+Takes left behind (FR04): takes in this Mac's Recordings folder that no window holds, as a crash, a forced quit, or a save that failed after its window closed leaves them.
+
+- Owner: the folder itself.
+  RecordingTakeFiles.leftovers lists, oldest first, the take files no window holds, as RecoveredTake values, each with its start, read from its name, and its length, read from the file (readLeftovers, off the main thread).
+  A take is held:
+  - while any live recorder has it, starting, under way, or ended and not yet handed on (RecordingService.takesInUse, a weak list of every recorder, the Record window's and each audio editor's),
+  - or while the Record window saves it or keeps it to save again (RecordingWindowModel.ownedTakes).
+- Who may write it: the Record window, which saves one through Stop's save, titled for when it was recorded, or discards it with any encoding beside it, only while nothing records, starts, or is being saved, and no take waits to be saved again (canHandleRecoveredTakes).
+  Nothing deletes them on its own.
+- How others observe it: the window lists them whenever it opens, saying once how many.
+  RecordingWindowController looks once, as the first Library window attaches the library, and opens the window on them, VoiceOver on the first one's Save as Audiobook (RECORDING_TAKES_RECOVERED; never in a test host).
+  A recovered take's origin.json names no microphone, since its file doesn't say which recorded it.
+
+## Microphones and the chosen one
+<!-- id: microphones-chosen-one; keys: Microphone pop-up, input device, RecordingInputCatalog, AVCaptureDevice, default input, recordingInputDeviceID; src: TextMouth/Services/RecordingInputDevices.swift, TextMouth/Services/RecordingPreferences.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Models/StoredPreference.swift, TextMouth/ViewModels/AudioEditorModel+PunchIn.swift -->
+
+Microphones, and which one records.
+
+- Owner: SystemRecordingInputCatalog, which lists the microphones (an AVCaptureDevice.DiscoverySession of microphones and external devices, less the virtual and aggregate devices, which carry other apps' sound) and hears them connect and disconnect.
+  And RecordingInputChoice, which owns recordingInputDeviceID through StoredPreference and resolves it: the remembered microphone when it is connected, otherwise macOS's default input, never written in its place, so the remembered one is used again once it is back.
+  Microphones of the same name are numbered (distinctlyNamed).
+- Who may write it: RecordingWindowModel.chooseDevice, from the Microphone pop-up, AudioEditorModel.chooseMicrophone(_:), from the editor's Microphone for Punch In, and config.json.
+- How others observe it: the Record window lists the microphones and says when it falls back to another.
+  While nothing records, it also says when one connects: that recordings now use it, the remembered one or the first at all, or that others are in the pop-up (refreshDevices(announcingChanges:)).
+  While a take is under way, the list still follows, the microphone in use stays, and the recorder reports a lost one itself.
+
+## A saved recording
+<!-- id: saved-recording; keys: Save Again, Open in Reader, Stop and save, M4A, AAC, original take, recording import; src: TextMouth/ViewModels/LibraryViewModel+Recording.swift, TextMouth/Services/RecordingEncoder.swift, TextMouth/Services/FileImportService+Recording.swift, TextMouth/ViewModels/RecordingWindowModel.swift, TextMouth/Services/AudioEditing/AudioOriginalSweep.swift, TextMouth/Models/AudioOriginalPolicy.swift -->
+
+A saved recording.
+
+- Owner: the library, as for any import.
+  RecordingWindowModel.librarySaver has RecordingEncoder write the take as an M4A beside it (AAC, one channel, at the highest bit rate up to 64 kbit/s the encoder accepts at the take's sample rate, the title tagged).
+  Then LibraryViewModel.saveRecording runs FileImportService.importRecording on the import queue, as storage work:
+  - the package is staged and published with one rename, holding:
+    - the M4A,
+    - original-take.caf when the original policy keeps one (see [The originals and the original policy](audio-edits.md)),
+    - and origin.json (a recording's origin record, in [Recording origin record](package-records-places-and-files.md)),
+  - and the book, whose author is Unknown, is added as any import's book is.
+- Who may write it: the Record window, on Stop, on Save Again, when a take ends on its own, and on a take left behind's Save as Audiobook (takes left behind, above).
+- How others observe it: the window announces the saved book and offers Open in Reader.
+  The take and its encoding then leave the Recordings folder; a save that fails keeps the take.
+  Each save writes a RECORDING_SAVED line and starts a sweep of the originals (AudioOriginalSweep).

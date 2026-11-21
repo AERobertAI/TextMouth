@@ -18,13 +18,23 @@ import difflib
 import os
 import re
 import shlex
+import sys
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Dict, List, Optional, Sequence, Tuple
 
+# Importing a sibling module must leave no __pycache__ folder in the repository (set before the import below).
+sys.dont_write_bytecode = True
+# The reader of a retried test's tries lives beside the agents' scripts; this folder's scripts run
+# with `python3 -I`, which leaves their own folder out of the path, so it is added by location.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "agents"))
+import test_tries  # noqa: E402
+
 # The folder of hosted test sources, the project and scheme, and the wrapper
 # that holds one of the machine's three build slots (all relative to the root).
 TESTS_FOLDER = "TextMouthProductionTests"
+# The iPhone unit bundle's folder: `hosted_test_classes` reads it too, with `folder_name`.
+IOS_TESTS_FOLDER = "TextMouthiOSTests"
 TEST_TARGET = "TextMouthProductionTests"
 PROJECT = "TextMouth.xcodeproj"
 SCHEME = "TextMouth"
@@ -84,8 +94,9 @@ _TEST_METHOD = re.compile(
     r"func\s+test\w*\s*\(\s*\)")
 
 
-def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
-    """Scans TextMouthProductionTests/*.swift and returns {class name: HostedClass}.
+def hosted_test_classes(root: Path, folder_name: str = TESTS_FOLDER) -> Dict[str, HostedClass]:
+    """Scans TextMouthProductionTests/*.swift (or the folder `folder_name`, such as the iPhone bundle's) and returns
+    {class name: HostedClass}.
 
     This is a line scanner, not a Swift parser, and it has limits:
       * a scope opens at a column-0 `class`/`extension` line and closes at the
@@ -101,7 +112,7 @@ def hosted_test_classes(root: Path) -> Dict[str, HostedClass]:
     """
     declared: Dict[str, Tuple[str, int, Optional[str]]] = {}  # name -> path, line, superclass
     own_tests: Dict[str, int] = {}
-    folder = root / TESTS_FOLDER
+    folder = root / folder_name
     for source in sorted(folder.glob("*.swift")):
         relative = str(source.relative_to(root))
         current: Optional[str] = None
@@ -253,7 +264,7 @@ def resolve_names(names: Sequence[str], areas: Sequence[Area],
 # ---------------------------------------------------------------------------
 
 def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: int = 4,
-                  use_slot: bool = True, action: str = "test") -> List[str]:
+                  use_slot: bool = True, action: str = "test", extra: Sequence[str] = ()) -> List[str]:
     """The argv of one xcodebuild run of all `classes`, behind the slot wrapper.
 
     `action` is xcodebuild's own: "test" (the default), or "build-for-testing"
@@ -262,7 +273,10 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
     One invocation carries every class as its own -only-testing: argument, so
     several areas launch the test host once (each launch leaves about 23 MB in
     a system cache). Run it from the repository root. The wrapper is left out
-    when use_slot is false.
+    when use_slot is false. `extra` is more xcodebuild arguments, put before the
+    classes (the GitHub runner passes its test time limits this way). xcodebuild
+    refuses an option given twice, so an `extra` that carries
+    `-parallel-testing-enabled` takes the place of the default `NO`.
     """
     command = [str(root / SLOT_WRAPPER)] if use_slot else []
     command += [
@@ -270,12 +284,13 @@ def build_command(root: Path, classes: Sequence[str], derived_data: str, jobs: i
         "-project", PROJECT,
         "-scheme", SCHEME,
         "-destination", "platform=macOS",
-        "-parallel-testing-enabled", "NO",
+        *([] if "-parallel-testing-enabled" in extra else ["-parallel-testing-enabled", "NO"]),
         "-jobs", str(jobs),
         "CODE_SIGNING_ALLOWED=NO",
         "COMPILER_INDEX_STORE_ENABLE=NO",
         "-derivedDataPath", derived_data,
     ]
+    command += list(extra)
     command += [f"-only-testing:{TEST_TARGET}/{name}" for name in classes]
     return command
 
@@ -300,6 +315,7 @@ class Summary:
     errors: Tuple[Tuple[str, str, str], ...] = ()   # (file, line, message); file may be ""
     warnings: Tuple[Tuple[str, str, str], ...] = ()
     crash: Optional[str] = None
+    retried: Tuple[str, ...] = ()              # "RETRIED Class.test passed on try 2 of 3", one per test
     succeeded: bool = False                    # "** TEST SUCCEEDED **" (or "TEST EXECUTE SUCCEEDED") seen
     tail: Tuple[str, ...] = ()                 # last log lines, shown when nothing else explains a failure
     log_path: Optional[str] = None             # set by the caller
@@ -317,7 +333,9 @@ _EXECUTED = re.compile(r"^\s*(Executed (\d+) tests?, with (?:\d+ tests? skipped 
 _TEST_ERROR = re.compile(r"^(.+?\.swift):(\d+): error: -\[(?:[\w.]+\.)?(\w+) (\w+)\] : (.*)$")
 _TEST_FAILED = re.compile(r"^Test Case '-\[(?:[\w.]+\.)?(\w+) (\w+)\]' failed")
 _COMPILE_ERROR = re.compile(r"^(/.+?\.swift):(\d+):\d+: error: (.*)$")
-_BARE_ERROR = re.compile(r"^(?:[\w+.-]+: )?(?:fatal )?error: (.*)$")
+# A printed NSError ("error: Error Domain=...") is not one: interleaved output from two processes can leave such a
+# line starting at "error:".
+_BARE_ERROR = re.compile(r"^(?:[\w+.-]+: )?(?:fatal )?error: (?!Error Domain=)(.*)$")
 _WARNING = re.compile(r"^(/.+?\.swift):(\d+):\d+: warning: (.*)$")
 _CRASH = re.compile(r"crashed|Restarting after unexpected exit, crash, or test timeout")
 # The build wrapper copies the agent's unread board messages into the log
@@ -336,6 +354,14 @@ def _in_repository(path: str, root: Path) -> bool:
     """True for a source file of this repository (not a package or DerivedData)."""
     roots = {str(root), os.path.realpath(root)}
     return any(path.startswith(r + "/") for r in roots) and not any(p in path for p in _FOREIGN_PATH)
+
+
+def _executed_without_tries(line: str, tests: int, skipped: int, failures: int) -> str:
+    """`line` (an Executed line) with the counts of the tests' final outcomes in place of xcodebuild's, which
+    count every try of a retried test; its times are kept."""
+    seconds = re.search(r" in [\d.]+ \([\d.]+\) seconds", line)
+    return (f"Executed {tests} tests, with {skipped} tests skipped and {failures} failures (0 unexpected)"
+            + (seconds.group(0) if seconds else ""))
 
 
 def summarize_log(text: str, root: Path) -> Summary:
@@ -405,9 +431,19 @@ def summarize_log(text: str, root: Path) -> Summary:
                 and not line.startswith(("Test Case ", "Test Suite ", _WRAPPER_PREFIX)) \
                 and ".swift:" not in line:
             crash = line.strip()[:240]
+    retried: Tuple[str, ...] = ()
+    if test_tries.has_retries(text):
+        # A run that retries: its Executed line counts every try, so the tests' last results are read instead.
+        found = test_tries.outcomes(text)
+        retried = tuple(test_tries.retried_line(o) for o in test_tries.retried(found))
+        failed_order = [name for name, o in found.items() if o.result == "failed"]
+        if found and executed_line is not None:
+            executed, failures = len(found), len(failed_order)
+            skipped = test_tries.counts(found)[1]
+            executed_line = _executed_without_tries(executed_line, executed, skipped, failures)
     failed_tests = tuple((key,) + test_errors.get(key, ("", "", "")) for key in failed_order)
     return Summary(
-        executed_line=executed_line, executed=executed, failures=failures,
+        executed_line=executed_line, executed=executed, failures=failures, retried=retried,
         failed_tests=failed_tests, errors=tuple(errors), warnings=tuple(warnings),
         crash=crash, succeeded=succeeded,
         tail=tuple(l.strip() for l in lines if l.strip())[-3:])
@@ -426,6 +462,8 @@ def format_summary(summary: Summary) -> List[str]:
     for test, file, number, message in summary.failed_tests:
         where = f" at {file}:{number}: {message}" if file else ""
         out.append(f"FAILED {test}{where}")
+    # A test that passed on a later try stays visible, though it does not fail the run.
+    out.extend(summary.retried)
     for file, number, message in summary.errors[:MAX_ERRORS_SHOWN]:
         out.append(f"ERROR {file}:{number}: {message}" if file else f"ERROR {message}")
     if len(summary.errors) > MAX_ERRORS_SHOWN:

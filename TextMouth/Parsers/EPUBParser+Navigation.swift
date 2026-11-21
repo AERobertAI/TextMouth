@@ -53,6 +53,15 @@ extension EPUBParser {
         var path: String
         var fragment: String
         var marker: MarkdownPageMarker
+        /// The label the entry gave its page, as the list spelled it, before
+        /// the marker's normalization took a leading "Page" off it; nil when
+        /// the entry gave none (`givenPageLabel`) and the marker has its
+        /// ordinal.
+        var sourceLabel: String?
+
+        /// Whether the entry gave its page a label, rather than leaving the
+        /// marker its ordinal.
+        var isLabelled: Bool { sourceLabel != nil }
     }
 
     /// The page list's entries grouped by the document each names (PG05), and
@@ -70,13 +79,17 @@ extension EPUBParser {
 
         /// What the converter needs to know of the document at `path`: the
         /// pages named at its elements (the first entry for an id takes it),
-        /// and whether its page-break elements are pages.
+        /// with their labels as the list spelled them, and whether its
+        /// page-break elements are pages.
         func htmlTargets(in path: String) -> HTMLPageTargets {
             var markers: [String: MarkdownPageMarker] = [:]
+            var sourceLabels: [String: String] = [:]
             for target in targetsByPath[path] ?? [] where !target.fragment.isEmpty {
-                if markers[target.fragment] == nil { markers[target.fragment] = target.marker }
+                guard markers[target.fragment] == nil else { continue }
+                markers[target.fragment] = target.marker
+                sourceLabels[target.fragment] = target.sourceLabel
             }
-            return HTMLPageTargets(markers: markers, pageBreaksArePages: !hasPageList)
+            return HTMLPageTargets(markers: markers, sourceLabels: sourceLabels, pageBreaksArePages: !hasPageList)
         }
 
         /// The pages that begin the document at `path` itself, in list order.
@@ -209,7 +222,7 @@ extension EPUBParser {
 
         // Conversion failures are found after every reading failure, so put
         // the omissions back into reading order.
-        report.omissions.sort { $0.chapterNumber < $1.chapterNumber }
+        report.omissions.sortStably { $0.chapterNumber < $1.chapterNumber }
         guard !chapters.isEmpty else { throw EPUBParserError.noReadableChapters(report) }
         return (chapters, report)
     }
@@ -261,7 +274,7 @@ extension EPUBParser {
         let doc: Document
         let title: String
         do {
-            doc = try SwiftSoup.parse(html)
+            doc = try MarkupGuard.parse(html)
             title = try doc.title()
 
             // Some converted EPUBs have an incomplete machine TOC but a full
@@ -343,7 +356,7 @@ extension EPUBParser {
         bookTitle: String,
         startPages: [MarkdownPageMarker]
     ) throws -> PreparedChapter? {
-        guard !withoutPageMarkers(converted).trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard !holdsOnlyWhitespaceAndPageMarkers(converted) else { return nil }
         // Each start page is a block of its own at the very start, which names
         // the same place as the block after it (MarkdownMarkerWriter).
         var markdown = ""
@@ -355,7 +368,7 @@ extension EPUBParser {
         let documentTitle = normalizedLabel(document.title)
         let fallbackTitle = targets.first(where: { $0.fragment.isEmpty })?.heading.text
             ?? (!documentTitle.isEmpty && documentTitle != normalizedLabel(bookTitle)
-                ? documentTitle : "Chapter \(document.number)")
+                ? documentTitle : "Chapter \(document.number)") // l10n: no (stored id: a chapter title the book keeps as written, question 9)
         var chapter = try MarkdownDocParser.parseChapter(
             markdown: markdown, title: fallbackTitle, includeNavigationHeadings: true
         )
@@ -384,11 +397,11 @@ extension EPUBParser {
         // A guide reference to a navigation document read here would only find
         // the same TOC again, next to that document's page list and landmarks.
         var navigationDocumentPaths: Set<String> = []
-        let manifest = opfData.manifest.sorted { $0.key < $1.key }
+        let manifest = opfData.manifest.sortedStably { $0.key < $1.key }
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             navigationDocumentPaths.insert(path)
             let readingFlow = PublicationSemantics.ReadingFlow(source: html)
             for toc in tableOfContentsNavigations(in: doc) {
@@ -397,7 +410,7 @@ extension EPUBParser {
         }
 
         result += withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [NavigationTarget] in
-            let maps = (try? doc.nodes(forXPath: "//*[local-name()='navMap']")) ?? []
+            let maps = XMLElementIndex(doc).elements(named: "navMap")
             return maps.flatMap { ncxTargets(in: $0, relativeTo: path, level: 1) }
         } ?? []
 
@@ -408,7 +421,7 @@ extension EPUBParser {
             let path = ParserUtilities.resolvedPackagePath(href, relativeTo: opfPath, preserveFragment: false)
             guard !navigationDocumentPaths.contains(path),
                   let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             let fragment = ParserUtilities.splitFragment(href).fragment
             let readingFlow = PublicationSemantics.ReadingFlow(source: html)
             for container in guideTOCContainers(in: doc.body() ?? doc, fragment: fragment, readingFlow: readingFlow) {
@@ -421,7 +434,7 @@ extension EPUBParser {
     /// What `body` makes of the EPUB 2 NCX the package declares through the
     /// spine's `toc` attribute, or else of its first manifest item of an NCX
     /// media type, given its path inside the archive and its document, read
-    /// as every XML file of the book is (`readingXML(_:_:)`); nil when there
+    /// as every XML file of the book is (`readingXML(_:file:_:)`); nil when there
     /// is none or it cannot be read.
     private static func withNCX<Result>(
         archive: IndexedArchive,
@@ -430,11 +443,11 @@ extension EPUBParser {
         _ body: (_ path: String, _ document: XMLDocument) -> Result
     ) -> Result? {
         let ncx = opfData.spineTOCID.flatMap { opfData.manifest[$0] }
-            ?? opfData.manifest.sorted { $0.key < $1.key }.first(where: { $0.value.mediaType.contains("ncx") })?.value
+            ?? opfData.manifest.sortedStably { $0.key < $1.key }.first(where: { $0.value.mediaType.contains("ncx") })?.value
         guard let ncx else { return nil }
         let path = ParserUtilities.resolvedPackagePath(ncx.href, relativeTo: opfPath, preserveFragment: false)
         guard let xml = try? extractString(archive: archive, path: path) else { return nil }
-        return try? readingXML(xml) { body(path, $0) }
+        return try? readingXML(xml, file: path) { body(path, $0) }
     }
 
     // MARK: - Page Lists
@@ -443,46 +456,56 @@ extension EPUBParser {
     /// navigation document's `page-list` navigation, else the EPUB 2 NCX's
     /// `pageList`. Empty when the book has none, or when none of its entries
     /// names a place (a web link, or an entry with no `href`).
+    ///
+    /// A list that labels none of its pages (`givenPageLabel`) names no pages
+    /// either: a generator with no page numbers can write a list whose one
+    /// entry is the id it links to ("pagenum_000000"), and such a list is
+    /// passed over, for the NCX's when the navigation document's is the one,
+    /// and else for the book's page-break elements, as in a book with no list.
     private static func readPageList(archive: IndexedArchive, opfPath: String, opfData: OPFData) -> [PageTarget] {
         var targets: [PageTarget] = []
         // The entries read so far, which numbers an entry that has no label.
         var entryCount = 0
-        let manifest = opfData.manifest.sorted { $0.key < $1.key }
+        let manifest = opfData.manifest.sortedStably { $0.key < $1.key }
         for (_, item) in manifest where item.properties.split(whereSeparator: \.isWhitespace).contains("nav") {
             let path = ParserUtilities.resolvedPackagePath(item.href, relativeTo: opfPath, preserveFragment: false)
             guard let html = try? extractString(archive: archive, path: path),
-                  let doc = try? SwiftSoup.parse(html) else { continue }
+                  let doc = try? MarkupGuard.parse(html) else { continue }
             for list in pageListContainers(in: doc) {
                 for link in elements(in: list, pruning: { _ in false }) where link.tagName() == "a" {
                     guard link.hasAttr("href") else { continue }
                     entryCount += 1
                     let href = (try? link.attr("href")) ?? ""
-                    let label = (try? link.text()) ?? ""
-                    if let target = pageTarget(href: href, label: label, ordinal: entryCount, relativeTo: path) {
+                    let text = (try? link.text()) ?? ""
+                    if let target = pageTarget(
+                        href: href, labels: [text], entryID: link.id(), ordinal: entryCount, relativeTo: path
+                    ) {
                         targets.append(target)
                     }
                 }
             }
         }
-        if !targets.isEmpty { return targets }
+        if targets.contains(where: \.isLabelled) { return targets }
 
-        // No EPUB 3 page list: the NCX's pageList, each pageTarget labelled by
-        // its navLabel, else its value, and numbered from 1 in list order.
+        // No EPUB 3 page list that labels a page: the NCX's pageList, each
+        // pageTarget labelled by its navLabel, else its value, and numbered
+        // from 1 in list order.
         return withNCX(archive: archive, opfPath: opfPath, opfData: opfData) { (path, doc) -> [PageTarget] in
-            let entries = (try? doc.nodes(
-                forXPath: "//*[local-name()='pageList']/*[local-name()='pageTarget']"
-            )) ?? []
+            let entries = XMLElementIndex(doc).elements(named: "pageTarget", insideParentNamed: "pageList")
             var listed: [PageTarget] = []
-            for (index, entry) in entries.compactMap({ $0 as? XMLElement }).enumerated() {
-                let text = (try? entry.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
-                let label = text.contains(where: { !$0.isWhitespace }) ? text : (entry.attribute(forName: "value")?.stringValue ?? "")
-                let content = (try? entry.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+            for (index, entry) in entries.enumerated() {
+                let text = entry.firstNavLabelText?.stringValue ?? ""
+                let value = entry.attribute(forName: "value")?.stringValue ?? ""
+                let content = entry.childElements(localName: "content").first
                 if let href = content?.attribute(forName: "src")?.stringValue,
-                   let target = pageTarget(href: href, label: label, ordinal: index + 1, relativeTo: path) {
+                   let target = pageTarget(
+                       href: href, labels: [text, value], entryID: entry.attribute(forName: "id")?.stringValue ?? "",
+                       ordinal: index + 1, relativeTo: path
+                   ) {
                     listed.append(target)
                 }
             }
-            return listed
+            return listed.contains(where: \.isLabelled) ? listed : []
         } ?? []
     }
 
@@ -509,21 +532,99 @@ extension EPUBParser {
     }
 
     /// One page list entry: the place `href` names (resolved as a TOC entry's
-    /// is) and a marker labelled `label`, or the entry's `ordinal`, its
-    /// 1-based position in the list, when the label is empty.
-    private static func pageTarget(href: String, label: String, ordinal: Int, relativeTo path: String) -> PageTarget? {
+    /// is) and a marker labelled by the first of `labels` that labels the
+    /// page (`givenPageLabel`), or by the entry's `ordinal`, its 1-based
+    /// position in the list, when none does. `entryID` is the id the entry's
+    /// own element carries, empty when it has none.
+    private static func pageTarget(
+        href: String,
+        labels: [String],
+        entryID: String,
+        ordinal: Int,
+        relativeTo path: String
+    ) -> PageTarget? {
         guard let destination = resolvedDestination(href: href, relativeTo: path) else { return nil }
+        let ids = [destination.fragment, entryID].filter { !$0.isEmpty }
+        let label = labels.lazy.compactMap { givenPageLabel($0, ids: ids) }.first
         return PageTarget(
             path: destination.path,
             fragment: destination.fragment,
-            marker: MarkdownPageMarker(label: label, ordinal: ordinal)
+            marker: MarkdownPageMarker(label: label ?? "", ordinal: ordinal),
+            sourceLabel: label
         )
     }
 
-    /// `markdown` without its page markers, for judging whether a document
-    /// holds any text.
-    private static func withoutPageMarkers(_ markdown: String) -> String {
-        markdown.replacingOccurrences(of: "<!-- page: [^<>]+ -->", with: "", options: .regularExpression)
+    /// The label a page list entry's `text` gives its page (PG05), or nil
+    /// when the text labels no page. That is when it is blank or only the
+    /// word "Page" (`MarkdownPageMarker.namesNoPage`), or when it is no more
+    /// than one of `ids`, the id the entry links to or carries, and no page
+    /// number: a generator with no number for a page can write the id in its
+    /// place ("pagenum_000000" linking to `#pagenum_000000`). An id that is a
+    /// page number itself ("12" linking to `#12`) is the page's label.
+    private static func givenPageLabel(_ text: String, ids: [String]) -> String? {
+        guard !MarkdownPageMarker.namesNoPage(text) else { return nil }
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if ids.contains(trimmed), !MarkdownPageMarker.isPageNumber(trimmed) { return nil }
+        return text
+    }
+
+    /// Whether `markdown` holds nothing but white space and page markers, so
+    /// that a document converted to it is blank. It is what removing every
+    /// `<!-- page: [^<>]+ -->` with a regular expression, trimming
+    /// `whitespacesAndNewlines`, and asking whether anything is left once
+    /// answered, which read the whole chapter and built a copy of it (7% of
+    /// an EPUB import before the November 14, 2026 speed-up, H5). The text
+    /// is read from its start, skipping white space and markers, until the
+    /// first other character: for any chapter with words that is its first
+    /// few characters.
+    ///
+    /// A marker is `MarkdownPageMarker.prefix`, then one or more characters
+    /// that are neither "<" nor ">", then `MarkdownPageMarker.suffix`. Since
+    /// the suffix ends in ">" and the label holds none, the marker ends at
+    /// the first ">" after the prefix, which must be preceded by the rest of
+    /// the suffix and at least one character before that. A "<" before the
+    /// ">" means no marker begins there, and its text is read.
+    static func holdsOnlyWhitespaceAndPageMarkers(_ markdown: String) -> Bool {
+        let scalars = markdown.unicodeScalars
+        var position = scalars.startIndex
+        while position < scalars.endIndex {
+            let scalar = scalars[position]
+            if CharacterSet.whitespacesAndNewlines.contains(scalar) {
+                position = scalars.index(after: position)
+            } else if scalar == "<", let end = endOfPageMarker(beginningAt: position, in: scalars) {
+                position = end
+            } else {
+                // Text that stays.
+                return false
+            }
+        }
+        return true
+    }
+
+    /// Where the page marker (as `holdsOnlyWhitespaceAndPageMarkers` defines
+    /// it) that begins at `start` in `scalars` ends, or nil when none does.
+    private static func endOfPageMarker(
+        beginningAt start: String.UnicodeScalarView.Index,
+        in scalars: String.UnicodeScalarView
+    ) -> String.UnicodeScalarView.Index? {
+        var position = start
+        // The prefix, scalar by scalar.
+        for expected in MarkdownPageMarker.prefix.unicodeScalars {
+            guard position < scalars.endIndex, scalars[position] == expected else { return nil }
+            position = scalars.index(after: position)
+        }
+        // The label and the rest of the suffix, up to the first ">", with no "<" before it.
+        let labelStart = position
+        while position < scalars.endIndex, scalars[position] != ">" {
+            if scalars[position] == "<" { return nil }
+            position = scalars.index(after: position)
+        }
+        guard position < scalars.endIndex else { return nil }
+        // What came before the ">" must end with the suffix up to its ">", after at least one label character.
+        let beforeClosing = Array(MarkdownPageMarker.suffix.unicodeScalars.dropLast())
+        let between = Array(scalars[labelStart..<position])
+        guard between.count > beforeClosing.count, between.suffix(beforeClosing.count) == beforeClosing[...] else { return nil }
+        return scalars.index(after: position)
     }
 
     // MARK: - Tables of Contents
@@ -593,8 +694,8 @@ extension EPUBParser {
         var result: [NavigationTarget] = []
         var stack = pending(under: node, level: level)
         while let (navPoint, navPointLevel) = stack.popLast() {
-            let label = (try? navPoint.nodes(forXPath: "*[local-name()='navLabel']/*[local-name()='text']"))?.first?.stringValue ?? ""
-            let content = (try? navPoint.nodes(forXPath: "*[local-name()='content']"))?.first as? XMLElement
+            let label = navPoint.firstNavLabelText?.stringValue ?? ""
+            let content = navPoint.childElements(localName: "content").first
             if let href = content?.attribute(forName: "src")?.stringValue,
                let target = navigationTarget(href: href, label: label, level: navPointLevel, relativeTo: path) {
                 result.append(target)

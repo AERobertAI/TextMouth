@@ -54,6 +54,7 @@ final class FeedEndToEndTests: XCTestCase {
         let reader = try openReader(for: book, in: world)
         await waitFor("the episode loads in its reader") { !reader.isLoading }
         XCTAssertNil(reader.errorMessage)
+        await waitForMainQueueTurnAsync() // the published set follows a turn after the registry (B22)
         XCTAssertTrue(world.library.openBookIDs.contains(book.id))
 
         reader.handleEndOfBook()
@@ -128,7 +129,7 @@ final class FeedEndToEndTests: XCTestCase {
             notificationCenter: NotificationCenter(),
             initializeServices: false,
             userDefaults: makeSandboxedPreferences("FeedReaderSettings"),
-            configService: ConfigService(fileURL: configFile)
+            configService: makeConfigService(fileURL: configFile)
         )
         // A finished book stops, so no next book starts, and counts among
         // Books Finished, as every end-of-book behavior but looping does.

@@ -72,7 +72,7 @@ An optional corpus test reproduces the reported Helliconia 27-headings versus
 directory containing a copy of that EPUB and its old `content.md`. Supply the
 value as an `xcodebuild test` build setting; the test bundle receives it through
 its Info.plist. The test skips when this setting is absent and never searches a
-user's library. See the [fix record](../EPUB-HEADINGS-FIX-2026-09-08.md) for the
+user's library. See the [fix record](../research/EPUB-HEADINGS-FIX-2026-09-08.md) for the
 complete command and cache compatibility notes.
 
 `LibraryLifecycleTests` covers the utility-queue final release that caused the
@@ -85,7 +85,7 @@ checkpoints, forced manual extraction, failed updates, and bounded worker
 scheduling. Ordinary EPUBs use two utility workers; large sources and other
 formats run alone. The corpus test above also reports diagnostic single-book
 and serial/parallel batch times against disposable copies, with no timing-based
-assertions. See the [performance record](../CACHE-UPDATES-2026-09-09.md).
+assertions. See the [performance record](../research/CACHE-UPDATES-2026-09-09.md).
 
 Choose version bumps by processing stage: change
 `MarkdownCacheService.currentCacheVersion` for source-to-Markdown changes, and

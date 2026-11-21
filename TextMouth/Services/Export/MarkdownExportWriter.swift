@@ -20,9 +20,9 @@ import Foundation
 /// book's text as content.md holds it.
 struct MarkdownExportWriter: TextExportWriter {
     let id = "md"
-    let name = "Markdown"
+    var name: String { BookExportWording.markdownChoiceName }
     let fileExtension = "md"
-    let hint = BookExportWording.markdownChoiceHint
+    var hint: String { BookExportWording.markdownChoiceHint }
 
     /// Writes the Markdown of `document` as UTF-8 to a new file at `url`; a
     /// file already there is an error, and is left as it was.
@@ -94,6 +94,10 @@ struct MarkdownExportWriter: TextExportWriter {
             return ["---"]
         case .table(let table):
             return tableLines(table)
+        case .pageBreak, .navigationTarget:
+            // content.md's own page markers are not Markdown to write: this
+            // writer's document never keeps them, and one is left out.
+            return []
         }
     }
 
