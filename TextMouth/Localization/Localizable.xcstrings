@@ -9146,7 +9146,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@のデフォルトは%2$@です"
+            "value" : "デフォルトの%2$@は「%1$@」に割り当てられています"
           }
         },
         "ko" : {
@@ -17461,7 +17461,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@には、Mac 専用の点字テーブル「%2$@」が必要ですが、iPhone 版の TextMouth にはありません。"
+            "value" : "%1$@には、Mac 専用の点字表「%2$@」が必要ですが、iPhone 版の TextMouth にはありません。"
           }
         },
         "ko" : {
@@ -17741,7 +17741,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を%2$@に記録できませんでした：%3$@"
+            "value" : "%1$@を「%2$@」に記録できませんでした：%3$@"
           }
         },
         "ko" : {
@@ -18021,7 +18021,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を1回押すと、続けて押される場合に備えて、%2$@の前に少し待ちます。"
+            "value" : "%1$@を1回押すと、続けて押される場合に備えて、「%2$@」の前に少し待ちます。"
           }
         },
         "ko" : {
@@ -18615,7 +18615,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@章（全%lld章）を読み込めませんでした"
+                  "value" : "全%2$lld章のうち%1$@章を読み込めませんでした"
                 }
               }
             }
@@ -20156,7 +20156,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@をデフォルトに戻しました：%2$@"
+            "value" : "「%1$@」をデフォルトに戻しました：%2$@"
           }
         },
         "ko" : {
@@ -22378,7 +22378,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@で再試行、%2$@で保存せずに終了、%3$@で TextMouth を開いたままにします。"
+            "value" : "「%1$@」で再試行、「%2$@」で保存せずに終了、「%3$@」で TextMouth を開いたままにします。"
           }
         },
         "ko" : {
@@ -22789,7 +22789,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "メニューの%@で使われています"
+            "value" : "メニューの「%@」で使われています"
           }
         },
         "ko" : {
@@ -25061,7 +25061,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@は%2$@で使えます。"
+            "value" : "「%1$@」は%2$@で使えます。"
           }
         },
         "ko" : {
@@ -30313,7 +30313,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を%2$@に記録しました"
+            "value" : "%1$@を「%2$@」に記録しました"
           }
         },
         "ko" : {
@@ -96324,7 +96324,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新しいタイマーは、実行中のタイマーに置き換わります。"
+            "value" : "実行中のタイマーは、新しいタイマーに置き換わります。"
           }
         },
         "ko" : {
@@ -105241,7 +105241,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "あなたのルールの後に辞書のエントリを追加します。発音の表記だけのエントリは除外されます。"
+            "value" : "既存のルールの後に辞書のエントリを追加します。発音の表記だけのエントリは除外されます。"
           }
         },
         "ko" : {
@@ -105789,7 +105789,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "リーダ、「ここはどこ？」、読書位置のコピー、見出しシートの長さに、時間と一緒に数える速度（1倍速でないオーディオブックの2.0x、テキストブックの毎分500語など）を追加します。"
+            "value" : "リーダ、「ここはどこ？」、「読書位置をコピー」、見出しシートの長さに、時間の計算に使う速度（1倍速以外のオーディオブックなら2.0x、テキストブックなら毎分500語など）を追加します。"
           }
         },
         "ko" : {
@@ -105926,7 +105926,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "分数を調整"
+            "value" : "分を調整"
           }
         },
         "ko" : {
@@ -116960,7 +116960,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テーブルの定義どおり"
+            "value" : "点字表の定義どおり"
           }
         },
         "ko" : {
@@ -133471,7 +133471,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキストを、読み上げ中の文に移します。"
+            "value" : "読み上げ中の文に移動します。"
           }
         },
         "ko" : {
@@ -140980,7 +140980,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "チャプタ%1$@を再生できませんでした。ブックのパッケージ内：%2$@。"
+            "value" : "チャプタ%1$@を再生できませんでした：ブックのパッケージ内の%2$@。"
           }
         },
         "ko" : {
@@ -154877,7 +154877,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択するとショートカットが自分用に変わります。「デフォルトに戻す」で、デフォルトの動作場所に戻ります。"
+            "value" : "選択すると、このショートカットはカスタム設定になります。「デフォルトに戻す」で、デフォルトの動作場所に戻ります。"
           }
         },
         "ko" : {
@@ -174552,7 +174552,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "カスタムの分数"
+            "value" : "カスタム時間（分）"
           }
         },
         "ko" : {
@@ -202847,7 +202847,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "マニフェストを編集するアプリ…"
+            "value" : "アプリを指定してマニフェストを編集…"
           }
         },
         "ko" : {
@@ -203806,7 +203806,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキストを編集するアプリ…"
+            "value" : "アプリを指定してテキストを編集…"
           }
         },
         "ko" : {
@@ -222903,7 +222903,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したばかりの点字テーブルの確認が済んだら、チェックした項目を書き出します。"
+            "value" : "選択したばかりの点字表の確認が済んだら、チェックした項目を書き出します。"
           }
         },
         "ko" : {
@@ -274241,7 +274241,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "見出しは本物の見出しで、目次からリンクされています。"
+            "value" : "見出しは構造化された見出しで、目次からリンクされています。"
           }
         },
         "ko" : {
@@ -274515,7 +274515,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "唯一のページは%@です。"
+            "value" : "ページは%@のみです。"
           }
         },
         "ko" : {
@@ -278967,7 +278967,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックをこの Mac に保持"
+            "value" : "リストのブックをこの Mac に保持"
           }
         },
         "ko" : {
@@ -280097,7 +280097,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%2$lld章のうち%1$@章を、TextMouth を終了するか、別の読み上げオーディオの書き出しを始めるか、ブックの声、テキスト、置換、間が変わるまで保持しています。%3$@章から続けるには、同じ範囲を同じ速度とピッチで書き出してください。"
+                  "value" : "全%2$lld章のうち%1$@章を、TextMouth を終了するか、別の読み上げオーディオの書き出しを始めるか、ブックの声、テキスト、置換、間が変わるまで保持しています。第%3$@章から続けるには、同じ範囲を同じ速度とピッチで書き出してください。"
                 }
               }
             }
@@ -304284,7 +304284,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "解放なし：このブックはメディアコントロールを保持していません。"
+            "value" : "メディアコントロールを解放しませんでした：このブックは保持していません。"
           }
         },
         "ko" : {
@@ -323238,7 +323238,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ナビゲーション単位を保ったまま、次の見出しに移動します。"
+            "value" : "移動単位を保ったまま、次の見出しに移動します。"
           }
         },
         "ko" : {
@@ -323375,7 +323375,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ナビゲーション単位を保ったまま、前の見出しに移動します。"
+            "value" : "移動単位を保ったまま、前の見出しに移動します。"
           }
         },
         "ko" : {
@@ -326856,7 +326856,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオブックのナビゲーション単位"
+            "value" : "オーディオブックの移動単位"
           }
         },
         "ko" : {
@@ -326993,7 +326993,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキストのブックのナビゲーション単位"
+            "value" : "テキストのブックの移動単位"
           }
         },
         "ko" : {
@@ -341851,7 +341851,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "再開できる前回のスリープタイマーはありません。"
+            "value" : "前回のスリープタイマーがないため、再開始できません。"
           }
         },
         "ko" : {
@@ -350270,7 +350270,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "スリープタイマーのため、再開しませんでした"
+            "value" : "スリープタイマーのため、もう一度再生しませんでした"
           }
         },
         "ko" : {
@@ -353284,7 +353284,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ナンバー記号"
+            "value" : "シャープ"
           }
         },
         "ko" : {
@@ -353592,7 +353592,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ページ（全%lldページ）で OCR を実行できなかったため、画像にしかないテキストが欠けています：%@。"
+                  "value" : "全%2$lldページのうち%1$@ページで OCR を実行できなかったため、画像にしかないテキストが欠けています：%3$@。"
                 }
               }
             }
@@ -354355,7 +354355,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "PDF の唯一のページで OCR を実行できなかったため、画像にしかないテキストが欠けています：%@。"
+            "value" : "1ページのみの PDF で OCR を実行できなかったため、画像にしかないテキストが欠けています：%@。"
           }
         },
         "ko" : {
@@ -382196,7 +382196,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新しいキーを押してください。キャンセルするにはエスケープを押します。"
+            "value" : "新しいキーを押すか、キャンセルする場合はエスケープキーを押してください。"
           }
         },
         "ko" : {
@@ -405994,7 +405994,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@のショートカット%1$@を取り除く"
+            "value" : "「%2$@」のショートカット%1$@を取り除く"
           }
         },
         "ko" : {
@@ -410795,7 +410795,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@をデフォルトに戻す"
+            "value" : "「%@」をデフォルトに戻す"
           }
         },
         "ko" : {
@@ -438212,7 +438212,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "設定をグローバルなデフォルトとして適用しました"
+            "value" : "設定を全体のデフォルトとして適用しました"
           }
         },
         "ko" : {
@@ -471961,7 +471961,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@から取得"
+            "value" : "%@から割り当てを移しました"
           }
         },
         "ko" : {
@@ -474862,7 +474862,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキストは更新されませんでした：%2$@の編集済みテキストのチャプタ%1$@について、%3$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。"
+            "value" : "テキストは更新されませんでした：%2$@の編集済みテキストのチャプタ%1$@について、%3$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。"
           }
         },
         "ko" : {
@@ -475005,7 +475005,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキストは更新されませんでした：%1$@の編集済みテキストについて、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。"
+            "value" : "テキストは更新されませんでした：%1$@の編集済みテキストについて、%2$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消してください。それまで、ブックは以前のテキストのままです。"
           }
         },
         "ko" : {
@@ -475696,7 +475696,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキストは更新されませんでした：%1$@の編集済み文字起こしには%2$@がありますが、オーディオブックには%3$@があります。 <!-- chapter: で始まる行をすべて残して、もう一度保存してください。それまで、ブックは以前のテキストのままです。"
+            "value" : "テキストは更新されませんでした：%1$@の編集済み文字起こしには%2$@がありますが、オーディオブックには%3$@があります。<!-- chapter: で始まる行をすべて残して、もう一度保存してください。それまで、ブックは以前のテキストのままです。"
           }
         },
         "ko" : {
@@ -480178,7 +480178,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "設定で選択された点字テーブル「%1$@」を TextMouth は使用できないため、この書き出しは%2$@から始まります。"
+            "value" : "設定で選択された点字表「%1$@」を TextMouth は使用できないため、この書き出しは%2$@から始まります。"
           }
         },
         "ko" : {
@@ -480321,7 +480321,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの Mac のテーブル「%1$@」を使用できません：%2$@。"
+            "value" : "TextMouth はこの Mac の点字表「%1$@」を使用できません：%2$@。"
           }
         },
         "ko" : {
@@ -480738,7 +480738,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの Mac の点字テーブル「%1$@」を確認できませんでした：%2$@。もう一度お試しください。"
+            "value" : "TextMouth はこの Mac の点字表「%1$@」を確認できませんでした：%2$@。もう一度お試しください。"
           }
         },
         "ko" : {
@@ -480881,7 +480881,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの Mac のテーブル「%1$@」を確認できませんでした：%2$@。もう一度選ぶと再試行します。"
+            "value" : "TextMouth はこの Mac の点字表「%1$@」を確認できませんでした：%2$@。もう一度選ぶと再試行します。"
           }
         },
         "ko" : {
@@ -483484,7 +483484,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの点字を翻訳できませんでした。"
+            "value" : "TextMouth はこの点字を変換できませんでした。"
           }
         },
         "ko" : {
@@ -487905,7 +487905,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth のバンドルに点字テーブルが見つかりませんでした。"
+            "value" : "TextMouth のバンドルに点字表が見つかりませんでした。"
           }
         },
         "ko" : {
@@ -488042,7 +488042,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth に「%@」という名前の点字テーブルはありません。"
+            "value" : "TextMouth に「%@」という名前の点字表はありません。"
           }
         },
         "ko" : {
@@ -497961,7 +497961,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は点字の翻訳を中止しました。理由：%@。"
+            "value" : "TextMouth は点字の変換を中止しました。理由：%@。"
           }
         },
         "ko" : {
@@ -506408,7 +506408,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@は「%3$@」の%2$@の位置から始まっていますが、それより前にある%4$@（%5$@の位置から始まる）より前になっています。"
+            "value" : "%1$@は「%3$@」の%2$@の位置から始まっていますが、これはその前の%4$@の開始位置（%5$@）より前です。"
           }
         },
         "ko" : {
@@ -515342,7 +515342,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオファイル%@は、本来のオーディオより前で終わっているため、変換できませんでした。"
+            "value" : "オーディオファイル%@は途中で切れているため、変換できませんでした。"
           }
         },
         "ko" : {
@@ -522808,7 +522808,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この点字テーブルは8点のセル（%@）を書きますが、TextMouth の BRF と PEF ファイルは6点のみです。"
+            "value" : "この点字表は8点のセル（%@）を出力しますが、TextMouth の BRF と PEF ファイルは6点のみです。"
           }
         },
         "ko" : {
@@ -522945,7 +522945,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この点字テーブルは「%@」を8点のセルで書きますが、TextMouth の BRF と PEF ファイルは6点のみです。"
+            "value" : "この点字表は「%@」を8点のセルで出力しますが、TextMouth の BRF と PEF ファイルは6点のみです。"
           }
         },
         "ko" : {
@@ -523082,7 +523082,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したテーブルは TextMouth に組み込まれています（liblouis %@）。"
+            "value" : "選択した点字表は TextMouth に組み込まれています（liblouis %@）。"
           }
         },
         "ko" : {
@@ -523219,7 +523219,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したテーブルは、この Mac の VoiceOver の点字テーブルの1つです（liblouis %@）。"
+            "value" : "選択した点字表は、この Mac の VoiceOver の点字表の1つです（liblouis %@）。"
           }
         },
         "ko" : {
@@ -523356,7 +523356,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したテーブルは、この Mac の VoiceOver の点字テーブルの1つです。"
+            "value" : "選択した点字表は、この Mac の VoiceOver の点字表の1つです。"
           }
         },
         "ko" : {
@@ -530435,7 +530435,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ファイル%@が途中で失敗しました。"
+            "value" : "ファイル%@の再生が途中で失敗しました。"
           }
         },
         "ko" : {
@@ -545356,7 +545356,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "唯一のチャプタを読み込めませんでした"
+            "value" : "1つしかないチャプタを読み込めませんでした"
           }
         },
         "ko" : {
@@ -547423,7 +547423,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "読み込んだ元のファイルには触れません。"
+            "value" : "読み込んだ元のファイルには手を加えません。"
           }
         },
         "ko" : {
@@ -561887,7 +561887,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」の途中で、声がオーディオの種類を変えました。"
+            "value" : "「%@」の途中で、声のオーディオ形式が変わりました。"
           }
         },
         "ko" : {
@@ -570287,7 +570287,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この Mac には、選択したテーブル「%@」がなくなりました。別のテーブルを選んでください。"
+            "value" : "この Mac には、選択した点字表「%@」がなくなりました。別の点字表を選んでください。"
           }
         },
         "ko" : {
@@ -570430,7 +570430,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックを読み込んでから、この Mac の点字テーブル「%1$@」が liblouis %2$@ から %3$@ に変わったため、TextMouth はブックのテキストをそのまま保持します。"
+            "value" : "ブックを読み込んでから、この Mac の点字表「%1$@」が liblouis %2$@ から %3$@ に変わったため、TextMouth はブックのテキストをそのまま保持します。"
           }
         },
         "ko" : {
@@ -570573,7 +570573,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "liblouis %2$@ でブックを読み込んでから、この Mac の点字テーブル「%1$@」が変わった可能性があるため、TextMouth はブックのテキストをそのまま保持します。"
+            "value" : "liblouis %2$@ でブックを読み込んでから、この Mac の点字表「%1$@」が変わった可能性があるため、TextMouth はブックのテキストをそのまま保持します。"
           }
         },
         "ko" : {
@@ -575206,7 +575206,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックの唯一のページは%@です。"
+            "value" : "このブックのページは%@のみです。"
           }
         },
         "ko" : {
@@ -584839,7 +584839,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "タイマーを再開しました：%@。"
+            "value" : "タイマーを再開始しました：%@。"
           }
         },
         "ko" : {
@@ -598070,7 +598070,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "2回の押下の間隔は%1$@でした。2回を1回と数えるには、時間を%2$@より長くしてください。"
+            "value" : "2回の押下の間隔は%1$@でした。ダブルプレスとして数えるには、時間を%2$@より長くしてください。"
           }
         },
         "ko" : {
@@ -599446,7 +599446,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "まっすぐな引用符を入力してください。TextEdit では、「編集」>「置換」で「スマート引用符」をオフにします。"
+            "value" : "まっすぐな引用符を入力してください。テキストエディットでは、「編集」>「自動置換」で「スマート引用符」をオフにします。"
           }
         },
         "ko" : {
@@ -608225,7 +608225,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "グローバル設定を使用（%@）"
+            "value" : "全体の設定を使用（%@）"
           }
         },
         "ko" : {
@@ -626818,7 +626818,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Word 97-2003 ドキュメントです。見出しはプレーンテキストなので、Word のナビゲーションパネルには表示されません。"
+            "value" : "Word 97-2003 ドキュメントです。見出しはプレーンテキストなので、Word のナビゲーションウィンドウには表示されません。"
           }
         },
         "ko" : {
@@ -647185,7 +647185,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "編集済みテキストについて、%@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、ブックが開きます。"
+            "value" : "編集済みテキストについて、%@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、ブックが開きます。"
           }
         },
         "ko" : {
@@ -647322,7 +647322,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "編集済みテキストについて、%@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、テキストが表示されます。"
+            "value" : "編集済みテキストについて、%@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、テキストが表示されます。"
           }
         },
         "ko" : {
@@ -648013,7 +648013,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字起こしは%1$@ですが、オーディオブックは%2$@です。 <!-- chapter: で始まる行をすべて残してもう一度保存すると、テキストが表示されます。"
+            "value" : "文字起こしは%1$@ですが、オーディオブックは%2$@です。<!-- chapter: で始まる行をすべて残してもう一度保存すると、テキストが表示されます。"
           }
         },
         "ko" : {
@@ -650510,7 +650510,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "8点点字で書かれていますが、TextMouth が使うのは6点点字のみです"
+            "value" : "8点点字を出力しますが、TextMouth が使うのは6点点字のみです"
           }
         },
         "ko" : {
@@ -652054,7 +652054,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、ブックが開きます。"
+            "value" : "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、ブックが開きます。"
           }
         },
         "ko" : {
@@ -652197,7 +652197,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、テキストが表示されます。"
+            "value" : "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。入れ子を浅くしてもう一度保存するか、変更を取り消すと、テキストが表示されます。"
           }
         },
         "ko" : {
@@ -670909,7 +670909,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ファイル%@が途中で失敗しました"
+            "value" : "ファイル%@の再生が途中で失敗しました"
           }
         },
         "ko" : {
