@@ -3179,7 +3179,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ ada di pustaka Anda, tetapi tidak berlangganan. Pilih %2$@ pada baris feed, atau di %3$@, untuk memeriksanya lagi."
+            "value" : "%1$@ ada di pustaka Anda, tetapi tidak lagi dilanggan. Pilih %2$@ pada baris feed, atau di %3$@, untuk memeriksanya lagi."
           }
         },
         "it" : {
@@ -5630,7 +5630,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tidak dapat mengirim feed (galat %2$@). Coba lagi nanti."
+            "value" : "%1$@ tidak dapat mengirim feed (kesalahan %2$@). Coba lagi nanti."
           }
         },
         "it" : {
@@ -5773,7 +5773,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tidak dapat mengirim file (galat %2$@). Coba lagi nanti."
+            "value" : "%1$@ tidak dapat mengirim file (kesalahan %2$@). Coba lagi nanti."
           }
         },
         "it" : {
@@ -6474,7 +6474,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ tidak menjawab selama %lld detik."
+                  "value" : "%@ tidak merespons selama %lld detik."
                 }
               }
             }
@@ -13926,7 +13926,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ ada di pustaka Anda, tetapi tidak berlangganan. Pilih %2$@ pada barisnya, atau di %3$@, untuk memeriksanya lagi."
+            "value" : "%1$@ ada di pustaka Anda, tetapi tidak lagi dilanggan. Pilih %2$@ pada barisnya, atau di %3$@, untuk memeriksanya lagi."
           }
         },
         "it" : {
@@ -15320,7 +15320,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tidak berlangganan, jadi TextMouth tidak memeriksanya. Pilih %2$@ untuk memeriksanya lagi."
+            "value" : "%1$@ tidak lagi dilanggan, jadi TextMouth tidak memeriksanya. Pilih %2$@ untuk memeriksanya lagi."
           }
         },
         "it" : {
@@ -19316,7 +19316,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ memutar bagian yang merupakan potongan dari trek-nya, sehingga trek-nya belum dapat diedit."
+            "value" : "%@ memutar bagian yang merupakan potongan dari treknya, sehingga treknya belum dapat diedit."
           }
         },
         "it" : {
@@ -23051,7 +23051,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ menunggu jaringan tanpa batas data untuk menyegarkan sendiri."
+            "value" : "%@ menunggu jaringan tanpa batas data untuk menyegarkan secara otomatis."
           }
         },
         "it" : {
@@ -59985,7 +59985,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld edit diurungkan. Ulangi mengembalikannya sampai Anda melakukan edit lain."
+                  "value" : "%lld edit diurungkan. Pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain."
                 }
               }
             }
@@ -89467,7 +89467,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld sudah berlangganan."
+                  "value" : "%lld sudah dilanggan."
                 }
               }
             }
@@ -145269,7 +145269,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Memeriksa feed ini lagi mulai sekarang, dan langsung saat ini."
+            "value" : "Memeriksa feed ini lagi mulai sekarang, dan langsung memeriksanya."
           }
         },
         "it" : {
@@ -156795,7 +156795,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tutup"
+            "value" : "Tutup bukunya"
           }
         },
         "it" : {
@@ -165438,7 +165438,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengonversi %1$@ gagal (konverter berakhir dengan kode %2$@)."
+            "value" : "Gagal mengonversi %1$@ (konverter berakhir dengan kode %2$@)."
           }
         },
         "it" : {
@@ -206409,7 +206409,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlalu"
+            "value" : "Waktu berlalu"
           }
         },
         "it" : {
@@ -206546,7 +206546,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlalu: %@"
+            "value" : "Waktu berlalu: %@"
           }
         },
         "it" : {
@@ -212275,7 +212275,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Semua artikel tercantum, unduh manual"
+            "value" : "Semua artikel tercantum, diunduh manual"
           }
         },
         "it" : {
@@ -213701,7 +213701,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Semua episode tercantum, unduh manual"
+            "value" : "Semua episode tercantum, diunduh manual"
           }
         },
         "it" : {
@@ -214448,7 +214448,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Semua feed tidak berlangganan, jadi tidak ada yang diperiksa. Pilih %1$@ pada baris feed, atau di %2$@-nya, untuk memeriksanya lagi."
+            "value" : "Semua feed tidak lagi dilanggan, jadi tidak ada yang diperiksa. Pilih %1$@ pada baris feed, atau di %2$@-nya, untuk memeriksanya lagi."
           }
         },
         "it" : {
@@ -214585,7 +214585,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Semua item tercantum, unduh manual"
+            "value" : "Semua item tercantum, diunduh manual"
           }
         },
         "it" : {
@@ -262268,7 +262268,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rekaman baru berdurasi %@ disisipkan, dan sedang dipilih."
+            "value" : "Rekaman baru berdurasi %@ disisipkan dan kini terpilih."
           }
         },
         "it" : {
@@ -263775,7 +263775,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Itu"
+            "value" : "Buku ini"
           }
         },
         "it" : {
@@ -264186,7 +264186,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ini milik feed-nya selama masih diunduh. %@ membuang file-nya dan mempertahankan posisi serta markahnya."
+            "value" : "Ini milik feed-nya selama masih berupa unduhan. %@ membuang file-nya dan mempertahankan posisi serta markahnya."
           }
         },
         "it" : {
@@ -271707,7 +271707,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ disimpan untuk saat Anda mengunduhnya lagi."
+            "value" : "%@ disimpan untuk dipakai saat Anda mengunduhnya lagi."
           }
         },
         "it" : {
@@ -271981,7 +271981,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ disimpan untuk saat Anda mengunduhnya lagi."
+            "value" : "%@ disimpan untuk dipakai saat Anda mengunduhnya lagi."
           }
         },
         "it" : {
@@ -275742,7 +275742,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trek-nya melewati akhir audio yang disebutkan, jadi file ini dibuat untuk salinan audio yang lain."
+            "value" : "Treknya melewati akhir audio yang disebutkan, jadi file ini dibuat untuk salinan audio yang lain."
           }
         },
         "it" : {
@@ -291651,7 +291651,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mencantumkan setiap artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu."
+            "value" : "Mencantumkan setiap artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati."
           }
         },
         "it" : {
@@ -292255,7 +292255,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mencantumkan setiap episode dan artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu."
+            "value" : "Mencantumkan setiap episode dan artikel; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati."
           }
         },
         "it" : {
@@ -292859,7 +292859,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mencantumkan setiap episode; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau hari setelah diputarnya berlalu."
+            "value" : "Mencantumkan setiap episode; tidak ada yang diunduh otomatis, dan unduhan tetap ada sampai Anda menghapusnya atau batas harinya setelah diputar terlewati."
           }
         },
         "it" : {
@@ -337125,7 +337125,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Belum ada penanda. Tambah Penanda menaruh satu di posisi kursor."
+            "value" : "Belum ada penanda. Pilih Tambah Penanda untuk memasang satu di posisi kursor."
           }
         },
         "it" : {
@@ -339921,7 +339921,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Urungkan menarik kembali edit sejak penyimpanan terakhir."
+            "value" : "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Pilih Urungkan untuk menarik kembali edit sejak penyimpanan terakhir."
           }
         },
         "it" : {
@@ -347736,7 +347736,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nanti Saja"
+            "value" : "Jangan Sekarang"
           }
         },
         "it" : {
@@ -349436,7 +349436,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Belum ada di audio buku. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain."
+            "value" : "Belum ada di audio buku. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain."
           }
         },
         "it" : {
@@ -386568,7 +386568,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Taruh folder feed di"
+            "value" : "Tempatkan folder feed di"
           }
         },
         "it" : {
@@ -386705,7 +386705,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Taruh folder feed di"
+            "value" : "Tempatkan folder feed di"
           }
         },
         "it" : {
@@ -387116,7 +387116,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan hanya mempertahankan folder dan posisi salinan yang ada di Daftar Bacaan."
+            "value" : "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan hanya mempertahankan folder serta posisi salinan yang ada di Daftar Bacaan."
           }
         },
         "it" : {
@@ -387253,7 +387253,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menaruh salinan baru menggantikan yang sudah ada di pustaka, dengan mempertahankan posisi baca, markah, dan pengaturan salinan yang ada."
+            "value" : "Mengganti salinan yang sudah ada di pustaka dengan salinan baru, dan mempertahankan posisi baca, markah, serta pengaturan salinan yang ada."
           }
         },
         "it" : {
@@ -396169,7 +396169,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya."
+            "value" : "Merekam menimpa %1$@ pada %2$@, dari %3$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya."
           }
         },
         "it" : {
@@ -396723,7 +396723,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti mengakhirinya; Kosongkan Pilihan membuangnya."
+            "value" : "Merekam untuk disisipkan pada %1$@, dari %2$@, setelah bunyi bip. Rekam Menimpa atau Berhenti untuk mengakhirinya; Kosongkan Pilihan untuk membuangnya."
           }
         },
         "it" : {
@@ -397551,7 +397551,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Tekan lagi, atau Berhenti, untuk mengakhirinya."
+            "value" : "Merekam menimpa pilihan, atau di posisi kursor, setelah bunyi bip. Pilih lagi, atau Berhenti, untuk mengakhirinya."
           }
         },
         "it" : {
@@ -409139,7 +409139,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ diganti dengan rekaman baru berdurasi %2$@, dan sedang dipilih."
+            "value" : "%1$@ diganti dengan rekaman baru berdurasi %2$@ yang kini terpilih."
           }
         },
         "it" : {
@@ -415578,7 +415578,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlangganan lagi ke %@. Memeriksanya sekarang…"
+            "value" : "Berhasil berlangganan %@ lagi. Memeriksanya sekarang…"
           }
         },
         "it" : {
@@ -419013,7 +419013,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Dikembalikan ke audio asli semula. Ulangi mengembalikan %lld edit."
+                  "value" : "Dikembalikan ke audio asli semula. Pilih Ulangi untuk mengembalikan %lld edit."
                 }
               }
             }
@@ -431905,7 +431905,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Detik antar pengumuman level"
+            "value" : "Detik antarpengumuman level"
           }
         },
         "it" : {
@@ -437789,7 +437789,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengatur bahasa transkripsi. Bahasa yang ditandai perlu diunduh hanya dapat diunduh dari lembar Transkripsikan Audio."
+            "value" : "Mengatur bahasa transkripsi. Bahasa yang ditandai “perlu diunduh” hanya dapat diunduh dari lembar Transkripsikan Audio."
           }
         },
         "it" : {
@@ -462036,7 +462036,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Masih bekerja. Tutup setelah perubahan selesai."
+            "value" : "Masih memproses. Tutup setelah perubahan selesai."
           }
         },
         "it" : {
@@ -468867,7 +468867,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya."
+            "value" : "Berhasil berlangganan %@. Feed ini memakai http biasa, sehingga orang lain dapat membaca atau mengubah apa yang dikirimnya; TextMouth tetap memuatnya."
           }
         },
         "it" : {
@@ -469010,7 +469010,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlangganan %1$@: %2$@."
+            "value" : "Berhasil berlangganan %1$@: %2$@."
           }
         },
         "it" : {
@@ -469294,7 +469294,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Berlangganan %lld feed."
+                  "value" : "Berhasil berlangganan %lld feed."
                 }
               }
             }
@@ -480446,7 +480446,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth tidak dapat membuka file yang dilindungi hak cipta."
+            "value" : "TextMouth tidak dapat membuka file yang dilindungi dari penyalinan."
           }
         },
         "it" : {
@@ -487025,7 +487025,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi."
+                  "value" : "TextMouth mengunduh ulang %lld di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi."
                 }
               }
             }
@@ -487345,7 +487345,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan berikutnya feed-nya, atau saat TextMouth dibuka lagi."
+            "value" : "TextMouth mengunduh ulang 1 di antaranya pada pemeriksaan feed-nya yang berikutnya, atau saat TextMouth dibuka lagi."
           }
         },
         "it" : {
@@ -490552,7 +490552,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth akan keluar dan audio buku belum memuat edit ini. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain. Batal membiarkan TextMouth tetap terbuka."
+            "value" : "TextMouth akan keluar dan audio buku belum memuat edit ini. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain. Pilih Batal agar TextMouth tetap terbuka."
           }
         },
         "it" : {
@@ -492333,7 +492333,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Notifikasi, TextMouth."
+            "value" : "TextMouth tidak diizinkan menampilkan notifikasi. Aktifkan di Pengaturan Sistem, Pemberitahuan, TextMouth."
           }
         },
         "it" : {
@@ -525822,7 +525822,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Disk terlalu penuh untuk menyimpan audio ini untuk ditempel."
+            "value" : "Disk terlalu penuh untuk menyimpan audio ini agar dapat ditempel."
           }
         },
         "it" : {
@@ -547834,7 +547834,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio asli adalah hasil rekaman tanpa kehilangan kualitas tempat sebuah rekaman disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya."
+            "value" : "Audio asli adalah rekaman mentah tanpa kehilangan kualitas yang menjadi sumber rekaman saat disimpan, atau salinan file buku audio dari sebelum edit pertamanya. Dengan mempertahankannya, setiap edit dapat diurungkan tanpa kehilangan kualitas; audio asli rekaman memakan sekitar 345 MB per jam. Perubahan juga berlaku untuk audio asli yang sudah dipertahankan, dan di pustaka cloud, audio asli ikut tersinkron dengan bukunya."
           }
         },
         "it" : {
@@ -549683,7 +549683,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Direktori podcast di %1$@ tidak dapat menjawab pencarian (galat %2$@). Coba lagi nanti."
+            "value" : "Direktori podcast di %1$@ tidak dapat memproses pencarian (kesalahan %2$@). Coba lagi nanti."
           }
         },
         "it" : {
@@ -550247,7 +550247,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Direktori podcast di %1$@ tidak menjawab selama %2$lld detik."
+                  "value" : "Direktori podcast di %1$@ tidak merespons selama %2$lld detik."
                 }
               }
             }
@@ -550704,7 +550704,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Direktori podcast tidak dapat menjawab pencarian. Coba lagi nanti."
+            "value" : "Direktori podcast tidak dapat memproses pencarian. Coba lagi nanti."
           }
         },
         "it" : {
@@ -550978,7 +550978,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Direktori podcast mengirim jawaban yang tidak dapat dibaca TextMouth. Coba lagi nanti."
+            "value" : "Direktori podcast mengirim respons yang tidak dapat dibaca TextMouth. Coba lagi nanti."
           }
         },
         "it" : {
@@ -551115,7 +551115,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jawaban direktori podcast lebih besar dari yang dibaca TextMouth."
+            "value" : "Respons direktori podcast lebih besar dari yang dibaca TextMouth."
           }
         },
         "it" : {
@@ -554191,7 +554191,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rekaman tidak dapat disimpan: %1$@ Rekaman tetap disimpan; pilih %2$@ atau %3$@."
+            "value" : "Rekaman tidak dapat disimpan: %1$@ Rekaman masih ada; pilih %2$@ atau %3$@."
           }
         },
         "it" : {
@@ -563245,7 +563245,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak berlangganan."
+            "value" : "Tidak ada langganan untuk diekspor: semua feed di pustaka Anda tidak lagi dilanggan."
           }
         },
         "it" : {
@@ -574783,7 +574783,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat dimulai berikutnya."
+            "value" : "Audio buku ini tidak dapat dikonversi dari Ogg ke AAC. TextMouth akan mencoba lagi saat peluncuran berikutnya."
           }
         },
         "it" : {
@@ -575605,7 +575605,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Arsip buku komik ini berisi lebih dari %@ gambar yang dibaca TextMouth."
+            "value" : "Arsip buku komik ini berisi lebih dari %@ gambar, batas yang dapat dibaca TextMouth."
           }
         },
         "it" : {
@@ -598886,7 +598886,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik judul atau penerbit podcast, lalu menekan Return untuk mencari di direktori Apple."
+            "value" : "Ketik judul atau penerbit podcast, lalu tekan Return untuk mencari di direktori Apple."
           }
         },
         "it" : {
@@ -599297,7 +599297,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik atau menempel alamat feed atau halaman web, lalu menekan Return."
+            "value" : "Ketik atau tempel alamat feed atau halaman web, lalu tekan Return."
           }
         },
         "it" : {
@@ -602174,7 +602174,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengurungkan setiap edit, kembali ke audio asli; Ulangi mengembalikannya."
+            "value" : "Mengurungkan setiap edit, kembali ke audio asli; pilih Ulangi untuk mengembalikannya."
           }
         },
         "it" : {
@@ -672958,7 +672958,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "server tidak mengirim jawaban"
+            "value" : "server tidak mengirim respons"
           }
         },
         "it" : {
@@ -673095,7 +673095,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "bagian teratas pustaka Anda"
+            "value" : "tingkat atas pustaka Anda"
           }
         },
         "it" : {
@@ -679090,7 +679090,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” sudah sedang ditambahkan ke pustaka."
+            "value" : "“%@” sedang ditambahkan ke pustaka."
           }
         },
         "it" : {
@@ -680061,7 +680061,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” masih bekerja. Keluar setelah perubahan selesai."
+            "value" : "“%@” masih memproses. Keluar setelah perubahan selesai."
           }
         },
         "it" : {
