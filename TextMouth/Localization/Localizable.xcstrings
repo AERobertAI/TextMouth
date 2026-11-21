@@ -110829,7 +110829,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il manque à l’EPUB son document de package (fichier OPF)."
+            "value" : "Il manque à l’EPUB son document de paquet (fichier OPF)."
           }
         },
         "it" : {
@@ -110858,7 +110858,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le document de package de l’EPUB n’a pas pu être analysé."
+            "value" : "Le document de paquet de l’EPUB n’a pas pu être analysé."
           }
         },
         "it" : {
@@ -125376,7 +125376,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ce fichier est un package Kindle Create, que TextMouth ne sait pas encore lire."
+            "value" : "Ce fichier est un paquet Kindle Create, que TextMouth ne sait pas encore lire."
           }
         },
         "it" : {
