@@ -209971,7 +209971,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Memasukkan atau menempel teks untuk buku baru."
+            "value" : "Menerima teks yang Anda ketik atau tempel untuk buku baru."
           }
         },
         "it" : {
@@ -258364,7 +258364,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sedang Dibaca"
+            "value" : "Sedang Berlangsung"
           }
         },
         "it" : {
@@ -308083,7 +308083,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Baris terbanyak yang ditampilkan"
+            "value" : "Jumlah baris maksimum"
           }
         },
         "it" : {
@@ -308357,7 +308357,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pindahkan \"%@\""
+            "value" : "Pindahkan “%@”"
           }
         },
         "it" : {
@@ -312392,7 +312392,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pindahkan Isi Keluar"
+            "value" : "Pindahkan Isi ke Luar"
           }
         },
         "it" : {
@@ -312529,7 +312529,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pindahkan Isi \"%@\""
+            "value" : "Pindahkan Isi “%@”"
           }
         },
         "it" : {
@@ -327392,7 +327392,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak ada yang memiliki posisi atau buku lebih baru yang tidak dimiliki salinan lain, tetapi keduanya berbeda dengan cara lain."
+            "value" : "Tidak ada salinan yang memiliki posisi lebih baru atau buku yang tidak dimiliki salinan lain, tetapi keduanya berbeda dalam hal lain."
           }
         },
         "it" : {
@@ -347873,7 +347873,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak dalam"
+            "value" : "Tidak Dalam"
           }
         },
         "it" : {
@@ -369861,7 +369861,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tempel dari Clipboard"
+            "value" : "Tempel dari Papan Klip"
           }
         },
         "it" : {
@@ -409687,7 +409687,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengganti teks dengan teks di clipboard."
+            "value" : "Mengganti teks dengan teks di papan klip."
           }
         },
         "it" : {
@@ -415989,7 +415989,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hasil disalin ke clipboard."
+            "value" : "Hasil disalin ke papan klip."
           }
         },
         "it" : {
@@ -441133,7 +441133,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tampilkan Selalu"
+            "value" : "Selalu Tampilkan"
           }
         },
         "it" : {
@@ -453032,7 +453032,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beberapa file “%@” hanya ada di cloud, dan menggantinya sekarang akan meninggalkannya. Unduh buku, lalu pilih %@ lagi."
+            "value" : "Beberapa file “%@” hanya ada di cloud, dan jika buku diganti sekarang, file itu akan tertinggal. Unduh buku, lalu pilih %@ lagi."
           }
         },
         "it" : {
@@ -461168,7 +461168,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Masih membandingkan: sejauh ini %lld detik. Tekan Escape untuk menghentikan."
+                  "value" : "Masih membandingkan: sejauh ini %lld detik. Tekan Escape untuk menghentikannya."
                 }
               }
             }
@@ -522659,7 +522659,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Braille diterjemahkan ke cetak lagi dengan kode ini. Tidak ada yang memeriksa apakah ini pilihan yang benar. Jika kata terbaca salah, pilih yang lain."
+            "value" : "Braille diterjemahkan ulang ke teks cetak dengan kode ini. Tidak ada yang memeriksa apakah ini pilihan yang benar. Jika kata terbaca salah, pilih yang lain."
           }
         },
         "it" : {
@@ -523481,7 +523481,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Clipboard tidak berisi teks untuk ditempel, jadi teks tidak berubah."
+            "value" : "Papan klip tidak berisi teks untuk ditempel, jadi teks tidak berubah."
           }
         },
         "it" : {
@@ -561464,7 +561464,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tampilan ini pertama dalam daftar."
+            "value" : "Tampilan ini berada di urutan pertama dalam daftar."
           }
         },
         "it" : {
@@ -561601,7 +561601,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tampilan ini terakhir dalam daftar."
+            "value" : "Tampilan ini berada di urutan terakhir dalam daftar."
           }
         },
         "it" : {
@@ -599708,7 +599708,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik untuk mencari di transkrip buku."
+            "value" : "Mencari di transkrip buku saat Anda mengetik."
           }
         },
         "it" : {
@@ -599845,7 +599845,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik untuk mencari teks setiap buku di pustaka."
+            "value" : "Mencari teks setiap buku di pustaka saat Anda mengetik."
           }
         },
         "it" : {
@@ -599982,7 +599982,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik untuk mencari di dalam buku."
+            "value" : "Mencari di dalam buku saat Anda mengetik."
           }
         },
         "it" : {
@@ -603612,7 +603612,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak terbaca: %@ tidak diminta lagi, karena drive belum menjawab pembacaan sebelumnya, %@"
+            "value" : "Tidak terbaca: %@ tidak diminta lagi, karena drive belum merespons pembacaan sebelumnya, %@"
           }
         },
         "it" : {
