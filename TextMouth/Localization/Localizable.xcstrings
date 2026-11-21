@@ -1884,7 +1884,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Copia di %@"
+            "value" : "%@ copia"
           }
         },
         "ja" : {
@@ -2027,7 +2027,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Copia di %@ %@"
+            "value" : "%1$@ copia %2$@"
           }
         },
         "ja" : {
@@ -11281,7 +11281,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata in un altro momento."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata in un altro momento."
           }
         },
         "ja" : {
@@ -11424,7 +11424,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata il %@."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata il %@."
           }
         },
         "ja" : {
@@ -11567,7 +11567,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata su “%@” il %@."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata su “%@” il %@."
           }
         },
         "ja" : {
@@ -11710,7 +11710,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata su “%@”."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata su “%@”."
           }
         },
         "ja" : {
@@ -20567,7 +20567,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ha messo da parte una copia in conflitto di %@: “%@”, in %@."
+            "value" : "%@ ha messo da parte una copia in conflitto del %@: “%@”, in %@."
           }
         },
         "ja" : {
@@ -28027,7 +28027,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@, le eventuali sottocartelle e il libro al suo interno (%lld) verranno rimossi dalla libreria."
+                  "value" : "%@, le eventuali sottocartelle e il libro al suo interno verranno rimossi dalla libreria."
                 }
               },
               "other" : {
@@ -48509,19 +48509,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di libri nel cloud non sono stati cercati"
+                  "value" : "%lld di libri nel cloud non sono stati inclusi nella ricerca"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libro nel cloud non è stato cercato"
+                  "value" : "%lld libro nel cloud non è stato incluso nella ricerca"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libri nel cloud non sono stati cercati"
+                  "value" : "%lld libri nel cloud non sono stati inclusi nella ricerca"
                 }
               }
             }
@@ -96181,7 +96181,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Uno spostamento sposta un libro alla volta e ne sono selezionati diversi. Seleziona un solo libro, poi riprova."
+            "value" : "Puoi spostare un libro alla volta, ma ne hai selezionati diversi. Seleziona un solo libro, poi riprova."
           }
         },
         "ja" : {
@@ -103535,7 +103535,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aggiunta %@, %lld di %lld."
+            "value" : "Aggiunta la vista %@, %lld di %lld."
           }
         },
         "ja" : {
@@ -133761,7 +133761,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ma %@ contiene anche %lld libro aggiunto da una versione più recente di TextMouth: viene conservato dove si trova, così come ogni cartella che ne contiene uno."
+                  "value" : "Ma %@ contiene anche %lld libro aggiunto da una versione più recente di TextMouth: viene conservato dove si trova, così come ogni cartella che lo contiene."
                 }
               },
               "other" : {
@@ -141969,7 +141969,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Capitolo %@, da %@"
+            "value" : "Capitolo %@, tramite %@"
           }
         },
         "ja" : {
@@ -151035,7 +151035,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sceglie nessun controllo per libro, un selettore condiviso o un menu con selettori separati per avanti e indietro."
+            "value" : "Sceglie tra nessun controllo per libro, un selettore condiviso o un menu con selettori separati per avanti e indietro."
           }
         },
         "ja" : {
@@ -160643,7 +160643,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Confronto di questa libreria con la copia nella cartella scelta, per dire quale è più recente. Può richiedere fino a un minuto; scegli Interrompi confronto per saltarlo."
+            "value" : "Confronto di questa libreria con la copia nella cartella scelta, per stabilire quale sia più recente. Può richiedere fino a un minuto; scegli Interrompi confronto per saltarlo."
           }
         },
         "ja" : {
@@ -183619,7 +183619,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eliminati definitivamente: %@."
+            "value" : "Eliminazione definitiva completata: %@."
           }
         },
         "ja" : {
@@ -183899,7 +183899,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eliminata %@. %@ selezionata, %lld di %lld."
+            "value" : "Eliminata la vista %@. Selezionata la vista %@, %lld di %lld."
           }
         },
         "ja" : {
@@ -189385,7 +189385,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Non riavvolgere se in pausa da meno di questo tempo."
+            "value" : "Non riavvolge se la pausa dura meno di questo tempo."
           }
         },
         "ja" : {
@@ -194578,7 +194578,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scaricato: %@"
+            "value" : "Scaricati: %@"
           }
         },
         "ja" : {
@@ -195269,7 +195269,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download di %@ da %@ in corso."
+            "value" : "Download di %@ tramite %@ in corso."
           }
         },
         "ja" : {
@@ -210114,7 +210114,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inserisci prima del testo."
+            "value" : "Prima inserisci del testo."
           }
         },
         "ja" : {
@@ -233600,7 +233600,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La posizione nelle cartelle e l’ordine manuale memorizzati solo nell’indice illeggibile vanno persi dalla libreria."
+            "value" : "La posizione nelle cartelle e l’ordine manuale memorizzati solo nell’indice illeggibile vanno persi."
           }
         },
         "ja" : {
@@ -234845,7 +234845,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le cartelle e l’elenco di lettura elencano sempre ciò che hanno. Puoi spostarle e nascondere l’elenco di lettura."
+            "value" : "Le cartelle e l’elenco di lettura elencano sempre ciò che hanno. Puoi spostarli e nascondere l’elenco di lettura."
           }
         },
         "ja" : {
@@ -237647,7 +237647,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Da %@"
+            "value" : "Tramite %@"
           }
         },
         "ja" : {
@@ -257822,7 +257822,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "In %@, un feed"
+            "value" : "Nel feed %@"
           }
         },
         "ja" : {
@@ -259341,7 +259341,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nella cartella Registri di questo Mac."
+            "value" : "Nella cartella Registri di questo Mac"
           }
         },
         "ja" : {
@@ -266714,7 +266714,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Contiene gli stessi libri, posizioni, segnalibri, elenco di lettura e cartelle."
+            "value" : "Libri, posizioni, segnalibri, elenco di lettura e cartelle coincidono."
           }
         },
         "ja" : {
@@ -269353,7 +269353,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Potrebbe essere in pausa, aver perso l’accesso o non essere in esecuzione."
+            "value" : "Potrebbe essere in pausa, non aver effettuato l’accesso o non essere in esecuzione."
           }
         },
         "ja" : {
@@ -290328,7 +290328,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Elenco della prima corrispondenza (%lld) su %@ in %@"
+                  "value" : "Elenco della prima corrispondenza su %2$@ in %3$@"
                 }
               },
               "other" : {
@@ -296682,7 +296682,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Creata %@, %lld di %lld."
+            "value" : "Creata la vista %@, %lld di %lld."
           }
         },
         "ja" : {
@@ -304826,7 +304826,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le modifiche al menu vengono salvate come predefinite per il libro corrente. Nascondere i menu usa le scelte di salto globali; le impostazioni predefinite dei libri vengono mantenute."
+            "value" : "Le modifiche al menu vengono salvate come predefinite per il libro corrente. Se nascondi i menu, vengono usate le scelte di salto globali; le impostazioni predefinite dei libri vengono mantenute."
           }
         },
         "ja" : {
@@ -308089,7 +308089,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Massimo di righe mostrate"
+            "value" : "Numero massimo di righe"
           }
         },
         "ja" : {
@@ -315567,7 +315567,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spostati nel Cestino: %@."
+            "value" : "Spostamento nel Cestino completato: %@."
           }
         },
         "ja" : {
@@ -406536,7 +406536,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rimossi dalla libreria: %@."
+            "value" : "Rimozione dalla libreria completata: %@."
           }
         },
         "ja" : {
@@ -414899,7 +414899,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ripristinare “%@” al valore predefinito?"
+            "value" : "Ripristinare le impostazioni predefinite di “%@”?"
           }
         },
         "ja" : {
@@ -415036,7 +415036,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ripristinata %@."
+            "value" : "Ripristinata la vista %@."
           }
         },
         "ja" : {
@@ -425759,7 +425759,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salvata %@."
+            "value" : "Salvata la vista %@."
           }
         },
         "ja" : {
@@ -430896,7 +430896,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cercati %@ su %@…"
+            "value" : "Esaminati %@ su %@…"
           }
         },
         "ja" : {
@@ -438617,7 +438617,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Risolvi prima il conflitto con %@."
+            "value" : "Risolvi prima il conflitto tramite %@."
           }
         },
         "ja" : {
@@ -444642,7 +444642,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mostra la prima corrispondenza (%lld) su %@ in %@"
+                  "value" : "Mostra la prima corrispondenza su %2$@ in %3$@"
                 }
               },
               "other" : {
@@ -445532,7 +445532,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mostrata la prima corrispondenza (%lld); affina la ricerca"
+                  "value" : "Mostrata la prima corrispondenza; affina la ricerca"
                 }
               },
               "other" : {
@@ -464153,7 +464153,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Interrompi, Riproduci ricomincia da capo"
+            "value" : "Interrompi; con Riproduci ricomincia da capo"
           }
         },
         "ja" : {
@@ -465037,7 +465037,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Smesso di mantenere su questo Mac: %@"
+            "value" : "Mantenimento su questo Mac interrotto: %@"
           }
         },
         "ja" : {
@@ -494998,7 +494998,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth li sposta di nuovo quando ha finito di spostare i libri tra le cartelle."
+            "value" : "TextMouth li riporta al loro posto quando ha finito di spostare i libri tra le cartelle."
           }
         },
         "ja" : {
@@ -495135,7 +495135,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth li sposta di nuovo quando ha finito di ricostruire la sua cartella dei dati."
+            "value" : "TextMouth li riporta al loro posto quando ha finito di ricostruire la sua cartella dei dati."
           }
         },
         "ja" : {
@@ -495272,7 +495272,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth li sposta di nuovo quando lo spostamento della sua cartella dei dati termina."
+            "value" : "TextMouth li riporta al loro posto quando lo spostamento della sua cartella dei dati termina."
           }
         },
         "ja" : {
@@ -505939,19 +505939,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Di %2$lld di essi vengono conservati: %1$@."
+                  "value" : "Per %2$lld di essi vengono conservati: %1$@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Di %2$lld di essi vengono conservati: %1$@."
+                  "value" : "Per %2$lld di essi vengono conservati: %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Di %2$lld di essi vengono conservati: %1$@."
+                  "value" : "Per %2$lld di essi vengono conservati: %1$@."
                 }
               }
             }
@@ -538011,7 +538011,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La libreria aveva già un contenuto diverso con il nome del suo pacchetto, %@, quindi è stato archiviato in un nuovo pacchetto, %@, e il suo file originale è stato conservato in %@."
+            "value" : "La libreria aveva già un contenuto diverso con il nome del suo pacchetto, %@, quindi il libro è stato archiviato in un nuovo pacchetto, %@, e il suo file originale è stato conservato in %@."
           }
         },
         "ja" : {
@@ -580549,7 +580549,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Questo sposta tutti i dati da %@ alla posizione predefinita, %@."
+            "value" : "Questo riporta tutti i dati da %@ alla posizione predefinita, %@."
           }
         },
         "ja" : {
@@ -588096,7 +588096,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Per lasciarlo andare, toglilo dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
+            "value" : "Per non mantenerlo più su questo Mac, toglilo dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
           }
         },
         "ja" : {
@@ -588233,7 +588233,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Per lasciarli andare, toglili dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
+            "value" : "Per non mantenerli più su questo Mac, toglili dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
           }
         },
         "ja" : {
@@ -619602,7 +619602,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se disattivata, rimuovere un libro significa subito %@."
+            "value" : "Se disattivata, quando rimuovi un libro TextMouth provvede subito a %@."
           }
         },
         "ja" : {
@@ -621663,7 +621663,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dove TextMouth scrive i propri registri diagnostici. %@ li tiene insieme ai tuoi libri, quindi si spostano e si sincronizzano con la libreria. %@ li tiene in %@, che non si sincronizza mai. Una modifica vale dalla riga successiva; i registri esistenti restano."
+            "value" : "Dove TextMouth scrive i propri registri diagnostici. “%1$@” li tiene insieme ai tuoi libri, quindi si spostano e si sincronizzano con la libreria. “%2$@” li tiene in %3$@, che non si sincronizza mai. Una modifica vale dalla riga successiva; i registri esistenti restano."
           }
         },
         "ja" : {
@@ -631750,7 +631750,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il record di un libro, %@"
+            "value" : "file del record di un libro, %@"
           }
         },
         "ja" : {
@@ -631887,7 +631887,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’indice degli episodi di un feed, %@"
+            "value" : "file dell’indice degli episodi di un feed, %@"
           }
         },
         "ja" : {
@@ -632024,7 +632024,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il record di un feed, %@"
+            "value" : "file del record di un feed, %@"
           }
         },
         "ja" : {
@@ -636040,7 +636040,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "in cima alla libreria"
+            "value" : "al primo livello della libreria"
           }
         },
         "ja" : {
@@ -645803,7 +645803,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "iCloud Drive potrebbe essere disattivato o senza accesso effettuato, oppure questo Mac potrebbe essere offline. Controlla, poi scegli Riprova."
+            "value" : "iCloud Drive potrebbe essere disattivato o potresti non aver effettuato l’accesso, oppure questo Mac potrebbe essere offline. Controlla, poi scegli Riprova."
           }
         },
         "ja" : {
@@ -645940,7 +645940,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "iCloud Drive potrebbe essere disattivato o senza accesso effettuato."
+            "value" : "iCloud Drive potrebbe essere disattivato o potresti non aver effettuato l’accesso."
           }
         },
         "ja" : {
@@ -669944,7 +669944,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "la copia in questa cartella"
+            "value" : "quella in questa cartella"
           }
         },
         "ja" : {
@@ -671862,7 +671862,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "la libreria in uso"
+            "value" : "quella in uso"
           }
         },
         "ja" : {
@@ -672273,7 +672273,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’indice della libreria, %@"
+            "value" : "file dell’indice della libreria, %@"
           }
         },
         "ja" : {
@@ -672410,7 +672410,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’altra copia"
+            "value" : "quell’altra copia"
           }
         },
         "ja" : {
