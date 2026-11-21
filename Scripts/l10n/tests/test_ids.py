@@ -241,6 +241,14 @@ class WordTests(unittest.TestCase):
         frequency = ids.word_frequency(["Download the book", "Download the feed", "Download the index"])
         self.assertEqual(ids.slug("Download the feed", 1, frequency=frequency), "feed")
 
+    def test_a_slug_never_repeats_a_word_the_id_already_holds(self) -> None:
+        held = {"feed", "stays"}
+        # Content words the earlier segments lack come first.
+        self.assertEqual(ids.slug("Mark all played items", 3, avoid={"mark", "played"}), "allItems")
+        # With too little left, the first words from the first one the ID lacks, small words too.
+        self.assertEqual(ids.slug("%@ stays in its feed: %@", 3, avoid=held), "inItsFeed")
+        self.assertEqual(ids.make_id(["feed", "stays"], "%@ stays in its feed: %@", 2), "feed.stays.inIts")
+
     def test_lighten_member_drops_filler_words(self) -> None:
         self.assertEqual(ids.lighten_member(["x", "titleForKind"]), ["x", "titleKind"])
         self.assertEqual(ids.lighten_member(["x", "notReadSentence"], ids.MEMBER_ENDINGS), ["x", "notRead"])
@@ -403,6 +411,29 @@ enum OtherWording {
                          {"id": "other.three", "sites": [f"{path}:OtherWording.three"]}]}
         found = self.problems(self.table({"One": "pair.two", "Two": "pair.two"}, split), sources=sources)
         self.assertTrue(any("given to" in p for p in found), found)
+
+
+class CommittedTableTests(unittest.TestCase):
+    """Rules of the frozen table that do not depend on the catalog."""
+
+    def test_no_last_segment_holds_only_words_the_earlier_segments_hold(self) -> None:
+        from scan_case import REPO
+        table = json.loads((REPO / ids.IDS_PATH).read_text(encoding="utf-8"))
+        repeated = []
+        for ident in table["ids"].values():
+            segments = ident.split(".")
+            if len(segments) < 3:
+                continue
+            before = {w.lower() for s in segments[:-1] for w in ids.camel_words(s)}
+            if {w.lower() for w in ids.camel_words(segments[-1])} <= before:
+                repeated.append(ident)
+        self.assertEqual(repeated, [])
+
+    def test_common_ids_that_are_only_placeholders_read_as_their_shape(self) -> None:
+        from scan_case import REPO
+        table = json.loads((REPO / ids.IDS_PATH).read_text(encoding="utf-8"))["ids"]
+        self.assertEqual(table["%@ (%@)"], "common.valueInParentheses")
+        self.assertEqual(table["%@ of %@"], "common.valueOfValue")
 
 
 class TableFileTests(TreeCase):

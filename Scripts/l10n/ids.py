@@ -330,10 +330,19 @@ def slug(english: str, count: int, keep_stopwords: bool = False,
     Trash?` gives `moveBookTrash`); with it ({word: how many keys of the group hold it}) they are the rarest words of the
     group, in the English's order, because those are the ones that tell the keys apart."""
     words = english_words(english, keep_stopwords, marked)
-    # A word the ID already holds (in the member or the case) adds nothing; keep it only when it is all there is.
-    fresh = [w for w in words if w.lower() not in (avoid or ())]
-    # ...and a word that is all that is left is no help when it is a bare `not` or `to`.
-    words = fresh if sum(len(w) for w in fresh) >= 4 else words
+    # A word the ID already holds (in the member or the case) adds nothing, so a slug takes the content words the earlier
+    # segments lack. When too little is left (a bare `to`), it takes the English's first words, small ones too, from the
+    # first word the ID does not hold (`%@ stays in its feed: %@` after feed.stays gives `inItsFeed`).
+    held = avoid or set()
+    fresh = [w for w in words if w.lower() not in held]
+    if sum(len(w) for w in fresh) < 4 and held:
+        every = english_words(english, True, marked)
+        start = 0
+        while start < len(every) and every[start].lower() in held:
+            start += 1
+        rest = every[start:]
+        fresh = rest if sum(len(w) for w in rest) >= 4 else fresh
+    words = fresh if fresh else words
     if frequency is not None and not marked and count < len(words):
         ranked = sorted(range(len(words)), key=lambda i: (frequency.get(words[i].lower(), 0), -min(len(words[i]), 9), i))
         words = [words[i] for i in sorted(ranked[:count])]
