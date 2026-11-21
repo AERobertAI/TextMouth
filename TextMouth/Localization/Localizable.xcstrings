@@ -2325,7 +2325,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ dodaje zakładkę w bieżącej pozycji."
+            "value" : "%@ dodaje zakładkę w bieżącym miejscu."
           }
         },
         "pt-BR" : {
@@ -2462,7 +2462,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ dodaje ją w bieżącej pozycji."
+            "value" : "%@ dodaje ją w bieżącym miejscu."
           }
         },
         "pt-BR" : {
@@ -4478,7 +4478,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ nie może zostać otwarta, bo nie można użyć jej edytowanego tekstu: %2$@"
+            "value" : "Nie można otworzyć książki %1$@, bo nie można użyć jej edytowanego tekstu: %2$@"
           }
         },
         "pt-BR" : {
@@ -9164,7 +9164,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Domyślny skrót, %2$@, ma teraz działanie %1$@"
+            "value" : "Domyślny skrót, %2$@, należy teraz do działania %1$@"
           }
         },
         "pt-BR" : {
@@ -16035,7 +16035,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ nie ma na liście czytelniczej."
+            "value" : "%@ nie znajduje się na liście czytelniczej."
           }
         },
         "pt-BR" : {
@@ -17759,7 +17759,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ nie został zapisany dla działania %2$@: %3$@"
+            "value" : "Skrót %1$@ nie został zapisany dla działania %2$@: %3$@"
           }
         },
         "pt-BR" : {
@@ -18039,7 +18039,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ czeka teraz chwilę przed wykonaniem działania %2$@, na wypadek gdyby został naciśnięty dwukrotnie."
+            "value" : "Skrót %1$@ czeka teraz chwilę przed wykonaniem działania %2$@, na wypadek gdyby został naciśnięty dwukrotnie."
           }
         },
         "pt-BR" : {
@@ -18669,13 +18669,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziałów"
+                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziału"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziałów"
+                  "value" : "Nie udało się odczytać %1$@ z %2$lld rozdziału"
                 }
               }
             }
@@ -19620,7 +19620,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pozostało %@"
+            "value" : "Pozostało: %@"
           }
         },
         "pt-BR" : {
@@ -19757,7 +19757,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pozostało %@ przy bieżącej prędkości"
+            "value" : "Pozostało przy bieżącej prędkości: %@"
           }
         },
         "pt-BR" : {
@@ -19894,7 +19894,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Do końca nagłówka pozostało %@"
+            "value" : "Do końca nagłówka pozostało: %@"
           }
         },
         "pt-BR" : {
@@ -21842,7 +21842,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ do %2$@"
+            "value" : "od %1$@ do %2$@"
           }
         },
         "pt-BR" : {
@@ -23915,7 +23915,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie dodano ponownie %@: nie udało się najpierw zachować kopii tekstu zapisanego w jego pakiecie, więc TextMouth pozostawił tekst bez zmian."
+            "value" : "Nie dodano ponownie książki %@: nie udało się najpierw zachować kopii tekstu zapisanego w jej pakiecie, więc TextMouth pozostawił tekst bez zmian."
           }
         },
         "pt-BR" : {
@@ -29628,7 +29628,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@, edytowane ręcznie"
+            "value" : "%@, edytowano ręcznie"
           }
         },
         "pt-BR" : {
@@ -30331,7 +30331,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ zapisany dla działania %2$@"
+            "value" : "Skrót %1$@ zapisany dla działania %2$@"
           }
         },
         "pt-BR" : {
@@ -105807,7 +105807,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dodaje prędkość, z jaką liczony jest czas, na przykład 2,0x dla audiobooka niesłuchanego w prędkości 1x lub 500 słów na minutę dla książki tekstowej, w czytniku, w poleceniach Gdzie jestem? i Kopiuj pozycję czytania oraz w czasach trwania na arkuszu Nagłówki."
+            "value" : "Dodaje prędkość, z jaką liczony jest czas, na przykład 2,0x dla audiobooka odtwarzanego z prędkością inną niż 1x lub 500 słów na minutę dla książki tekstowej, w czytniku, w poleceniach Gdzie jestem? i Kopiuj pozycję czytania oraz w czasach trwania na arkuszu Nagłówki."
           }
         },
         "pt-BR" : {
@@ -106635,7 +106635,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Potem Odtwórz ponawia próbę dla tego fragmentu."
+            "value" : "Potem Odtwórz ponownie spróbuje odczytać ten fragment."
           }
         },
         "pt-BR" : {
@@ -122276,7 +122276,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zresetowano prędkość dźwięku do: %@"
+            "value" : "Zresetowano prędkość dźwięku: %@"
           }
         },
         "pt-BR" : {
@@ -133078,7 +133078,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Znaki pliku Braille’a"
+            "value" : "Znaki pliku brajlowskiego"
           }
         },
         "pt-BR" : {
@@ -133215,7 +133215,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Numery stron Braille’a"
+            "value" : "Numery stron brajlowskich"
           }
         },
         "pt-BR" : {
@@ -167672,7 +167672,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można dodać zakładki: „%@” nie ma już w bibliotece."
+            "value" : "Nie można dodać zakładki: „%@” nie znajduje się już w bibliotece."
           }
         },
         "pt-BR" : {
@@ -170001,7 +170001,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można usunąć zakładki: „%@” nie ma już w bibliotece."
+            "value" : "Nie można usunąć zakładki: „%@” nie znajduje się już w bibliotece."
           }
         },
         "pt-BR" : {
@@ -203961,7 +203961,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edycja tekstu dla %@ została zatrzymana, ponieważ zastąpiła ją nowa kopia."
+            "value" : "Edycja tekstu książki %@ została przerwana, ponieważ książkę zastąpiła nowa kopia."
           }
         },
         "pt-BR" : {
@@ -204098,7 +204098,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edycja tekstu dla %@ została zatrzymana, ponieważ plik został odczytany ponownie."
+            "value" : "Edycja tekstu książki %@ została przerwana, ponieważ jej plik został ponownie odczytany."
           }
         },
         "pt-BR" : {
@@ -222647,7 +222647,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eksportowanie: %1$lld z %2$@…"
+            "value" : "Eksportowanie: zapisano %1$lld, łącznie %2$@…"
           }
         },
         "pt-BR" : {
@@ -247734,7 +247734,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ukrywa elementy sterujące przechodzenia do strony."
+            "value" : "Ukrywa panel przechodzenia do strony."
           }
         },
         "pt-BR" : {
@@ -247871,7 +247871,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ukrywa elementy sterujące przechodzenia do wartości procentowej."
+            "value" : "Ukrywa panel przechodzenia do wartości procentowej."
           }
         },
         "pt-BR" : {
@@ -248008,7 +248008,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ukrywa elementy sterujące przechodzenia do czasu."
+            "value" : "Ukrywa panel przechodzenia do czasu."
           }
         },
         "pt-BR" : {
@@ -259228,7 +259228,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "W czytanym tekście, którego przesunięcia podaje dziennik mowy: mowa zatrzymała się na znaku %1$@; odrzucony tekst biegnie od znaku %2$@ do %3$@."
+            "value" : "W czytanym tekście, którego przesunięcia podaje dziennik mowy: mowa zatrzymała się na znaku %1$@; odrzucony tekst obejmuje znaki od %2$@ do %3$@."
           }
         },
         "pt-BR" : {
@@ -275087,7 +275087,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Strony przebiegają od %1$@ do %2$@."
+            "value" : "Strony są numerowane od %1$@ do %2$@."
           }
         },
         "pt-BR" : {
@@ -276594,7 +276594,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeskoczono do %@ w nagraniu."
+            "value" : "Przeskoczono w nagraniu do pozycji: %@."
           }
         },
         "pt-BR" : {
@@ -276868,7 +276868,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeskoczono do %@."
+            "value" : "Przeskoczono do pozycji: %@."
           }
         },
         "pt-BR" : {
@@ -280139,25 +280139,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano %@ z %lld rozdziałów do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano %@ z %lld rozdziału do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby kontynuować od rozdziału %@, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               }
             }
@@ -280606,25 +280606,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano jedyny odczytany rozdział do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z niego plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+                  "value" : "Zachowano wszystkie odczytane rozdziały (%lld) do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z nich plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
                 }
               }
             }
@@ -281152,7 +281152,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zachowano odczytany rozdział do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Aby utworzyć z niego plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
+            "value" : "Zachowano odczytany rozdział do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Aby utworzyć z niego plik audio, wyeksportuj ten sam zakres z taką samą prędkością i wysokością głosu."
           }
         },
         "pt-BR" : {
@@ -345132,7 +345132,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zainstalowano żadnego głosu. Dodaj go w: Ustawienia systemowe, Dostępność, Treść mówiona. Potem wyeksportuj ponownie."
+            "value" : "Nie zainstalowano żadnego głosu. Dodaj go w: Ustawienia systemowe, Dostępność, Treść mówiona, a potem wyeksportuj ponownie."
           }
         },
         "pt-BR" : {
@@ -346354,13 +346354,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać żadnego z %lld rozdziałów"
+                  "value" : "Nie udało się odczytać jedynego rozdziału"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać żadnego z %lld rozdziałów"
+                  "value" : "Nie udało się odczytać żadnego z %lld rozdziału"
                 }
               }
             }
@@ -353646,13 +353646,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@."
+                  "value" : "Nie można było uruchomić OCR dla %1$@ z %2$lld strony, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie można było uruchomić OCR dla %1$@ z %2$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@."
+                  "value" : "Nie można było uruchomić OCR dla %1$@ z %2$lld strony, więc brakuje tekstu znajdującego się tylko na ich obrazach: %3$@."
                 }
               }
             }
@@ -354113,7 +354113,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie można było uruchomić OCR dla wszystkich %1$lld stron, więc brakuje tekstu znajdującego się tylko na ich obrazach: %2$@."
+                  "value" : "Nie można było uruchomić OCR dla %1$lld strony, więc brakuje tekstu znajdującego się tylko na jej obrazach: %2$@."
                 }
               },
               "other" : {
@@ -358950,7 +358950,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz książkę raz, a następnie spróbuj ponownie."
+            "value" : "Najpierw otwórz książkę, a następnie spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -359361,7 +359361,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz następny artykuł w"
+            "value" : "Gdzie otwierać następny artykuł"
           }
         },
         "pt-BR" : {
@@ -359498,7 +359498,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz następną książkę w"
+            "value" : "Gdzie otwierać następną książkę"
           }
         },
         "pt-BR" : {
@@ -359635,7 +359635,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz następny odcinek w"
+            "value" : "Gdzie otwierać następny odcinek"
           }
         },
         "pt-BR" : {
@@ -359772,7 +359772,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwórz następną pozycję w"
+            "value" : "Gdzie otwierać następną pozycję"
           }
         },
         "pt-BR" : {
@@ -362101,7 +362101,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera elementy sterujące przechodzenia do strony."
+            "value" : "Otwiera panel przechodzenia do strony."
           }
         },
         "pt-BR" : {
@@ -362238,7 +362238,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera elementy sterujące przechodzenia do wartości procentowej."
+            "value" : "Otwiera panel przechodzenia do wartości procentowej."
           }
         },
         "pt-BR" : {
@@ -362375,7 +362375,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera elementy sterujące przechodzenia do czasu."
+            "value" : "Otwiera panel przechodzenia do czasu."
           }
         },
         "pt-BR" : {
@@ -376803,7 +376803,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odtwarzanie zatrzymano, ponieważ pamięć TextMouth urosła do %@ GB podczas odtwarzania dźwięku, co jest błędem dźwięku w macOS."
+            "value" : "Odtwarzanie zatrzymano, ponieważ podczas odtwarzania dźwięku pamięć zajmowana przez TextMouth wzrosła do %@ GB, co jest błędem dźwięku w macOS."
           }
         },
         "pt-BR" : {
@@ -376940,7 +376940,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odtwarzanie zatrzymano, ponieważ pamięć TextMouth urosła do %@ GB podczas odtwarzania dźwięku, co jest błędem dźwięku w systemie."
+            "value" : "Odtwarzanie zatrzymano, ponieważ podczas odtwarzania dźwięku pamięć zajmowana przez TextMouth wzrosła do %@ GB, co jest błędem dźwięku w systemie."
           }
         },
         "pt-BR" : {
@@ -378447,7 +378447,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odtwarza książkę i wstrzymuje przed jej ponownym rozpoczęciem."
+            "value" : "Odtwarza książkę i wstrzymuje odtwarzanie przed jej ponownym rozpoczęciem."
           }
         },
         "pt-BR" : {
@@ -378584,7 +378584,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odtwarza książkę i wstrzymuje przed następną książką."
+            "value" : "Odtwarza książkę i wstrzymuje odtwarzanie przed następną książką."
           }
         },
         "pt-BR" : {
@@ -382488,7 +382488,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Podgląd dźwięku: %@"
+            "value" : "Odsłuchaj dźwięk: %@"
           }
         },
         "pt-BR" : {
@@ -406286,7 +406286,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usuń je: audiobook ze ścieżek jest zbudowany ze ścieżek."
+            "value" : "Usuń je: w audiobooku złożonym ze ścieżek układ wyznaczają ścieżki."
           }
         },
         "pt-BR" : {
@@ -407245,7 +407245,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usuwa własny głos, prędkość i wysokość głosu tej książki, więc używa ustawień globalnych."
+            "value" : "Usuwa własny głos, prędkość i wysokość głosu tej książki, aby korzystała z ustawień globalnych."
           }
         },
         "pt-BR" : {
@@ -413416,7 +413416,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przywraca tej książce %@."
+            "value" : "Przywraca prędkość tej książki: %@."
           }
         },
         "pt-BR" : {
@@ -455945,7 +455945,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mowa głosów komputera Mac jest przeznaczona do użytku osobistego, niekomercyjnego, zgodnie z licencją Apple."
+            "value" : "Mowa generowana przez głosy komputera Mac jest przeznaczona do użytku osobistego i niekomercyjnego, zgodnie z licencją Apple."
           }
         },
         "pt-BR" : {
@@ -456289,7 +456289,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Dziennik mowy, ostatnie wiersze (%lld), tylko przesunięcia i długości:"
+                  "value" : "Dziennik mowy, ostatni wiersz, tylko przesunięcia i długości:"
                 }
               },
               "other" : {
@@ -462340,7 +462340,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zatrzymaj w"
+            "value" : "Miejsce zatrzymania"
           }
         },
         "pt-BR" : {
@@ -466705,7 +466705,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zatrzymuje eksport i zachowuje już odczytane rozdziały do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub pauz książki. Eksport tego samego zakresu z taką samą prędkością i wysokością głosu kontynuuje od nich."
+            "value" : "Zatrzymuje eksport i zachowuje już odczytane rozdziały do czasu zakończenia TextMouth, rozpoczęcia innego eksportu dźwięku mówionego albo zmiany głosu, tekstu, podstawień lub przerw książki. Eksport tego samego zakresu z taką samą prędkością i wysokością głosu kontynuuje od nich."
           }
         },
         "pt-BR" : {
@@ -470335,7 +470335,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przełącza na elementy sterujące przechodzenia do strony."
+            "value" : "Przełącza na panel przechodzenia do strony."
           }
         },
         "pt-BR" : {
@@ -470472,7 +470472,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przełącza na elementy sterujące przechodzenia do wartości procentowej."
+            "value" : "Przełącza na panel przechodzenia do wartości procentowej."
           }
         },
         "pt-BR" : {
@@ -470609,7 +470609,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przełącza na elementy sterujące przechodzenia do czasu."
+            "value" : "Przełącza na panel przechodzenia do czasu."
           }
         },
         "pt-BR" : {
@@ -471979,7 +471979,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zabrano z: %@"
+            "value" : "Skrót należał wcześniej do: %@"
           }
         },
         "pt-BR" : {
@@ -474737,7 +474737,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zaktualizowano tekstu: książka %@ została usunięta lub jej pobrany plik został usunięty, więc edycja tekstu dla niej została zatrzymana."
+            "value" : "Nie zaktualizowano tekstu: książka %@ została usunięta lub jej pobrany plik został usunięty, więc edycja jej tekstu została przerwana."
           }
         },
         "pt-BR" : {
@@ -475160,7 +475160,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie ma rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie; do tego czasu książka zachowuje stary tekst."
+            "value" : "Nie zaktualizowano tekstu: edytowany tekst książki %@ nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie; do tego czasu książka zachowuje stary tekst."
           }
         },
         "pt-BR" : {
@@ -480613,7 +480613,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth zamknął się podczas otwierania %@, więc nie otwarto tego ponownie."
+            "value" : "TextMouth zamknął się podczas otwierania książki %@, więc nie otwarto jej ponownie."
           }
         },
         "pt-BR" : {
@@ -481310,7 +481310,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth nie mógł utworzyć folderu do sprawdzenia"
+            "value" : "TextMouth nie mógł utworzyć folderu, w którym mógłby ją sprawdzić"
           }
         },
         "pt-BR" : {
@@ -488608,7 +488608,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth jeszcze nie odczytał nagłówków tej książki. Otwórz książkę raz, a potem wyeksportuj ponownie."
+            "value" : "TextMouth jeszcze nie odczytał nagłówków tej książki. Najpierw otwórz książkę, a potem wyeksportuj ponownie."
           }
         },
         "pt-BR" : {
@@ -495850,7 +495850,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth zakończył działanie %1$@: jego pamięć urosła do %2$@ GB podczas odtwarzania %3$@ z powodu usterki w dźwięku macOS. Pozycję zachowano."
+            "value" : "TextMouth zakończył działanie %1$@: użycie pamięci wzrosło do %2$@ GB podczas odtwarzania książki %3$@ z powodu usterki w dźwięku macOS. Pozycję zachowano."
           }
         },
         "pt-BR" : {
@@ -495993,7 +495993,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth zakończył działanie %1$@: jego pamięć urosła do %2$@ GB podczas odtwarzania książki z powodu usterki w dźwięku macOS. Pozycję zachowano."
+            "value" : "TextMouth zakończył działanie %1$@: użycie pamięci wzrosło do %2$@ GB podczas odtwarzania książki z powodu usterki w dźwięku macOS. Pozycję zachowano."
           }
         },
         "pt-BR" : {
@@ -496136,7 +496136,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth zakończył działanie %1$@: jego pamięć urosła do %2$@ GB, gdy nic nie było odtwarzane. Pozycję zachowano."
+            "value" : "TextMouth zakończył działanie %1$@: użycie pamięci wzrosło do %2$@ GB, gdy nic nie było odtwarzane. Pozycję zachowano."
           }
         },
         "pt-BR" : {
@@ -503476,7 +503476,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sekcja (%1$@) kończy się na pozycji %2$@ pliku „%3$@”, który trwa tylko %4$@."
+            "value" : "Sekcja (%1$@) kończy się na pozycji %2$@ pliku „%3$@”, którego długość to tylko %4$@."
           }
         },
         "pt-BR" : {
@@ -506569,7 +506569,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sekcja (%1$@) zaczyna się na pozycji %2$@ pliku „%3$@”, który trwa tylko %4$@."
+            "value" : "Sekcja (%1$@) zaczyna się na pozycji %2$@ pliku „%3$@”, którego długość to tylko %4$@."
           }
         },
         "pt-BR" : {
@@ -528193,7 +528193,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eksport zatrzymano przed pozostałymi."
+            "value" : "Eksport zatrzymano przed zapisaniem pozostałych."
           }
         },
         "pt-BR" : {
@@ -530453,7 +530453,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plik %@ uległ awarii w trakcie."
+            "value" : "Plik %@ uległ awarii w trakcie odtwarzania."
           }
         },
         "pt-BR" : {
@@ -531001,7 +531001,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plik %@ został zatrzymany, ponieważ pamięć TextMouth urosła zbyt bardzo."
+            "value" : "Plik %@ został zatrzymany, ponieważ TextMouth zajął zbyt dużo pamięci."
           }
         },
         "pt-BR" : {
@@ -554358,7 +554358,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nagranie trwa %@."
+            "value" : "Długość nagrania: %@."
           }
         },
         "pt-BR" : {
@@ -555454,7 +555454,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odrzucony tekst trwa dalej poza ten fragment, do znaku %@."
+            "value" : "Odrzucony tekst ciągnie się poza ten fragment, do znaku %@."
           }
         },
         "pt-BR" : {
@@ -557372,7 +557372,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tekst content.md zachowany wcześniej został zapisany jako %@ w pakiecie książki."
+            "value" : "Wcześniejszy tekst pliku content.md zachowano jako %@ w pakiecie książki."
           }
         },
         "pt-BR" : {
@@ -615773,7 +615773,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następny artykuł, jeśli nie ma go jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -616240,7 +616240,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następną książkę, jeśli nie ma jej jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -616707,7 +616707,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następny odcinek, jeśli nie ma go jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -617174,7 +617174,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Gdy zostało %lld minuta lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac."
+                  "value" : "Gdy została %lld minuta lub mniej, pobiera następną pozycję, jeśli nie ma jej jeszcze na tym komputerze Mac."
                 }
               },
               "other" : {
@@ -632870,7 +632870,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "około %@"
+            "value" : "mniej więcej %@"
           }
         },
         "pt-BR" : {
@@ -640740,7 +640740,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "edytowane ręcznie"
+            "value" : "edytowano ręcznie"
           }
         },
         "pt-BR" : {
@@ -648168,7 +648168,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "edytowany tekst nie zawiera rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie, a książka się otworzy."
+            "value" : "edytowany tekst nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie, a książka się otworzy."
           }
         },
         "pt-BR" : {
@@ -648305,7 +648305,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "edytowany tekst nie zawiera rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie, a tekst się pokaże."
+            "value" : "edytowany tekst nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie, a tekst się pokaże."
           }
         },
         "pt-BR" : {
@@ -670927,7 +670927,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "plik %@ uległ awarii w trakcie"
+            "value" : "plik %@ uległ awarii w trakcie odtwarzania"
           }
         },
         "pt-BR" : {
@@ -671475,7 +671475,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "plik %@ został zatrzymany, ponieważ pamięć TextMouth urosła zbyt bardzo"
+            "value" : "plik %@ został zatrzymany, ponieważ TextMouth zajął zbyt dużo pamięci"
           }
         },
         "pt-BR" : {
@@ -678846,7 +678846,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„%1$@” to Personal Voice, którego macOS nie może nagrać do pliku. Wybierz inny głos przyciskiem %2$@ w czytniku, a potem wyeksportuj ponownie."
+            "value" : "„%1$@” to Głos osobisty, którego macOS nie może nagrać do pliku. Wybierz inny głos przyciskiem %2$@ w czytniku, a potem wyeksportuj ponownie."
           }
         },
         "pt-BR" : {
