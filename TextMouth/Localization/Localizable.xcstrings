@@ -315221,7 +315221,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Hiện %lld sách trong Finder"
+                  "value" : "Hiển thị %lld sách trong Finder"
                 }
               }
             }
@@ -315432,7 +315432,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện dấu trang"
+            "value" : "Hiển thị dấu trang"
           }
         },
         "zh-Hans" : {
@@ -315527,7 +315527,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện mô tả…"
+            "value" : "Hiển thị mô tả…"
           }
         },
         "zh-Hans" : {
@@ -315622,7 +315622,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện Xuất trên thanh công cụ trình đọc"
+            "value" : "Hiển thị Xuất trên thanh công cụ trình đọc"
           }
         },
         "zh-Hans" : {
@@ -315723,7 +315723,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện đề mục"
+            "value" : "Hiển thị đề mục"
           }
         },
         "zh-Hans" : {
@@ -315818,7 +315818,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện nhật ký trong Finder"
+            "value" : "Hiển thị nhật ký trong Finder"
           }
         },
         "zh-Hans" : {
@@ -315913,7 +315913,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện bản sao đã lưu trong Finder"
+            "value" : "Hiển thị bản sao đã lưu trong Finder"
           }
         },
         "zh-Hans" : {
@@ -316014,7 +316014,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện hẹn giờ ngủ"
+            "value" : "Hiển thị hẹn giờ ngủ"
           }
         },
         "zh-Hans" : {
@@ -316563,7 +316563,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện cảnh báo khi làm mới có tập mới"
+            "value" : "Hiển thị cảnh báo khi làm mới có tập mới"
           }
         },
         "zh-Hans" : {
@@ -316759,7 +316759,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện thông tin sách"
+            "value" : "Hiển thị thông tin sách"
           }
         },
         "zh-Hans" : {
@@ -316854,7 +316854,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện nút dấu trang"
+            "value" : "Hiển thị nút dấu trang"
           }
         },
         "zh-Hans" : {
@@ -316949,7 +316949,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện nút dấu trang trong điều khiển phát lại"
+            "value" : "Hiển thị nút dấu trang trong điều khiển phát lại"
           }
         },
         "zh-Hans" : {
@@ -317050,7 +317050,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện dấu trang"
+            "value" : "Hiển thị dấu trang"
           }
         },
         "zh-Hans" : {
@@ -317151,7 +317151,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện trình điều hướng đề mục"
+            "value" : "Hiển thị trình điều hướng đề mục"
           }
         },
         "zh-Hans" : {
@@ -317246,7 +317246,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện trong Finder"
+            "value" : "Hiển thị trong Finder"
           }
         },
         "zh-Hans" : {
@@ -317347,7 +317347,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện các cấp"
+            "value" : "Hiển thị các cấp"
           }
         },
         "zh-Hans" : {
@@ -317442,7 +317442,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện các điều khiển tốc độ"
+            "value" : "Hiển thị các điều khiển tốc độ"
           }
         },
         "zh-Hans" : {
@@ -317537,7 +317537,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện các điều khiển tốc độ trong điều khiển phát lại"
+            "value" : "Hiển thị các điều khiển tốc độ trong điều khiển phát lại"
           }
         },
         "zh-Hans" : {
@@ -317632,7 +317632,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện nút Xuất trên thanh công cụ trình đọc"
+            "value" : "Hiển thị nút Xuất trên thanh công cụ trình đọc"
           }
         },
         "zh-Hans" : {
@@ -318086,7 +318086,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện trang trên màn hình trình đọc"
+            "value" : "Hiển thị trang trên màn hình trình đọc"
           }
         },
         "zh-Hans" : {
@@ -318187,7 +318187,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đang hiện nhóm %1$@ trên %2$@"
+            "value" : "Đang hiển thị nhóm %1$@ trên %2$@"
           }
         },
         "zh-Hans" : {
@@ -318288,7 +318288,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đang hiện các nhóm %1$@ đến %2$@ trên %3$@"
+            "value" : "Đang hiển thị các nhóm %1$@ đến %2$@ trên %3$@"
           }
         },
         "zh-Hans" : {
@@ -318736,7 +318736,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "iPhone chưa hỗ trợ hiện nhật ký trong Finder."
+            "value" : "iPhone chưa hỗ trợ hiển thị nhật ký trong Finder."
           }
         },
         "zh-Hans" : {
@@ -319033,7 +319033,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chỉ hiện các đề mục đến cấp đã chọn."
+            "value" : "Chỉ hiển thị các đề mục đến cấp đã chọn."
           }
         },
         "zh-Hans" : {
@@ -319229,7 +319229,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện các lựa chọn để khôi phục chỉ mục thư viện."
+            "value" : "Hiển thị các lựa chọn để khôi phục chỉ mục thư viện."
           }
         },
         "zh-Hans" : {
@@ -319324,7 +319324,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện các nhóm sau các nhóm này."
+            "value" : "Hiển thị các nhóm sau các nhóm này."
           }
         },
         "zh-Hans" : {
@@ -319419,7 +319419,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện các nhóm trước các nhóm này."
+            "value" : "Hiển thị các nhóm trước các nhóm này."
           }
         },
         "zh-Hans" : {
@@ -319520,7 +319520,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hiện trang đang đọc, chẳng hạn Trang 12 trên 300, bên cạnh phần trăm, cho sách có nhiều hơn một trang."
+            "value" : "Hiển thị trang đang đọc, chẳng hạn Trang 12 trên 300, bên cạnh phần trăm, cho sách có nhiều hơn một trang."
           }
         },
         "zh-Hans" : {
@@ -364507,7 +364507,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The Hobbit được tính là chữ H khi bạn gõ. Danh sách giữ nguyên thứ tự và hiện mỗi tiêu đề như đã viết."
+            "value" : "The Hobbit được tính là chữ H khi bạn gõ. Danh sách giữ nguyên thứ tự và hiển thị mỗi tiêu đề như đã viết."
           }
         },
         "zh-Hans" : {
@@ -364602,7 +364602,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The Hobbit được xếp trong nhóm chữ H và hiện là Hobbit, The. Gõ H sẽ tìm thấy nó trong nhóm chữ H."
+            "value" : "The Hobbit được xếp trong nhóm chữ H và hiển thị là Hobbit, The. Gõ H sẽ tìm thấy nó trong nhóm chữ H."
           }
         },
         "zh-Hans" : {
@@ -419176,7 +419176,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Để vẫn giải phóng dung lượng, chọn Hiện trong Finder, rồi %@."
+            "value" : "Để vẫn giải phóng dung lượng, chọn Hiển thị trong Finder, rồi %@."
           }
         },
         "zh-Hans" : {
