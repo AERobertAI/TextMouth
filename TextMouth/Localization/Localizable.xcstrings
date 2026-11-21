@@ -562918,7 +562918,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "然後請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。"
+            "value" : "然後請將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。"
           }
         }
       }
@@ -586337,7 +586337,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書名會照原樣排序，也照原樣輸入尋找：The Hobbit 在 T 之中。"
+            "value" : "書名會依原樣排序，輸入字母尋找時也是如此：The Hobbit 在 T 之中。"
           }
         }
       }
@@ -588174,7 +588174,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "若要讓它釋出，請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。"
+            "value" : "若要讓它釋出，請將它從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。"
           }
         }
       }
@@ -588311,7 +588311,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "若要讓它們釋出，請將它們從閱讀列表中移除，或清除閱讀列表選項中的 %@。"
+            "value" : "若要讓它們釋出，請將它們從閱讀列表中移除，或在閱讀列表的選項中取消勾選 %@。"
           }
         }
       }
@@ -637637,7 +637637,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "第 %1$@ 章，%2$@ 儲存，以及 %3$@"
+            "value" : "第 %1$@ 章，儲存於 %2$@，以及 %3$@"
           }
         }
       }
@@ -658110,7 +658110,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "沒有儲存的位置，以及 %@"
+            "value" : "沒有已儲存的閱讀位置，以及 %@"
           }
         }
       }
@@ -664368,7 +664368,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正則"
+            "value" : "正規表示式"
           }
         }
       }
@@ -675782,7 +675782,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "使用該磁碟機本身的指令，讓書籍僅保留在線上"
+            "value" : "使用該雲端硬碟本身的指令，讓這本書只保留在雲端"
           }
         }
       }
@@ -678066,7 +678066,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在失敗的移動之後，無法將「%1$@」移回，因此它的檔案在 %2$@，而不是 %3$@：%4$@"
+            "value" : "移動失敗後，無法將「%1$@」移回，因此它的檔案在 %2$@，而不是 %3$@：%4$@"
           }
         }
       }
