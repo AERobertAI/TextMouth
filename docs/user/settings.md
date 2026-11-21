@@ -20,12 +20,13 @@ Four tabs have pages of their own, and this page holds the rest:
 - [Settings: the Storage tab](settings-storage.md), with the library folder, imports, duplicates, and maintenance.
 
 ## The language of the interface
-<!-- id: interface-language; keys: language, Spanish, English, localization, translated interface, String Catalog; src: TextMouth/Localization/Localizable.xcstrings; status: incomplete; issues: FR34 -->
+<!-- id: interface-language; keys: language, Spanish, Japanese, Korean, Language & Region, localization, translated interface, String Catalog; src: TextMouth/Localization/Localizable.xcstrings; status: incomplete; issues: FR34 -->
 
-TextMouth's own words, its menus, buttons, hints, and messages, follow the language the Mac or iPhone is set to for TextMouth.
-On the Mac, choose it in System Settings; on the iPhone, in Settings, TextMouth, Language.
-English and Spanish are the languages so far; the Spanish is a machine translation, which a native speaker will review.
-A language TextMouth does not have yet shows English.
+TextMouth's own words, its menus, buttons, hints, and messages, are in eleven languages: English, Spanish, Italian, French, Brazilian Portuguese, German, Russian, Ukrainian, Simplified Chinese, Japanese, and Korean.
+All but English are machine translations, which a native speaker will review.
+TextMouth follows the language order of the Mac or iPhone and shows the first of those languages it has.
+To set TextMouth's language alone, on the Mac choose it in System Settings, General, Language & Region, Applications; on the iPhone, in Settings, TextMouth, Language.
+A language TextMouth does not have shows English.
 This is separate from the voice, which speaks a book in the voice's own language, from the transcription language (see [Transcribing an audiobook](transcribing.md)), and from the braille language (see the Braille tab).
 
 ## Open the next book in
