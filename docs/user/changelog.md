@@ -4,6 +4,20 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.8 (November 21, 2026)
+
+### TextMouth in Urdu and Persian
+- TextMouth's menus, buttons, messages, and VoiceOver hints are now also in Urdu and Persian: 25 languages in all.
+- Both are written right to left in their own letters, so VoiceOver and a braille display read them as Urdu and Persian, not as Arabic.
+- Each is a machine translation that uses one word for each thing across the whole app, which a native speaker will review.
+
+### Better wording in every language
+- The careful machine review that 0.5.7 began has now read every string in every language, and reworded about 4,300 more that were wrong or awkward.
+- This time it read Korean, Italian, Turkish, Indonesian, Bengali, Polish, Vietnamese, Ukrainian, Thai, Traditional Chinese, Dutch, Swedish, Hebrew, Urdu, and Persian.
+- A path to a setting, such as System Settings, Accessibility, Spoken Content, no longer has ">" between its steps in any language, so VoiceOver doesn't say "greater than" in the middle of it.
+- Ukrainian uses macOS's own names for System Settings, Accessibility, Undo, and Quit.
+- In Traditional Chinese, Cancel Feed Downloads no longer sounds like Unsubscribe, and in Thai, an action that has finished is announced as done, not as a command.
+
 ## 0.5.7 (November 21, 2026)
 
 ### TextMouth in twelve more languages

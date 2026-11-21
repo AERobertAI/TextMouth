@@ -8525,6 +8525,7 @@
 				de,
 				en,
 				es,
+				fa,
 				fr,
 				he,
 				hi,
@@ -8540,6 +8541,7 @@
 				th,
 				tr,
 				uk,
+				ur,
 				vi,
 				"zh-Hans",
 				"zh-Hant",
@@ -12055,7 +12057,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.5.7;
+				MARKETING_VERSION = 0.5.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth.iOS;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
@@ -12237,7 +12239,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.5.7;
+				MARKETING_VERSION = 0.5.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;
@@ -12640,7 +12642,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.5.7;
+				MARKETING_VERSION = 0.5.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth.iOS;
 				PRODUCT_MODULE_NAME = TextMouth;
 				PRODUCT_NAME = TextMouth;
@@ -12802,7 +12804,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 0.5.7;
+				MARKETING_VERSION = 0.5.8;
 				PRODUCT_BUNDLE_IDENTIFIER = com.textmouth.TextMouth;
 				PRODUCT_NAME = TextMouth;
 				SDKROOT = macosx;

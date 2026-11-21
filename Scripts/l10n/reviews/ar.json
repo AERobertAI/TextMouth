@@ -2319,6 +2319,58 @@
      "why": "natural: مكتبة Mac الخاص بك is a word-for-word copy of Your Mac’s library"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "يضيف زر تصدير إلى شريط أدوات كل قارئ. يعمل الأمر ملف > تصدير في الحالتين.",
+     "after": "يضيف زر تصدير إلى شريط أدوات كل قارئ. يعمل الأمر ملف، تصدير في الحالتين.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Choose the language in Settings, Playback, Transcription.",
+     "english": "Choose the language in Settings, Playback, Transcription.",
+     "before": "اختر اللغة في الإعدادات > التشغيل > التفريغ النصي.",
+     "after": "اختر اللغة في الإعدادات، التشغيل، التفريغ النصي.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "لا يوجد صوت مثبّت. أضف صوتًا في إعدادات النظام > تسهيلات الاستخدام > المحتوى المنطوق، ثم صدّر مرة أخرى.",
+     "after": "لا يوجد صوت مثبّت. أضف صوتًا في إعدادات النظام، تسهيلات الاستخدام، المحتوى المنطوق، ثم صدّر مرة أخرى.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "لا توجد أصوات مثبّتة. أضف أصواتًا في الإعدادات > تسهيلات الاستخدام > القراءة والنطق.",
+     "after": "لا توجد أصوات مثبّتة. أضف أصواتًا في الإعدادات، تسهيلات الاستخدام، القراءة والنطق.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "لا يملك TextMouth إذنًا بإرسال الإشعارات. فعّلها في إعدادات النظام > الإشعارات > TextMouth.",
+     "after": "لا يملك TextMouth إذنًا بإرسال الإشعارات. فعّلها في إعدادات النظام، الإشعارات، TextMouth.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "english": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "before": "غير مسموح لـ TextMouth باستخدام الميكروفون. فعّله في إعدادات النظام > الخصوصية والأمن > الميكروفون.",
+     "after": "غير مسموح لـ TextMouth باستخدام الميكروفون. فعّله في إعدادات النظام، الخصوصية والأمن، الميكروفون.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    }
+   ]
   }
  ]
 }

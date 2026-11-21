@@ -1461,6 +1461,37 @@
      "why": "natural: a file itself does not fail in Japanese; its playback failed partway, as the note says"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "インストールされている声がありません。「システム設定」の「アクセシビリティ」>「読み上げコンテンツ」で追加してから、もう一度書き出してください。",
+     "after": "インストールされている声がありません。「システム設定」の「アクセシビリティ」の「読み上げコンテンツ」で追加してから、もう一度書き出してください。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "インストールされている声がありません。「設定」の「アクセシビリティ」>「読み上げコンテンツ」で声を追加してください。",
+     "after": "インストールされている声がありません。「設定」の「アクセシビリティ」の「読み上げコンテンツ」で声を追加してください。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "まっすぐな引用符を入力してください。テキストエディットでは、「編集」>「自動置換」で「スマート引用符」をオフにします。",
+     "after": "まっすぐな引用符を入力してください。テキストエディットでは、「編集」の「自動置換」で「スマート引用符」をオフにします。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    }
+   ]
   }
  ]
 }

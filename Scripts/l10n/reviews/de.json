@@ -2051,6 +2051,44 @@
      "why": "term: Apple German calls Personal Voice Eigene Stimme"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Fügt der Symbolleiste jeder Leseansicht eine Taste „Exportieren“ hinzu. „Ablage“ > „Exportieren“ funktioniert in beiden Fällen.",
+     "after": "Fügt der Symbolleiste jeder Leseansicht eine Taste „Exportieren“ hinzu. „Ablage“, „Exportieren“ funktioniert in beiden Fällen.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Es ist keine Stimme installiert. Füge in den Systemeinstellungen unter „Bedienungshilfen“ > „Gesprochene Inhalte“ eine hinzu und exportiere dann erneut.",
+     "after": "Es ist keine Stimme installiert. Füge in den Systemeinstellungen unter „Bedienungshilfen“, „Gesprochene Inhalte“ eine hinzu und exportiere dann erneut.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "Es sind keine Stimmen installiert. Füge in „Einstellungen“ > „Bedienungshilfen“ > „Gesprochene Inhalte“ Stimmen hinzu.",
+     "after": "Es sind keine Stimmen installiert. Füge in „Einstellungen“, „Bedienungshilfen“, „Gesprochene Inhalte“ Stimmen hinzu.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Gib gerade Anführungszeichen ein: Deaktiviere in TextEdit unter „Bearbeiten“ > „Ersetzungen“ die intelligenten Anführungszeichen.",
+     "after": "Gib gerade Anführungszeichen ein: Deaktiviere in TextEdit unter „Bearbeiten“, „Ersetzungen“ die intelligenten Anführungszeichen.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    }
+   ]
   }
  ]
 }
