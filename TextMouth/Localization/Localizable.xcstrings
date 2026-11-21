@@ -126984,7 +126984,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請檢查 %@ 是否正在執行，以及這部 Mac 是否已連線，然後選擇「再試一次」。"
+            "value" : "請檢查 %@ 是否正在執行，以及這部 Mac 是否已連線，然後選擇「重試」。"
           }
         }
       }
@@ -134959,7 +134959,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請在「設定」、「播放控制」、「語音轉文字」中選擇語言。"
+            "value" : "請在「設定」>「播放控制」>「語音轉文字」中選擇語言。"
           }
         }
       }
@@ -234244,7 +234244,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現在可以再次讀取。請選擇「再試一次」來使用它。"
+            "value" : "現在可以再次讀取。請選擇「重試」來使用它。"
           }
         }
       }
@@ -328726,7 +328726,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "暫停等級"
+            "value" : "停頓等級"
           }
         }
       }
@@ -371456,7 +371456,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "RTF 文件"
+            "value" : "多重格式文字"
           }
         }
       }
@@ -371581,7 +371581,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "含附件的 RTF 文件"
+            "value" : "含附件的多重格式文字"
           }
         }
       }
@@ -420922,7 +420922,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%1$@ 編輯後的逐字稿有 %2$@，但有聲書有 %3$@。請保留每一行以 <!-- chapter: 開頭的行後再次儲存；在此之前，書籍會保留舊的文字。"
+            "value" : "文字未更新：%1$@ 編輯後的逐字稿有 %2$@，但有聲書有 %3$@。請保留每個以 <!-- chapter: 開頭的行，然後再次儲存；在此之前，書籍會保留舊的文字。"
           }
         }
       }
@@ -435705,7 +435705,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 不允許發送通知。請在「系統設定」的「通知」中，開啟 TextMouth 的通知。"
+            "value" : "TextMouth 不允許發送通知。請在「系統設定」>「通知」>「TextMouth」中，開啟 TextMouth 的通知。"
           }
         }
       }
@@ -435824,7 +435824,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 未獲允許使用麥克風。請在「系統設定」、「隱私權與安全性」、「麥克風」中開啟。"
+            "value" : "TextMouth 未獲允許使用麥克風。請在「系統設定」>「隱私權與安全性」>「麥克風」中開啟。"
           }
         }
       }
@@ -476989,7 +476989,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法讀取書庫索引。請先在書庫視窗中選擇「再試一次」或「重建書庫索引」。"
+            "value" : "無法讀取書庫索引。請先在書庫視窗中選擇「重試」或「重建書庫索引」。"
           }
         }
       }
@@ -510935,7 +510935,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法將此檔案讀取為含附件的 RTF 文件。"
+            "value" : "無法將此檔案讀取為含附件的多重格式文字。"
           }
         }
       }
@@ -511054,7 +511054,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法將此檔案讀取為 RTF 文件。"
+            "value" : "無法將此檔案讀取為多重格式文字。"
           }
         }
       }
@@ -571373,7 +571373,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "iCloud Drive 可能已關閉或已登出，或是這部 Mac 可能已離線。請檢查，然後選擇「再試一次」。"
+            "value" : "iCloud Drive 可能已關閉或已登出，或是這部 Mac 可能已離線。請檢查，然後選擇「重試」。"
           }
         }
       }
