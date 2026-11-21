@@ -151441,7 +151441,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se copió %@."
+            "value" : "Se copió un fragmento de %@."
           }
         },
         "fr" : {
@@ -159560,7 +159560,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se cortó %@."
+            "value" : "Se cortó un fragmento de %@."
           }
         },
         "fr" : {
@@ -254052,7 +254052,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Conservar durante unos días"
+            "value" : "Conservar durante un número de días"
           }
         },
         "fr" : {
@@ -287764,7 +287764,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se movió %1$@ a %2$@."
+            "value" : "Se movió un fragmento de %1$@ a %2$@."
           }
         },
         "fr" : {
@@ -323655,7 +323655,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ofrecer transcribir después de importar un audiolibro"
+            "value" : "Ofrecer la transcripción después de importar un audiolibro"
           }
         },
         "fr" : {
@@ -337531,7 +337531,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se pegaron %@ donde se habían cortado."
+            "value" : "Se pegó un fragmento de %@ donde se había cortado."
           }
         },
         "fr" : {
@@ -337662,7 +337662,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se pegaron %1$@ sobre %2$@."
+            "value" : "Se pegó un fragmento de %1$@ sobre %2$@."
           }
         },
         "fr" : {
@@ -337787,7 +337787,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se pegaron %@."
+            "value" : "Se pegó un fragmento de %@."
           }
         },
         "fr" : {
@@ -373091,7 +373091,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se reemplazó %1$@ con %2$@ de grabación nueva, que queda seleccionada."
+            "value" : "Se reemplazó un fragmento de %1$@ por %2$@ de grabación nueva, que queda seleccionada."
           }
         },
         "fr" : {
@@ -382119,7 +382119,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se volvió al audio original. Rehacer recupera la %lld edición."
+                  "value" : "Se volvió al audio original. Rehacer recupera la edición."
                 }
               },
               "other" : {
@@ -396642,7 +396642,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Capítulo seleccionado %1$@: %2$@, %3$@."
+            "value" : "Capítulo %1$@ seleccionado: %2$@, %3$@."
           }
         },
         "fr" : {
@@ -396767,7 +396767,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se seleccionaron %@ antes del capítulo 1."
+            "value" : "Se seleccionó el fragmento de %@ antes del capítulo 1."
           }
         },
         "fr" : {
@@ -399317,7 +399317,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Define el idioma de la transcripción. Un idioma marcado como necesita descarga solo se descarga desde la hoja Transcribir audio."
+            "value" : "Define el idioma de la transcripción. Si un idioma indica que necesita descarga, solo se descarga desde la hoja Transcribir audio."
           }
         },
         "fr" : {
