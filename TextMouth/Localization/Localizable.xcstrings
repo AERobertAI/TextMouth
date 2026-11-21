@@ -84058,19 +84058,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de livres de texte"
+                  "value" : "%lld de livres texte"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld livre de texte"
+                  "value" : "%lld livre texte"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld livres de texte"
+                  "value" : "%lld livres texte"
                 }
               }
             }
@@ -231247,7 +231247,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pour essayer avec un afficheur braille."
+            "value" : "Pour essayer avec une plage braille."
           }
         },
         "hi" : {
@@ -239407,7 +239407,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Va à une page, un pourcentage ou un temps."
+            "value" : "Va à une page, à un pourcentage ou à un instant."
           }
         },
         "hi" : {
@@ -244941,7 +244941,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comment le BRF écrit chaque cellule braille. La plupart des afficheurs braille et des embosseuses lisent le braille ASCII nord-américain ; ceux réglés pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF."
+            "value" : "Comment le BRF écrit chaque cellule braille. La plupart des plages braille et des embosseuses lisent le braille ASCII nord-américain ; celles réglées pour l’allemand lisent l’Eurobraille. Pour partager avec un lecteur ailleurs, exportez un PEF."
           }
         },
         "hi" : {
@@ -268925,7 +268925,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ses en-têtes sont de vrais en-têtes, et la table des matières les relie."
+            "value" : "Ses en-têtes sont de vrais en-têtes, et la table des matières y renvoie."
           }
         },
         "hi" : {
@@ -271063,7 +271063,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aller au temps"
+            "value" : "Aller à cet instant"
           }
         },
         "hi" : {
@@ -298386,7 +298386,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Commandes multimédia non libérées : ce livre ne les détient pas."
+            "value" : "Commandes multimédias non libérées : ce livre ne les détient pas."
           }
         },
         "hi" : {
@@ -298517,7 +298517,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Commandes multimédia libérées"
+            "value" : "Commandes multimédias libérées"
           }
         },
         "hi" : {
@@ -320813,7 +320813,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unité de navigation des livres de texte"
+            "value" : "Unité de navigation des livres texte"
           }
         },
         "hi" : {
@@ -331390,7 +331390,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plus de livre dans le dossier"
+            "value" : "Aucun autre livre dans le dossier"
           }
         },
         "hi" : {
@@ -402515,7 +402515,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rétablir %@ par défaut"
+            "value" : "Rétablir les raccourcis par défaut de %@"
           }
         },
         "hi" : {
@@ -445239,7 +445239,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Effets sonores réinitialisés par défaut"
+            "value" : "Effets sonores réinitialisés"
           }
         },
         "hi" : {
@@ -462598,7 +462598,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Retire chaque livre terminé de la liste quand sa fenêtre passe à autre chose ou se ferme. Les livres terminés avant l’activation restent."
+            "value" : "Retire chaque livre terminé de la liste quand sa fenêtre passe à un autre livre ou se ferme. Les livres terminés avant l’activation restent."
           }
         },
         "hi" : {
@@ -486025,7 +486025,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter en démarre un BRF avec eux. Un livre garde ses caractères d’import, que la fenêtre Informations sur le livre peut modifier."
+            "value" : "TextMouth lit les fichiers BRF et BRL que vous ajoutez à partir de maintenant avec ces caractères, et reconnaît tout seul les motifs braille Unicode. La fenêtre Exporter les présélectionne pour un BRF. Un livre garde ses caractères d’importation, que la fenêtre Informations sur le livre peut modifier."
           }
         },
         "hi" : {
@@ -500737,7 +500737,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Le MP3 a des chapitres pour les %@ premiers de ses %lld en-têtes ; exportez en M4B pour avoir un chapitre par en-tête."
+                  "value" : "Le MP3 n’a de chapitres que pour %@ en-tête sur %lld ; exportez en M4B pour avoir un chapitre par en-tête."
                 }
               },
               "other" : {
@@ -550673,7 +550673,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La voix a changé de type d’audio en cours de « %@ »."
+            "value" : "La voix a changé de type d’audio pendant la lecture de « %@ »."
           }
         },
         "hi" : {
@@ -550935,7 +550935,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La voix s’est arrêtée en cours de « %@ », et TextMouth a cessé d’attendre."
+            "value" : "La voix s’est arrêtée pendant la lecture de « %@ », et TextMouth a cessé d’attendre."
           }
         },
         "hi" : {
@@ -615343,7 +615343,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cet export en paragraphes simples de lignes, sans redemander."
+            "value" : "Écrit ce chapitre et tous les autres chapitres trop imbriqués de cette exportation en paragraphes simples de lignes, sans redemander."
           }
         },
         "hi" : {
