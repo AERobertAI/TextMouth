@@ -2399,6 +2399,51 @@
      "why": "natural: Hãy …, và sách sẽ mở copied the English and-then-result; để says what the step brings, as part 2 dropped the same và"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "after": "Thao tác này xóa %@: mục này được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi dọn sạch Thùng rác.",
+     "why": "term: Finder's own Empty Trash in Vietnamese is Dọn sạch Thùng rác (Finder's vi MenuBar.strings, macOS 26.3.1), as part 1 writes it"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi làm trống Thùng rác.",
+     "after": "Thao tác này xóa %@: chúng được chuyển vào Thùng rác, nơi bạn có thể khôi phục cho đến khi dọn sạch Thùng rác.",
+     "why": "term: Finder's own Empty Trash in Vietnamese is Dọn sạch Thùng rác (Finder's vi MenuBar.strings, macOS 26.3.1), as part 1 writes it"
+    },
+    {
+     "key": "This file could not be read as a rich text document with attachments.",
+     "english": "This file could not be read as a rich text document with attachments.",
+     "before": "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng kèm tệp đính kèm.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu văn bản đa dạng thức có tệp đính kèm.",
+     "why": "term: TextEdit's own Vietnamese for rich text is văn bản đa dạng thức (TextEdit's tables, macOS 26.3.1), as part 3 writes it"
+    },
+    {
+     "key": "This file could not be read as a rich text document.",
+     "english": "This file could not be read as a rich text document.",
+     "before": "Không đọc được tệp này dưới dạng tài liệu văn bản có định dạng.",
+     "after": "Không đọc được tệp này dưới dạng tài liệu văn bản đa dạng thức.",
+     "why": "term: TextEdit's own Vietnamese for rich text is văn bản đa dạng thức (TextEdit's tables, macOS 26.3.1), as part 3 writes it"
+    },
+    {
+     "key": "You can recover it from the Trash until the Trash is emptied.",
+     "english": "You can recover it from the Trash until the Trash is emptied.",
+     "before": "Bạn có thể khôi phục nó từ Thùng rác cho đến khi làm trống Thùng rác.",
+     "after": "Bạn có thể khôi phục nó từ Thùng rác cho đến khi dọn sạch Thùng rác.",
+     "why": "term: Finder's own Empty Trash in Vietnamese is Dọn sạch Thùng rác (Finder's vi MenuBar.strings, macOS 26.3.1), as part 1 writes it"
+    }
+   ]
   }
  ]
 }
