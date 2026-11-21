@@ -126515,7 +126515,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sprawdź, czy dysk z biblioteką jest podłączony, a następnie wybierz Ponów."
+            "value" : "Sprawdź, czy dysk z biblioteką jest podłączony, a następnie wybierz Spróbuj ponownie."
           }
         },
         "pt-BR" : {
@@ -129907,7 +129907,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wybierz Ponów, aby spróbować jeszcze raz, albo zaimportuj książkę ponownie, jeśli błąd się powtarza."
+            "value" : "Wybierz Spróbuj ponownie albo zaimportuj książkę ponownie, jeśli błąd się powtarza."
           }
         },
         "pt-BR" : {
@@ -138869,7 +138869,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zamknij ekran nagłówków i wróć do książki"
+            "value" : "Zamyka ekran nagłówków i wraca do książki."
           }
         },
         "pt-BR" : {
@@ -198425,7 +198425,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie udało się odbudować katalogu"
+            "value" : "Nie udało się odbudować folderu danych"
           }
         },
         "pt-BR" : {
@@ -269100,7 +269100,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Minimalny próg pauzy"
+            "value" : "Minimalny próg przerwy"
           }
         },
         "pt-BR" : {
@@ -269402,25 +269402,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Minimalna pauza: %lld sekundy"
+                  "value" : "Minimalna przerwa: %lld sekundy"
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Minimalna pauza: %lld sekund"
+                  "value" : "Minimalna przerwa: %lld sekund"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Minimalna pauza: %lld sekunda"
+                  "value" : "Minimalna przerwa: %lld sekunda"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Minimalna pauza: %lld sekundy"
+                  "value" : "Minimalna przerwa: %lld sekundy"
                 }
               }
             }
@@ -303546,7 +303546,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zainstalowano żadnego głosu. Dodaj go w Ustawieniach systemowych, Dostępność, Treść mówiona, a potem wyeksportuj ponownie."
+            "value" : "Nie zainstalowano żadnego głosu. Dodaj go w: Ustawienia systemowe, Dostępność, Treść mówiona. Potem wyeksportuj ponownie."
           }
         },
         "pt-BR" : {
@@ -303665,7 +303665,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zainstalowano żadnych głosów. Dodaj głosy w Ustawieniach, Dostępność, Treść mówiona."
+            "value" : "Nie zainstalowano żadnych głosów. Dodaj głosy w: Ustawienia, Dostępność, Treść mówiona."
           }
         },
         "pt-BR" : {
@@ -318998,7 +318998,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera ustawienia prywatności mikrofonu w Ustawieniach systemowych."
+            "value" : "Otwiera ustawienia prywatności mikrofonu w programie Ustawienia systemowe."
           }
         },
         "pt-BR" : {
@@ -319611,7 +319611,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera ustawienia wstępne filtrów, aby je edytować, dodawać, zmieniać ich kolejność, usuwać lub resetować."
+            "value" : "Otwiera ustawienia wstępne filtrów, aby je edytować, dodawać, zmieniać ich kolejność, usuwać lub przywracać domyślne."
           }
         },
         "pt-BR" : {
@@ -320712,7 +320712,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Otwiera w edytorze tekstu twoją kopię reguł, transcript-cleanup.json, utworzoną za pierwszym razem z własnych reguł TextMouth. Zmiany obowiązują po powrocie do TextMouth."
+            "value" : "Otwiera w edytorze tekstu Twoją kopię reguł, transcript-cleanup.json, utworzoną za pierwszym razem z własnych reguł TextMouth. Zmiany obowiązują po powrocie do TextMouth."
           }
         },
         "pt-BR" : {
@@ -346764,7 +346764,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odbuduj katalog"
+            "value" : "Odbuduj folder danych"
           }
         },
         "pt-BR" : {
@@ -347014,7 +347014,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odbuduj katalog TextMouth"
+            "value" : "Odbuduj folder danych TextMouth"
           }
         },
         "pt-BR" : {
@@ -349781,7 +349781,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odtwarza strukturę katalogów i migruje książki korzystające ze starego sposobu przechowywania"
+            "value" : "Odtwarza strukturę folderów i migruje książki korzystające ze starego sposobu przechowywania"
           }
         },
         "pt-BR" : {
@@ -352729,7 +352729,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usuń z listy"
+            "value" : "Usuń"
           }
         },
         "pt-BR" : {
@@ -361340,7 +361340,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zresetować skróty klawiszowe?"
+            "value" : "Przywrócić skróty klawiszowe do domyślnych?"
           }
         },
         "pt-BR" : {
@@ -361935,7 +361935,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zresetuj wszystkie efekty dźwiękowe do domyślnych"
+            "value" : "Przywróć wszystkie efekty dźwiękowe do domyślnych"
           }
         },
         "pt-BR" : {
@@ -362054,7 +362054,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zresetuj symbole do domyślnych"
+            "value" : "Przywróć symbole do domyślnych"
           }
         },
         "pt-BR" : {
@@ -363946,7 +363946,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przywróć domyślną"
+            "value" : "Przywróć widok domyślny"
           }
         },
         "pt-BR" : {
@@ -364071,7 +364071,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przywróć domyślną…"
+            "value" : "Przywróć widok domyślny…"
           }
         },
         "pt-BR" : {
@@ -366255,7 +366255,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ponów"
+            "value" : "Spróbuj ponownie"
           }
         },
         "pt-BR" : {
@@ -366499,7 +366499,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ponowienie nie powiodło się."
+            "value" : "Ponowna próba nie powiodła się."
           }
         },
         "pt-BR" : {
@@ -366624,7 +366624,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przycisk Ponów jest u góry okna Biblioteki."
+            "value" : "Przycisk Spróbuj ponownie jest u góry okna Biblioteki."
           }
         },
         "pt-BR" : {
@@ -370715,25 +370715,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Reguły: twoja kopia, wersja %1$@ z %2$@, %3$lld reguły."
+                  "value" : "Reguły: Twoja kopia, wersja %1$@ z %2$@, %3$lld reguły."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Reguły: twoja kopia, wersja %1$@ z %2$@, %3$lld reguł."
+                  "value" : "Reguły: Twoja kopia, wersja %1$@ z %2$@, %3$lld reguł."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Reguły: twoja kopia, wersja %1$@ z %2$@, %3$lld reguła."
+                  "value" : "Reguły: Twoja kopia, wersja %1$@ z %2$@, %3$lld reguła."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Reguły: twoja kopia, wersja %1$@ z %2$@, %3$lld reguły."
+                  "value" : "Reguły: Twoja kopia, wersja %1$@ z %2$@, %3$lld reguły."
                 }
               }
             }
@@ -392238,7 +392238,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pokazuje książki w kolejności ustawionej przez ciebie"
+            "value" : "Pokazuje książki w kolejności ustawionej przez Ciebie"
           }
         },
         "pt-BR" : {
@@ -399393,7 +399393,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zresetowano efekty dźwiękowe do domyślnych"
+            "value" : "Przywrócono efekty dźwiękowe do domyślnych"
           }
         },
         "pt-BR" : {
@@ -407188,7 +407188,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zatrzymaj komunikat Gdzie jestem"
+            "value" : "Zatrzymaj komunikat Gdzie jestem?"
           }
         },
         "pt-BR" : {
@@ -413810,7 +413810,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zresetowano symbole do listy domyślnej"
+            "value" : "Przywrócono symbole do listy domyślnej"
           }
         },
         "pt-BR" : {
@@ -425184,7 +425184,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth nie mógł zachować zmienionego przez ciebie tekstu w „%@” obok nowego odczytu, więc pozostawił książkę bez zmian."
+            "value" : "TextMouth nie mógł zachować zmienionego przez Ciebie tekstu w „%@” obok nowego odczytu, więc pozostawił książkę bez zmian."
           }
         },
         "pt-BR" : {
@@ -428857,7 +428857,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth nie ma własnych reguł: żadna nie sprawdziła się we wszystkich testowanych książkach. Edytuj reguły… otwiera twoją kopię, w której możesz dodać reguły, na przykład nazwę, którą rozpoznawanie mowy zawsze zapisuje inaczej."
+            "value" : "TextMouth nie ma własnych reguł: żadna nie sprawdziła się we wszystkich testowanych książkach. Edytuj reguły… otwiera Twoją kopię, w której możesz dodać reguły, na przykład nazwę, którą rozpoznawanie mowy zawsze zapisuje inaczej."
           }
         },
         "pt-BR" : {
@@ -431734,7 +431734,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth przebudowuje swój folder danych. Poczekaj na zakończenie, a potem ponownie wybierz: %@."
+            "value" : "TextMouth odbudowuje swój folder danych. Poczekaj na zakończenie, a potem ponownie wybierz: %@."
           }
         },
         "pt-BR" : {
@@ -454139,7 +454139,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dźwięk audiobooka, twoje miejsce i zakładki pozostają bez zmian."
+            "value" : "Dźwięk audiobooka, Twoje miejsce i zakładki pozostają bez zmian."
           }
         },
         "pt-BR" : {
@@ -454258,7 +454258,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tytuł audiobooka w twojej bibliotece."
+            "value" : "Tytuł audiobooka w Twojej bibliotece."
           }
         },
         "pt-BR" : {
@@ -461018,7 +461018,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bieżący katalog zostanie zachowany jako dane do odzyskiwania."
+            "value" : "Bieżący folder danych zostanie zachowany jako dane do odzyskiwania."
           }
         },
         "pt-BR" : {
@@ -468792,7 +468792,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ustawienia wstępne filtrów zostały zresetowane do domyślnych."
+            "value" : "Ustawienia wstępne filtrów zostały przywrócone do domyślnych."
           }
         },
         "pt-BR" : {
@@ -476141,7 +476141,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mikrofon używany przy nagrywaniu w miejscu zaznaczenia. TextMouth go zapamiętuje, niezależnie od wejścia macOS."
+            "value" : "Mikrofon, z którego nagrywa Nagraj w miejscu zaznaczenia. TextMouth go zapamiętuje, niezależnie od wejścia macOS."
           }
         },
         "pt-BR" : {
@@ -493108,7 +493108,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkrypcja wraz z twoimi zmianami pozostaje przy odcinku w jego kanale, nawet po usunięciu pobranego pliku. Usunięcie odcinka lub kanału usuwa ją; Przenieś do biblioteki zachowuje ją jako książkę."
+            "value" : "Transkrypcja wraz z Twoimi zmianami pozostaje przy odcinku w jego kanale, nawet po usunięciu pobranego pliku. Usunięcie odcinka lub kanału usuwa ją; Przenieś do biblioteki zachowuje ją jako książkę."
           }
         },
         "pt-BR" : {
@@ -511770,7 +511770,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "To odtworzy strukturę katalogów i zmigruje książki korzystające ze starego sposobu przechowywania."
+            "value" : "To odtworzy strukturę folderów i zmigruje książki korzystające ze starego sposobu przechowywania."
           }
         },
         "pt-BR" : {
@@ -517035,7 +517035,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aby użyć innego folderu, otwórz Ustawienia, Pamięć i wybierz %1$@ lub %2$@."
+            "value" : "Aby użyć innego folderu, otwórz Ustawienia, przejdź do sekcji Pamięć i wybierz %1$@ lub %2$@."
           }
         },
         "pt-BR" : {
@@ -532061,7 +532061,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Do tego czasu zmiana lokalizacji i odbudowa katalogu są niedostępne."
+            "value" : "Do tego czasu zmiana lokalizacji i odbudowa folderu danych są niedostępne."
           }
         },
         "pt-BR" : {
@@ -552415,7 +552415,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Oczyszczone przez ciebie dnia %@."
+            "value" : "Oczyszczone przez Ciebie dnia %@."
           }
         },
         "pt-BR" : {
@@ -552653,7 +552653,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edytowane przez ciebie dnia %@."
+            "value" : "Edytowane przez Ciebie dnia %@."
           }
         },
         "pt-BR" : {
@@ -552891,7 +552891,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta transkrypcja została edytowana dnia %@. Ponowne transkrybowanie zastąpi twoje edycje."
+            "value" : "Ta transkrypcja została edytowana dnia %@. Ponowne transkrybowanie zastąpi Twoje edycje."
           }
         },
         "pt-BR" : {
@@ -560968,7 +560968,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "wybierz Usuń pobrane"
+            "value" : "wybierz Usuń pobrany plik"
           }
         },
         "pt-BR" : {
