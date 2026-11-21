@@ -6022,7 +6022,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tenta de novo, %2$@ sai sem salvar, %3$@ mantém o TextMouth aberto."
+            "value" : "%1$@ tenta novamente, %2$@ sai sem salvar, %3$@ mantém o TextMouth aberto."
           }
         }
       }
@@ -72926,7 +72926,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O texto dele ainda não pôde ser preparado para a leitura; o TextMouth vai tentar de novo mais tarde."
+            "value" : "O texto dele ainda não pôde ser preparado para a leitura; o TextMouth vai tentar novamente mais tarde."
           }
         }
       }
@@ -99019,7 +99019,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reprodução interrompida: o áudio parou de responder. Pressione Reproduzir para tentar de novo; se parar outra vez, saia do TextMouth e abra-o novamente."
+            "value" : "Reprodução interrompida: o áudio parou de responder. Pressione Reproduzir para tentar novamente; se parar outra vez, saia do TextMouth e abra-o novamente."
           }
         }
       }
@@ -119198,7 +119198,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fala pausada: a voz não começou. Pressione Reproduzir para tentar de novo."
+            "value" : "Fala pausada: a voz não começou. Pressione Reproduzir para tentar novamente."
           }
         }
       }
@@ -120495,7 +120495,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ainda localizando as pausas. Tente de novo em instantes."
+            "value" : "Ainda localizando as pausas. Tente novamente em instantes."
           }
         }
       }
@@ -127484,7 +127484,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth já está transcrevendo %@. Tente de novo quando terminar."
+            "value" : "O TextMouth já está transcrevendo %@. Tente novamente quando terminar."
           }
         }
       }
@@ -129750,7 +129750,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth interrompeu %1$@ porque %2$@, e não tentará de novo até ser fechado e aberto outra vez."
+            "value" : "O TextMouth interrompeu %1$@ porque %2$@, e não tentará novamente até ser fechado e aberto outra vez."
           }
         }
       }
@@ -129785,7 +129785,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth interrompeu %@ antes porque demorou demais, e não tentará de novo até ser fechado e aberto outra vez."
+            "value" : "O TextMouth interrompeu %@ antes porque demorou demais, e não tentará novamente até ser fechado e aberto outra vez."
           }
         }
       }
@@ -145207,7 +145207,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O mecanismo de fala se recusou a falar o texto aqui, duas vezes, então a fala parou. Reproduzir tenta de novo a partir do mesmo ponto."
+            "value" : "O mecanismo de fala se recusou a falar o texto aqui, duas vezes, então a fala parou. Reproduzir tenta novamente a partir do mesmo ponto."
           }
         }
       }
@@ -151777,7 +151777,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Esta gravação não foi salva. %1$@ tenta de novo, %2$@ a exclui e %3$@ mantém a janela aberta."
+            "value" : "Esta gravação não foi salva. %1$@ tenta novamente, %2$@ a exclui e %3$@ mantém a janela aberta."
           }
         }
       }
@@ -155156,7 +155156,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tenta de novo salvar a gravação como audiolivro."
+            "value" : "Tenta novamente salvar a gravação como audiolivro."
           }
         }
       }
@@ -155552,7 +155552,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tente de novo quando o livro for baixado."
+            "value" : "Tente novamente quando o livro for baixado."
           }
         }
       }
@@ -174002,7 +174002,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o registro do livro não pode ser alterado agora. O TextMouth tenta de novo quando você salvar ou voltar na próxima vez."
+            "value" : "o registro do livro não pode ser alterado agora. O TextMouth tenta novamente quando você salvar ou voltar na próxima vez."
           }
         }
       }
