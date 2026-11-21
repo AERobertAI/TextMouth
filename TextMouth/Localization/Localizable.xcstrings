@@ -40856,7 +40856,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wähle „Speichern erneut versuchen“ und versuche es dann noch einmal."
+            "value" : "Wähle „Sichern erneut versuchen“ und versuche es dann erneut."
           }
         },
         "es" : {
@@ -111668,7 +111668,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Speichern erneut versuchen"
+            "value" : "Sichern erneut versuchen"
           }
         },
         "es" : {
@@ -111738,7 +111738,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Speichern erneut versuchen steht oben im Bibliotheksfenster."
+            "value" : "Sichern erneut versuchen steht oben im Bibliotheksfenster."
           }
         },
         "es" : {
