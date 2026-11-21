@@ -1,4 +1,4 @@
-"""The scanner runs under Xcode's Python 3.9, so its sources use nothing that needs 3.10."""
+"""The scanner and ids.py run under Xcode's Python 3.9, so their sources use nothing that needs 3.10."""
 
 from __future__ import annotations
 
@@ -14,8 +14,9 @@ class PythonNineCompatibilityTests(unittest.TestCase):
 
     @staticmethod
     def sources() -> list:
-        """The scanner's own Python files: scan.py and the swiftscan package."""
-        return [L10N / "scan.py", *sorted((L10N / "swiftscan").glob("*.py"))]
+        """The scanner's own Python files (scan.py and the swiftscan package) and ids.py, which reads the sources
+        through the scanner's lexer and runs under the same Python."""
+        return [L10N / "scan.py", L10N / "ids.py", *sorted((L10N / "swiftscan").glob("*.py"))]
 
     def test_no_dataclass_takes_slots_or_kw_only(self) -> None:
         # `@dataclass(slots=True)` was the one 3.10 construct in lexer.py (review of l10n/scan, finding 5).

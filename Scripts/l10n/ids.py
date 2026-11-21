@@ -351,7 +351,8 @@ def slug(english: str, count: int, keep_stopwords: bool = False,
     words = english_words(english, keep_stopwords, marked)
     # A word the ID already holds (in the member or the case) adds nothing; keep it only when it is all there is.
     fresh = [w for w in words if w.lower() not in (avoid or ())]
-    words = fresh or words
+    # ...and a word that is all that is left is no help when it is a bare `not` or `to`.
+    words = fresh if sum(len(w) for w in fresh) >= 4 else words
     if frequency is not None and not marked and count < len(words):
         ranked = sorted(range(len(words)), key=lambda i: (frequency.get(words[i].lower(), 0), -min(len(words[i]), 9), i))
         words = [words[i] for i in sorted(ranked[:count])]
@@ -453,15 +454,16 @@ def acceptable(ident: str) -> bool:
 COMMON_WORDS = 6
 
 
-def fit_group(keys: List[str], parts: List[str], common: bool, taken: Dict[str, str]) -> Dict[str, str]:
+def fit_group(keys: List[str], parts: List[str], common: bool, taken: Dict[str, str], start: int = 1) -> Dict[str, str]:
     """IDs for keys that share `parts`, each key's English words added until its ID is its own: one word of the group's
-    rarest (a `common` ID starts from six of the first words instead, so it reads as the English), and more words for
+    rarest (a type's own strings start from `start` of the first words, and a `common` ID from six of them with the
+    small words kept, so that it reads as the English), and more words for
     each key whose ID another key, or an ID already taken, shares. Keys whose words are all the same then name their
     placeholders (`articlesCount`). A key whose ID is too long then tries the member without its filler words and fewer
     words. Where nothing fits, the key keeps its longest unique form for the review."""
-    frequency = None if common else word_frequency(keys)
+    frequency = None if (common or start > 1) else word_frequency(keys)
     marked: Set[str] = set(keys) if common else set()
-    count = {key: (COMMON_WORDS if common else 1) for key in keys}
+    count = {key: (COMMON_WORDS if common else start) for key in keys}
 
     def words_of(key: str) -> int:
         """How many words the key's English has in its current form."""
@@ -475,7 +477,8 @@ def fit_group(keys: List[str], parts: List[str], common: bool, taken: Dict[str, 
         for _ in range(max((words_of(k) for k in keys), default=1) + 1):
             ids = {key: ident(key, parts, count[key]) for key in keys}
             tally = Counter(ids.values())
-            clash = [k for k, i in ids.items() if tally[i] > 1 or taken.get(i, k) != k]
+            clash = [k for k, i in ids.items() if tally[i] > 1 or taken.get(i, k) != k
+                     or len(i.rsplit(".", 1)[-1]) <= 3]  # a slug of one or two letters says nothing
             grown = [k for k in clash if count[k] < words_of(k)]
             for key in grown:
                 count[key] += 1
@@ -527,7 +530,8 @@ def resolve(forms: Dict[str, Tuple[List[str], str]], taken: Optional[Dict[str, s
             crowded.append((how, first))
     for how, first in crowded:
         keys = groups[(how, first)]
-        ids = fit_group(keys, forms[keys[0]][0], how == "common", taken)
+        # A type's strings have no member to carry their meaning, so they start from three words, as the design says.
+        ids = fit_group(keys, forms[keys[0]][0], how == "common", taken, 3 if how == "members" else 1)
         for key, ident in ids.items():
             taken[ident] = key
             result[key] = ident
@@ -726,8 +730,11 @@ def suggest(root: Path, spot: str) -> str:
     table = load_table(table_path(root))
     taken = set(table["ids"].values()) | {u["id"] for uses in table["splits"].values() for u in uses} | retired_ids(root)
     first = ".".join(parts)
-    candidates = [first] + [make_id(parts, english, n) for n in (3, 5, 8, 99)] \
-        + [make_id(lighten_member(parts), english, n) for n in (3, 5, 8, 99)]
+    # The bare declaration first, then the English's words (the small words kept only when nothing else is free).
+    candidates = [first]
+    for common in (False, True):
+        for use in shorter_forms(parts):
+            candidates += [make_id(use, english, n, common) for n in (3, 5, 8, 99)]
     for ident in candidates:
         if ID_PATTERN.fullmatch(ident) and len(ident) <= MAX_ID_LENGTH and ident not in taken:
             return ident
