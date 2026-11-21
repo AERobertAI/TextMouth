@@ -4880,7 +4880,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เปิด %1$@ ไม่ได้ เพราะใช้ข้อความที่แก้ไขไม่ได้: %2$@"
+            "value" : "เปิด %1$@ ไม่ได้ เพราะข้อความที่แก้ไขแล้วใช้ไม่ได้: %2$@"
           }
         },
         "tr" : {
@@ -9950,7 +9950,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ ใช้ค่าเริ่มต้น %2$@"
+            "value" : "%1$@ ใช้ %2$@ ซึ่งเป็นค่าเริ่มต้นของการดำเนินการนี้"
           }
         },
         "tr" : {
@@ -24310,7 +24310,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ ลองอีกครั้ง %2$@ ออกโดยไม่บันทึก %3$@ เปิด TextMouth ต่อไป"
+            "value" : "%1$@ จะลองบันทึกอีกครั้ง %2$@ จะออกโดยไม่บันทึก %3$@ จะให้ TextMouth เปิดอยู่ต่อ"
           }
         },
         "tr" : {
@@ -44116,7 +44116,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld หนังสือเสียง"
+                  "value" : "หนังสือเสียง %lld เล่ม"
                 }
               }
             }
@@ -115257,7 +115257,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "หลังจากนั้น การเล่นจะลองอ่านตอนนั้นอีกครั้ง"
+            "value" : "หลังจากนั้น เล่น จะลองอ่านข้อความช่วงนั้นอีกครั้ง"
           }
         },
         "tr" : {
@@ -118442,7 +118442,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ampersand"
+            "value" : "เครื่องหมายแอมเพอร์แซนด์"
           }
         },
         "tr" : {
@@ -122037,7 +122037,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apostrophe"
+            "value" : "เครื่องหมายอัญประกาศเดี่ยว"
           }
         },
         "tr" : {
@@ -128115,7 +128115,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ถามหาโน้ตซึ่งไม่บังคับ แล้วคั่นตำแหน่งการอ่าน"
+            "value" : "ให้ใส่โน้ตได้หากต้องการ แล้วคั่นตำแหน่งการอ่าน"
           }
         },
         "tr" : {
@@ -128413,7 +128413,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Asterisk"
+            "value" : "เครื่องหมายดอกจัน"
           }
         },
         "tr" : {
@@ -128562,7 +128562,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "At Sign"
+            "value" : "เครื่องหมายแอท"
           }
         },
         "tr" : {
@@ -135210,7 +135210,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Backslash"
+            "value" : "เครื่องหมายทับขวา"
           }
         },
         "tr" : {
@@ -136110,7 +136110,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Begin"
+            "value" : "เริ่ม"
           }
         },
         "tr" : {
@@ -144266,7 +144266,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Break"
+            "value" : "ตัวแบ่ง"
           }
         },
         "tr" : {
@@ -148202,7 +148202,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Caret"
+            "value" : "เครื่องหมายตก"
           }
         },
         "tr" : {
@@ -152560,7 +152560,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เล่นบทที่ %1$@ ไม่ได้: %2$@จากแพ็กเกจของหนังสือ"
+            "value" : "เล่นบทที่ %1$@ ไม่ได้: %2$@ ในแพ็กเกจของหนังสือ"
           }
         },
         "tr" : {
@@ -164540,7 +164540,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เลือกโฟลเดอร์ที่จะส่งออก โฟลเดอร์ใหม่ จะสร้างโฟลเดอร์ให้"
+            "value" : "เลือกโฟลเดอร์ที่จะส่งออกไป โฟลเดอร์ใหม่ จะสร้างโฟลเดอร์ให้"
           }
         },
         "tr" : {
@@ -165136,7 +165136,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เลือกรูปแบบไฟล์ M4B เป็นหนังสือเสียง ส่วน M4A และ MP3 เล่นได้ในแอปมากกว่า M4B และ M4A มีหนึ่งบทต่อหนึ่งหัวข้อ ส่วน MP3 มีสำหรับ %@ หัวข้อแรก"
+            "value" : "เลือกรูปแบบของไฟล์ที่ส่งออก โดย M4B เป็นหนังสือเสียง ส่วน M4A และ MP3 เป็นรูปแบบที่แอปส่วนใหญ่เล่นได้ M4B และ M4A มีหนึ่งบทต่อหนึ่งหัวข้อ ส่วน MP3 มีบทเฉพาะ %@ หัวข้อแรก"
           }
         },
         "tr" : {
@@ -165285,7 +165285,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เลือกโฟลเดอร์ที่จะส่งออกรายการที่เลือกไว้"
+            "value" : "เลือกโฟลเดอร์ที่จะเก็บรายการที่เลือกไว้เมื่อส่งออก"
           }
         },
         "tr" : {
@@ -167669,7 +167669,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "การเลือกจะทำให้ทางลัดเป็นของคุณ รีเซ็ตเป็นค่าเริ่มต้น จะคืนที่ที่ใช้งานตามค่าเริ่มต้น"
+            "value" : "การเลือกจะทำให้ทางลัดนี้เป็นแบบกำหนดเอง ส่วน รีเซ็ตเป็นค่าเริ่มต้น จะคืนหน้าต่างที่ใช้งานได้ตามค่าเริ่มต้น"
           }
         },
         "tr" : {
@@ -172157,7 +172157,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Colon"
+            "value" : "เครื่องหมายทวิภาค"
           }
         },
         "tr" : {
@@ -172455,7 +172455,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comma"
+            "value" : "เครื่องหมายจุลภาค"
           }
         },
         "tr" : {
@@ -204885,7 +204885,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dollar Sign"
+            "value" : "เครื่องหมายดอลลาร์"
           }
         },
         "tr" : {
@@ -206580,7 +206580,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Down Arrow"
+            "value" : "ลูกศรลง"
           }
         },
         "tr" : {
@@ -217699,7 +217699,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "แต่ละ <!-- page: … --> ระบุจุดที่หน้าเริ่มต้น"
+            "value" : "เครื่องหมาย <!-- page: … --> แต่ละตัวระบุจุดเริ่มต้นของหน้า"
           }
         },
         "tr" : {
@@ -218295,7 +218295,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ชื่อและจุดเริ่มต้นของแต่ละหัวข้อ เป็นไฟล์ CUE ที่ตั้งชื่อเสียงตามที่ส่งออกด้วยเสียง"
+            "value" : "ชื่อและจุดเริ่มต้นของแต่ละหัวข้อ เป็นไฟล์ CUE ที่อ้างถึงไฟล์เสียงตามชื่อที่ เสียง ส่งออก"
           }
         },
         "tr" : {
@@ -229302,7 +229302,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Equals"
+            "value" : "เครื่องหมายเท่ากับ"
           }
         },
         "tr" : {
@@ -230848,7 +230848,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "หนังสือทุกเล่มเหนือเล่มนี้ในรายการอ่านอ่านจบแล้ว"
+            "value" : "อ่านจบแล้วทุกเล่มที่อยู่เหนือเล่มนี้ในรายการอ่าน"
           }
         },
         "tr" : {
@@ -231295,7 +231295,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "หนังสือทุกเล่มใต้เล่มนี้ในรายการอ่านอ่านจบแล้ว"
+            "value" : "อ่านจบแล้วทุกเล่มที่อยู่ใต้เล่มนี้ในรายการอ่าน"
           }
         },
         "tr" : {
@@ -233499,7 +233499,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ทางลัดทั้งหมดและที่ที่ใช้งานจะกลับเป็นค่าเริ่มต้น แป้นที่คุณตั้งเองจะหายไป"
+            "value" : "ทางลัดทั้งหมดและหน้าต่างที่ใช้งานได้จะกลับเป็นค่าเริ่มต้น แป้นที่คุณตั้งเองจะหายไป"
           }
         },
         "tr" : {
@@ -234244,7 +234244,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exclamation Mark"
+            "value" : "เครื่องหมายอัศเจรีย์"
           }
         },
         "tr" : {
@@ -249584,7 +249584,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Find"
+            "value" : "ค้นหา"
           }
         },
         "tr" : {
@@ -255574,7 +255574,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Forward Delete"
+            "value" : "ลบไปข้างหน้า"
           }
         },
         "tr" : {
@@ -263980,7 +263980,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ไปที่ที่คั่นหน้า %@"
+            "value" : "ไปยังที่คั่นหน้า %@"
           }
         },
         "tr" : {
@@ -264576,7 +264576,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ไปที่ที่คั่นหน้านี้และปิดรายการ"
+            "value" : "ไปยังที่คั่นหน้านี้และปิดรายการ"
           }
         },
         "tr" : {
@@ -265172,7 +265172,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Grave Accent"
+            "value" : "เครื่องหมายเกรฟ"
           }
         },
         "tr" : {
@@ -265321,7 +265321,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Greater Than"
+            "value" : "เครื่องหมายมากกว่า"
           }
         },
         "tr" : {
@@ -267767,7 +267767,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Help"
+            "value" : "วิธีใช้"
           }
         },
         "tr" : {
@@ -281437,7 +281437,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "รวมความเร็วกับเวลาที่เหลือและเวลาทั้งหมด"
+            "value" : "แสดงความเร็วพร้อมเวลาที่เหลือและเวลาทั้งหมด"
           }
         },
         "tr" : {
@@ -300297,7 +300297,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ข้ามไปที่หน้า %1$@ ซึ่งเป็นหน้า%2$@ที่มีป้ายกำกับ %3$@ แล้ว"
+            "value" : "ข้ามไปที่หน้า %1$@ ซึ่งเป็นหน้า%2$@ ที่มีป้ายกำกับ %3$@ แล้ว"
           }
         },
         "tr" : {
@@ -303035,7 +303035,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เก็บหนังสือของรายการไว้ที่ดาวน์โหลดแล้วใน Mac เครื่องนี้ แต่ละเครื่องเลือกเอง การล้างตัวเลือกนี้ไม่นำรายการดาวน์โหลดออก"
+            "value" : "ให้หนังสือในรายการนี้ดาวน์โหลดไว้ใน Mac เครื่องนี้ Mac แต่ละเครื่องเลือกได้เอง การยกเลิกการเลือกจะไม่นำรายการดาวน์โหลดออก"
           }
         },
         "tr" : {
@@ -308231,7 +308231,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Left Arrow"
+            "value" : "ลูกศรซ้าย"
           }
         },
         "tr" : {
@@ -308380,7 +308380,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Left Brace"
+            "value" : "วงเล็บปีกกาด้านซ้าย"
           }
         },
         "tr" : {
@@ -308529,7 +308529,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Left Bracket"
+            "value" : "วงเล็บก้ามปูซ้าย"
           }
         },
         "tr" : {
@@ -308678,7 +308678,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Left Parenthesis"
+            "value" : "วงเล็บเปิด"
           }
         },
         "tr" : {
@@ -309125,7 +309125,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Less Than"
+            "value" : "เครื่องหมายน้อยกว่า"
           }
         },
         "tr" : {
@@ -329904,7 +329904,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ไม่ได้ปล่อยตัวควบคุมสื่อ: หนังสือเล่มนี้ไม่ได้ถือตัวควบคุมสื่ออยู่"
+            "value" : "ไม่ได้ปล่อยตัวควบคุมสื่อ: หนังสือเล่มนี้ไม่ได้ใช้ตัวควบคุมสื่ออยู่"
           }
         },
         "tr" : {
@@ -332344,7 +332344,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Minus"
+            "value" : "เครื่องหมายลบ"
           }
         },
         "tr" : {
@@ -333089,7 +333089,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mode Switch"
+            "value" : "สวิตช์โหมด"
           }
         },
         "tr" : {
@@ -383080,7 +383080,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Number Sign"
+            "value" : "เครื่องหมายแฮช"
           }
         },
         "tr" : {
@@ -389059,7 +389059,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เปิดหนังสือในโปรแกรมที่สร้างขึ้น บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง"
+            "value" : "เปิดหนังสือในโปรแกรมที่ใช้สร้าง บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง"
           }
         },
         "tr" : {
@@ -389357,7 +389357,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เปิดเอกสารในโปรแกรมที่สร้างขึ้น บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง"
+            "value" : "เปิดเอกสารในโปรแกรมที่ใช้สร้าง บันทึกอีกครั้ง แล้วนำเข้าอีกครั้ง"
           }
         },
         "tr" : {
@@ -400948,7 +400948,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "วางและจับคู่ลักษณะ"
+            "value" : "วางและปรับลักษณะให้ตรงกัน"
           }
         },
         "tr" : {
@@ -404288,7 +404288,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Percent Sign"
+            "value" : "เครื่องหมายเปอร์เซ็นต์"
           }
         },
         "tr" : {
@@ -404884,7 +404884,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Period"
+            "value" : "เครื่องหมายจุด"
           }
         },
         "tr" : {
@@ -410248,7 +410248,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เล่นเสียงสั้น ๆ สำหรับการทำงานของการเล่น"
+            "value" : "เล่นเสียงสั้น ๆ เมื่อสั่งการเล่น"
           }
         },
         "tr" : {
@@ -412185,7 +412185,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Plus"
+            "value" : "เครื่องหมายบวก"
           }
         },
         "tr" : {
@@ -417468,7 +417468,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Print"
+            "value" : "พิมพ์"
           }
         },
         "tr" : {
@@ -420448,7 +420448,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Question Mark"
+            "value" : "เครื่องหมายคำถาม"
           }
         },
         "tr" : {
@@ -420746,7 +420746,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ออกต่อไป"
+            "value" : "ยืนยันจะออก"
           }
         },
         "tr" : {
@@ -421789,7 +421789,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Quotation Mark"
+            "value" : "เครื่องหมายคำพูด"
           }
         },
         "tr" : {
@@ -440624,7 +440624,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "นำออก เพราะหนังสือเสียงที่แบ่งเป็นแทร็กจัดเรียงด้วยแทร็ก"
+            "value" : "ให้นำเซกเมนต์ออก เพราะหนังสือเสียงที่แบ่งเป็นแทร็กใช้แทร็กในการจัดเรียง"
           }
         },
         "tr" : {
@@ -448080,7 +448080,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "รีเซ็ตเป็นการตั้งค่าเมื่อจบหนังสือส่วนกลาง"
+            "value" : "รีเซ็ตเป็นการตั้งค่าส่วนกลางสำหรับเมื่อจบหนังสือ"
           }
         },
         "tr" : {
@@ -455735,7 +455735,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Right Arrow"
+            "value" : "ลูกศรขวา"
           }
         },
         "tr" : {
@@ -455884,7 +455884,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Right Brace"
+            "value" : "วงเล็บปีกกาด้านขวา"
           }
         },
         "tr" : {
@@ -456033,7 +456033,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Right Bracket"
+            "value" : "วงเล็บก้ามปูขวา"
           }
         },
         "tr" : {
@@ -456182,7 +456182,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Right Parenthesis"
+            "value" : "วงเล็บปิด"
           }
         },
         "tr" : {
@@ -473180,7 +473180,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Semicolon"
+            "value" : "เครื่องหมายอัฒภาค"
           }
         },
         "tr" : {
@@ -488092,7 +488092,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slash"
+            "value" : "เครื่องหมายทับ"
           }
         },
         "tr" : {
@@ -489135,7 +489135,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ตัวตั้งเวลาปิดหมดเวลาที่จบหัวข้อ หยุดการเล่นชั่วคราว"
+            "value" : "ตัวตั้งเวลาปิดหมดเวลาที่จบหัวข้อ หยุดการเล่นชั่วคราวแล้ว"
           }
         },
         "tr" : {
@@ -489284,7 +489284,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ตัวตั้งเวลาปิดหมดเวลา หยุดการเล่นชั่วคราว"
+            "value" : "ตัวตั้งเวลาปิดหมดเวลา หยุดการเล่นชั่วคราวแล้ว"
           }
         },
         "tr" : {
@@ -495821,7 +495821,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "การอ่านออกเสียงหยุดลง: เครื่องมืออ่านออกเสียงปฏิเสธข้อความตอนนี้ ดูรายละเอียดในหน้าต่างของหนังสือ"
+            "value" : "การอ่านออกเสียงหยุดลง: เครื่องมืออ่านออกเสียงปฏิเสธข้อความช่วงนี้ ดูรายละเอียดในหน้าต่างของหนังสือ"
           }
         },
         "tr" : {
@@ -511373,7 +511373,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "System"
+            "value" : "ระบบ"
           }
         },
         "tr" : {
@@ -512124,7 +512124,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ใช้เวลา %1$lld ถึง %2$lld นาที"
+            "value" : "รับค่า %1$lld ถึง %2$lld นาที"
           }
         },
         "tr" : {
@@ -512279,7 +512279,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ใช้เวลา %1$lld ถึง %2$lld นาที กด Return เพื่อตั้งตัวจับเวลาและเล่นหนังสือ"
+            "value" : "รับค่า %1$lld ถึง %2$lld นาที กด Return เพื่อตั้งตัวจับเวลาและเล่นหนังสือ"
           }
         },
         "tr" : {
@@ -512428,7 +512428,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "นำหนังสือที่อ่านจบแล้วออกจากรายการเมื่อหน้าต่างของรายการไปต่อหรือปิด หนังสือที่อ่านจบก่อนเปิดตัวเลือกนี้จะยังอยู่"
+            "value" : "นำหนังสือที่อ่านจบแล้วออกจากรายการเมื่อหน้าต่างของหนังสือไปต่อหรือปิดลง หนังสือที่อ่านจบก่อนเปิดตัวเลือกนี้จะยังอยู่"
           }
         },
         "tr" : {
@@ -529877,7 +529877,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth ยังไม่ได้อ่านการบันทึกล่าสุด"
+            "value" : "TextMouth ยังไม่ได้อ่านข้อความที่บันทึกไว้ล่าสุด"
           }
         },
         "tr" : {
@@ -549201,7 +549201,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "หน้า%1$@ซึ่งมีป้ายกำกับ %2$@"
+            "value" : "หน้า%1$@ ซึ่งมีป้ายกำกับ %2$@"
           }
         },
         "tr" : {
@@ -602137,7 +602137,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ข้อความที่ถูกปฏิเสธเริ่มก่อนข้อความตอนนี้ ที่อักขระ %@"
+            "value" : "ข้อความที่ถูกปฏิเสธเริ่มก่อนข้อความช่วงนี้ ที่อักขระ %@"
           }
         },
         "tr" : {
@@ -602584,7 +602584,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ข้อความที่ถูกปฏิเสธต่อไปเกินข้อความตอนนี้ จนถึงอักขระ %@"
+            "value" : "ข้อความที่ถูกปฏิเสธต่อไปเกินข้อความช่วงนี้ จนถึงอักขระ %@"
           }
         },
         "tr" : {
@@ -632433,7 +632433,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tilde"
+            "value" : "เครื่องหมายตัวหนอน"
           }
         },
         "tr" : {
@@ -639572,7 +639572,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "สลับที่คั่นหน้า"
+            "value" : "เพิ่มหรือนำที่คั่นหน้าออก"
           }
         },
         "tr" : {
@@ -650386,7 +650386,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "พิมพ์เครื่องหมายคำพูดแบบตรง: ใน TextEdit ให้ปิดเครื่องหมายคำพูดอัจฉริยะภายใต้ แก้ไข > การแทนที่"
+            "value" : "พิมพ์เครื่องหมายคำพูดแบบตรง: ใน TextEdit ให้ปิด อัญประกาศอัจฉริยะ ใน แก้ไข > การเปลี่ยนแทนที่"
           }
         },
         "tr" : {
@@ -652174,7 +652174,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Underscore"
+            "value" : "เครื่องหมายขีดล่าง"
           }
         },
         "tr" : {
@@ -657680,7 +657680,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Up Arrow"
+            "value" : "ลูกศรขึ้น"
           }
         },
         "tr" : {
@@ -657978,7 +657978,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "อัปเดตเสียง ความเร็ว และความสูงต่ำของเสียงเริ่มต้นสำหรับทุกหนังสือที่ไม่มีการตั้งค่าของตัวเอง"
+            "value" : "อัปเดตเสียง ความเร็ว และความสูงต่ำของเสียงเริ่มต้นสำหรับหนังสือทุกเล่มที่ไม่มีการตั้งค่าของตัวเอง"
           }
         },
         "tr" : {
@@ -660219,7 +660219,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "User"
+            "value" : "ผู้ใช้"
           }
         },
         "tr" : {
@@ -660815,7 +660815,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vertical Bar"
+            "value" : "เครื่องหมายเส้นแนวตั้ง"
           }
         },
         "tr" : {
@@ -666185,7 +666185,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "สิ่งที่หนังสือประเภทนี้เลื่อนไปทีละหน่วย จนกว่าจะมีหน่วยของตัวเอง"
+            "value" : "หน่วยที่หนังสือประเภทนี้ใช้เลื่อน จนกว่าหนังสือจะมีหน่วยของตัวเอง"
           }
         },
         "tr" : {
@@ -673617,7 +673617,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ที่ไหน"
+            "value" : "ตำแหน่ง"
           }
         },
         "tr" : {
@@ -681451,7 +681451,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "เขียนบทนี้และบททุกบทที่ซ้อนกันลึกเกินไปอื่น ๆ ในการส่งออกนี้เป็นย่อหน้าธรรมดาของบรรทัด โดยไม่ถามอีก"
+            "value" : "เขียนบทนี้และบทอื่น ๆ ทุกบทที่ซ้อนกันลึกเกินไปในการส่งออกนี้เป็นย่อหน้าธรรมดาตามบรรทัด โดยไม่ถามอีก"
           }
         },
         "tr" : {
@@ -684735,7 +684735,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ไลบรารีของคุณว่างเปล่า เพิ่มไปยังไลบรารี เพิ่มหนังสือได้"
+            "value" : "ไลบรารีของคุณว่างเปล่า ใช้ เพิ่มไปยังไลบรารี เพื่อเพิ่มหนังสือ"
           }
         },
         "tr" : {
@@ -716645,7 +716645,7 @@
         "th" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ที่หน้า%1$@ซึ่งมีป้ายกำกับ %2$@"
+            "value" : "ที่หน้า%1$@ ซึ่งมีป้ายกำกับ %2$@"
           }
         },
         "tr" : {
