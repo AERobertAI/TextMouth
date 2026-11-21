@@ -936,6 +936,13 @@
      "why": "register: Quand c’est activé is spoken French; the interface says Si l’option est activée"
     },
     {
+     "key": "Go to Time",
+     "english": "Go to Time",
+     "before": "Aller à l’instant",
+     "after": "Aller à un instant",
+     "why": "meaning: «à l'instant» also means right away; the same as part 3's «Aller à un instant…» (set by the orchestrator after both parts merged)"
+    },
+    {
      "key": "Import cancelled while extracting the archive, before any book was imported.",
      "english": "Import cancelled while extracting the archive, before any book was imported.",
      "before": "Importation annulée pendant l’extraction de l’archive, avant l’importation de tout livre.",
