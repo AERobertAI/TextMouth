@@ -248264,7 +248264,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "スキップ中にシフトキーを押したままにすると、もう1つのスキップ量を使います。"
+            "value" : "スキップするときにシフトキーを押したままにすると、もう1つのスキップ量を使います。"
           }
         },
         "ko" : {
@@ -264472,7 +264472,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "もう一度読み取れるようになりました。「再試行」を選択して使用します。"
+            "value" : "もう一度読み取れるようになりました。使用するには「再試行」を選択してください。"
           }
         },
         "ko" : {
@@ -295586,7 +295586,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "最初にループ"
+            "value" : "最初から繰り返す"
           }
         },
         "ko" : {
@@ -345833,7 +345833,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "選択した%@冊のブックのうち、あなたの選択でこの Mac に保持されているものはなく、%lld冊はリーディングリストのために保持されています。"
+                  "value" : "選択した%@冊のブックのうち、自分で指定してこの Mac に保持しているものはなく、%lld冊はリーディングリストのために保持されています。"
                 }
               }
             }
@@ -458704,7 +458704,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新しいライブラリを開始"
+            "value" : "新しいライブラリを作成"
           }
         },
         "ko" : {
@@ -458978,7 +458978,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新しいライブラリを開始しますか？"
+            "value" : "新しいライブラリを作成しますか？"
           }
         },
         "ko" : {
@@ -464159,7 +464159,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停止して、再生で最初から"
+            "value" : "停止し、次の再生は最初から"
           }
         },
         "ko" : {
@@ -492071,7 +492071,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は別のライブラリに切り替えて、それで開き直しています。"
+            "value" : "TextMouth は別のライブラリに切り替えて開き直しています。"
           }
         },
         "ko" : {
@@ -495415,7 +495415,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ライブラリを開くには、TextMouth にドライブ「%@」を接続する必要があります。"
+            "value" : "TextMouth がライブラリを開くには、ドライブ「%@」を接続する必要があります。"
           }
         },
         "ko" : {
@@ -499069,7 +499069,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は終了して開き直し、それを開始します。"
+            "value" : "TextMouth は終了して開き直し、新しいライブラリを使い始めます。"
           }
         },
         "ko" : {
@@ -499212,7 +499212,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は、利用できない%2$@のライブラリの代わりに、デフォルトの場所%1$@に新しい空のライブラリを開始します。"
+            "value" : "TextMouth は、利用できない%2$@のライブラリの代わりに、デフォルトの場所%1$@に新しい空のライブラリを作成します。"
           }
         },
         "ko" : {
@@ -537326,7 +537326,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」または「%2$@」を選択するまで、インデックスは変更されません。どちらもライブラリ上部の%3$@から使えます。"
+            "value" : "「%1$@」または「%2$@」を選択するまで、インデックスは変更されません。どちらもライブラリ上部の「%3$@」から使えます。"
           }
         },
         "ko" : {
