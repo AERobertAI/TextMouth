@@ -9122,7 +9122,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ל-%1$@ יש את ברירת המחדל, %2$@"
+            "value" : "ברירת המחדל, %2$@, תפוסה על ידי %1$@"
           }
         },
         "hi" : {
@@ -15445,7 +15445,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ אינו ספר שמע של רצועות, ולכן אין בו מניפסט לעריכה."
+            "value" : "%@ אינו ספר שמע המורכב מרצועות, ולכן אין בו מניפסט לעריכה."
           }
         },
         "hi" : {
@@ -18537,7 +18537,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "לא ניתן היה לקרוא %@ מתוך %lld פרקים"
+                  "value" : "לא ניתן היה לקרוא %@ מתוך %lld פרק"
                 }
               },
               "other" : {
@@ -21520,7 +21520,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ לאורך הספר"
+            "value" : "%@ מהספר"
           }
         },
         "hi" : {
@@ -39582,7 +39582,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld מילים/דקה"
+                  "value" : "%lld מילה/דקה"
                 }
               },
               "other" : {
@@ -105491,7 +105491,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "מוסיף את העמוד, כגון עמוד 12 מתוך 300, לסיכומים של “איפה אני?”, עבור ספרים של יותר מעמוד אחד."
+            "value" : "מוסיף את העמוד, כגון עמוד 12 מתוך 300, לסיכומים של “איפה אני?”, בספרים שיש בהם יותר מעמוד אחד."
           }
         },
         "hi" : {
@@ -128006,7 +128006,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "שם היצירה של הספר"
+            "value" : "שם הספר"
           }
         },
         "hi" : {
@@ -170924,7 +170924,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "לא ניתן היה לשמור: שם היצירה של הספר ריק."
+            "value" : "לא ניתן היה לשמור: שם הספר ריק."
           }
         },
         "hi" : {
@@ -175624,7 +175624,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "קובץ DAISY לא נמצא ב: %@"
+            "value" : "קובץ DAISY לא נמצא בנתיב: %@"
           }
         },
         "hi" : {
@@ -175898,7 +175898,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "קובץ DOCX לא נמצא ב: %@"
+            "value" : "קובץ DOCX לא נמצא בנתיב: %@"
           }
         },
         "hi" : {
@@ -208315,7 +208315,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "התנהגות בסוף הספר"
+            "value" : "התנהגות בסוף ספר זה"
           }
         },
         "hi" : {
@@ -244616,7 +244616,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "מבטא גרב"
+            "value" : "גרש הפוך"
           }
         },
         "hi" : {
@@ -247692,7 +247692,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "מסתיר את פקדי הדילוג לעמוד."
+            "value" : "מסתיר את פקדי הקפיצה לעמוד."
           }
         },
         "hi" : {
@@ -247829,7 +247829,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "מסתיר את פקדי הדילוג לאחוז."
+            "value" : "מסתיר את פקדי הקפיצה לאחוז."
           }
         },
         "hi" : {
@@ -247966,7 +247966,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "מסתיר את פקדי הדילוג לזמן."
+            "value" : "מסתיר את פקדי הקפיצה לזמן."
           }
         },
         "hi" : {
@@ -269061,7 +269061,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "היא מפרטת את רצועות הספר לפי סדר הניגון, כל אחת עם שם הכותרת שלה. ניתן לשנות את הסדר, לשנות שמות, לקבץ אותן תחת כותרות משלך ולקבוע את ההפסקות ביניהן."
+            "value" : "הוא מפרט את רצועות הספר לפי סדר הניגון, כל אחת עם שם הכותרת שלה. ניתן לשנות את הסדר, לשנות שמות, לקבץ אותן תחת כותרות משלך ולקבוע את ההפסקות ביניהן."
           }
         },
         "hi" : {
@@ -283171,7 +283171,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ניסיון אחרון: %@"
+            "value" : "הניסיון האחרון: %@"
           }
         },
         "hi" : {
@@ -353260,7 +353260,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "סימן מספר"
+            "value" : "סולמית"
           }
         },
         "hi" : {
@@ -362059,7 +362059,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פותח את פקדי הדילוג לעמוד."
+            "value" : "פותח את פקדי הקפיצה לעמוד."
           }
         },
         "hi" : {
@@ -362196,7 +362196,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פותח את פקדי הדילוג לאחוז."
+            "value" : "פותח את פקדי הקפיצה לאחוז."
           }
         },
         "hi" : {
@@ -362333,7 +362333,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פותח את פקדי הדילוג לזמן."
+            "value" : "פותח את פקדי הקפיצה לזמן."
           }
         },
         "hi" : {
@@ -366910,7 +366910,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "קובץ PDF לא נמצא ב: %@"
+            "value" : "קובץ PDF לא נמצא בנתיב: %@"
           }
         },
         "hi" : {
@@ -373062,7 +373062,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אחוז לאורך הספר"
+            "value" : "אחוז מהספר"
           }
         },
         "hi" : {
@@ -376761,7 +376761,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן השמעת השמע, תקלה בשמע של macOS."
+            "value" : "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן ניגון השמע, תקלה בשמע של macOS."
           }
         },
         "hi" : {
@@ -376898,7 +376898,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן השמעת השמע, תקלה בשמע של המערכת."
+            "value" : "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן ניגון השמע, תקלה בשמע של המערכת."
           }
         },
         "hi" : {
@@ -406244,7 +406244,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "הסר אותם: ספר שמע של רצועות מסודר באמצעות רצועות."
+            "value" : "הסר אותם: ספר שמע המורכב מרצועות מסודר באמצעות רצועות."
           }
         },
         "hi" : {
@@ -410771,7 +410771,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אפס את %@ לברירת המחדל"
+            "value" : "שחזר את ברירת המחדל של %@"
           }
         },
         "hi" : {
@@ -418580,7 +418580,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "חזור למקור…"
+            "value" : "שחזר למקור…"
           }
         },
         "hi" : {
