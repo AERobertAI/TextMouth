@@ -2397,6 +2397,163 @@
      "why": "meaning: чинний means in legal force; a valid XML file is коректний"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ — повторити спробу, %2$@ — вийти без збереження, %3$@ — залишити TextMouth відкритим.",
+     "after": "%1$@ — повторити спробу, %2$@ — завершити без збереження, %3$@ — залишити TextMouth відкритим.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "Вносить ці виправлення. Попередню транскрипцію збережено, тож «Скасувати очищення» поверне її.",
+     "after": "Вносить ці виправлення. Попередню транскрипцію збережено, тож «Відмінити очищення» поверне її.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "Оригінал не збережено, тому повернутися до нього не можна. «Скасувати дію» скасовує правки від останнього збереження.",
+     "after": "Оригінал не збережено, тому повернутися до нього не можна. «Відмінити» скасовує правки від останнього збереження.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Жодного голосу не встановлено. Додайте голос: Системні налаштування, Універсальний доступ, Усний вміст, а потім експортуйте знову.",
+     "after": "Жодного голосу не встановлено. Додайте голос: Системні параметри, Доступність, Усний вміст, а потім експортуйте знову.",
+     "why": "term: Apple's current Ukrainian name (AccessibilitySettingsExtension UniversalAccess.searchTerms)"
+    },
+    {
+     "key": "Open Privacy Settings",
+     "english": "Open Privacy Settings",
+     "before": "Відкрити налаштування конфіденційності",
+     "after": "Відкрити параметри приватності",
+     "why": "term: Apple's current Ukrainian name (System Settings Localizable.loctable, SecurityPrivacyExtension InfoPlist.loctable)"
+    },
+    {
+     "key": "Opens the Microphone privacy settings in System Settings.",
+     "english": "Opens the Microphone privacy settings in System Settings.",
+     "before": "Відкриває налаштування конфіденційності мікрофона в системних налаштуваннях.",
+     "after": "Відкриває параметри приватності мікрофона в Системних параметрах.",
+     "why": "term: Apple's current Ukrainian name (System Settings.app InfoPlist.loctable)"
+    },
+    {
+     "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "before": "Відтворення зупинено: аудіо перестало відповідати. Натисніть «Відтворити», щоб спробувати знову; якщо воно знову зупиниться, вийдіть із TextMouth і відкрийте його знову.",
+     "after": "Відтворення зупинено: аудіо перестало відповідати. Натисніть «Відтворити», щоб спробувати знову; якщо воно знову зупиниться, завершіть TextMouth і відкрийте його знову.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quit Anyway",
+     "english": "Quit Anyway",
+     "before": "Усе одно вийти",
+     "after": "Все одно завершити",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quit TextMouth",
+     "english": "Quit TextMouth",
+     "before": "Вийти з TextMouth",
+     "after": "Завершити TextMouth",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quit TextMouth and open it again.",
+     "english": "Quit TextMouth and open it again.",
+     "before": "Вийдіть із TextMouth і відкрийте його знову.",
+     "after": "Завершіть TextMouth і відкрийте його знову.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quits TextMouth without changing anything in the library's location.",
+     "english": "Quits TextMouth without changing anything in the library's location.",
+     "before": "Виходить із TextMouth, не змінюючи розташування бібліотеки.",
+     "after": "Завершує TextMouth, не змінюючи розташування бібліотеки.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.",
+     "english": "Quits TextMouth without writing the library index, so you can restore the file and open TextMouth again.",
+     "before": "Виходить із TextMouth, не записуючи індекс бібліотеки, щоб ви могли відновити файл і знову відкрити TextMouth.",
+     "after": "Завершує TextMouth, не записуючи індекс бібліотеки, щоб ви могли відновити файл і знову відкрити TextMouth.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth не має дозволу надсилати сповіщення. Увімкніть їх: Системні налаштування, Сповіщення, TextMouth.",
+     "after": "TextMouth не має дозволу надсилати сповіщення. Увімкніть їх: Системні параметри, Сповіщення, TextMouth.",
+     "why": "term: Apple's current Ukrainian name (System Settings.app InfoPlist.loctable)"
+    },
+    {
+     "key": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "english": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "before": "TextMouth не має дозволу користуватися мікрофоном. Увімкніть його: Системні налаштування, Конфіденційність і безпека, Мікрофон.",
+     "after": "TextMouth не має дозволу користуватися мікрофоном. Увімкніть його: Системні параметри, Приватність і безпека, Мікрофон.",
+     "why": "term: Apple's current Ukrainian name (System Settings Localizable.loctable, SecurityPrivacyExtension InfoPlist.loctable)"
+    },
+    {
+     "key": "Undo",
+     "english": "Undo",
+     "before": "Скасувати дію",
+     "after": "Відмінити",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "Undo %@",
+     "english": "Undo %@",
+     "before": "Скасувати «%@»",
+     "after": "Відмінити «%@»",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "Undo Cleanup",
+     "english": "Undo Cleanup",
+     "before": "Скасувати очищення",
+     "after": "Відмінити очищення",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "«Скасувати очищення» повертає транскрипцію, яка була раніше.",
+     "after": "«Відмінити очищення» повертає транскрипцію, яка була раніше.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "english": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "before": "Ви відредагували транскрипцію %@, після очищення. «Скасувати очищення» скасовує й ці правки.",
+     "after": "Ви відредагували транскрипцію %@, після очищення. «Відмінити очищення» скасовує й ці правки.",
+     "why": "term: Apple's current Ukrainian name (AppKit MenuCommands.loctable)"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "Триває запис «%@». Зупиніть його або відхиліть командою «Зняти виділення», потім вийдіть.",
+     "after": "Триває запис «%@». Зупиніть його або відхиліть командою «Зняти виділення», потім завершіть TextMouth.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "Редактор аудіо для «%@» ще працює. Вийдіть, коли зміну буде завершено.",
+     "after": "Редактор аудіо для «%@» ще працює. Завершіть TextMouth, коли зміну буде виконано.",
+     "why": "term: Apple's current Ukrainian name (AppKit Document.loctable)"
+    }
+   ]
   }
  ]
 }
