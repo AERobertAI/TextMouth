@@ -62584,7 +62584,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 單集"
+                  "value" : "%lld 個單集"
                 }
               }
             }
@@ -75949,7 +75949,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已完成 %1$lld，共 %2$@，百分之 %3$lld"
+            "value" : "已完成 %1$lld 個，共 %2$@，百分之 %3$lld"
           }
         }
       }
@@ -76092,7 +76092,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已完成 %1$lld，共 %2$@，%3$lld%%"
+            "value" : "已完成 %1$lld 個，共 %2$@，%3$lld%%"
           }
         }
       }
@@ -92212,7 +92212,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$lld／%2$lld"
+            "value" : "%1$lld/%2$lld"
           }
         }
       }
@@ -117854,7 +117854,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "先詢問，然後為書庫給予新身分並打開書庫。"
+            "value" : "先詢問，然後給予書庫新身分並打開書庫。"
           }
         }
       }
@@ -141332,7 +141332,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章節 %@ 不在這部 Mac 上。"
+            "value" : "第 %@ 章不在這部 Mac 上。"
           }
         }
       }
@@ -141761,7 +141761,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%2$@」的章節 %1$@ 未下載。"
+            "value" : "「%2$@」的第 %1$@ 章未下載。"
           }
         }
       }
@@ -142047,7 +142047,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章節 %1$@，來自 %2$@"
+            "value" : "第 %1$@ 章，來自 %2$@"
           }
         }
       }
@@ -225310,7 +225310,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法重建為預設值"
+            "value" : "無法重置為預設位置"
           }
         }
       }
@@ -240328,7 +240328,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要為書庫給予新身分嗎？"
+            "value" : "要給予書庫新身分嗎？"
           }
         }
       }
@@ -252041,7 +252041,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "如果之後 %1$@ 從 %2$@ 抵達，%3$@ 可能會保留它的兩個副本。"
+            "value" : "如果之後 %1$@ 從 %2$@ 同步過來，%3$@ 可能會保留它的兩個副本。"
           }
         }
       }
@@ -252315,7 +252315,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "如果之後該檔案從 %@ 抵達，它會指向同一個書庫。"
+            "value" : "如果之後該檔案從 %@ 同步過來，它會指向同一個書庫。"
           }
         }
       }
@@ -252595,7 +252595,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "如果書庫本身的 %1$@ 之後從 %2$@ 抵達，%3$@ 可能會保留它的兩個副本，而這部 Mac 與另一部對於這是哪個書庫會有不同看法。"
+            "value" : "如果書庫本身的 %1$@ 之後從 %2$@ 同步過來，%3$@ 可能會保留它的兩個副本，而這部 Mac 與另一部 Mac 對於這是哪個書庫會有不同看法。"
           }
         }
       }
@@ -304630,7 +304630,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "觸發重新啟動的媒體控制事件。最後一個事件會被消耗，不會傳給播放，因此無法啟動音訊。"
+            "value" : "觸發重新啟動的媒體控制事件。最後一個事件會被攔截，不會傳給播放功能，因此無法啟動音訊。"
           }
         }
       }
