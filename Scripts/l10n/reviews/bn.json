@@ -906,6 +906,1203 @@
    ]
   },
   {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ failed: %@",
+     "english": "%1$@ failed: %2$@",
+     "before": "%1$@ ব্যর্থ হয়েছে: %2$@",
+     "after": "“%1$@” ধাপে ব্যর্থ হয়েছে: %2$@",
+     "why": "grammar: the step is a progressive phrase (…যোগ করা হচ্ছে), so step ব্যর্থ হয়েছে read is being added failed; the step is now named, failed at the step"
+    },
+    {
+     "key": "%@ for %@ now follows the global setting: %@.",
+     "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
+     "before": "%2$@-এর জন্য %1$@ এখন সাধারণ সেটিং অনুসরণ করে: %3$@।",
+     "after": "%2$@-এর জন্য %1$@ এখন গ্লোবাল সেটিং অনুসরণ করে: %3$@।",
+     "why": "term: the catalog says গ্লোবাল for global in 13 strings; সাধারণ also suggests the General tab"
+    },
+    {
+     "key": "%@ is open in a reader. Close it, then choose Edit Audio again.",
+     "english": "%@ is open in a reader. Close it, then choose Edit Audio again.",
+     "before": "%@ একটি রিডারে খোলা আছে। সেটি বন্ধ করুন, তারপর আবার অডিও সম্পাদনা করুন বেছে নিন।",
+     "after": "%@ একটি রিডারে খোলা আছে। সেটি বন্ধ করুন, তারপর আবার “অডিও সম্পাদনা করুন” বেছে নিন।",
+     "why": "punctuation: the command name ran into the sentence (edit the audio, choose); quoted as other sentences quote a command"
+    },
+    {
+     "key": "%@ lists %lld feeds. Each gets its own folder, named after it.",
+     "english": {
+      "one": "%@ lists %lld feed. Each gets its own folder, named after it.",
+      "other": "%@ lists %lld feeds. Each gets its own folder, named after it."
+     },
+     "before": {
+      "one": "%@ ফাইলে %lldটি ফিড আছে। প্রতিটির নিজস্ব ফোল্ডার হয়, ফিডের নামে।",
+      "other": "%@ ফাইলে %lldটি ফিড আছে। প্রতিটির নিজস্ব ফোল্ডার হয়, ফিডের নামে।"
+     },
+     "after": {
+      "one": "%@ ফাইলে %lldটি ফিড আছে। প্রতিটি ফিড তার নামে একটি নিজস্ব ফোল্ডার পায়।",
+      "other": "%@ ফাইলে %lldটি ফিড আছে। প্রতিটি ফিড তার নামে একটি নিজস্ব ফোল্ডার পায়।"
+     },
+     "why": "natural: the second sentence copied the English order (its own folder becomes, in the feed name); now each feed gets its own folder named after it"
+    },
+    {
+     "key": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "english": "%@ moves an episode or article downloaded in its feed. Select one in its feed's folder.",
+     "before": "%@ একটি ফিডে ডাউনলোড করা পর্ব বা নিবন্ধ সরায়। ফিডের ফোল্ডারে একটি নির্বাচন করুন।",
+     "after": "%@ দিয়ে ফিডে ডাউনলোড করা পর্ব বা নিবন্ধ স্থানান্তর করা যায়। ফিডের ফোল্ডারে একটি নির্বাচন করুন।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work (with it, they can be moved)"
+    },
+    {
+     "key": "%@ not recording",
+     "english": "%@ not recording",
+     "before": "%@ রেকর্ড হচ্ছে না",
+     "after": "%@, রেকর্ড হচ্ছে না",
+     "why": "meaning: without a pause the level label became the subject (the level is not being recorded); the comma separates the label from its state"
+    },
+    {
+     "key": "%@ stay in their feeds: %@",
+     "english": "%1$@ stay in their feeds: %2$@",
+     "before": "%1$@ তাদের ফিডেই থাকে: %2$@",
+     "after": "%1$@ নিজ নিজ ফিডেই রয়ে গেছে: %2$@",
+     "why": "grammar: তাদের is the pronoun for people, and the habitual থাকে misread an outcome; now the items remained in their own feeds"
+    },
+    {
+     "key": "%@ stays in its feed: %@",
+     "english": "%1$@ stays in its feed: %2$@",
+     "before": "%1$@ তার ফিডেই থাকে: %2$@",
+     "after": "%1$@ নিজের ফিডেই রয়ে গেছে: %2$@",
+     "why": "natural: the habitual থাকে misread an outcome (the item stayed); matches the plural form"
+    },
+    {
+     "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "before": "%@ plain http ব্যবহার করে, তাই অন্যরা তাদের পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এগুলো লোড করে।",
+     "after": "%@ সাধারণ http ব্যবহার করে, তাই অন্যরা সেগুলোর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও সেগুলো লোড করে।",
+     "why": "natural: the English word plain was left in Latin letters, and তাদের is the pronoun for people"
+    },
+    {
+     "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@ plain http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
+     "after": "%@ সাধারণ http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
+     "why": "natural: the English word plain was left in Latin letters"
+    },
+    {
+     "key": "%lld by %lld pixels",
+     "english": "%1$lld by %2$lld pixels",
+     "before": "%1$lld × %2$lld পিক্সেল",
+     "after": "%1$lld বাই %2$lld পিক্সেল",
+     "why": "voiceover: the sign × is read as a symbol name; a picture size is said with বাই, as the English spells out by"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "one": "%lldটি সম্পাদনা পূর্বাবস্থায় ফেরানো হয়েছে। আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে।",
+      "other": "%lldটি সম্পাদনা পূর্বাবস্থায় ফেরানো হয়েছে। আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে।"
+     },
+     "after": {
+      "one": "%lldটি সম্পাদনা পূর্বাবস্থায় ফেরানো হয়েছে। আরেকটি সম্পাদনা না করা পর্যন্ত “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে।",
+      "other": "%lldটি সম্পাদনা পূর্বাবস্থায় ফেরানো হয়েছে। আরেকটি সম্পাদনা না করা পর্যন্ত “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে।"
+     },
+     "why": "natural: the command name Redo stood unquoted as the subject (redo them brings back); now choosing it brings them back"
+    },
+    {
+     "key": "A .%@ file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu.",
+     "english": "A .%@ file is a transcript, not a book. To use it, import its audio, open the book, and choose Attach Transcript… from the Book menu.",
+     "before": ".%@ ফাইল একটি ট্রান্সক্রিপ্ট, বই নয়। এটি ব্যবহার করতে এর অডিও আমদানি করুন, বইটি খুলুন, এবং বই মেনু থেকে ট্রান্সক্রিপ্ট সংযুক্ত করুন… বেছে নিন।",
+     "after": ".%@ ফাইল একটি ট্রান্সক্রিপ্ট, বই নয়। এটি ব্যবহার করতে এর অডিও আমদানি করুন, বইটি খুলুন এবং বই মেনু থেকে “ট্রান্সক্রিপ্ট সংযুক্ত করুন…” বেছে নিন।",
+     "why": "punctuation: the command name joins the next verb (two commands in a row); quoted as every other sentence quotes a command, and no comma before এবং"
+    },
+    {
+     "key": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "english": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "before": "ফিডের ঠিকানা, যেমন .rss বা .xml-এ শেষ হওয়া লিঙ্ক, অথবা ফিডের নাম উল্লেখ করা ওয়েব পৃষ্ঠা।",
+     "after": "ফিডের ঠিকানা, যেমন .rss বা .xml দিয়ে শেষ হওয়া লিঙ্ক, অথবা এমন ওয়েব পৃষ্ঠা যা তার ফিডের ঠিকানা জানায়।",
+     "why": "meaning: names its feed means the page points to its feed, not that it mentions the feed name"
+    },
+    {
+     "key": "A feed can have its own %@ choice and its own days before deleting played downloads, in its %@.",
+     "english": "A feed can have its own %1$@ choice and its own days before deleting played downloads, in its %2$@.",
+     "before": "প্রতিটি ফিডের নিজস্ব %1$@ পছন্দ এবং চালানো ডাউনলোড মোছার আগে নিজস্ব দিনের সংখ্যা থাকতে পারে, এর %2$@-এ।",
+     "after": "%2$@-এ প্রতিটি ফিডের নিজস্ব %1$@ পছন্দ এবং শোনা ডাউনলোড মোছার আগের নিজস্ব দিনসংখ্যা রাখা যায়।",
+     "why": "term: played is শোনা in the glossary (চালানো said run); the trailing in its Feed Info copied the English order"
+    },
+    {
+     "key": "A newer TextMouth edited this audio, so this version leaves its edits alone.",
+     "english": "A newer TextMouth edited this audio, so this version leaves its edits alone.",
+     "before": "TextMouth-এর একটি নতুন সংস্করণ এই অডিও সম্পাদনা করেছে, তাই এই সংস্করণ এর সম্পাদনায় হাত দেয় না।",
+     "after": "TextMouth-এর একটি নতুন সংস্করণ এই অডিও সম্পাদনা করেছে, তাই এই সংস্করণ সেই সম্পাদনাগুলোতে হাত দেয় না।",
+     "why": "grammar: the possessive এর after সংস্করণ is heard as its genitive (this version’s edits)"
+    },
+    {
+     "key": "A quote isn't closed in “%@”.",
+     "english": "A quote isn't closed in “%@”.",
+     "before": "“%@”-এ একটি উদ্ধৃতি বন্ধ করা হয়নি।",
+     "after": "“%@”-এ একটি উদ্ধৃতিচিহ্ন বন্ধ করা হয়নি।",
+     "why": "meaning: the quote is a quotation mark in a filter chain; উদ্ধৃতি alone is a quoted passage"
+    },
+    {
+     "key": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An article's details come from its feed; %@ makes it a book you can edit.",
+     "before": "নিবন্ধের বিবরণ এর ফিড থেকে আসে; %@ এটিকে সম্পাদনাযোগ্য বই বানায়।",
+     "after": "নিবন্ধের বিবরণ ফিড থেকে আসে; %@ বেছে নিলে এটি সম্পাদনাযোগ্য বই হয়।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work; বিবরণ এর was heard as the details’ feed"
+    },
+    {
+     "key": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "english": "An episode's details come from its feed; %@ makes it a book you can edit.",
+     "before": "পর্বের বিবরণ এর ফিড থেকে আসে; %@ এটিকে সম্পাদনাযোগ্য বই বানায়।",
+     "after": "পর্বের বিবরণ ফিড থেকে আসে; %@ বেছে নিলে এটি সম্পাদনাযোগ্য বই হয়।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work; বিবরণ এর was heard as the details’ feed"
+    },
+    {
+     "key": "Apply Filter",
+     "english": "Apply Filter",
+     "before": "ফিল্টার প্রয়োগ করুন",
+     "after": "ফিল্টার প্রয়োগ",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun, which also suits the sheet’s title"
+    },
+    {
+     "key": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "english": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "before": "ফিল্টার প্রয়োগ করুন এগুলো এই ক্রমে তালিকাভুক্ত করে। প্রতিটি ffmpeg-এর সিনট্যাক্সে ফিল্টারের একটি চেইন, যেমন highpass=f=80,volume=3dB। TextMouth নিজের ফিল্টার চালায়, এবং ffmpeg ইনস্টল করা ও উপরে চালু থাকলে ffmpeg-এর প্রতিটি ফিল্টারও চালায়।",
+     "after": "“ফিল্টার প্রয়োগ” এগুলো এই ক্রমে তালিকাভুক্ত করে। প্রতিটি ffmpeg-এর সিনট্যাক্সে ফিল্টারের একটি চেইন, যেমন highpass=f=80,volume=3dB। TextMouth নিজের ফিল্টার চালায়, এবং ffmpeg ইনস্টল করা ও উপরে চালু থাকলে ffmpeg-এর প্রতিটি ফিল্টারও চালায়।",
+     "why": "punctuation: the sheet’s name ran into the sentence as an imperative; quoted, with the sheet’s new noun title"
+    },
+    {
+     "key": "Apply Filter plays a preview first, and applies when you choose Apply again.",
+     "english": "Apply Filter plays a preview first, and applies when you choose Apply again.",
+     "before": "ফিল্টার প্রয়োগ করুন আগে একটি প্রিভিউ চালায়, এবং আপনি আবার প্রয়োগ করুন বেছে নিলে প্রয়োগ করে।",
+     "after": "“ফিল্টার প্রয়োগ” আগে একটি প্রিভিউ চালায়, এবং আপনি আবার “প্রয়োগ করুন” বেছে নিলে প্রয়োগ করে।",
+     "why": "punctuation: two control names ran into the sentence; quoted, with the sheet’s new noun title"
+    },
+    {
+     "key": "Apply to",
+     "english": "Apply to",
+     "before": "যাতে প্রয়োগ হবে",
+     "after": "কোথায় প্রয়োগ হবে",
+     "why": "meaning: যাতে প্রয়োগ হবে reads first as so that it is applied; the label asks where the filter applies"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "প্রতিটি অডিওবুক আমদানির পর জিজ্ঞেস করে সেটি ট্রান্সক্রাইব করা হবে কি না। বন্ধ থাকলে অডিওবুক শুধু অডিও ট্রান্সক্রাইব করুন দিয়ে ট্রান্সক্রাইব হয়।",
+     "after": "প্রতিটি অডিওবুক আমদানির পর জিজ্ঞেস করে সেটি ট্রান্সক্রাইব করা হবে কি না। বন্ধ থাকলে অডিওবুক শুধু “অডিও ট্রান্সক্রাইব করুন” দিয়ে ট্রান্সক্রাইব হয়।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "অন্য ফিড রিডার যেভাবে রপ্তানি করে, সেভাবে সাবস্ক্রিপশনের একটি OPML ফাইল বেছে নিন।",
+     "after": "অন্য কোনো ফিড রিডার থেকে রপ্তানি করা সাবস্ক্রিপশনের একটি OPML ফাইল বেছে নিন।",
+     "why": "meaning: the as clause attached to choosing (choose it the way a reader exports); it describes the file"
+    },
+    {
+     "key": "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording.",
+     "english": "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording.",
+     "before": "বন্ধ করলে রেকর্ডিং শেষ হয়। %1$@ এটি অডিওবুক হিসেবে সংরক্ষণ করে, %2$@ এটি মুছে ফেলে, আর %3$@ রেকর্ডিং চালিয়ে যায়।",
+     "after": "বন্ধ করলে রেকর্ডিং শেষ হয়। %1$@ বেছে নিলে এটি অডিওবুক হিসেবে সংরক্ষিত হয়, %2$@ বেছে নিলে মুছে যায়, আর %3$@ বেছে নিলে রেকর্ডিং চলতে থাকে।",
+     "why": "natural: three button names stood as subjects, so the listener heard commands (cancel, the recording goes on); now choosing each does it"
+    },
+    {
+     "key": "Cut %@",
+     "english": "Cut %@",
+     "before": "%@ কাট করুন",
+     "after": "%@ কাট",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun"
+    },
+    {
+     "key": "Deleted “%@” from its feed; its book stays in your library.",
+     "english": "Deleted “%@” from its feed; its book stays in your library.",
+     "before": "“%@” এর ফিড থেকে মোছা হয়েছে; এর বইটি আপনার লাইব্রেরিতে থেকে যায়।",
+     "after": "“%@” তার ফিড থেকে মোছা হয়েছে; এর বইটি আপনার লাইব্রেরিতে থেকে যায়।",
+     "why": "grammar: the possessive এর right after the title is heard as its genitive suffix (deleted from the title’s feed)"
+    },
+    {
+     "key": "Edits one track at a time, listed by chapter name.",
+     "english": "Edits one track at a time, listed by chapter name.",
+     "before": "একবারে একটি ট্র্যাক সম্পাদনা করে, অধ্যায়ের নাম অনুযায়ী তালিকাভুক্ত।",
+     "after": "একবারে একটি ট্র্যাক সম্পাদনা করে; ট্র্যাকগুলো অধ্যায়ের নাম অনুযায়ী তালিকাভুক্ত।",
+     "why": "natural: the trailing তালিকাভুক্ত dangled with no noun (listed by chapter name)"
+    },
+    {
+     "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "before": "পরীক্ষামূলক। এই নিয়মগুলো সেই শব্দ সংশোধন করে, যা শনাক্তকারী জোরে পড়া বইয়ের থেকে আলাদাভাবে লেখে। প্রয়োগ করার আগে পরিবর্তনগুলো দেখে নিন; পরিষ্কার করা পূর্বাবস্থায় ফেরান ট্রান্সক্রিপ্ট আগের অবস্থায় ফিরিয়ে দেয়।",
+     "after": "পরীক্ষামূলক। এই নিয়মগুলো সেই শব্দ সংশোধন করে, যা শনাক্তকারী জোরে পড়া বইয়ের থেকে আলাদাভাবে লেখে। প্রয়োগ করার আগে পরিবর্তনগুলো দেখে নিন; “পরিষ্কার করা পূর্বাবস্থায় ফেরান” বেছে নিলে ট্রান্সক্রিপ্ট আগের অবস্থায় ফিরে যায়।",
+     "why": "punctuation: the command Undo Cleanup ran into the sentence as a subject; quoted, and choosing it puts the transcript back"
+    },
+    {
+     "key": "Import cancelled after %@.",
+     "english": "Import cancelled after %@.",
+     "before": "%@ পর আমদানি বাতিল করা হয়েছে।",
+     "after": "%@-এর পর আমদানি বাতিল করা হয়েছে।",
+     "why": "grammar: পর after a noun phrase needs the genitive; the placeholder is a phrase such as 3 of 10 books"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "ডাউনলোড থাকা অবস্থায় এটি এর ফিডের অংশ। %@ এর ফাইল সরায় এবং এর অবস্থান ও বুকমার্ক রেখে দেয়।",
+     "after": "ডাউনলোড থাকা অবস্থায় এটি তার ফিডের অংশ। %@ বেছে নিলে এর ফাইল সরানো হয়, আর এর অবস্থান ও বুকমার্ক থেকে যায়।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work (remove download removes its file)"
+    },
+    {
+     "key": "It may be damaged, or another kind of file.",
+     "english": "It may be damaged, or another kind of file.",
+     "before": "এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ধরনের ফাইল।",
+     "after": "এটি ক্ষতিগ্রস্ত হতে পারে, অথবা অন্য ধরনের ফাইল হতে পারে।",
+     "why": "grammar: the second half lost its verb and dangled (or another kind of file.)"
+    },
+    {
+     "key": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "english": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "before": "এর ফাইল এখন “%@”, কারণ TextMouth এর পুরোনো ফরম্যাটে লিখতে পারে না।",
+     "after": "এর ফাইল এখন “%@”, কারণ TextMouth ফাইলটির পুরোনো ফরম্যাটে লিখতে পারে না।",
+     "why": "grammar: TextMouth এর is heard as TextMouth’s (its own old format); the format is the file’s"
+    },
+    {
+     "key": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "english": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "before": "অডিওবুক ট্রান্সক্রাইব না করে রেখে দেয়; অডিও ট্রান্সক্রাইব করুন পরে তা করে।",
+     "after": "অডিওবুক ট্রান্সক্রাইব না করে রেখে দেয়; পরে “অডিও ট্রান্সক্রাইব করুন” দিয়ে তা করা যায়।",
+     "why": "natural: a command name stood unquoted as the subject, so the listener heard a command; quoted, and choosing it does the work"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "সব নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।",
+      "other": "সব নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+     },
+     "after": {
+      "one": "সব নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে এবং নিজের করা পুরোনো ডাউনলোড সরায়, তবে সেগুলোর অবস্থান, বুকমার্ক ও সেটিংস রেখে দেয়।",
+      "other": "সব নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে এবং নিজের করা পুরোনো ডাউনলোড সরায়, তবে সেগুলোর অবস্থান, বুকমার্ক ও সেটিংস রেখে দেয়।"
+     },
+     "why": "grammar: তাদের is the pronoun for people, said here of downloads; the trailing keeping clause copied the English order"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "সব পর্ব ও নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।",
+      "other": "সব পর্ব ও নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+     },
+     "after": {
+      "one": "সব পর্ব ও নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে এবং নিজের করা পুরোনো ডাউনলোড সরায়, তবে সেগুলোর অবস্থান, বুকমার্ক ও সেটিংস রেখে দেয়।",
+      "other": "সব পর্ব ও নিবন্ধ তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে এবং নিজের করা পুরোনো ডাউনলোড সরায়, তবে সেগুলোর অবস্থান, বুকমার্ক ও সেটিংস রেখে দেয়।"
+     },
+     "why": "grammar: তাদের is the pronoun for people, said here of downloads; the trailing keeping clause copied the English order"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।",
+      "other": "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে, এবং এর তৈরি করা পুরোনো ডাউনলোড সরায়, তাদের অবস্থান, বুকমার্ক ও সেটিংস রেখে দিয়ে।"
+     },
+     "after": {
+      "one": "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে এবং নিজের করা পুরোনো ডাউনলোড সরায়, তবে সেগুলোর অবস্থান, বুকমার্ক ও সেটিংস রেখে দেয়।",
+      "other": "সব পর্ব তালিকাভুক্ত করে, সবচেয়ে নতুন %lldটি ডাউনলোড করা রাখে এবং নিজের করা পুরোনো ডাউনলোড সরায়, তবে সেগুলোর অবস্থান, বুকমার্ক ও সেটিংস রেখে দেয়।"
+     },
+     "why": "grammar: তাদের is the pronoun for people, said here of downloads; the trailing keeping clause copied the English order"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "এই সংশোধনগুলো করে। আগের ট্রান্সক্রিপ্ট রাখা থাকে, তাই পরিষ্কার করা পূর্বাবস্থায় ফেরান তা ফিরিয়ে আনতে পারে।",
+     "after": "এই সংশোধনগুলো করে। আগের ট্রান্সক্রিপ্ট রাখা থাকে, তাই “পরিষ্কার করা পূর্বাবস্থায় ফেরান” দিয়ে তা ফিরিয়ে আনা যায়।",
+     "why": "natural: a command name stood unquoted as the subject, so the listener heard a command; quoted, and choosing it does the work"
+    },
+    {
+     "key": "Mark All Played",
+     "english": "Mark All Played",
+     "before": "সব শোনা হয়েছে চিহ্নিত করুন",
+     "after": "সব শোনা হয়েছে হিসেবে চিহ্নিত করুন",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as Bengali software writes Mark as read"
+    },
+    {
+     "key": "Mark All Read",
+     "english": "Mark All Read",
+     "before": "সব পড়া হয়েছে চিহ্নিত করুন",
+     "after": "সব পড়া হয়েছে হিসেবে চিহ্নিত করুন",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as Bengali software writes Mark as read"
+    },
+    {
+     "key": "Mark Played",
+     "english": "Mark Played",
+     "before": "শোনা হয়েছে চিহ্নিত করুন",
+     "after": "শোনা হয়েছে হিসেবে চিহ্নিত করুন",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as Bengali software writes Mark as read"
+    },
+    {
+     "key": "Mark Read",
+     "english": "Mark Read",
+     "before": "পড়া হয়েছে চিহ্নিত করুন",
+     "after": "পড়া হয়েছে হিসেবে চিহ্নিত করুন",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as Bengali software writes Mark as read"
+    },
+    {
+     "key": "Mark Unplayed",
+     "english": "Mark Unplayed",
+     "before": "শোনা হয়নি চিহ্নিত করুন",
+     "after": "শোনা হয়নি হিসেবে চিহ্নিত করুন",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as Bengali software writes Mark as read"
+    },
+    {
+     "key": "Mark Unread",
+     "english": "Mark Unread",
+     "before": "পড়া হয়নি চিহ্নিত করুন",
+     "after": "পড়া হয়নি হিসেবে চিহ্নিত করুন",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Marked %lld articles of %@ read.",
+     "english": {
+      "one": "Marked %lld article of %@ read.",
+      "other": "Marked %lld articles of %@ read."
+     },
+     "before": {
+      "one": "%2$@-এর %1$lldটি নিবন্ধ পড়া হয়েছে চিহ্নিত করা হয়েছে।",
+      "other": "%2$@-এর %1$lldটি নিবন্ধ পড়া হয়েছে চিহ্নিত করা হয়েছে।"
+     },
+     "after": {
+      "one": "%2$@-এর %1$lldটি নিবন্ধ পড়া হয়েছে হিসেবে চিহ্নিত করা হয়েছে।",
+      "other": "%2$@-এর %1$lldটি নিবন্ধ পড়া হয়েছে হিসেবে চিহ্নিত করা হয়েছে।"
+     },
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Marked %lld episodes of %@ played.",
+     "english": {
+      "one": "Marked %lld episode of %@ played.",
+      "other": "Marked %lld episodes of %@ played."
+     },
+     "before": {
+      "one": "%2$@-এর %1$lldটি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।",
+      "other": "%2$@-এর %1$lldটি পর্ব শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+     },
+     "after": {
+      "one": "%2$@-এর %1$lldটি পর্ব শোনা হয়েছে হিসেবে চিহ্নিত করা হয়েছে।",
+      "other": "%2$@-এর %1$lldটি পর্ব শোনা হয়েছে হিসেবে চিহ্নিত করা হয়েছে।"
+     },
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "one": "%2$@-এর %1$lldটি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।",
+      "other": "%2$@-এর %1$lldটি আইটেম শোনা হয়েছে চিহ্নিত করা হয়েছে।"
+     },
+     "after": {
+      "one": "%2$@-এর %1$lldটি আইটেম শোনা হয়েছে হিসেবে চিহ্নিত করা হয়েছে।",
+      "other": "%2$@-এর %1$lldটি আইটেম শোনা হয়েছে হিসেবে চিহ্নিত করা হয়েছে।"
+     },
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Marked “%@” played.",
+     "english": "Marked “%@” played.",
+     "before": "“%@” শোনা হয়েছে চিহ্নিত করা হয়েছে।",
+     "after": "“%@” শোনা হয়েছে হিসেবে চিহ্নিত করা হয়েছে।",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Marked “%@” read.",
+     "english": "Marked “%@” read.",
+     "before": "“%@” পড়া হয়েছে চিহ্নিত করা হয়েছে।",
+     "after": "“%@” পড়া হয়েছে হিসেবে চিহ্নিত করা হয়েছে।",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Marked “%@” unplayed.",
+     "english": "Marked “%@” unplayed.",
+     "before": "“%@” শোনা হয়নি চিহ্নিত করা হয়েছে।",
+     "after": "“%@” শোনা হয়নি হিসেবে চিহ্নিত করা হয়েছে।",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Marked “%@” unread.",
+     "english": "Marked “%@” unread.",
+     "before": "“%@” পড়া হয়নি চিহ্নিত করা হয়েছে।",
+     "after": "“%@” পড়া হয়নি হিসেবে চিহ্নিত করা হয়েছে।",
+     "why": "grammar: marking something as a state needs হিসেবে (as), as the Mark commands now say"
+    },
+    {
+     "key": "Move %@",
+     "english": "Move %@",
+     "before": "%@ সরান",
+     "after": "%@ সরানো",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun"
+    },
+    {
+     "key": "Moved %lld articles into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld article into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%2$@-এ %1$lldটি নিবন্ধ সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।",
+      "other": "%2$@-এ %1$lldটি নিবন্ধ সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+     },
+     "after": {
+      "one": "%2$@-এ %1$lldটি নিবন্ধ সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।",
+      "other": "%2$@-এ %1$lldটি নিবন্ধ সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর নিজ নিজ ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+     },
+     "why": "grammar: এদের and তাদের are pronouns for people, said here of feed items"
+    },
+    {
+     "key": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld episode into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%2$@-এ %1$lldটি পর্ব সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।",
+      "other": "%2$@-এ %1$lldটি পর্ব সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+     },
+     "after": {
+      "one": "%2$@-এ %1$lldটি পর্ব সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।",
+      "other": "%2$@-এ %1$lldটি পর্ব সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর নিজ নিজ ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+     },
+     "why": "grammar: এদের and তাদের are pronouns for people, said here of feed items"
+    },
+    {
+     "key": "Moved %lld items into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld item into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld items into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%2$@-এ %1$lldটি আইটেম সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।",
+      "other": "%2$@-এ %1$lldটি আইটেম সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর এদের ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+     },
+     "after": {
+      "one": "%2$@-এ %1$lldটি আইটেম সরানো হয়েছে। এটি এখন লাইব্রেরির বই, আর এর ফিডে এটি %3$@ হিসেবে দেখানো হয়।",
+      "other": "%2$@-এ %1$lldটি আইটেম সরানো হয়েছে। এগুলো এখন লাইব্রেরির বই, আর নিজ নিজ ফিডে এগুলো %3$@ হিসেবে দেখানো হয়।"
+     },
+     "why": "grammar: এদের and তাদের are pronouns for people, said here of feed items"
+    },
+    {
+     "key": "Moves the cursor back a tenth of a second.",
+     "english": "Moves the cursor back a tenth of a second.",
+     "before": "কার্সর এক সেকেন্ডের দশ ভাগের এক ভাগ পিছিয়ে নেয়।",
+     "after": "কার্সর সেকেন্ডের এক-দশমাংশ পিছিয়ে নেয়।",
+     "why": "natural: এক সেকেন্ডের দশ ভাগের এক ভাগ is three times as long in braille as এক-দশমাংশ"
+    },
+    {
+     "key": "Moves the cursor forward a tenth of a second.",
+     "english": "Moves the cursor forward a tenth of a second.",
+     "before": "কার্সর এক সেকেন্ডের দশ ভাগের এক ভাগ এগিয়ে নেয়।",
+     "after": "কার্সর সেকেন্ডের এক-দশমাংশ এগিয়ে নেয়।",
+     "why": "natural: এক সেকেন্ডের দশ ভাগের এক ভাগ is three times as long in braille as এক-দশমাংশ"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "এই %lldটি নিবন্ধ একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়",
+      "other": "এই %lldটি নিবন্ধ একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+     },
+     "after": {
+      "one": "এই %lldটি নিবন্ধ একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়",
+      "other": "এই %lldটি নিবন্ধ একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো নিজ নিজ ফিড ছেড়ে যায়"
+     },
+     "why": "grammar: এদের and তাদের are pronouns for people, said here of feed items"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "এই %lldটি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়",
+      "other": "এই %lldটি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+     },
+     "after": {
+      "one": "এই %lldটি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়",
+      "other": "এই %lldটি পর্ব একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো নিজ নিজ ফিড ছেড়ে যায়"
+     },
+     "why": "grammar: এদের and তাদের are pronouns for people, said here of feed items"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "এই %lldটি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়",
+      "other": "এই %lldটি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো তাদের ফিড ছেড়ে যায়"
+     },
+     "after": {
+      "one": "এই %lldটি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেটি ফিড ছেড়ে যায়",
+      "other": "এই %lldটি আইটেম একটি লাইব্রেরি ফোল্ডারে সম্পাদনাযোগ্য বই হিসেবে সরায়; সেগুলো নিজ নিজ ফিড ছেড়ে যায়"
+     },
+     "why": "grammar: এদের and তাদের are pronouns for people, said here of feed items"
+    },
+    {
+     "key": "Never delete played downloads",
+     "english": "Never delete played downloads",
+     "before": "চালানো ডাউনলোড কখনও মুছবেন না",
+     "after": "শোনা ডাউনলোড কখনও মুছবেন না",
+     "why": "term: played is শোনা in the glossary and on the episode rows; চালানো ডাউনলোড read as downloads that were run"
+    },
+    {
+     "key": "No markers yet. Add Marker drops one at the cursor.",
+     "english": "No markers yet. Add Marker drops one at the cursor.",
+     "before": "এখনও কোনো মার্কার নেই। মার্কার যোগ করুন কার্সরের জায়গায় একটি রাখে।",
+     "after": "এখনও কোনো মার্কার নেই। “মার্কার যোগ করুন” বেছে নিলে কার্সরের জায়গায় একটি মার্কার রাখা হয়।",
+     "why": "natural: a command name stood unquoted as the subject, so the listener heard a command; quoted, and choosing it does the work"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "মূল অডিও রাখা হয়নি, তাই আগের অবস্থায় ফেরা যায় না। পূর্বাবস্থায় ফেরান শেষ সংরক্ষণের পরের সম্পাদনা ফিরিয়ে নেয়।",
+     "after": "মূল অডিও রাখা হয়নি, তাই আগের অবস্থায় ফেরা যায় না। “পূর্বাবস্থায় ফেরান” দিয়ে শেষ সংরক্ষণের পরের সম্পাদনাগুলো ফেরানো যায়।",
+     "why": "natural: a command name stood unquoted as the subject, so the listener heard a command; quoted, and choosing it does the work"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "এখনও বইয়ের অডিওতে নেই। বর্জন করুন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে।",
+     "after": "এখনও বইয়ের অডিওতে নেই। “বর্জন করুন” বেছে নিলে সেগুলো পূর্বাবস্থায় ফেরে; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে।",
+     "why": "natural: a command name stood unquoted as the subject, so the listener heard a command; quoted, and choosing it does the work"
+    },
+    {
+     "key": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "english": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "before": "একটি কপি রেকর্ডিং থেকে চালানো হয় এবং অন্যটি টেক্সট থেকে পড়ে শোনানো হয়, তাই প্রতিস্থাপন করলে শুধু বিদ্যমান কপির ফোল্ডার ও পড়ার তালিকায় এর জায়গা থাকে, এর পড়ার অবস্থান, বুকমার্ক ও তাদের নোট, বা সেটিংস থাকে না।",
+     "after": "একটি কপি রেকর্ডিং থেকে চালানো হয় এবং অন্যটি টেক্সট থেকে পড়ে শোনানো হয়, তাই প্রতিস্থাপন করলে শুধু বিদ্যমান কপির ফোল্ডার ও পড়ার তালিকায় এর জায়গা থাকে, এর পড়ার অবস্থান, বুকমার্ক ও সেগুলোর নোট, বা সেটিংস থাকে না।",
+     "why": "grammar: তাদের is the pronoun for people, said here of bookmarks"
+    },
+    {
+     "key": "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.",
+     "english": "Opens Transcribe Audio, which starts at once if the language's model is on this Mac; otherwise, download it there, then choose Transcribe.",
+     "before": "অডিও ট্রান্সক্রাইব করুন খোলে, যা ভাষার মডেল এই Mac-এ থাকলে সঙ্গে সঙ্গে শুরু হয়; না থাকলে সেখানে ডাউনলোড করে তারপর ট্রান্সক্রাইব করুন বেছে নিতে হয়।",
+     "after": "“অডিও ট্রান্সক্রাইব করুন” খোলে, যা ভাষার মডেল এই Mac-এ থাকলে সঙ্গে সঙ্গে শুরু হয়; না থাকলে সেখানে মডেলটি ডাউনলোড করে তারপর “ট্রান্সক্রাইব করুন” বেছে নিতে হয়।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command (two names)"
+    },
+    {
+     "key": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "english": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "before": "নিয়মগুলোর আপনার কপি, transcript-cleanup.json, আপনার টেক্সট এডিটরে খোলে, যা প্রথমবার TextMouth-এর নিজস্ব নিয়ম থেকে তৈরি হয়। আপনি TextMouth-এ ফিরে এলে পরিবর্তনগুলো প্রয়োগ হয়।",
+     "after": "আপনার নিয়মের কপি, transcript-cleanup.json, আপনার টেক্সট এডিটরে খোলে; প্রথমবার এটি TextMouth-এর নিজস্ব নিয়ম থেকে তৈরি হয়। আপনি TextMouth-এ ফিরে এলে পরিবর্তনগুলো প্রয়োগ হয়।",
+     "why": "natural: নিয়মগুলোর আপনার কপি copied the English order, and the made-from clause trailed after the verb"
+    },
+    {
+     "key": "Pauses the recording; %@ continues the same recording.",
+     "english": "Pauses the recording; %@ continues the same recording.",
+     "before": "রেকর্ডিংয়ে বিরতি দেয়; %@ একই রেকর্ডিং চালিয়ে যায়।",
+     "after": "রেকর্ডিংয়ে বিরতি দেয়; %@ বেছে নিলে একই রেকর্ডিং চলতে থাকে।",
+     "why": "natural: the Resume command name stood as the subject (resume the same recording goes on); now choosing it continues the recording"
+    },
+    {
+     "key": "Plain http: others can read or change what this feed sends.",
+     "english": "Plain http: others can read or change what this feed sends.",
+     "before": "Plain http: অন্যরা এই ফিডের পাঠানো তথ্য পড়তে বা বদলাতে পারে।",
+     "after": "সাধারণ http: অন্যরা এই ফিডের পাঠানো তথ্য পড়তে বা বদলাতে পারে।",
+     "why": "natural: the English word Plain was left in Latin letters"
+    },
+    {
+     "key": "Played downloads are kept until you delete them",
+     "english": "Played downloads are kept until you delete them",
+     "before": "চালানো ডাউনলোড আপনি না মোছা পর্যন্ত থেকে যায়।",
+     "after": "শোনা ডাউনলোড আপনি না মোছা পর্যন্ত থেকে যায়।",
+     "why": "term: played is শোনা in the glossary and on the episode rows, as in the checkbox above it"
+    },
+    {
+     "key": "Plays a preview; choose Apply again to apply.",
+     "english": "Plays a preview; choose Apply again to apply.",
+     "before": "একটি প্রিভিউ চালায়; আবার প্রয়োগ করুন বেছে নিলে প্রয়োগ হয়।",
+     "after": "একটি প্রিভিউ চালায়; আবার “প্রয়োগ করুন” বেছে নিলে প্রয়োগ হয়।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command"
+    },
+    {
+     "key": "Preview filters before applying",
+     "english": "Preview filters before applying",
+     "before": "প্রয়োগের আগে ফিল্টারের প্রিভিউ দেখুন",
+     "after": "প্রয়োগের আগে ফিল্টারের প্রিভিউ শুনুন",
+     "why": "meaning: an audio preview is heard; প্রিভিউ দেখুন said to look at it"
+    },
+    {
+     "key": "Previewing %@ first. Choose Apply again to apply it.",
+     "english": "Previewing %@ first. Choose Apply again to apply it.",
+     "before": "আগে %@-এর প্রিভিউ চলছে। প্রয়োগ করতে আবার প্রয়োগ করুন বেছে নিন।",
+     "after": "আগে %@-এর প্রিভিউ চলছে। প্রয়োগ করতে আবার “প্রয়োগ করুন” বেছে নিন।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command (to apply, choose apply)"
+    },
+    {
+     "key": "Put the feed's folder in",
+     "english": "Put the feed's folder in",
+     "before": "ফিডের ফোল্ডার রাখুন যেখানে",
+     "after": "ফিডের ফোল্ডার রাখা হবে এখানে",
+     "why": "natural: the caption ended on a dangling যেখানে copied from in; now says where the folder goes, as Downloads go to does"
+    },
+    {
+     "key": "Put the feeds' folders in",
+     "english": "Put the feeds' folders in",
+     "before": "ফিডগুলোর ফোল্ডার রাখুন যেখানে",
+     "after": "ফিডগুলোর ফোল্ডার রাখা হবে এখানে",
+     "why": "natural: the caption ended on a dangling যেখানে copied from in"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "বিপ শব্দের পর %3$@ থেকে, %2$@-এ, %1$@-এর ওপর রেকর্ড হচ্ছে। রেকর্ড করে বসান বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বর্জন করে।",
+     "after": "বিপ শব্দের পর %3$@ থেকে, %2$@-এ, %1$@-এর ওপর রেকর্ড হচ্ছে। “রেকর্ড করে বসান” বা “থামান” বেছে নিলে এটি শেষ হয়; “নির্বাচন সাফ করুন” বেছে নিলে এটি বর্জন করা হয়।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work (three names)"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "বিপ শব্দের পর %2$@ থেকে, %1$@-এ সন্নিবেশের জন্য রেকর্ড হচ্ছে। রেকর্ড করে বসান বা থামান এটি শেষ করে; নির্বাচন সাফ করুন এটি বর্জন করে।",
+     "after": "বিপ শব্দের পর %2$@ থেকে, %1$@-এ সন্নিবেশের জন্য রেকর্ড হচ্ছে। “রেকর্ড করে বসান” বা “থামান” বেছে নিলে এটি শেষ হয়; “নির্বাচন সাফ করুন” বেছে নিলে এটি বর্জন করা হয়।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work (three names)"
+    },
+    {
+     "key": "Recording. Stop or discard it with Clear Selection, then close.",
+     "english": "Recording. Stop or discard it with Clear Selection, then close.",
+     "before": "রেকর্ড হচ্ছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বর্জন করুন, তারপর বন্ধ করুন।",
+     "after": "রেকর্ড হচ্ছে। এটি থামান, অথবা “নির্বাচন সাফ করুন” দিয়ে বর্জন করুন, তারপর বন্ধ করুন।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "বিপ শব্দের পর নির্বাচনের ওপর, বা কার্সরের জায়গায় রেকর্ড করে। আবার চাপলে, বা থামান, এটি শেষ করে।",
+     "after": "বিপ শব্দের পর নির্বাচনের ওপর, বা কার্সরের জায়গায় রেকর্ড করে। আবার বেছে নিলে, বা “থামান” বেছে নিলে, রেকর্ডিং শেষ হয়।",
+     "why": "voiceover: the hint named a press (আবার চাপলে), and the Stop name ran into the sentence; now choosing either ends it"
+    },
+    {
+     "key": "Refresh feeds every",
+     "english": "Refresh feeds every",
+     "before": "ফিড রিফ্রেশ করুন প্রতি",
+     "after": "ফিড রিফ্রেশের ব্যবধান",
+     "why": "natural: the label ended on a dangling প্রতি (every) before the number; a noun label reads before the field and its hours"
+    },
+    {
+     "key": "Remove Chapter Marker",
+     "english": "Remove Chapter Marker",
+     "before": "অধ্যায় মার্কার সরান",
+     "after": "অধ্যায় মার্কার সরানো",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun"
+    },
+    {
+     "key": "Replace %@",
+     "english": "Replace %@",
+     "before": "%@ প্রতিস্থাপন করুন",
+     "after": "%@ প্রতিস্থাপন",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "one": "মূল অডিওতে ফেরা হয়েছে। পুনরায় করুন %lldটি সম্পাদনা ফিরিয়ে আনে।",
+      "other": "মূল অডিওতে ফেরা হয়েছে। পুনরায় করুন %lldটি সম্পাদনা ফিরিয়ে আনে।"
+     },
+     "after": {
+      "one": "মূল অডিওতে ফেরা হয়েছে। “পুনরায় করুন” বেছে নিলে %lldটি সম্পাদনা ফিরে আসে।",
+      "other": "মূল অডিওতে ফেরা হয়েছে। “পুনরায় করুন” বেছে নিলে %lldটি সম্পাদনা ফিরে আসে।"
+     },
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work"
+    },
+    {
+     "key": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "english": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "before": "WordPerfect নথি এমন প্রোগ্রামে Word বা HTML ফাইল হিসেবে সংরক্ষণ করুন যা সেগুলো পড়তে পারে, যেমন LibreOffice, তারপর সেগুলো আমদানি করুন।",
+     "after": "WordPerfect নথি পড়তে পারে এমন কোনো প্রোগ্রামে, যেমন LibreOffice-এ, সেগুলো Word বা HTML ফাইল হিসেবে সংরক্ষণ করুন, তারপর সেগুলো আমদানি করুন।",
+     "why": "natural: the clause that reads them was cut off from the program it describes by the verb"
+    },
+    {
+     "key": "Save in",
+     "english": "Save in",
+     "before": "যেখানে সংরক্ষণ হবে",
+     "after": "কোথায় সংরক্ষণ হবে",
+     "why": "natural: the label was a bare relative clause (যেখানে সংরক্ষণ হবে); it asks where, as Apply to now does"
+    },
+    {
+     "key": "Saved as",
+     "english": "Saved as",
+     "before": "যে ফরম্যাটে সংরক্ষিত",
+     "after": "সংরক্ষণের ফরম্যাট",
+     "why": "natural: the label was a bare relative clause (যে ফরম্যাটে সংরক্ষিত) before the format’s name"
+    },
+    {
+     "key": "Seconds between level announcements",
+     "english": "Seconds between level announcements",
+     "before": "লেভেল ঘোষণার মধ্যে সেকেন্ড",
+     "after": "লেভেল ঘোষণার ব্যবধান (সেকেন্ড)",
+     "why": "meaning: ঘোষণার মধ্যে সেকেন্ড read as seconds within the announcement; the stepper sets the gap between announcements"
+    },
+    {
+     "key": "Select one audiobook, then choose Transcribe Audio again.",
+     "english": "Select one audiobook, then choose Transcribe Audio again.",
+     "before": "একটি অডিওবুক নির্বাচন করুন, তারপর আবার অডিও ট্রান্সক্রাইব করুন বেছে নিন।",
+     "after": "একটি অডিওবুক নির্বাচন করুন, তারপর আবার “অডিও ট্রান্সক্রাইব করুন” বেছে নিন।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command"
+    },
+    {
+     "key": "Set Chapter Marker",
+     "english": "Set Chapter Marker",
+     "before": "অধ্যায় মার্কার রাখুন",
+     "after": "অধ্যায় মার্কার রাখা",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "ট্রান্সক্রিপশনের ভাষা ঠিক করে। “ডাউনলোড দরকার” চিহ্নিত ভাষা শুধু অডিও ট্রান্সক্রাইব করুন শিট থেকে ডাউনলোড হয়।",
+     "after": "ট্রান্সক্রিপশনের ভাষা ঠিক করে। “ডাউনলোড দরকার” চিহ্নিত ভাষা শুধু “অডিও ট্রান্সক্রাইব করুন” শিট থেকে ডাউনলোড হয়।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command (the sheet named by its command)"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@-এ সাবস্ক্রাইব করা হয়েছে। এই ফিড plain http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
+     "after": "%@-এ সাবস্ক্রাইব করা হয়েছে। এই ফিড সাধারণ http ব্যবহার করে, তাই অন্যরা এর পাঠানো তথ্য পড়তে বা বদলাতে পারে; TextMouth তবুও এটি লোড করে।",
+     "why": "natural: the English word plain was left in Latin letters"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth “%@”-এর সাউন্ড রূপান্তর করতে পারে না: এটি এমন অডিও ধরনের যা সে পড়ে না।",
+     "after": "TextMouth “%@”-এর সাউন্ড রূপান্তর করতে পারে না: এটি এমন ধরনের অডিও, যা TextMouth পড়ে না।",
+     "why": "grammar: সে is a personal pronoun (he or she), said of the app; and ধরনের goes before its noun"
+    },
+    {
+     "key": "TextMouth can't convert “%@”: its sound changes rate or channels partway through, by more than it can follow.",
+     "english": "TextMouth can't convert “%@”: its sound changes rate or channels partway through, by more than it can follow.",
+     "before": "TextMouth “%@” রূপান্তর করতে পারে না: এর সাউন্ডের রেট বা চ্যানেল মাঝপথে এমন বদলায় যা সে অনুসরণ করতে পারে না।",
+     "after": "TextMouth “%@” রূপান্তর করতে পারে না: এর সাউন্ডের রেট বা চ্যানেল মাঝপথে এতটা বদলায় যে TextMouth তা অনুসরণ করতে পারে না।",
+     "why": "grammar: সে is a personal pronoun (he or she), said of the app"
+    },
+    {
+     "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
+     "before": "TextMouth “%1$@”-কে %2$@ হিসেবে পড়তে পারে না। এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ফরম্যাটের নামে নাম দেওয়া।",
+     "after": "TextMouth “%1$@”-কে %2$@ হিসেবে পড়তে পারে না। এটি ক্ষতিগ্রস্ত হতে পারে, অথবা এর নাম অন্য ফরম্যাটের হতে পারে।",
+     "why": "grammar: the second half lost its verb and dangled (named in another format’s name)"
+    },
+    {
+     "key": "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again.",
+     "english": "TextMouth could not keep the new copy of “%@”. Choose Cancel to discard the copy, then import the file again.",
+     "before": "TextMouth “%@”-এর নতুন কপি রাখতে পারেনি। কপিটি বাতিল করতে বাতিল করুন বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
+     "after": "TextMouth “%@”-এর নতুন কপি রাখতে পারেনি। কপিটি বাদ দিতে “বাতিল করুন” বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
+     "why": "punctuation: the button name ran into the sentence (বাতিল করতে বাতিল করুন); quoted as other sentences quote a command"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "one": "TextMouth তাদের মধ্যে %lldটি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।",
+      "other": "TextMouth তাদের মধ্যে %lldটি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+     },
+     "after": {
+      "one": "TextMouth সেগুলোর মধ্যে %lldটি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।",
+      "other": "TextMouth সেগুলোর মধ্যে %lldটি ফিডগুলোর পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।"
+     },
+     "why": "grammar: তাদের is the pronoun for people, said here of downloads"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth তাদের মধ্যে 1 টি ফিডের পরের চেকে, বা পরের বার খোলার সময়, আবার ডাউনলোড করে।",
+     "after": "TextMouth সেগুলোর মধ্যে 1টি আবার ডাউনলোড করে, সেটির ফিডের পরের চেকে বা পরের বার খোলার সময়।",
+     "why": "meaning: 1 টি ফিডের পরের চেকে read as at the next check of one feed; তাদের said of downloads; the count joins its classifier"
+    },
+    {
+     "key": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "english": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "before": "TextMouth-এর নিজস্ব কোনো নিয়ম নেই: পরীক্ষা করা প্রতিটি বইয়ে কোনোটিই ঠিক ছিল না। নিয়ম সম্পাদনা করুন… আপনার কপি খোলে, যেখানে আপনি নিয়ম যোগ করতে পারেন, যেমন এমন নাম যা শনাক্তকারী সবসময় অন্যভাবে বানান করে।",
+     "after": "TextMouth-এর নিজস্ব কোনো নিয়ম নেই: কোনো নিয়মই পরীক্ষা করা সব বইয়ে ঠিক ছিল না। “নিয়ম সম্পাদনা করুন…” বেছে নিলে আপনার কপি খোলে, যেখানে আপনি নিয়ম যোগ করতে পারেন, যেমন এমন নাম যা শনাক্তকারী সবসময় অন্যভাবে বানান করে।",
+     "why": "meaning: প্রতিটি বইয়ে কোনোটিই ঠিক ছিল না said no rule was right in any book; the English says none was right in all of them; and the command name is quoted"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth বন্ধ হচ্ছে এবং বইয়ের অডিওতে এই সম্পাদনাগুলো এখনও নেই। বর্জন করুন সেগুলো পূর্বাবস্থায় ফেরায়; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত পুনরায় করুন সেগুলো ফিরিয়ে আনে। বাতিল করুন TextMouth খোলা রাখে।",
+     "after": "TextMouth বন্ধ হচ্ছে এবং বইয়ের অডিওতে এই সম্পাদনাগুলো এখনও নেই। “বর্জন করুন” বেছে নিলে সেগুলো পূর্বাবস্থায় ফেরে; পরের বার এই বই সম্পাদনা করলে, আরেকটি সম্পাদনা না করা পর্যন্ত “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে। “বাতিল করুন” বেছে নিলে TextMouth খোলা থাকে।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work (three names)"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "one": "TextMouth ডুপ্লিকেট বইয়ের %lldটি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।",
+      "other": "TextMouth ডুপ্লিকেট বইয়ের %lldটি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।"
+     },
+     "after": {
+      "one": "TextMouth ডুপ্লিকেট বইয়ের %lldটি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে “আগের জায়গায় রাখুন” বেছে নিন।",
+      "other": "TextMouth ডুপ্লিকেট বইয়ের %lldটি নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে “আগের জায়গায় রাখুন” বেছে নিন।"
+     },
+     "why": "punctuation: the Finder command Put Back ran into the sentence (open the Trash, put it back, choose); quoted as other sentences quote a command"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth %@-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।",
+     "after": "TextMouth %@-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেগুলো ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেগুলো ফিরে পেতে ট্র্যাশ খুলে “আগের জায়গায় রাখুন” বেছে নিন।",
+     "why": "punctuation: the Finder command Put Back ran into the sentence (open the Trash, put it back, choose); quoted as other sentences quote a command"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth “%@”-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেটি ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেটি ফিরে পেতে ট্র্যাশ খুলে আগের জায়গায় রাখুন বেছে নিন।",
+     "after": "TextMouth “%@”-এর নতুন কপি ট্র্যাশে সরিয়েছে, কারণ TextMouth বন্ধ হওয়ার আগে সেটি ডুপ্লিকেট হিসেবে রাখা হবে কি না সেই প্রশ্নের উত্তর দেওয়া হয়নি। সেটি ফিরে পেতে ট্র্যাশ খুলে “আগের জায়গায় রাখুন” বেছে নিন।",
+     "why": "punctuation: the Finder command Put Back ran into the sentence (open the Trash, put it back, choose); quoted as other sentences quote a command"
+    },
+    {
+     "key": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
+     "english": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
+     "before": "TextMouth-এর নিজস্ব নিয়ম নতুন, সংস্করণ %@। সেগুলো ব্যবহার করতে আপনার কপি মুছে ফেলুন অথবা তাদের নিয়ম এতে কপি করুন।",
+     "after": "TextMouth-এর নিজস্ব নিয়ম নতুন, সংস্করণ %@। সেগুলো ব্যবহার করতে আপনার কপি মুছে ফেলুন, অথবা সেই নিয়মগুলো আপনার কপিতে কপি করুন।",
+     "why": "grammar: তাদের is the pronoun for people, said here of the rules"
+    },
+    {
+     "key": "That OPML file is damaged at line %@: %@.",
+     "english": "That OPML file is damaged at line %1$@: %2$@.",
+     "before": "সেই OPML ফাইল %1$@ লাইনে ক্ষতিগ্রস্ত: %2$@।",
+     "after": "সেই OPML ফাইল %1$@ নম্বর লাইনে ক্ষতিগ্রস্ত: %2$@।",
+     "why": "meaning: a number before লাইনে reads as in so many lines; a line number takes নম্বর"
+    },
+    {
+     "key": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "english": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "before": "সেটি ওয়েব ঠিকানা নয়। একটি ফিডের ঠিকানা, বা ফিডের নাম উল্লেখ করা পৃষ্ঠার ঠিকানা লিখুন।",
+     "after": "সেটি ওয়েব ঠিকানা নয়। একটি ফিডের ঠিকানা, অথবা কোনো ফিডের ঠিকানা জানায় এমন পৃষ্ঠার ঠিকানা লিখুন।",
+     "why": "meaning: a page that names a feed points to it; ফিডের নাম উল্লেখ করা said it mentions the feed’s title"
+    },
+    {
+     "key": "That page doesn't name a feed.",
+     "english": "That page doesn't name a feed.",
+     "before": "সেই পৃষ্ঠা কোনো ফিডের নাম উল্লেখ করেনি।",
+     "after": "সেই পৃষ্ঠা কোনো ফিডের ঠিকানা জানায় না।",
+     "why": "meaning: naming a feed means pointing to it, not mentioning its title"
+    },
+    {
+     "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "english": {
+      "one": "The marker is deleted, and Redo doesn't bring it back.",
+      "other": "The %lld markers are deleted, and Redo doesn't bring them back."
+     },
+     "before": {
+      "one": "%lldটি মার্কার মুছে ফেলা হয়েছে, এবং পুনরায় করুন সেগুলো ফিরিয়ে আনে না।",
+      "other": "%lldটি মার্কার মুছে ফেলা হয়েছে, এবং পুনরায় করুন সেগুলো ফিরিয়ে আনে না।"
+     },
+     "after": {
+      "one": "%lldটি মার্কার মুছে ফেলা হয়েছে, এবং “পুনরায় করুন” দিয়েও সেগুলো ফিরে আসে না।",
+      "other": "%lldটি মার্কার মুছে ফেলা হয়েছে, এবং “পুনরায় করুন” দিয়েও সেগুলো ফিরে আসে না।"
+     },
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work"
+    },
+    {
+     "key": "The article leaves the list for good, and its download, if any, is deleted.",
+     "english": "The article leaves the list for good, and its download, if any, is deleted.",
+     "before": "নিবন্ধটি চিরতরে তালিকা থেকে চলে যায়, এবং এর ডাউনলোড, থাকলে, মুছে ফেলা হয়।",
+     "after": "নিবন্ধটি চিরতরে তালিকা থেকে চলে যায়, এবং এর কোনো ডাউনলোড থাকলে তা মুছে ফেলা হয়।",
+     "why": "natural: the commas around থাকলে copied the English if any"
+    },
+    {
+     "key": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
+     "english": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
+     "before": "বইয়ের অডিওতে এমন সম্পাদনা আছে যা এর ইতিহাস হারিয়ে ফেলেছে, তাই সেগুলো থাকে, পরের বার এই বই সম্পাদনা করলে সংরক্ষণ বা পূর্বাবস্থায় ফেরানোর জন্য।",
+     "after": "বইয়ের অডিওতে এমন সম্পাদনা আছে, যা সম্পাদনার ইতিহাসে আর নেই; তাই সেগুলো থেকে যায়, পরের বার এই বই সম্পাদনা করলে সংরক্ষণ বা পূর্বাবস্থায় ফেরানোর জন্য।",
+     "why": "meaning: যা এর ইতিহাস হারিয়ে ফেলেছে reads as edits that lost their history; the history lost the edits"
+    },
+    {
+     "key": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "english": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "before": "বইয়ের টেক্সট শুধু iCloud-এ আছে, তাই TextMouth সেটি ছেড়ে দেয়। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
+     "after": "বইয়ের টেক্সট শুধু iCloud-এ আছে, তাই TextMouth সেটিতে হাত দেয় না। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
+     "why": "meaning: ছেড়ে দেয় says TextMouth gives it up; it leaves the text untouched"
+    },
+    {
+     "key": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "english": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "before": "পর্বটি চিরতরে তালিকা থেকে চলে যায়, এবং এর ডাউনলোড, থাকলে, মুছে ফেলা হয়।",
+     "after": "পর্বটি চিরতরে তালিকা থেকে চলে যায়, এবং এর কোনো ডাউনলোড থাকলে তা মুছে ফেলা হয়।",
+     "why": "natural: the commas around থাকলে copied the English if any"
+    },
+    {
+     "key": "The feed is damaged at line %@: %@.",
+     "english": "The feed is damaged at line %1$@: %2$@.",
+     "before": "ফিডটি %1$@ লাইনে ক্ষতিগ্রস্ত: %2$@।",
+     "after": "ফিডটি %1$@ নম্বর লাইনে ক্ষতিগ্রস্ত: %2$@।",
+     "why": "meaning: a number before লাইনে reads as in so many lines; a line number takes নম্বর"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "ফিডটি তার সেটিংস ও %1$@সহ আপনার লাইব্রেরিতে থাকে, এবং %2$@ আবার এটি চেক করে।",
+     "after": "ফিডটি তার সেটিংস ও %1$@সহ আপনার লাইব্রেরিতে থাকে, এবং %2$@ বেছে নিলে এটি আবার চেক করা হয়।",
+     "why": "natural: the command name Resubscribe stood as the subject and was followed by a second আবার; now choosing it checks the feed"
+    },
+    {
+     "key": "The feed stays in your library with its settings, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings, and %@ checks it again.",
+     "before": "ফিডটি তার সেটিংসসহ আপনার লাইব্রেরিতে থাকে, এবং %@ আবার এটি চেক করে।",
+     "after": "ফিডটি তার সেটিংসসহ আপনার লাইব্রেরিতে থাকে, এবং %@ বেছে নিলে এটি আবার চেক করা হয়।",
+     "why": "natural: the command name Resubscribe stood as the subject and was followed by a second আবার"
+    },
+    {
+     "key": "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again.",
+     "english": "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again.",
+     "before": "“%@”-এর নতুন কপির ফাইল আর লাইব্রেরিতে নেই, তাই এটি রাখা যাবে না। বাতিল করুন বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
+     "after": "“%@”-এর নতুন কপির ফাইল আর লাইব্রেরিতে নেই, তাই এটি রাখা যাবে না। “বাতিল করুন” বেছে নিন, তারপর ফাইলটি আবার আমদানি করুন।",
+     "why": "punctuation: the button name ran into the sentence (cancel, choose); quoted as other sentences quote a command"
+    },
+    {
+     "key": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "english": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "before": "লেবেল ফাইল “%@” নামে পাশের কোনো অডিও ফাইলের সঙ্গে মেলে না, তাই এর হেডিং ব্যবহার করা হয়নি।",
+     "after": "লেবেল ফাইল “%@”-এর নাম পাশের কোনো অডিও ফাইলের নামের সঙ্গে মেলে না, তাই এর হেডিং ব্যবহার করা হয়নি।",
+     "why": "meaning: “%@” নামে reads as the label file named so-and-so, losing by name"
+    },
+    {
+     "key": "The library folder the recording is saved in.",
+     "english": "The library folder the recording is saved in.",
+     "before": "যে লাইব্রেরি ফোল্ডারে রেকর্ডিং সংরক্ষিত হয়।",
+     "after": "রেকর্ডিং সংরক্ষণের লাইব্রেরি ফোল্ডার।",
+     "why": "natural: the hint was a bare relative clause with nothing it relates to; now a noun phrase, as the English is"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "%@ বদলালে তালিকা তখনই তা অনুসরণ করে; কী ডাউনলোড হবে বা যাবে তা বদল দশ সেকেন্ড টিকে থাকা পর্যন্ত অপেক্ষা করে, আর তখন VoiceOver তা জানায়।",
+     "after": "%@ বদলালে তালিকা তখনই তা অনুসরণ করে; কী ডাউনলোড হবে বা সরানো হবে, তা বদলটি দশ সেকেন্ড টিকে থাকা পর্যন্ত অপেক্ষা করে, আর তখন VoiceOver তা জানায়।",
+     "why": "meaning: goes means a download is removed; যাবে alone said only will go"
+    },
+    {
+     "key": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "english": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "before": "রেকর্ড করে বসান যে মাইক্রোফোন থেকে শব্দ নেয়। macOS-এর ইনপুট থেকে আলাদাভাবে TextMouth এটি মনে রাখে।",
+     "after": "রেকর্ড করে বসানোর মাইক্রোফোন। macOS-এর ইনপুট থেকে আলাদাভাবে TextMouth এটি মনে রাখে।",
+     "why": "natural: the hint was a bare relative clause with nothing it relates to; now a noun phrase, as the English is; the command name Punch In stood as its subject"
+    },
+    {
+     "key": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
+     "english": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
+     "before": "যে মাইক্রোফোন থেকে রেকর্ড হবে। TextMouth এটি মনে রাখে; macOS অন্যত্র যে ইনপুট ব্যবহার করে তা বদলায় না।",
+     "after": "রেকর্ড করার মাইক্রোফোন। TextMouth এটি মনে রাখে; macOS অন্যত্র যে ইনপুট ব্যবহার করে তা বদলায় না।",
+     "why": "natural: the hint was a bare relative clause with nothing it relates to; now a noun phrase, as the English is"
+    },
+    {
+     "key": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
+     "english": "The transcript changed since this was shown. Reopen Clean Up Transcript to see the changes.",
+     "before": "এটি দেখানোর পর ট্রান্সক্রিপ্ট বদলেছে। পরিবর্তনগুলো দেখতে ট্রান্সক্রিপ্ট পরিষ্কার করুন আবার খুলুন।",
+     "after": "এটি দেখানোর পর ট্রান্সক্রিপ্ট বদলেছে। পরিবর্তনগুলো দেখতে “ট্রান্সক্রিপ্ট পরিষ্কার করুন” আবার খুলুন।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command (clean the transcript, open again)"
+    },
+    {
+     "key": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "english": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "before": "ট্রান্সক্রিপ্ট শুধু iCloud-এ আছে, তাই TextMouth সেটি ছেড়ে দেয়। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
+     "after": "ট্রান্সক্রিপ্ট শুধু iCloud-এ আছে, তাই TextMouth সেটিতে হাত দেয় না। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।",
+     "why": "meaning: ছেড়ে দেয় says TextMouth gives it up; it leaves the text untouched"
+    },
+    {
+     "key": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
+     "english": "The transcript, with your changes, stays with the episode in its feed, even after its download is deleted. Deleting the episode or feed deletes it; Move to Library keeps it as a book.",
+     "before": "আপনার পরিবর্তনসহ ট্রান্সক্রিপ্ট ফিডে পর্বের সঙ্গেই থাকে, ডাউনলোড মুছে ফেললেও। পর্ব বা ফিড মুছলে এটিও মুছে যায়; লাইব্রেরিতে স্থানান্তর করুন এটি বই হিসেবে রেখে দেয়।",
+     "after": "আপনার পরিবর্তনসহ ট্রান্সক্রিপ্ট ফিডে পর্বের সঙ্গেই থাকে, ডাউনলোড মুছে ফেললেও। পর্ব বা ফিড মুছলে এটিও মুছে যায়; “লাইব্রেরিতে স্থানান্তর করুন” বেছে নিলে এটি বই হিসেবে থেকে যায়।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work"
+    },
+    {
+     "key": "This Feed Uses Plain http",
+     "english": "This Feed Uses Plain http",
+     "before": "এই ফিড plain http ব্যবহার করে",
+     "after": "এই ফিড সাধারণ http ব্যবহার করে",
+     "why": "natural: the English word Plain was left in Latin letters"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "এই XML ফাইলটি DTBook বই, Word 2003 XML নথি বা PEF ব্রেইল ফাইল নয়, যেগুলোই TextMouth-এর পড়া একমাত্র XML।",
+     "after": "এই XML ফাইলটি DTBook বই, Word 2003 XML নথি বা PEF ব্রেইল ফাইল নয়; TextMouth শুধু এই ধরনের XML পড়ে।",
+     "why": "natural: the appended যেগুলোই TextMouth-এর পড়া একমাত্র XML did not parse; now says TextMouth reads only these"
+    },
+    {
+     "key": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
+     "english": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
+     "before": "এই ফাইলটি কমিক বইয়ের আর্কাইভ হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ধরনের ফাইল।",
+     "after": "এই ফাইলটি কমিক বইয়ের আর্কাইভ হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, অথবা অন্য ধরনের ফাইল হতে পারে।",
+     "why": "grammar: the second half lost its verb and dangled (or another kind of file.)"
+    },
+    {
+     "key": "This file could not be read as a picture. It may be damaged, or another kind of file.",
+     "english": "This file could not be read as a picture. It may be damaged, or another kind of file.",
+     "before": "এই ফাইলটি ছবি হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, বা অন্য ধরনের ফাইল।",
+     "after": "এই ফাইলটি ছবি হিসেবে পড়া যায়নি। এটি ক্ষতিগ্রস্ত হতে পারে, অথবা অন্য ধরনের ফাইল হতে পারে।",
+     "why": "grammar: the second half lost its verb and dangled (or another kind of file.)"
+    },
+    {
+     "key": "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open.",
+     "english": "This recording isn't saved. %1$@ tries again, %2$@ deletes it, and %3$@ keeps the window open.",
+     "before": "এই রেকর্ডিং সংরক্ষিত হয়নি। %1$@ আবার চেষ্টা করে, %2$@ এটি মুছে ফেলে, আর %3$@ উইন্ডো খোলা রাখে।",
+     "after": "এই রেকর্ডিং সংরক্ষিত হয়নি। %1$@ বেছে নিলে আবার চেষ্টা করা হয়, %2$@ বেছে নিলে এটি মুছে যায়, আর %3$@ বেছে নিলে উইন্ডো খোলা থাকে।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work (three button names)"
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "one": "বাকি %lldটি আবার ডাউনলোড করতে এর সারিতে %@ বেছে নিন।",
+      "other": "বাকি %lldটি আবার ডাউনলোড করতে তাদের সারিতে %@ বেছে নিন।"
+     },
+     "after": {
+      "one": "বাকি %lldটি আবার ডাউনলোড করতে এর সারিতে %@ বেছে নিন।",
+      "other": "বাকি %lldটি আবার ডাউনলোড করতে প্রতিটির সারিতে %@ বেছে নিন।"
+     },
+     "why": "grammar: তাদের is the pronoun for people, said here of downloads"
+    },
+    {
+     "key": "To download them again, choose %@ on their rows.",
+     "english": "To download them again, choose %@ on their rows.",
+     "before": "সেগুলো আবার ডাউনলোড করতে তাদের সারিতে %@ বেছে নিন।",
+     "after": "সেগুলো আবার ডাউনলোড করতে প্রতিটির সারিতে %@ বেছে নিন।",
+     "why": "grammar: তাদের is the pronoun for people, said here of downloads"
+    },
+    {
+     "key": "Trim End",
+     "english": "Trim End",
+     "before": "শেষ ছাঁটুন",
+     "after": "শেষ ছাঁটা",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun"
+    },
+    {
+     "key": "Trim Start",
+     "english": "Trim Start",
+     "before": "শুরু ছাঁটুন",
+     "after": "শুরু ছাঁটা",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun"
+    },
+    {
+     "key": "Trim to Selection",
+     "english": "Trim to Selection",
+     "before": "নির্বাচিত অংশে ছাঁটুন",
+     "after": "নির্বাচিত অংশে ছাঁটা",
+     "why": "grammar: an edit name follows the app’s Undo %@ (… পূর্বাবস্থায় ফেরান), so an imperative made two commands in a row; now a noun, which also reads as the shortcut action’s name"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "পরিষ্কার করা পূর্বাবস্থায় ফেরান আগের ট্রান্সক্রিপ্ট ফিরিয়ে আনে।",
+     "after": "“পরিষ্কার করা পূর্বাবস্থায় ফেরান” বেছে নিলে আগের ট্রান্সক্রিপ্ট ফিরে আসে।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work"
+    },
+    {
+     "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "english": "Undoes every edit, back to the original; Redo brings them back.",
+     "before": "মূল অডিওতে ফিরে প্রতিটি সম্পাদনা পূর্বাবস্থায় ফেরায়; পুনরায় করুন সেগুলো ফিরিয়ে আনে।",
+     "after": "মূল অডিওতে ফিরে প্রতিটি সম্পাদনা পূর্বাবস্থায় ফেরায়; “পুনরায় করুন” বেছে নিলে সেগুলো ফিরে আসে।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work"
+    },
+    {
+     "key": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "english": "You edited the transcript on %@, after the cleanup. Undo Cleanup undoes those edits too.",
+     "before": "পরিষ্কার করার পর আপনি ট্রান্সক্রিপ্ট %@ তারিখে সম্পাদনা করেছেন। পরিষ্কার করা পূর্বাবস্থায় ফেরান সেই সম্পাদনাগুলোও পূর্বাবস্থায় ফেরায়।",
+     "after": "পরিষ্কার করার পর আপনি ট্রান্সক্রিপ্ট %@ তারিখে সম্পাদনা করেছেন। “পরিষ্কার করা পূর্বাবস্থায় ফেরান” বেছে নিলে সেই সম্পাদনাগুলোও পূর্বাবস্থায় ফেরে।",
+     "why": "natural: a command name stood as the subject, so the listener heard a command; now choosing it does the work"
+    },
+    {
+     "key": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "english": "Your copy of the rules is empty. Edit Rules… opens it to add some.",
+     "before": "নিয়মগুলোর আপনার কপি খালি। নিয়ম সম্পাদনা করুন… এটি খোলে, যাতে কিছু যোগ করতে পারেন।",
+     "after": "আপনার নিয়মের কপি খালি। “নিয়ম সম্পাদনা করুন…” বেছে নিলে এটি খোলে, যাতে আপনি কিছু নিয়ম যোগ করতে পারেন।",
+     "why": "natural: নিয়মগুলোর আপনার কপি copied the English order (of the rules your copy); and a command name stood as the subject"
+    },
+    {
+     "key": "Your copy of the rules is only in the cloud, so TextMouth asked for it and uses its own meanwhile.",
+     "english": "Your copy of the rules is only in the cloud, so TextMouth asked for it and uses its own meanwhile.",
+     "before": "নিয়মগুলোর আপনার কপি শুধু ক্লাউডে আছে, তাই TextMouth সেটি চেয়েছে এবং ততক্ষণ নিজের নিয়ম ব্যবহার করছে।",
+     "after": "আপনার নিয়মের কপি শুধু ক্লাউডে আছে, তাই TextMouth সেটি চেয়েছে এবং ততক্ষণ নিজের নিয়ম ব্যবহার করছে।",
+     "why": "natural: নিয়মগুলোর আপনার কপি copied the English order (of the rules your copy)"
+    },
+    {
+     "key": "a kind the system does not name",
+     "english": "a kind the system does not name",
+     "before": "সিস্টেম যে ধরনের নাম দেয় না",
+     "after": "এমন ধরন, যার নাম সিস্টেম দেয় না",
+     "why": "meaning: সিস্টেম যে ধরনের নাম দেয় না reads first as the kind of name the system does not give"
+    },
+    {
+     "key": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "english": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "before": "ffmpeg চালু করা যায়নি। এটি ইনস্টল করা আছে কি না দেখুন, অথবা স্টোরেজ সেটিংসে ফিল্টারের জন্য ffmpeg ব্যবহার করুন বন্ধ করুন।",
+     "after": "ffmpeg চালু করা যায়নি। এটি ইনস্টল করা আছে কি না দেখুন, অথবা স্টোরেজ সেটিংসে “ফিল্টারের জন্য ffmpeg ব্যবহার করুন” বন্ধ করুন।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command (use ffmpeg for filters, turn off)"
+    },
+    {
+     "key": "returning it to the library",
+     "english": "returning it to the library",
+     "before": "এটি লাইব্রেরিতে ফেরত দেওয়া হচ্ছে",
+     "after": "এটি লাইব্রেরিতে ফিরিয়ে আনা হচ্ছে",
+     "why": "meaning: লাইব্রেরিতে ফেরত দেওয়া is returning a borrowed book to a lending library; the file is brought back into the library"
+    },
+    {
+     "key": "the top of your library",
+     "english": "the top of your library",
+     "before": "আপনার লাইব্রেরির একদম উপরে",
+     "after": "আপনার লাইব্রেরির একদম উপরের স্তর",
+     "why": "grammar: the phrase ended in a locative, and Moved … into %@ adds -এ to it (উপরে-এ); now a noun, the top level"
+    },
+    {
+     "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "before": "“%@” প্রতিস্থাপনের সময় বদলে গেছে, তাই TextMouth উভয় কপি যেমন ছিল তেমনই রেখেছে। আবার বিদ্যমানটি প্রতিস্থাপন করুন বেছে নিন।",
+     "after": "“%@” প্রতিস্থাপনের সময় বদলে গেছে, তাই TextMouth উভয় কপি যেমন ছিল তেমনই রেখেছে। আবার “বিদ্যমানটি প্রতিস্থাপন করুন” বেছে নিন।",
+     "why": "punctuation: the button name ran into the sentence; quoted as other sentences quote a command"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "“%@” রেকর্ড করছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বর্জন করুন, তারপর প্রস্থান করুন।",
+     "after": "“%@” রেকর্ড করছে। এটি থামান, অথবা “নির্বাচন সাফ করুন” দিয়ে বর্জন করুন, তারপর প্রস্থান করুন।",
+     "why": "punctuation: the command name ran into the sentence; quoted as other sentences quote a command"
+    }
+   ]
+  },
+  {
    "part": 3,
    "areas": [
     "reader, formats, and menus",
