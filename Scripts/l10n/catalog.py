@@ -413,11 +413,13 @@ _ONLY_OTHER = ("other",)
 _SLAVIC = ("one", "few", "many", "other")
 PLURAL_CATEGORIES = {
     # One and other: the Germanic languages, Turkish (and its group), Finnish, Hungarian, Greek, Hindi, Danish, ...
-    **{code: _ONE_OTHER for code in ("en", "de", "nl", "sv", "da", "nb", "nn", "no", "fi", "et", "tr", "hu", "el", "hi", "af", "vi")},
+    **{code: _ONE_OTHER for code in ("en", "de", "nl", "sv", "da", "nb", "nn", "no", "fi", "et", "tr", "hu", "el", "hi", "bn", "af")},
     # One, many (exact millions), and other: Spanish, French, Italian, Portuguese (Brazil and Portugal), Catalan.
     **{code: _ONE_MANY_OTHER for code in ("es", "fr", "it", "pt", "pt-PT", "ca", "gl")},
-    # Other alone: Chinese, Japanese, Korean, and the languages with no plural.
-    **{code: _ONLY_OTHER for code in ("ja", "zh", "zh-Hans", "zh-Hant", "ko", "id", "ms", "th")},
+    # Other alone: Chinese, Japanese, Korean, and the languages with no plural. Vietnamese too: CLDR 49 gives it a `one`
+    # for 0 and 1, but Apple's Foundation (macOS 26.3, November 20, 2026) still picks `other` for every count, and
+    # Foundation is what picks the form, so the table follows it (LanguagePackPluralRules checks Apple's rule).
+    **{code: _ONLY_OTHER for code in ("ja", "zh", "zh-Hans", "zh-Hant", "ko", "id", "ms", "th", "vi")},
     # One, few, many, and other: the Slavic languages that decline by count.
     **{code: _SLAVIC for code in ("ru", "uk", "pl", "cs", "sk")},
     "ro": ("one", "few", "other"),
@@ -452,14 +454,14 @@ def plural_categories(language):
 
 # CLDR's rule for the `one` category of each language that has it, as the file writes it (release 49), grouped by rule.
 # They say what `one` means: "n = 1" and "i = 1 and v = 0" mean exactly the number 1; French and Portuguese's "i = 0..1"
-# covers 0, Hindi's and Vietnamese's "i = 0 or n = 1" covers 0, and Russian's and Ukrainian's covers 21, 31, 101, and so on.
+# covers 0, Hindi's and Bengali's "i = 0 or n = 1" covers 0, and Russian's and Ukrainian's covers 21, 31, 101, and so on.
 _ONE_RULE_GROUPS = {
     "n = 1": ("af", "ar", "el", "es", "hu", "nb", "nn", "no", "tr"),
     "i = 1 and v = 0": ("ca", "cs", "de", "en", "et", "fi", "gl", "it", "nl", "pl", "pt-PT", "ro", "sk", "sv"),
     "n = 1 or t != 0 and i = 0,1": ("da",),
     "i = 0..1": ("fr", "pt"),
     "i = 1 and v = 0 or i = 0 and v != 0": ("he",),
-    "i = 0 or n = 1": ("hi", "vi"),
+    "i = 0 or n = 1": ("hi", "bn"),
     "v = 0 and i % 10 = 1 and i % 100 != 11": ("ru", "uk"),
 }
 ONE_RULES = {code: rule for rule, codes in _ONE_RULE_GROUPS.items() for code in codes}

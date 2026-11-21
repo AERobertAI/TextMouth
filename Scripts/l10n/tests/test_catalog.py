@@ -370,13 +370,14 @@ class PluralTableTests(unittest.TestCase):
         "da": "one other", "de": "one other", "el": "one other", "en": "one other", "es": "one many other",
         "et": "one other", "fi": "one other", "fr": "one many other",
         # Galician shares Catalan's and Italian's rule, `many` included (a reviewer believed it had only one and other).
-        "gl": "one many other", "he": "one two other", "hi": "one other", "hu": "one other", "id": "other",
+        "bn": "one other", "gl": "one many other", "he": "one two other", "hi": "one other", "hu": "one other", "id": "other",
         "it": "one many other", "ja": "other", "ko": "other", "ms": "other", "nb": "one other", "nl": "one other",
         "nn": "one other", "no": "one other", "pl": "one few many other", "pt": "one many other",
         "pt-PT": "one many other", "ro": "one few other", "ru": "one few many other", "sk": "one few many other",
         "sv": "one other", "th": "other", "tr": "one other", "uk": "one few many other",
-        # Vietnamese has `one` (0 and 1) in release 49; it had only `other` before.
-        "vi": "one other", "zh": "other", "zh-Hans": "other", "zh-Hant": "other",
+        # Vietnamese has `one` (0 and 1) in release 49, but the table keeps `other` alone, as Apple's Foundation does
+        # (catalog.py says why): the one language where the table follows Apple rather than this release.
+        "vi": "other", "zh": "other", "zh-Hans": "other", "zh-Hant": "other",
     }
 
     def test_every_language_of_the_table_has_cldrs_categories(self):
@@ -395,7 +396,7 @@ class PluralTableTests(unittest.TestCase):
             self.assertTrue(catalog.one_is_exactly_one(language), language)
 
     def test_one_covers_more_than_the_number_1_in_french_portuguese_russian_and_hindi(self):
-        for language in ("fr", "pt", "pt-BR", "ru", "uk", "hi", "vi"):
+        for language in ("fr", "pt", "pt-BR", "ru", "uk", "hi", "bn"):
             self.assertFalse(catalog.one_is_exactly_one(language), language)
         self.assertTrue(catalog.one_selects("fr", 0), "French's one covers 0")
         self.assertTrue(catalog.one_selects("ru", 21), "Russian's one covers 21")

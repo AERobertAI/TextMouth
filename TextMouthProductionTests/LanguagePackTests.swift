@@ -199,17 +199,29 @@ enum LanguagePackPluralRules {
     /// `PLURAL_CATEGORIES`. One language to a line: `Scripts/l10n/tests/test_plural_rules_swift.py` reads these lines
     /// and fails when they differ from that table.
     static let categories: [String: [String]] = [
+        "ar": ["zero", "one", "two", "few", "many", "other"],
+        "bn": ["one", "other"],
         "de": ["one", "other"],
         "en": ["one", "other"],
         "es": ["one", "many", "other"],
         "fr": ["one", "many", "other"],
+        "he": ["one", "two", "other"],
+        "hi": ["one", "other"],
+        "id": ["other"],
         "it": ["one", "many", "other"],
         "ja": ["other"],
         "ko": ["other"],
+        "nl": ["one", "other"],
+        "pl": ["one", "few", "many", "other"],
         "pt-BR": ["one", "many", "other"],
         "ru": ["one", "few", "many", "other"],
+        "sv": ["one", "other"],
+        "th": ["other"],
+        "tr": ["one", "other"],
         "uk": ["one", "few", "many", "other"],
+        "vi": ["other"],
         "zh-Hans": ["other"],
+        "zh-Hant": ["other"],
     ]
 
     /// Whether `count` is a whole number of millions (1 000 000, 2 000 000, ...), the numbers that have `many` in
@@ -220,16 +232,24 @@ enum LanguagePackPluralRules {
 
     /// The category of `count` in `language`, or nil for a language with no rule here. For the whole numbers the
     /// tests use (0 and up), by CLDR's cardinal rules:
-    /// - English, German: `one` for 1, else `other`.
+    /// - English, German, Dutch, Swedish, Turkish: `one` for 1, else `other`.
+    /// - Hindi, Bengali: `one` for 0 and 1, else `other`.
     /// - Spanish, Italian: `one` for 1, `many` for a whole number of millions, else `other`.
     /// - French, Brazilian Portuguese: `one` for 0 and 1, `many` for a whole number of millions, else `other`.
     /// - Russian, Ukrainian: `one` for a number ending in 1 but not 11, `few` for one ending in 2 to 4 but not 12 to 14,
     ///   else `many`.
-    /// - Chinese, Japanese, Korean: always `other`.
+    /// - Polish: `one` for 1, `few` for a number ending in 2 to 4 but not 12 to 14, else `many`.
+    /// - Arabic: `zero` for 0, `one` for 1, `two` for 2, `few` when the last two digits are 3 to 10, `many` when they
+    ///   are 11 to 99, else `other`.
+    /// - Hebrew: `one` for 1, `two` for 2, else `other`.
+    /// - Chinese, Japanese, Korean, Indonesian, Thai, Vietnamese: always `other`. (CLDR 49 gives Vietnamese a `one`
+    ///   for 0 and 1, but Apple's Foundation still uses `other` alone, and Foundation is what picks the form.)
     static func category(of count: Int, language: String) -> String? {
         switch language {
-        case "en", "de":
+        case "en", "de", "nl", "sv", "tr":
             return count == 1 ? "one" : "other"
+        case "hi", "bn":
+            return count == 0 || count == 1 ? "one" : "other"
         case "es", "it":
             return count == 1 ? "one" : (isWholeMillions(count) ? "many" : "other")
         case "fr", "pt-BR":
@@ -240,7 +260,25 @@ enum LanguagePackPluralRules {
             if lastDigit == 1 && lastTwoDigits != 11 { return "one" }
             if (2...4).contains(lastDigit) && !(12...14).contains(lastTwoDigits) { return "few" }
             return "many"
-        case "zh-Hans", "ja", "ko":
+        case "pl":
+            if count == 1 { return "one" }
+            let lastDigit = count % 10
+            let lastTwoDigits = count % 100
+            return (2...4).contains(lastDigit) && !(12...14).contains(lastTwoDigits) ? "few" : "many"
+        case "ar":
+            let lastTwoDigits = count % 100
+            switch count {
+            case 0: return "zero"
+            case 1: return "one"
+            case 2: return "two"
+            default:
+                if (3...10).contains(lastTwoDigits) { return "few" }
+                if (11...99).contains(lastTwoDigits) { return "many" }
+                return "other"
+            }
+        case "he":
+            return count == 1 ? "one" : (count == 2 ? "two" : "other")
+        case "zh-Hans", "zh-Hant", "ja", "ko", "id", "th", "vi":
             return "other"
         default:
             return nil
@@ -386,21 +424,25 @@ final class LanguagePackTests: XCTestCase {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: root) }
 
-        // Every category the nine languages use, each form's text being the category's own name. `zero` is left out
-        // on purpose: Foundation reads an explicit `zero` form as "the count is 0" in every language, which is not
-        // a language's own rule (the first run of this test, on GitHub, showed German at 0 choosing `zero`).
-        let everyCategory = ["one", "two", "few", "many", "other"]
-        var forms: [String: Any] = ["NSStringFormatSpecTypeKey": "NSStringPluralRuleType", "NSStringFormatValueTypeKey": "lld"]
-        for category in everyCategory { forms[category] = "\(category) %lld" }
+        // Every category the languages use, each form's text being the category's own name. `zero` goes in only for
+        // a language whose own rule has it (Arabic): Foundation reads an explicit `zero` form as "the count is 0" in
+        // every language, which is not a language's own rule (the first run of this test, on GitHub, showed German at
+        // 0 choosing `zero`).
         let key = "%lld probe"
-        let table: [String: Any] = [key: ["NSStringLocalizedFormatKey": "%#@value@", "value": forms]]
-        let data = try PropertyListSerialization.data(fromPropertyList: table, format: .binary, options: 0)
+        func probeTable(withZero: Bool) throws -> Data {
+            var forms: [String: Any] = ["NSStringFormatSpecTypeKey": "NSStringPluralRuleType", "NSStringFormatValueTypeKey": "lld"]
+            for category in ["one", "two", "few", "many", "other"] + (withZero ? ["zero"] : []) {
+                forms[category] = "\(category) %lld"
+            }
+            let table: [String: Any] = [key: ["NSStringLocalizedFormatKey": "%#@value@", "value": forms]]
+            return try PropertyListSerialization.data(fromPropertyList: table, format: .binary, options: 0)
+        }
 
         var checked = 0
         for (language, categories) in LanguagePackPluralRules.categories.sorted(by: { $0.key < $1.key }) {
             let folder = root.appendingPathComponent("\(language).lproj", isDirectory: true)
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            try data.write(to: folder.appendingPathComponent("Localizable.stringsdict"))
+            try probeTable(withZero: categories.contains("zero")).write(to: folder.appendingPathComponent("Localizable.stringsdict"))
             let bundle = try XCTUnwrap(LanguagePackLookups.bundle(language: language, in: root), language)
             for count in LanguagePackLookups.counts {
                 let expected = try XCTUnwrap(LanguagePackPluralRules.category(of: count, language: language), "\(language) has no rule")

@@ -4,6 +4,19 @@ Part of [TextMouth's documentation](../../README.md).
 
 Every version of TextMouth, newest first, and what changed for you in each.
 
+## 0.5.7 (November 21, 2026)
+
+### TextMouth in twelve more languages
+- TextMouth's menus, buttons, messages, and VoiceOver hints are now also in Hindi, Arabic, Bengali, Indonesian, Vietnamese, Turkish, Thai, Polish, Traditional Chinese, Dutch, Swedish, and Hebrew: 23 languages in all.
+- Arabic and Hebrew are TextMouth's first languages written right to left.
+- Each new language is a machine translation that uses one word for each thing across the whole app, which a native speaker will review.
+
+### Better wording in nine languages
+- A second, more careful machine review read every string in Spanish, French, Brazilian Portuguese, Simplified Chinese, Hindi, Arabic, Russian, Japanese, and German, and reworded about 1,900 that were wrong or awkward.
+- In Simplified Chinese, a copy-protected Kindle book no longer says that TextMouth can't read copyrighted books.
+- Spanish says "auriculares" for headphones, not "audífonos", which in Spain are hearing aids.
+- A sentence with a count now reads right for every number, and a button's name in a sentence is set off, so it isn't heard as an ordinary word.
+
 ## 0.5.6 (November 20, 2026)
 
 ### TextMouth in nine more languages
