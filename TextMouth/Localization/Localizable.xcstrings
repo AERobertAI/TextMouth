@@ -467938,7 +467938,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Problemy z pamięcią"
+            "value" : "Problemy z plikami"
           }
         },
         "pt-BR" : {
@@ -471842,7 +471842,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zdejmij ją z listy czytelniczej albo najpierw wyczyść %@ w opcjach listy czytelniczej."
+            "value" : "Zdejmij ją z listy czytelniczej albo najpierw odznacz %@ w opcjach listy czytelniczej."
           }
         },
         "pt-BR" : {
@@ -481036,7 +481036,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth nie mógł sprawdzić, czy przenieść go do Kosza."
+            "value" : "TextMouth nie mógł sprawdzić, czy przenieść go do kosza."
           }
         },
         "pt-BR" : {
@@ -499087,7 +499087,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth zakończy działanie i otworzy się ponownie, aby ją uruchomić."
+            "value" : "TextMouth zakończy działanie i otworzy się ponownie, aby ją utworzyć."
           }
         },
         "pt-BR" : {
@@ -534673,7 +534673,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Folder %@ jest w Koszu."
+            "value" : "Folder %@ jest w koszu."
           }
         },
         "pt-BR" : {
@@ -562864,7 +562864,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Następnie zdejmij ją z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej."
+            "value" : "Następnie zdejmij ją z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej."
           }
         },
         "pt-BR" : {
@@ -582248,7 +582248,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "To ponownie wyodrębni tekst z pamięci podręcznej każdej książki, co w dużej bibliotece może chwilę potrwać."
+            "value" : "To ponownie wyodrębni tekst każdej książki i odświeży jego kopię w pamięci podręcznej, co w dużej bibliotece może chwilę potrwać."
           }
         },
         "pt-BR" : {
@@ -588120,7 +588120,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aby ją zwolnić, zdejmij ją z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej."
+            "value" : "Aby ją zwolnić, zdejmij ją z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej."
           }
         },
         "pt-BR" : {
@@ -588257,7 +588257,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aby je zwolnić, zdejmij je z listy czytelniczej albo wyczyść %@ w opcjach listy czytelniczej."
+            "value" : "Aby je zwolnić, zdejmij je z listy czytelniczej albo odznacz %@ w opcjach listy czytelniczej."
           }
         },
         "pt-BR" : {
@@ -589091,7 +589091,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Razem z archiwami w środku archiwum po rozpakowaniu zajmie %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów zawierających dźwięk lub inne archiwa."
+            "value" : "Archiwum wraz z zawartymi w nim archiwami zajmie po rozpakowaniu %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów zawierających dźwięk lub inne archiwa."
           }
         },
         "pt-BR" : {
@@ -589234,7 +589234,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Razem z archiwami w środku archiwum po rozpakowaniu zajmie %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów bez dźwięku."
+            "value" : "Archiwum wraz z zawartymi w nim archiwami zajmie po rozpakowaniu %1$@, więcej niż %2$@, które TextMouth wyodrębnia z archiwów bez dźwięku."
           }
         },
         "pt-BR" : {
@@ -589377,7 +589377,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Razem z archiwami w środku archiwum zawiera %1$@ plików i folderów, więcej niż %2$@, które TextMouth wyodrębnia podczas jednego importu."
+            "value" : "Archiwum wraz z zawartymi w nim archiwami zawiera %1$@ plików i folderów, więcej niż %2$@, które TextMouth wyodrębnia podczas jednego importu."
           }
         },
         "pt-BR" : {
@@ -614140,7 +614140,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Co się dzieje po zakończeniu odtwarzania książki."
+            "value" : "Określa, co się dzieje po zakończeniu odtwarzania książki."
           }
         },
         "pt-BR" : {
@@ -614277,7 +614277,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Co się dzieje po przytrzymaniu Shift i przewinięciu do tyłu."
+            "value" : "Określa, co się dzieje po przytrzymaniu Shift i przewinięciu do tyłu."
           }
         },
         "pt-BR" : {
@@ -614414,7 +614414,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Co się dzieje po przytrzymaniu Shift i przewinięciu do przodu."
+            "value" : "Określa, co się dzieje po przytrzymaniu Shift i przewinięciu do przodu."
           }
         },
         "pt-BR" : {
@@ -614551,7 +614551,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Co się dzieje po przewinięciu do tyłu."
+            "value" : "Określa, co się dzieje po przewinięciu do tyłu."
           }
         },
         "pt-BR" : {
@@ -614688,7 +614688,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Co się dzieje po przewinięciu do przodu."
+            "value" : "Określa, co się dzieje po przewinięciu do przodu."
           }
         },
         "pt-BR" : {
@@ -614825,7 +614825,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Co zrobić z oryginalnym plikiem po zaimportowaniu książki."
+            "value" : "Określa, co zrobić z oryginalnym plikiem po zaimportowaniu książki."
           }
         },
         "pt-BR" : {
@@ -619763,7 +619763,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy wyłączone, arkusz pozostaje otwarty i pokazuje pozostały czas oraz przycisk resetowania."
+            "value" : "Gdy ta opcja jest wyłączona, arkusz pozostaje otwarty i pokazuje pozostały czas oraz przycisk resetowania."
           }
         },
         "pt-BR" : {
@@ -621687,7 +621687,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdzie TextMouth zapisuje swoje dzienniki diagnostyczne. %1$@ przechowuje je razem z książkami, więc przenoszą się i synchronizują z biblioteką. %2$@ przechowuje je w %3$@, który nigdy się nie synchronizuje. Zmiana działa od następnego wiersza; istniejące dzienniki pozostają."
+            "value" : "Określa, gdzie TextMouth zapisuje swoje dzienniki diagnostyczne. Opcja %1$@ przechowuje je razem z książkami, więc przenoszą się i synchronizują z biblioteką. Opcja %2$@ przechowuje je w %3$@, który nigdy się nie synchronizuje. Zmiana działa od następnego wiersza; istniejące dzienniki pozostają."
           }
         },
         "pt-BR" : {
