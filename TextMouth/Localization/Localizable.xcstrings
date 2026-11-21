@@ -9146,7 +9146,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "デフォルトの%2$@は%1$@に割り当てられています"
+            "value" : "デフォルトの%2$@は「%1$@」に割り当てられています"
           }
         },
         "ko" : {
@@ -17461,7 +17461,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@には、Mac 専用の点字テーブル「%2$@」が必要ですが、iPhone 版の TextMouth にはありません。"
+            "value" : "%1$@には、Mac 専用の点字表「%2$@」が必要ですが、iPhone 版の TextMouth にはありません。"
           }
         },
         "ko" : {
@@ -17741,7 +17741,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を%2$@に記録できませんでした：%3$@"
+            "value" : "%1$@を「%2$@」に記録できませんでした：%3$@"
           }
         },
         "ko" : {
@@ -18021,7 +18021,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を1回押すと、続けて押される場合に備えて、%2$@の前に少し待ちます。"
+            "value" : "%1$@を1回押すと、続けて押される場合に備えて、「%2$@」の前に少し待ちます。"
           }
         },
         "ko" : {
@@ -20156,7 +20156,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@をデフォルトに戻しました：%2$@"
+            "value" : "「%1$@」をデフォルトに戻しました：%2$@"
           }
         },
         "ko" : {
@@ -22378,7 +22378,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@で再試行、%2$@で保存せずに終了、%3$@で TextMouth を開いたままにします。"
+            "value" : "「%1$@」で再試行、「%2$@」で保存せずに終了、「%3$@」で TextMouth を開いたままにします。"
           }
         },
         "ko" : {
@@ -22789,7 +22789,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "メニューの%@で使われています"
+            "value" : "メニューの「%@」で使われています"
           }
         },
         "ko" : {
@@ -25061,7 +25061,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@は%2$@で使えます。"
+            "value" : "「%1$@」は%2$@で使えます。"
           }
         },
         "ko" : {
@@ -30313,7 +30313,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@を%2$@に記録しました"
+            "value" : "%1$@を「%2$@」に記録しました"
           }
         },
         "ko" : {
@@ -116960,7 +116960,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テーブルの定義どおり"
+            "value" : "点字表の定義どおり"
           }
         },
         "ko" : {
@@ -222903,7 +222903,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したばかりの点字テーブルの確認が済んだら、チェックした項目を書き出します。"
+            "value" : "選択したばかりの点字表の確認が済んだら、チェックした項目を書き出します。"
           }
         },
         "ko" : {
@@ -405994,7 +405994,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@のショートカット%1$@を取り除く"
+            "value" : "「%2$@」のショートカット%1$@を取り除く"
           }
         },
         "ko" : {
@@ -410795,7 +410795,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@をデフォルトに戻す"
+            "value" : "「%@」をデフォルトに戻す"
           }
         },
         "ko" : {
@@ -480178,7 +480178,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "設定で選択された点字テーブル「%1$@」を TextMouth は使用できないため、この書き出しは%2$@から始まります。"
+            "value" : "設定で選択された点字表「%1$@」を TextMouth は使用できないため、この書き出しは%2$@から始まります。"
           }
         },
         "ko" : {
@@ -480321,7 +480321,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの Mac のテーブル「%1$@」を使用できません：%2$@。"
+            "value" : "TextMouth はこの Mac の点字表「%1$@」を使用できません：%2$@。"
           }
         },
         "ko" : {
@@ -480738,7 +480738,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの Mac の点字テーブル「%1$@」を確認できませんでした：%2$@。もう一度お試しください。"
+            "value" : "TextMouth はこの Mac の点字表「%1$@」を確認できませんでした：%2$@。もう一度お試しください。"
           }
         },
         "ko" : {
@@ -480881,7 +480881,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの Mac のテーブル「%1$@」を確認できませんでした：%2$@。もう一度選ぶと再試行します。"
+            "value" : "TextMouth はこの Mac の点字表「%1$@」を確認できませんでした：%2$@。もう一度選ぶと再試行します。"
           }
         },
         "ko" : {
@@ -487905,7 +487905,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth のバンドルに点字テーブルが見つかりませんでした。"
+            "value" : "TextMouth のバンドルに点字表が見つかりませんでした。"
           }
         },
         "ko" : {
@@ -488042,7 +488042,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth に「%@」という名前の点字テーブルはありません。"
+            "value" : "TextMouth に「%@」という名前の点字表はありません。"
           }
         },
         "ko" : {
@@ -522808,7 +522808,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この点字テーブルは8点のセル（%@）を書きますが、TextMouth の BRF と PEF ファイルは6点のみです。"
+            "value" : "この点字表は8点のセル（%@）を出力しますが、TextMouth の BRF と PEF ファイルは6点のみです。"
           }
         },
         "ko" : {
@@ -522945,7 +522945,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この点字テーブルは「%@」を8点のセルで書きますが、TextMouth の BRF と PEF ファイルは6点のみです。"
+            "value" : "この点字表は「%@」を8点のセルで出力しますが、TextMouth の BRF と PEF ファイルは6点のみです。"
           }
         },
         "ko" : {
@@ -523082,7 +523082,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したテーブルは TextMouth に組み込まれています（liblouis %@）。"
+            "value" : "選択した点字表は TextMouth に組み込まれています（liblouis %@）。"
           }
         },
         "ko" : {
@@ -523219,7 +523219,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したテーブルは、この Mac の VoiceOver の点字テーブルの1つです（liblouis %@）。"
+            "value" : "選択した点字表は、この Mac の VoiceOver の点字表の1つです（liblouis %@）。"
           }
         },
         "ko" : {
@@ -523356,7 +523356,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選択したテーブルは、この Mac の VoiceOver の点字テーブルの1つです。"
+            "value" : "選択した点字表は、この Mac の VoiceOver の点字表の1つです。"
           }
         },
         "ko" : {
@@ -570287,7 +570287,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この Mac には、選択したテーブル「%@」がなくなりました。別のテーブルを選んでください。"
+            "value" : "この Mac には、選択した点字表「%@」がなくなりました。別の点字表を選んでください。"
           }
         },
         "ko" : {
@@ -570430,7 +570430,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックを読み込んでから、この Mac の点字テーブル「%1$@」が liblouis %2$@ から %3$@ に変わったため、TextMouth はブックのテキストをそのまま保持します。"
+            "value" : "ブックを読み込んでから、この Mac の点字表「%1$@」が liblouis %2$@ から %3$@ に変わったため、TextMouth はブックのテキストをそのまま保持します。"
           }
         },
         "ko" : {
@@ -570573,7 +570573,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "liblouis %2$@ でブックを読み込んでから、この Mac の点字テーブル「%1$@」が変わった可能性があるため、TextMouth はブックのテキストをそのまま保持します。"
+            "value" : "liblouis %2$@ でブックを読み込んでから、この Mac の点字表「%1$@」が変わった可能性があるため、TextMouth はブックのテキストをそのまま保持します。"
           }
         },
         "ko" : {
