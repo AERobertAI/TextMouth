@@ -248770,7 +248770,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wie schnell die Stimme in der Datei spricht. Sie beginnt mit der Geschwindigkeit des Buchs."
+            "value" : "Wie schnell die Stimme in der Datei spricht. Voreingestellt ist die Geschwindigkeit des Buchs."
           }
         },
         "es" : {
@@ -248907,7 +248907,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wie hoch die Stimme in der Datei klingt. Sie beginnt mit der Tonhöhe des Buchs."
+            "value" : "Wie hoch die Stimme in der Datei klingt. Voreingestellt ist die Tonhöhe des Buchs."
           }
         },
         "es" : {
@@ -249729,7 +249729,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wie die BRF-Datei jede Braillezelle schreibt. Die meisten Braillezeilen und Punktschriftdrucker lesen North American Braille ASCII; auf Deutsch eingerichtete lesen Eurobraille. Um sie mit anderen zu teilen, exportiere eine PEF-Datei."
+            "value" : "Wie die BRF-Datei jede Braillezelle schreibt. Die meisten Braillezeilen und Punktschriftdrucker lesen North American Braille ASCII; auf Deutsch eingerichtete lesen Eurobraille. Zum Teilen mit Lesern anderswo exportiere eine PEF-Datei."
           }
         },
         "es" : {
@@ -304242,7 +304242,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mediensteuerung nicht freigegeben: Dieses Buch hält sie nicht."
+            "value" : "Mediensteuerung nicht freigegeben: Dieses Buch hat sie nicht belegt."
           }
         },
         "es" : {
@@ -405124,7 +405124,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bücher nach dem Beenden entfernen"
+            "value" : "Beendete Bücher entfernen"
           }
         },
         "es" : {
@@ -436738,7 +436738,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Setzen"
+            "value" : "Stellen"
           }
         },
         "es" : {
@@ -456073,7 +456073,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Sprachprotokoll, seine letzte %lld Zeile, nur Positionen und Längen:"
+                  "value" : "Sprachprotokoll, seine letzte Zeile, nur Positionen und Längen:"
                 }
               },
               "other" : {
@@ -466645,7 +466645,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stoppt den Export und behält die bereits gesprochenen Kapitel, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Ein Export desselben Bereichs mit derselben Geschwindigkeit und Tonhöhe setzt dort fort."
+            "value" : "Stoppt den Export und behält die bereits gesprochenen Kapitel, bis TextMouth beendet wird, ein anderer gesprochener Audioexport beginnt oder Stimme, Text, Ersetzungen oder Pausen des Buchs sich ändern. Ein Export desselben Bereichs mit derselben Geschwindigkeit und Tonhöhe macht dort weiter."
           }
         },
         "es" : {
@@ -472199,7 +472199,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Akzeptiert %1$lld bis %2$lld Minuten. Mit Return wird der Timer gesetzt und das Buch wiedergegeben."
+            "value" : "Akzeptiert %1$lld bis %2$lld Minuten. Mit Return wird der Timer gestellt und das Buch wiedergegeben."
           }
         },
         "en" : {
@@ -472342,7 +472342,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Entfernt jedes beendete Buch aus der Liste, wenn sein Fenster weiterwechselt oder geschlossen wird. Bücher, die vor dem Aktivieren beendet wurden, bleiben."
+            "value" : "Entfernt jedes beendete Buch aus der Liste, wenn sein Fenster zu einem anderen Buch wechselt oder geschlossen wird. Bücher, die vor dem Aktivieren beendet wurden, bleiben."
           }
         },
         "es" : {
@@ -495784,7 +495784,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wurde am %1$@ beendet: Sein Speicher wuchs auf %2$@ GB, während %3$@ wiedergegeben wurde, wegen eines Fehlers im Audio von macOS. Deine Position wurde gesichert."
+            "value" : "TextMouth wurde am %1$@ beendet: Wegen eines Fehlers im Audiosystem von macOS wuchs sein Speicher auf %2$@ GB, während %3$@ wiedergegeben wurde. Deine Position wurde gesichert."
           }
         },
         "en" : {
@@ -495927,7 +495927,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wurde am %1$@ beendet: Sein Speicher wuchs auf %2$@ GB, während ein Buch wiedergegeben wurde, wegen eines Fehlers im Audio von macOS. Deine Position wurde gesichert."
+            "value" : "TextMouth wurde am %1$@ beendet: Wegen eines Fehlers im Audiosystem von macOS wuchs sein Speicher auf %2$@ GB, während ein Buch wiedergegeben wurde. Deine Position wurde gesichert."
           }
         },
         "en" : {
@@ -496213,7 +496213,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth liest BRF- und BRL-Dateien, die du ab jetzt hinzufügst, mit diesen Zeichen und erkennt Unicode-Braillemuster selbst. Der Exportdialog beginnt eine BRF-Datei mit ihnen. Ein Buch behält seine Importzeichen, die „Buchinformationen“ ändern können."
+            "value" : "TextMouth liest BRF- und BRL-Dateien, die du ab jetzt hinzufügst, mit diesen Zeichen und erkennt Unicode-Braillemuster selbst. Der Exportdialog verwendet sie anfangs für eine BRF-Datei. Ein Buch behält seine Importzeichen, die sich in „Buchinformationen“ ändern lassen."
           }
         },
         "es" : {
@@ -528133,7 +528133,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Export wurde vor dem Rest gestoppt."
+            "value" : "Der Export wurde gestoppt, bevor der Rest geschrieben war."
           }
         },
         "es" : {
@@ -530393,7 +530393,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Datei %@ ist mittendrin fehlgeschlagen."
+            "value" : "Die Wiedergabe der Datei %@ brach mittendrin ab."
           }
         },
         "es" : {
@@ -548819,7 +548819,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Passage, wie das Buch sie hat, Zeichen %1$@ bis %2$@ von Kapitel %3$@:"
+            "value" : "Die Passage, wie sie im Buch steht, Zeichen %1$@ bis %2$@ von Kapitel %3$@:"
           }
         },
         "en" : {
@@ -556627,7 +556627,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Sprachausgabe hat sich geweigert, den Text hier zu sprechen, zweimal, daher stoppte das Vorlesen. „Wiedergeben“ versucht es von derselben Stelle erneut."
+            "value" : "Die Sprachausgabe hat sich zweimal geweigert, den Text hier zu sprechen, daher stoppte das Vorlesen. „Wiedergeben“ versucht es von derselben Stelle erneut."
           }
         },
         "es" : {
@@ -558140,7 +558140,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Text dieses Buchs %@, und TextMouth kann ihn nicht sicher exportieren. Wähle „Text bearbeiten“, ebne die Verschachtelung ein und sichere; exportiere dann erneut."
+            "value" : "Der Text dieses Buchs %@, und TextMouth kann ihn nicht sicher exportieren. Wähle „Text bearbeiten“, verringere die Verschachtelung und sichere; exportiere dann erneut."
           }
         },
         "es" : {
@@ -561845,7 +561845,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Stimme hat mittendrin in „%@“ ihre Audioart gewechselt."
+            "value" : "Die Stimme hat mitten in „%@“ ihr Audioformat gewechselt."
           }
         },
         "es" : {
@@ -562119,7 +562119,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Stimme blieb mittendrin in „%@“ stehen, und TextMouth hat nicht länger gewartet."
+            "value" : "Die Stimme blieb mitten in „%@“ stehen, und TextMouth hat nicht länger gewartet."
           }
         },
         "es" : {
@@ -610101,7 +610101,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stimme geändert zu %@"
+            "value" : "Stimme geändert: %@"
           }
         },
         "es" : {
@@ -613943,7 +613943,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wonach ein Buch dieser Art springt, bis es eine eigene Einheit hat."
+            "value" : "Um welche Einheit ein Buch dieser Art springt, bis es eine eigene hat."
           }
         },
         "es" : {
@@ -622312,7 +622312,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ob die Braille dieses Codes in Kurzschrift geschrieben wird, die gebräuchliche Wörter und Buchstabengruppen in weniger Zellen schreibt."
+            "value" : "Ob dieser Code Kurzschrift verwendet, die gebräuchliche Wörter und Buchstabengruppen mit weniger Zellen schreibt."
           }
         },
         "es" : {
@@ -622449,7 +622449,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ob die Braille dieses Codes in Kurzschrift geschrieben wird."
+            "value" : "Ob dieser Code Kurzschrift verwendet."
           }
         },
         "es" : {
@@ -666559,13 +666559,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Sprachexport wird mit den bereits fertigen Kapiteln gestoppt"
+                  "value" : "Stoppen von %lld Sprachexport, ohne die fertigen Kapitel zu verlieren"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Sprachexporte werden mit den bereits fertigen Kapiteln gestoppt"
+                  "value" : "Stoppen von %lld Sprachexporten, ohne die fertigen Kapitel zu verlieren"
                 }
               }
             }
@@ -666975,7 +666975,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ein Sprachexport wird mit den bereits fertigen Kapiteln gestoppt"
+            "value" : "Stoppen eines Sprachexports, ohne die fertigen Kapitel zu verlieren"
           }
         },
         "es" : {
@@ -670867,7 +670867,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "die Datei %@ ist mittendrin fehlgeschlagen"
+            "value" : "die Wiedergabe der Datei %@ brach mittendrin ab"
           }
         },
         "es" : {
@@ -678780,7 +678780,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„%1$@“ ist eine Persönliche Stimme, die macOS nicht in eine Datei aufnehmen kann. Wähle mit der Taste „%2$@“ in der Leseansicht eine andere Stimme und exportiere dann erneut."
+            "value" : "„%1$@“ ist eine „Eigene Stimme“, die macOS nicht in eine Datei aufnehmen kann. Wähle mit der Taste „%2$@“ in der Leseansicht eine andere Stimme und exportiere dann erneut."
           }
         },
         "en" : {
