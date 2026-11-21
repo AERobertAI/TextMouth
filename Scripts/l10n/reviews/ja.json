@@ -2,6 +2,437 @@
  "language": "ja",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "other": "%@には、新しい TextMouth が追加した%lld冊のブックも含まれていて、そのまま残されます。"
+     },
+     "after": {
+      "other": "%@には、新しいバージョンの TextMouth で追加された%lld冊のブックも含まれていて、そのまま残されます。"
+     },
+     "why": "natural: \"a newer TextMouth\" means a newer version, as the catalog says it elsewhere"
+    },
+    {
+     "key": "%@ can't be made, because the folder that would hold it, %@, can't be found.",
+     "english": "%1$@ can't be made, because the folder that would hold it, %2$@, can't be found.",
+     "before": "%2$@が見つからないため、%1$@を作成できません。",
+     "after": "親フォルダ%2$@が見つからないため、%1$@を作成できません。",
+     "why": "meaning: lost that the second path is the folder that would hold the first"
+    },
+    {
+     "key": "%lld of %@, %lld percent",
+     "english": "%1$lld of %2$@, %3$lld percent",
+     "before": "%2$@中%1$lld完了、%3$lldパーセント",
+     "after": "%2$@中%1$lld個完了、%3$lldパーセント",
+     "why": "grammar: the count of files done had no counter (3個のファイル中1完了); adds 個"
+    },
+    {
+     "key": "%lld of %@, %lld%%",
+     "english": "%1$lld of %2$@, %3$lld%%",
+     "before": "%2$@中%1$lld完了、%3$lld%%",
+     "after": "%2$@中%1$lld個完了、%3$lld%%",
+     "why": "grammar: the count of files done had no counter (3個のファイル中1完了); adds 個"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "other": "%lld個のビューには、新しい TextMouth が必要です。そのまま残されますが、表示はされません。"
+     },
+     "after": {
+      "other": "%lld個のビューには、新しいバージョンの TextMouth が必要です。そのまま残されますが、表示はされません。"
+     },
+     "why": "natural: \"a newer TextMouth\" means a newer version, as the catalog says it elsewhere"
+    },
+    {
+     "key": "Adds or removes a bookmark at the current position",
+     "english": "Adds or removes a bookmark at the current position",
+     "before": "現在の位置にブックマークを追加または取り除きします。",
+     "after": "現在の位置にブックマークを追加するか、取り除きます。",
+     "why": "grammar: 取り除きします is a broken verb form"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "テキストの編集内容は、ブックのパッケージ内に、新しい読み込み結果の隣のコピーとして残されます。",
+     "after": "テキストの編集内容は、新しい読み込み結果とは別に、ブックのパッケージ内にコピーとして残されます。",
+     "why": "natural: \"beside the new reading\" was copied as next to it; says it is kept apart from it"
+    },
+    {
+     "key": "Another view is already named %@. Choose another name.",
+     "english": "Another view is already named %@. Choose another name.",
+     "before": "すでに%@という名前の別のビューがあります。別の名前を選択してください。",
+     "after": "すでに「%@」という名前の別のビューがあります。別の名前を選択してください。",
+     "why": "punctuation: a name before という goes in 「」"
+    },
+    {
+     "key": "Another view is named %@. Rename it first, then restore this view.",
+     "english": "Another view is named %@. Rename it first, then restore this view.",
+     "before": "%@という名前の別のビューがあります。先にそのビューの名前を変更してから、このビューを復元してください。",
+     "after": "「%@」という名前の別のビューがあります。先にそのビューの名前を変更してから、このビューを復元してください。",
+     "why": "punctuation: a name before という goes in 「」"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "other": "ただし%@には、新しい TextMouth が追加した%lld冊のブックも含まれています。それらと、それらを含むフォルダはそのまま残されます。"
+     },
+     "after": {
+      "other": "ただし%@には、新しいバージョンの TextMouth で追加された%lld冊のブックも含まれています。それらのブックと、それらを含むフォルダはそのまま残されます。"
+     },
+     "why": "natural: \"a newer TextMouth\" means a newer version, as the catalog says it elsewhere"
+    },
+    {
+     "key": "Choose %@ in the Sort menu, then try again.",
+     "english": "Choose %@ in the Sort menu, then try again.",
+     "before": "「並べ替え」メニューで%@を選択してから、もう一度お試しください。",
+     "after": "「並べ替え」メニューで「%@」を選択してから、もう一度お試しください。",
+     "why": "punctuation: the menu choice it names goes in 「」, as the menu does"
+    },
+    {
+     "key": "Choose %@ or %@ from %@ at the top of the Library window.",
+     "english": "Choose %1$@ or %2$@ from %3$@ at the top of the Library window.",
+     "before": "ライブラリウインドウ上部の%3$@から、%1$@または%2$@を選択してください。",
+     "after": "ライブラリウインドウ上部の「%3$@」から、「%1$@」または「%2$@」を選択してください。",
+     "why": "punctuation: the button names it names go in 「」, or they run into the sentence"
+    },
+    {
+     "key": "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it.",
+     "english": "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it.",
+     "before": "ライブラリの移動先として空のフォルダを選択するか、TextMouth ライブラリを含むフォルダを選択してそれを使用します。",
+     "after": "ライブラリの移動先となる空のフォルダか、使用する TextMouth ライブラリを含むフォルダを選択してください。",
+     "why": "register: the chooser asks the listener to choose; 使用します read as a description"
+    },
+    {
+     "key": "Close sleep timer sheet after setting a timer",
+     "english": "Close sleep timer sheet after setting a timer",
+     "before": "スリープタイマーの設定後にスリープタイマーのシートを閉じる",
+     "after": "スリープタイマーの設定後にシートを閉じる",
+     "why": "natural: スリープタイマー said twice in one label; shorter in braille"
+    },
+    {
+     "key": "Enter a search term above.",
+     "english": "Enter a search term above.",
+     "before": "上に検索語を入力してください。",
+     "after": "上の検索フィールドに検索語を入力してください。",
+     "why": "natural: 上に入力 reads as typing on top of something; names the field above"
+    },
+    {
+     "key": "Enters edit mode, for selecting several books to move or remove.",
+     "english": "Enters edit mode, for selecting several books to move or remove.",
+     "before": "編集モードを開始します。複数のブックを選択して、移動または取り除くことができます。",
+     "after": "編集モードを開始します。複数のブックを選択して、移動したり取り除いたりできます。",
+     "why": "grammar: a noun and a verb joined by または; parallel たり forms"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "「フォルダ」とリーディングリストは、常に決まった内容を表示します。移動はできます。リーディングリストは非表示にできます。",
+     "after": "「フォルダ」とリーディングリストは、常に決まった内容を表示します。どちらも移動でき、リーディングリストは非表示にすることもできます。",
+     "why": "natural: the clipped third sentence 移動はできます。 read as a fragment"
+    },
+    {
+     "key": "Hold Shift while skipping to use a secondary skip amount.",
+     "english": "Hold Shift while skipping to use a secondary skip amount.",
+     "before": "スキップ中にシフトキーを押したままにすると、もう1つのスキップ量を使います。",
+     "after": "スキップするときにシフトキーを押したままにすると、もう1つのスキップ量を使います。",
+     "why": "natural: スキップ中に read as during a skip already under way, not when skipping"
+    },
+    {
+     "key": "It can be read again now. Choose Try Again to use it.",
+     "english": "It can be read again now. Choose Try Again to use it.",
+     "before": "もう一度読み取れるようになりました。「再試行」を選択して使用します。",
+     "after": "もう一度読み取れるようになりました。使用するには「再試行」を選択してください。",
+     "why": "register: the English asks the listener to choose; 選択して使用します read as a description"
+    },
+    {
+     "key": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "english": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "before": "場所、ブックマーク、文字起こしがある場合はそれらも残り、もう一度ダウンロードできます。",
+     "after": "場所、ブックマーク、文字起こし（ある場合）は残り、もう一度ダウンロードできます。",
+     "why": "natural: それらも残り implied something else is also kept; the if-any now reads as a condition"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。%2$@を実行すると、ライブラリのブックにできます。",
+     "after": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。「%2$@」を実行すると、ライブラリのブックにできます。",
+     "why": "punctuation: the command name it names goes in 「」, or it runs into the sentence"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。%2$@を実行すると、ライブラリのブックにできます。",
+     "after": "%1$@をそのままにしました。エピソードと記事はフィードに残ります。「%2$@」を実行すると、ライブラリのブックにできます。",
+     "why": "punctuation: the command name it names goes in 「」, or it runs into the sentence"
+    },
+    {
+     "key": "Listening",
+     "english": "Listening",
+     "before": "リスニング",
+     "after": "再生",
+     "why": "term: リスニング reads as language-study listening; a heading over playback options is 再生"
+    },
+    {
+     "key": "Loop to Start",
+     "english": "Loop to Start",
+     "before": "最初にループ",
+     "after": "最初から繰り返す",
+     "why": "natural: 最初にループ copied Loop to Start word for word; the choice plays the book again from its start"
+    },
+    {
+     "key": "Neither is newer: each has changes the other lacks.",
+     "english": "Neither is newer: each has changes the other lacks.",
+     "before": "どちらも新しくはありません。それぞれに、もう一方にない変更があります。",
+     "after": "どちらが新しいとも言えません。それぞれに、もう一方にない変更があります。",
+     "why": "meaning: どちらも新しくはありません said neither is new, not that neither is newer"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "other": "選択した%@冊のブックのうち、あなたの選択でこの Mac に保持されているものはなく、%lld冊はリーディングリストのために保持されています。"
+     },
+     "after": {
+      "other": "選択した%@冊のブックのうち、自分で指定してこの Mac に保持しているものはなく、%lld冊はリーディングリストのために保持されています。"
+     },
+     "why": "natural: あなたの選択で copied by your choice; Apple's Japanese avoids あなた"
+    },
+    {
+     "key": "Opens a file picker to import books in any format TextMouth reads.",
+     "english": "Opens a file picker to import books in any format TextMouth reads.",
+     "before": "ファイルピッカーを開き、TextMouth が読み込めるあらゆる形式のブックを読み込みます。",
+     "after": "ファイルピッカーを開き、TextMouth が対応するあらゆる形式のブックを読み込みます。",
+     "why": "natural: 読み込める…を読み込みます repeated the verb; reads as the formats it supports"
+    },
+    {
+     "key": "Position in %@: differs, and both were saved at the same time.",
+     "english": "Position in %@: differs, and both were saved at the same time.",
+     "before": "%@の位置：異なり、どちらも同時に保存されました。",
+     "after": "%@の位置：異なりますが、どちらも同時に保存されました。",
+     "why": "natural: the bare 異なり、 after the colon read as a fragment"
+    },
+    {
+     "key": "Position in %@: newer in %@, %@.",
+     "english": "Position in %1$@: newer in %2$@, %3$@.",
+     "before": "%1$@の位置：%2$@のほうが新しく、%3$@。",
+     "after": "%1$@の位置：%2$@のほうが新しく、%3$@です。",
+     "why": "grammar: the sentence ended on the bare place after 新しく、; adds です"
+    },
+    {
+     "key": "Sets when the View pop-up offers this view",
+     "english": "Sets when the View pop-up offers this view",
+     "before": "ビューのポップアップメニューにこのビューを表示するタイミングを設定します。",
+     "after": "「ビュー」ポップアップメニューにこのビューを表示するタイミングを設定します。",
+     "why": "punctuation: the View pop-up named in 「」 as elsewhere; ビューのポップアップ read as this view's own pop-up"
+    },
+    {
+     "key": "Start New Library",
+     "english": "Start New Library",
+     "before": "新しいライブラリを開始",
+     "after": "新しいライブラリを作成",
+     "why": "natural: a library is made (作成), not started (開始), as Apple's Photos and Music say"
+    },
+    {
+     "key": "Start a New Library?",
+     "english": "Start a New Library?",
+     "before": "新しいライブラリを開始しますか？",
+     "after": "新しいライブラリを作成しますか？",
+     "why": "natural: a library is made (作成), not started (開始), as Apple's Photos and Music say"
+    },
+    {
+     "key": "Still comparing: %lld seconds so far. Press Escape to stop.",
+     "english": {
+      "one": "Still comparing: %lld second so far. Press Escape to stop.",
+      "other": "Still comparing: %lld seconds so far. Press Escape to stop."
+     },
+     "before": {
+      "other": "比較を続けています：これまでに%lld秒。停止するには エスケープキーを押してください。"
+     },
+     "after": {
+      "other": "比較を続けています：これまでに%lld秒。停止するにはエスケープキーを押してください。"
+     },
+     "why": "punctuation: a stray half-width space inside the Japanese sentence"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "停止して、再生で最初から",
+     "after": "停止し、次の再生は最初から",
+     "why": "natural: 再生で最初から was a fragment; says the next Play starts from the beginning"
+    },
+    {
+     "key": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "english": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "before": "TextMouth は、ライブラリ内のコピーの編集済みテキストを新しいコピーのテキストの隣に残せなかったため、どちらのコピーもそのままにしました。",
+     "after": "TextMouth は、ライブラリ内のコピーの編集済みテキストを新しいコピーのテキストとは別に残せなかったため、どちらのコピーもそのままにしました。",
+     "why": "natural: \"beside\" was copied as の隣に; says the text is kept apart from it"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth は、「%@」で変更したテキストを新しい読み込み結果の隣に残せなかったため、ブックをそのままにしました。",
+     "after": "TextMouth は、「%@」で変更したテキストを新しい読み込み結果とは別に残せなかったため、ブックをそのままにしました。",
+     "why": "natural: \"beside\" was copied as の隣に; says the text is kept apart from it"
+    },
+    {
+     "key": "TextMouth couldn't save the library's index, so it left both copies as they are.",
+     "english": "TextMouth couldn't save the library's index, so it left both copies as they are.",
+     "before": "TextMouth はライブラリの索引を保存できなかったため、どちらのコピーもそのままにしました。",
+     "after": "TextMouth はライブラリインデックスを保存できなかったため、どちらのコピーもそのままにしました。",
+     "why": "term: the library index is ライブラリインデックス in the glossary and 35 other strings"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "before": "TextMouth はデータフォルダを再構築しています。完了するまで待ってから、もう一度「%@」を選択してください。",
+     "after": "TextMouth はデータディレクトリを再構築しています。完了するまで待ってから、もう一度「%@」を選択してください。",
+     "why": "term: the data directory is データディレクトリ in 24 other strings; データフォルダ was an outlier"
+    },
+    {
+     "key": "TextMouth is switching to another library and opening again on it.",
+     "english": "TextMouth is switching to another library and opening again on it.",
+     "before": "TextMouth は別のライブラリに切り替えて、それで開き直しています。",
+     "after": "TextMouth は別のライブラリに切り替えて開き直しています。",
+     "why": "natural: それで開き直しています (reopening with it) was a literal copy of opening again on it"
+    },
+    {
+     "key": "TextMouth needs the drive “%@” connected to open the library.",
+     "english": "TextMouth needs the drive “%@” connected to open the library.",
+     "before": "ライブラリを開くには、TextMouth にドライブ「%@」を接続する必要があります。",
+     "after": "TextMouth がライブラリを開くには、ドライブ「%@」を接続する必要があります。",
+     "why": "meaning: TextMouth にドライブを接続 said to connect the drive to TextMouth, not to the Mac"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth は終了して開き直し、それを開始します。",
+     "after": "TextMouth は終了して開き直し、新しいライブラリを使い始めます。",
+     "why": "natural: それを開始します started a library; a library is used or made, not started"
+    },
+    {
+     "key": "TextMouth will start a new, empty library in the default location, %@, instead of the library in %@, which isn't available.",
+     "english": "TextMouth will start a new, empty library in the default location, %1$@, instead of the library in %2$@, which isn't available.",
+     "before": "TextMouth は、利用できない%2$@のライブラリの代わりに、デフォルトの場所%1$@に新しい空のライブラリを開始します。",
+     "after": "TextMouth は、利用できない%2$@のライブラリの代わりに、デフォルトの場所%1$@に新しい空のライブラリを作成します。",
+     "why": "natural: a library is made (作成), not started (開始), as Apple's Photos and Music say"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "点字はこのコードで印刷文字に翻訳し直されます。これが正しい選択かどうかは確認されません。単語の読みが正しくない場合は、別のものを選択してください。",
+     "after": "点字は、このコードで墨字に翻訳し直されます。これが正しい選択かどうかは確認されません。単語の読みが正しくない場合は、別のものを選択してください。",
+     "why": "term: print as opposed to braille is 墨字 to Japanese braille readers, not 印刷文字"
+    },
+    {
+     "key": "The index is not changed until you choose %@ or %@, which stay available from %@ at the top of the library.",
+     "english": "The index is not changed until you choose %1$@ or %2$@, which stay available from %3$@ at the top of the library.",
+     "before": "「%1$@」または「%2$@」を選択するまで、インデックスは変更されません。どちらもライブラリ上部の%3$@から使えます。",
+     "after": "「%1$@」または「%2$@」を選択するまで、インデックスは変更されません。どちらもライブラリ上部の「%3$@」から使えます。",
+     "why": "punctuation: the Recovery Options button named in 「」 like the other two buttons"
+    },
+    {
+     "key": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "english": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "before": "リーディングリスト、フォルダの並べ替えと聴取オプション、ファイルがまだこのフォルダにないブックは、含まれません。",
+     "after": "リーディングリスト、フォルダの並べ替えと再生オプション、ファイルがまだこのフォルダにないブックは、含まれません。",
+     "why": "term: listening options as the Folder Settings heading now names them (再生); 聴取オプション was used nowhere else"
+    },
+    {
+     "key": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
+     "english": "Their places, bookmarks, and transcripts, if they have any, are kept, and they can be downloaded again.",
+     "before": "場所、ブックマーク、文字起こしがある場合はそれらも残り、もう一度ダウンロードできます。",
+     "after": "場所、ブックマーク、文字起こし（ある場合）は残り、もう一度ダウンロードできます。",
+     "why": "natural: それらも残り implied something else is also kept; the if-any now reads as a condition"
+    },
+    {
+     "key": "chapter %@",
+     "english": "chapter %@",
+     "before": "章%@",
+     "after": "チャプタ%@",
+     "why": "natural: 章3 is not how Japanese names chapter 3; the glossary and catalog say チャプタ%@"
+    },
+    {
+     "key": "chapter %@, %lld%%",
+     "english": "chapter %1$@, %2$lld%%",
+     "before": "章%1$@、%2$lld%%",
+     "after": "チャプタ%1$@、%2$lld%%",
+     "why": "natural: 章3 is not how Japanese names chapter 3; the glossary and catalog say チャプタ%@"
+    },
+    {
+     "key": "chapter %@, with no note",
+     "english": "chapter %@, with no note",
+     "before": "章%@、メモなし",
+     "after": "チャプタ%@、メモなし",
+     "why": "natural: 章3 is not how Japanese names chapter 3; the glossary and catalog say チャプタ%@"
+    },
+    {
+     "key": "chapter %@, with the note “%@”",
+     "english": "chapter %1$@, with the note “%2$@”",
+     "before": "章%1$@、メモ「%2$@」付き",
+     "after": "チャプタ%1$@、メモ「%2$@」付き",
+     "why": "natural: 章3 is not how Japanese names chapter 3; the glossary and catalog say チャプタ%@"
+    },
+    {
+     "key": "choose Remove Download",
+     "english": "choose Remove Download",
+     "before": "「ダウンロードを取り除く」を選択します",
+     "after": "「ダウンロードしたものを削除」を選択します",
+     "why": "term: this names the Finder's own iCloud Drive command, which the Finder's Japanese table calls ダウンロードしたものを削除"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "そのため、そこでの位置とブックマークはライブラリ索引のみから取得しました。",
+     "after": "そのため、そこでの位置とブックマークはライブラリインデックスのみから取得しました。",
+     "why": "term: the library index is ライブラリインデックス in the glossary and 35 other strings"
+    },
+    {
+     "key": "the library index in %@",
+     "english": "the library index in %@",
+     "before": "%@内のライブラリ索引",
+     "after": "%@内のライブラリインデックス",
+     "why": "term: the library index is ライブラリインデックス in the glossary and 35 other strings"
+    },
+    {
+     "key": "the library index of %@",
+     "english": "the library index of %@",
+     "before": "%@のライブラリ索引",
+     "after": "%@のライブラリインデックス",
+     "why": "term: the library index is ライブラリインデックス in the glossary and 35 other strings"
+    },
+    {
+     "key": "“%@” is being exported. %@, then %@.",
+     "english": "“%1$@” is being exported. %2$@, then %3$@.",
+     "before": "「%1$@」を書き出し中です。%2$@、そのあと%3$@。",
+     "after": "「%1$@」を書き出し中です。%2$@。そのあと、%3$@。",
+     "why": "grammar: two polite commands (待ってください、もう一度お試しください) joined by a comma; as the shared join %@, then %@. writes it"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
