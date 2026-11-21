@@ -503732,7 +503732,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il filtro %1$@ non ha l’opzione “%2$@”. Le sue opzioni sono %3$@."
+            "value" : "Il filtro %1$@ non ha l’opzione “%2$@”. Opzioni disponibili: %3$@."
           }
         },
         "ja" : {
@@ -680067,7 +680067,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” sta ancora elaborando. Esci quando la modifica è finita."
+            "value" : "In “%@” è ancora in corso una modifica. Esci quando è finita."
           }
         },
         "ja" : {
