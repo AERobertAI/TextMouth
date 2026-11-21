@@ -151019,7 +151019,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Listelenen her karakter bir dizi oluşturabilir. Boşluklar yok sayılır; harfler ve rakamlar hiçbir zaman dizi oluşturmaz."
+            "value" : "Listelenen her karakter bir dizi oluşturabilir. Boşluklar yoksayılır; harfler ve rakamlar hiçbir zaman dizi oluşturmaz."
           }
         },
         "uk" : {
@@ -228623,7 +228623,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Üst veri güncellendi"
+            "value" : "Meta veri güncellendi"
           }
         },
         "uk" : {
@@ -458357,7 +458357,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitap üst verilerinin okunması bekleniyor..."
+            "value" : "Kitap meta verilerinin okunması bekleniyor..."
           }
         },
         "uk" : {
@@ -462849,7 +462849,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Artikeller yok sayıldığında, üst verisi Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe olan bir kitap, o dilin Le ve Die gibi artiklerini ve The kelimeyi atlar."
+            "value" : "Artikeller yoksayıldığında, meta verisi Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe olan bir kitap, o dilin Le ve Die gibi artiklerini ve The kelimeyi atlar."
           }
         },
         "uk" : {
