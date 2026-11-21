@@ -1250,6 +1250,746 @@
      "why": "natural: «книга» ещё выполняется makes the book the thing running; it is a change in its audio editor that is under way"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "У «%1$@» по умолчанию %2$@",
+     "after": "Сочетание по умолчанию %2$@ занято действием «%1$@»",
+     "why": "meaning: said that the other action has its own default, not that it now holds this action’s default key"
+    },
+    {
+     "key": "%@ has no words, so the cursor is %@.",
+     "english": "%1$@ has no words, so the cursor is %2$@.",
+     "before": "%1$@ без слов, курсор %2$@.",
+     "after": "%1$@ не содержит слов, поэтому курсор %2$@.",
+     "why": "natural: «без слов» and the dropped «поэтому» read as a telegram; the cause is now said"
+    },
+    {
+     "key": "%@ is already in the reading list.",
+     "english": "%@ is already in the reading list.",
+     "before": "%@ уже в списке для чтения.",
+     "after": "«%@» уже в списке для чтения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ is an audiobook without a transcript, so it has no text to edit.",
+     "english": "%@ is an audiobook without a transcript, so it has no text to edit.",
+     "before": "%@ — аудиокнига без расшифровки, поэтому в ней нет текста для изменения.",
+     "after": "«%@» — аудиокнига без расшифровки, поэтому в ней нет текста для изменения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ is in a skipped section, so the cursor is %@.",
+     "english": "%1$@ is in a skipped section, so the cursor is %2$@.",
+     "before": "%1$@ в пропущенном разделе, курсор %2$@.",
+     "after": "%1$@ находится в пропущенном разделе, поэтому курсор %2$@.",
+     "why": "natural: restores the verb and the cause, as in the sibling announcement"
+    },
+    {
+     "key": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "english": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "before": "%@ — не аудиокнига из дорожек, поэтому у неё нет манифеста для изменения.",
+     "after": "«%@» — не аудиокнига из дорожек, поэтому у неё нет манифеста для изменения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ isn't in the reading list.",
+     "english": "%@ isn't in the reading list.",
+     "before": "%@ нет в списке для чтения.",
+     "after": "«%@» нет в списке для чтения.",
+     "why": "punctuation: a book title inside a sentence takes «…», as in the 32 other sentences of this part"
+    },
+    {
+     "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "before": "%1$@ требует таблицу «%2$@», одну из собственных таблиц Брайля на Mac, которой нет в TextMouth на iPhone.",
+     "after": "%1$@ требует таблицу «%2$@», одну из встроенных таблиц Брайля на Mac, которой нет в TextMouth на iPhone.",
+     "why": "natural: «собственных таблиц Брайля на Mac» copies “a Mac’s own”; these are the Mac’s built-in tables"
+    },
+    {
+     "key": "%@ reset to default: %@",
+     "english": "%1$@ reset to default: %2$@",
+     "before": "%1$@ возвращено к значениям по умолчанию: %2$@",
+     "after": "Для «%1$@» восстановлено значение по умолчанию: %2$@",
+     "why": "grammar: a neuter participle agreed with no noun after an action name; plural «значениям» for one key"
+    },
+    {
+     "key": "%@ sound",
+     "english": "%@ sound",
+     "before": "Звук: %@",
+     "after": "Звук для «%@»",
+     "why": "voiceover: «Звук: Воспроизвести» made the event name sound like the pop-up’s value"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "english": "%@ uses it in the menus",
+     "before": "%@ использует это сочетание в меню",
+     "after": "это сочетание использует команда меню «%@»",
+     "why": "grammar: a bare command name such as Скопировать cannot be the subject; quoted as a menu command"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "Не удалось добавить «%@» обратно: сначала не получилось сохранить копию текста из пакета книги, поэтому TextMouth оставил текст как был.",
+     "after": "Не удалось добавить «%@» обратно: сначала не получилось сохранить копию текста из пакета книги, поэтому TextMouth оставил текст без изменений.",
+     "why": "natural: «оставил текст как был» is colloquial; «без изменений» is the interface idiom"
+    },
+    {
+     "key": "%@ works in %@.",
+     "english": "%1$@ works in %2$@.",
+     "before": "%1$@ работает: %2$@.",
+     "after": "«%1$@» работает: %2$@.",
+     "why": "punctuation: the action name is quoted as in the other shortcut announcements"
+    },
+    {
+     "key": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "english": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "before": "Серия — это один повторяющийся символ, отдельно или через одиночные пробелы, например * * * * или ====. Озвучивание переписывает серии перед правилами выше; на экране и в Брайле остаётся каждый символ.",
+     "after": "Серия — это один повторяющийся символ, отдельно или через одиночные пробелы, например * * * * или ====. Озвучивание переписывает серии до применения правил выше; на экране и в Брайле остаётся каждый символ.",
+     "why": "meaning: «перед правилами выше» read as a place; runs are rewritten before the rules apply"
+    },
+    {
+     "key": "A web page of the book's text, with a contents list linking each heading.",
+     "english": "A web page of the book's text, with a contents list linking each heading.",
+     "before": "Веб-страница с текстом книги и списком оглавления со ссылками на каждый заголовок.",
+     "after": "Веб-страница с текстом книги и оглавлением со ссылками на каждый заголовок.",
+     "why": "natural: «списком оглавления» says list twice"
+    },
+    {
+     "key": "Add it again.",
+     "english": "Add it again.",
+     "before": "Добавьте её снова.",
+     "after": "Добавьте этот файл снова.",
+     "why": "grammar: «её» had no feminine noun to point to after «Импорт «Dune»»; the English it is the file"
+    },
+    {
+     "key": "Add it on your Mac, then send the book here.",
+     "english": "Add it on your Mac, then send the book here.",
+     "before": "Добавьте её на своём Mac, затем отправьте книгу сюда.",
+     "after": "Добавьте файл на своём Mac, затем отправьте книгу сюда.",
+     "why": "grammar: «её» pointed back to «документ» or «формат», both masculine; the English it is the file"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "Добавляет скорость, с которой считается время, например 2,0x для аудиокниги не на скорости 1x или 500 слов в минуту для текстовой книги, в окне чтения, в «Где я?», «Скопировать позицию чтения» и в длительности на листе заголовков.",
+     "after": "Добавляет скорость, с которой считается время, например 2,0x для аудиокниги не на скорости 1x или 500 слов в минуту для текстовой книги, в окне чтения, в «Где я?», в «Скопировать позицию чтения» и в длительностях на листе заголовков.",
+     "why": "grammar: the list lost its preposition before a command name, and the durations were singular"
+    },
+    {
+     "key": "As the table defines",
+     "english": "As the table defines",
+     "before": "По определению таблицы",
+     "after": "Как задано в таблице",
+     "why": "natural: «По определению таблицы» reads as “by definition of the table”; the table’s own rules decide"
+    },
+    {
+     "key": "Break",
+     "english": "Break",
+     "before": "Break",
+     "after": "Перенос",
+     "why": "term: Apple’s Russian key name for Break (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "Caret",
+     "english": "Caret",
+     "before": "Циркумфлекс",
+     "after": "Знак вставки",
+     "why": "term: VoiceOver’s own Russian speech names “^” «знак вставки» (ScreenReader speech table), so the key name matches what the listener hears"
+    },
+    {
+     "key": "Change this book's forward and backward navigation unit",
+     "english": "Change this book's forward and backward navigation unit",
+     "before": "Меняет единицу, на которую эта книга перемещается вперёд и назад",
+     "after": "Меняет единицу навигации вперёд и назад для этой книги.",
+     "why": "natural: «на которую эта книга перемещается» was a word-for-word calque; a hint ends with a period"
+    },
+    {
+     "key": "Change this book's forward and backward navigation units",
+     "english": "Change this book's forward and backward navigation units",
+     "before": "Меняет единицы, на которые эта книга перемещается вперёд и назад",
+     "after": "Меняет единицы навигации вперёд и назад для этой книги.",
+     "why": "natural: the same calque as the one-unit help text; a hint ends with a period"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "Выбирает шаг перехода для воспроизведения и кнопок пропуска.",
+     "after": "Выбирает шаг перехода для воспроизведения и кнопок перемотки.",
+     "why": "term: the skip buttons are the glossary’s Перемотать вперёд/назад, so «кнопки перемотки», not «кнопки пропуска»"
+    },
+    {
+     "key": "Copies the whole report as plain text",
+     "english": "Copies the whole report as plain text",
+     "before": "Копирует весь отчёт как обычный текст.",
+     "after": "Копирует весь отчёт как простой текст.",
+     "why": "term: plain text as a format is «простой текст», as Apple’s TextEdit says it and as part 1 now names the Plain Text format"
+    },
+    {
+     "key": "Could not save: the book's title is empty.",
+     "english": "Could not save: the book's title is empty.",
+     "before": "Не удалось сохранить: название книги пусто.",
+     "after": "Не удалось сохранить: не указано название книги.",
+     "why": "natural: the short adjective «название пусто» is unidiomatic"
+    },
+    {
+     "key": "Every window",
+     "english": "Every window",
+     "before": "Каждое окно",
+     "after": "Все окна",
+     "why": "natural: «Каждое окно» copies “every window”; the sibling choices are plural (Окна библиотеки, Окна чтения)"
+    },
+    {
+     "key": "Find",
+     "english": "Find",
+     "before": "Найти",
+     "after": "Поиск",
+     "why": "term: Apple’s Russian names both the Find key and the Edit menu’s Find submenu «Поиск» (AppKit FunctionKeyNames, SwiftUI MainMenu)"
+    },
+    {
+     "key": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "english": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "before": "Насколько высоким звучит голос в файле. Начальное значение — высота тона книги.",
+     "after": "Насколько высоко звучит голос в файле. Начальное значение — высота тона книги.",
+     "why": "grammar: «звучит» takes the adverb «высоко», not the adjective «высоким»"
+    },
+    {
+     "key": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "english": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "before": "В окнах библиотеки отдельная буква переходит к первой книге или папке, название которой с неё начинается, поэтому сочетание из одной буквы, например W, работает только в других окнах.",
+     "after": "В окнах библиотеки нажатая буква выбирает первую книгу или папку, название которой с неё начинается, поэтому сочетание из одной буквы, например W, работает только в других окнах.",
+     "why": "natural: «отдельная буква переходит» made the letter itself move; a pressed letter selects the first match"
+    },
+    {
+     "key": "Jumped to %@ in the recording.",
+     "english": "Jumped to %@ in the recording.",
+     "before": "Переход к %@ в записи.",
+     "after": "Переход к отметке %@ в записи.",
+     "why": "grammar: the spoken time is nominative (2 часа, 13 минут), so it cannot follow «к» directly; «к отметке» takes it in apposition"
+    },
+    {
+     "key": "Jumped to %@ percent.",
+     "english": "Jumped to %@ percent.",
+     "before": "Переход к проценту: %@.",
+     "after": "Переход к отметке %@ процента.",
+     "why": "natural: «к проценту: 47,5» was clumsy; the value always has one decimal, so «процента» is always the right form"
+    },
+    {
+     "key": "Jumped to %@.",
+     "english": "Jumped to %@.",
+     "before": "Переход к %@.",
+     "after": "Переход к отметке %@.",
+     "why": "grammar: the spoken time is nominative and cannot follow «к» directly"
+    },
+    {
+     "key": "Leave out",
+     "english": "Leave out",
+     "before": "Пропустить",
+     "after": "Пропускать",
+     "why": "grammar: a reading style is a standing behaviour, imperfective like its siblings «Повторять каждый символ», «Называть количество»"
+    },
+    {
+     "key": "Markup guard: strict, every angle bracket silent, from character %@ to %@ of the spoken text.",
+     "english": "Markup guard: strict, every angle bracket silent, from character %1$@ to %2$@ of the spoken text.",
+     "before": "Защита разметки: строгая, все угловые скобки не читаются, с символа %1$@ по %2$@ озвучиваемого текста.",
+     "after": "Защита разметки: строгая, ни одна угловая скобка не произносится, с символа %1$@ по %2$@ озвучиваемого текста.",
+     "why": "meaning: «все угловые скобки не читаются» can be heard as “not all are read”"
+    },
+    {
+     "key": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "english": "Markup guard: the usual one, which silences only the brackets of tag-shaped text.",
+     "before": "Защита разметки: обычная, не читает только скобки текста в виде тегов.",
+     "after": "Защита разметки: обычная, пропускает при чтении только скобки текста, похожего на теги.",
+     "why": "meaning: «не читает только скобки» can be heard as “reads more than the brackets”"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "Элементы управления медиа не освобождены: эта книга их не удерживает.",
+     "after": "Медиаклавиши не освобождены: эта книга их не удерживает.",
+     "why": "term: the command is «Освободить медиаклавиши»; the announcement now names the same thing"
+    },
+    {
+     "key": "Media controls released",
+     "english": "Media controls released",
+     "before": "Элементы управления медиа освобождены",
+     "after": "Медиаклавиши освобождены",
+     "why": "term: matches the command «Освободить медиаклавиши» instead of the long «Элементы управления медиа»"
+    },
+    {
+     "key": "Minimize",
+     "english": "Minimize",
+     "before": "Свернуть",
+     "after": "Убрать в Dock",
+     "why": "term: the Window menu’s Minimize is «Убрать в Dock» in Apple’s Russian, so the listener can find the command named"
+    },
+    {
+     "key": "Minimize All",
+     "english": "Minimize All",
+     "before": "Свернуть все",
+     "after": "Убрать все окна в Dock",
+     "why": "term: Apple’s Russian Window menu says «Убрать все окна в Dock» for Minimize All"
+    },
+    {
+     "key": "Mode Switch",
+     "english": "Mode Switch",
+     "before": "Переключение режима",
+     "after": "Переключение режимов",
+     "why": "term: Apple’s Russian key name for Mode Switch (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "No key was pressed twice.",
+     "english": "No key was pressed twice.",
+     "before": "Клавиша не была нажата дважды.",
+     "after": "Ни одна клавиша не была нажата дважды.",
+     "why": "meaning: «Клавиша не была нажата дважды» spoke of one known key; the trial found no key pressed twice"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Голос не установлен. Добавьте его в «Системные настройки», «Универсальный доступ», «Речь», затем экспортируйте снова.",
+     "after": "Не установлено ни одного голоса. Добавьте голос в «Системные настройки», «Универсальный доступ», «Устный контент», затем экспортируйте снова.",
+     "why": "term: Apple’s Russian names the pane «Устный контент» (System Settings’ own search terms), not «Речь»; «Голос не установлен» meant one known voice"
+    },
+    {
+     "key": "Not restarted because of the sleep timer",
+     "english": "Not restarted because of the sleep timer",
+     "before": "Не перезапущено из-за таймера сна",
+     "after": "Книга не начата заново из-за таймера сна",
+     "why": "natural: the bare neuter «Не перезапущено» agreed with nothing; the book is what did not start again"
+    },
+    {
+     "key": "OCR could not run on all %lld pages, so text found only in their images is missing: %@.",
+     "english": {
+      "one": "OCR could not run on all %lld page, so text found only in its images is missing: %@.",
+      "other": "OCR could not run on all %lld pages, so text found only in their images is missing: %@."
+     },
+     "before": {
+      "few": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "many": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "one": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "other": "Не удалось запустить OCR для всех страниц (%lld), поэтому текст, который есть только на изображениях, отсутствует: %@."
+     },
+     "after": {
+      "one": "Не удалось запустить OCR ни для одной из %lld страницы, поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "few": "Не удалось запустить OCR ни для одной из %lld страниц, поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "many": "Не удалось запустить OCR ни для одной из %lld страниц, поэтому текст, который есть только на изображениях, отсутствует: %@.",
+      "other": "Не удалось запустить OCR ни для одной из %lld страницы, поэтому текст, который есть только на изображениях, отсутствует: %@."
+     },
+     "why": "meaning: «не удалось … для всех страниц» reads as “not for every page”; the warning is for OCR failing on every page"
+    },
+    {
+     "key": "Open the book in the program that made it, save it again, then import it again.",
+     "english": "Open the book in the program that made it, save it again, then import it again.",
+     "before": "Откройте книгу в программе, в которой она создана, сохраните её снова и затем снова импортируйте.",
+     "after": "Откройте книгу в программе, в которой она создана, пересохраните её и снова импортируйте.",
+     "why": "natural: «сохраните её снова и затем снова импортируйте» repeated «снова»"
+    },
+    {
+     "key": "Open the document in the program that made it, save it again, then import it again.",
+     "english": "Open the document in the program that made it, save it again, then import it again.",
+     "before": "Откройте документ в программе, в которой он создан, сохраните его снова и затем снова импортируйте.",
+     "after": "Откройте документ в программе, в которой он создан, пересохраните его и снова импортируйте.",
+     "why": "natural: the same doubled «снова» as the book sentence"
+    },
+    {
+     "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "before": "Воспроизведение остановлено: звук перестал отвечать. Нажмите «Воспроизвести», чтобы повторить попытку; если оно снова остановится, завершите TextMouth и откройте его заново.",
+     "after": "Воспроизведение остановлено: звуковая система перестала отвечать. Нажмите «Воспроизвести», чтобы повторить попытку; если воспроизведение снова остановится, завершите TextMouth и откройте его заново.",
+     "why": "natural: «звук перестал отвечать» (the sound stopped answering) is a calque; it is the audio system that stops responding"
+    },
+    {
+     "key": "Preview %@ sound",
+     "english": "Preview %@ sound",
+     "before": "Прослушать звук: %@",
+     "after": "Прослушать звук для «%@»",
+     "why": "voiceover: «Прослушать звук: Воспроизвести» made the event name sound like the sound’s name"
+    },
+    {
+     "key": "Print",
+     "english": "Print",
+     "before": "Печать",
+     "after": "Напечатать",
+     "why": "term: Apple’s Russian key name for Print (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "Print Screen",
+     "english": "Print Screen",
+     "before": "Print Screen",
+     "after": "Напечатать экран",
+     "why": "term: Apple’s Russian key name for Print Screen (AppKit FunctionKeyNames)"
+    },
+    {
+     "key": "Resets this book to %@",
+     "english": "Resets this book to %@",
+     "before": "Возвращает этой книге скорость: %@.",
+     "after": "Возвращает этой книге скорость %@.",
+     "why": "natural: the colon before a value such as «1,0× от обычной скорости» made a broken sentence"
+    },
+    {
+     "key": "Restarts the timer at its full length and plays the book.",
+     "english": "Restarts the timer at its full length and plays the book.",
+     "before": "Перезапускает таймер с полной длительности и воспроизводит книгу.",
+     "after": "Запускает таймер заново на полное время и воспроизводит книгу.",
+     "why": "natural: «перезапускает таймер с полной длительности» is a broken calque of “at its full length”"
+    },
+    {
+     "key": "Restores this action's default shortcuts, which follow later releases' changes",
+     "english": "Restores this action's default shortcuts, which follow later releases' changes",
+     "before": "Возвращает сочетания этого действия по умолчанию, которые меняются в следующих версиях.",
+     "after": "Возвращает действию сочетания по умолчанию; новые версии могут их изменить.",
+     "why": "meaning: said the defaults do change in later versions, and «по умолчанию» sat on the verb; later versions may change them"
+    },
+    {
+     "key": "Say how many",
+     "english": "Say how many",
+     "before": "Назвать количество",
+     "after": "Называть количество",
+     "why": "grammar: imperfective, like the other reading styles in the same pop-up"
+    },
+    {
+     "key": "Select Chapter",
+     "english": "Select Chapter",
+     "before": "Выбрать главу",
+     "after": "Выделить главу",
+     "why": "term: the audio editor selects a range, as its sibling commands say with «Выделить»; «Выбрать» is for picking items"
+    },
+    {
+     "key": "Settings applied as global defaults",
+     "english": "Settings applied as global defaults",
+     "before": "Настройки применены как глобальные по умолчанию",
+     "after": "Настройки применены как общие значения по умолчанию",
+     "why": "term: the app says «общие значения по умолчанию» for global defaults everywhere else; «глобальные по умолчанию» lacks its noun"
+    },
+    {
+     "key": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "english": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "before": "Речь голосов Mac предназначена для личного некоммерческого использования по лицензии Apple.",
+     "after": "Речь, созданная голосами Mac, предназначена для личного некоммерческого использования по лицензии Apple.",
+     "why": "natural: «Речь голосов Mac» is an unidiomatic genitive chain"
+    },
+    {
+     "key": "Stop At",
+     "english": "Stop At",
+     "before": "Остановить на",
+     "after": "Место остановки",
+     "why": "natural: a heading cannot end on a preposition («Остановить на»)"
+    },
+    {
+     "key": "Taken from %@",
+     "english": "Taken from %@",
+     "before": "Забрано у: %@",
+     "after": "Прежнее назначение: %@",
+     "why": "natural: «Забрано у: …» is slangy and puts a colon after a preposition; the value is a list of action names"
+    },
+    {
+     "key": "Text as plain text",
+     "english": "Text as plain text",
+     "before": "Текст как обычный текст",
+     "after": "Текст как простой текст",
+     "why": "term: plain text as a format is «простой текст», as Apple’s TextEdit says it and as part 1 now names the Plain Text format"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Текст не обновлён: «%@» убрано из библиотеки или его загрузка удалена, поэтому изменение текста остановлено.",
+     "after": "Текст не обновлён: книга «%@» убрана из библиотеки или её загрузка удалена, поэтому изменение текста остановлено.",
+     "why": "grammar: the neuter «убрано» agreed with no noun before a book title"
+    },
+    {
+     "key": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "english": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "before": "TextMouth экспортирует озвученное аудио в один файл за раз. Экспортируйте это после завершения текущего.",
+     "after": "TextMouth может экспортировать только один озвученный аудиофайл за раз. Запустите этот экспорт после завершения текущего.",
+     "why": "meaning: «экспортирует озвученное аудио в один файл за раз» said each export makes one file; only one export may run at once"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth читает файлы BRF и BRL, которые вы добавите с этого момента, с этими символами и сам распознаёт шаблоны Unicode-брайля. Диалог экспорта начинает BRF с них. Книга сохраняет символы, с которыми была импортирована; их можно изменить в окне «Сведения о книге».",
+     "after": "TextMouth читает файлы BRF и BRL, которые вы добавите с этого момента, с этими символами и сам распознаёт шаблоны Unicode-брайля. В диалоге экспорта они выбраны по умолчанию для BRF. Книга сохраняет символы, с которыми была импортирована; их можно изменить в окне «Сведения о книге».",
+     "why": "natural: «Диалог экспорта начинает BRF с них» is a calque; the Export dialog preselects them for a BRF"
+    },
+    {
+     "key": "The %@ ends %@ into “%@”, which is only %@ long.",
+     "english": "The %1$@ ends %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "В аудиокниге %1$@ заканчивается на отметке %2$@ файла «%3$@», хотя его длина всего %4$@.",
+     "after": "В аудиокниге %1$@ заканчивается на отметке %2$@ файла «%3$@», хотя длительность этого файла всего %4$@.",
+     "why": "natural: «его длина» could point to the heading as well as the file; Duration is «длительность»"
+    },
+    {
+     "key": "The %@ starts %@ into “%@”, which is only %@ long.",
+     "english": "The %1$@ starts %2$@ into “%3$@”, which is only %4$@ long.",
+     "before": "В аудиокниге %1$@ начинается на отметке %2$@ файла «%3$@», хотя его длина всего %4$@.",
+     "after": "В аудиокниге %1$@ начинается на отметке %2$@ файла «%3$@», хотя длительность этого файла всего %4$@.",
+     "why": "natural: the same ambiguous «его длина» as the sibling sentence"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "Аудиофайл %@ заканчивается раньше, чем его звук, поэтому его не удалось преобразовать.",
+     "after": "Аудиофайл %@ обрывается до конца записи, поэтому его не удалось преобразовать.",
+     "why": "meaning: «заканчивается раньше, чем его звук» is a calque; the file is cut off before its audio ends"
+    },
+    {
+     "key": "The braille code for reading and writing braille.",
+     "english": "The braille code for reading and writing braille.",
+     "before": "Код Брайля для чтения и записи Брайля.",
+     "after": "Код Брайля для чтения и записи.",
+     "why": "natural: «Код Брайля для чтения и записи Брайля» repeats Брайль"
+    },
+    {
+     "key": "The file %@ stopped responding.",
+     "english": "The file %@ stopped responding.",
+     "before": "Файл %@ перестал отвечать.",
+     "after": "Воспроизведение файла %@ перестало отвечать.",
+     "why": "natural: a file does not «перестать отвечать»; its playback does, as the note says"
+    },
+    {
+     "key": "The file “%@” declares the text encoding “%@”, but it holds bytes that are not valid in that encoding.",
+     "english": "The file “%1$@” declares the text encoding “%2$@”, but it holds bytes that are not valid in that encoding.",
+     "before": "Файл «%1$@» объявляет кодировку текста «%2$@», но содержит байты, недопустимые в этой кодировке.",
+     "after": "В файле «%1$@» указана кодировка текста «%2$@», но он содержит байты, недопустимые в этой кодировке.",
+     "why": "natural: a file «объявляет кодировку» is a calque of “declares”"
+    },
+    {
+     "key": "The file “%@” declares the text encoding “%@”, which TextMouth cannot read.",
+     "english": "The file “%1$@” declares the text encoding “%2$@”, which TextMouth cannot read.",
+     "before": "Файл «%1$@» объявляет кодировку текста «%2$@», которую TextMouth не может прочитать.",
+     "after": "В файле «%1$@» указана кодировка текста «%2$@», которую TextMouth не может прочитать.",
+     "why": "natural: the same calque «объявляет кодировку»"
+    },
+    {
+     "key": "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
+     "english": "The folder is not a DAISY book: it has no ncc.html or .opf file at its top level.",
+     "before": "Эта папка не является книгой DAISY: в её верхнем уровне нет файла ncc.html или .opf.",
+     "after": "Эта папка не является книгой DAISY: на её верхнем уровне нет файла ncc.html или .opf.",
+     "why": "grammar: a level takes «на», not «в»"
+    },
+    {
+     "key": "The language of the braille code for reading and writing braille.",
+     "english": "The language of the braille code for reading and writing braille.",
+     "before": "Язык кода Брайля для чтения и записи Брайля.",
+     "after": "Язык кода Брайля для чтения и записи.",
+     "why": "natural: the same doubled Брайль as the code hint"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "few": "Остальные %lld главы не содержат текста.",
+      "many": "Остальные %lld глав не содержат текста.",
+      "one": "Остальная %lld глава не содержит текста.",
+      "other": "Остальные %lld главы не содержат текста."
+     },
+     "after": {
+      "one": "Остальные %lld глава не содержат текста.",
+      "few": "Остальные %lld главы не содержат текста.",
+      "many": "Остальные %lld глав не содержат текста.",
+      "other": "Остальные %lld главы не содержат текста."
+     },
+     "why": "grammar: the one form (21, 31) said «Остальная 21 глава»; the attribute before such a numeral is plural"
+    },
+    {
+     "key": "The other chapter has no text.",
+     "english": "The other chapter has no text.",
+     "before": "Остальная глава не содержит текста.",
+     "after": "Оставшаяся глава не содержит текста.",
+     "why": "natural: singular «остальная глава» is not said of one countable chapter; it is the one that remains"
+    },
+    {
+     "key": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "english": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "before": "Слова, которые TextMouth читает вслух, обычным текстом; каждая глава под своим заголовком.",
+     "after": "Слова, которые TextMouth читает вслух, простым текстом; каждая глава под своим заголовком.",
+     "why": "term: plain text as a format is «простой текст», as Apple’s TextEdit says it and as part 1 now names the Plain Text format"
+    },
+    {
+     "key": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "english": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "before": "В этой книге Kindle нет текучего текста, как в комиксах или копиях печатных изданий, поэтому TextMouth не может её прочитать.",
+     "after": "В этой книге Kindle нет текста с плавающей вёрсткой, как в комиксах или копиях печатных изданий, поэтому TextMouth не может её прочитать.",
+     "why": "term: «текучий текст» is not Russian; reflowable text is «текст с плавающей вёрсткой»"
+    },
+    {
+     "key": "This document holds more than %@, the most TextMouth reads from one document.",
+     "english": "This document holds more than %@, the most TextMouth reads from one document.",
+     "before": "В этом документе больше %@, а это предел для одного документа, который читает TextMouth.",
+     "after": "Этот документ больше %@ — это наибольший объём, который TextMouth читает из одного документа.",
+     "why": "natural: «предел для одного документа, который читает TextMouth» tied the clause to the document"
+    },
+    {
+     "key": "Time exceeds book length.",
+     "english": "Time exceeds book length.",
+     "before": "Время превышает длину книги.",
+     "after": "Время превышает длительность книги.",
+     "why": "term: a book’s length in time is its «длительность», the glossary word for Duration"
+    },
+    {
+     "key": "Time exceeds the recording's length.",
+     "english": "Time exceeds the recording's length.",
+     "before": "Время превышает длину записи.",
+     "after": "Время превышает длительность записи.",
+     "why": "term: a recording’s length in time is its «длительность»"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "english": "Toggle Bookmark",
+     "before": "Переключить закладку",
+     "after": "Добавить или убрать закладку",
+     "why": "natural: «Переключить закладку» copies “toggle” and does not say what happens"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Вводите прямые кавычки: в TextEdit отключите «Умные кавычки» в меню «Правка», «Подстановки».",
+     "after": "Вводите прямые кавычки: в TextEdit выключите «Смарт-кавычки» в меню «Правка», подменю «Замены».",
+     "why": "term: Apple’s Russian TextEdit names these Смарт-кавычки under Правка > Замены"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next article if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующую статью, если её ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующую статью, если её ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующую статью, если её ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующую статью, если её ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующую статью, если её ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующую статью, если её ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующую статью, если её ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующую статью, если её ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next book if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующую книгу, если её ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующую книгу, если её ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующую книгу, если её ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next episode if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующий выпуск, если его ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующий выпуск, если его ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующий выпуск, если его ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet",
+     "english": {
+      "one": "When %lld minute or less is left, downloads the next item if it is not on this Mac yet",
+      "other": "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet"
+     },
+     "before": {
+      "few": "Когда осталось %lld минуты, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "many": "Когда осталось %lld минут, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "one": "Когда осталась %lld минута, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "other": "Когда осталось %lld минуты, загружает следующий элемент, если его ещё нет на этом Mac."
+     },
+     "after": {
+      "one": "Когда остаётся %lld минута или меньше, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "few": "Когда остаётся %lld минуты или меньше, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "many": "Когда остаётся %lld минут или меньше, загружает следующий элемент, если его ещё нет на этом Mac.",
+      "other": "Когда остаётся %lld минуты или меньше, загружает следующий элемент, если его ещё нет на этом Mac."
+     },
+     "why": "meaning: “or less” was dropped, so the hint named one moment instead of a threshold"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "Указывает, несёт ли последняя строка каждой страницы номер страницы Брайля.",
+     "after": "Указывает, ставится ли номер страницы Брайля в последней строке каждой страницы.",
+     "why": "natural: «несёт ли последняя строка номер» copies “carries”"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "При «%1$@» воспроизведение завершённой книги сообщает, что она завершена; при «%2$@» оно начинает её заново с начала.",
+     "after": "Если выбрано «%1$@», «Воспроизвести» для завершённой книги сообщает, что она завершена; если «%2$@» — начинает её заново с начала.",
+     "why": "meaning: Play is the command, not «воспроизведение» (playback), which cannot say anything"
+    },
+    {
+     "key": "every window",
+     "english": "every window",
+     "before": "каждое окно",
+     "after": "все окна",
+     "why": "natural: matches the pop-up choice «Все окна»; «каждое окно» copied “every window”"
+    },
+    {
+     "key": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "english": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "before": "аудио аудиокниги изменилось после расшифровки, поэтому её расшифровка ей больше не соответствует.",
+     "after": "звук аудиокниги изменился после расшифровки, поэтому расшифровка ему больше не соответствует.",
+     "why": "natural: «аудио аудиокниги» and «её расшифровка ей» stacked echoes and pronouns"
+    },
+    {
+     "key": "the edited transcript can't be laid over the audiobook's audio.",
+     "english": "the edited transcript can't be laid over the audiobook's audio.",
+     "before": "изменённую расшифровку нельзя наложить на аудио аудиокниги.",
+     "after": "изменённую расшифровку нельзя наложить на звук аудиокниги.",
+     "why": "natural: «аудио аудиокниги» repeats the root; the same wording as its sibling reason"
+    },
+    {
+     "key": "the file %@ stopped responding",
+     "english": "the file %@ stopped responding",
+     "before": "файл %@ перестал отвечать",
+     "after": "воспроизведение файла %@ перестало отвечать",
+     "why": "natural: the same clause as the full sentence; it is playback that stops responding"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "«%1$@» — персональный голос, который macOS не может записать в файл. Выберите другой голос кнопкой «%2$@» в окне чтения, затем экспортируйте снова.",
+     "after": "«%1$@» — личный голос, который macOS не может записать в файл. Выберите другой голос кнопкой «%2$@» в окне чтения, затем экспортируйте снова.",
+     "why": "term: Apple’s Russian calls Personal Voice «Личный голос» (Accessibility settings)"
+    }
+   ]
   }
  ]
 }
