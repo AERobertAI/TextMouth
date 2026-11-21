@@ -9194,7 +9194,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ varsayılan olarak %2$@ tuşunu kullanıyor"
+            "value" : "Varsayılan kısayolunu %1$@ kullanıyor: %2$@"
           }
         },
         "uk" : {
@@ -17789,7 +17789,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ %2$@ için kaydedilmedi: %3$@"
+            "value" : "%1$@, %2$@ için kaydedilmedi: %3$@"
           }
         },
         "uk" : {
@@ -25109,7 +25109,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ çalıştığı yer: %2$@."
+            "value" : "%1$@ şurada çalışır: %2$@."
           }
         },
         "uk" : {
@@ -105563,7 +105563,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sayfayı, örneğin Sayfa 12 / 300 gibi, birden çok sayfası olan kitaplar için Neredeyim? özetlerine ekler."
+            "value" : "Birden çok sayfası olan kitaplarda, Sayfa 12 / 300 gibi sayfa bilgisini Neredeyim? özetlerine ekler."
           }
         },
         "uk" : {
@@ -118926,7 +118926,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "At İşareti"
+            "value" : "At işareti"
           }
         },
         "uk" : {
@@ -125594,7 +125594,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ sayfasından önce"
+            "value" : "%@ numaralı sayfadan önce"
           }
         },
         "uk" : {
@@ -154925,7 +154925,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Seçim kısayolu size özel yapar; Varsayılanı Geri Yükle, varsayılan çalışma yerini geri getirir."
+            "value" : "Bir seçim yapmak kısayolu size özel kılar; Varsayılanı Geri Yükle, varsayılan çalışma yerini geri getirir."
           }
         },
         "uk" : {
@@ -258287,7 +258287,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitaplık pencerelerinde tek başına bir harf, onunla başlayan ilk kitaba ya da klasöre gider; bu yüzden W gibi tek harflik bir kısayol yalnızca diğer pencerelerde çalışır."
+            "value" : "Kitaplık pencerelerinde tek başına bir harf, onunla başlayan ilk kitaba ya da klasöre gider; bu yüzden W gibi tek harfli bir kısayol yalnızca diğer pencerelerde çalışır."
           }
         },
         "uk" : {
@@ -277041,7 +277041,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ sayfasına gidildi, %3$@ etiketli %2$@ sayfa."
+            "value" : "%1$@ numaralı sayfaya gidildi, %3$@ etiketli %2$@ sayfa."
           }
         },
         "uk" : {
@@ -277178,7 +277178,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ sayfasına gidildi."
+            "value" : "%@ numaralı sayfaya gidildi."
           }
         },
         "uk" : {
@@ -284488,7 +284488,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sol Süslü Parantez"
+            "value" : "Sol süslü parantez"
           }
         },
         "uk" : {
@@ -284625,7 +284625,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sol Köşeli Parantez"
+            "value" : "Sol köşeli parantez"
           }
         },
         "uk" : {
@@ -284762,7 +284762,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sol Parantez"
+            "value" : "Sol parantez"
           }
         },
         "uk" : {
@@ -296873,7 +296873,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Çift Basma Yap"
+            "value" : "Çift Basmaya Dönüştür"
           }
         },
         "uk" : {
@@ -297010,7 +297010,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tek Basma Yap"
+            "value" : "Tek Basmaya Dönüştür"
           }
         },
         "uk" : {
@@ -376970,7 +376970,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Oynatma durduruldu: ses çalarken TextMouth'un belleği büyüdü ve %@ GB oldu; bu, sistemin ses sistemindeki bir hatadır."
+            "value" : "Oynatma durduruldu: ses çalarken TextMouth'un belleği büyüdü ve %@ GB oldu; bu, sistemin ses altyapısındaki bir hatadır."
           }
         },
         "uk" : {
@@ -388820,7 +388820,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Şimdi çıkmak bu değişiklikleri kaydedilmemiş bırakır:"
+            "value" : "Şimdi çıkarsanız şu değişiklikler kaydedilmemiş kalır:"
           }
         },
         "uk" : {
@@ -410843,7 +410843,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ varsayılanı geri yükle"
+            "value" : "%@ için varsayılanı geri yükle"
           }
         },
         "uk" : {
@@ -420352,7 +420352,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sağ Süslü Parantez"
+            "value" : "Sağ süslü parantez"
           }
         },
         "uk" : {
@@ -420489,7 +420489,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sağ Köşeli Parantez"
+            "value" : "Sağ köşeli parantez"
           }
         },
         "uk" : {
@@ -420626,7 +420626,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sağ Parantez"
+            "value" : "Sağ parantez"
           }
         },
         "uk" : {
