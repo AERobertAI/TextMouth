@@ -83,6 +83,7 @@ ARCHITECTURE.md, in the same folder, is the index of the pages explaining how th
   - [Testing the iPhone app](docs/developer/testing-iphone.md): the phone area, the two iOS test targets.
   - [The iPhone accessibility audit](docs/developer/testing-iphone-audit.md): the audit, its accepted findings, the UI tests.
 - [Translating TextMouth](docs/developer/translation.md): the translation tools, the glossary, and the rules.
+- [The interface languages](docs/developer/translation-languages.md): each language's letters, address, plurals, and doubts.
 - [Localizing TextMouth's code](docs/developer/localization.md): the catalog, the commands, and the conversion patterns.
 - [Architecture](ARCHITECTURE.md): state ownership, how a book is read, shared helpers.
 - [Third-party code](docs/developer/third-party-code.md): the libraries TextMouth includes, and their licences.
