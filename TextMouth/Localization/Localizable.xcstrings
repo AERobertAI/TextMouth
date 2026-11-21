@@ -225577,7 +225577,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para probar con una línea braille."
+            "value" : "Para probar con una pantalla braille."
           }
         },
         "fr" : {
@@ -239163,7 +239163,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cómo escribe el BRF cada celda braille. La mayoría de las líneas braille y de las impresoras braille leen North American Braille ASCII; las configuradas para alemán leen Eurobraille. Para compartir con un lector en otro lugar, exporta un PEF."
+            "value" : "Cómo escribe el BRF cada celda braille. La mayoría de las pantallas braille y de las impresoras braille leen North American Braille ASCII; las configuradas para alemán leen Eurobraille. Para compartir con un lector en otro lugar, exporta un PEF."
           }
         },
         "fr" : {
@@ -268288,7 +268288,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Se conservó el capítulo hablado completo (%lld) hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de él, exporta el mismo intervalo con la misma velocidad y el mismo tono."
+                  "value" : "Se conservó el único capítulo hablado hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de él, exporta el mismo intervalo con la misma velocidad y el mismo tono."
                 }
               },
               "other" : {
@@ -327524,7 +327524,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se agregó ninguna regla de «%@»."
+            "value" : "No se agregó ninguna regla de “%@”."
           }
         },
         "fr" : {
@@ -329904,7 +329904,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay ninguna voz instalada. Agrega una en Ajustes del Sistema, Accesibilidad, Contenido hablado, y vuelve a exportar."
+            "value" : "No hay ninguna voz instalada. Agrega una en Ajustes del Sistema, Accesibilidad, Contenido leído, y vuelve a exportar."
           }
         },
         "fr" : {
@@ -330035,7 +330035,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No hay voces instaladas. Agrega voces en Ajustes, Accesibilidad, Contenido hablado."
+            "value" : "No hay voces instaladas. Agrega voces en Ajustes, Accesibilidad, Lectura y voz."
           }
         },
         "fr" : {
@@ -436103,7 +436103,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El habla de las voces de esta Mac es para uso personal y no comercial, según la licencia de Apple."
+            "value" : "El audio de las voces de la Mac es para uso personal y no comercial, según la licencia de Apple."
           }
         },
         "fr" : {
@@ -459184,7 +459184,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no puede usar la tabla de braille elegida en Ajustes, «%1$@», así que esta exportación empieza con %2$@."
+            "value" : "TextMouth no puede usar la tabla de braille elegida en Ajustes, “%1$@”, así que esta exportación empieza con %2$@."
           }
         },
         "fr" : {
@@ -459321,7 +459321,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no puede usar la tabla «%1$@» de esta Mac: %2$@."
+            "value" : "TextMouth no puede usar la tabla “%1$@” de esta Mac: %2$@."
           }
         },
         "fr" : {
@@ -459714,7 +459714,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no pudo comprobar la tabla de braille «%1$@» de esta Mac: %2$@. Inténtalo de nuevo."
+            "value" : "TextMouth no pudo comprobar la tabla de braille “%1$@” de esta Mac: %2$@. Inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -459851,7 +459851,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no pudo comprobar la tabla «%1$@» de esta Mac: %2$@. Elígela de nuevo para reintentar."
+            "value" : "TextMouth no pudo comprobar la tabla “%1$@” de esta Mac: %2$@. Elígela de nuevo para reintentar."
           }
         },
         "fr" : {
@@ -461721,7 +461721,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no pudo leer «%@»."
+            "value" : "TextMouth no pudo leer “%@”."
           }
         },
         "fr" : {
@@ -462263,7 +462263,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no pudo guardar «%@»."
+            "value" : "TextMouth no pudo guardar “%@”."
           }
         },
         "fr" : {
@@ -466766,7 +466766,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth no tiene ninguna tabla de braille llamada «%@»."
+            "value" : "TextMouth no tiene ninguna tabla de braille llamada “%@”."
           }
         },
         "fr" : {
@@ -489243,7 +489243,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El motor de voz de la Mac se negó a leer una parte de «%@», incluso con sus corchetes en silencio."
+            "value" : "El motor de voz de la Mac se negó a leer una parte de “%@”, incluso con sus corchetes en silencio."
           }
         },
         "fr" : {
@@ -496953,7 +496953,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El audio del libro antes de su primera edición, que TextMouth conserva mientras lo haga el ajuste Audio original."
+            "value" : "El audio del libro antes de su primera edición, que TextMouth conserva mientras el ajuste Audio original lo indique."
           }
         },
         "fr" : {
@@ -500091,7 +500091,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La tabla de braille escribe «%@» como una celda de ocho puntos, pero los archivos BRF y PEF de TextMouth son solo de seis puntos."
+            "value" : "La tabla de braille escribe “%@” como una celda de ocho puntos, pero los archivos BRF y PEF de TextMouth son solo de seis puntos."
           }
         },
         "fr" : {
@@ -507215,7 +507215,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El archivo %@ falló a medias."
+            "value" : "El archivo %@ falló a mitad de la reproducción."
           }
         },
         "fr" : {
@@ -533762,7 +533762,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El texto de este libro %@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, aplana el anidado y guarda; después vuelve a exportar."
+            "value" : "El texto de este libro %@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, simplifica el anidamiento y guarda; después vuelve a exportar."
           }
         },
         "fr" : {
@@ -537323,7 +537323,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La voz cambió su tipo de audio a mitad de «%@»."
+            "value" : "La voz cambió su tipo de audio a mitad de “%@”."
           }
         },
         "fr" : {
@@ -537454,7 +537454,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La voz no emitió ningún sonido para «%@». Comprueba que hable el idioma del libro."
+            "value" : "La voz no emitió ningún sonido para “%@”. Comprueba que hable el idioma del libro."
           }
         },
         "fr" : {
@@ -537585,7 +537585,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La voz se detuvo a mitad de «%@», y TextMouth dejó de esperar."
+            "value" : "La voz se detuvo a mitad de “%@”, y TextMouth dejó de esperar."
           }
         },
         "fr" : {
@@ -545411,7 +545411,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Esta Mac ya no tiene la tabla elegida, «%@»; elige otra."
+            "value" : "Esta Mac ya no tiene la tabla elegida, “%@”; elige otra."
           }
         },
         "fr" : {
@@ -545548,7 +545548,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La tabla de braille «%1$@» de esta Mac cambió de liblouis %2$@ a %3$@ desde que se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba."
+            "value" : "La tabla de braille “%1$@” de esta Mac cambió de liblouis %2$@ a %3$@ desde que se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba."
           }
         },
         "fr" : {
@@ -545685,7 +545685,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La tabla de braille «%1$@» de esta Mac puede haber cambiado desde que liblouis %2$@ leyó el libro, así que TextMouth conserva el texto del libro tal como estaba."
+            "value" : "La tabla de braille “%1$@” de esta Mac puede haber cambiado desde que liblouis %2$@ leyó el libro, así que TextMouth conserva el texto del libro tal como estaba."
           }
         },
         "fr" : {
@@ -581489,7 +581489,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usar el ajuste general (%@)"
+            "value" : "Usar el ajuste global (%@)"
           }
         },
         "fr" : {
@@ -597861,7 +597861,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Con “%1$@”, Play en un libro terminado avisa que ya está terminado; con “%2$@”, Play lo vuelve a empezar desde el principio."
+            "value" : "Con “%1$@”, Reproducir en un libro terminado avisa que ya está terminado; con “%2$@”, Reproducir lo vuelve a empezar desde el principio."
           }
         },
         "fr" : {
@@ -600535,7 +600535,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escribe este y cualquier otro capítulo de esta exportación con anidado demasiado profundo como párrafos simples de líneas, sin volver a preguntar."
+            "value" : "Escribe este y cualquier otro capítulo de esta exportación con un anidamiento demasiado profundo como párrafos simples de líneas, sin volver a preguntar."
           }
         },
         "fr" : {
@@ -641407,7 +641407,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "el archivo %@ falló a medias"
+            "value" : "el archivo %@ falló a mitad de la reproducción"
           }
         },
         "fr" : {
@@ -648347,7 +648347,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudo descargar «%@» desde iCloud. Comprueba la conexión y vuelve a agregarlo."
+            "value" : "No se pudo descargar “%@” desde iCloud. Comprueba la conexión y vuelve a agregarlo."
           }
         },
         "fr" : {
@@ -648996,7 +648996,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%1$@» es una Voz personal, que macOS no puede grabar en un archivo. Elige otra voz con el botón %2$@ del lector y vuelve a exportar."
+            "value" : "“%1$@” es una Voz personal, que macOS no puede grabar en un archivo. Elige otra voz con el botón %2$@ del lector y vuelve a exportar."
           }
         },
         "fr" : {
@@ -649377,7 +649377,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» es un archivo XML, pero no un léxico de pronunciación."
+            "value" : "“%@” es un archivo XML, pero no un léxico de pronunciación."
           }
         },
         "fr" : {
@@ -649651,7 +649651,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» no es un archivo XML completo y válido."
+            "value" : "“%@” no es un archivo XML completo y válido."
           }
         },
         "fr" : {
@@ -650318,7 +650318,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» es demasiado grande para leerlo."
+            "value" : "“%@” es demasiado grande para leerlo."
           }
         },
         "fr" : {
@@ -651253,7 +651253,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» usa entidades XML propias, que TextMouth no lee."
+            "value" : "“%@” usa entidades XML propias, que TextMouth no lee."
           }
         },
         "fr" : {
