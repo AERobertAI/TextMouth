@@ -240127,6 +240127,12 @@
     "TextMouth hasn't read this book's headings yet. Open the book once, then export again." : {
       "comment" : "Why a book's headings could not be exported, after the file's name in a failure sentence such as \"Couldn't export Headings: ...\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يقرأ TextMouth العناوين الرئيسية لهذا الكتاب بعد. افتح الكتاب مرة واحدة، ثم صدّر مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -240880,6 +240886,12 @@
     "TextMouth is not downloading right now." : {
       "comment" : "Why the download of a feed's next episode did not start: the app is quitting or the feed is being deleted. Said after \"The next episode could not be downloaded, so playback stopped.\"",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يقوم TextMouth بالتنزيل الآن."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243583,6 +243595,12 @@
     "TextMouth quit on %@: its memory grew to %@ GB while %@ played, because of a fault in macOS's audio. Your place was saved." : {
       "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1; %3$@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُغلق TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل %3$@، بسبب عطل في صوت macOS. حُفظ موضعك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243654,6 +243672,12 @@
     "TextMouth quit on %@: its memory grew to %@ GB while a book played, because of a fault in macOS's audio. Your place was saved." : {
       "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when a book played whose title was not kept. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُغلق TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل كتاب، بسبب عطل في صوت macOS. حُفظ موضعك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243725,6 +243749,12 @@
     "TextMouth quit on %@: its memory grew to %@ GB while nothing was playing. Your place was saved." : {
       "comment" : "Alert text at the next launch after TextMouth quit to protect the Mac, when nothing was playing. %1$@ is the date and time of the quit; %2$@ is how large its memory grew, in gigabytes, such as 6.1.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُغلق TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB بينما لم يكن شيء قيد التشغيل. حُفظ موضعك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243796,6 +243826,12 @@
     "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change." : {
       "comment" : "The caption under the braille file characters pop-up in the Braille tab of Settings. BRF and BRL are braille file formats, and Book Information is a window.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يقرأ TextMouth ملفات BRF و BRL التي تضيفها من الآن فصاعدًا بهذه الأحرف، ويتعرّف على أنماط برايل Unicode من تلقاء نفسه. يبدأ مربع حوار التصدير ملف BRF بها. يحتفظ الكتاب بأحرف استيراده، ويمكن لمعلومات الكتاب تغييرها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243861,6 +243897,12 @@
     "TextMouth reads braille files (BRF, BRL, and PEF) with this code and exports with it unless the Export dialog chooses another. A book keeps the code it was imported with." : {
       "comment" : "The caption under the code pop-ups in the Braille tab of Settings. BRF, BRL, and PEF are braille file formats.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يقرأ TextMouth ملفات برايل (BRF و BRL و PEF) بهذا الرمز ويصدّر به ما لم يختر مربع حوار التصدير رمزًا آخر. يحتفظ الكتاب بالرمز الذي استُورد به."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -244419,6 +244461,12 @@
     "TextMouth stopped %@ because %@, and won't try again until TextMouth is closed and opened again." : {
       "comment" : "Said when a library call inside the iPhone app ran too long and was abandoned. %1$@ is the work's name, such as \"the braille translation\" (English until its area converts); %2$@ is why it was stopped, such as \"it ran longer than 11 seconds\" (English until the watchdog's area converts). Read after an import's own words.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أوقف TextMouth %1$@ لأن %2$@، ولن يحاول مرة أخرى حتى يُغلق TextMouth ويُفتح من جديد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -244490,6 +244538,12 @@
     "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again." : {
       "comment" : "Said when a library call inside the iPhone app is refused because an earlier one was abandoned for taking too long. %@ is the work's name, such as \"the braille translation\" (English until its area converts). Read after an import's own words.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أوقف TextMouth %@ سابقًا لأنه استغرق وقتًا طويلًا، ولن يحاول مرة أخرى حتى يُغلق TextMouth ويُفتح من جديد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -244620,6 +244674,12 @@
     "TextMouth stopped the braille translation because %@." : {
       "comment" : "Why a braille translation ended. %@ is the reason, a clause such as \"an earlier call was abandoned\", which stays English until the engine's sentences convert.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أوقف TextMouth ترجمة برايل لأن %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -246015,6 +246075,12 @@
     "TextMouth: no build details recorded" : {
       "comment" : "A line of the speech refusal report: the app recorded nothing about how it was built.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth: لم تُسجَّل تفاصيل البناء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -249331,6 +249397,12 @@
     "The %lld selected books are already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: every book selected is on the list already. %lld is the number of books selected (two or more).",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتب المحددة وعددها %lld موجودة بالفعل في قائمة القراءة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -250122,6 +250194,12 @@
     "The EPUB file could not be written, because the disk may be full." : {
       "comment" : "Why an EPUB export failed: the write failed and the disk may be full.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت كتابة ملف EPUB، لأن القرص قد يكون ممتلئًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -250187,6 +250265,12 @@
     "The EPUB file could not be written." : {
       "comment" : "Why an EPUB export failed: the file was not written whole.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت كتابة ملف EPUB."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -250252,6 +250336,12 @@
     "The EPUB file could not be written: %@." : {
       "comment" : "Why an EPUB export failed: the system gave a reason. %@ is the system's own words, such as \"Read-only file system\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت كتابة ملف EPUB: %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251005,6 +251095,48 @@
     "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each." : {
       "comment" : "A sentence the Export dialog adds after it made an MP3 of more headings than an MP3 has chapters for. %1$@ is the number of chapters an MP3 can have, 255, and %2$lld the number of headings. M4B and MP3 are audio file formats.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي MP3 على فصول لأول %@ من أصل %lld عناوين رئيسية؛ صدّر بصيغة M4B للحصول على فصل لكل منها."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي MP3 على فصول لأول %@ من أصل %lld عنوانًا رئيسيًا؛ صدّر بصيغة M4B للحصول على فصل لكل منها."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي MP3 على فصول لأول %@ من أصل %lld عنوان رئيسي؛ صدّر بصيغة M4B للحصول على فصل لكل منها."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي MP3 على فصول لأول %@ من أصل %lld عنوان رئيسي؛ صدّر بصيغة M4B للحصول على فصل لكل منها."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي MP3 على فصول لأول %@ من أصل %lld عنوانين رئيسيين؛ صدّر بصيغة M4B للحصول على فصل لكل منها."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي MP3 على فصول لأول %@ من أصل %lld عناوين رئيسية؛ صدّر بصيغة M4B للحصول على فصل لكل منها."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -251238,6 +251370,12 @@
     "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent." : {
       "comment" : "Why a chapter of a spoken audio export could not be spoken. %@ is the chapter's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رفض محرك النطق في Mac نطق جزء من “%@”، حتى مع كتم أقواسه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254293,6 +254431,12 @@
     "The book has no timed transcript to write as captions." : {
       "comment" : "Why a book's captions could not be exported, after the file's name in a failure sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ليس للكتاب نسخة نصية موقوتة لكتابتها كترجمات توضيحية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254423,6 +254567,12 @@
     "The book is in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added one book to it: the library folder the book went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتاب في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255138,6 +255288,12 @@
     "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does." : {
       "comment" : "The hint of the Original audio checkbox in the Export dialog. \"Original audio\" is the name of a setting.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صوت الكتاب كما كان قبل أول تعديل، ويحتفظ به TextMouth ما دام إعداد الصوت الأصلي مفعّلًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255398,6 +255554,12 @@
     "The book's audio: its file, or its tracks in a folder named after the book, each named for its chapter." : {
       "comment" : "The hint of the Audio checkbox in the Export dialog.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صوت الكتاب: ملفه، أو مقاطعه في مجلد يحمل اسم الكتاب، كل منها باسم فصله."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255463,6 +255625,12 @@
     "The book's file as imported; for an audiobook, its audio files before TextMouth converted them." : {
       "comment" : "The hint of the Original file checkbox in the Export dialog.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملف الكتاب كما استُورد؛ وفي الكتاب الصوتي، ملفاته الصوتية قبل أن يحوّلها TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255593,6 +255761,12 @@
     "The book's headings changed after the dialog opened. Reopen it and choose the range again." : {
       "comment" : "Why a spoken audio export was refused: the book's headings changed after the Export dialog opened.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تغيّرت العناوين الرئيسية للكتاب بعد فتح مربع الحوار. أعد فتحه واختر النطاق مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255788,6 +255962,12 @@
     "The book's text as %@, made from its Markdown." : {
       "comment" : "The hint of a text checkbox in the Export dialog while its text is converted. %@ is the name of the format, such as HTML or RTF.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نص الكتاب بصيغة %@، مُنشأ من Markdown الخاص به."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255853,6 +256033,12 @@
     "The book's text as Markdown, with its headings, lists, and emphasis." : {
       "comment" : "The hint of the Convert to picker in the Export dialog while Markdown is chosen, and of the Text as Markdown checkbox.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نص الكتاب بصيغة Markdown، مع عناوينه الرئيسية وقوائمه وما فيه من تمييز."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -255918,6 +256104,12 @@
     "The book's text could not be made into a Word 97-2003 document." : {
       "comment" : "Why a Word 97-2003 export failed, after the file's name in a failure sentence: Apple's reader or writer refused the book's text.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تحويل نص الكتاب إلى مستند Word 97-2003."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256113,6 +256305,12 @@
     "The book's text spoken by its voice into one audio file, with a chapter for each heading." : {
       "comment" : "The hint of the Text as spoken audio checkbox in the Export dialog.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نص الكتاب منطوقًا بصوته في ملف صوتي واحد، بفصل لكل عنوان رئيسي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256243,6 +256441,12 @@
     "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again." : {
       "comment" : "Why a spoken audio export was refused: the book's voice can't be recorded. %@ is the name of the Voice button in the book's reader.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن تسجيل صوت الكتاب في ملف. اختر صوتًا آخر بزر %@ في القارئ، ثم صدّر مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256373,6 +256577,12 @@
     "The books are in %@." : {
       "comment" : "Second sentence of the announcement after an import at the Reading List added several books to it: the library folder they went to. %@ is the folder's path, such as Essays/Sea, or Library Root.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتب في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256438,6 +256648,12 @@
     "The braille code for reading and writing braille." : {
       "comment" : "The hint of the braille code pop-up in the Braille tab of Settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رمز برايل للقراءة والكتابة بالبرايل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256503,6 +256719,12 @@
     "The braille code the book is written in." : {
       "comment" : "The hint of the braille code pop-up in the Export dialog's braille options.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رمز برايل الذي كُتب به الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256633,6 +256855,12 @@
     "The braille table writes an eight-dot cell, %@, but TextMouth's BRF and PEF files are six-dot only." : {
       "comment" : "Why braille could not be written to a BRF or PEF file: the braille table writes an eight-dot cell. %@ names the cell's dots, such as \"dots 4 and 7\". BRF and PEF are braille file formats.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يكتب جدول برايل خلية من ثماني نقاط، %@، بينما ملفات BRF و PEF في TextMouth من ست نقاط فقط."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256698,6 +256926,12 @@
     "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only." : {
       "comment" : "Why braille could not be written to a BRF or PEF file: the braille table writes a character with an eight-dot cell. %@ is the print character. BRF and PEF are braille file formats.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يكتب جدول برايل “%@” كخلية من ثماني نقاط، بينما ملفات BRF و PEF في TextMouth من ست نقاط فقط."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256763,6 +256997,12 @@
     "The chosen table is built into TextMouth (liblouis %@)." : {
       "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table comes with TextMouth. %@ is the version of liblouis, the braille library, written as a version number.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الجدول المختار مدمج في TextMouth (liblouis %@)."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256828,6 +257068,12 @@
     "The chosen table is one of this Mac's VoiceOver braille tables (liblouis %@)." : {
       "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table is one of this Mac's. %@ is the version of liblouis, the braille library, written as a version number.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الجدول المختار أحد جداول برايل الخاصة بـ VoiceOver على هذا الـ Mac (liblouis %@)."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -256893,6 +257139,12 @@
     "The chosen table is one of this Mac's VoiceOver braille tables." : {
       "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table is one of this Mac's.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الجدول المختار أحد جداول برايل الخاصة بـ VoiceOver على هذا الـ Mac."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257945,6 +258197,12 @@
     "The details could not be copied" : {
       "comment" : "Announcement when Copy Details could not copy the report of a speech refusal to the pasteboard.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر نسخ التفاصيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258140,6 +258398,12 @@
     "The disk lacks room: this needs about %@, and TextMouth keeps %@ free. Free some space, then export again." : {
       "comment" : "Why a spoken audio export was refused: the disk is too full. %1$@ is the space the export needs and %2$@ the space TextMouth always keeps free, each a size such as 1 GB.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد مساحة كافية على القرص: يحتاج هذا إلى نحو %1$@، ويُبقي TextMouth %2$@ خالية. حرّر بعض المساحة، ثم صدّر مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259192,6 +259456,12 @@
     "The export was stopped before the rest." : {
       "comment" : "A sentence of what an export says once it ends: it was stopped after it wrote some items.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُوقف التصدير قبل بقية العناصر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260217,6 +260487,12 @@
     "The file %@ could not be read quickly enough." : {
       "comment" : "A sentence telling an audio file could not be read fast enough to play. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة الملف %@ بسرعة كافية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260282,6 +260558,12 @@
     "The file %@ failed partway through." : {
       "comment" : "A sentence telling an audio file failed while playing. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعطّل الملف %@ في منتصف التشغيل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260347,6 +260629,12 @@
     "The file %@ is damaged, unreadable, or not an audio file." : {
       "comment" : "A sentence telling an audio file cannot be read as audio. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الملف %@ تالف أو غير قابل للقراءة أو ليس ملفًا صوتيًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260412,6 +260700,12 @@
     "The file %@ is missing." : {
       "comment" : "A sentence telling an audio file is not there. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الملف %@ مفقود."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260477,6 +260771,12 @@
     "The file %@ stopped responding." : {
       "comment" : "A sentence telling playback of an audio file stopped responding. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف الملف %@ عن الاستجابة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260542,6 +260842,12 @@
     "The file %@ was stopped because TextMouth's memory grew too large." : {
       "comment" : "A sentence telling TextMouth stopped an audio file to protect the Mac. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُوقف الملف %@ لأن ذاكرة TextMouth كبرت أكثر من اللازم."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263408,6 +263714,12 @@
     "The heading whose section ends the audio, with its subheadings, or the end of the book." : {
       "comment" : "The hint of the To pop-up in the Export dialog's spoken audio options.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "العنوان الرئيسي الذي ينهي قسمه الصوت، مع عناوينه الفرعية، أو نهاية الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263804,6 +264116,12 @@
     "The language of the braille code for reading and writing braille." : {
       "comment" : "The hint of the language pop-up in the Braille tab of Settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لغة رمز برايل للقراءة والكتابة بالبرايل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263869,6 +264187,12 @@
     "The language of the braille code the book is written in." : {
       "comment" : "The hint of the language pop-up in the Export dialog's braille options.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لغة رمز برايل الذي كُتب به الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267138,6 +267462,12 @@
     "The next article could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next article failed. %@ is the download's own sentence saying why.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تنزيل المقال التالي، لذا توقف التشغيل. %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267333,6 +267663,12 @@
     "The next episode could not be downloaded, so playback stopped. %@" : {
       "comment" : "VoiceOver announcement when the download of a feed's next episode failed. %@ is the download's own sentence saying why.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تنزيل الحلقة التالية، لذا توقف التشغيل. %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269085,6 +269421,12 @@
     "The part of the book chosen has no words to speak." : {
       "comment" : "Why a spoken audio export was refused: the chosen part of the book has no words.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ليس في الجزء المختار من الكتاب كلمات لنطقها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269150,6 +269492,12 @@
     "The passage as the book has it, characters %@ to %@ of chapter %@:" : {
       "comment" : "A line of the speech refusal report that introduces the passage as the book has it. %1$@ and %2$@ are the first and last character offsets of the passage, and %3$@ is the chapter's number, each written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المقطع كما هو في الكتاب، من الحرف %1$@ إلى %2$@ من الفصل %3$@:"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270896,6 +271244,12 @@
     "The reading list is empty. To add a book, choose Add to Reading List from its actions." : {
       "comment" : "The only row of the iPhone's empty Reading List. \"Add to Reading List\" is the name of a book's action, so keep it the same as that action's label.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قائمة القراءة فارغة. لإضافة كتاب، اختر إضافة إلى قائمة القراءة من إجراءاته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270961,6 +271315,12 @@
     "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu." : {
       "comment" : "Shown and read as the only row of the Reading List while it holds no book. Add to Reading List is the name of the command in the Library menu.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قائمة القراءة فارغة. لإضافة كتاب، اختر إضافة إلى قائمة القراءة من قائمته السياقية، أو إجراءات VoiceOver الخاصة به، أو قائمة المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271026,6 +271386,12 @@
     "The reading list is set to stop when a book ends" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": the list's When a book ends is Stop. Written without its full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قائمة القراءة مضبوطة على التوقف عند انتهاء الكتاب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271519,6 +271885,12 @@
     "The recording as it was made, before any edits." : {
       "comment" : "The hint of the Original recording checkbox in the Export dialog.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التسجيل كما صُنع، قبل أي تعديلات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272110,6 +272482,12 @@
     "The refused text began before this passage, at character %@." : {
       "comment" : "A line of the speech refusal report: the refused text began before the passage shown. %@ is the character offset where it began, written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بدأ النص المرفوض قبل هذا المقطع، عند الحرف %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272175,6 +272553,12 @@
     "The refused text begins here, at character %@." : {
       "comment" : "A line of the speech refusal report, just before the refused text. %@ is the character offset where it begins, written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يبدأ النص المرفوض هنا، عند الحرف %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272240,6 +272624,12 @@
     "The refused text ends here, at character %@." : {
       "comment" : "A line of the speech refusal report, just after the refused text. %@ is the character offset where it ends, written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ينتهي النص المرفوض هنا، عند الحرف %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272305,6 +272695,12 @@
     "The refused text goes on past this passage, to character %@." : {
       "comment" : "A line of the speech refusal report: the refused text goes on past the passage shown. %@ is the character offset where it ends, written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يستمر النص المرفوض بعد هذا المقطع، حتى الحرف %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272890,6 +273286,12 @@
     "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place." : {
       "comment" : "Summary under the heading of the report of a refusal, on the Mac and the iPhone: what happened, and that Play tries again.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رفض محرك النطق نطق النص هنا مرتين، لذا توقف النطق. يحاول التشغيل مرة أخرى من المكان نفسه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273280,6 +273682,12 @@
     "The text handed to the speech engine, after the substitutions and the markup guard, characters %@ to %@ of the spoken text:" : {
       "comment" : "A line of the speech refusal report that introduces the text the speech engine was handed, after the user's substitution rules and the markup guard. %1$@ and %2$@ are the first and last character offsets in the spoken text, written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النص الذي سُلّم إلى محرك النطق، بعد البدائل وحارس الترميز، من الحرف %1$@ إلى %2$@ من النص المنطوق:"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273351,6 +273759,12 @@
     "The text of %@" : {
       "comment" : "Names what the export's deep-nesting question is about: a book's whole text, which has no chapter markers. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نص %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273611,6 +274025,12 @@
     "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again." : {
       "comment" : "Why a book's text was not exported: it nests quotes, lists, or emphasis too deeply, and has no chapter markers. %@ is the clause that says how deep, such as \"nests quotes, lists, or emphasis more than 128 levels deep\". \"Edit Text\" is a command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نص هذا الكتاب %@، ولا يستطيع TextMouth تصديره بأمان. اختر تحرير النص، وسطّح التداخل، واحفظ؛ ثم صدّر مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273871,6 +274291,12 @@
     "The transcript as %@ captions, one file timed from the start of the audio." : {
       "comment" : "The hint of the Transcript checkbox in the Export dialog while its transcript is written as captions. %@ is the format's name, such as WebVTT or SubRip.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية كترجمات توضيحية بصيغة %@، في ملف واحد يبدأ توقيته من بداية الصوت."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273936,6 +274362,12 @@
     "The transcript as TextMouth keeps it, in JSON, with its text as Markdown." : {
       "comment" : "The hint of the Transcript's Convert to picker in the Export dialog while JSON and Markdown is chosen.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية كما يحتفظ بها TextMouth، بصيغة JSON، مع نصها بصيغة Markdown."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274787,6 +275219,12 @@
     "The transcript's text as %@, made from its Markdown." : {
       "comment" : "The hint of the Transcript checkbox in the Export dialog while its text is written by a text writer. %@ is the writer's name, such as HTML or RTF.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نص النسخة النصية بصيغة %@، مُنشأ من Markdown الخاص بها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274982,6 +275420,12 @@
     "The transcript, with its text as Markdown for an audiobook." : {
       "comment" : "The hint of the Transcript checkbox in the Export dialog.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية، مع نصها بصيغة Markdown للكتاب الصوتي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275372,6 +275816,12 @@
     "The voice changed its kind of audio partway through “%@”." : {
       "comment" : "Why a chapter of a spoken audio export could not be spoken: the voice changed its audio format. %@ is the chapter's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "غيّر الصوت نوع صوته في منتصف “%@”."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275437,6 +275887,12 @@
     "The voice made no sound for “%@”. Check that it speaks the book's language." : {
       "comment" : "Why a chapter of a spoken audio export could not be spoken: the voice made no sound. %@ is the chapter's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم ينطق الصوت أي شيء في “%@”. تأكد من أنه ينطق لغة الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275502,6 +275958,12 @@
     "The voice stopped partway through “%@”, and TextMouth stopped waiting." : {
       "comment" : "Why a chapter of a spoken audio export could not be spoken: the voice stalled. %@ is the chapter's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف الصوت في منتصف “%@”، وكفّ TextMouth عن الانتظار."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275567,6 +276029,12 @@
     "The words TextMouth reads aloud, as plain text, each chapter under its title." : {
       "comment" : "The hint of the Text as plain text checkbox in the Export dialog.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكلمات التي يقرؤها TextMouth بصوت عالٍ، كنص عادي، كل فصل تحت عنوانه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -276521,6 +276989,12 @@
     "There is nothing to export." : {
       "comment" : "Shown in the Export dialog when the books hold nothing to export.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يوجد ما يمكن تصديره."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278878,6 +279352,12 @@
     "This Mac" : {
       "comment" : "Heading of the report's lines about the device it ran on, on the Mac.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ Mac"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279398,6 +279878,12 @@
     "This Mac no longer has the chosen table, “%@”; choose another." : {
       "comment" : "Under the pop-ups in the Braille tab of Settings: the chosen braille table of this Mac is gone. %@ is the table's stored name, \"mac:\" and its file name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد في هذا الـ Mac الجدول المختار “%@”؛ اختر جدولًا آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279463,6 +279949,12 @@
     "This Mac's braille table “%@” changed from liblouis %@ to %@ since the book was read, so TextMouth keeps the book's text as it was." : {
       "comment" : "Why a book is not read with its braille table again: the table changed. %1$@ is the table's name as macOS gives it, %2$@ the liblouis version the book was read with, and %3$@ the version now.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تغيّر جدول برايل “%1$@” الخاص بهذا الـ Mac من liblouis %2$@ إلى %3$@ منذ قراءة الكتاب، لذا يحتفظ TextMouth بنص الكتاب كما كان."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279534,6 +280026,12 @@
     "This Mac's braille table “%@” may have changed since liblouis %@ read the book, so TextMouth keeps the book's text as it was." : {
       "comment" : "Why a book is not read with its braille table again: the table may have changed. %1$@ is the table's name as macOS gives it and %2$@ the liblouis version the book was read with.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ربما تغيّر جدول برايل “%1$@” الخاص بهذا الـ Mac منذ أن قرأ liblouis %2$@ الكتاب، لذا يحتفظ TextMouth بنص الكتاب كما كان."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279735,6 +280233,12 @@
     "This Week" : {
       "comment" : "Title of the Stats pane's tile showing the listening time of this week.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الأسبوع"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279800,6 +280304,12 @@
     "This Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in the window already open, in place of the book there.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذه النافذة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280125,6 +280635,12 @@
     "This audiobook has no text." : {
       "comment" : "Text of the iPhone reader's book content for an audiobook that has no transcript.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ليس لهذا الكتاب الصوتي نص."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280748,6 +281264,12 @@
     "This book has no headings, so all of it is exported." : {
       "comment" : "Shown in the Export dialog's spoken audio options in place of the From and To pop-ups when the book has no headings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ليس لهذا الكتاب عناوين رئيسية، لذا يُصدَّر كله."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281371,6 +281893,12 @@
     "This book was exported from TextMouth as text only." : {
       "comment" : "The first sentence of the accessibility summary written into an exported EPUB.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صُدِّر هذا الكتاب من TextMouth كنص فقط."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281436,6 +281964,12 @@
     "This book was not opened from the reading list." : {
       "comment" : "VoiceOver announcement when Next in Reading List or Previous in Reading List is used in a reader whose book was not opened from the reading list.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يُفتح هذا الكتاب من قائمة القراءة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281826,6 +282360,12 @@
     "This book's text can't be read, so it can't be spoken into an audio file." : {
       "comment" : "Shown under the Text as spoken audio checkbox in the Export dialog when the book's text can't be read.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن قراءة نص هذا الكتاب، لذا لا يمكن نطقه في ملف صوتي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282541,6 +283081,12 @@
     "This file" : {
       "comment" : "Stands for a file's name at the start of a sentence about refusing it, when no name is known: \"This file is in Ogg, which...\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الملف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283776,6 +284322,12 @@
     "This folder is empty." : {
       "comment" : "The only row of a folder in the iPhone Library that holds no book and no folder.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا المجلد فارغ."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283906,6 +284458,12 @@
     "This iPhone" : {
       "comment" : "Heading of the report's lines about the device it ran on, on the iPhone.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ iPhone"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284898,6 +285456,48 @@
     "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each." : {
       "comment" : "The line under the Format pop-up in the Export dialog's spoken audio options while MP3 is chosen for a range with more headings than an MP3 has chapters. %1$lld is the number of headings in the range and %2$@ the number of chapters an MP3 can have, 255. M4B and MP3 are audio file formats.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي هذا النطاق على %lld عناوين رئيسية، لكن MP3 يحتوي على فصول لأول %@ فقط. اختر M4B للحصول على فصل لكل منها."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي هذا النطاق على %lld عنوانًا رئيسيًا، لكن MP3 يحتوي على فصول لأول %@ فقط. اختر M4B للحصول على فصل لكل منها."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي هذا النطاق على %lld عنوان رئيسي، لكن MP3 يحتوي على فصول لأول %@ فقط. اختر M4B للحصول على فصل لكل منها."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي هذا النطاق على %lld عنوان رئيسي، لكن MP3 يحتوي على فصول لأول %@ فقط. اختر M4B للحصول على فصل لكل منها."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي هذا النطاق على %lld عنوانين رئيسيين، لكن MP3 يحتوي على فصول لأول %@ فقط. اختر M4B للحصول على فصل لكل منها."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتوي هذا النطاق على %lld عناوين رئيسية، لكن MP3 يحتوي على فصول لأول %@ فقط. اختر M4B للحصول على فصل لكل منها."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -286242,6 +286842,12 @@
     "Timer reset." : {
       "comment" : "VoiceOver announcement after the Restart Sleep Timer command started the running sleep timer again.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُعيد ضبط المؤقت."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286307,6 +286913,12 @@
     "Timer reset: %@." : {
       "comment" : "VoiceOver announcement after Reset Timer started the sleep timer again. %@ is the timer's state, such as \"15:00 remaining\" or \"stops at the end of the book\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُعيد ضبط المؤقت: %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286372,6 +286984,12 @@
     "Timer restarted: %@." : {
       "comment" : "VoiceOver announcement after the Restart Sleep Timer command set the last timer used again. %@ is that timer's name, such as 30 minutes or End of heading.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُعيد تشغيل المؤقت: %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286437,6 +287055,48 @@
     "Timer set for %lld minutes." : {
       "comment" : "VoiceOver announcement after a sleep timer of so many minutes was set. %lld is the number of minutes.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم ضبط المؤقت على %lld دقائق."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم ضبط المؤقت على %lld دقيقة."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم ضبط المؤقت على %lld دقيقة."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم ضبط المؤقت على %lld دقيقة."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم ضبط المؤقت على %lld دقيقتين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم ضبط المؤقت على %lld دقائق."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -287125,6 +287785,12 @@
     "To" : {
       "comment" : "The label of the pop-up in the Export dialog's spoken audio options that chooses where the spoken audio ends.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إلى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288339,6 +289005,12 @@
     "Today" : {
       "comment" : "Title of the Stats pane's tile showing the listening time of today.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اليوم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289045,6 +289717,12 @@
     "Total listening time" : {
       "comment" : "What VoiceOver says before the total listening time on the Stats pane; a colon and the time follow.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إجمالي وقت الاستماع"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290753,6 +291431,12 @@
     "Transcript" : {
       "comment" : "Label of the detail in Book Information that says where the book's transcript came from.\nThe name of the Transcript checkbox in the Export dialog: the book's transcript.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294015,6 +294699,12 @@
     "Uncontracted" : {
       "comment" : "How a braille table contracts, for a table with no grade that writes every letter out.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "غير مختصر"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294080,6 +294770,12 @@
     "Uncontracted (Grade %@)" : {
       "comment" : "How a braille table contracts, for a table of one grade that writes every letter out. %@ is the grade, an identifier such as 1.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "غير مختصر (الدرجة %@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296461,6 +297157,12 @@
     "Untitled" : {
       "comment" : "The name given to an exported file or folder, or to an entry of an exported EPUB, when the book's title or the heading has no words.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بلا عنوان"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297572,6 +298274,12 @@
     "Use the global setting (%@)" : {
       "comment" : "A choice of the Open the next book in pop-up button in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as This Window.\nA choice of the pop-up button that sets what happens when an item ends, in Feed Info and Folder Settings: do as Settings says. %@ is the name of the choice Settings has now, such as Continue to Next Book.\nThe first choice of the Audio Info pop-up for a book's original audio: follow the global setting. %@ is that setting's name, such as \"Keep\".\nTitle of the checkbox that makes a feed follow the global setting. %@ is the global setting's value, such as \"Every item listed, newest 5 downloaded\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "استخدام الإعداد العام (%@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297897,6 +298605,12 @@
     "Version" : {
       "comment" : "Label of the iPhone Settings row that names the app's version.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الإصدار"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298287,6 +299001,12 @@
     "Voice" : {
       "comment" : "Name of the Settings tab for the voice, its language, and the default speed and pitch. Shown in the Settings window's toolbar.\nThe name of the Voice button in a book's reader, which opens the book's voice choices.\nTitle of the pop-up in the Voice settings that chooses the voice.\nTitle of the reader toolbar's button that opens a text book's own voice settings.\nTitle of the voice sheet's menu of voices, and the heading of its group.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الصوت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298417,6 +299137,12 @@
     "Voice and speed" : {
       "comment" : "Heading of the lines of a speech refusal report about the voice and the speaking speed.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الصوت والسرعة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298482,6 +299208,12 @@
     "Voice changed to %@" : {
       "comment" : "Announcement after a voice was chosen for the open book. %@ is the voice's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم تغيير الصوت إلى %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298677,6 +299409,12 @@
     "Voice: %@" : {
       "comment" : "The line in the Export dialog's spoken audio options naming the voice the book is spoken with. %@ is the voice's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الصوت: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298742,6 +299480,12 @@
     "Voice: %@ (%@), %@, %@ quality" : {
       "comment" : "A line of the speech refusal report naming the voice. %1$@ is its name, %2$@ its system identifier, %3$@ its language code such as en-US, and %4$@ its quality such as Standard, Enhanced, or Premium.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الصوت: %1$@ (%2$@)، %3$@، جودة %4$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298813,6 +299557,12 @@
     "Voice: the system's default voice" : {
       "comment" : "A line of the speech refusal report: no voice was chosen, so the system's default voice spoke.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الصوت: الصوت الافتراضي للنظام"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298943,6 +299693,12 @@
     "Volume" : {
       "comment" : "Title of the sound effects volume slider in Settings, Sound Effects.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مستوى الصوت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299008,6 +299764,12 @@
     "Volume: %lld%%" : {
       "comment" : "Caption above the sound effects volume slider in Settings. %lld is the volume as a percentage from 0 to 100; the percent sign after it is written as %%.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مستوى الصوت: %lld%%"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300308,6 +301070,12 @@
     "What a book of this kind moves by until it has a unit of its own." : {
       "comment" : "Hint of the two iPhone Settings rows that choose a navigation unit, one for text books and one for audiobooks.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ما يتنقل به كتاب من هذا النوع إلى أن تكون له وحدته الخاصة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300763,6 +301531,12 @@
     "What to export" : {
       "comment" : "The name of the group of checkboxes in the Export dialog.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ما يتم تصديره"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301061,6 +301835,48 @@
     "When %lld minutes or less are left, downloads the next article if it is not on this Mac yet" : {
       "comment" : "VoiceOver hint of the Download the next article switch in a news feed's Feed Info. %lld is the number of minutes left that start the download.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل المقال التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل المقال التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل المقال التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل المقال التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقتان أو أقل، ينزّل المقال التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل المقال التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -301294,6 +302110,48 @@
     "When %lld minutes or less are left, downloads the next book if it is not on this Mac yet" : {
       "comment" : "VoiceOver hint of a switch that downloads the next book (a folder's settings do not show it today). %lld is the number of minutes left that start the download.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل الكتاب التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل الكتاب التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل الكتاب التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل الكتاب التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقتان أو أقل، ينزّل الكتاب التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل الكتاب التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -301527,6 +302385,48 @@
     "When %lld minutes or less are left, downloads the next episode if it is not on this Mac yet" : {
       "comment" : "VoiceOver hint of the Download the next episode switch in a podcast feed's Feed Info. %lld is the number of minutes left that start the download.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل الحلقة التالية إن لم تكن على هذا الـ Mac بعد"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل الحلقة التالية إن لم تكن على هذا الـ Mac بعد"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل الحلقة التالية إن لم تكن على هذا الـ Mac بعد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل الحلقة التالية إن لم تكن على هذا الـ Mac بعد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقتان أو أقل، ينزّل الحلقة التالية إن لم تكن على هذا الـ Mac بعد"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل الحلقة التالية إن لم تكن على هذا الـ Mac بعد"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -301760,6 +302660,48 @@
     "When %lld minutes or less are left, downloads the next item if it is not on this Mac yet" : {
       "comment" : "VoiceOver hint of the Download the next item switch in a feed's Feed Info. %lld is the number of minutes left that start the download.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل العنصر التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل العنصر التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل العنصر التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقة أو أقل، ينزّل العنصر التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقيقتان أو أقل، ينزّل العنصر التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "عندما يتبقى %lld دقائق أو أقل، ينزّل العنصر التالي إن لم يكن على هذا الـ Mac بعد"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -302123,6 +303065,12 @@
     "When a book ends" : {
       "comment" : "Label of the Reading List's options bar pop-up button choosing what a book opened from the list does when it ends: play the book below, play the book above, or stop.\nLabel of the pop-up button in a folder's settings choosing what happens when one of its books ends.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند انتهاء كتاب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302253,6 +303201,12 @@
     "When an article ends" : {
       "comment" : "Label of the pop-up button in a news feed's Feed Info choosing what happens when one of its articles ends.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند انتهاء مقال"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302318,6 +303272,12 @@
     "When an episode ends" : {
       "comment" : "Label of the pop-up button in a podcast feed's Feed Info choosing what happens when one of its episodes ends.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند انتهاء حلقة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302383,6 +303343,12 @@
     "When an item ends" : {
       "comment" : "Label of the pop-up button in a feed's Feed Info choosing what happens when one of its items ends.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند انتهاء عنصر"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303163,6 +304129,12 @@
     "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead." : {
       "comment" : "The hint of the guess switch in the Braille tab of Settings. Unified English Braille and English Braille, American Edition are the names of braille codes.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند التفعيل، يُقرأ ملف برايل مقروء على أنه برايل إنجليزي موحد مختصر ويتضح أنه برايل الإنجليزي، الإصدار الأمريكي، على أنه الأخير."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303618,6 +304590,12 @@
     "Where" : {
       "comment" : "Heading of the lines of a speech refusal report that say where in the book speech stopped.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المكان"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303683,6 +304661,12 @@
     "Where Am I (End)" : {
       "comment" : "Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement ends. Where Am I is the name of a command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أين أنا؟ (النهاية)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303748,6 +304732,12 @@
     "Where Am I (Start)" : {
       "comment" : "Name of the event whose sound is chosen in Settings, Sound Effects: the Where Am I announcement starts. Where Am I is the name of a command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أين أنا؟ (البداية)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304209,6 +305199,12 @@
     "Where the audio begins: the book's beginning, or a heading." : {
       "comment" : "The hint of the From pop-up in the Export dialog's spoken audio options.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المكان الذي يبدأ منه الصوت: بداية الكتاب أو عنوان رئيسي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304274,6 +305270,12 @@
     "Whether each page's last line carries its braille page number." : {
       "comment" : "The hint of the Braille page numbers switch in the Export dialog's braille options.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل يحمل السطر الأخير من كل صفحة رقم صفحة برايل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304339,6 +305341,12 @@
     "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells." : {
       "comment" : "The hint of the contraction pop-up in the Braille tab of Settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل برايل ذلك الرمز مختصر، أي يكتب الكلمات الشائعة ومجموعات الحروف بخلايا أقل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304404,6 +305412,12 @@
     "Whether that code's braille is contracted." : {
       "comment" : "The hint of the contraction pop-up in the Export dialog's braille options.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل برايل ذلك الرمز مختصر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304903,6 +305917,12 @@
     "While playing, moves Book content on with the speech, even as you read it." : {
       "comment" : "First sentence of the hint of Follow in Braille in iPhone Settings. \"Book content\" is the name of the element that holds the book's text, as VoiceOver reads it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أثناء التشغيل، ينقل محتوى الكتاب مع النطق، حتى أثناء قراءتك له."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -305748,6 +306768,12 @@
     "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning." : {
       "comment" : "Caption under the When book ends picker in Settings, Playback. %1$@ and %2$@ are the names of two of the picker's choices, as the picker shows them (Stop, and Stop, and Play Starts Over); Play is the reader's Play button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مع “%1$@”، يقول التشغيل لكتاب منتهٍ إنه منتهٍ؛ ومع “%2$@”، يبدأه من البداية مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306481,6 +307507,12 @@
     "Word 97-2003 document. Its headings are plain text, so Word's navigation pane omits them." : {
       "comment" : "The hint of the Convert to picker in the Export dialog while Word 97-2003 is chosen. Word is an app's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مستند Word 97-2003. عناوينه الرئيسية نص عادي، لذا يُغفلها جزء التنقل في Word."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307066,6 +308098,12 @@
     "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again." : {
       "comment" : "The hint of the Export Every Such Chapter as Written button in the alert an export shows when a chapter nests too deeply.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يكتب هذا الفصل وكل فصل آخر متداخل بعمق مفرط في هذا التصدير فقرات عادية من أسطره، دون أن يسأل مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307131,6 +308169,12 @@
     "Writes this chapter as plain paragraphs of its lines, and exports everything else as usual." : {
       "comment" : "The hint of the Export as Written button in the alert an export shows when a chapter nests too deeply.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يكتب هذا الفصل فقرات عادية من أسطره، ويصدّر كل ما عداه كالمعتاد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307976,6 +309020,12 @@
     "Your Mac's library isn't touched." : {
       "comment" : "Last sentence of the message of the iPhone's question before a book is removed: a copy of the book in a Mac's library stays.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مكتبة Mac الخاص بك لا تتأثر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -308502,6 +309552,12 @@
     "Your library is empty. Add to Library adds a book." : {
       "comment" : "The only row of an empty library. \"Add to Library\" is the name of the button that adds a book, so keep it the same as that button's label.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مكتبتك فارغة. يضيف الزر إضافة إلى المكتبة كتابًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309347,6 +310403,12 @@
     "about %@" : {
       "comment" : "A time estimate, said after \"Time to transcribe:\" or inside a sentence. %@ is a length of time in words, such as \"6 minutes\" or \"1 hour, 5 minutes\".\nPart of a checkbox's label in the Export dialog for text whose size is only close. %@ is a size such as 12 KB.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نحو %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311163,6 +312225,12 @@
     "build %@" : {
       "comment" : "A detail of the build line of the speech refusal report. %@ is the app's build number.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "البناء %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311228,6 +312296,12 @@
     "built %@" : {
       "comment" : "A detail of the build line of the speech refusal report. %@ is the date and time the app was built, as written in its Info.plist.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بُني %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312221,6 +313295,12 @@
     "commit %@" : {
       "comment" : "A detail of the build line of the speech refusal report. %@ is the abbreviated identifier of the source commit the app was built from.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الإيداع %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312936,6 +314016,12 @@
     "dot %@" : {
       "comment" : "How VoiceOver says a braille cell with one raised dot. %@ is the dot's number, 1 to 8, an identifier.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نقطة %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313001,6 +314087,12 @@
     "dots %@" : {
       "comment" : "How VoiceOver says a braille cell with two or more raised dots. %@ is the list of the dots' numbers, 1 to 8, such as \"4 and 7\" or \"1, 2, and 7\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النقاط %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313456,6 +314548,12 @@
     "fading out" : {
       "comment" : "The sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while the timer fades the sound out. Lowercase, since it follows a colon.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تلاشي الصوت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315755,6 +316853,12 @@
     "in the cloud" : {
       "comment" : "Part of a checkbox's label in the Export dialog: the one book's item is only in the cloud.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "في السحابة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316470,6 +317574,12 @@
     "it does not load in TextMouth's liblouis %@" : {
       "comment" : "Why a braille table of this Mac was refused, ending a sentence. %@ is the version of liblouis, the braille library, written as a version number.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يُحمَّل في liblouis %@ الخاص بـ TextMouth"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317294,6 +318404,48 @@
     "it needs more than %lld MB of memory" : {
       "comment" : "Why a braille table of this Mac was refused, ending a sentence. %lld is the most memory a table may need, in megabytes.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتاج إلى أكثر من %lld MB من الذاكرة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتاج إلى أكثر من %lld MB من الذاكرة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتاج إلى أكثر من %lld MB من الذاكرة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتاج إلى أكثر من %lld MB من الذاكرة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتاج إلى أكثر من %lld MB من الذاكرة"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يحتاج إلى أكثر من %lld MB من الذاكرة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -317592,6 +318744,48 @@
     "it translates too slowly, under %lld KB a second" : {
       "comment" : "Why a braille table of this Mac was refused, ending a sentence. %lld is the least speed a table may have, in kilobytes of text a second.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يترجم ببطء شديد، أقل من %lld KB في الثانية"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يترجم ببطء شديد، أقل من %lld KB في الثانية"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يترجم ببطء شديد، أقل من %lld KB في الثانية"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يترجم ببطء شديد، أقل من %lld KB في الثانية"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يترجم ببطء شديد، أقل من %lld KB في الثانية"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يترجم ببطء شديد، أقل من %lld KB في الثانية"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -317825,6 +319019,12 @@
     "it writes eight-dot braille, and TextMouth uses six-dot braille only" : {
       "comment" : "Why a braille table of this Mac was refused, ending a sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يكتب برايل ثماني النقاط، بينما يستخدم TextMouth برايل سداسي النقاط فقط"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319966,6 +321166,12 @@
     "min" : {
       "comment" : "Short for minutes, shown after the sleep timer sheet's custom minutes field. Hidden from VoiceOver.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "د"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321353,6 +322559,12 @@
     "no dots" : {
       "comment" : "How VoiceOver says the blank braille cell, which has no raised dots.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بلا نقاط"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325585,6 +326797,48 @@
     "stopping %lld speech exports with the chapters they finished kept" : {
       "comment" : "One item of the list in the message of a quit that waits for work to finish (\"TextMouth is finishing up before it quits: ...\"): several spoken audio exports are being stopped. %lld is the number of exports, more than one.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف %lld عمليات تصدير صوتي منطوق مع الاحتفاظ بالفصول المنتهية منها"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف %lld عملية تصدير صوتي منطوق مع الاحتفاظ بالفصول المنتهية منها"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف %lld عملية تصدير صوتي منطوق مع الاحتفاظ بالفصول المنتهية منها"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف %lld عملية تصدير صوتي منطوق مع الاحتفاظ بالفصول المنتهية منها"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف %lld عمليتي تصدير صوتي منطوق مع الاحتفاظ بالفصول المنتهية منها"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "إيقاف %lld عمليات تصدير صوتي منطوق مع الاحتفاظ بالفصول المنتهية منها"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -325818,6 +327072,12 @@
     "stopping a speech export with the chapters it finished kept" : {
       "comment" : "One item of the list in the message of a quit that waits for work to finish (\"TextMouth is finishing up before it quits: ...\"): one spoken audio export is being stopped.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إيقاف عملية تصدير صوتي منطوق مع الاحتفاظ بالفصول التي أنهتها"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325883,6 +327143,12 @@
     "stops at the end of the book" : {
       "comment" : "The state of a sleep timer set to End of book, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتوقف عند نهاية الكتاب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325948,6 +327214,12 @@
     "stops at the end of this heading" : {
       "comment" : "The state of a sleep timer set to End of heading, as VoiceOver reads it after \"Sleep timer:\". Lowercase, since it follows a colon.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتوقف عند نهاية هذا العنوان الرئيسي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326078,6 +327350,12 @@
     "symbols" : {
       "comment" : "The unit shown after the field and stepper that set the length from which a run of one symbol is collapsed, such as \"Collapse runs of at least 4 symbols\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رموز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326961,6 +328239,12 @@
     "the braille helper failed" : {
       "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence. The braille helper is a program TextMouth runs.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فشل مساعد برايل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327026,6 +328310,12 @@
     "the braille helper was stopped because %@" : {
       "comment" : "Why the check of a braille table of this Mac could not be made, ending a sentence. %@ is a clause saying why the program was stopped, such as \"it ran longer than 10 seconds\". The braille helper is a program TextMouth runs.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُوقف مساعد برايل لأن %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327611,6 +328901,12 @@
     "the file %@ could not be read quickly enough" : {
       "comment" : "A clause that ends a longer sentence about an audio file that cannot play: the disk was too slow. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة الملف %@ بسرعة كافية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327676,6 +328972,12 @@
     "the file %@ failed partway through" : {
       "comment" : "A clause that ends a longer sentence about an audio file that cannot play: it failed while playing. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعطّل الملف %@ في منتصف التشغيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327741,6 +329043,12 @@
     "the file %@ is damaged, unreadable, or not an audio file" : {
       "comment" : "A clause that ends a longer sentence about an audio file that cannot play: it cannot be read as audio. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الملف %@ تالف أو غير قابل للقراءة أو ليس ملفًا صوتيًا"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327806,6 +329114,12 @@
     "the file %@ is missing" : {
       "comment" : "A clause that ends a longer sentence about an audio file that cannot play: the file is not there. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الملف %@ مفقود"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327871,6 +329185,12 @@
     "the file %@ stopped responding" : {
       "comment" : "A clause that ends a longer sentence about an audio file that cannot play: playback stopped responding. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف الملف %@ عن الاستجابة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -327936,6 +329256,12 @@
     "the file %@ was stopped because TextMouth's memory grew too large" : {
       "comment" : "A clause that ends a longer sentence about an audio file that cannot play: TextMouth stopped it to protect the Mac. %@ is the file's name, such as 03.mp3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أُوقف الملف %@ لأن ذاكرة TextMouth كبرت أكثر من اللازم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329047,6 +330373,12 @@
     "this Mac no longer has it" : {
       "comment" : "Why a braille table of this Mac was refused, ending a sentence such as \"TextMouth can't use this Mac's table X: this Mac no longer has it.\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد هذا الـ Mac يحتوي عليه"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330022,6 +331354,12 @@
     "version %@" : {
       "comment" : "A detail of the build line of the speech refusal report. %@ is the app's version, such as 0.5.3.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الإصدار %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331136,6 +332474,12 @@
     "“%@” couldn't be downloaded from iCloud. Check the connection, then add it again." : {
       "comment" : "What VoiceOver says when a file's download from iCloud stalled and the import was cancelled. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تنزيل “%@” من iCloud. تحقق من الاتصال، ثم أضفه مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331467,6 +332811,12 @@
     "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again." : {
       "comment" : "Why a spoken audio export was refused: the book's voice is a Personal Voice. %1$@ is the voice's name and %2$@ the name of the Voice button in the book's reader.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” صوت شخصي لا يستطيع macOS تسجيله في ملف. اختر صوتًا آخر بزر %2$@ في القارئ، ثم صدّر مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331668,6 +333018,12 @@
     "“%@” is an XML file, but not a pronunciation lexicon." : {
       "comment" : "Message of the alert when a file chosen as a pronunciation lexicon is XML of another kind. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” ملف XML، لكنه ليس قاموس نطق."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331804,6 +333160,12 @@
     "“%@” is not a complete, valid XML file." : {
       "comment" : "Message of the alert when a file chosen as a pronunciation lexicon is not valid XML. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” ليس ملف XML كاملًا وصالحًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332135,6 +333497,12 @@
     "“%@” is too large to read." : {
       "comment" : "Message of the alert when a pronunciation lexicon file is too large. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” كبير جدًا بحيث لا يمكن قراءته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332620,6 +333988,12 @@
     "“%@” uses XML entities of its own, which TextMouth does not read." : {
       "comment" : "Message of the alert when a pronunciation lexicon declares XML entities, which are refused for safety. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يستخدم “%@” كيانات XML خاصة به، ولا يقرؤها TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
