@@ -18045,7 +18045,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ agora espera antes de %2$@, caso seja pressionada duas vezes."
+            "value" : "A tecla %1$@ agora espera antes de %2$@, caso seja pressionada duas vezes."
           }
         },
         "ru" : {
@@ -23921,7 +23921,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Não foi possível adicionar %@ de volta: antes, nenhuma cópia do texto contido no pacote pôde ser guardada, então o TextMouth deixou o texto como estava."
+            "value" : "Não foi possível adicionar %@ de volta: nenhuma cópia do texto do pacote pôde ser guardada antes, então o TextMouth deixou o texto como estava."
           }
         },
         "ru" : {
@@ -39732,7 +39732,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de PPM"
+                  "value" : "%lld PPM"
                 }
               },
               "one" : {
@@ -137941,7 +137941,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Altera a unidade de navegação deste livro para frente e para trás"
+            "value" : "Altera a unidade de navegação para frente e para trás deste livro"
           }
         },
         "ru" : {
@@ -138078,7 +138078,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Altera as unidades de navegação deste livro para frente e para trás"
+            "value" : "Altera as unidades de navegação para frente e para trás deste livro"
           }
         },
         "ru" : {
@@ -245903,7 +245903,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modo de informação do cabeçalho"
+            "value" : "Informação exibida nos cabeçalhos"
           }
         },
         "ru" : {
@@ -249658,7 +249658,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Quão rápido um segundo pressionamento deve seguir o primeiro. Uma tecla com ações diferentes para um e dois pressionamentos espera esse tempo antes de agir no pressionamento simples."
+            "value" : "O tempo máximo entre o primeiro e o segundo pressionamento. Uma tecla com ações diferentes para pressionamento simples e duplo espera esse tempo antes de executar a ação do pressionamento simples."
           }
         },
         "ru" : {
@@ -353308,7 +353308,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sinal de número"
+            "value" : "Cerquilha"
           }
         },
         "ru" : {
@@ -369760,7 +369760,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Colar e corresponder ao estilo"
+            "value" : "Colar e manter estilo"
           }
         },
         "ru" : {
