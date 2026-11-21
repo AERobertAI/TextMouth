@@ -305,7 +305,7 @@ One neutral Spanish (`es`) serves every region, until the user says otherwise.
 ## Translating at scale
 <!-- id: translation-at-scale; keys: partition, key file, disjoint keys, batches, consistency pass, glossary first, 20 agents, extract-report; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json, Scripts/agents/extract-report.py -->
 
-The nine languages added after Spanish were made this way, about 4,200 strings each.
+The twenty-one languages added after Spanish were made this way, about 4,200 strings each.
 Developers who convert code read [Localizing TextMouth's code](localization.md) instead.
 
 1. Glossary first.
@@ -330,6 +330,72 @@ Developers who convert code read [Localizing TextMouth's code](localization.md) 
    - each term has one translation, and the pass's glossary changes go to a file, which the orchestrator applies to `glossary.json` at once, so later passes see them;
    - names that must not be translated stay as they are.
    The pass changes the catalog only, and is a branch of its own.
+9. A consistency pass or a review writes its own batch, `{"language": ..., "items": [{"key": ..., "english": ..., "translation": ...}]}`, and runs `apply` on it.
+   `todo` offers only the strings a language still lacks, so it never lists one to rework.
+10. The orchestrator fits a pass's glossary changes to the glossary's tests and drops an entry they refuse: a new term may not share another term's text, and a term's own text must hold each term its English contains.
+
+## Adding a language
+<!-- id: translation-adding-language; keys: new language, checklist, plural categories, knownRegions, make generate, verify_packs, language code, onboarding; src: Scripts/l10n/l10n.py, Scripts/l10n/catalog.py, Scripts/l10n/glossary.json, Scripts/l10n/verify_packs.py, TextMouthProductionTests/LanguagePackTests.swift, Scripts/l10n/tests/test_plural_rules_swift.py, Makefile -->
+
+A person or an agent follows these steps from the start.
+Twenty-one languages were added this way, in two waves.
+
+1. Choose the code Xcode uses for the language: `zh-Hant` and `pt-BR` carry a script or region, `hi` does not.
+2. Add its plural categories to `PLURAL_CATEGORIES` in `Scripts/l10n/catalog.py`, and the same to the table in `LanguagePackTests.swift`, after checking the rule Foundation on this macOS applies, not only CLDR's: Vietnamese has `other` alone in Foundation, though CLDR 49 gives it `one`.
+   Probe it with `LanguagePackPluralRules`; `test_plural_rules_swift.py` fails when the two tables differ, and `Scripts/l10n/tests/test_catalog.py` keeps the catalog's.
+3. Add the language's text to every glossary term in `Scripts/l10n/glossary.json`, each marked `"check": true`, with the glossary's tests green (`Scripts/l10n/tests/test_glossary_file.py`).
+   One agent for each language does this, so every translator of the language later uses the same words.
+4. Write the language's rules for translators, as the sections above do: the address (register), the command form of menu items and buttons, the hints, the quotation marks, and how a sentence ends.
+   Follow Apple's own interface in the language.
+5. Split the keys the language lacks into the six area files (see Translating at scale), and give each file to one translator.
+6. Check each translator's branch before merging it: it changed only its own keys, in its own language, and none of them is left without the language.
+   Merge the branches; the catalog's merge driver merges them by key.
+7. Run one consistency pass over the language, then apply its glossary changes to `glossary.json`.
+8. Where usage allows, have a heavier model review the wording (see Reviewing a language).
+9. Run `make generate`, which adds the language to Xcode's `knownRegions`.
+10. Check the whole:
+    - `python3 -I -B Scripts/l10n/verify_packs.py`: the compact language files change no lookup;
+    - `python3 -I -B Scripts/l10n/l10n.py check` and the l10n tests (`make l10n-check` runs both);
+    - an iPhone train that names `LanguagePackTests`;
+    - the full Mac suite;
+    - `make check`, for the app's size against the limit (see [Building](building.md), the make check gate).
+11. Name the language in the opening of this page, in the list in [Settings](../user/settings.md) (the interface language), and in the changelog.
+
+## What adding a language still does by hand
+<!-- id: translation-adding-by-hand; keys: orchestrator scripts, area split, branch check, fit glossary changes, review dump, not in the repository, limitation; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json; status: incomplete; issues: FR36 -->
+
+These steps of Adding a language are done with the orchestrator's own scripts, which are not in the repository yet:
+- the area split of step 5 (the six key files);
+- the branch check of step 6;
+- fitting the glossary changes of step 7 to the glossary's tests, which drops each entry the tests refuse;
+- the review's dump and its batch writer, which step 8 uses.
+
+A person who adds a language writes them again from the steps above.
+No test yet looks at a window mirrored for a right-to-left language (Arabic and Hebrew).
+
+## Reviewing a language
+<!-- id: translation-reviewing-language; keys: review, reviewer, Opus, fix categories, reviews folder, native speaker, record; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json -->
+
+A heavier model (Opus) reads each language's wording after its consistency pass, and a native speaker reviews it after that.
+Nobody has read the machine translation for bad wording until then, and the user hears every string through VoiceOver and braille.
+
+1. One reviewer reads one third of one language: two of the six areas, in numbered chunks of 150 strings.
+   A plural string shows its forms on one line, and a short string carries the start of its note.
+2. Fix a string when it is wrong or plainly unnatural, not when it merely differs from what the reviewer would write.
+   Each fix has one category:
+   - `meaning`: another sense of the word (Play, Sheet, Index, Track, Book, Return), swapped subject and object, a lost negation;
+   - `grammar`: agreement, case, a wrong particle or verb form, a sentence built around a placeholder that cannot read right for every value;
+   - `natural`: a copy of the English word order or idiom, or a label far longer than it needs to be;
+   - `term`: a word other than Apple's for the same thing, where the glossary does not decide it;
+   - `register`: a form of address or command form unlike the rest of the language;
+   - `punctuation`: the language's own quotation marks, spacing, and sentence ends;
+   - `voiceover`: a label that names its control type, a hint that names a gesture or a key, or a hint that is not a sentence.
+3. Leave alone a glossary word, even one the reviewer would choose differently: propose it in the report, unless it is wrong in the sense one string needs.
+   Leave alone placeholders and their order, plural categories, names never translated, and `keepEnglish` strings.
+4. Write each chunk's fixes as a batch (`l10n.py apply`, with its refusal loop), and record each fix: the key, the English, the text before, the text after, and the category with one short reason.
+   Check the catalog once at the end.
+5. The records go to `Scripts/l10n/reviews/<code>.json`, one file a language, for the native speaker who reviews next.
+   Only the languages that have a file there have been reviewed.
 
 ## The prompt for a translator agent
 <!-- id: translation-agent-prompt; keys: prompt, translator agent, batch file, brief; src: Scripts/l10n/l10n.py -->
