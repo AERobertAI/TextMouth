@@ -2035,6 +2035,37 @@
      "why": "term: does not read is 無法讀取, as parts 1 and 2 write it (不會讀取 says it chooses not to); 它自己的 copied of its own"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "開啟時，已刪除書籍的檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原。",
+     "after": "開啟時，已刪除書籍的檔案會移到垃圾桶，在清空垃圾桶之前都可以復原。",
+     "why": "term: Finder's own Empty Trash in Traditional Chinese is 清空垃圾桶 (Finder's zh_TW MenuBar.strings, macOS 26.3.1), as parts 2 and 3 now write it"
+    },
+    {
+     "key": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "english": "its files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "其檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原",
+     "after": "其檔案會移到垃圾桶，在清空垃圾桶之前都可以復原",
+     "why": "term: Finder's own Empty Trash in Traditional Chinese is 清空垃圾桶 (Finder's zh_TW MenuBar.strings, macOS 26.3.1), as parts 2 and 3 now write it"
+    },
+    {
+     "key": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "english": "their files go to the Trash, where you can recover them until the Trash is emptied",
+     "before": "它們的檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原",
+     "after": "它們的檔案會移到垃圾桶，在清空垃圾桶之前都可以復原",
+     "why": "term: Finder's own Empty Trash in Traditional Chinese is 清空垃圾桶 (Finder's zh_TW MenuBar.strings, macOS 26.3.1), as parts 2 and 3 now write it"
+    }
+   ]
   }
  ]
 }
