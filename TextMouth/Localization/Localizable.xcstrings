@@ -262268,7 +262268,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rekaman baru berdurasi %@ disisipkan, dan sedang dipilih."
+            "value" : "Rekaman baru berdurasi %@ disisipkan dan kini terpilih."
           }
         },
         "it" : {
@@ -337125,7 +337125,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Belum ada penanda. Tambah Penanda menaruh satu di posisi kursor."
+            "value" : "Belum ada penanda. Pilih Tambah Penanda untuk memasang satu di posisi kursor."
           }
         },
         "it" : {
@@ -339921,7 +339921,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Urungkan menarik kembali edit sejak penyimpanan terakhir."
+            "value" : "Audio asli tidak disimpan, sehingga tidak dapat dikembalikan ke semula. Pilih Urungkan untuk menarik kembali edit sejak penyimpanan terakhir."
           }
         },
         "it" : {
@@ -347736,7 +347736,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nanti Saja"
+            "value" : "Jangan Sekarang"
           }
         },
         "it" : {
@@ -349436,7 +349436,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Belum ada di audio buku. Buang mengurungkannya; saat Anda mengedit buku ini lagi, Ulangi mengembalikannya sampai Anda melakukan edit lain."
+            "value" : "Belum ada di audio buku. Pilih Buang untuk mengurungkannya; saat Anda mengedit buku ini lagi, pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain."
           }
         },
         "it" : {
