@@ -134964,7 +134964,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Мітки та паузи…"
+            "value" : "Мітки й паузи…"
           }
         },
         "zh-Hans" : {
@@ -190248,7 +190248,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Шукати в бібліотеці…"
+            "value" : "Пошук у бібліотеці…"
           }
         },
         "zh-Hans" : {
@@ -203704,7 +203704,7 @@
         "uk" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Початок"
+            "value" : "Запуск"
           }
         },
         "zh-Hans" : {
