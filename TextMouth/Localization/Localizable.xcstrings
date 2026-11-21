@@ -26970,7 +26970,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O nome de uma pasta não pode ser vazio, \".\" ou \"..\", terminar em \".tmb\" nem ser reservado pelo TextMouth."
+            "value" : "O nome de uma pasta não pode ser vazio, “.” ou “..”, terminar em “.tmb” nem ser reservado pelo TextMouth."
           }
         }
       }
@@ -41586,7 +41586,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escolha para onde mover os livros e as subpastas antes de excluir \"%@\"."
+            "value" : "Escolha para onde mover os livros e as subpastas antes de excluir “%@”."
           }
         }
       }
@@ -45528,7 +45528,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Não foi possível excluir \"%@\" e mover seu conteúdo"
+            "value" : "Não foi possível excluir “%@” e mover seu conteúdo"
           }
         }
       }
@@ -45697,7 +45697,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Não foi possível mover \"%@\""
+            "value" : "Não foi possível mover “%@”"
           }
         }
       }
@@ -46082,7 +46082,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Não foi possível renomear \"%@\""
+            "value" : "Não foi possível renomear “%@”"
           }
         }
       }
@@ -81413,7 +81413,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mover \"%@\""
+            "value" : "Mover “%@”"
           }
         }
       }
@@ -82573,7 +82573,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mover o conteúdo de \"%@\""
+            "value" : "Mover o conteúdo de “%@”"
           }
         }
       }
