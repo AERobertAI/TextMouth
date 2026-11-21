@@ -2945,7 +2945,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在你的资料库中，已取消订阅。在订阅源所在行或其 %3$@ 中选取 %2$@，可再次检查。"
+            "value" : "%1$@ 在你的资料库中，但已取消订阅。在订阅源所在行或其 %3$@ 中选取 %2$@，即可再次检查。"
           }
         },
         "zh-Hant" : {
@@ -12840,7 +12840,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在你的资料库中，已取消订阅。在其所在行或其 %3$@ 中选取 %2$@，可再次检查。"
+            "value" : "%1$@ 在你的资料库中，但已取消订阅。在其所在行或其 %3$@ 中选取 %2$@，即可再次检查。"
           }
         },
         "zh-Hant" : {
@@ -47194,7 +47194,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "导入了 %1$lld 本图书，来自“%2$@”。"
+                  "value" : "已从“%2$@”导入 %1$lld 本图书。"
                 }
               }
             }
@@ -88626,7 +88626,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "符号链接不能作为受管理的图书包被删除。"
+            "value" : "无法将符号链接作为受管理的图书包删除。"
           }
         },
         "zh-Hant" : {
@@ -123278,7 +123278,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "取消订阅源下载"
+            "value" : "取消下载订阅源内容"
           }
         },
         "zh-Hant" : {
@@ -240954,7 +240954,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它在下载期间属于其订阅源。%@ 会移除其文件，但保留其位置和书签。"
+            "value" : "它作为下载内容属于其订阅源。%@ 会移除其文件，但保留其位置和书签。"
           }
         },
         "zh-Hant" : {
@@ -241722,7 +241722,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "删除%@：它会移到废纸篓，在清倒废纸篓之前你可以将其恢复。"
+            "value" : "这会删除%@：它会移到废纸篓，在清倒废纸篓之前你可以将其恢复。"
           }
         },
         "zh-Hant" : {
@@ -241847,7 +241847,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "删除%@：它会被永久删除，无法恢复。"
+            "value" : "这会删除%@：它会被永久删除，无法恢复。"
           }
         },
         "zh-Hant" : {
@@ -241972,7 +241972,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "删除%@：它会保留在 TextMouth 资料库文件夹中。"
+            "value" : "这会删除%@：它会保留在 TextMouth 资料库文件夹中。"
           }
         },
         "zh-Hant" : {
@@ -242097,7 +242097,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "删除%@：它们会被永久删除，无法恢复。"
+            "value" : "这会删除%@：它们会被永久删除，无法恢复。"
           }
         },
         "zh-Hant" : {
@@ -242222,7 +242222,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "删除%@：它们会移到废纸篓，在清倒废纸篓之前你可以将其恢复。"
+            "value" : "这会删除%@：它们会移到废纸篓，在清倒废纸篓之前你可以将其恢复。"
           }
         },
         "zh-Hant" : {
@@ -242347,7 +242347,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "删除%@：它们会保留在 TextMouth 资料库文件夹中。"
+            "value" : "这会删除%@：它们会保留在 TextMouth 资料库文件夹中。"
           }
         },
         "zh-Hant" : {
@@ -249681,7 +249681,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "当其中没有其他内容时，其文件夹“%@”也会一并删除。"
+            "value" : "若其文件夹“%@”中没有其他内容，该文件夹也会一并删除。"
           }
         },
         "zh-Hant" : {
@@ -253761,7 +253761,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "两者都保留"
+            "value" : "保留两者"
           }
         },
         "zh-Hant" : {
@@ -265963,7 +265963,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出每篇文章，保留最新的 %lld 篇下载内容，并移除它所做的较早下载，同时保留其位置、书签和设置。"
+                  "value" : "列出每篇文章，保留最新的 %lld 篇下载内容，并移除它自动下载的较早内容，同时保留其位置、书签和设置。"
                 }
               }
             }
@@ -266513,7 +266513,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出每个单集和文章，保留最新的 %lld 项下载内容，并移除它所做的较早下载，同时保留其位置、书签和设置。"
+                  "value" : "列出每个单集和文章，保留最新的 %lld 项下载内容，并移除它自动下载的较早内容，同时保留其位置、书签和设置。"
                 }
               }
             }
@@ -267063,7 +267063,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "列出每个单集，保留最新的 %lld 个下载内容，并移除它所做的较早下载，同时保留其位置、书签和设置。"
+                  "value" : "列出每个单集，保留最新的 %lld 个下载内容，并移除它自动下载的较早内容，同时保留其位置、书签和设置。"
                 }
               }
             }
@@ -313702,7 +313702,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在此漫画归档的这一张图片中没有找到文本。"
+            "value" : "在此漫画归档唯一的图片中没有找到文本。"
           }
         },
         "zh-Hant" : {
@@ -317107,7 +317107,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "没有足够空间来转换音频"
+            "value" : "空间不足，无法转换音频"
           }
         },
         "zh-Hant" : {
@@ -379098,7 +379098,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已重新订阅 %@。正在立即检查…"
+            "value" : "已重新订阅 %@。正在检查…"
           }
         },
         "zh-Hant" : {
@@ -436141,7 +436141,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 无法转换 %@ 文件，因为其转换器已从 App 中丢失。"
+            "value" : "TextMouth 无法转换 %@ 文件，因为 App 中缺少相应的转换器。"
           }
         },
         "zh-Hant" : {
@@ -438302,7 +438302,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 无法打开受拷贝保护的文件。"
+            "value" : "TextMouth 无法打开受复制保护的文件。"
           }
         },
         "zh-Hant" : {
