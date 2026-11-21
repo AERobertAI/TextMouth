@@ -22450,7 +22450,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 會把該章節寫成純段落（每行一段），其引用和清單標記保留為字元，其餘內容照常輸出。"
+            "value" : "%@ 會把該章節寫成純段落（每行一段），其引用和列表標記保留為字元，其餘內容照常輸出。"
           }
         }
       }
@@ -22569,7 +22569,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 會把文字寫成純段落（每行一段），其引用和清單標記保留為字元，其餘內容照常輸出。"
+            "value" : "%@ 會把文字寫成純段落（每行一段），其引用和列表標記保留為字元，其餘內容照常輸出。"
           }
         }
       }
@@ -242998,7 +242998,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它的名稱、條件、排序和限制會還原為 TextMouth 原有的設定。它在清單中的位置和提供的時機則維持不變。"
+            "value" : "它的名稱、條件、排序和限制會還原為 TextMouth 原有的設定。它在列表中的位置和提供的時機則維持不變。"
           }
         }
       }
@@ -429336,7 +429336,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法儲存此訂閱源的下載項目清單，因此下載項目已保留。請在書庫可儲存後再試一次。"
+            "value" : "TextMouth 無法儲存此訂閱源的下載項目列表，因此下載項目已保留。請在書庫可儲存後再試一次。"
           }
         }
       }
@@ -429455,7 +429455,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法儲存訂閱源的項目清單，因此沒有移動任何項目。"
+            "value" : "TextMouth 無法儲存訂閱源的項目列表，因此沒有移動任何項目。"
           }
         }
       }
@@ -443851,7 +443851,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "該檔案不是 OPML 訂閱清單。"
+            "value" : "該檔案不是 OPML 訂閱列表。"
           }
         }
       }
@@ -446278,7 +446278,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "清單中的 %1$@ 將被 TextMouth 的 %2$@ 取代。"
+            "value" : "列表中的 %1$@ 將被 TextMouth 的 %2$@ 取代。"
           }
         }
       }
@@ -461134,7 +461134,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書籍的文字（Markdown 格式），含標題、清單和強調。"
+            "value" : "書籍的文字（Markdown 格式），含標題、列表和強調。"
           }
         }
       }
@@ -478852,7 +478852,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書庫現在顯示依磁碟上的書籍重建的暫時清單。"
+            "value" : "書庫現在顯示依磁碟上的書籍重建的暫時列表。"
           }
         }
       }
@@ -496772,7 +496772,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此顯示方式位於清單的第一個。"
+            "value" : "此顯示方式位於列表的第一個。"
           }
         }
       }
@@ -496897,7 +496897,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此顯示方式位於清單的最後一個。"
+            "value" : "此顯示方式位於列表的最後一個。"
           }
         }
       }
