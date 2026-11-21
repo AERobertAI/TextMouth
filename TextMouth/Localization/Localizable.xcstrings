@@ -33519,7 +33519,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkript anhängen …"
+            "value" : "Transkript anhängen…"
           }
         },
         "es" : {
@@ -37946,7 +37946,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abbruch nach diesem Buch..."
+            "value" : "Abbruch nach diesem Buch…"
           }
         },
         "es" : {
@@ -38051,7 +38051,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wird abgebrochen..."
+            "value" : "Wird abgebrochen…"
           }
         },
         "es" : {
@@ -38337,7 +38337,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ort ändern …"
+            "value" : "Ort ändern…"
           }
         },
         "es" : {
@@ -40255,7 +40255,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sprachmodell wird geprüft …"
+            "value" : "Sprachmodell wird geprüft…"
           }
         },
         "es" : {
@@ -40611,7 +40611,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Andere Bibliothek wählen …"
+            "value" : "Andere Bibliothek wählen…"
           }
         },
         "es" : {
@@ -42921,7 +42921,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkript bereinigen (experimentell) …"
+            "value" : "Transkript bereinigen (experimentell)…"
           }
         },
         "es" : {
@@ -43073,7 +43073,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkript wird bereinigt …"
+            "value" : "Transkript wird bereinigt…"
           }
         },
         "es" : {
@@ -49996,7 +49996,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkript löschen …"
+            "value" : "Transkript löschen…"
           }
         },
         "es" : {
@@ -53896,7 +53896,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sprachmodell für %@ wird heruntergeladen …"
+            "value" : "Sprachmodell für %@ wird heruntergeladen…"
           }
         },
         "es" : {
@@ -55197,7 +55197,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio bearbeiten …"
+            "value" : "Audio bearbeiten…"
           }
         },
         "es" : {
@@ -55477,7 +55477,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Regeln bearbeiten …"
+            "value" : "Regeln bearbeiten…"
           }
         },
         "es" : {
@@ -60809,7 +60809,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exportieren …"
+            "value" : "Exportieren…"
           }
         },
         "es" : {
@@ -60879,7 +60879,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Archiv wird entpackt..."
+            "value" : "Archiv wird entpackt…"
           }
         },
         "es" : {
@@ -60914,7 +60914,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„%1$@“ wird entpackt: %2$@..."
+            "value" : "„%1$@“ wird entpackt: %2$@…"
           }
         },
         "en" : {
@@ -62507,7 +62507,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Filtervoreinstellungen …"
+            "value" : "Filtervoreinstellungen…"
           }
         },
         "es" : {
@@ -62682,7 +62682,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Doppelte Bücher suchen …"
+            "value" : "Doppelte Bücher suchen…"
           }
         },
         "es" : {
@@ -65130,7 +65130,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Neue Identität geben …"
+            "value" : "Neue Identität geben…"
           }
         },
         "es" : {
@@ -96284,7 +96284,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ohne Index öffnen …"
+            "value" : "Ohne Index öffnen…"
           }
         },
         "es" : {
@@ -103926,7 +103926,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkript von vorher wird wiederhergestellt …"
+            "value" : "Transkript von vorher wird wiederhergestellt…"
           }
         },
         "es" : {
@@ -105624,7 +105624,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkript und Regeln werden gelesen …"
+            "value" : "Transkript und Regeln werden gelesen…"
           }
         },
         "es" : {
@@ -106698,7 +106698,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wiederherstellungsoptionen …"
+            "value" : "Wiederherstellungsoptionen…"
           }
         },
         "es" : {
@@ -106873,7 +106873,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Textextraktion wiederholen …"
+            "value" : "Textextraktion wiederholen…"
           }
         },
         "es" : {
@@ -111038,7 +111038,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Identität wiederherstellen …"
+            "value" : "Identität wiederherstellen…"
           }
         },
         "es" : {
@@ -111598,7 +111598,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio erneut transkribieren …"
+            "value" : "Audio erneut transkribieren…"
           }
         },
         "es" : {
@@ -114436,7 +114436,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aufnahme wird gesichert …"
+            "value" : "Aufnahme wird gesichert…"
           }
         },
         "es" : {
@@ -122971,7 +122971,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wird gestartet …"
+            "value" : "Wird gestartet…"
           }
         },
         "es" : {
@@ -130417,7 +130417,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth hat keine eigenen Regeln: Keine war in allen getesteten Büchern richtig. „Regeln bearbeiten …“ öffnet deine Kopie, in der du Regeln hinzufügen kannst, etwa für einen Namen, den die Erkennung immer anders schreibt."
+            "value" : "TextMouth hat keine eigenen Regeln: Keine war in allen getesteten Büchern richtig. „Regeln bearbeiten…“ öffnet deine Kopie, in der du Regeln hinzufügen kannst, etwa für einen Namen, den die Erkennung immer anders schreibt."
           }
         },
         "es" : {
@@ -157742,7 +157742,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio transkribieren …"
+            "value" : "Audio transkribieren…"
           }
         },
         "es" : {
@@ -161757,7 +161757,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Standardort verwenden …"
+            "value" : "Standardort verwenden…"
           }
         },
         "es" : {
@@ -163338,7 +163338,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Warte, bis das Verschieben des Datenordners abgeschlossen ist..."
+            "value" : "Warte, bis das Verschieben des Datenordners abgeschlossen ist…"
           }
         },
         "es" : {
@@ -167865,7 +167865,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deine Kopie der Regeln ist leer. „Regeln bearbeiten …“ öffnet sie, damit du welche hinzufügst."
+            "value" : "Deine Kopie der Regeln ist leer. „Regeln bearbeiten…“ öffnet sie, damit du welche hinzufügst."
           }
         },
         "es" : {
