@@ -379257,7 +379257,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "내 위치는? 안내가 끝날 때 재생됩니다."
+            "value" : "“내 위치는?” 안내가 끝날 때 재생됩니다."
           }
         },
         "nl" : {
@@ -379394,7 +379394,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "내 위치는? 안내가 시작될 때 재생됩니다."
+            "value" : "“내 위치는?” 안내가 시작될 때 재생됩니다."
           }
         },
         "nl" : {
@@ -415185,7 +415185,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "표준 목록을 복원합니다. ASCII 기호, 글머리 기호, 대시, 줄임표, 상자 그리기 선."
+            "value" : "ASCII 기호, 글머리 기호, 대시, 줄임표, 상자 그리기 선으로 된 표준 목록을 복원합니다."
           }
         },
         "nl" : {
@@ -420036,7 +420036,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "각 표제가 개요 수준으로 표시되는 서식 있는 텍스트로, 사용 앱: Word, Pages, TextEdit."
+            "value" : "각 표제가 개요 수준으로 표시되는 서식 있는 텍스트로, Word, Pages, 텍스트 편집기에서 열 수 있습니다."
           }
         },
         "nl" : {
@@ -438218,7 +438218,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "설정이 전체 기본값으로 적용됨"
+            "value" : "설정이 전역 기본값으로 적용됨"
           }
         },
         "nl" : {
@@ -455933,7 +455933,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mac 음성으로 만든 음성은 Apple 라이선스에 따라 개인용 비상업적 용도로만 사용할 수 있습니다."
+            "value" : "Mac의 음성으로 만든 오디오는 Apple 라이선스에 따라 개인적인 비상업적 용도로만 사용할 수 있습니다."
           }
         },
         "nl" : {
@@ -458146,7 +458146,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "속도: 분당 %1$lld단어, 비율 %2$@, 음높이 %3$@, 음량 %4$@"
+                  "value" : "속도: 분당 %1$lld단어, 엔진 속도 %2$@, 음높이 %3$@, 음량 %4$@"
                 }
               }
             }
@@ -474034,7 +474034,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "음성 오디오로 만든 텍스트"
+            "value" : "음성 오디오 형식의 텍스트"
           }
         },
         "nl" : {
@@ -497556,7 +497556,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 %2$@ 때문에 %1$@을(를) 중지했으며, TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다."
+            "value" : "TextMouth가 %1$@을(를) 중지했으며(이유: %2$@), TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다."
           }
         },
         "nl" : {
@@ -497693,7 +497693,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 %@을(를) 너무 오래 걸려 이전에 중지했으며, TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다."
+            "value" : "%@이(가) 너무 오래 걸려 TextMouth가 이전에 중지했으며, TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다."
           }
         },
         "nl" : {
@@ -497967,7 +497967,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 %@ 때문에 점자 번역을 중지했습니다."
+            "value" : "TextMouth가 점자 번역을 중지했습니다(이유: %@)."
           }
         },
         "nl" : {
@@ -517882,7 +517882,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책에 캡션으로 쓸 시간 정보가 있는 대본이 없습니다."
+            "value" : "책에 자막으로 쓸 시간 정보가 있는 대본이 없습니다."
           }
         },
         "nl" : {
@@ -530441,7 +530441,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "파일 %@이(가) 중간에 실패했습니다."
+            "value" : "파일 %@을(를) 재생하는 도중 오류가 발생했습니다."
           }
         },
         "nl" : {
@@ -530989,7 +530989,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth의 메모리가 너무 커져 파일 %@을(를) 중지했습니다."
+            "value" : "TextMouth의 메모리가 너무 커져 파일 %@의 재생을 중지했습니다."
           }
         },
         "nl" : {
@@ -548730,7 +548730,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "선택한 책의 부분에는 읽을 단어가 없습니다."
+            "value" : "책에서 선택한 부분에는 읽을 단어가 없습니다."
           }
         },
         "nl" : {
@@ -548873,7 +548873,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책의 구간, 챕터 %3$@의 문자 %1$@에서 %2$@까지:"
+            "value" : "책에 있는 그대로의 구간, 챕터 %3$@의 문자 %1$@에서 %2$@까지:"
           }
         },
         "nl" : {
@@ -552777,7 +552777,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "읽기 목록이 책이 끝나면 중지하도록 설정되어 있음"
+            "value" : "읽기 목록은 책이 끝나면 중지하도록 설정되어 있음"
           }
         },
         "nl" : {
@@ -555168,7 +555168,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "거부된 텍스트가 여기서 문자 %@에서 시작됩니다."
+            "value" : "거부된 텍스트는 여기, 문자 %@에서 시작됩니다."
           }
         },
         "nl" : {
@@ -555305,7 +555305,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "거부된 텍스트가 여기서 문자 %@에서 끝납니다."
+            "value" : "거부된 텍스트는 여기, 문자 %@에서 끝납니다."
           }
         },
         "nl" : {
@@ -558736,7 +558736,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "시간 정보가 있는 %@ 캡션 형식의 대본으로, 오디오 시작부터 시간을 맞춘 파일 하나입니다."
+            "value" : "%@ 자막 형식의 대본으로, 오디오 시작부터 시간을 맞춘 파일 하나입니다."
           }
         },
         "nl" : {
@@ -558873,7 +558873,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 보관하는 대로 JSON 형식의 대본이며, 텍스트는 Markdown 형식입니다."
+            "value" : "TextMouth가 보관하는 그대로의 JSON 형식 대본이며, 텍스트는 Markdown 형식입니다."
           }
         },
         "nl" : {
@@ -608231,7 +608231,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "전체 설정 사용(%@)"
+            "value" : "전역 설정 사용(%@)"
           }
         },
         "nl" : {
@@ -610703,7 +610703,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "음성: %1$@(%2$@), %3$@, %4$@ 품질"
+            "value" : "음성: %1$@(%2$@), %3$@, %4$@"
           }
         },
         "nl" : {
@@ -622086,7 +622086,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "오디오가 시작되는 위치: 책의 처음 또는 표제."
+            "value" : "오디오가 시작되는 위치로, 책의 처음 또는 표제입니다."
           }
         },
         "nl" : {
@@ -623518,7 +623518,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "재생하는 동안 책 콘텐츠를 음성에 맞춰 이동하며, 읽는 중에도 마찬가지입니다."
+            "value" : "재생하는 동안 책 내용을 음성에 맞춰 이동하며, 읽는 중에도 마찬가지입니다."
           }
         },
         "nl" : {
@@ -666733,7 +666733,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "내보낸 챕터는 보관한 채 음성 내보내기 %lld개 중지"
+                  "value" : "완료한 챕터는 보관한 채 음성 내보내기 %lld개를 중지하는 중"
                 }
               }
             }
@@ -667023,7 +667023,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "내보낸 챕터는 보관한 채 음성 내보내기 중지"
+            "value" : "완료한 챕터는 보관한 채 음성 내보내기를 중지하는 중"
           }
         },
         "nl" : {
@@ -667160,7 +667160,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책의 끝에서 중지됨"
+            "value" : "책의 끝에서 중지"
           }
         },
         "nl" : {
@@ -667297,7 +667297,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 표제의 끝에서 중지됨"
+            "value" : "이 표제의 끝에서 중지"
           }
         },
         "nl" : {
@@ -669545,7 +669545,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "점자 도우미가 %@ 때문에 중지되었습니다"
+            "value" : "점자 도우미가 중지되었습니다(이유: %@)"
           }
         },
         "nl" : {
@@ -670915,7 +670915,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "파일 %@이(가) 중간에 실패했습니다"
+            "value" : "파일 %@을(를) 재생하는 도중 오류가 발생했습니다"
           }
         },
         "nl" : {
@@ -671463,7 +671463,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth의 메모리가 너무 커져 파일 %@을(를) 중지했습니다"
+            "value" : "TextMouth의 메모리가 너무 커져 파일 %@의 재생을 중지했습니다"
           }
         },
         "nl" : {
