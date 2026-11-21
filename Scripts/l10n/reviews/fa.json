@@ -2,6 +2,666 @@
  "language": "fa",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ Copy",
+     "english": "%@ Copy",
+     "before": "%@ کپی",
+     "after": "%@ (کپی)",
+     "why": "natural: a bare کپی after a name copies the English order; a tag in parentheses reads as a copy of the view"
+    },
+    {
+     "key": "%@ Copy %@",
+     "english": "%1$@ Copy %2$@",
+     "before": "%1$@ کپی %2$@",
+     "after": "%1$@ (کپی %2$@)",
+     "why": "natural: the same naming as the first copy, with its number inside the tag"
+    },
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "one": "%1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است و نگه داشته می‌شوند.",
+      "other": "%1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است و نگه داشته می‌شوند."
+     },
+     "after": {
+      "one": "%1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است و نگه داشته می‌شود.",
+      "other": "%1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است و نگه داشته می‌شوند."
+     },
+     "why": "grammar: the one form needs a singular verb"
+    },
+    {
+     "key": "%@ and any subfolders will be removed from the library.",
+     "english": "%@ and any subfolders will be removed from the library.",
+     "before": "%@ و هر زیرپوشه از کتابخانه برداشته می‌شود.",
+     "after": "%@ و هر زیرپوشه‌ای که دارد از کتابخانه برداشته می‌شود.",
+     "why": "meaning: هر زیرپوشه alone reads as every subfolder of the library, not the folder's own"
+    },
+    {
+     "key": "%@ hasn't arrived on this Mac yet. %@ may still be syncing it.",
+     "english": "%1$@ hasn't arrived on this Mac yet. %2$@ may still be syncing it.",
+     "before": "%1$@ هنوز به این Mac نرسیده است. %2$@ ممکن است هنوز آن را همگام‌سازی کند.",
+     "after": "%1$@ هنوز به این Mac نرسیده است. %2$@ ممکن است هنوز در حال همگام‌سازی آن باشد.",
+     "why": "grammar: may still be syncing is progressive, در حال همگام‌سازی باشد, not may sync"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved at another time.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved at another time.",
+     "before": "%1$@ نسخه‌ای ناسازگار از %2$@ دارد که در زمانی دیگر ذخیره شده است.",
+     "after": "%1$@ نسخه‌ای متعارض از %2$@ دارد که در زمانی دیگر ذخیره شده است.",
+     "why": "meaning: ناسازگار is incompatible; a sync conflict is تعارض, as in Persian Wikipedia's edit conflict"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved on %@.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved on %3$@.",
+     "before": "%1$@ نسخه‌ای ناسازگار از %2$@ دارد که در %3$@ ذخیره شده است.",
+     "after": "%1$@ نسخه‌ای متعارض از %2$@ دارد که در %3$@ ذخیره شده است.",
+     "why": "meaning: ناسازگار is incompatible; a sync conflict is تعارض, as in Persian Wikipedia's edit conflict"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved on “%@” on %@.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved on “%3$@” on %4$@.",
+     "before": "%1$@ نسخه‌ای ناسازگار از %2$@ دارد که در «%3$@» در %4$@ ذخیره شده است.",
+     "after": "%1$@ نسخه‌ای متعارض از %2$@ دارد که روی «%3$@» در %4$@ ذخیره شده است.",
+     "why": "meaning: ناسازگار is incompatible; a sync conflict is تعارض, as in Persian Wikipedia's edit conflict; a computer takes روی"
+    },
+    {
+     "key": "%@ holds a conflicting version of %@, saved on “%@”.",
+     "english": "%1$@ holds a conflicting version of %2$@, saved on “%3$@”.",
+     "before": "%1$@ نسخه‌ای ناسازگار از %2$@ دارد که در «%3$@» ذخیره شده است.",
+     "after": "%1$@ نسخه‌ای متعارض از %2$@ دارد که روی «%3$@» ذخیره شده است.",
+     "why": "meaning: ناسازگار is incompatible; a sync conflict is تعارض, as in Persian Wikipedia's edit conflict; a computer takes روی"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "english": "%@ may be signed out or not running.",
+     "before": "%@ ممکن است از حساب خود خارج شده باشد یا اجرا نشود.",
+     "after": "%@ ممکن است از حساب خود خارج شده باشد یا در حال اجرا نباشد.",
+     "why": "grammar: اجرا نشود is may not run; not running is در حال اجرا نباشد"
+    },
+    {
+     "key": "%@ set aside a conflicting copy of %@: “%@”, in %@.",
+     "english": "%1$@ set aside a conflicting copy of %2$@: “%3$@”, in %4$@.",
+     "before": "%1$@ نسخه ناسازگاری از %2$@ را کنار گذاشت: «%3$@»، در %4$@.",
+     "after": "%1$@ نسخه‌ی متعارضی از %2$@ را کنار گذاشت: «%3$@»، در %4$@.",
+     "why": "meaning: ناسازگار is incompatible; a sync conflict is تعارض, as in Persian Wikipedia's edit conflict"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "one": "%1$@، هر زیرپوشه و %2$lld کتاب داخل آن از کتابخانه برداشته می‌شوند.",
+      "other": "%1$@، هر زیرپوشه و %2$lld کتاب داخل آن از کتابخانه برداشته می‌شوند."
+     },
+     "after": {
+      "one": "%1$@، هر زیرپوشه‌ای که دارد و %2$lld کتاب داخل آن از کتابخانه برداشته می‌شوند.",
+      "other": "%1$@، هر زیرپوشه‌ای که دارد و %2$lld کتاب داخل آن از کتابخانه برداشته می‌شوند."
+     },
+     "why": "meaning: any subfolders are the folder's own, not every subfolder"
+    },
+    {
+     "key": "%@, any subfolders, and the book inside will be removed from the library.",
+     "english": "%@, any subfolders, and the book inside will be removed from the library.",
+     "before": "%@، هر زیرپوشه و کتاب داخل آن از کتابخانه برداشته می‌شوند.",
+     "after": "%@، هر زیرپوشه‌ای که دارد و کتاب داخل آن از کتابخانه برداشته می‌شوند.",
+     "why": "meaning: any subfolders are the folder's own, not every subfolder"
+    },
+    {
+     "key": "%lld books in the cloud were skipped.",
+     "english": {
+      "one": "%lld book in the cloud was skipped.",
+      "other": "%lld books in the cloud were skipped."
+     },
+     "before": {
+      "one": "%lld کتاب در فضای ابری رد شد.",
+      "other": "%lld کتاب در فضای ابری رد شدند."
+     },
+     "after": {
+      "one": "از %lld کتاب در فضای ابری صرف‌نظر شد.",
+      "other": "از %lld کتاب در فضای ابری صرف‌نظر شد."
+     },
+     "why": "meaning: رد شد is heard as rejected; skipped in running text is the glossary's صرف‌نظر کردن"
+    },
+    {
+     "key": "%lld books whose edited text can't be used yet were skipped.",
+     "english": {
+      "one": "%lld book whose edited text can't be used yet was skipped.",
+      "other": "%lld books whose edited text can't be used yet were skipped."
+     },
+     "before": {
+      "one": "%lld کتاب که متن ویرایش‌شده‌اش هنوز قابل استفاده نیست رد شد.",
+      "other": "%lld کتاب که متن ویرایش‌شده‌شان هنوز قابل استفاده نیست رد شدند."
+     },
+     "after": {
+      "one": "از %lld کتاب که متن ویرایش‌شده‌اش هنوز قابل استفاده نیست صرف‌نظر شد.",
+      "other": "از %lld کتاب که متن ویرایش‌شده‌شان هنوز قابل استفاده نیست صرف‌نظر شد."
+     },
+     "why": "meaning: رد شد is heard as rejected; skipped in running text is the glossary's صرف‌نظر کردن"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "one": "%lld نما به TextMouth جدیدتری نیاز دارد. آن‌ها همان‌طور که هستند نگه داشته می‌شوند و ارائه نمی‌شوند.",
+      "other": "%lld نما به TextMouth جدیدتری نیاز دارد. آن‌ها همان‌طور که هستند نگه داشته می‌شوند و ارائه نمی‌شوند."
+     },
+     "after": {
+      "one": "%lld نما به نسخه‌ی جدیدتری از TextMouth نیاز دارد. آن همان‌طور که هست نگه داشته می‌شود و ارائه نمی‌شود.",
+      "other": "%lld نما به نسخه‌ی جدیدتری از TextMouth نیاز دارد. آن‌ها همان‌طور که هستند نگه داشته می‌شوند و ارائه نمی‌شوند."
+     },
+     "why": "grammar: the one form said they for one view; a newer TextMouth is a newer version of it"
+    },
+    {
+     "key": "Adds or removes a bookmark at the current position",
+     "english": "Adds or removes a bookmark at the current position",
+     "before": "نشانکی را در موقعیت فعلی اضافه یا برمی‌دارد.",
+     "after": "نشانکی را در موقعیت فعلی اضافه می‌کند یا برمی‌دارد.",
+     "why": "grammar: اضافه cannot share برمی‌دارد; the compound verb needs its own می‌کند"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "ویرایش متن آن در کنار خواندن جدید، به‌صورت یک نسخه در بسته‌ی کتاب نگه داشته می‌شود.",
+     "after": "ویرایش متن آن، به‌صورت یک نسخه در بسته‌ی کتاب، کنار متن جدید نگه داشته می‌شود.",
+     "why": "meaning: the new reading is the newly read text, not the act of reading"
+    },
+    {
+     "key": "Asks first, then makes a new library index from the books in this folder and opens the library.",
+     "english": "Asks first, then makes a new library index from the books in this folder and opens the library.",
+     "before": "ابتدا می‌پرسد، سپس نمایه کتابخانه‌ای جدید از کتاب‌های این پوشه می‌سازد و کتابخانه را باز می‌کند.",
+     "after": "ابتدا می‌پرسد، سپس از کتاب‌های این پوشه یک نمایه‌ی جدید برای کتابخانه می‌سازد و کتابخانه را باز می‌کند.",
+     "why": "grammar: the ezafe made new describe the library; it is a new index for the library"
+    },
+    {
+     "key": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "می‌پرسد: %@ یا نگه داشتن در پوشه‌ی کتابخانه‌ی TextMouth.",
+     "after": "می‌پرسد که آیا %@ انجام شود یا فایل‌ها در پوشه‌ی کتابخانه‌ی TextMouth نگه داشته شوند.",
+     "why": "natural: the hint read as a bare list with no object; it now asks as the Storage setting's sentence does"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "one": "اما %1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است: آن‌ها همان‌جا که هستند نگه داشته می‌شوند، و هر پوشه‌ای که یکی از آن‌ها را دارد هم همین‌طور.",
+      "other": "اما %1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است: آن‌ها همان‌جا که هستند نگه داشته می‌شوند، و هر پوشه‌ای که یکی از آن‌ها را دارد هم همین‌طور."
+     },
+     "after": {
+      "one": "اما %1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است: آن همان‌جا که هست نگه داشته می‌شود، و هر پوشه‌ای که آن را دارد هم همین‌طور.",
+      "other": "اما %1$@ همچنین %2$lld کتاب دارد که نسخه‌ای جدیدتر از TextMouth افزوده است: آن‌ها همان‌جا که هستند نگه داشته می‌شوند، و هر پوشه‌ای که یکی از آن‌ها را دارد هم همین‌طور."
+     },
+     "why": "grammar: the one form said they for one book"
+    },
+    {
+     "key": "Conflicting Copies Found",
+     "english": "Conflicting Copies Found",
+     "before": "نسخه‌های ناسازگار پیدا شد",
+     "after": "نسخه‌های متعارض پیدا شد",
+     "why": "meaning: ناسازگار is incompatible; a sync conflict is تعارض, as in Persian Wikipedia's edit conflict"
+    },
+    {
+     "key": "Could not discard duplicate import",
+     "english": "Could not discard duplicate import",
+     "before": "وارد کردن تکراری دور انداخته نشد",
+     "after": "نسخه‌ی تکراری وارد‌شده دور انداخته نشد",
+     "why": "natural: what is discarded is the imported duplicate copy, not an importing"
+    },
+    {
+     "key": "Could not remove folder: its library path is invalid or has changed.",
+     "english": "Could not remove folder: its library path is invalid or has changed.",
+     "before": "پوشه برداشته نشد: مسیر آن در کتابخانه‌ی نامعتبر است یا تغییر کرده است.",
+     "after": "پوشه برداشته نشد: مسیر آن در کتابخانه نامعتبر است یا تغییر کرده است.",
+     "why": "grammar: a stray ezafe made invalid describe the library instead of the path"
+    },
+    {
+     "key": "Could not replace duplicate",
+     "english": "Could not replace duplicate",
+     "before": "جایگزینی تکراری انجام نشد",
+     "after": "جایگزینی نسخه‌ی تکراری انجام نشد",
+     "why": "natural: a duplicate replacement read oddly; it is replacing the duplicate copy"
+    },
+    {
+     "key": "Download Now",
+     "english": "Download Now",
+     "before": "بارگیری اکنون",
+     "after": "بارگیری فوری",
+     "why": "natural: بارگیری اکنون copies the English word order; a command that downloads at once is بارگیری فوری"
+    },
+    {
+     "key": "Enable restart-timer gesture",
+     "english": "Enable restart-timer gesture",
+     "before": "روشن کردن حرکت راه‌اندازی دوباره زمان‌سنج",
+     "after": "روشن کردن حرکت شروع دوباره‌ی زمان‌سنج",
+     "why": "term: restarting the sleep timer is شروع دوباره, as its messages and part 3 say; راه‌اندازی دوباره is rebooting"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "آزمایشی. دنباله‌ای از کلیدهای رسانه یا کنترل‌های AirPods در یک بازه زمانی کوتاه، آخرین زمان‌سنج خواب را دوباره برقرار می‌کند؛ پس از پایان یک زمان‌سنج مفید است.",
+     "after": "آزمایشی. دنباله‌ای از کلیدهای رسانه یا کنترل‌های AirPods در یک بازه زمانی کوتاه، آخرین زمان‌سنج خواب را دوباره شروع می‌کند؛ پس از پایان یک زمان‌سنج مفید است.",
+     "why": "natural: a timer is not برقرار; re-arms is شروع دوباره, as the sleep timer's other messages say"
+    },
+    {
+     "key": "Go up one folder level",
+     "english": "Go up one folder level",
+     "before": "رفتن به یک سطح بالاتر پوشه",
+     "after": "رفتن به پوشه‌ی بالاتر",
+     "why": "natural: the ezafe chain one higher level folder copied the English order"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "از بریل کتاب حدس زده شده است. اگر نادرست می‌خواند، در «کد بریل» Unified English Braille را انتخاب کنید.",
+     "after": "از بریل کتاب حدس زده شده است. اگر درست خوانده نمی‌شود، در «کد بریل» Unified English Braille را انتخاب کنید.",
+     "why": "natural: Persian does not say a book reads wrongly; it is not read correctly"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "english": "In this Mac's Logs folder",
+     "before": "در پوشه گزارش‌های این Mac.",
+     "after": "در پوشه‌ی گزارش‌های این Mac",
+     "why": "punctuation: a pop-up choice takes no period, and its path follows in parentheses"
+    },
+    {
+     "key": "It holds the folders of the feeds %@.",
+     "english": "It holds the folders of the feeds %@.",
+     "before": "پوشه‌ی فیدهای %@ را در خود دارد.",
+     "after": "پوشه‌های فیدهای %@ را در خود دارد.",
+     "why": "grammar: the folders of several feeds are plural"
+    },
+    {
+     "key": "It may be paused, signed out, or not running.",
+     "english": "It may be paused, signed out, or not running.",
+     "before": "ممکن است متوقف شده باشد، از حساب خود خارج شده باشد یا اجرا نشود.",
+     "after": "ممکن است متوقف شده باشد، از حساب خود خارج شده باشد یا در حال اجرا نباشد.",
+     "why": "grammar: اجرا نشود is may not run; not running is در حال اجرا نباشد"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "متن آن با خواندن جدید جایگزین می‌شود.",
+     "after": "متن آن با متن جدید جایگزین می‌شود.",
+     "why": "meaning: the new reading is the newly read text, not the act of reading"
+    },
+    {
+     "key": "Library index unreadable",
+     "english": "Library index unreadable",
+     "before": "نمایه کتابخانه‌ی ناخوانا",
+     "after": "نمایه‌ی کتابخانه ناخواناست",
+     "why": "grammar: the ezafe made unreadable describe the library instead of its index"
+    },
+    {
+     "key": "Loop to Start",
+     "english": "Loop to Start",
+     "before": "حلقه به ابتدا",
+     "after": "تکرار از ابتدا",
+     "why": "natural: حلقه به ابتدا copies loop to start; the choice plays the book again from its beginning"
+    },
+    {
+     "key": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "english": "Media-control events that trigger the restart. The last one is consumed, not passed to playback, so it can't start audio.",
+     "before": "رویدادهای کنترل رسانه که راه‌اندازی دوباره را فعال می‌کنند. آخرین رویداد مصرف می‌شود و به پخش داده نمی‌شود، بنابراین نمی‌تواند صدا را شروع کند.",
+     "after": "رویدادهای کنترل رسانه که شروع دوباره را فعال می‌کنند. آخرین رویداد مصرف می‌شود و به پخش داده نمی‌شود، بنابراین نمی‌تواند صدا را شروع کند.",
+     "why": "term: restarting the sleep timer is شروع دوباره, as its messages and part 3 say; راه‌اندازی دوباره is rebooting"
+    },
+    {
+     "key": "Most rows shown",
+     "english": "Most rows shown",
+     "before": "بیشترین ردیف‌های نمایش‌داده‌شده",
+     "after": "حداکثر ردیف‌های نمایش‌داده‌شده",
+     "why": "meaning: بیشترین reads as the most-shown rows; the limit field is the maximum number of rows"
+    },
+    {
+     "key": "Moving the library, %lld percent.",
+     "english": "Moving the library, %lld percent.",
+     "before": "انتقال کتابخانه، %lld درصد.",
+     "after": "در حال انتقال کتابخانه، %lld درصد.",
+     "why": "natural: progress said in the command's noun form reads as a label; it is در حال انتقال, as the other move lines are"
+    },
+    {
+     "key": "Moving the library… %lld percent",
+     "english": "Moving the library… %lld percent",
+     "before": "انتقال کتابخانه… %lld درصد",
+     "after": "در حال انتقال کتابخانه… %lld درصد",
+     "why": "natural: progress said in the command's noun form reads as a label; it is در حال انتقال, as the other move lines are"
+    },
+    {
+     "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "before": "در هیچ‌کدام مکان یا کتاب جدیدتری نیست که در دیگری نباشد، اما از جهت‌های دیگر با هم فرق دارند.",
+     "after": "هیچ‌کدام نه مکان جدیدتری دارد و نه کتابی که دیگری نداشته باشد، اما از جهت‌های دیگر با هم فرق دارند.",
+     "why": "meaning: newer had spread to the books; the books are only ones the other lacks"
+    },
+    {
+     "key": "None (Use Global)",
+     "english": "None (Use Global)",
+     "before": "هیچ (استفاده از سراسری)",
+     "after": "هیچ (استفاده از تنظیم سراسری)",
+     "why": "natural: سراسری is an adjective and needs its noun, the global setting"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "هیچ چیز درستی این انتخاب را بررسی نمی‌کند. اگر اعداد و نقطه‌گذاری نادرست شنیده می‌شوند، گزینه‌ی دیگری انتخاب کنید.",
+     "after": "درست بودن این انتخاب بررسی نمی‌شود. اگر اعداد و نقطه‌گذاری نادرست شنیده می‌شوند، گزینه‌ی دیگری انتخاب کنید.",
+     "why": "natural: هیچ چیز درستی is heard as no right thing; say plainly that the choice is not checked"
+    },
+    {
+     "key": "Only the Latest from Each Feed",
+     "english": "Only the Latest from Each Feed",
+     "before": "فقط جدیدترین مورد هر فید",
+     "after": "فقط آخرین مورد هر فید",
+     "why": "meaning: جدیدترین is the newest, but the checkbox keeps the item opened last, as its hint says"
+    },
+    {
+     "key": "Opens a folder chooser. An empty folder receives a copy of the library; a folder that holds a TextMouth library can be used as it is.",
+     "english": "Opens a folder chooser. An empty folder receives a copy of the library; a folder that holds a TextMouth library can be used as it is.",
+     "before": "یک انتخابگر پوشه باز می‌کند. پوشه خالی یک نسخه از کتابخانه دریافت می‌کند؛ پوشه‌ای که کتابخانه‌ی TextMouth در آن است را می‌توان همان‌طور که هست استفاده کرد.",
+     "after": "یک انتخابگر پوشه باز می‌کند. پوشه‌ی خالی یک نسخه از کتابخانه دریافت می‌کند؛ از پوشه‌ای که کتابخانه‌ی TextMouth در آن است می‌توان همان‌طور که هست استفاده کرد.",
+     "why": "grammar: استفاده کردن takes از, not را"
+    },
+    {
+     "key": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "english": "Reading positions are kept, but character offsets may shift slightly if the text changes.",
+     "before": "موقعیت‌های مطالعه حفظ می‌شوند، اما اگر متن تغییر کند، جابه‌جایی نویسه‌ها ممکن است کمی تغییر کند.",
+     "after": "موقعیت‌های مطالعه حفظ می‌شوند، اما اگر متن تغییر کند، موقعیت نویسه‌ای آن‌ها ممکن است کمی جابه‌جا شود.",
+     "why": "meaning: character offsets are the positions counted in characters, not a displacement of the characters"
+    },
+    {
+     "key": "Restart Sleep Timer Gesture",
+     "english": "Restart Sleep Timer Gesture",
+     "before": "حرکت راه‌اندازی دوباره زمان‌سنج خواب",
+     "after": "حرکت شروع دوباره‌ی زمان‌سنج خواب",
+     "why": "term: restarting the sleep timer is شروع دوباره, as its messages and part 3 say; راه‌اندازی دوباره is rebooting"
+    },
+    {
+     "key": "Restarts the most recent sleep timer with a sequence of media-control presses",
+     "english": "Restarts the most recent sleep timer with a sequence of media-control presses",
+     "before": "آخرین زمان‌سنج خواب را با دنباله‌ای از فشردن کنترل‌های رسانه دوباره راه‌اندازی می‌کند.",
+     "after": "آخرین زمان‌سنج خواب را با دنباله‌ای از فشردن کنترل‌های رسانه دوباره شروع می‌کند.",
+     "why": "term: restarting the sleep timer is شروع دوباره, as its messages and part 3 say; راه‌اندازی دوباره is rebooting"
+    },
+    {
+     "key": "Settle the conflict in %@ first.",
+     "english": "Settle the conflict in %@ first.",
+     "before": "ابتدا ناسازگاری را در %@ حل کنید.",
+     "after": "ابتدا تعارض را در %@ حل کنید.",
+     "why": "meaning: ناسازگاری is incompatibility; a sync conflict is تعارض, as in Persian Wikipedia's edit conflict"
+    },
+    {
+     "key": "Sounds",
+     "english": "Sounds",
+     "before": "صداها",
+     "after": "افکت‌های صوتی",
+     "why": "term: the glossary's word for an event's sound; صداها sounded like the Voice tab صدا beside it"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "توقف، و پخش از ابتدا شروع می‌شود",
+     "after": "توقف، و «پخش» آن را از ابتدا شروع می‌کند",
+     "why": "meaning: پخش از ابتدا شروع می‌شود read as playing again at once; Play is the command that later starts it over"
+    },
+    {
+     "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "before": "تعویض، تغییراتی را که TextMouth تا وقتی کتابخانه در دسترس نیست نتوانست ذخیره کند، از بین می‌برد.",
+     "after": "تعویض کتابخانه، تغییراتی را که TextMouth به دلیل در دسترس نبودن کتابخانه نتوانست ذخیره کند، از بین می‌برد.",
+     "why": "grammar: تا وقتی with a past verb mixed the tenses; the changes were not saved because the library is unavailable"
+    },
+    {
+     "key": "TextMouth could not record the removal in its package, %@.",
+     "english": "TextMouth could not record the removal in its package, %@.",
+     "before": "TextMouth نتوانست حذف را در بسته‌ی خود، %@، ثبت کند.",
+     "after": "TextMouth نتوانست حذف را در بسته‌ی کتاب، %@، ثبت کند.",
+     "why": "meaning: بسته‌ی خود pointed to TextMouth; the package is the book's"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth نتوانست متنی را که در «%@» تغییر داده بودید کنار خواندن جدید نگه دارد، بنابراین کتاب را همان‌طور که بود گذاشت.",
+     "after": "TextMouth نتوانست متنی را که در «%@» تغییر داده بودید کنار متن جدید نگه دارد، بنابراین کتاب را همان‌طور که بود گذاشت.",
+     "why": "meaning: the new reading is the newly read text, not the act of reading"
+    },
+    {
+     "key": "TextMouth hasn't merged it or removed it.",
+     "english": "TextMouth hasn't merged it or removed it.",
+     "before": "TextMouth آن را ادغام یا برداشته نکرده است.",
+     "after": "TextMouth آن را ادغام نکرده و برنداشته است.",
+     "why": "grammar: برداشته نکرده is not a verb form; the negative is برنداشته است"
+    },
+    {
+     "key": "TextMouth is switching to another library and opening again on it.",
+     "english": "TextMouth is switching to another library and opening again on it.",
+     "before": "TextMouth به کتابخانه‌ای دیگر تعویض می‌شود و دوباره روی آن باز می‌شود.",
+     "after": "TextMouth به کتابخانه‌ای دیگر می‌رود و دوباره روی آن باز می‌شود.",
+     "why": "meaning: تعویض می‌شود says TextMouth itself is being replaced"
+    },
+    {
+     "key": "TextMouth makes a new library index from the books in this folder.",
+     "english": "TextMouth makes a new library index from the books in this folder.",
+     "before": "TextMouth از کتاب‌های این پوشه یک نمایه کتابخانه‌ی جدید می‌سازد.",
+     "after": "TextMouth از کتاب‌های این پوشه یک نمایه‌ی جدید برای کتابخانه می‌سازد.",
+     "why": "grammar: the ezafe made new describe the library; it is a new index for the library"
+    },
+    {
+     "key": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "english": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "before": "TextMouth فایل خود را همان‌طور می‌خواند که فایلی را که شما اضافه می‌کنید: با کدگذاری‌ای که فایل مشخص کرده است، وگرنه با کدگذاری‌ای که TextMouth خودش پیدا می‌کند.",
+     "after": "TextMouth فایل کتاب را همان‌طور می‌خواند که فایلی را که شما اضافه می‌کنید: با کدگذاری‌ای که فایل مشخص کرده است، وگرنه با کدگذاری‌ای که TextMouth خودش پیدا می‌کند.",
+     "why": "meaning: فایل خود pointed to TextMouth; the file is the book's"
+    },
+    {
+     "key": "The %@ in the list will be replaced by TextMouth's %@.",
+     "english": "The %1$@ in the list will be replaced by TextMouth's %2$@.",
+     "before": "%1$@ موجود در فهرست با %2$@ TextMouth جایگزین می‌شوند.",
+     "after": "%1$@ موجود در فهرست با %2$@ TextMouth جایگزین می‌شود.",
+     "why": "grammar: the count may be one rule; a singular verb reads right for every count"
+    },
+    {
+     "key": "The book's files aren't on this Mac yet. %@ may still be syncing them.",
+     "english": "The book's files aren't on this Mac yet. %@ may still be syncing them.",
+     "before": "فایل‌های کتاب هنوز روی این Mac نیستند. %@ ممکن است هنوز آن‌ها را همگام‌سازی کند.",
+     "after": "فایل‌های کتاب هنوز روی این Mac نیستند. %@ ممکن است هنوز در حال همگام‌سازی آن‌ها باشد.",
+     "why": "grammar: may still be syncing is progressive, در حال همگام‌سازی باشد, not may sync"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "بریل دوباره با این کد به متن چاپی ترجمه می‌شود. هیچ چیز درستی این انتخاب را بررسی نمی‌کند. اگر کلمه‌ها نادرست خوانده می‌شوند، کد دیگری انتخاب کنید.",
+     "after": "بریل دوباره با این کد به متن چاپی ترجمه می‌شود. درست بودن این انتخاب بررسی نمی‌شود. اگر کلمه‌ها نادرست خوانده می‌شوند، کد دیگری انتخاب کنید.",
+     "why": "natural: هیچ چیز درستی is heard as no right thing; say plainly that the choice is not checked"
+    },
+    {
+     "key": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "english": "The data directory has no Logs folder, so logs go to %@ until it has one.",
+     "before": "دایرکتوری داده پوشه‌ی گزارش‌ها ندارد، بنابراین تا وقتی داشته باشد، گزارش‌ها به %@ می‌روند.",
+     "after": "دایرکتوری داده پوشه‌ی گزارش‌ها ندارد، بنابراین تا وقتی چنین پوشه‌ای ندارد، گزارش‌ها به %@ می‌روند.",
+     "why": "meaning: تا وقتی with a state verb reads as as long as, the opposite of until"
+    },
+    {
+     "key": "The data directory's Logs folder can't be written (%@), so logs go to %@ until it can.",
+     "english": "The data directory's Logs folder can't be written (%1$@), so logs go to %2$@ until it can.",
+     "before": "در پوشه گزارش‌های دایرکتوری داده نمی‌توان نوشت (%1$@)، بنابراین تا وقتی بتوان نوشت، گزارش‌ها به %2$@ می‌روند.",
+     "after": "در پوشه‌ی گزارش‌های دایرکتوری داده نمی‌توان نوشت (%1$@)، بنابراین تا وقتی نوشتن در آن ممکن نیست، گزارش‌ها به %2$@ می‌روند.",
+     "why": "meaning: تا وقتی with a state verb reads as as long as, the opposite of until"
+    },
+    {
+     "key": "The file disappeared while TextMouth was reading it.",
+     "english": "The file disappeared while TextMouth was reading it.",
+     "before": "فایل هنگام خواندن توسط TextMouth ناپدید شد.",
+     "after": "فایل در حالی که TextMouth آن را می‌خواند ناپدید شد.",
+     "why": "natural: a passive with توسط copies the English by; TextMouth is the subject of reading"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "پوشه‌های %@ و %@ را نمی‌توان هر دو به %@ منتقل کرد: نام‌هایشان در این دیسک یک پوشه را می‌رساند.",
+     "after": "پوشه‌های %@ و %@ را نمی‌توان هر دو به %@ منتقل کرد: نام‌هایشان در این دیسک به یک پوشه اشاره می‌کنند.",
+     "why": "natural: names point to one folder (اشاره می‌کنند, as the sentence on capitalization says); می‌رساند is convey"
+    },
+    {
+     "key": "The library already had different content under its package name, %@, so it was stored in a new package, %@, and its original file was kept at %@.",
+     "english": "The library already had different content under its package name, %1$@, so it was stored in a new package, %2$@, and its original file was kept at %3$@.",
+     "before": "کتابخانه از قبل محتوای متفاوتی با نام بسته خود، %1$@، داشت، بنابراین در بسته‌ای جدید، %2$@، ذخیره شد و فایل اصلی آن در %3$@ نگه داشته شد.",
+     "after": "کتابخانه از قبل محتوای متفاوتی با نام بسته‌ی این کتاب، %1$@، داشت، بنابراین کتاب در بسته‌ای جدید، %2$@، ذخیره شد و فایل اصلی آن در %3$@ نگه داشته شد.",
+     "why": "meaning: بسته‌ی خود pointed to the library; the package name and the new package are the book's"
+    },
+    {
+     "key": "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with %@.",
+     "english": "The unreadable library index is no longer there, so TextMouth saved the library rebuilt from your books as the new index, with %@.",
+     "before": "نمایه کتابخانه‌ی ناخوانا دیگر وجود ندارد، بنابراین TextMouth کتابخانه بازسازی‌شده از کتاب‌های شما را با %@ به‌عنوان نمایه‌ی جدید ذخیره کرد.",
+     "after": "نمایه‌ی ناخوانای کتابخانه دیگر وجود ندارد، بنابراین TextMouth کتابخانه‌ی بازسازی‌شده از کتاب‌های شما را با %@ به‌عنوان نمایه‌ی جدید ذخیره کرد.",
+     "why": "grammar: the ezafe made unreadable describe the library instead of its index"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "این بریل شبیه بریل انگلیسی، ویرایش آمریکایی است. «کد بریل» آن را در «اطلاعات کتاب» انتخاب کنید.",
+     "after": "این بریل شبیه English Braille, American Edition است. «کد بریل» آن را در «اطلاعات کتاب» انتخاب کنید.",
+     "why": "term: the code's name as the Braille Code pop-up shows it, in English, as the other braille strings keep it"
+    },
+    {
+     "key": "This folder has no stored name, so it cannot be changed safely.",
+     "english": "This folder has no stored name, so it cannot be changed safely.",
+     "before": "این پوشه نام ذخیره‌شده‌ای ندارد، بنابراین نمی‌توان آن را با امنیت تغییر داد.",
+     "after": "این پوشه نام ذخیره‌شده‌ای ندارد، بنابراین نمی‌توان آن را به‌طور ایمن تغییر داد.",
+     "why": "natural: با امنیت is security; safely is به‌طور ایمن"
+    },
+    {
+     "key": "Tries again to save every change that could not be saved",
+     "english": "Tries again to save every change that could not be saved",
+     "before": "هر تغییری را که ذخیره نشد دوباره برای ذخیره امتحان می‌کند.",
+     "after": "دوباره تلاش می‌کند هر تغییری را که ذخیره نشده است ذخیره کند.",
+     "why": "natural: امتحان کردن برای ذخیره is testing for saving; the button tries again to save"
+    },
+    {
+     "key": "What happens when a book finishes playing",
+     "english": "What happens when a book finishes playing",
+     "before": "آنچه پس از پایان پخش کتاب رخ می‌دهد.",
+     "after": "تعیین می‌کند پس از پایان پخش کتاب چه اتفاقی بیفتد.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence with a third-person verb, as the next pop-up's hint is"
+    },
+    {
+     "key": "What happens when you hold Shift and skip backward",
+     "english": "What happens when you hold Shift and skip backward",
+     "before": "آنچه با نگه داشتن Shift و عقب رفتن رخ می‌دهد.",
+     "after": "تعیین می‌کند با نگه داشتن Shift و عقب رفتن چه اتفاقی بیفتد.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence with a third-person verb, as the next pop-up's hint is"
+    },
+    {
+     "key": "What happens when you hold Shift and skip forward",
+     "english": "What happens when you hold Shift and skip forward",
+     "before": "آنچه با نگه داشتن Shift و جلو رفتن رخ می‌دهد.",
+     "after": "تعیین می‌کند با نگه داشتن Shift و جلو رفتن چه اتفاقی بیفتد.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence with a third-person verb, as the next pop-up's hint is"
+    },
+    {
+     "key": "What happens when you skip backward",
+     "english": "What happens when you skip backward",
+     "before": "آنچه هنگام عقب رفتن رخ می‌دهد.",
+     "after": "تعیین می‌کند هنگام عقب رفتن چه اتفاقی بیفتد.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence with a third-person verb, as the next pop-up's hint is"
+    },
+    {
+     "key": "What happens when you skip forward",
+     "english": "What happens when you skip forward",
+     "before": "آنچه هنگام جلو رفتن رخ می‌دهد.",
+     "after": "تعیین می‌کند هنگام جلو رفتن چه اتفاقی بیفتد.",
+     "why": "voiceover: the hint was a noun phrase; it is now a sentence with a third-person verb, as the next pop-up's hint is"
+    },
+    {
+     "key": "When off, its files are deleted permanently and cannot be recovered.",
+     "english": "When off, its files are deleted permanently and cannot be recovered.",
+     "before": "وقتی خاموش باشد، فایل‌های آن برای همیشه حذف می‌شوند و بازیابی نمی‌شوند.",
+     "after": "وقتی خاموش باشد، فایل‌های آن برای همیشه حذف می‌شوند و قابل بازیابی نیستند.",
+     "why": "meaning: بازیابی نمی‌شوند is are not recovered; the warning is that they cannot be"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "هر جا هیچ‌کدام از کلمه‌های آن‌ها نمانده باشد، %@، هر کدام تقریباً به همان نقطه‌ی فصل خودش می‌رود، یا به نزدیک‌ترین بخشی که دو خواندن در آن مشترک‌اند.",
+     "after": "هر جا هیچ‌کدام از کلمه‌های آن‌ها نمانده باشد، %@، هر کدام تقریباً به همان نقطه‌ی فصل خودش می‌رود، یا به نزدیک‌ترین بخشی که دو متن در آن مشترک‌اند.",
+     "why": "meaning: the two readings are the old and new texts, not two acts of reading"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "هر جا هیچ‌کدام از کلمه‌های آن‌ها نمانده باشد، هر کدام تقریباً به همان نقطه‌ی فصل خودش می‌رود، یا به نزدیک‌ترین بخشی که دو خواندن در آن مشترک‌اند.",
+     "after": "هر جا هیچ‌کدام از کلمه‌های آن‌ها نمانده باشد، هر کدام تقریباً به همان نقطه‌ی فصل خودش می‌رود، یا به نزدیک‌ترین بخشی که دو متن در آن مشترک‌اند.",
+     "why": "meaning: the two readings are the old and new texts, not two acts of reading"
+    },
+    {
+     "key": "at the top of the library",
+     "english": "at the top of the library",
+     "before": "در بالای کتابخانه",
+     "after": "در ریشه کتابخانه",
+     "why": "term: not in any folder is the glossary's Library Root; در بالای کتابخانه reads as the top of the list"
+    },
+    {
+     "key": "chapter %@, saved %@, and %@",
+     "english": "chapter %1$@, saved %2$@, and %3$@",
+     "before": "فصل %1$@، ذخیره‌شده %2$@، و %3$@",
+     "after": "فصل %1$@، ذخیره‌شده در %2$@، و %3$@",
+     "why": "grammar: a date after saved takes در, as added on a date does elsewhere"
+    },
+    {
+     "key": "its files are deleted permanently and cannot be recovered",
+     "english": "its files are deleted permanently and cannot be recovered",
+     "before": "فایل‌های آن برای همیشه حذف می‌شوند و بازیابی نمی‌شوند",
+     "after": "فایل‌های آن برای همیشه حذف می‌شوند و قابل بازیابی نیستند",
+     "why": "meaning: بازیابی نمی‌شوند is are not recovered; the warning is that they cannot be"
+    },
+    {
+     "key": "no place saved, and %@",
+     "english": "no place saved, and %@",
+     "before": "هیچ جایی ذخیره نشده، و %@",
+     "after": "هیچ مکانی ذخیره نشده، و %@",
+     "why": "meaning: هیچ جایی ذخیره نشده is heard as saved nowhere; it is no reading place saved"
+    },
+    {
+     "key": "only the latest from each feed",
+     "english": "only the latest from each feed",
+     "before": "فقط جدیدترین مورد هر فید",
+     "after": "فقط آخرین مورد هر فید",
+     "why": "meaning: جدیدترین is the newest, but the option keeps the item opened last"
+    },
+    {
+     "key": "their files are deleted permanently and cannot be recovered",
+     "english": "their files are deleted permanently and cannot be recovered",
+     "before": "فایل‌های آن‌ها برای همیشه حذف می‌شوند و بازیابی نمی‌شوند",
+     "after": "فایل‌های آن‌ها برای همیشه حذف می‌شوند و قابل بازیابی نیستند",
+     "why": "meaning: بازیابی نمی‌شوند is are not recovered; the warning is that they cannot be"
+    },
+    {
+     "key": "unsubscribed",
+     "english": "unsubscribed",
+     "before": "مشترک نشده",
+     "after": "بدون اشتراک",
+     "why": "term: the glossary's Unsubscribed, the word the condition's pop-up shows; مشترک نشده did not match it"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
