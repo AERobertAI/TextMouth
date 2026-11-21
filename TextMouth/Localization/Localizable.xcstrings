@@ -8185,7 +8185,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ 的「%1$@」現在依循整體設定：%3$@。"
+            "value" : "%2$@ 的「%1$@」現在依循全域設定：%3$@。"
           }
         }
       }
@@ -396253,7 +396253,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "嗶聲之後，將用 %3$@ 覆蓋錄製 %2$@ 處的 %1$@。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。"
+            "value" : "嗶聲之後，將用 %3$@ 覆蓋錄製 %2$@處的 %1$@。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。"
           }
         }
       }
@@ -396807,7 +396807,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "嗶聲之後，將用 %2$@ 錄音並插入到 %1$@ 處。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。"
+            "value" : "嗶聲之後，將用 %2$@ 錄音並插入到 %1$@處。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。"
           }
         }
       }
@@ -397635,7 +397635,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "嗶聲之後，覆蓋錄製選取範圍或游標處。再次選擇或選擇「停止」即可結束。"
+            "value" : "嗶聲之後，覆蓋錄製選取範圍，或在游標處錄音。再次選擇或選擇「停止」即可結束。"
           }
         }
       }
@@ -409223,7 +409223,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已用 %2$@ 的新錄音取代 %1$@，並已選取新錄音。"
+            "value" : "已用 %2$@的新錄音取代 %1$@，並已選取新錄音。"
           }
         }
       }
@@ -419277,7 +419277,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已回復為原始音訊。「重做」可帶回 %lld 項編輯。"
+                  "value" : "已回復為原始音訊。「重做」可恢復 %lld 項編輯。"
                 }
               }
             }
@@ -427350,7 +427350,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在將 %1$@ 的音訊儲存為 %2$@，也就是這本書原有的格式。"
+            "value" : "正在將 %1$@的音訊儲存為 %2$@，也就是這本書原有的格式。"
           }
         }
       }
@@ -427487,7 +427487,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在將 %@ 的音訊儲存到書籍中。"
+            "value" : "正在將 %@的音訊儲存到書籍中。"
           }
         }
       }
@@ -434928,7 +434928,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已選取章節 %1$@：%2$@，%3$@。"
+            "value" : "已選取第 %1$@ 章：%2$@，%3$@。"
           }
         }
       }
@@ -435482,7 +435482,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選取範圍從 %1$@ 到 %2$@，長度 %3$@。"
+            "value" : "選取範圍從 %1$@到 %2$@，長度 %3$@。"
           }
         }
       }
@@ -488251,7 +488251,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 沒有自己的規則：測試過的每本書中，沒有任何規則都適用。「編輯規則…」會打開你的副本，你可以在其中加入規則，例如辨識器總是寫成另一種寫法的名稱。"
+            "value" : "TextMouth 沒有自己的規則：沒有任何一條規則在所有測試過的書中都正確。「編輯規則…」會打開你的副本，你可以在其中加入規則，例如辨識器總是寫成另一種寫法的名稱。"
           }
         }
       }
@@ -490636,7 +490636,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。「取消」會讓 TextMouth 保持打開。"
+            "value" : "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，在你進行其他編輯之前，可用「重做」恢復它們。「取消」會讓 TextMouth 保持打開。"
           }
         }
       }
@@ -500803,7 +500803,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 本身的規則較新，版本為 %@。若要使用，請刪除你的副本，或將它們的規則複製到你的副本中。"
+            "value" : "TextMouth 本身的規則較新，版本為 %@。若要使用，請刪除你的副本，或將它們的規則拷貝到你的副本中。"
           }
         }
       }
@@ -505453,7 +505453,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法下載 %1$@ 模型：%2$@"
+            "value" : "無法下載%1$@模型：%2$@"
           }
         }
       }
@@ -505590,7 +505590,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 模型已下載。現在可以轉錄這本書了。"
+            "value" : "%@模型已下載。現在可以轉錄這本書了。"
           }
         }
       }
@@ -505727,7 +505727,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 模型的下載已取消。"
+            "value" : "%@模型的下載已取消。"
           }
         }
       }
@@ -507087,7 +507087,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "這 %lld 個標記會被刪除，「重做」無法帶回它們。"
+                  "value" : "這 %lld 個標記會被刪除，「重做」也無法恢復它們。"
                 }
               }
             }
@@ -519318,7 +519318,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "轉錄期間這本書已離開書庫，因此其逐字稿未儲存。"
+            "value" : "轉錄期間這本書已從書庫中移除，因此其逐字稿未儲存。"
           }
         }
       }
@@ -531472,7 +531472,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這個檔案是版本 %2$@ 的 %1$@ 逐字稿，TextMouth 不會讀取。"
+            "value" : "這個檔案是版本 %2$@ 的 %1$@ 逐字稿，TextMouth 不支援這個版本。"
           }
         }
       }
@@ -554275,7 +554275,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法儲存錄音：%1$@ 錄音已保留；請選擇「%2$@」或「%3$@」。"
+            "value" : "無法儲存錄音：%1$@錄音已保留；請選擇「%2$@」或「%3$@」。"
           }
         }
       }
@@ -602258,7 +602258,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "還原所有編輯，回到原始音訊；「重做」可將它們帶回。"
+            "value" : "還原所有編輯，回到原始音訊；「重做」可恢復它們。"
           }
         }
       }
