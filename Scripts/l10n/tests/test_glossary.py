@@ -159,6 +159,17 @@ class OrdinaryWordTests(unittest.TestCase):
         self.assertEqual(self.terms("Close Windows-1252"), ["Close"])
         self.assertEqual(self.terms("Window"), ["Window"], "the term alone is still the term")
 
+    def test_masking_is_the_same_as_masking_each_name_in_turn_and_is_kept(self):
+        """mask_names passes over a name the text lacks and remembers each answer (`check` masks one English once for each
+        term it looks for); the text it gives is the one masking every name in turn gives."""
+        glossary_ = glossary.Glossary(["TextMouth", "Windows", "EPUBs", "EPUB"], [])
+        for text in ("Open EPUBs in TextMouth", "Windows-1252 (Western) EPUB", "textmouth", "", "EPUBEPUB TextMouths"):
+            expected = text
+            for name in glossary_.names:
+                expected = glossary._word_pattern(name).sub(" ", expected)
+            self.assertEqual(glossary_.mask_names(text), expected, text)
+            self.assertIs(glossary_.mask_names(text), glossary_.mask_names(text), "the answer is kept")
+
     def test_title_case_and_whole_labels(self):
         self.assertTrue(glossary.is_title_case("Open Recent"))
         self.assertTrue(glossary.is_title_case("Open %lld in TextMouth"))

@@ -22,6 +22,7 @@ How a term is found in a text:
   a title-case phrase ("Close Window", "Open %@ in TextMouth"), which is how a menu item or a button is written. Nouns (Library,
   Bookmark, Chapter) are found anywhere, in any case.
 """
+import functools
 import json
 import re
 import sys
@@ -55,9 +56,12 @@ def _fold(text):
     return "".join(character for character in decomposed if not unicodedata.combining(character))
 
 
+@functools.lru_cache(maxsize=None)
 def _word_pattern(text, flags=0):
     """A regular expression for `text` standing as a word of its own (with an optional plural `s` after it). Japanese,
-    Chinese, or Korean text right beside it counts as a word edge (see _SPACELESS); a Latin or Cyrillic letter does not."""
+    Chinese, or Korean text right beside it counts as a word edge (see _SPACELESS); a Latin or Cyrillic letter does not.
+    Kept once made: `check` asks for the same few hundred patterns millions of times, and building each again (the escape
+    and re's own cache lookup) was most of its time on an eleven-language catalog."""
     return re.compile(r"(?<!" + _JOINING + r")" + re.escape(text) + _WORD_END, flags)
 
 
@@ -92,6 +96,9 @@ class Glossary:
     def __init__(self, names=(), terms=()):
         self.names = list(names)
         self.terms = list(terms)
+        # mask_names' answers by text: `check` masks the same English once for every term it looks for (4.8 million
+        # times for 46,715 strings on November 20, 2026), and the names never change once a glossary is made.
+        self._masked = {}
 
     # ---- reading ----
 
@@ -163,10 +170,16 @@ class Glossary:
     # ---- what a text holds ----
 
     def mask_names(self, text):
-        """`text` with each do-not-translate name replaced by a space, so that a term is never found inside one."""
+        """`text` with each do-not-translate name replaced by a space, so that a term is never found inside one. A name
+        whose letters the text doesn't hold can't match (the pattern is case-sensitive), so it is passed over unread."""
+        if text in self._masked:
+            return self._masked[text]
+        masked = text
         for name in self.names:
-            text = _word_pattern(name).sub(" ", text)
-        return text
+            if name in masked:
+                masked = _word_pattern(name).sub(" ", masked)
+        self._masked[text] = masked
+        return masked
 
     def term_in(self, term, english):
         """Whether `term` (a glossary entry) is found in `english`: as a word of its own, in any case, with an optional plural
