@@ -204,6 +204,7 @@ enum LanguagePackPluralRules {
         "de": ["one", "other"],
         "en": ["one", "other"],
         "es": ["one", "many", "other"],
+        "fa": ["one", "other"],
         "fr": ["one", "many", "other"],
         "he": ["one", "two", "other"],
         "hi": ["one", "other"],
@@ -219,6 +220,7 @@ enum LanguagePackPluralRules {
         "th": ["other"],
         "tr": ["one", "other"],
         "uk": ["one", "few", "many", "other"],
+        "ur": ["one", "other"],
         "vi": ["other"],
         "zh-Hans": ["other"],
         "zh-Hant": ["other"],
@@ -232,8 +234,8 @@ enum LanguagePackPluralRules {
 
     /// The category of `count` in `language`, or nil for a language with no rule here. For the whole numbers the
     /// tests use (0 and up), by CLDR's cardinal rules:
-    /// - English, German, Dutch, Swedish, Turkish: `one` for 1, else `other`.
-    /// - Hindi, Bengali: `one` for 0 and 1, else `other`.
+    /// - English, German, Dutch, Swedish, Turkish, Urdu: `one` for 1, else `other`.
+    /// - Hindi, Bengali, Persian: `one` for 0 and 1, else `other`.
     /// - Spanish, Italian: `one` for 1, `many` for a whole number of millions, else `other`.
     /// - French, Brazilian Portuguese: `one` for 0 and 1, `many` for a whole number of millions, else `other`.
     /// - Russian, Ukrainian: `one` for a number ending in 1 but not 11, `few` for one ending in 2 to 4 but not 12 to 14,
@@ -246,9 +248,9 @@ enum LanguagePackPluralRules {
     ///   for 0 and 1, but Apple's Foundation still uses `other` alone, and Foundation is what picks the form.)
     static func category(of count: Int, language: String) -> String? {
         switch language {
-        case "en", "de", "nl", "sv", "tr":
+        case "en", "de", "nl", "sv", "tr", "ur":
             return count == 1 ? "one" : "other"
-        case "hi", "bn":
+        case "hi", "bn", "fa":
             return count == 0 || count == 1 ? "one" : "other"
         case "es", "it":
             return count == 1 ? "one" : (isWholeMillions(count) ? "many" : "other")
