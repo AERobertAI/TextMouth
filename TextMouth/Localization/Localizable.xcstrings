@@ -74819,7 +74819,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@の変換を停止しました。理由：%2$@"
+            "value" : "%1$@の変換を停止しました。理由：%2$@。"
           }
         },
         "pt-BR" : {
@@ -220480,7 +220480,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はこの書類の読み取りを停止しました。理由：%@"
+            "value" : "TextMouth はこの書類の読み取りを停止しました。理由：%@。"
           }
         },
         "pt-BR" : {
