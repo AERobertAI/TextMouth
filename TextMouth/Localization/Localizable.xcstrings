@@ -37023,7 +37023,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "「%2$@」のPodcastが%1$lld件見つかりました。"
+                  "value" : "「%2$@」の Podcast が%1$lld件見つかりました。"
                 }
               }
             }
@@ -112388,7 +112388,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "同一のファイル (MD5)"
+            "value" : "同一のファイル（MD5）"
           }
         },
         "pt-BR" : {
@@ -151666,7 +151666,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」のPodcastは見つかりませんでした。別の言葉をお試しいただくか、フィードのアドレスを入力してください。"
+            "value" : "「%@」の Podcast は見つかりませんでした。別の言葉をお試しいただくか、フィードのアドレスを入力してください。"
           }
         },
         "pt-BR" : {
@@ -167487,7 +167487,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオの再生中に TextMouth のメモリが%@ GBまで増えたため、再生を停止しました。macOS のオーディオの不具合です。"
+            "value" : "オーディオの再生中に TextMouth のメモリが%@ GB まで増えたため、再生を停止しました。macOS のオーディオの不具合です。"
           }
         },
         "pt-BR" : {
@@ -167546,7 +167546,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オーディオの再生中に TextMouth のメモリが%@ GBまで増えたため、再生を停止しました。システムのオーディオの不具合です。"
+            "value" : "オーディオの再生中に TextMouth のメモリが%@ GB まで増えたため、再生を停止しました。システムのオーディオの不具合です。"
           }
         },
         "pt-BR" : {
