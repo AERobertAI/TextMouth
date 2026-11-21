@@ -18591,19 +18591,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Non è stato possibile leggere %@ capitoli su %lld"
+                  "value" : "Non è stato possibile leggere %@ su %lld di capitoli"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Non è stato possibile leggere %@ capitoli su %lld"
+                  "value" : "Non è stato possibile leggere %@ su %lld capitolo"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Non è stato possibile leggere %@ capitoli su %lld"
+                  "value" : "Non è stato possibile leggere %@ su %lld capitoli"
                 }
               }
             }
@@ -105783,7 +105783,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aggiunge la velocità con cui si contano, ad esempio 2,0x per un audiolibro non a 1x, o 500 parole al minuto per un libro di testo, nel lettore, in Dove sono?, in Copia posizione di lettura e nelle durate del foglio Intestazioni."
+            "value" : "Aggiunge la velocità su cui si basano i tempi, ad esempio 2,0x per un audiolibro non a 1x, o 500 parole al minuto per un libro testuale, nel lettore, in Dove sono?, in Copia posizione di lettura e nelle durate del foglio Intestazioni."
           }
         },
         "ja" : {
@@ -154871,7 +154871,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La scelta rende la scorciatoia personale; Ripristina predefinito ripristina dove funziona per impostazione predefinita."
+            "value" : "Scegliere rende tua la scorciatoia; Ripristina predefinito riporta le finestre in cui funziona a quelle predefinite."
           }
         },
         "ja" : {
@@ -215469,7 +215469,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tutte le scorciatoie e dove funzionano tornano ai valori predefiniti. I tuoi tasti andranno persi."
+            "value" : "Tutte le scorciatoie e le finestre in cui funzionano tornano ai valori predefiniti. I tasti che hai scelto andranno persi."
           }
         },
         "ja" : {
@@ -235256,7 +235256,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Per cinque secondi i due tasti successivi non sono scorciatoie; TextMouth dice se formano una doppia pressione."
+            "value" : "Per cinque secondi, le prossime due pressioni di tasto non attivano scorciatoie; TextMouth dice se formano una doppia pressione."
           }
         },
         "ja" : {
@@ -245873,7 +245873,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modalità di visualizzazione delle informazioni sull’intestazione"
+            "value" : "Informazioni mostrate per ogni intestazione"
           }
         },
         "ja" : {
@@ -296819,7 +296819,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rendi doppia pressione"
+            "value" : "Imposta doppia pressione"
           }
         },
         "ja" : {
@@ -296956,7 +296956,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rendi pressione singola"
+            "value" : "Imposta pressione singola"
           }
         },
         "ja" : {
@@ -305648,7 +305648,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Riduci"
+            "value" : "Contrai"
           }
         },
         "ja" : {
@@ -305785,7 +305785,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Riduci tutto"
+            "value" : "Contrai tutto"
           }
         },
         "ja" : {
@@ -343489,7 +343489,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Non è stato possibile leggere il testo del PDF: non ha testo incorporato e l’OCR non ha potuto funzionare (%@)."
+            "value" : "Non è stato possibile leggere il testo del PDF: non ha testo incorporato e non è stato possibile eseguire l’OCR (%@)."
           }
         },
         "ja" : {
@@ -346276,19 +346276,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessuno dei %lld di capitoli ha potuto essere letto"
+                  "value" : "Non è stato possibile leggere nessuno dei %lld di capitoli"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessuno dei %lld capitoli ha potuto essere letto"
+                  "value" : "Non è stato possibile leggere l’unico capitolo"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessuno dei %lld capitoli ha potuto essere letto"
+                  "value" : "Non è stato possibile leggere nessuno dei %lld capitoli"
                 }
               }
             }
@@ -353568,19 +353568,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su %@ di %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %@ delle %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su %@ di %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %@ di %lld pagina, quindi manca il testo presente solo nelle sue immagini: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su %@ di %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %@ delle %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               }
             }
@@ -354035,19 +354035,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su tutte le %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su nessuna delle %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su tutte le %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %lld pagina, quindi manca il testo presente solo nelle sue immagini: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su tutte le %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su nessuna delle %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               }
             }
@@ -354349,7 +354349,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’OCR non ha potuto funzionare sull’unica pagina del PDF, quindi manca il testo presente solo nelle sue immagini: %@."
+            "value" : "Non è stato possibile eseguire l’OCR sull’unica pagina del PDF, quindi manca il testo presente solo nelle sue immagini: %@."
           }
         },
         "ja" : {
@@ -385067,7 +385067,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stamp"
+            "value" : "Stampa schermo"
           }
         },
         "ja" : {
@@ -388766,7 +388766,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Uscendo ora, queste modifiche non verranno salvate:"
+            "value" : "Se esci ora, queste modifiche non verranno salvate:"
           }
         },
         "ja" : {
