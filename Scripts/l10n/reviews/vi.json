@@ -2405,9 +2405,16 @@
    "areas": [
     "the whole app: words carried across the three parts"
    ],
-   "reviewer": "Claude Opus 5.5",
+   "reviewer": "Claude Opus 5.5 and Claude Sonnet 5.5",
    "date": "2026-11-21",
    "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Thêm nút Xuất vào thanh công cụ của mỗi trình đọc. Tệp > Xuất vẫn dùng được trong cả hai trường hợp.",
+     "after": "Thêm nút Xuất vào thanh công cụ của mỗi trình đọc. Tệp, Xuất vẫn dùng được trong cả hai trường hợp.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
     {
      "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
      "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
