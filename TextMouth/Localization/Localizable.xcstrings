@@ -16611,7 +16611,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@에 피드 %2$lld개가 있습니다. 각 피드는 피드 이름을 딴 폴더를 갖습니다."
+                  "value" : "%1$@에 피드 %2$lld개가 있습니다. 피드마다 피드 이름을 딴 폴더가 따로 생깁니다."
                 }
               }
             }
@@ -22658,7 +22658,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@은(는) 암호화되지 않은 http를 사용하므로 다른 사람이 보내는 내용을 읽거나 바꿀 수 있습니다. TextMouth는 그래도 불러옵니다."
+            "value" : "%@은(는) 암호화되지 않은 http를 사용하므로 보내는 내용을 다른 사람이 읽거나 바꿀 수 있습니다. 그래도 TextMouth는 불러옵니다."
           }
         },
         "nl" : {
@@ -22932,7 +22932,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@은(는) 암호화되지 않은 http를 사용하므로 다른 사람이 보내는 내용을 읽거나 바꿀 수 있습니다. TextMouth는 그래도 불러옵니다."
+            "value" : "%@은(는) 암호화되지 않은 http를 사용하므로 보내는 내용을 다른 사람이 읽거나 바꿀 수 있습니다. 그래도 TextMouth는 불러옵니다."
           }
         },
         "nl" : {
@@ -38271,7 +38271,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$lld개의 .%2$@ 파일"
+                  "value" : ".%2$@ 파일 %1$lld개"
                 }
               }
             }
@@ -50083,7 +50083,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "책 %lld권 처리됨"
+                  "value" : "처리할 책 %lld권"
                 }
               }
             }
@@ -75273,7 +75273,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$lld, 전체 %2$@"
+            "value" : "%2$@ 중 %1$lld"
           }
         },
         "nl" : {
@@ -83911,7 +83911,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "중복으로 건너뜀 %lld권"
+                  "value" : "중복으로 %lld권 건너뜀"
                 }
               }
             }
@@ -88581,7 +88581,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 Mac: 공간 대기 중 %lld개"
+                  "value" : "이 Mac의 공간 확보 대기 중 %lld개"
                 }
               }
             }
@@ -89048,7 +89048,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 Mac: 데이터 제한 없는 네트워크 대기 중 %lld개"
+                  "value" : "이 Mac의 데이터 제한 없는 네트워크 연결 대기 중 %lld개"
                 }
               }
             }
@@ -118199,7 +118199,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "먼저 확인한 다음 확인을 중단합니다. 피드와 다운로드는 그대로 유지됩니다."
+            "value" : "먼저 물어본 다음 피드 확인을 중단합니다. 피드와 다운로드는 그대로 유지됩니다."
           }
         },
         "nl" : {
@@ -124456,7 +124456,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "뒷표지"
+            "value" : "뒤표지"
           }
         },
         "nl" : {
@@ -145287,7 +145287,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "지금부터 이 피드를 다시 확인하며, 즉시 확인합니다."
+            "value" : "이 피드를 지금 바로 확인하고, 앞으로도 계속 확인합니다."
           }
         },
         "nl" : {
@@ -150773,7 +150773,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "가져올 폴더를 각각 선택하십시오. DAISY 책 폴더(ncc.html 또는 .opf 파일 포함) 또는 오디오 트랙 폴더이며, 하나의 오디오북이 됩니다."
+            "value" : "가져올 폴더를 각각 선택하십시오. ncc.html 또는 .opf 파일이 있는 DAISY 책 폴더나, 하나의 오디오북이 되는 오디오 트랙 폴더를 선택할 수 있습니다."
           }
         },
         "nl" : {
@@ -228656,7 +228656,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "피드는 켜져 있는 경우 실행할 때, 그리고 %1$@ 또는 %2$@을(를) 선택할 때만 새로 고칩니다."
+            "value" : "피드는 실행할 때(해당 설정이 켜져 있는 경우)와 %1$@ 또는 %2$@을(를) 선택할 때만 새로 고쳐집니다."
           }
         },
         "nl" : {
@@ -248544,7 +248544,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새로 고침 사이의 시간(TextMouth 실행 중, 1~168시간)."
+            "value" : "TextMouth 실행 중 새로 고침 간격을 1~168시간으로 설정합니다."
           }
         },
         "nl" : {
@@ -254036,7 +254036,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "가져오기가 %@ 후에 취소되었습니다."
+            "value" : "가져오기가 취소되었습니다(%@ 완료)."
           }
         },
         "nl" : {
@@ -260916,7 +260916,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "안쪽 표지"
+            "value" : "속표지"
           }
         },
         "nl" : {
@@ -264204,7 +264204,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다운로드된 동안에는 피드에 속해 있습니다. %@은(는) 파일을 제거하고 위치와 북마크는 유지합니다."
+            "value" : "다운로드되어 있는 동안에는 피드에 속해 있습니다. %@은(는) 파일을 제거하고 위치와 북마크는 유지합니다."
           }
         },
         "nl" : {
@@ -282927,7 +282927,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "마지막으로 연 시간"
+            "value" : "최근 사용일"
           }
         },
         "nl" : {
@@ -321609,7 +321609,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 기사 %lld개를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+                  "value" : "이 기사 %lld개를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
                 }
               }
             }
@@ -322076,7 +322076,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 에피소드 %lld개를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+                  "value" : "이 에피소드 %lld개를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
                 }
               }
             }
@@ -322543,7 +322543,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 항목 %lld개를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+                  "value" : "이 항목 %lld개를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
                 }
               }
             }
@@ -322833,7 +322833,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 기사를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+            "value" : "이 기사를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
           }
         },
         "nl" : {
@@ -322970,7 +322970,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 에피소드를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+            "value" : "이 에피소드를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
           }
         },
         "nl" : {
@@ -323107,7 +323107,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 항목을 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+            "value" : "이 항목을 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
           }
         },
         "nl" : {
@@ -343912,7 +343912,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "이 만화책 압축 파일의 이미지 하나에서 텍스트를 찾지 못했습니다."
+            "value" : "이 만화책 압축 파일에 있는 하나뿐인 이미지에서 텍스트를 찾지 못했습니다."
           }
         },
         "nl" : {
@@ -344363,7 +344363,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 만화책 압축 파일의 %lld페이지 어디에서도 텍스트를 찾지 못했습니다."
+                  "value" : "이 만화책 압축 파일의 페이지 %lld개 중 어느 페이지에서도 텍스트를 찾지 못했습니다."
                 }
               }
             }
@@ -344830,7 +344830,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "이 이미지의 %lld페이지 어디에서도 텍스트를 찾지 못했습니다."
+                  "value" : "이 이미지의 페이지 %lld개 중 어느 페이지에서도 텍스트를 찾지 못했습니다."
                 }
               }
             }
@@ -368453,7 +368453,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@의 일부를 디코딩할 수 없어 무음으로 유지됩니다."
+            "value" : "%@의 일부를 디코딩할 수 없어 무음으로 처리됩니다."
           }
         },
         "nl" : {
@@ -368904,7 +368904,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "파일 %1$lld개(%2$@)의 일부를 디코딩할 수 없어 무음으로 유지됩니다."
+                  "value" : "파일 %1$lld개(%2$@)의 일부를 디코딩할 수 없어 무음으로 처리됩니다."
                 }
               }
             }
@@ -423162,7 +423162,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "WordPerfect 문서를 LibreOffice 같은 해당 파일을 읽는 프로그램에서 Word 또는 HTML 파일로 저장한 다음 가져오십시오."
+            "value" : "WordPerfect 문서를 LibreOffice처럼 이 문서를 읽을 수 있는 프로그램에서 Word 또는 HTML 파일로 저장한 다음 가져오십시오."
           }
         },
         "nl" : {
@@ -442851,7 +442851,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새로 고침으로 새 에피소드가 생기면 경고 표시"
+            "value" : "새로 고침으로 새 에피소드가 생기면 경고창 표시"
           }
         },
         "nl" : {
@@ -468885,7 +468885,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 구독을 시작했습니다. 이 피드는 암호화되지 않은 http를 사용하므로 다른 사람이 보내는 내용을 읽거나 바꿀 수 있습니다. TextMouth는 그래도 불러옵니다."
+            "value" : "%@ 구독을 시작했습니다. 이 피드는 암호화되지 않은 http를 사용하므로 피드가 보내는 내용을 다른 사람이 읽거나 바꿀 수 있습니다. 그래도 TextMouth는 불러옵니다."
           }
         },
         "nl" : {
@@ -476433,7 +476433,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "텍스트 인식이 %1$lld페이지를 하나도 읽지 못했습니다: %2$@."
+                  "value" : "텍스트 인식이 페이지 %1$lld개 중 어느 페이지도 읽지 못했습니다: %2$@."
                 }
               }
             }
@@ -476723,7 +476723,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "텍스트 인식이 유일한 페이지를 읽지 못했습니다: %@."
+            "value" : "텍스트 인식이 하나뿐인 페이지를 읽지 못했습니다: %@."
           }
         },
         "nl" : {
@@ -479207,7 +479207,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 “%1$@”을(를) %2$@ 포맷으로 읽을 수 없습니다. 손상되었거나 다른 포맷의 이름이 붙어 있을 수 있습니다."
+            "value" : "TextMouth가 “%1$@”을(를) %2$@ 포맷으로 읽을 수 없습니다. 손상되었거나 다른 포맷의 확장자가 붙어 있을 수 있습니다."
           }
         },
         "nl" : {
