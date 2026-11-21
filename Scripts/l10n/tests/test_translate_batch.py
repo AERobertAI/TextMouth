@@ -339,11 +339,15 @@ class TodoContextTests(BatchCase):
         strings.update({text: {"comment": "c", "extractionState": "stale", "localizations": {"es": base.unit("T " + text)}}
                         for text in stale})
         cat = catalog.Catalog({"sourceLanguage": "en", "version": "1.0", "strings": strings})
-        started = time.monotonic()
+        # This process's CPU time, not the clock's: the clock also counts the time other work on a busy Mac holds the
+        # cores (on November 20, 2026, with twenty translators' checks running at once, a run of these tests failed
+        # once on each Python and passed later), while the CPU time still shows a comparison of each string with
+        # every other one, which took 84 seconds of it.
+        started = time.process_time()
         batch = translate.build_batch(cat, "es", glossary.Glossary(), {}, self.root, None, 0)
-        elapsed = time.monotonic() - started
+        elapsed = time.process_time() - started
         self.assertEqual(batch["count"], len(pending))
-        self.assertLess(elapsed, 10, f"{elapsed:.1f} seconds for {len(pending)} strings and {len(stale)} stale ones")
+        self.assertLess(elapsed, 10, f"{elapsed:.1f} CPU seconds for {len(pending)} strings and {len(stale)} stale ones")
 
 
 class ApplyCase(BatchCase):
