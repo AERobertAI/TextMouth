@@ -44638,7 +44638,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "2から99までの数字"
+            "value" : "2から99までの数字。"
           }
         },
         "pt-BR" : {
@@ -45847,7 +45847,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この結果に移動します"
+            "value" : "この結果に移動します。"
           }
         },
         "pt-BR" : {
@@ -48463,7 +48463,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "あなたのルールの後に辞書のエントリを追加します。発音の表記だけのエントリは除外されます"
+            "value" : "あなたのルールの後に辞書のエントリを追加します。発音の表記だけのエントリは除外されます。"
           }
         },
         "pt-BR" : {
@@ -49059,7 +49059,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この後「再生」すると、その箇所をもう一度試します"
+            "value" : "この後「再生」すると、その箇所をもう一度試します。"
           }
         },
         "pt-BR" : {
@@ -52309,7 +52309,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "続けて別の記事を聴くときに適用されます"
+            "value" : "続けて別の記事を聴くときに適用されます。"
           }
         },
         "pt-BR" : {
@@ -52368,7 +52368,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "続けて別のブックを聴くときに適用されます"
+            "value" : "続けて別のブックを聴くときに適用されます。"
           }
         },
         "pt-BR" : {
@@ -52427,7 +52427,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "続けて別のエピソードを聴くときに適用されます"
+            "value" : "続けて別のエピソードを聴くときに適用されます。"
           }
         },
         "pt-BR" : {
@@ -52486,7 +52486,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "続けて別の項目を聴くときに適用されます"
+            "value" : "続けて別の項目を聴くときに適用されます。"
           }
         },
         "pt-BR" : {
@@ -56548,7 +56548,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフィードの記事が終わったときに別の記事へ進む場合にのみ使用できます"
+            "value" : "このフィードの記事が終わったときに別の記事へ進む場合にのみ使用できます。"
           }
         },
         "pt-BR" : {
@@ -56607,7 +56607,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフィードのエピソードが終わったときに別のエピソードへ進む場合にのみ使用できます"
+            "value" : "このフィードのエピソードが終わったときに別のエピソードへ進む場合にのみ使用できます。"
           }
         },
         "pt-BR" : {
@@ -56666,7 +56666,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフィードの項目が終わったときに別の項目へ進む場合にのみ使用できます"
+            "value" : "このフィードの項目が終わったときに別の項目へ進む場合にのみ使用できます。"
           }
         },
         "pt-BR" : {
@@ -56725,7 +56725,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフォルダのブックが終わったときに別のブックへ進む場合にのみ使用できます"
+            "value" : "このフォルダのブックが終わったときに別のブックへ進む場合にのみ使用できます。"
           }
         },
         "pt-BR" : {
@@ -63074,7 +63074,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "数を1ずつ変更します（2から99）"
+            "value" : "数を1ずつ変更します（2から99）。"
           }
         },
         "pt-BR" : {
@@ -63133,7 +63133,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "速度を%@倍ずつ変更します"
+            "value" : "速度を%@倍ずつ変更します。"
           }
         },
         "pt-BR" : {
@@ -68653,7 +68653,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックの前方と後方の移動単位を別々に選択します"
+            "value" : "このブックの前方と後方の移動単位を別々に選択します。"
           }
         },
         "pt-BR" : {
@@ -69479,7 +69479,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフィードの記事が終わったときの動作を選びます"
+            "value" : "このフィードの記事が終わったときの動作を選びます。"
           }
         },
         "pt-BR" : {
@@ -69538,7 +69538,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフィードのエピソードが終わったときの動作を選びます"
+            "value" : "このフィードのエピソードが終わったときの動作を選びます。"
           }
         },
         "pt-BR" : {
@@ -69597,7 +69597,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフィードの項目が終わったときの動作を選びます"
+            "value" : "このフィードの項目が終わったときの動作を選びます。"
           }
         },
         "pt-BR" : {
@@ -69656,7 +69656,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このフォルダのブックが終わったときの動作を選びます"
+            "value" : "このフォルダのブックが終わったときの動作を選びます。"
           }
         },
         "pt-BR" : {
@@ -71084,7 +71084,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "検索を閉じて、ブックに戻ります"
+            "value" : "検索を閉じて、ブックに戻ります。"
           }
         },
         "pt-BR" : {
@@ -71261,7 +71261,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "見出し画面を閉じてブックに戻ります"
+            "value" : "見出し画面を閉じてブックに戻ります。"
           }
         },
         "pt-BR" : {
@@ -71379,7 +71379,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「ライブラリを検索」を閉じます。結果は次回のために残ります"
+            "value" : "「ライブラリを検索」を閉じます。結果は次回のために残ります。"
           }
         },
         "pt-BR" : {
@@ -71556,7 +71556,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックのウインドウを閉じます"
+            "value" : "このブックのウインドウを閉じます。"
           }
         },
         "pt-BR" : {
@@ -71615,7 +71615,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックを作成せずに、このビューを閉じます"
+            "value" : "ブックを作成せずに、このビューを閉じます。"
           }
         },
         "pt-BR" : {
@@ -75238,7 +75238,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "レポート全体をプレーンテキストでコピーします"
+            "value" : "レポート全体をプレーンテキストでコピーします。"
           }
         },
         "pt-BR" : {
@@ -89474,7 +89474,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックをもう一度ダウンロードします"
+            "value" : "ブックをもう一度ダウンロードします。"
           }
         },
         "pt-BR" : {
@@ -94153,7 +94153,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新しいブックのテキストを入力またはペーストします"
+            "value" : "新しいブックのテキストを入力またはペーストします。"
           }
         },
         "pt-BR" : {
@@ -102275,7 +102275,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィードは常にタイトル順に表示されます"
+            "value" : "フィードは常にタイトル順に表示されます。"
           }
         },
         "pt-BR" : {
@@ -107913,7 +107913,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "見出しやブックマークを閲覧する前にいた場所に戻ります"
+            "value" : "見出しやブックマークを閲覧する前にいた場所に戻ります。"
           }
         },
         "pt-BR" : {
@@ -110736,7 +110736,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ページ移動のコントロールを非表示にします"
+            "value" : "ページ移動のコントロールを非表示にします。"
           }
         },
         "pt-BR" : {
@@ -110795,7 +110795,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "パーセント移動のコントロールを非表示にします"
+            "value" : "パーセント移動のコントロールを非表示にします。"
           }
         },
         "pt-BR" : {
@@ -110854,7 +110854,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "時間移動のコントロールを非表示にします"
+            "value" : "時間移動のコントロールを非表示にします。"
           }
         },
         "pt-BR" : {
@@ -111680,7 +111680,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "同じ記号が何度も続くとき、声がどう読み上げるかを選びます"
+            "value" : "同じ記号が何度も続くとき、声がどう読み上げるかを選びます。"
           }
         },
         "pt-BR" : {
@@ -131244,7 +131244,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ここにこのブックの一致を最大500件まで一覧表示します"
+            "value" : "ここにこのブックの一致を最大500件まで一覧表示します。"
           }
         },
         "pt-BR" : {
@@ -131775,7 +131775,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックをもう一度探します"
+            "value" : "ブックをもう一度探します。"
           }
         },
         "pt-BR" : {
@@ -133026,7 +133026,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "手動の順序には方向がありません"
+            "value" : "手動の順序には方向がありません。"
           }
         },
         "pt-BR" : {
@@ -142354,7 +142354,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "1つ下に移動します"
+            "value" : "1つ下に移動します。"
           }
         },
         "pt-BR" : {
@@ -142413,7 +142413,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "1つ上に移動します"
+            "value" : "1つ上に移動します。"
           }
         },
         "pt-BR" : {
@@ -161089,7 +161089,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ページ移動のコントロールを開きます"
+            "value" : "ページ移動のコントロールを開きます。"
           }
         },
         "pt-BR" : {
@@ -161148,7 +161148,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "パーセント移動のコントロールを開きます"
+            "value" : "パーセント移動のコントロールを開きます。"
           }
         },
         "pt-BR" : {
@@ -161207,7 +161207,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "時間移動のコントロールを開きます"
+            "value" : "時間移動のコントロールを開きます。"
           }
         },
         "pt-BR" : {
@@ -161443,7 +161443,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "この一致箇所でブックを開きます"
+            "value" : "この一致箇所でブックを開きます。"
           }
         },
         "pt-BR" : {
@@ -161620,7 +161620,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィードの設定を開きます: ダウンロード先、表示とダウンロードの対象、エピソード終了時の動作"
+            "value" : "フィードの設定を開きます: ダウンロード先、表示とダウンロードの対象、エピソード終了時の動作。"
           }
         },
         "pt-BR" : {
@@ -161738,7 +161738,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フォルダの設定を開きます: 中身と、ブック終了時の動作"
+            "value" : "フォルダの設定を開きます: 中身と、ブック終了時の動作。"
           }
         },
         "pt-BR" : {
@@ -161856,7 +161856,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "最後に読んでいたブックを開きます"
+            "value" : "最後に読んでいたブックを開きます。"
           }
         },
         "pt-BR" : {
@@ -162151,7 +162151,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "外部のエディタでテキストを開きます"
+            "value" : "外部のエディタでテキストを開きます。"
           }
         },
         "pt-BR" : {
@@ -163139,7 +163139,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "スタイルより優先されます"
+            "value" : "スタイルより優先されます。"
           }
         },
         "pt-BR" : {
@@ -168136,7 +168136,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "再生操作に短いサウンドを鳴らします"
+            "value" : "再生操作に短いサウンドを鳴らします。"
           }
         },
         "pt-BR" : {
@@ -168549,7 +168549,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「ここはどこ？」の読み上げが終わると鳴ります"
+            "value" : "「ここはどこ？」の読み上げが終わると鳴ります。"
           }
         },
         "pt-BR" : {
@@ -168608,7 +168608,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「ここはどこ？」の読み上げが始まると鳴ります"
+            "value" : "「ここはどこ？」の読み上げが始まると鳴ります。"
           }
         },
         "pt-BR" : {
@@ -168667,7 +168667,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "読書を一時停止すると鳴ります"
+            "value" : "読書を一時停止すると鳴ります。"
           }
         },
         "pt-BR" : {
@@ -168726,7 +168726,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "巻き戻したときに鳴ります"
+            "value" : "巻き戻したときに鳴ります。"
           }
         },
         "pt-BR" : {
@@ -168785,7 +168785,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "早送りしたときに鳴ります"
+            "value" : "早送りしたときに鳴ります。"
           }
         },
         "pt-BR" : {
@@ -168844,7 +168844,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "読書を開始すると鳴ります"
+            "value" : "読書を開始すると鳴ります。"
           }
         },
         "pt-BR" : {
@@ -178113,7 +178113,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "エディタのファイルからテキストを読み込み直します"
+            "value" : "エディタのファイルからテキストを読み込み直します。"
           }
         },
         "pt-BR" : {
@@ -181885,7 +181885,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "テキストをクリップボードのテキストに置き換えます"
+            "value" : "テキストをクリップボードのテキストに置き換えます。"
           }
         },
         "pt-BR" : {
@@ -183478,7 +183478,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このブックを%@に戻します"
+            "value" : "このブックを%@に戻します。"
           }
         },
         "pt-BR" : {
@@ -184245,7 +184245,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "標準のリストに戻します：ASCII 記号、箇条書きの記号、ダッシュ、省略記号、罫線"
+            "value" : "標準のリストに戻します：ASCII 記号、箇条書きの記号、ダッシュ、省略記号、罫線。"
           }
         },
         "pt-BR" : {
@@ -184304,7 +184304,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "このアクションのデフォルトのショートカットに戻します。今後のリリースでの変更にも従います"
+            "value" : "このアクションのデフォルトのショートカットに戻します。今後のリリースでの変更にも従います。"
           }
         },
         "pt-BR" : {
@@ -185602,7 +185602,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックの順序を逆にします"
+            "value" : "ブックの順序を逆にします。"
           }
         },
         "pt-BR" : {
@@ -189398,7 +189398,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オンのプレーンテキストのルールを保存します。正規表現のルールは除外されます"
+            "value" : "オンのプレーンテキストのルールを保存します。正規表現のルールは除外されます。"
           }
         },
         "pt-BR" : {
@@ -194206,7 +194206,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ビューのポップアップメニューにこのビューを表示するタイミングを設定します"
+            "value" : "ビューのポップアップメニューにこのビューを表示するタイミングを設定します。"
           }
         },
         "pt-BR" : {
@@ -197816,7 +197816,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "一度に1つのフォルダを表示します"
+            "value" : "一度に1つのフォルダを表示します。"
           }
         },
         "pt-BR" : {
@@ -197934,7 +197934,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "手動で並べた順にブックを表示します"
+            "value" : "手動で並べた順にブックを表示します。"
           }
         },
         "pt-BR" : {
@@ -207010,7 +207010,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "検索を停止し、これまでに見つかった一致を残します"
+            "value" : "検索を停止し、これまでに見つかった一致を残します。"
           }
         },
         "pt-BR" : {
@@ -207187,7 +207187,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ダウンロードの待機を停止します"
+            "value" : "ダウンロードの待機を停止します。"
           }
         },
         "pt-BR" : {
@@ -208423,7 +208423,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ページ移動のコントロールに切り替えます"
+            "value" : "ページ移動のコントロールに切り替えます。"
           }
         },
         "pt-BR" : {
@@ -208482,7 +208482,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "パーセント移動のコントロールに切り替えます"
+            "value" : "パーセント移動のコントロールに切り替えます。"
           }
         },
         "pt-BR" : {
@@ -208541,7 +208541,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "時間移動のコントロールに切り替えます"
+            "value" : "時間移動のコントロールに切り替えます。"
           }
         },
         "pt-BR" : {
@@ -263509,7 +263509,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックをもう一度取得しようとします"
+            "value" : "ブックをもう一度取得しようとします。"
           }
         },
         "pt-BR" : {
@@ -264701,7 +264701,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックのページ番号のとおりにページを入力します。例：12、xii"
+            "value" : "ブックのページ番号のとおりにページを入力します。例：12、xii。"
           }
         },
         "pt-BR" : {
@@ -264819,7 +264819,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "0から100までのパーセントを入力します。例：47.5"
+            "value" : "0から100までのパーセントを入力します。例：47.5。"
           }
         },
         "pt-BR" : {
@@ -265232,7 +265232,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "入力して、ブックの文字起こしを検索します"
+            "value" : "入力して、ブックの文字起こしを検索します。"
           }
         },
         "pt-BR" : {
@@ -265291,7 +265291,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "入力して、ライブラリ内のすべてのブックのテキストを検索します"
+            "value" : "入力して、ライブラリ内のすべてのブックのテキストを検索します。"
           }
         },
         "pt-BR" : {
@@ -265350,7 +265350,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "入力して、ブック内を検索します"
+            "value" : "入力して、ブック内を検索します。"
           }
         },
         "pt-BR" : {
@@ -272219,7 +272219,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "残り%lld分以下になると、次の記事がこの Mac にまだなければダウンロードします"
+                  "value" : "残り%lld分以下になると、次の記事がこの Mac にまだなければダウンロードします。"
                 }
               }
             }
@@ -272440,7 +272440,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "残り%lld分以下になると、次のブックがこの Mac にまだなければダウンロードします"
+                  "value" : "残り%lld分以下になると、次のブックがこの Mac にまだなければダウンロードします。"
                 }
               }
             }
@@ -272661,7 +272661,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "残り%lld分以下になると、次のエピソードがこの Mac にまだなければダウンロードします"
+                  "value" : "残り%lld分以下になると、次のエピソードがこの Mac にまだなければダウンロードします。"
                 }
               }
             }
@@ -272882,7 +272882,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "残り%lld分以下になると、次の項目がこの Mac にまだなければダウンロードします"
+                  "value" : "残り%lld分以下になると、次の項目がこの Mac にまだなければダウンロードします。"
                 }
               }
             }
@@ -273547,7 +273547,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オンにすると、一致は大文字と小文字が同じでなければなりません"
+            "value" : "オンにすると、一致は大文字と小文字が同じでなければなりません。"
           }
         },
         "pt-BR" : {
@@ -273606,7 +273606,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オンにすると、検索テキストが ICU 正規表現として扱われます"
+            "value" : "オンにすると、検索テキストが ICU 正規表現として扱われます。"
           }
         },
         "pt-BR" : {
@@ -273783,7 +273783,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "オンにすると、検索テキストが正規表現として扱われます"
+            "value" : "オンにすると、検索テキストが正規表現として扱われます。"
           }
         },
         "pt-BR" : {
