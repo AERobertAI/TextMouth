@@ -9158,7 +9158,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ heeft zijn standaardtoets, %@"
+            "value" : "%@ heeft nu de standaardtoets, %@"
           }
         },
         "pl" : {
@@ -18033,7 +18033,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ wacht nu even voor %@, voor het geval de toets twee keer wordt ingedrukt."
+            "value" : "%@ wacht nu even met %@, voor het geval de toets twee keer wordt ingedrukt."
           }
         },
         "pl" : {
@@ -18639,13 +18639,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstukken niet gelezen"
+                  "value" : "%@ van %lld hoofdstuk niet te lezen"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ van %lld hoofdstukken niet gelezen"
+                  "value" : "%@ van %lld hoofdstukken niet te lezen"
                 }
               }
             }
@@ -19751,7 +19751,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ resterend op huidige snelheid"
+            "value" : "Nog %@ bij de huidige snelheid"
           }
         },
         "pl" : {
@@ -21556,7 +21556,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ door het boek"
+            "value" : "%@ van het boek"
           }
         },
         "pl" : {
@@ -118890,7 +118890,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "At-teken"
+            "value" : "Apenstaartje"
           }
         },
         "pl" : {
@@ -125558,7 +125558,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Voor pagina %@"
+            "value" : "Vóór pagina %@"
           }
         },
         "pl" : {
@@ -140992,7 +140992,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hoofdstuk %@ kon niet worden afgespeeld: %@ uit het pakket van het boek."
+            "value" : "Hoofdstuk %@ kon niet worden afgespeeld: %@ in het pakket van het boek."
           }
         },
         "pl" : {
@@ -285685,7 +285685,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Niveau 1 tot %lld"
+            "value" : "Niveaus 1 tot en met %lld"
           }
         },
         "pl" : {
@@ -294776,7 +294776,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Boek laden…"
+            "value" : "Boek wordt geladen…"
           }
         },
         "pl" : {
@@ -346324,7 +346324,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Geen van de %lld hoofdstukken kon worden gelezen"
+                  "value" : "Het enige hoofdstuk kon niet worden gelezen"
                 }
               },
               "other" : {
@@ -353616,13 +353616,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op %@ van %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               }
             }
@@ -354083,13 +354083,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op %lld pagina, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+                  "value" : "OCR kon niet worden uitgevoerd op alle %lld pagina's, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
                 }
               }
             }
@@ -354367,7 +354367,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat ontbreekt: %@."
+            "value" : "OCR kon niet worden uitgevoerd op de enige pagina van de PDF, dus tekst die alleen in de afbeeldingen staat, ontbreekt: %@."
           }
         },
         "pl" : {
@@ -373098,7 +373098,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Percentage door het boek"
+            "value" : "Percentage van het boek"
           }
         },
         "pl" : {
@@ -396330,7 +396330,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toetsenbordcommando opnemen. Druk op een toets met Command of Control."
+            "value" : "Toetsenbordcommando wordt opgenomen. Druk op een toets met Command of Control."
           }
         },
         "pl" : {
@@ -396467,7 +396467,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toetsenbordcommando opnemen. Druk op een toets, of druk er twee keer op voor een dubbele druk."
+            "value" : "Toetsenbordcommando wordt opgenomen. Druk op een toets, of druk er twee keer op voor een dubbele druk."
           }
         },
         "pl" : {
@@ -406280,7 +406280,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Haal ze weg: een luisterboek met tracks is ingedeeld met tracks."
+            "value" : "Haal ze weg: een luisterboek met tracks is ingedeeld in tracks."
           }
         },
         "pl" : {
