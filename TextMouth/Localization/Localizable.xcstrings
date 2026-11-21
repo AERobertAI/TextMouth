@@ -9182,7 +9182,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ har sin standardgenväg, %@"
+            "value" : "%@ har standardgenvägen, %@"
           }
         },
         "th" : {
@@ -25800,7 +25800,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@, %@ kvalitet"
+            "value" : "%@, kvalitet %@"
           }
         },
         "th" : {
@@ -105825,7 +105825,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till hastigheten de räknas i, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, Var är jag?, Kopiera läsposition och rubrikarkets längder."
+            "value" : "Lägger till hastigheten som tiderna räknas med, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, Var är jag?, Kopiera läsposition och rubrikarkets längder."
           }
         },
         "th" : {
@@ -213612,7 +213612,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla kapitel lästes."
+            "value" : "Alla kapitel lästes in."
           }
         },
         "th" : {
@@ -215374,7 +215374,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla sidor lästes."
+            "value" : "Alla sidor lästes in."
           }
         },
         "th" : {
@@ -235298,7 +235298,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Under fem sekunder är de nästa två tangenttrycken inte genvägar; TextMouth säger om de blir ett dubbeltryck."
+            "value" : "Under fem sekunder räknas nästa två tangenttryck inte som genvägar; TextMouth säger om de blir ett dubbeltryck."
           }
         },
         "th" : {
@@ -241251,7 +241251,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Går tillbaka till där du var innan du bläddrade bland rubriker eller bokmärken."
+            "value" : "Går tillbaka dit du var innan du bläddrade bland rubriker eller bokmärken."
           }
         },
         "th" : {
@@ -259657,7 +259657,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta med hastigheten vid återstående tid och total tid"
+            "value" : "Ta med hastigheten i återstående tid och total tid"
           }
         },
         "th" : {
@@ -369772,7 +369772,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Klistra in och anpassa stil"
+            "value" : "Klistra in och matcha stil"
           }
         },
         "th" : {
