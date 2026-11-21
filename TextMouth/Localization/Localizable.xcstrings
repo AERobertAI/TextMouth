@@ -37,7 +37,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\"은(는) 숫자가 아닙니다."
+            "value" : "“%@”은(는) 숫자가 아닙니다."
           }
         },
         "pt-BR" : {
@@ -102,7 +102,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\" 선택 시 같은 폴더에서 정렬 순서상 다음 책을 재생합니다."
+            "value" : "“%@” 선택 시 같은 폴더에서 정렬 순서상 다음 책을 재생합니다."
           }
         },
         "pt-BR" : {
@@ -74418,7 +74418,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\"을(를) 삭제하기 전에 책과 하위 폴더를 이동할 위치를 선택하십시오."
+            "value" : "“%@”을(를) 삭제하기 전에 책과 하위 폴더를 이동할 위치를 선택하십시오."
           }
         },
         "pt-BR" : {
@@ -81864,7 +81864,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\"을(를) 삭제하고 내용을 이동할 수 없음"
+            "value" : "“%@”을(를) 삭제하고 내용을 이동할 수 없음"
           }
         },
         "pt-BR" : {
@@ -82189,7 +82189,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\"을(를) 이동할 수 없음"
+            "value" : "“%@”을(를) 이동할 수 없음"
           }
         },
         "pt-BR" : {
@@ -82904,7 +82904,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\"의 이름을 변경할 수 없음"
+            "value" : "“%@”의 이름을 변경할 수 없음"
           }
         },
         "pt-BR" : {
@@ -149225,7 +149225,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\" 이동"
+            "value" : "“%@” 이동"
           }
         },
         "pt-BR" : {
@@ -151273,7 +151273,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\"의 내용 이동"
+            "value" : "“%@”의 내용 이동"
           }
         },
         "pt-BR" : {
