@@ -681771,7 +681771,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” is niet bijgevoegd aan %2$@: %3$@"
+            "value" : "“%1$@” is niet bij %2$@ gevoegd: %3$@"
           }
         },
         "pl" : {
