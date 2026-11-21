@@ -36,6 +36,17 @@ class MatchingTests(unittest.TestCase):
         self.assertEqual(glossary_.missing_names("Use VoiceOver in TextMouth", "Usa VoiceOver en la aplicación"), ["TextMouth"])
         self.assertEqual(glossary_.missing_names("Use VoiceOver", "Usa VoiceOver"), [])
 
+    def test_a_name_with_a_japanese_chinese_or_korean_particle_against_it_is_kept(self):
+        """Those scripts write the next word or particle straight against a name; a Latin or Cyrillic letter still joins."""
+        glossary_ = make()
+        english = "TextMouth reads EPUB with VoiceOver"
+        for translation in ("TextMouthはVoiceOverでEPUBを読みます", "TextMouth가 VoiceOver로 EPUB를 읽습니다",
+                            "TextMouth通过VoiceOver读取EPUB", "ｔ：TextMouthは、VoiceOverとEPUB。"):
+            self.assertEqual(glossary_.missing_names(english, translation), [], translation)
+        self.assertEqual(glossary_.missing_names(english, "TextMouthy читает EPUBа с VoiceOver"), ["TextMouth", "EPUB"])
+        self.assertEqual(glossary_.names_in("この TextMouthの本とEPUBファイル"), ["TextMouth", "EPUB"])
+        self.assertEqual(glossary_.names_in("MyTextMouth와 EPUBs"), ["EPUB"], "a Latin letter before a name still joins")
+
     def test_a_text_of_names_numbers_and_placeholders_has_nothing_to_translate(self):
         glossary_ = make()
         for text in ("TextMouth", "%lld", "%1$@ %2$lld", "EPUB 3", "…", "TextMouth 2.0", "%@ / %@"):

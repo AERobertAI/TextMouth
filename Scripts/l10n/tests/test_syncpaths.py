@@ -62,13 +62,15 @@ class UnmatchedGlobsTests(unittest.TestCase):
         import time
         files = [f"TextMouth/Views/Area{n % 50}/File{n}.swift" for n in range(4000)]
         globs = sorted(files[n * 4] for n in range(900))
-        started = time.monotonic()
+        # This process's CPU time, not the clock's, so that a busy Mac (other processes holding the cores) can't fail
+        # the test while a matcher that tries every glob on every path still would.
+        started = time.process_time()
         self.assertEqual(l10n.unmatched_globs(globs, files), [])
-        self.assertLess(time.monotonic() - started, 1.0)
+        self.assertLess(time.process_time() - started, 1.0)
         # A few wildcard globs among them stay fast too.
-        started = time.monotonic()
+        started = time.process_time()
         self.assertEqual(l10n.unmatched_globs(globs + ["TextMouth/Views/Area7/**"], files), [])
-        self.assertLess(time.monotonic() - started, 1.0)
+        self.assertLess(time.process_time() - started, 1.0)
 
 
 @unittest.skipUnless(HAS_GIT, "git is not installed")
