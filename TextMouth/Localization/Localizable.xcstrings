@@ -247704,7 +247704,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menyembunyikan kontrol buka halaman."
+            "value" : "Menyembunyikan kontrol lompat ke halaman."
           }
         },
         "it" : {
@@ -247841,7 +247841,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menyembunyikan kontrol buka persentase."
+            "value" : "Menyembunyikan kontrol lompat ke persen."
           }
         },
         "it" : {
@@ -247978,7 +247978,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menyembunyikan kontrol buka waktu."
+            "value" : "Menyembunyikan kontrol lompat ke waktu."
           }
         },
         "it" : {
@@ -362071,7 +362071,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Membuka kontrol buka halaman."
+            "value" : "Membuka kontrol lompat ke halaman."
           }
         },
         "it" : {
@@ -362208,7 +362208,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Membuka kontrol buka persentase."
+            "value" : "Membuka kontrol lompat ke persen."
           }
         },
         "it" : {
@@ -362345,7 +362345,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Membuka kontrol buka waktu."
+            "value" : "Membuka kontrol lompat ke waktu."
           }
         },
         "it" : {
@@ -382184,7 +382184,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menekan tombol baru, atau Escape untuk membatalkan."
+            "value" : "Tekan tombol baru, atau Escape untuk membatalkan."
           }
         },
         "it" : {
@@ -383280,7 +383280,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Previous"
+            "value" : "Sebelumnya"
           }
         },
         "it" : {
@@ -384924,7 +384924,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Print"
+            "value" : "Cetak"
           }
         },
         "it" : {
@@ -385061,7 +385061,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Print Screen"
+            "value" : "Cetak Layar"
           }
         },
         "it" : {
@@ -388623,7 +388623,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Keluar dari TextMouth"
+            "value" : "Sedang keluar dari TextMouth"
           }
         },
         "it" : {
@@ -427814,7 +427814,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ucapkan halaman di Di mana saya?"
+            "value" : "Ucapkan halaman dalam Di mana saya?"
           }
         },
         "it" : {
@@ -428499,7 +428499,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scroll Lock"
+            "value" : "Kunci Gulir"
           }
         },
         "it" : {
@@ -470305,7 +470305,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beralih ke kontrol buka halaman."
+            "value" : "Beralih ke kontrol lompat ke halaman."
           }
         },
         "it" : {
@@ -470442,7 +470442,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beralih ke kontrol buka persentase."
+            "value" : "Beralih ke kontrol lompat ke persen."
           }
         },
         "it" : {
@@ -470579,7 +470579,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beralih ke kontrol buka waktu."
+            "value" : "Beralih ke kontrol lompat ke waktu."
           }
         },
         "it" : {
@@ -471401,7 +471401,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "System"
+            "value" : "Sistem"
           }
         },
         "it" : {
@@ -488441,7 +488441,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth belum membaca simpanan terbaru."
+            "value" : "TextMouth belum membaca versi terakhir yang disimpan."
           }
         },
         "it" : {
@@ -506253,7 +506253,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Halaman berlabel %2$@ urutan %1$@"
+            "value" : "Halaman berlabel %2$@ yang %1$@"
           }
         },
         "it" : {
@@ -515330,7 +515330,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "File audio %@ berakhir sebelum audionya, sehingga tidak dapat dikonversi."
+            "value" : "File audio %@ berakhir sebelum audionya selesai, sehingga tidak dapat dikonversi."
           }
         },
         "it" : {
@@ -589484,7 +589484,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aktifkan atau Nonaktifkan Markah"
+            "value" : "Tambah atau Buang Markah"
           }
         },
         "it" : {
@@ -598749,7 +598749,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mengetik persentase dari 0 sampai 100, misalnya 47.5."
+            "value" : "Ketik persentase dari 0 sampai 100, misalnya 47.5."
           }
         },
         "it" : {
