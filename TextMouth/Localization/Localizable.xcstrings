@@ -520934,7 +520934,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le fichier n’est pas une transcription %@ que TextMouth peut lire."
+            "value" : "Le fichier n’est pas une transcription %@ que TextMouth puisse lire."
           }
         },
         "he" : {
@@ -528068,7 +528068,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le dossier de la bibliothèque où l’enregistrement est enregistré."
+            "value" : "Le dossier de la bibliothèque où l’enregistrement est sauvegardé."
           }
         },
         "he" : {
@@ -543133,7 +543133,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’enregistrement n’a pas pu être enregistré : %1$@ Il est conservé ; choisissez %2$@ ou %3$@."
+            "value" : "L’enregistrement n’a pas pu être sauvegardé : %1$@ Il est conservé ; choisissez %2$@ ou %3$@."
           }
         },
         "he" : {
@@ -545003,7 +545003,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La sélection est tout l’audio ; rien à rogner."
+            "value" : "La sélection couvre tout l’audio ; rien à rogner."
           }
         },
         "he" : {
@@ -555880,7 +555880,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ces modifications ont besoin de l’audio original, qui n’est plus conservé."
+            "value" : "Ces modifications nécessitent l’audio original, qui n’est plus conservé."
           }
         },
         "he" : {
@@ -570715,7 +570715,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cet enregistrement n’est pas enregistré. %1$@ réessaie, %2$@ le supprime, et %3$@ garde la fenêtre ouverte."
+            "value" : "Cet enregistrement n’est pas sauvegardé. %1$@ réessaie, %2$@ le supprime, et %3$@ garde la fenêtre ouverte."
           }
         },
         "he" : {
@@ -583706,7 +583706,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Réessaie d’enregistrer l’enregistrement comme livre audio."
+            "value" : "Réessaie de sauvegarder l’enregistrement comme livre audio."
           }
         },
         "he" : {
@@ -584516,7 +584516,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rogné à la sélection : %@ conservé."
+            "value" : "Rogné à la sélection ; durée conservée : %@."
           }
         },
         "he" : {
@@ -589828,7 +589828,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annuler le nettoyage remet la transcription d’avant."
+            "value" : "Annuler le nettoyage rétablit la transcription précédente."
           }
         },
         "he" : {
