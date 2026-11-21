@@ -1,0 +1,567 @@
+{
+ "language": "he",
+ "reviews": [
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "ל-%1$@ יש את ברירת המחדל, %2$@",
+     "after": "ברירת המחדל, %2$@, תפוסה על ידי %1$@",
+     "why": "natural: \"to X there is the default\" was unclear about who holds the key and put the prefix ל- on an action name; now \"the default, Y, is taken by X\", as the menus reason says"
+    },
+    {
+     "key": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "english": "%@ isn't an audiobook of tracks, so it has no manifest to edit.",
+     "before": "%@ אינו ספר שמע של רצועות, ולכן אין בו מניפסט לעריכה.",
+     "after": "%@ אינו ספר שמע המורכב מרצועות, ולכן אין בו מניפסט לעריכה.",
+     "why": "natural: \"an audiobook of tracks\" copied word for word; now \"an audiobook made of tracks\""
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "one": "לא ניתן היה לקרוא %@ מתוך %lld פרקים",
+      "other": "לא ניתן היה לקרוא %@ מתוך %lld פרקים",
+      "two": "לא ניתן היה לקרוא %@ מתוך %lld פרקים"
+     },
+     "after": {
+      "one": "לא ניתן היה לקרוא %@ מתוך %lld פרק",
+      "two": "לא ניתן היה לקרוא %@ מתוך %lld פרקים",
+      "other": "לא ניתן היה לקרוא %@ מתוך %lld פרקים"
+     },
+     "why": "grammar: the one form said \"of 1 chapters\" with a plural noun"
+    },
+    {
+     "key": "%@ through the book",
+     "english": "%@ through the book",
+     "before": "%@ לאורך הספר",
+     "after": "%@ מהספר",
+     "why": "meaning: \"along the book\" does not say how far through it; now \"42% of the book\""
+    },
+    {
+     "key": "%@: off while Never collapse is checked",
+     "english": "%@: off while Never collapse is checked",
+     "before": "%@: כבוי כשהאפשרות לעולם לא לכווץ מסומנת",
+     "after": "%@: כבוי כשהאפשרות “לעולם לא לכווץ” מסומנת",
+     "why": "punctuation: the checkbox name goes in quotation marks, as the other Hebrew strings mark a control"
+    },
+    {
+     "key": "%lld WPM",
+     "english": {
+      "one": "%lld WPM",
+      "other": "%lld WPM"
+     },
+     "before": {
+      "one": "%lld מילים/דקה",
+      "other": "%lld מילים/דקה",
+      "two": "%lld מילים/דקה"
+     },
+     "after": {
+      "one": "%lld מילה/דקה",
+      "two": "%lld מילים/דקה",
+      "other": "%lld מילים/דקה"
+     },
+     "why": "grammar: the one form had the plural noun"
+    },
+    {
+     "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "before": "מוסיף את העמוד, כגון עמוד 12 מתוך 300, לסיכומים של “איפה אני?”, עבור ספרים של יותר מעמוד אחד.",
+     "after": "מוסיף את העמוד, כגון עמוד 12 מתוך 300, לסיכומים של “איפה אני?”, בספרים שיש בהם יותר מעמוד אחד.",
+     "why": "natural: \"books of more than one page\" copied the English; now \"books that have more than one page\""
+    },
+    {
+     "key": "Book title",
+     "english": "Book title",
+     "before": "שם היצירה של הספר",
+     "after": "שם הספר",
+     "why": "natural: \"the work title of the book\" doubled the noun; a book title is simply שם הספר"
+    },
+    {
+     "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "פרק %1$@ בספר הזה %2$@, ו-TextMouth לא יכול לייצא אותו בבטחה. בחר “ערוך טקסט”, שטח את הקינון ושמור; ואז ייצא שוב.",
+     "after": "פרק %1$@ בספר הזה %2$@, ו-TextMouth לא יכול לייצא אותו בבטחה. בחר “ערוך טקסט”, צמצם את הקינון ושמור; ואז ייצא שוב.",
+     "why": "term: one wording for the same advice as the Edit Text refusals (צמצם את הקינון); שטח also reads as the noun \"area\""
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "בוחר את היחידה שבה נגן ולחצני הדילוג מתקדמים.",
+     "after": "בוחר את היחידה שבה “נגן” ולחצני הדילוג מתקדמים.",
+     "why": "punctuation: without quotation marks נגן reads as the noun \"player\"; it is the Play button"
+    },
+    {
+     "key": "Could not save: the book's title is empty.",
+     "english": "Could not save: the book's title is empty.",
+     "before": "לא ניתן היה לשמור: שם היצירה של הספר ריק.",
+     "after": "לא ניתן היה לשמור: שם הספר ריק.",
+     "why": "natural: same as Book title, the doubled \"work title of the book\""
+    },
+    {
+     "key": "DAISY file not found at: %@",
+     "english": "DAISY file not found at: %@",
+     "before": "קובץ DAISY לא נמצא ב: %@",
+     "after": "קובץ DAISY לא נמצא בנתיב: %@",
+     "why": "grammar: the prefix ב- cannot stand alone before a colon; now \"at the path:\""
+    },
+    {
+     "key": "DOCX file not found at: %@",
+     "english": "DOCX file not found at: %@",
+     "before": "קובץ DOCX לא נמצא ב: %@",
+     "after": "קובץ DOCX לא נמצא בנתיב: %@",
+     "why": "grammar: the prefix ב- cannot stand alone before a colon; now \"at the path:\""
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "השם וההתחלה של כל כותרת, כגיליון CUE שמצביע על השמע כפי שהאפשרות “שמע” מייצאת אותו.",
+     "after": "השם וההתחלה של כל כותרת, כקובץ CUE שמצביע על השמע כפי שהאפשרות “שמע” מייצאת אותו.",
+     "why": "term: a cue sheet is קובץ CUE in the other Hebrew strings; גיליון is the app word for a sheet window"
+    },
+    {
+     "key": "End of book behavior for this book",
+     "english": "End of book behavior for this book",
+     "before": "התנהגות בסוף הספר",
+     "after": "התנהגות בסוף ספר זה",
+     "why": "meaning: \"for this book\" was lost, so the book menu sounded like the global setting"
+    },
+    {
+     "key": "Exported %@ to %@.",
+     "english": "Exported %1$@ to %2$@.",
+     "before": "יוצאו %1$@ אל %2$@.",
+     "after": "הייצוא אל %2$@ הסתיים: %1$@.",
+     "why": "grammar: the plural verb יוצאו did not agree with a count of one (פריט אחד); now \"the export to X ended: 3 items\""
+    },
+    {
+     "key": "Exports the checked items once the braille table just chosen is checked.",
+     "english": "Exports the checked items once the braille table just chosen is checked.",
+     "before": "מייצא את הפריטים המסומנים אחרי שטבלת הברייל שנבחרה זה עתה נבדקת.",
+     "after": "מייצא את הפריטים המסומנים לאחר שטבלת הברייל שנבחרה זה עתה תיבדק.",
+     "why": "grammar: \"after the table is being checked\" in the present; now future, as the check comes first"
+    },
+    {
+     "key": "Goes back to where the last jump began.",
+     "english": "Goes back to where the last jump began.",
+     "before": "חוזר למקום שבו התחיל הדילוג האחרון.",
+     "after": "חוזר למקום שבו התחילה הקפיצה האחרונה.",
+     "why": "term: the Jump button is קפוץ and a jump is קפיצה; דלג is the app word for skipping sections"
+    },
+    {
+     "key": "Grave Accent",
+     "english": "Grave Accent",
+     "before": "מבטא גרב",
+     "after": "גרש הפוך",
+     "why": "meaning: מבטא is a spoken accent, not a mark; the backtick key is called גרש הפוך"
+    },
+    {
+     "key": "Hides jump to page controls",
+     "english": "Hides jump to page controls",
+     "before": "מסתיר את פקדי הדילוג לעמוד.",
+     "after": "מסתיר את פקדי הקפיצה לעמוד.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "Hides jump to percent controls",
+     "english": "Hides jump to percent controls",
+     "before": "מסתיר את פקדי הדילוג לאחוז.",
+     "after": "מסתיר את פקדי הקפיצה לאחוז.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "Hides jump to time controls",
+     "english": "Hides jump to time controls",
+     "before": "מסתיר את פקדי הדילוג לזמן.",
+     "after": "מסתיר את פקדי הקפיצה לזמן.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them.",
+     "english": "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them.",
+     "before": "היא מפרטת את רצועות הספר לפי סדר הניגון, כל אחת עם שם הכותרת שלה. ניתן לשנות את הסדר, לשנות שמות, לקבץ אותן תחת כותרות משלך ולקבוע את ההפסקות ביניהן.",
+     "after": "הוא מפרט את רצועות הספר לפי סדר הניגון, כל אחת עם שם הכותרת שלה. ניתן לשנות את הסדר, לשנות שמות, לקבץ אותן תחת כותרות משלך ולקבוע את ההפסקות ביניהן.",
+     "why": "grammar: \"It\" is the manifest (מניפסט, masculine), not a feminine subject"
+    },
+    {
+     "key": "Jump to page",
+     "english": "Jump to page",
+     "before": "דלג לעמוד",
+     "after": "קפוץ לעמוד",
+     "why": "term: the Jump button is קפוץ and a jump is קפיצה; דלג is the app word for skipping sections"
+    },
+    {
+     "key": "Jump to percent",
+     "english": "Jump to percent",
+     "before": "דלג לאחוז",
+     "after": "קפוץ לאחוז",
+     "why": "term: the Jump button is קפוץ and a jump is קפיצה; דלג is the app word for skipping sections"
+    },
+    {
+     "key": "Jump to time",
+     "english": "Jump to time",
+     "before": "דלג לזמן",
+     "after": "קפוץ לזמן",
+     "why": "term: the Jump button is קפוץ and a jump is קפיצה; דלג is the app word for skipping sections"
+    },
+    {
+     "key": "Last try: %@",
+     "english": "Last try: %@",
+     "before": "ניסיון אחרון: %@",
+     "after": "הניסיון האחרון: %@",
+     "why": "meaning: without the article ניסיון אחרון reads as \"final attempt\"; this is the latest trial"
+    },
+    {
+     "key": "Next paragraph",
+     "english": "Next paragraph",
+     "before": "פסקה הבאה",
+     "after": "לפסקה הבאה",
+     "why": "grammar: פסקה הבאה mixed an indefinite noun with a definite adjective; הפסקה would read as \"the pause\", so now \"to the next paragraph\""
+    },
+    {
+     "key": "No next book in the reading list.",
+     "english": "No next book in the reading list.",
+     "before": "אין ספר הבא ברשימת הקריאה.",
+     "after": "אין ספר נוסף ברשימת הקריאה.",
+     "why": "grammar: indefinite noun with a definite adjective (ספר הבא); now \"no further book\""
+    },
+    {
+     "key": "No next book in the reading list: every book below this one is finished.",
+     "english": "No next book in the reading list: every book below this one is finished.",
+     "before": "אין ספר הבא ברשימת הקריאה: כל הספרים שמתחת לזה הושלמו.",
+     "after": "אין ספר נוסף ברשימת הקריאה: כל הספרים שמתחת לזה הושלמו.",
+     "why": "grammar: indefinite noun with a definite adjective (ספר הבא); now \"no further book\""
+    },
+    {
+     "key": "No next bookmark.",
+     "english": "No next bookmark.",
+     "before": "אין סימנייה הבאה.",
+     "after": "אין עוד סימניות.",
+     "why": "grammar: indefinite noun with a definite adjective (אין X הבא); now \"no more Xs\", as No more books in folder says"
+    },
+    {
+     "key": "No next heading.",
+     "english": "No next heading.",
+     "before": "אין כותרת הבאה.",
+     "after": "אין עוד כותרות.",
+     "why": "grammar: indefinite noun with a definite adjective (אין X הבא); now \"no more Xs\", as No more books in folder says"
+    },
+    {
+     "key": "No next page.",
+     "english": "No next page.",
+     "before": "אין עמוד הבא.",
+     "after": "אין עוד עמודים.",
+     "why": "grammar: indefinite noun with a definite adjective (אין X הבא); now \"no more Xs\", as No more books in folder says"
+    },
+    {
+     "key": "No next paragraph.",
+     "english": "No next paragraph.",
+     "before": "אין פסקה הבאה.",
+     "after": "אין עוד פסקאות.",
+     "why": "grammar: indefinite noun with a definite adjective (אין X הבא); now \"no more Xs\", as No more books in folder says"
+    },
+    {
+     "key": "No next sentence.",
+     "english": "No next sentence.",
+     "before": "אין משפט הבא.",
+     "after": "אין עוד משפטים.",
+     "why": "grammar: indefinite noun with a definite adjective (אין X הבא); now \"no more Xs\", as No more books in folder says"
+    },
+    {
+     "key": "No next subheading.",
+     "english": "No next subheading.",
+     "before": "אין כותרת משנה הבאה.",
+     "after": "אין עוד כותרות משנה.",
+     "why": "grammar: indefinite noun with a definite adjective (אין X הבא); now \"no more Xs\", as No more books in folder says"
+    },
+    {
+     "key": "Number Sign",
+     "english": "Number Sign",
+     "before": "סימן מספר",
+     "after": "סולמית",
+     "why": "term: the # key is called סולמית in Hebrew; סימן מספר is a word-for-word copy"
+    },
+    {
+     "key": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
+     "english": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
+     "before": "רק ספר שמציג בבירור English Braille, American Edition משתנה בעת ההוספה. פרטי הספר אומר שהקוד נוחש, ואפשר לבחור בו קוד אחר.",
+     "after": "רק ספר שמציג בבירור English Braille, American Edition משתנה בעת ההוספה. ב“פרטי הספר” מצוין שהקוד נוחש, ואפשר לבחור בו קוד אחר.",
+     "why": "grammar: the plural name פרטי הספר took a singular verb (אומר); now \"Book Information states\""
+    },
+    {
+     "key": "Opens jump to page controls",
+     "english": "Opens jump to page controls",
+     "before": "פותח את פקדי הדילוג לעמוד.",
+     "after": "פותח את פקדי הקפיצה לעמוד.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "Opens jump to percent controls",
+     "english": "Opens jump to percent controls",
+     "before": "פותח את פקדי הדילוג לאחוז.",
+     "after": "פותח את פקדי הקפיצה לאחוז.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "Opens jump to time controls",
+     "english": "Opens jump to time controls",
+     "before": "פותח את פקדי הדילוג לזמן.",
+     "after": "פותח את פקדי הקפיצה לזמן.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "PDF file not found at: %@",
+     "english": "PDF file not found at: %@",
+     "before": "קובץ PDF לא נמצא ב: %@",
+     "after": "קובץ PDF לא נמצא בנתיב: %@",
+     "why": "grammar: the prefix ב- cannot stand alone before a colon; now \"at the path:\""
+    },
+    {
+     "key": "Percent through the book",
+     "english": "Percent through the book",
+     "before": "אחוז לאורך הספר",
+     "after": "אחוז מהספר",
+     "why": "meaning: \"percent along the book\" does not say how far through it; now \"percent of the book\""
+    },
+    {
+     "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio.",
+     "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in macOS's audio.",
+     "before": "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן השמעת השמע, תקלה בשמע של macOS.",
+     "after": "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן ניגון השמע, תקלה בשמע של macOS.",
+     "why": "natural: השמעת השמע (\"the sounding of the sound\") is a tautology; now ניגון השמע"
+    },
+    {
+     "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "before": "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן השמעת השמע, תקלה בשמע של המערכת.",
+     "after": "הניגון נעצר כי הזיכרון של TextMouth גדל ל-%@ GB בזמן ניגון השמע, תקלה בשמע של המערכת.",
+     "why": "natural: השמעת השמע (\"the sounding of the sound\") is a tautology; now ניגון השמע"
+    },
+    {
+     "key": "Previous paragraph",
+     "english": "Previous paragraph",
+     "before": "פסקה קודמת",
+     "after": "לפסקה הקודמת",
+     "why": "natural: matches Next paragraph (לפסקה הבאה), so the pair of announcements reads alike"
+    },
+    {
+     "key": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "english": "Remove them: an audiobook of tracks is arranged with tracks.",
+     "before": "הסר אותם: ספר שמע של רצועות מסודר באמצעות רצועות.",
+     "after": "הסר אותם: ספר שמע המורכב מרצועות מסודר באמצעות רצועות.",
+     "why": "natural: \"an audiobook of tracks\" copied word for word; now \"an audiobook made of tracks\""
+    },
+    {
+     "key": "Reset %@ to Default",
+     "english": "Reset %@ to Default",
+     "before": "אפס את %@ לברירת המחדל",
+     "after": "שחזר את ברירת המחדל של %@",
+     "why": "term: the button it labels reads שחזר ברירת מחדל and its hint says משחזר; the label said אפס"
+    },
+    {
+     "key": "Revert to Original…",
+     "english": "Revert to Original…",
+     "before": "חזור למקור…",
+     "after": "שחזר למקור…",
+     "why": "term: glossary Revert = שחזר, and the alert this command opens asks לשחזר את השמע המקורי?"
+    },
+    {
+     "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "before": "מציג את העמוד הנקרא, כגון עמוד 12 מתוך 300, לצד האחוז, עבור ספרים של יותר מעמוד אחד.",
+     "after": "מציג את העמוד הנקרא, כגון עמוד 12 מתוך 300, לצד האחוז, בספרים שיש בהם יותר מעמוד אחד.",
+     "why": "natural: \"books of more than one page\" copied the English; now \"books that have more than one page\""
+    },
+    {
+     "key": "Speech paused: the voice did not start. Press Play to try again.",
+     "english": "Speech paused: the voice did not start. Press Play to try again.",
+     "before": "הדיבור הושהה: הקול לא התחיל. לחץ על נגן כדי לנסות שוב.",
+     "after": "הדיבור הושהה: הקול לא התחיל. לחץ על “נגן” כדי לנסות שוב.",
+     "why": "punctuation: without quotation marks נגן reads as the noun \"player\"; it is the Play button, quoted as elsewhere"
+    },
+    {
+     "key": "Speed: %lld WPM",
+     "english": {
+      "one": "Speed: %lld WPM",
+      "other": "Speed: %lld WPM"
+     },
+     "before": {
+      "one": "מהירות: %lld מילים/דקה",
+      "other": "מהירות: %lld מילים/דקה",
+      "two": "מהירות: %lld מילים/דקה"
+     },
+     "after": {
+      "one": "מהירות: %lld מילה/דקה",
+      "two": "מהירות: %lld מילים/דקה",
+      "other": "מהירות: %lld מילים/דקה"
+     },
+     "why": "grammar: the one form had the plural noun"
+    },
+    {
+     "key": "Switches to jump to page controls",
+     "english": "Switches to jump to page controls",
+     "before": "עובר לפקדי הדילוג לעמוד.",
+     "after": "עובר לפקדי הקפיצה לעמוד.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "Switches to jump to percent controls",
+     "english": "Switches to jump to percent controls",
+     "before": "עובר לפקדי הדילוג לאחוז.",
+     "after": "עובר לפקדי הקפיצה לאחוז.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "Switches to jump to time controls",
+     "english": "Switches to jump to time controls",
+     "before": "עובר לפקדי הדילוג לזמן.",
+     "after": "עובר לפקדי הקפיצה לזמן.",
+     "why": "term: \"jump to\" panels are קפיצה, as the Jump button (קפוץ) and the announcements say; דילוג is the app word for skipping sections"
+    },
+    {
+     "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "הטקסט לא עודכן: פרק %1$@ של הטקסט הערוך של %2$@ %3$@, ש-TextMouth לא יכול לקרוא בבטחה. ישר אותו ושמור שוב, או בטל את השינוי; הספר שומר על הטקסט הישן שלו עד אז.",
+     "after": "הטקסט לא עודכן: פרק %1$@ של הטקסט הערוך של %2$@ %3$@, ש-TextMouth לא יכול לקרוא בבטחה. צמצם את הקינון ושמור שוב, או בטל את השינוי; הספר שומר על הטקסט הישן שלו עד אז.",
+     "why": "meaning: ישר (\"straighten\") does not say what to do with nested markup; now \"reduce the nesting\""
+    },
+    {
+     "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "הטקסט לא עודכן: הטקסט הערוך של %1$@ %2$@, ש-TextMouth לא יכול לקרוא בבטחה. ישר אותו ושמור שוב, או בטל את השינוי; הספר שומר על הטקסט הישן שלו עד אז.",
+     "after": "הטקסט לא עודכן: הטקסט הערוך של %1$@ %2$@, ש-TextMouth לא יכול לקרוא בבטחה. צמצם את הקינון ושמור שוב, או בטל את השינוי; הספר שומר על הטקסט הישן שלו עד אז.",
+     "why": "meaning: ישר (\"straighten\") does not say what to do with nested markup; now \"reduce the nesting\""
+    },
+    {
+     "key": "TextMouth closed while opening %@, so it wasn't reopened.",
+     "english": "TextMouth closed while opening %@, so it wasn't reopened.",
+     "before": "TextMouth נסגר בזמן פתיחת %@, ולכן הוא לא נפתח מחדש.",
+     "after": "TextMouth נסגר בזמן פתיחת %@, ולכן הספר לא נפתח מחדש.",
+     "why": "meaning: הוא could be TextMouth, saying the app was not reopened; it is the book"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth קורא מעכשיו קבצי BRF ו-BRL שתוסיף עם התווים האלה, ומזהה תבניות ברייל של Unicode בעצמו. חלון הייצוא מתחיל BRF איתם. ספר שומר את תווי הייבוא שלו, ופרטי הספר יכול לשנות אותם.",
+     "after": "TextMouth קורא מעכשיו קבצי BRF ו-BRL שתוסיף עם התווים האלה, ומזהה תבניות ברייל של Unicode בעצמו. חלון הייצוא משתמש בהם כברירת מחדל עבור BRF. ספר שומר את תווי הייבוא שלו, ואפשר לשנות אותם ב“פרטי הספר”.",
+     "why": "grammar: the plural name פרטי הספר took a singular verb; and \"the Export dialog starts a BRF with them\" copied the English; now \"uses them by default for a BRF\""
+    },
+    {
+     "key": "TextMouth stopped %@ because %@, and won't try again until TextMouth is closed and opened again.",
+     "english": "TextMouth stopped %1$@ because %2$@, and won't try again until TextMouth is closed and opened again.",
+     "before": "TextMouth עצר את %1$@ כי %2$@, ולא ינסה שוב עד שייסגר ויפתח מחדש.",
+     "after": "TextMouth עצר את %1$@ כי %2$@, ולא ינסה שוב עד שייסגר וייפתח מחדש.",
+     "why": "grammar: ויפתח is the active \"will open (something)\"; TextMouth being opened again is וייפתח"
+    },
+    {
+     "key": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "english": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "before": "TextMouth עצר את %@ קודם כי זה לקח יותר מדי זמן, ולא ינסה שוב עד שייסגר ויפתח מחדש.",
+     "after": "TextMouth עצר את %@ קודם כי זה לקח יותר מדי זמן, ולא ינסה שוב עד שייסגר וייפתח מחדש.",
+     "why": "grammar: ויפתח is the active \"will open (something)\"; TextMouth being opened again is וייפתח"
+    },
+    {
+     "key": "The EPUB file was not found at: %@",
+     "english": "The EPUB file was not found at: %@",
+     "before": "קובץ ה-EPUB לא נמצא ב: %@",
+     "after": "קובץ ה-EPUB לא נמצא בנתיב: %@",
+     "why": "grammar: the prefix ב- cannot stand alone before a colon; now \"at the path:\""
+    },
+    {
+     "key": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "english": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "before": "השמע של הספר כפי שהיה לפני העריכה הראשונה, ש-TextMouth שומר כל עוד ההגדרה שמע מקורי פועלת.",
+     "after": "השמע של הספר כפי שהיה לפני העריכה הראשונה, ש-TextMouth שומר כל עוד ההגדרה “שמע מקורי” פועלת.",
+     "why": "punctuation: the setting name goes in quotation marks; unquoted, \"the setting original audio is on\" did not parse"
+    },
+    {
+     "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "before": "מנוע הדיבור סירב להקריא את הטקסט כאן, פעמיים, ולכן הדיבור נעצר. נגן מנסה שוב מאותו מקום.",
+     "after": "מנוע הדיבור סירב להקריא את הטקסט כאן, פעמיים, ולכן הדיבור נעצר. “נגן” מנסה שוב מאותו מקום.",
+     "why": "punctuation: without quotation marks נגן reads as the noun \"player\"; it is the Play button, quoted as elsewhere"
+    },
+    {
+     "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "הטקסט של הספר הזה %@, ו-TextMouth לא יכול לייצא אותו בבטחה. בחר ערוך טקסט, שטח את הקינון ושמור; ואז ייצא שוב.",
+     "after": "הטקסט של הספר הזה %@, ו-TextMouth לא יכול לייצא אותו בבטחה. בחר “ערוך טקסט”, צמצם את הקינון ושמור; ואז ייצא שוב.",
+     "why": "term: one wording for the nesting advice (צמצם את הקינון), and the command name Edit Text quoted as in the chapter version"
+    },
+    {
+     "key": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "english": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "before": "בספר Kindle זה אין טקסט זורם, כמו בקומיקס או בעותק מודפס משוחזר, ולכן TextMouth אינו יכול לקרוא אותו.",
+     "after": "בספר Kindle זה אין טקסט זורם, כמו בקומיקס או בשכפול של ספר מודפס, ולכן TextMouth אינו יכול לקרוא אותו.",
+     "why": "meaning: עותק מודפס משוחזר is \"a restored printed copy\"; a print replica is a copy of the printed pages"
+    },
+    {
+     "key": "Type a title, then save again.",
+     "english": "Type a title, then save again.",
+     "before": "הקלד שם יצירה, ואז שמור שוב.",
+     "after": "הקלד שם לספר, ואז שמור שוב.",
+     "why": "natural: follows \"the book title is empty\" (now שם הספר); \"type a work title\" read oddly"
+    },
+    {
+     "key": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "english": "When on, a braille file read as contracted Unified English Braille that is clearly English Braille, American Edition is read as that instead.",
+     "before": "כשהאפשרות פועלת, קובץ ברייל שנקרא כ-Unified English Braille מקוצר ושברור שהוא English Braille, American Edition נקרא כזה במקום.",
+     "after": "כשהאפשרות פועלת, קובץ ברייל שנקרא כ-Unified English Braille מקוצר ושברור שהוא English Braille, American Edition נקרא כזה במקום זאת.",
+     "why": "grammar: במקום (\"instead of\") needs its object; \"instead\" alone is במקום זאת"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "עם “%1$@”, נגן על ספר שהושלם אומר שהוא הושלם; עם “%2$@”, נגן מתחיל אותו מחדש מההתחלה.",
+     "after": "כשנבחר “%1$@”, “נגן” על ספר שהושלם אומר שהוא הושלם; כשנבחר “%2$@”, “נגן” מתחיל אותו מחדש מההתחלה.",
+     "why": "punctuation: נגן unquoted read as \"player\"; and \"with X\" copied the English, now \"when X is chosen\""
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "הוא %@, ש-TextMouth לא יכול לקרוא בבטחה. ישר אותו ושמור שוב, או בטל את השינוי, והספר ייפתח.",
+     "after": "הוא %@, ש-TextMouth לא יכול לקרוא בבטחה. צמצם את הקינון ושמור שוב, או בטל את השינוי, והספר ייפתח.",
+     "why": "meaning: ישר (\"straighten\") does not say what to do with nested markup; now \"reduce the nesting\""
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "הוא %@, ש-TextMouth לא יכול לקרוא בבטחה. ישר אותו ושמור שוב, או בטל את השינוי, והטקסט יוצג.",
+     "after": "הוא %@, ש-TextMouth לא יכול לקרוא בבטחה. צמצם את הקינון ושמור שוב, או בטל את השינוי, והטקסט יוצג.",
+     "why": "meaning: ישר (\"straighten\") does not say what to do with nested markup; now \"reduce the nesting\""
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "הפרק %1$@ שלו %2$@, ש-TextMouth לא יכול לקרוא בבטחה. ישר אותו ושמור שוב, או בטל את השינוי, והספר ייפתח.",
+     "after": "הפרק %1$@ שלו %2$@, ש-TextMouth לא יכול לקרוא בבטחה. צמצם את הקינון ושמור שוב, או בטל את השינוי, והספר ייפתח.",
+     "why": "meaning: ישר (\"straighten\") does not say what to do with nested markup; now \"reduce the nesting\""
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "הפרק %1$@ שלו %2$@, ש-TextMouth לא יכול לקרוא בבטחה. ישר אותו ושמור שוב, או בטל את השינוי, והטקסט יוצג.",
+     "after": "הפרק %1$@ שלו %2$@, ש-TextMouth לא יכול לקרוא בבטחה. צמצם את הקינון ושמור שוב, או בטל את השינוי, והטקסט יוצג.",
+     "why": "meaning: ישר (\"straighten\") does not say what to do with nested markup; now \"reduce the nesting\""
+    },
+    {
+     "key": "the edited transcript can't be laid over the audiobook's audio.",
+     "english": "the edited transcript can't be laid over the audiobook's audio.",
+     "before": "לא ניתן להניח את התמליל הערוך על השמע של ספר השמע.",
+     "after": "לא ניתן להתאים את התמליל הערוך לשמע של ספר השמע.",
+     "why": "natural: \"lay the transcript on the audio\" copied the English idiom; now \"match the transcript to the audio\""
+    }
+   ]
+  }
+ ]
+}
