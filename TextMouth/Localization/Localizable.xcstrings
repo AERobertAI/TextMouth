@@ -151035,7 +151035,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sceglie nessun controllo per libro, un selettore condiviso o un menu con selettori separati per avanti e indietro."
+            "value" : "Sceglie tra nessun controllo per libro, un selettore condiviso o un menu con selettori separati per avanti e indietro."
           }
         },
         "ja" : {
@@ -189385,7 +189385,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Non riavvolgere se in pausa da meno di questo tempo."
+            "value" : "Non riavvolge se la pausa dura meno di questo tempo."
           }
         },
         "ja" : {
@@ -425759,7 +425759,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salvata %@."
+            "value" : "Salvata la vista %@."
           }
         },
         "ja" : {
@@ -430896,7 +430896,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cercati %@ su %@…"
+            "value" : "Esaminati %@ su %@…"
           }
         },
         "ja" : {
@@ -444642,7 +444642,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mostra la prima corrispondenza (%lld) su %@ in %@"
+                  "value" : "Mostra la prima corrispondenza su %2$@ in %3$@"
                 }
               },
               "other" : {
@@ -445532,7 +445532,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mostrata la prima corrispondenza (%lld); affina la ricerca"
+                  "value" : "Mostrata la prima corrispondenza; affina la ricerca"
                 }
               },
               "other" : {
@@ -505939,19 +505939,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Di %2$lld di essi vengono conservati: %1$@."
+                  "value" : "Per %2$lld di essi vengono conservati: %1$@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Di %2$lld di essi vengono conservati: %1$@."
+                  "value" : "Per %2$lld di essi vengono conservati: %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Di %2$lld di essi vengono conservati: %1$@."
+                  "value" : "Per %2$lld di essi vengono conservati: %1$@."
                 }
               }
             }
@@ -619602,7 +619602,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se disattivata, rimuovere un libro significa subito %@."
+            "value" : "Se disattivata, quando rimuovi un libro TextMouth provvede subito a %@."
           }
         },
         "ja" : {
@@ -636040,7 +636040,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "in cima alla libreria"
+            "value" : "al primo livello della libreria"
           }
         },
         "ja" : {
@@ -669944,7 +669944,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "la copia in questa cartella"
+            "value" : "quella in questa cartella"
           }
         },
         "ja" : {
@@ -671862,7 +671862,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "la libreria in uso"
+            "value" : "quella in uso"
           }
         },
         "ja" : {
@@ -672410,7 +672410,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’altra copia"
+            "value" : "quell’altra copia"
           }
         },
         "ja" : {
