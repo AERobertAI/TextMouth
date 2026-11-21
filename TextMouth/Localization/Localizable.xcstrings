@@ -59985,7 +59985,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld edit diurungkan. Ulangi mengembalikannya sampai Anda melakukan edit lain."
+                  "value" : "%lld edit diurungkan. Pilih Ulangi untuk mengembalikannya sebelum Anda melakukan edit lain."
                 }
               }
             }
@@ -206409,7 +206409,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlalu"
+            "value" : "Waktu berlalu"
           }
         },
         "it" : {
@@ -206546,7 +206546,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Berlalu: %@"
+            "value" : "Waktu berlalu: %@"
           }
         },
         "it" : {
