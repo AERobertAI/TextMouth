@@ -1,0 +1,248 @@
+{
+  "catalogSHA256": "7bd1af4f2d69c7f31916527d2f68d514151483af5438c8be2a24f20ee0f09e2e",
+  "ids": [
+    "fixture.breaks",
+    "fixture.englishOnly",
+    "fixture.noNote",
+    "fixture.number",
+    "fixture.object",
+    "fixture.partial",
+    "fixture.pending",
+    "fixture.percent",
+    "fixture.percentOnly",
+    "fixture.plain",
+    "fixture.reorder",
+    "fixture.repeat",
+    "fixture.unicode"
+  ],
+  "languages": {
+    "ar": {
+      "fixture.breaks": {
+        "text": "السطر الأول\nالسطر الثاني\tجدولة"
+      },
+      "fixture.englishOnly": null,
+      "fixture.noNote": null,
+      "fixture.number": {
+        "text": "صفحة %lld"
+      },
+      "fixture.object": {
+        "text": "فتح %@"
+      },
+      "fixture.partial": null,
+      "fixture.pending": {
+        "text": "نص معلق"
+      },
+      "fixture.percent": {
+        "text": "اكتمل %lld%%"
+      },
+      "fixture.percentOnly": {
+        "text": "متأكد 100%%"
+      },
+      "fixture.plain": {
+        "text": "مرحبا"
+      },
+      "fixture.reorder": {
+        "text": "قرأ %1$@ %2$lld صفحة"
+      },
+      "fixture.repeat": {
+        "text": "%2$@ - %1$@"
+      },
+      "fixture.unicode": {
+        "text": "مقهى ☕ — «اقتباس»"
+      }
+    },
+    "en": {
+      "fixture.breaks": {
+        "text": "First line\nSecond line\tTabbed"
+      },
+      "fixture.englishOnly": {
+        "text": "Only English"
+      },
+      "fixture.noNote": {
+        "text": "A line with no note"
+      },
+      "fixture.number": {
+        "text": "Page %lld"
+      },
+      "fixture.object": {
+        "text": "Open %@"
+      },
+      "fixture.partial": {
+        "text": "Partly translated"
+      },
+      "fixture.pending": {
+        "text": "Pending text"
+      },
+      "fixture.percent": {
+        "text": "%lld%% done"
+      },
+      "fixture.percentOnly": {
+        "text": "100%% sure"
+      },
+      "fixture.plain": {
+        "text": "Hello"
+      },
+      "fixture.reorder": {
+        "text": "%@ read %lld pages"
+      },
+      "fixture.repeat": {
+        "text": "%@: %@"
+      },
+      "fixture.unicode": {
+        "text": "Café ☕ — “quoted” 日本語"
+      }
+    },
+    "es": {
+      "fixture.breaks": {
+        "text": "Primera línea\nSegunda línea\tTabulada"
+      },
+      "fixture.englishOnly": null,
+      "fixture.noNote": {
+        "text": "Una línea sin nota"
+      },
+      "fixture.number": {
+        "text": "Página %lld"
+      },
+      "fixture.object": {
+        "text": "Abrir %@"
+      },
+      "fixture.partial": {
+        "text": "Traducido en parte"
+      },
+      "fixture.pending": null,
+      "fixture.percent": {
+        "text": "%lld %% hecho"
+      },
+      "fixture.percentOnly": {
+        "text": "100%% seguro"
+      },
+      "fixture.plain": {
+        "text": "Hola"
+      },
+      "fixture.reorder": {
+        "text": "%2$lld páginas leídas por %1$@"
+      },
+      "fixture.repeat": {
+        "text": "%2$@ (%1$@)"
+      },
+      "fixture.unicode": {
+        "text": "Café ☕ — «citado» 日本語"
+      }
+    },
+    "ja": {
+      "fixture.breaks": {
+        "text": "1行目\n2行目\tタブ"
+      },
+      "fixture.englishOnly": null,
+      "fixture.noNote": null,
+      "fixture.number": {
+        "text": "%lldページ"
+      },
+      "fixture.object": {
+        "text": "%@を開く"
+      },
+      "fixture.partial": null,
+      "fixture.pending": {
+        "text": "保留中のテキスト"
+      },
+      "fixture.percent": {
+        "text": "%lld%%完了"
+      },
+      "fixture.percentOnly": {
+        "text": "100%%確実"
+      },
+      "fixture.plain": {
+        "text": "こんにちは"
+      },
+      "fixture.reorder": {
+        "text": "%1$@は%2$lldページ読みました"
+      },
+      "fixture.repeat": {
+        "text": "%2$@（%1$@）"
+      },
+      "fixture.unicode": {
+        "text": "カフェ ☕ —「引用」"
+      }
+    },
+    "ru": {
+      "fixture.breaks": {
+        "text": "Первая строка\nВторая строка\tТабуляция"
+      },
+      "fixture.englishOnly": null,
+      "fixture.noNote": null,
+      "fixture.number": {
+        "text": "Страница %lld"
+      },
+      "fixture.object": {
+        "text": "Открыть %@"
+      },
+      "fixture.partial": {
+        "text": "Переведено частично"
+      },
+      "fixture.pending": {
+        "text": "Текст в ожидании"
+      },
+      "fixture.percent": {
+        "text": "Готово: %lld%%"
+      },
+      "fixture.percentOnly": {
+        "text": "100%% уверен"
+      },
+      "fixture.plain": {
+        "text": "Привет"
+      },
+      "fixture.reorder": {
+        "text": "%@ прочитал(а) страниц: %lld"
+      },
+      "fixture.repeat": {
+        "text": "%@: %@"
+      },
+      "fixture.unicode": {
+        "text": "Кафе ☕ — «цитата»"
+      }
+    }
+  },
+  "notes": {
+    "fixture.breaks": "Holds a line feed and a tab, the only control characters a line may hold.",
+    "fixture.englishOnly": "No translation in any language: every language falls back to English.",
+    "fixture.noNote": "",
+    "fixture.number": "%lld is a page number.",
+    "fixture.object": "%@ is a book's title.",
+    "fixture.partial": "Translated into Spanish and Russian only: Arabic and Japanese fall back to English.",
+    "fixture.pending": "Spanish is in state new (Xcode does not compile it), so Spanish falls back to English.",
+    "fixture.percent": "%% is a literal percent sign.",
+    "fixture.percentOnly": "A percent sign and no other specifier.",
+    "fixture.plain": "A greeting. Plain text in every language.",
+    "fixture.reorder": "%@ is a reader's name; %lld is a count of pages. Some languages put the count first.",
+    "fixture.repeat": "One argument used twice, as a positional specifier allows.",
+    "fixture.unicode": "Non-ASCII text: accents, a dash, curly quotes, an emoji, and Japanese."
+  },
+  "pluralCategories": {
+    "ar": [
+      "zero",
+      "one",
+      "two",
+      "few",
+      "many",
+      "other"
+    ],
+    "en": [
+      "one",
+      "other"
+    ],
+    "es": [
+      "one",
+      "many",
+      "other"
+    ],
+    "ja": [
+      "other"
+    ],
+    "ru": [
+      "one",
+      "few",
+      "many",
+      "other"
+    ]
+  }
+}
