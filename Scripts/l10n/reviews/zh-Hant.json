@@ -2041,9 +2041,30 @@
    "areas": [
     "the whole app: words carried across the three parts"
    ],
-   "reviewer": "Claude Opus 5.5",
+   "reviewer": "Claude Opus 5.5 and Claude Sonnet 5.5",
    "date": "2026-11-21",
    "fixes": [
+    {
+     "key": "Choose the language in Settings, Playback, Transcription.",
+     "english": "Choose the language in Settings, Playback, Transcription.",
+     "before": "請在「設定」>「播放控制」>「語音轉文字」中選擇語言。",
+     "after": "請在「設定」的「播放控制」中，於「語音轉文字」選擇語言。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth 未獲允許發送通知。請在「系統設定」>「通知」>「TextMouth」中開啟。",
+     "after": "TextMouth 未獲允許發送通知。請在「系統設定」的「通知」中，於「TextMouth」開啟。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "english": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "before": "TextMouth 未獲允許使用麥克風。請在「系統設定」>「隱私權與安全性」>「麥克風」中開啟。",
+     "after": "TextMouth 未獲允許使用麥克風。請在「系統設定」的「隱私權與安全性」中，於「麥克風」開啟。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
     {
      "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
      "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
