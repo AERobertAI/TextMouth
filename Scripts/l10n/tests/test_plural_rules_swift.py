@@ -39,11 +39,14 @@ class PluralRulesSwiftTests(unittest.TestCase):
         for language, categories in table.items():
             self.assertEqual(categories, list(catalog.plural_categories(language)), language)
 
-    def test_the_table_names_the_eleven_languages(self):
-        self.assertEqual(
-            sorted(self.swift_table()),
-            sorted(["en", "es", "it", "fr", "pt-BR", "de", "ru", "uk", "zh-Hans", "ja", "ko"]),
-        )
+    def test_the_table_names_every_language_the_catalog_holds(self):
+        """Every language of the String Catalog, English included, has its rule in the Swift table; the table may run
+        ahead of the catalog by the languages being translated (a wave's rules go in before its strings)."""
+        import json
+        path = HERE.parent.parent.parent / "TextMouth" / "Localization" / "Localizable.xcstrings"
+        strings = json.loads(path.read_text(encoding="utf-8"))["strings"]
+        languages = {"en"} | {language for entry in strings.values() for language in entry.get("localizations", {})}
+        self.assertEqual(sorted(languages - set(self.swift_table())), [])
 
 
 if __name__ == "__main__":
