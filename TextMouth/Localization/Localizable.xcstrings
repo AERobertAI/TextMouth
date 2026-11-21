@@ -3577,7 +3577,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ist ein Element eines Feeds, und die Elemente eines Feeds lassen sich nicht verschieben."
+            "value" : "%@ ist ein Eintrag eines Feeds, und die Einträge eines Feeds lassen sich nicht verschieben."
           }
         },
         "es" : {
@@ -19073,13 +19073,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Element"
+                  "value" : "%lld Eintrag"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Elemente"
+                  "value" : "%lld Einträge"
                 }
               }
             }
@@ -32230,7 +32230,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gilt, wenn die Wiedergabe zu einem anderen Element weitergeht"
+            "value" : "Gilt, wenn die Wiedergabe zu einem anderen Eintrag weitergeht"
           }
         },
         "es" : {
@@ -34742,7 +34742,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nur verfügbar, solange die Elemente dieses Feeds am Ende zu einem anderen Element weitergehen"
+            "value" : "Nur verfügbar, solange die Einträge dieses Feeds am Ende zu einem anderen Eintrag weitergehen"
           }
         },
         "es" : {
@@ -42501,7 +42501,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Legt fest, was passiert, wenn eines der Elemente dieses Feeds endet"
+            "value" : "Legt fest, was passiert, wenn einer der Einträge dieses Feeds endet"
           }
         },
         "es" : {
@@ -42711,7 +42711,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Legt fest, wo das nächste Element dieses Feeds geöffnet wird."
+            "value" : "Legt fest, wo der nächste Eintrag dieses Feeds geöffnet wird."
           }
         },
         "es" : {
@@ -53059,7 +53059,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nächstes Element herunterladen, bevor dieses endet"
+            "value" : "Nächsten Eintrag herunterladen, bevor dieser endet"
           }
         },
         "es" : {
@@ -96774,7 +96774,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nächstes Element öffnen in"
+            "value" : "Nächsten Eintrag öffnen in"
           }
         },
         "es" : {
@@ -100942,7 +100942,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Element darüber wiedergeben"
+            "value" : "Eintrag darüber wiedergeben"
           }
         },
         "es" : {
@@ -100977,7 +100977,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Element darunter wiedergeben"
+            "value" : "Eintrag darunter wiedergeben"
           }
         },
         "es" : {
@@ -120048,7 +120048,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beendete Elemente überspringen"
+            "value" : "Beendete Einträge überspringen"
           }
         },
         "es" : {
@@ -164414,13 +164414,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Wenn noch %lld Minute oder weniger übrig ist, wird das nächste Element heruntergeladen, falls es noch nicht auf diesem Mac ist"
+                  "value" : "Wenn noch %lld Minute oder weniger übrig ist, wird der nächste Eintrag heruntergeladen, falls er noch nicht auf diesem Mac ist"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Wenn noch %lld Minuten oder weniger übrig sind, wird das nächste Element heruntergeladen, falls es noch nicht auf diesem Mac ist"
+                  "value" : "Wenn noch %lld Minuten oder weniger übrig sind, wird der nächste Eintrag heruntergeladen, falls er noch nicht auf diesem Mac ist"
                 }
               }
             }
@@ -164758,7 +164758,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wenn ein Element endet"
+            "value" : "Wenn ein Eintrag endet"
           }
         },
         "es" : {
