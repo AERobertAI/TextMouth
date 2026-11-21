@@ -2,6 +2,689 @@
  "language": "nl",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" plays the next book in the same folder by sort order.",
+     "english": "\"%@\" plays the next book in the same folder by sort order.",
+     "before": "“%@” speelt het volgende boek in dezelfde map af, op volgorde van sortering.",
+     "after": "“%@” speelt het volgende boek in dezelfde map af, in de sorteervolgorde.",
+     "why": "natural: \"op volgorde van sortering\" is not Dutch; in de sorteervolgorde"
+    },
+    {
+     "key": "%@, any subfolders, and the %lld books inside will be removed from the library.",
+     "english": {
+      "one": "%@, any subfolders, and the %lld book inside will be removed from the library.",
+      "other": "%@, any subfolders, and the %lld books inside will be removed from the library."
+     },
+     "before": {
+      "one": "%@, alle submappen en het %lld boek erin worden uit de bibliotheek weggehaald.",
+      "other": "%@, alle submappen en de %lld boeken erin worden uit de bibliotheek weggehaald."
+     },
+     "after": {
+      "one": "%@, alle submappen en het boek erin worden uit de bibliotheek weggehaald.",
+      "other": "%@, alle submappen en de %lld boeken erin worden uit de bibliotheek weggehaald."
+     },
+     "why": "natural: \"het 1 boek erin\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "%@, by %@, %@, in %@, added %@",
+     "english": "%1$@, by %2$@, %3$@, in %4$@, added %5$@",
+     "before": "%1$@, van %2$@, %3$@, in %4$@, toegevoegd %5$@",
+     "after": "%1$@, van %2$@, %3$@, in %4$@, toegevoegd op %5$@",
+     "why": "grammar: a long date such as 3 november 2026 takes op"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Altijd toont een weergave altijd. Indien van toepassing toont die alleen zolang er iets in staat: de Leeslijst zolang die een boek, aflevering of artikel bevat, en Feeds zolang er een feed is. Verborgen laat de weergave weg. Een venster houdt zijn weergave totdat je een andere kiest.",
+     "after": "Met “Altijd” wordt een weergave steeds aangeboden. Met “Indien van toepassing” alleen zolang die iets toont: de Leeslijst zolang die een boek, aflevering of artikel bevat, en Feeds zolang er een feed is. Met “Verborgen” wordt de weergave weggelaten. Een venster houdt zijn weergave totdat je een andere kiest.",
+     "why": "natural: an option name as the subject (\"Altijd toont een weergave altijd\") reads as an adverb; \"Met X\" names the option"
+    },
+    {
+     "key": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Vraagt of je kiest voor: %@, of voor bewaren in de bibliotheekmap van TextMouth.",
+     "after": "Vraagt of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren.",
+     "why": "natural: \"kiest voor: %@, of voor bewaren\" was clumsy; the fragment is an infinitive phrase that fits \"of je … wilt\""
+    },
+    {
+     "key": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "english": "Automatically start playing when you navigate to a heading, bookmark, or search result.",
+     "before": "Begin automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert.",
+     "after": "Begint automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert.",
+     "why": "meaning: the imperative told the listener to start playing; the explanation says what the checkbox does"
+    },
+    {
+     "key": "Choose a voice for reading. Change takes effect immediately.",
+     "english": "Choose a voice for reading. Change takes effect immediately.",
+     "before": "Kies een stem om mee te lezen. De wijziging gaat direct in.",
+     "after": "Kiest de stem voor het voorlezen. De wijziging gaat direct in.",
+     "why": "meaning: \"om mee te lezen\" means to read along; a hint in the third person"
+    },
+    {
+     "key": "Chosen By",
+     "english": "Chosen By",
+     "before": "Gekozen door",
+     "after": "Gekozen op",
+     "why": "meaning: \"gekozen door\" names who chooses; the pop-up names the basis of the choice, \"gekozen op\""
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "Vergelijk bibliotheken in de instellingen voor Opslag toont elk verschil.",
+     "after": "Met Vergelijk bibliotheken in de instellingen voor Opslag zie je elk verschil.",
+     "why": "natural: an imperative command name as the subject reads as an order; \"Met X zie je\" names the command"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "Deze bibliotheek wordt vergeleken met de kopie in de map die je hebt gekozen, om te zeggen welke de nieuwste is. Dit kan tot een minuut duren; kies Stop met vergelijken om het over te slaan.",
+     "after": "Deze bibliotheek wordt vergeleken met de kopie in de map die je hebt gekozen, om na te gaan welke de nieuwere is. Dit kan tot een minuut duren; kies Stop met vergelijken om het over te slaan.",
+     "why": "natural: \"om te zeggen welke de nieuwste is\" copies the English; two copies take the comparative, as elsewhere"
+    },
+    {
+     "key": "Confirm before removing a book",
+     "english": "Confirm before removing a book",
+     "before": "Vraag bevestiging voordat een boek wordt verwijderd",
+     "after": "Vraag om bevestiging voordat een boek wordt weggehaald",
+     "why": "term: removing a book is weghalen in the glossary and in this setting’s hints; vragen om bevestiging"
+    },
+    {
+     "key": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "english": "Could not read the text back from the editor's file, so the text here is unchanged.",
+     "before": "Kan de tekst niet terug lezen uit het bestand van de editor, dus de tekst hier is ongewijzigd.",
+     "after": "Kan de tekst niet teruglezen uit het bestand van de editor, dus de tekst hier is ongewijzigd.",
+     "why": "grammar: the separable verb teruglezen is written as one word"
+    },
+    {
+     "key": "Default Speed: %lld WPM",
+     "english": {
+      "one": "Default Speed: %lld WPM",
+      "other": "Default Speed: %lld WPM"
+     },
+     "before": {
+      "one": "Standaardsnelheid: %lld woorden per minuut",
+      "other": "Standaardsnelheid: %lld woorden per minuut"
+     },
+     "after": {
+      "one": "Standaardsnelheid: %lld woord per minuut",
+      "other": "Standaardsnelheid: %lld woorden per minuut"
+     },
+     "why": "grammar: a one form must not read 1 woorden, as part 3 chose"
+    },
+    {
+     "key": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "english": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "before": "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan dit overschrijven.",
+     "after": "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan hiervan afwijken.",
+     "why": "natural: overschrijven means overwrite; a book’s own setting afwijkt"
+    },
+    {
+     "key": "Default speed for new books. Each book can override this with its own speed.",
+     "english": "Default speed for new books. Each book can override this with its own speed.",
+     "before": "Standaardsnelheid voor nieuwe boeken. Elk boek kan dit overschrijven met een eigen snelheid.",
+     "after": "Standaardsnelheid voor nieuwe boeken. Elk boek kan een eigen snelheid hebben.",
+     "why": "natural: overschrijven means overwrite; each book can have its own speed"
+    },
+    {
+     "key": "Don't rewind if paused for less than this.",
+     "english": "Don't rewind if paused for less than this.",
+     "before": "Ga niet terug als de pauze korter is dan dit.",
+     "after": "Spoelt niet terug als de pauze korter is dan dit.",
+     "why": "meaning: the imperative told the listener not to go back; the explanation says what the setting does"
+    },
+    {
+     "key": "EPUB books with the same ISBN identifier",
+     "english": "EPUB books with the same ISBN identifier",
+     "before": "EPUB-boeken met dezelfde ISBN-identificatie.",
+     "after": "EPUB-boeken met hetzelfde ISBN.",
+     "why": "natural: \"dezelfde ISBN-identificatie\" is clumsy; a book has an ISBN"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Wijzig tekst stopt voor dit boek; kies Wijzig tekst opnieuw om de nieuwe versie te wijzigen.",
+     "after": "Het wijzigen van de tekst stopt voor dit boek; kies opnieuw Wijzig tekst om de nieuwe versie te wijzigen.",
+     "why": "natural: the command name as the subject (\"Wijzig tekst stopt\") reads as an order"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Mappen en de Leeslijst tonen altijd wat ze altijd hebben. Je kunt ze verplaatsen en de Leeslijst verbergen.",
+     "after": "Mappen en de Leeslijst tonen altijd wat erin staat. Je kunt ze verplaatsen en de Leeslijst verbergen.",
+     "why": "natural: \"tonen altijd wat ze altijd hebben\" doubled altijd and copied the English"
+    },
+    {
+     "key": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
+     "english": "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly.",
+     "before": "Verlaag het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd.",
+     "after": "Verlaagt het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd.",
+     "why": "meaning: the imperative told the listener to lower the volume; the explanation says what the setting does"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "Als het bestand later van %@ aankomt, benoemt het dezelfde bibliotheek.",
+     "after": "Als het bestand later van %@ aankomt, verwijst het naar dezelfde bibliotheek.",
+     "why": "meaning: benoemen means to appoint; the file refers to the library"
+    },
+    {
+     "key": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "english": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "before": "Importeer het opnieuw, wat naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap zijn plaats inneemt, of verwijder het uit de bibliotheek en verplaats de gegevensmap dan opnieuw.",
+     "after": "Importeer het opnieuw, waarna TextMouth naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap de plaats ervan inneemt, of haal het uit de bibliotheek weg en verplaats de gegevensmap dan opnieuw.",
+     "why": "natural: \"wat naar het duplicaat vraagt\" copied the English; removing from the library is weghalen in the glossary"
+    },
+    {
+     "key": "It has the same books, places, bookmarks, reading list, and folders.",
+     "english": "It has the same books, places, bookmarks, reading list, and folders.",
+     "before": "Het heeft dezelfde boeken, leesposities, bladwijzers, leeslijst en mappen.",
+     "after": "Die heeft dezelfde boeken, leesposities, bladwijzers, leeslijst en mappen.",
+     "why": "grammar: it is the other copy, de kopie, so die, not het"
+    },
+    {
+     "key": "It holds the folder of the feed %@.",
+     "english": "It holds the folder of the feed %@.",
+     "before": "Het bevat de map van de feed %@.",
+     "after": "Deze map bevat de map van de feed %@.",
+     "why": "grammar: it is the folder, de map, which het cannot refer to"
+    },
+    {
+     "key": "It holds the folders of the feeds %@.",
+     "english": "It holds the folders of the feeds %@.",
+     "before": "Het bevat de mappen van de feeds %@.",
+     "after": "Deze map bevat de mappen van de feeds %@.",
+     "why": "grammar: it is the folder, de map, which het cannot refer to"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Het is de map van de feed %@. Hoe dan ook blijven de feed en de downloads ervan bewaard, in geen enkele map vermeld totdat Feedinformatie de feed een andere geeft; Verwijder feed… op de rij van de feed verwijdert die.",
+     "after": "Het is de map van de feed %@. Hoe dan ook blijven de feed en de downloads ervan bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van de feed verwijder je die.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Het is de map van de feeds %@. Hoe dan ook blijven de feeds en hun downloads bewaard, in geen enkele map vermeld totdat Feedinformatie elke feed een andere geeft; Verwijder feed… op de rij van een feed verwijdert die.",
+     "after": "Het is de map van de feeds %@. Hoe dan ook blijven de feeds en hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van een feed verwijder je die.",
+     "why": "natural: \"Feedinformatie elke feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "english": "Its conditions and sort are deleted. The books, episodes, articles, and feeds it lists stay in the library, and a Library window showing it shows another view.",
+     "before": "De voorwaarden en sortering ervan worden verwijderd. De boeken, afleveringen, artikelen en feeds die erin staan, blijven in de bibliotheek, en een bibliotheekvenster dat de weergave toont, toont een andere weergave.",
+     "after": "De voorwaarden en sortering ervan worden verwijderd. De boeken, afleveringen, artikelen en feeds die erin staan, blijven in de bibliotheek, en een bibliotheekvenster met deze weergave toont dan een andere.",
+     "why": "natural: \"dat de weergave toont, toont een andere weergave\" stacked toont twice"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ is op zijn plaats gelaten: afleveringen en artikelen blijven in hun feeds; %@ maakt er een boek van je bibliotheek van.",
+     "after": "%@ is op zijn plaats gelaten: afleveringen en artikelen blijven in hun feeds; met %@ maak je er een boek in je bibliotheek van.",
+     "why": "natural: the command name as the subject and \"een boek van je bibliotheek van\" copied the English"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ zijn op hun plaats gelaten: afleveringen en artikelen blijven in hun feeds; %@ maakt er een boek van je bibliotheek van.",
+     "after": "%@ zijn op hun plaats gelaten: afleveringen en artikelen blijven in hun feeds; met %@ maak je er een boek in je bibliotheek van.",
+     "why": "natural: the command name as the subject and \"een boek van je bibliotheek van\" copied the English"
+    },
+    {
+     "key": "Makes a view of your own from the conditions you choose.",
+     "english": "Makes a view of your own from the conditions you choose.",
+     "before": "Maakt een eigen weergave van de voorwaarden die je kiest.",
+     "after": "Maakt een eigen weergave met de voorwaarden die je kiest.",
+     "why": "meaning: \"een weergave van de voorwaarden\" reads as a view that shows the conditions"
+    },
+    {
+     "key": "Moves it one place down",
+     "english": "Moves it one place down",
+     "before": "Verplaatst het één plaats omlaag.",
+     "after": "Verplaatst de weergave één plaats omlaag.",
+     "why": "grammar: it is a view, de weergave, which het cannot refer to"
+    },
+    {
+     "key": "Moves it one place up",
+     "english": "Moves it one place up",
+     "before": "Verplaatst het één plaats omhoog.",
+     "after": "Verplaatst de weergave één plaats omhoog.",
+     "why": "grammar: it is a view, de weergave, which het cannot refer to"
+    },
+    {
+     "key": "None of the %lld selected books is kept on this Mac.",
+     "english": {
+      "one": "None of the %lld selected books is kept on this Mac.",
+      "other": "None of the %lld selected books is kept on this Mac."
+     },
+     "before": {
+      "one": "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard.",
+      "other": "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard."
+     },
+     "after": {
+      "one": "Het geselecteerde boek wordt niet op deze Mac bewaard.",
+      "other": "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard."
+     },
+     "why": "grammar: a one form must not read \"Geen van de 1 geselecteerde boeken\", as part 3 chose; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "Niets controleert of dit de juiste keuze is. Klinken cijfers en leestekens verkeerd, kies dan een andere.",
+     "after": "Er wordt niet gecontroleerd of dit de juiste keuze is. Klinken cijfers en leestekens verkeerd, kies dan een andere.",
+     "why": "natural: \"Niets controleert of\" copies the English subject"
+    },
+    {
+     "key": "Only the Latest from Each Feed",
+     "english": "Only the Latest from Each Feed",
+     "before": "Alleen het nieuwste van elke feed",
+     "after": "Alleen het laatst geopende van elke feed",
+     "why": "meaning: the checkbox keeps the item opened last, as its hint says; nieuwste means the newest published"
+    },
+    {
+     "key": "Removal Behavior",
+     "english": "Removal Behavior",
+     "before": "Gedrag bij verwijderen",
+     "after": "Gedrag bij weghalen",
+     "why": "term: the section is about removing a book, weghalen in the glossary and in its checkbox"
+    },
+    {
+     "key": "Reset to Defaults",
+     "english": "Reset to Defaults",
+     "before": "Stel standaardwaarden opnieuw in",
+     "after": "Zet terug naar standaardwaarden",
+     "why": "meaning: \"Stel standaardwaarden opnieuw in\" reads as redefining the defaults; the other reset buttons say terugzetten"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Opnieuw proberen staat boven in het bibliotheekvenster.",
+     "after": "De knop Probeer opnieuw staat boven in het bibliotheekvenster.",
+     "why": "term: the banner’s button is Probeer opnieuw; \"Opnieuw proberen staat\" named no button"
+    },
+    {
+     "key": "Same ISBN",
+     "english": "Same ISBN",
+     "before": "Dezelfde ISBN",
+     "after": "Hetzelfde ISBN",
+     "why": "grammar: ISBN is a het-word"
+    },
+    {
+     "key": "Select all %lld books",
+     "english": {
+      "one": "Select all %lld book",
+      "other": "Select all %lld books"
+     },
+     "before": {
+      "one": "Selecteer alle %lld boek",
+      "other": "Selecteer alle %lld boeken"
+     },
+     "after": {
+      "one": "Selecteer het boek",
+      "other": "Selecteer alle %lld boeken"
+     },
+     "why": "grammar: \"alle 1 boek\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "Set its shortcut with %@ in the %@ tab; the default is %@.",
+     "english": "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@.",
+     "before": "Stel de toets ervoor in met %1$@ in het tabblad %2$@; de standaardtoets is %3$@.",
+     "after": "Stel het toetsenbordcommando ervoor in met %1$@ in het tabblad %2$@; standaard is dat %3$@.",
+     "why": "term: a shortcut is a toetsenbordcommando in the glossary, not one toets"
+    },
+    {
+     "key": "Showing groups %@ to %@ of %@",
+     "english": "Showing groups %1$@ to %2$@ of %3$@",
+     "before": "Groep %1$@ tot %2$@ van %3$@ worden getoond",
+     "after": "Groepen %1$@ tot en met %2$@ van %3$@ worden getoond",
+     "why": "grammar: a plural verb needs groepen; a range that includes its end is tot en met"
+    },
+    {
+     "key": "Shows the groups before these.",
+     "english": "Shows the groups before these.",
+     "before": "Toont de groepen voor deze.",
+     "after": "Toont de vorige groepen.",
+     "why": "meaning: \"de groepen voor deze\" also reads as the groups for these"
+    },
+    {
+     "key": "Skips matches next to letters, digits, or underscores",
+     "english": "Skips matches next to letters, digits, or underscores",
+     "before": "Slaat overeenkomsten naast letters, cijfers of liggende streepjes over.",
+     "after": "Slaat treffers naast letters, cijfers of liggende streepjes over.",
+     "why": "term: a match is a treffer in the glossary; overeenkomsten means similarities"
+    },
+    {
+     "key": "Stops comparing. Nothing in either copy has been changed.",
+     "english": "Stops comparing. Nothing in either copy has been changed.",
+     "before": "Stopt het vergelijken. Er is niets gewijzigd in beide kopieën.",
+     "after": "Stopt het vergelijken. In geen van beide kopieën is iets gewijzigd.",
+     "why": "meaning: \"niets … in beide kopieën\" says not in both; the English means in neither"
+    },
+    {
+     "key": "Stops saying the code was guessed. The book is not read again.",
+     "english": "Stops saying the code was guessed. The book is not read again.",
+     "before": "Stopt met zeggen dat de code is geraden. Het boek wordt niet opnieuw gelezen.",
+     "after": "Meldt niet langer dat de code is geraden. Het boek wordt niet opnieuw gelezen.",
+     "why": "natural: \"Stopt met zeggen\" copies stop saying"
+    },
+    {
+     "key": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "english": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "before": "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus beide kopieën zijn gelaten zoals ze waren.",
+     "after": "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus blijven beide kopieën zoals ze zijn.",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus het boek is gelaten zoals het was.",
+     "after": "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus blijft het boek zoals het was.",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't read “%@” again, so it left the book as it was.",
+     "english": "TextMouth couldn't read “%@” again, so it left the book as it was.",
+     "before": "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was.",
+     "after": "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was.",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't read “%@” again, so it left the book as it was: %@",
+     "english": "TextMouth couldn't read “%1$@” again, so it left the book as it was: %2$@",
+     "before": "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was: %@",
+     "after": "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was: %@",
+     "why": "natural: the passive \"is gelaten zoals het was\" is stilted; \"blijft zoals het was\" says it plainly"
+    },
+    {
+     "key": "TextMouth couldn't save the library's index, so it left both copies as they are.",
+     "english": "TextMouth couldn't save the library's index, so it left both copies as they are.",
+     "before": "TextMouth kon de index van de bibliotheek niet bewaren, dus beide kopieën zijn gelaten zoals ze waren.",
+     "after": "TextMouth kon de bibliotheekindex niet bewaren, dus blijven beide kopieën zoals ze zijn.",
+     "why": "natural: the stilted passive \"zijn gelaten zoals ze waren\"; the glossary term Bibliotheekindex"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "english": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "before": "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze onbewaard.",
+     "after": "TextMouth start opnieuw met een andere bibliotheek, dus ze worden in deze bibliotheek niet bewaard.",
+     "why": "natural: onbewaard is hardly a word; niet bewaard; then natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "english": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "before": "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze waar ze zijn.",
+     "after": "TextMouth start opnieuw met een andere bibliotheek, dus ze blijven in deze bibliotheek waar ze zijn.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose; \"in deze\" names the library"
+    },
+    {
+     "key": "TextMouth is switching to another library and opening again on it.",
+     "english": "TextMouth is switching to another library and opening again on it.",
+     "before": "TextMouth schakelt over naar een andere bibliotheek en wordt daarmee opnieuw geopend.",
+     "after": "TextMouth schakelt over naar een andere bibliotheek en start daarmee opnieuw.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "english": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "before": "TextMouth leest zijn bestand zoals het een bestand leest dat je toevoegt: in de codering die het bestand noemt, of anders in de codering die TextMouth vindt.",
+     "after": "TextMouth leest het bestand van het boek zoals een bestand dat je toevoegt: in de codering die het bestand opgeeft, of anders in de codering die TextMouth vindt.",
+     "why": "meaning: \"zijn bestand\" read as TextMouth’s own file; it is the book’s file"
+    },
+    {
+     "key": "TextMouth will open the library in %@ the next time it opens, but it couldn't open again by itself: %@",
+     "english": "TextMouth will open the library in %1$@ the next time it opens, but it couldn't open again by itself: %2$@",
+     "before": "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het opent, maar kon niet zelf opnieuw openen: %2$@",
+     "after": "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het start, maar kon niet zelf opnieuw starten: %2$@",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth will quit and open again to load it.",
+     "english": "TextMouth will quit and open again to load it.",
+     "before": "TextMouth sluit af en opent opnieuw om de bibliotheek te laden.",
+     "after": "TextMouth sluit af en start opnieuw om de bibliotheek te laden.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose"
+    },
+    {
+     "key": "TextMouth will quit and open again to start it.",
+     "english": "TextMouth will quit and open again to start it.",
+     "before": "TextMouth sluit af en opent opnieuw om de bibliotheek te starten.",
+     "after": "TextMouth sluit af en start opnieuw om de nieuwe bibliotheek te beginnen.",
+     "why": "natural: an app starts, it is not opened by itself (starten, not openen), as part 2 chose; a new library is begun, as Begin nieuwe bibliotheek says"
+    },
+    {
+     "key": "The %lld selected books are already kept on this Mac.",
+     "english": {
+      "one": "The %lld selected book is already kept on this Mac.",
+      "other": "The %lld selected books are already kept on this Mac."
+     },
+     "before": {
+      "one": "Het %lld geselecteerde boek wordt al op deze Mac bewaard.",
+      "other": "De %lld geselecteerde boeken worden al op deze Mac bewaard."
+     },
+     "after": {
+      "one": "Het geselecteerde boek wordt al op deze Mac bewaard.",
+      "other": "De %lld geselecteerde boeken worden al op deze Mac bewaard."
+     },
+     "why": "natural: \"het 1 geselecteerde boek\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "The %lld selected books are kept on this Mac for the reading list.",
+     "english": {
+      "one": "The %lld selected book is kept on this Mac for the reading list.",
+      "other": "The %lld selected books are kept on this Mac for the reading list."
+     },
+     "before": {
+      "one": "Het %lld geselecteerde boek wordt op deze Mac bewaard voor de leeslijst.",
+      "other": "De %lld geselecteerde boeken worden op deze Mac bewaard voor de leeslijst."
+     },
+     "after": {
+      "one": "Het geselecteerde boek wordt op deze Mac bewaard voor de leeslijst.",
+      "other": "De %lld geselecteerde boeken worden op deze Mac bewaard voor de leeslijst."
+     },
+     "why": "natural: \"het 1 geselecteerde boek\" is not Dutch; Dutch one means exactly 1, so the form drops the number"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit sorteert bij de H en wordt getoond als Hobbit, The. Als je H typt, vind je het bij de H.",
+     "after": "The Hobbit wordt bij de H gesorteerd en getoond als Hobbit, The. Als je H typt, vind je het bij de H.",
+     "why": "grammar: sorteren takes an object; a title wordt gesorteerd"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "Het braille wordt opnieuw naar print vertaald met deze code. Niets controleert of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere.",
+     "after": "Het braille wordt met deze code opnieuw naar zwartschrift vertaald. Er wordt niet gecontroleerd of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere.",
+     "why": "term: Dutch braille calls print zwartschrift, not print; \"Niets controleert\" copied the English"
+    },
+    {
+     "key": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "english": "The feed %@ stays, with its downloads, without a folder until Feed Info gives it another.",
+     "before": "De feed %@ blijft, met de downloads, zonder map totdat Feedinformatie de feed een andere geeft.",
+     "after": "De feed %@ blijft met de downloads bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" copied the English; you give the feed a folder in Feed Info"
+    },
+    {
+     "key": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "english": "The feeds %@ stay, with their downloads, without folders until Feed Info gives each another.",
+     "before": "De feeds %@ blijven, met hun downloads, zonder map totdat Feedinformatie elke feed een andere geeft.",
+     "after": "De feeds %@ blijven met hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" copied the English; you give the feed a folder in Feed Info"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen betekenen op deze schijf dezelfde map.",
+     "after": "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen verwijzen op deze schijf naar dezelfde map.",
+     "why": "natural: names do not \"betekenen\" a folder; they refer to it, as the sentence on the same rule says"
+    },
+    {
+     "key": "The saved copy at %@ keeps the old data.",
+     "english": "The saved copy at %@ keeps the old data.",
+     "before": "De bewaarde kopie op %@ bewaart de oude gegevens.",
+     "after": "De bewaarde kopie op %@ bevat de oude gegevens.",
+     "why": "natural: \"De bewaarde kopie … bewaart\" repeated the verb"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "one": "Er is geen weergave %@. Ga naar weergave bereikt %lld weergave.",
+      "other": "Er is geen weergave %@. Ga naar weergave bereikt %lld weergaven."
+     },
+     "after": {
+      "one": "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergave.",
+      "other": "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergaven."
+     },
+     "why": "natural: the command name as the subject (\"Ga naar weergave bereikt\") reads as an order"
+    },
+    {
+     "key": "This folder has no stored name, so it cannot be changed safely.",
+     "english": "This folder has no stored name, so it cannot be changed safely.",
+     "before": "Deze map heeft geen opgeslagen naam en kan dus niet veilig worden gewijzigd.",
+     "after": "Deze map heeft geen opgeslagen naam, dus die kan niet veilig worden gewijzigd.",
+     "why": "meaning: the name cannot be changed safely, not the folder"
+    },
+    {
+     "key": "To free the space anyway, choose Show in Finder, then %@.",
+     "english": "To free the space anyway, choose Show in Finder, then %@.",
+     "before": "Om de ruimte toch vrij te maken, kies je Toon in Finder en %@.",
+     "after": "Wil je de ruimte toch vrijmaken, kies dan Toon in Finder en %@.",
+     "why": "grammar: the fragment is an imperative (\"kies …\"), which \"kies je … en\" could not join"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "Om een andere map te gebruiken, open je Instellingen en Opslag en kies je %1$@ of %2$@.",
+     "after": "Om een andere map te gebruiken, open je Opslag in Instellingen en kies je %1$@ of %2$@.",
+     "why": "meaning: \"open je Instellingen en Opslag\" read as opening two things; Storage is a tab of Settings"
+    },
+    {
+     "key": "Use regular expression matching",
+     "english": "Use regular expression matching",
+     "before": "Gebruik overeenkomst met reguliere expressie",
+     "after": "Gebruik reguliere expressies",
+     "why": "natural: \"Gebruik overeenkomst met reguliere expressie\" copied the English noun stack"
+    },
+    {
+     "key": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "english": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "before": "Als lidwoorden worden genegeerd, slaat een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt de lidwoorden van die taal over, zoals Le en Die, en The.",
+     "after": "Als lidwoorden worden genegeerd, worden bij een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt, de lidwoorden van die taal overgeslagen, zoals Le en Die, en ook The.",
+     "why": "natural: a book does not skip its articles; they are skipped for it, as the sentence before says"
+    },
+    {
+     "key": "When book ends",
+     "english": "When book ends",
+     "before": "Als boek eindigt",
+     "after": "Wanneer een boek eindigt",
+     "why": "natural: the label dropped its article; matches the other end-of-book labels"
+    },
+    {
+     "key": "When enabled, use \\b in the pattern for word boundaries",
+     "english": "When enabled, use \\b in the pattern for word boundaries",
+     "before": "Als dit aan staat, kun je \\b in het patroon gebruiken voor woordgrenzen.",
+     "after": "Als dit aanstaat, kun je \\b in het patroon gebruiken voor woordgrenzen.",
+     "why": "grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When off, its files are deleted permanently and cannot be recovered.",
+     "english": "When off, its files are deleted permanently and cannot be recovered.",
+     "before": "Als dit uit staat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld.",
+     "after": "Als dit uitstaat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld.",
+     "why": "grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When off, removing a book will %@ at once.",
+     "english": "When off, removing a book will %@ at once.",
+     "before": "Als dit uit staat, wordt bij het weghalen van een boek direct het volgende gedaan: %@.",
+     "after": "Als dit uitstaat, zal TextMouth bij het weghalen van een boek meteen %@.",
+     "why": "natural: \"wordt direct het volgende gedaan: %@\" was clumsy; the fragment is an infinitive phrase that fits \"zal TextMouth meteen\"; then grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "When on, a deleted book's files go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "Als dit aan staat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd.",
+     "after": "Als dit aanstaat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd.",
+     "why": "grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "Als dit aan staat, wordt bij het weghalen van een boek eerst gevraagd of je kiest voor: %@, of voor bewaren in de bibliotheekmap van TextMouth.",
+     "after": "Als dit aanstaat, vraagt TextMouth bij het weghalen van een boek eerst of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren.",
+     "why": "natural: \"kiest voor: %@, of voor bewaren\" was clumsy; the fragment is an infinitive phrase that fits \"of je … wilt\"; then grammar: a separable verb at the end of a clause is written as one word (aanstaat, uitstaat), as part 2 chose"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "Waar TextMouth zijn diagnostische logboeken schrijft. %1$@ houdt ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. %2$@ houdt ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven.",
+     "after": "Waar TextMouth zijn diagnostische logboeken schrijft. Met “%1$@” staan ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. Met “%2$@” staan ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven waar ze zijn.",
+     "why": "natural: the choices are named In de gegevensmap and In de map Logboeken, which read as places when they are the subject"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Met %@ blijven de feed en de downloads ervan bewaard, in geen enkele map vermeld totdat Feedinformatie de feed een andere geeft; Verwijder feed… op de rij van de feed verwijdert die.",
+     "after": "Met %@ blijven de feed en de downloads ervan bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van de feed verwijder je die.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Met %@ blijven de feeds en hun downloads bewaard, in geen enkele map vermeld totdat Feedinformatie elke feed een andere geeft; Verwijder feed… op de rij van een feed verwijdert die.",
+     "after": "Met %@ blijven de feeds en hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van een feed verwijder je die.",
+     "why": "natural: \"Feedinformatie de feed een andere geeft\" and a command name as the subject copied the English"
+    },
+    {
+     "key": "chapter %@, saved %@, and %@",
+     "english": "chapter %1$@, saved %2$@, and %3$@",
+     "before": "hoofdstuk %1$@, bewaard %2$@ en %3$@",
+     "after": "hoofdstuk %1$@, bewaard op %2$@ en %3$@",
+     "why": "grammar: a date and time take op"
+    },
+    {
+     "key": "declared in the file",
+     "english": "declared in the file",
+     "before": "gedeclareerd in het bestand",
+     "after": "opgegeven in het bestand",
+     "why": "natural: an encoding is opgegeven in a file; gedeclareerd is a programmer’s calque"
+    },
+    {
+     "key": "no place saved, and %@",
+     "english": "no place saved, and %@",
+     "before": "geen plek bewaard en %@",
+     "after": "geen leespositie bewaard en %@",
+     "why": "term: a place is leespositie everywhere else in Compare Libraries"
+    },
+    {
+     "key": "only the latest from each feed",
+     "english": "only the latest from each feed",
+     "before": "alleen het nieuwste van elke feed",
+     "after": "alleen het laatst geopende van elke feed",
+     "why": "meaning: the filter keeps the item opened last, as the checkbox’s hint says; nieuwste means the newest published"
+    },
+    {
+     "key": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "english": "so TextMouth can't tell whether the two copies are one library, and compared nothing.",
+     "before": "dus TextMouth kan niet zeggen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken.",
+     "after": "dus TextMouth kan niet bepalen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken.",
+     "why": "natural: \"kan niet zeggen\" copies cannot tell; bepalen, as the other Compare Libraries sentences say"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
