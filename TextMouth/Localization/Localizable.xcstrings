@@ -1728,7 +1728,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 拷貝"
+            "value" : "%@ 副本"
           }
         }
       }
@@ -1859,7 +1859,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 拷貝 %2$@"
+            "value" : "%1$@ 副本 %2$@"
           }
         }
       }
@@ -21281,7 +21281,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 未能重新加入：無法先保留其套件中文字的拷貝，因此 TextMouth 讓文字維持原樣。"
+            "value" : "%@ 未能重新加入：無法先保留其套件中文字的副本，因此 TextMouth 讓文字維持原樣。"
           }
         }
       }
@@ -93552,7 +93552,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將新的拷貝作為另一本書籍加入書庫。"
+            "value" : "將新的副本作為另一本書籍加入書庫。"
           }
         }
       }
@@ -96851,7 +96851,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "同時寫入書庫中的 EPUB 檔案拷貝"
+            "value" : "同時寫入書庫中的 EPUB 檔案副本"
           }
         }
       }
@@ -129668,7 +129668,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "再次選擇「編輯文字」以編輯新拷貝的文字。"
+            "value" : "再次選擇「編輯文字」以編輯新副本的文字。"
           }
         }
       }
@@ -151301,7 +151301,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法將中介資料儲存至書庫中「%@」的拷貝，因為該檔案已不在書庫中。"
+            "value" : "無法將中介資料儲存至書庫中「%@」的副本，因為該檔案已不在書庫中。"
           }
         }
       }
@@ -151426,7 +151426,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法將中介資料儲存至書庫中「%1$@」的拷貝：%2$@"
+            "value" : "無法將中介資料儲存至書庫中「%1$@」的副本：%2$@"
           }
         }
       }
@@ -166787,7 +166787,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "捨棄新的拷貝。書庫維持原樣。"
+            "value" : "捨棄新的副本。書庫維持原樣。"
           }
         }
       }
@@ -177333,7 +177333,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "重複的拷貝已移到垃圾桶"
+            "value" : "重複的副本已移到垃圾桶"
           }
         }
       }
@@ -180927,7 +180927,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "由於新的拷貝已取代它，%@ 的「編輯文字」已停止。"
+            "value" : "由於新的副本已取代它，%@ 的「編輯文字」已停止。"
           }
         }
       }
@@ -211837,7 +211837,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請取得書籍的新拷貝，然後再次輸入。"
+            "value" : "請取得書籍的新副本，然後再次輸入。"
           }
         }
       }
@@ -211956,7 +211956,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請取得檔案的新拷貝，然後再次輸入。"
+            "value" : "請取得檔案的新副本，然後再次輸入。"
           }
         }
       }
@@ -212075,7 +212075,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請取得檔案的另一份拷貝，或另存成其他格式，然後再次輸入。"
+            "value" : "請取得檔案的另一份副本，或另存成其他格式，然後再次輸入。"
           }
         }
       }
@@ -244236,7 +244236,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其音軌超出了它所指音訊的結尾，因此它是為另一份音訊拷貝製作的。"
+            "value" : "其音軌超出了它所指音訊的結尾，因此它是為另一份音訊副本製作的。"
           }
         }
       }
@@ -270168,7 +270168,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "中介資料已儲存至書庫中「%@」的拷貝。"
+            "value" : "中介資料已儲存至書庫中「%@」的副本。"
           }
         }
       }
@@ -296998,7 +296998,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法保留編輯後文字的拷貝，因此 TextMouth 讓 content.md 維持原樣。"
+            "value" : "無法保留編輯後文字的副本，因此 TextMouth 讓 content.md 維持原樣。"
           }
         }
       }
@@ -314538,7 +314538,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其中一份拷貝是從錄音播放，另一份則是從文字朗讀，因此取代時只會保留現有拷貝所在的檔案夾與在閱讀列表中的位置，不會保留其閱讀位置、書籤與備註，或設定。"
+            "value" : "其中一份副本是從錄音播放，另一份則是從文字朗讀，因此取代時只會保留現有副本所在的檔案夾與在閱讀列表中的位置，不會保留其閱讀位置、書籤與備註，或設定。"
           }
         }
       }
@@ -342488,7 +342488,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "以新拷貝取代書庫中已有的拷貝，只保留現有拷貝所在的檔案夾與在閱讀列表中的位置。"
+            "value" : "以新副本取代書庫中已有的副本，只保留現有副本所在的檔案夾與在閱讀列表中的位置。"
           }
         }
       }
@@ -342607,7 +342607,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "以新拷貝取代書庫中已有的拷貝，並保留現有拷貝的閱讀位置、書籤與設定。"
+            "value" : "以新副本取代書庫中已有的副本，並保留現有副本的閱讀位置、書籤與設定。"
           }
         }
       }
@@ -362670,7 +362670,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "取代時會保留現有拷貝的閱讀位置與書籤（在新文字中找得到的字詞處會移過去），以及其設定、檔案夾，和在閱讀列表中的位置。對其文字所做的編輯會保留為新文字旁的拷貝，不會套用。"
+            "value" : "取代時會保留現有副本的閱讀位置與書籤（在新文字中找得到的字詞處會移過去），以及其設定、檔案夾，和在閱讀列表中的位置。對其文字所做的編輯會保留為新文字旁的副本，不會套用。"
           }
         }
       }
@@ -362789,7 +362789,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "取代時會保留現有拷貝的閱讀位置、書籤、設定、檔案夾和在閱讀列表中的位置，且在音訊相同時也會保留其逐字稿，而不是新拷貝音訊旁找到的逐字稿檔案。"
+            "value" : "取代時會保留現有副本的閱讀位置、書籤、設定、檔案夾和在閱讀列表中的位置，且在音訊相同時也會保留其逐字稿，而不是新副本音訊旁找到的逐字稿檔案。"
           }
         }
       }
@@ -362908,7 +362908,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "取代時會保留現有拷貝的閱讀位置、書籤、設定、檔案夾和在閱讀列表中的位置，且在音訊相同時也會保留其逐字稿。"
+            "value" : "取代時會保留現有副本的閱讀位置、書籤、設定、檔案夾和在閱讀列表中的位置，且在音訊相同時也會保留其逐字稿。"
           }
         }
       }
@@ -363027,7 +363027,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "取代時會保留現有拷貝的閱讀位置、書籤、設定、檔案夾和在閱讀列表中的位置。"
+            "value" : "取代時會保留現有副本的閱讀位置、書籤、設定、檔案夾和在閱讀列表中的位置。"
           }
         }
       }
@@ -374567,7 +374567,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "請儲存一份沒有密碼的拷貝，然後輸入該拷貝。"
+            "value" : "請儲存一份沒有密碼的副本，然後輸入該副本。"
           }
         }
       }
@@ -375519,7 +375519,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將中介資料儲存至書庫及書庫中的 EPUB 檔案拷貝"
+            "value" : "將中介資料儲存至書庫及書庫中的 EPUB 檔案副本"
           }
         }
       }
@@ -423876,7 +423876,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法讀取這種圖片（%@）。請將其儲存為 PNG 或 JPEG，然後輸入該拷貝。"
+            "value" : "TextMouth 無法讀取這種圖片（%@）。請將其儲存為 PNG 或 JPEG，然後輸入該副本。"
           }
         }
       }
@@ -425709,7 +425709,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 無法保留「%@」的新拷貝。請選擇「取消」以捨棄該拷貝，然後再次輸入該檔案。"
+            "value" : "TextMouth 無法保留「%@」的新副本。請選擇「取消」以捨棄該副本，然後再次輸入該檔案。"
           }
         }
       }
@@ -434973,7 +434973,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 正在以新拷貝取代「%@」。請在完成後再試一次。"
+            "value" : "TextMouth 正在以新副本取代「%@」。請在完成後再試一次。"
           }
         }
       }
@@ -437808,7 +437808,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 已將 %@ 的新拷貝移到垃圾桶，因為在 TextMouth 關閉前，是否將它們保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
+            "value" : "TextMouth 已將 %@ 的新副本移到垃圾桶，因為在 TextMouth 關閉前，是否將它們保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
           }
         }
       }
@@ -437927,7 +437927,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 已將「%@」的新拷貝移到垃圾桶，因為在 TextMouth 關閉前，是否將它保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
+            "value" : "TextMouth 已將「%@」的新副本移到垃圾桶，因為在 TextMouth 關閉前，是否將它保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
           }
         }
       }
@@ -460777,7 +460777,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書籍的導覽與其音訊不相符；請取得新的拷貝，然後再次輸入。"
+            "value" : "書籍的導覽與其音訊不相符；請取得新的副本，然後再次輸入。"
           }
         }
       }
@@ -463413,7 +463413,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "剛輸入的拷貝不完整。"
+            "value" : "剛輸入的副本不完整。"
           }
         }
       }
@@ -467079,7 +467079,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現有拷貝的檔案會被永久刪除，無法復原。"
+            "value" : "現有副本的檔案會被永久刪除，無法復原。"
           }
         }
       }
@@ -467198,7 +467198,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現有拷貝的檔案會移到垃圾桶，但將它們放回原處並不會讓該拷貝回到你的書庫。"
+            "value" : "現有副本的檔案會移到垃圾桶，但將它們放回原處並不會讓該副本回到你的書庫。"
           }
         }
       }
@@ -471128,7 +471128,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此封存檔中的檔案「%1$@」已損毀或不完整：%2$@。請取得封存檔的新拷貝，然後再次輸入。"
+            "value" : "此封存檔中的檔案「%1$@」已損毀或不完整：%2$@。請取得封存檔的新副本，然後再次輸入。"
           }
         }
       }
@@ -471253,7 +471253,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書籍中的檔案「%1$@」已損毀或不完整：%2$@。請取得書籍的新拷貝，然後再次輸入。"
+            "value" : "此書籍中的檔案「%1$@」已損毀或不完整：%2$@。請取得書籍的新副本，然後再次輸入。"
           }
         }
       }
@@ -471378,7 +471378,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此文件中的檔案「%1$@」已損毀或不完整：%2$@。請取得文件的新拷貝，然後再次輸入。"
+            "value" : "此文件中的檔案「%1$@」已損毀或不完整：%2$@。請取得文件的新副本，然後再次輸入。"
           }
         }
       }
@@ -471741,7 +471741,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」新拷貝的檔案已不在書庫中，因此無法保留。請選擇「取消」，然後再次輸入該檔案。"
+            "value" : "「%@」新副本的檔案已不在書庫中，因此無法保留。請選擇「取消」，然後再次輸入該檔案。"
           }
         }
       }
@@ -476251,7 +476251,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法連上書庫，因此 TextMouth 無法保留「%@」的新拷貝。待書庫恢復後請再回答一次。"
+            "value" : "無法連上書庫，因此 TextMouth 無法保留「%@」的新副本。待書庫恢復後請再回答一次。"
           }
         }
       }
@@ -483733,7 +483733,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已保留原始檔案：TextMouth 從封存檔「%2$@」輸入了「%1$@」的音訊，而該封存檔是其文字的唯一拷貝。"
+            "value" : "已保留原始檔案：TextMouth 從封存檔「%2$@」輸入了「%1$@」的音訊，而該封存檔是其文字的唯一副本。"
           }
         }
       }
@@ -494850,7 +494850,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "新拷貝音訊旁找到的逐字稿檔案會取代現有拷貝的逐字稿。"
+            "value" : "新副本音訊旁找到的逐字稿檔案會取代現有副本的逐字稿。"
           }
         }
       }
@@ -503403,7 +503403,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此 Kindle 書籍已損毀或不完整。請取得新的拷貝，然後再次輸入。"
+            "value" : "此 Kindle 書籍已損毀或不完整。請取得新的副本，然後再次輸入。"
           }
         }
       }
@@ -503522,7 +503522,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此 Kindle 書籍已損毀或不完整：%@。請取得新的拷貝，然後再次輸入。"
+            "value" : "此 Kindle 書籍已損毀或不完整：%@。請取得新的副本，然後再次輸入。"
           }
         }
       }
@@ -542524,7 +542524,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "警告：這會重寫書庫中的 EPUB 檔案拷貝，並重新計算其 MD5 雜湊值。"
+            "value" : "警告：這會重寫書庫中的 EPUB 檔案副本，並重新計算其 MD5 雜湊值。"
           }
         }
       }
@@ -555488,7 +555488,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "將書名、作者、出版者與日期寫入書庫中此書籍的拷貝。"
+            "value" : "將書名、作者、出版者與日期寫入書庫中此書籍的副本。"
           }
         }
       }
@@ -581745,7 +581745,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法保留編輯後文字的拷貝，因此 TextMouth 讓 content.md 維持原樣。"
+            "value" : "無法保留編輯後文字的副本，因此 TextMouth 讓 content.md 維持原樣。"
           }
         }
       }
@@ -599689,7 +599689,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」在取代期間發生變動，因此 TextMouth 保持兩份拷貝原樣。請再次選擇「取代現有項目」。"
+            "value" : "「%@」在取代期間發生變動，因此 TextMouth 保持兩份副本原樣。請再次選擇「取代現有項目」。"
           }
         }
       }
@@ -602135,7 +602135,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」與你書庫中已有的「%2$@」相符。要取代現有拷貝，還是將兩者保留為各自獨立的書籍？"
+            "value" : "「%1$@」與你書庫中已有的「%2$@」相符。要取代現有副本，還是將兩者保留為各自獨立的書籍？"
           }
         }
       }
