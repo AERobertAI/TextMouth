@@ -9378,7 +9378,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ hat jetzt keinen Transkripttext zum Durchsuchen, weil %2$@"
+            "value" : "%1$@ hat jetzt keinen Transkripttext zum Durchsuchen, denn %2$@"
           }
         },
         "en" : {
@@ -23992,7 +23992,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ wurde nicht erneut angefordert, weil das Laufwerk auf ein früheres Lesen nicht geantwortet hat"
+            "value" : "%@ wurde nicht erneut angefordert, weil das Laufwerk auf einen früheren Lesezugriff noch nicht reagiert hat"
           }
         },
         "es" : {
@@ -26949,13 +26949,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, und insgesamt höchstens %2$lld"
+                  "value" : "%1$@ und insgesamt höchstens %2$lld"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, und insgesamt höchstens %2$lld"
+                  "value" : "%1$@ und insgesamt höchstens %2$lld"
                 }
               }
             }
@@ -95734,7 +95734,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eine Bibliothek in der Cloud kann eine Weile dauern: Ihre nur in der Cloud liegenden Dateien werden zum Lesen auf diesen Mac geladen."
+            "value" : "Bei einer Bibliothek in der Cloud kann das eine Weile dauern: Dateien, die nur in der Cloud liegen, werden zum Lesen auf diesen Mac geladen."
           }
         },
         "es" : {
@@ -108412,7 +108412,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alle Unterordner sind jetzt sortiert nach %@"
+            "value" : "Alle Unterordner sind jetzt nach %@ sortiert"
           }
         },
         "es" : {
@@ -150588,7 +150588,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wähle mindestens eine Art von Objekten, die die Ansicht auflisten soll."
+            "value" : "Wähle mindestens eine Art von Einträgen, die die Ansicht auflisten soll."
           }
         },
         "es" : {
@@ -234249,7 +234249,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ hat den Ordner „%1$@“, %4$@ hat ihn als „%3$@“."
+            "value" : "Ordner mit zwei Pfaden: %2$@ „%1$@“, %4$@ „%3$@“."
           }
         },
         "en" : {
@@ -274336,7 +274336,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Name, Bedingungen, Sortierung und Limit gehen auf die von TextMouth zurück. Ihre Stelle in der Liste und der Zeitpunkt ihres Angebots bleiben unverändert."
+            "value" : "Name, Bedingungen, Sortierung und Limit werden auf die Vorgaben von TextMouth zurückgesetzt. Ihr Platz in der Liste und wann sie angeboten wird, bleiben unverändert."
           }
         },
         "es" : {
@@ -290600,7 +290600,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Listet"
+            "value" : "Inhalt"
           }
         },
         "es" : {
@@ -335177,7 +335177,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Keine Bedingungen: Die Ansicht listet jedes Objekt der gewählten Arten auf."
+            "value" : "Keine Bedingungen: Die Ansicht listet jeden Eintrag der gewählten Arten auf."
           }
         },
         "es" : {
@@ -359986,7 +359986,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zuletzt geöffnete"
+            "value" : "Zuletzt geöffnet"
           }
         },
         "es" : {
@@ -374140,7 +374140,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nur Text"
+            "value" : "Reiner Text"
           }
         },
         "es" : {
@@ -381600,7 +381600,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ von %2$@ werden vorbereitet…"
+            "value" : "%2$@, davon %1$@ vorbereitet…"
           }
         },
         "en" : {
