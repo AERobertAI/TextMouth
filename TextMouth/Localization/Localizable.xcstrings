@@ -138208,7 +138208,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "清除"
+            "value" : "Clear"
           }
         }
       }
@@ -218891,7 +218891,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "輔助說明"
+            "value" : "Help"
           }
         }
       }
@@ -325272,7 +325272,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "向下翻頁"
+            "value" : "Page Down"
           }
         }
       }
@@ -325391,7 +325391,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "向上翻頁"
+            "value" : "Page Up"
           }
         }
       }
