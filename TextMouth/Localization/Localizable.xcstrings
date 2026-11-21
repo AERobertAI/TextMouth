@@ -35472,7 +35472,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 字/分鐘"
+                  "value" : "每分鐘 %lld 字"
                 }
               }
             }
@@ -158194,7 +158194,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "預設速度：%lld WPM"
+                  "value" : "預設速度：每分鐘 %lld 字"
                 }
               }
             }
@@ -405119,7 +405119,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "速度：%lld 字/分鐘"
+                  "value" : "速度：每分鐘 %lld 字"
                 }
               }
             }
