@@ -4983,7 +4983,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 無法移除這本書籍的下載內容：%2$@"
+            "value" : "%1$@ 無法移除這本書籍的下載項目：%2$@"
           }
         }
       }
@@ -6253,7 +6253,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 沒有說明這部 Mac 上的這本書籍副本是否為最新，因此無法移除其下載內容，而且再等也不會改變這一點。"
+            "value" : "%@ 沒有說明這部 Mac 上的這本書籍副本是否為最新，因此無法移除其下載項目，而且再等也不會改變這一點。"
           }
         }
       }
@@ -9903,7 +9903,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 尚未表示這本書籍的所有檔案都已上傳，因此無法移除其下載內容：唯一的副本可能在這部 Mac 上。"
+            "value" : "%@ 尚未表示這本書籍的所有檔案都已上傳，因此無法移除其下載項目：唯一的副本可能在這部 Mac 上。"
           }
         }
       }
@@ -10028,7 +10028,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 尚未表示這部 Mac 上的這本書籍副本是最新的，因此無法移除其下載內容。"
+            "value" : "%@ 尚未表示這部 Mac 上的這本書籍副本是最新的，因此無法移除其下載項目。"
           }
         }
       }
@@ -10677,7 +10677,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 保有這本書籍某個檔案的兩個版本，因此無法移除其下載內容。"
+            "value" : "%@ 保有這本書籍某個檔案的兩個版本，因此無法移除其下載項目。"
           }
         }
       }
@@ -116875,7 +116875,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書籍會保留在這部 Mac 上，直到你移除其下載內容或 macOS 需要空間。"
+            "value" : "書籍會保留在這部 Mac 上，直到你移除其下載項目或 macOS 需要空間。"
           }
         }
       }
@@ -170077,7 +170077,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下載內容未移除"
+            "value" : "下載項目未移除"
           }
         }
       }
@@ -176256,7 +176256,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下載內容未移除"
+            "value" : "下載項目未移除"
           }
         }
       }
@@ -181528,7 +181528,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "編輯書籍中繼資料"
+            "value" : "編輯書籍中介資料"
           }
         }
       }
@@ -228999,7 +228999,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在正則表達式中，美元符號加上群組編號（如 $1 或 $2）會放回該群組所符合的內容。"
+            "value" : "在正規表示式中，美元符號加上群組編號（如 $1 或 $2）會放回該群組所符合的內容。"
           }
         }
       }
@@ -233143,7 +233143,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無效的正則表達式：%@"
+            "value" : "無效的正規表示式：%@"
           }
         }
       }
@@ -242040,7 +242040,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在上傳完成之前，無法移除它的下載內容。"
+            "value" : "在上傳完成之前，無法移除它的下載項目。"
           }
         }
       }
@@ -248189,7 +248189,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已保留 %@ 個章節（共 %lld 個），直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。若要從第 %@ 章繼續，請以相同的速度和音調輸出相同範圍。"
+                  "value" : "已保留 %@ 個章節（共 %lld 個），直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。若要從第 %@ 章繼續，請以相同的速度和音調輸出相同範圍。"
                 }
               }
             }
@@ -248596,7 +248596,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已保留全部 %lld 個朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。若要用它們製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
+                  "value" : "已保留全部 %lld 個朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。若要用它們製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
                 }
               }
             }
@@ -248968,7 +248968,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已保留朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。若要用它製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
+            "value" : "已保留朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。若要用它製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
           }
         }
       }
@@ -270287,7 +270287,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "中繼資料已更新"
+            "value" : "中介資料已更新"
           }
         }
       }
@@ -354594,7 +354594,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正則表達式"
+            "value" : "正規表示式"
           }
         }
       }
@@ -357734,7 +357734,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "移除下載內容"
+            "value" : "移除下載項目"
           }
         }
       }
@@ -358156,7 +358156,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "移除 %lld 本書籍的下載內容"
+                  "value" : "移除 %lld 本書籍的下載項目"
                 }
               }
             }
@@ -360111,7 +360111,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已移除 %@ 的下載內容"
+            "value" : "已移除 %@ 的下載項目"
           }
         }
       }
@@ -360236,7 +360236,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已移除 %@ 的下載內容"
+            "value" : "已移除 %@ 的下載項目"
           }
         }
       }
@@ -400666,7 +400666,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍的部分更改尚未上傳到 %@，因此無法移除其下載內容。"
+            "value" : "這本書籍的部分更改尚未上傳到 %@，因此無法移除其下載項目。"
           }
         }
       }
@@ -412963,7 +412963,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停止輸出，並保留已朗讀的章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。以相同的速度和音調輸出相同範圍，會從這些章節繼續。"
+            "value" : "停止輸出，並保留已朗讀的章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、取代規則或停頓更改為止。以相同的速度和音調輸出相同範圍，會從這些章節繼續。"
           }
         }
       }
@@ -458599,7 +458599,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載內容。"
+            "value" : "這本書籍已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載項目。"
           }
         }
       }
@@ -458724,7 +458724,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍已保留在這部 Mac 上，因此無法移除其下載內容。"
+            "value" : "這本書籍已保留在這部 Mac 上，因此無法移除其下載項目。"
           }
         }
       }
@@ -459093,7 +459093,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載內容。"
+            "value" : "這本書籍在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載項目。"
           }
         }
       }
@@ -459337,7 +459337,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書籍已打開，因此無法移除其下載內容。請先關閉它。"
+            "value" : "這本書籍已打開，因此無法移除其下載項目。請先關閉它。"
           }
         }
       }
@@ -465508,7 +465508,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未移除 %@ 的下載內容"
+            "value" : "未移除 %@ 的下載項目"
           }
         }
       }
@@ -465883,7 +465883,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未移除 %1$@ 的下載內容：%2$@"
+            "value" : "未移除 %1$@ 的下載項目：%2$@"
           }
         }
       }
@@ -489557,7 +489557,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "閱讀列表仍保留其中 %lld 本的下載內容"
+                  "value" : "閱讀列表仍保留其中 %lld 本的下載項目"
                 }
               }
             }
@@ -489685,7 +489685,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "閱讀列表仍保留它的下載內容"
+            "value" : "閱讀列表仍保留它的下載項目"
           }
         }
       }
@@ -489810,7 +489810,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "閱讀列表仍保留它們的下載內容"
+            "value" : "閱讀列表仍保留它們的下載項目"
           }
         }
       }
@@ -493297,7 +493297,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "經替換規則和標記防護處理後交給語音引擎的文字，為朗讀文字的第 %1$@ 到 %2$@ 個字元："
+            "value" : "經取代規則和標記防護處理後交給語音引擎的文字，為朗讀文字的第 %1$@ 到 %2$@ 個字元："
           }
         }
       }
@@ -496522,7 +496522,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "逐字稿連同你的更改，會與訂閱源中的單集保留在一起，即使刪除其下載內容也一樣。刪除單集或訂閱源會一併刪除逐字稿；「移至書庫」則會將它保留為書籍。"
+            "value" : "逐字稿連同你的更改，會與訂閱源中的單集保留在一起，即使刪除其下載項目也一樣。刪除單集或訂閱源會一併刪除逐字稿；「移至書庫」則會將它保留為書籍。"
           }
         }
       }
@@ -537781,7 +537781,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "使用正則表達式比對"
+            "value" : "使用正規表示式比對"
           }
         }
       }
@@ -541667,7 +541667,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在等待書籍中繼資料讀取完成…"
+            "value" : "正在等待書籍中介資料讀取完成…"
           }
         }
       }
@@ -541792,7 +541792,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在等待訂閱源下載內容刪除完成…"
+            "value" : "正在等待訂閱源下載項目刪除完成…"
           }
         }
       }
@@ -546999,7 +546999,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "忽略冠詞時，中繼資料註明為法文、德文、西班牙文、義大利文、葡萄牙文、荷蘭文、加泰蘭文、瑞典文、丹麥文或挪威文的書籍，會略過該語言的冠詞（例如 Le 和 Die）以及 The。"
+            "value" : "忽略冠詞時，中介資料註明為法文、德文、西班牙文、義大利文、葡萄牙文、荷蘭文、加泰蘭文、瑞典文、丹麥文或挪威文的書籍，會略過該語言的冠詞（例如 Le 和 Die）以及 The。"
           }
         }
       }
@@ -564922,7 +564922,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇「移除下載內容」"
+            "value" : "選擇「移除下載項目」"
           }
         }
       }
