@@ -267284,6 +267284,12 @@
             "value" : "Elimina %@: se elimina de forma permanente y no se puede recuperar."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ را حذف می‌کند: برای همیشه حذف می‌شود و قابل بازیابی نیست."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267419,6 +267425,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elimina %@: se conserva en la carpeta de la biblioteca de TextMouth."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ را حذف می‌کند: در پوشه کتابخانه TextMouth می‌ماند."
           }
         },
         "fr" : {
@@ -267558,6 +267570,12 @@
             "value" : "Elimina %@: se eliminan de forma permanente y no se pueden recuperar."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ را حذف می‌کند: برای همیشه حذف می‌شوند و قابل بازیابی نیستند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267695,6 +267713,12 @@
             "value" : "Elimina %@: se mueven a la Papelera, donde se pueden recuperar hasta que la vacíes."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ را حذف می‌کند: به سطل زباله می‌روند و تا خالی شدن سطل می‌توانید آن‌ها را بازیابی کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267830,6 +267854,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Elimina %@: se conservan en la carpeta de la biblioteca de TextMouth."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ را حذف می‌کند: در پوشه کتابخانه TextMouth می‌مانند."
           }
         },
         "fr" : {
@@ -268984,6 +269014,12 @@
             "value" : "Contiene %@, que TextMouth no importa."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن شامل %@ است که TextMouth وارد نمی‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269542,6 +269578,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No contiene archivos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ فایلی ندارد."
           }
         },
         "fr" : {
@@ -270527,6 +270569,12 @@
             "value" : "Es una lista de reproducción en streaming para audio web, que TextMouth no importa."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فهرست پخش جریانی برای صدای وب است که TextMouth وارد نمی‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270938,6 +270986,12 @@
             "value" : "No indica ninguna pista de audio con un inicio que TextMouth pueda leer."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ تراک صوتی با زمان شروعِ قابل خواندن برای TextMouth فهرست نکرده است."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271073,6 +271127,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Solo enumera direcciones web, y TextMouth solo importa archivos de esta Mac."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فقط نشانی‌های وب را فهرست می‌کند و TextMouth فقط فایل‌های روی این Mac را وارد می‌کند."
           }
         },
         "fr" : {
@@ -271347,6 +271407,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Puede estar dañado, o ser otro tipo de archivo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ممکن است آسیب دیده باشد یا نوع دیگری از فایل باشد."
           }
         },
         "fr" : {
@@ -271760,6 +271826,12 @@
             "value" : "No nombra ningún archivo de audio en su propia carpeta que TextMouth pueda importar."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ فایل صوتی را در پوشه خودش که TextMouth بتواند وارد کند نام نبرده است."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272125,6 +272197,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Omitió %lld entradas: %@."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ورودی را رد کرد: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ورودی را رد کرد: %@."
                 }
               }
             }
@@ -272775,6 +272865,12 @@
             "value" : "Elementos"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موردها"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273003,6 +273099,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Elementos (%lld de %@ en la lista)"
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "موردها (%1$lld از %2$@ فهرست شده)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "موردها (%1$lld از %2$@ فهرست شده)"
                 }
               }
             }
@@ -273475,6 +273589,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "موردها (%lld)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "موردها (%lld)"
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -273846,6 +273978,12 @@
             "value" : "Para cuando la descargues de nuevo, se conservan: %@."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ آن برای زمانی که دوباره بارگیری کنید نگه داشته می‌شوند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273981,6 +274119,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se conservan: %@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ آن نگه داشته می‌شوند."
           }
         },
         "fr" : {
@@ -274120,6 +274264,12 @@
             "value" : "Para cuando la descargues de nuevo, se conserva: %@."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ آن برای زمانی که دوباره بارگیری کنید نگه داشته می‌شود."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274255,6 +274405,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se conserva: %@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ آن نگه داشته می‌شود."
           }
         },
         "fr" : {
@@ -275820,6 +275976,12 @@
             "value" : "Su carpeta “%@” también se elimina cuando no hay nada más en ella."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوشه آن، «%@»، هم حذف می‌شود، اگر چیز دیگری در آن نباشد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275955,6 +276117,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Su carpeta “%@” está vacía, pero no se pudo eliminar."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوشه آن، «%@»، خالی است اما حذف نشد."
           }
         },
         "fr" : {
@@ -276094,6 +276262,12 @@
             "value" : "Su carpeta “%@” también se eliminó."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوشه آن، «%@»، هم حذف شد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -276229,6 +276403,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Su carpeta “%@” se queda, porque hay otras cosas en ella."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوشه آن، «%@»، می‌ماند، چون چیز دیگری در آن است."
           }
         },
         "fr" : {
@@ -277879,6 +278059,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sus pistas van más allá del final del audio que nombra, así que se hizo para otra copia de ese audio."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تراک‌های آن از انتهای صدایی که نام می‌برد فراتر می‌روند، پس برای نسخه‌ای دیگر از آن صدا ساخته شده است."
           }
         },
         "fr" : {
@@ -280272,6 +280458,12 @@
             "value" : "Conservar ambos"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نگه داشتن هر دو"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280957,6 +281149,12 @@
             "value" : "Conservar originales del audio convertido"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نگه داشتن اصل صدای تبدیل‌شده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281366,6 +281564,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Conserva dentro del paquete del libro cada archivo de audio que convierte una importación, como Ogg o AC-3."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هر فایل صوتی را که وارد کردن تبدیل می‌کند، مانند Ogg یا AC-3، درون بسته کتاب نگه می‌دارد."
           }
         },
         "fr" : {
@@ -283672,6 +283876,12 @@
             "value" : "Etiqueta %@"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برچسب %@"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284637,6 +284847,12 @@
             "value" : "Última revisión"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آخرین بررسی"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284772,6 +284988,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Falló la última revisión: %@"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آخرین بررسی ناموفق بود: %@"
           }
         },
         "fr" : {
@@ -285046,6 +285268,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Última apertura"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آخرین باز شدن"
           }
         },
         "fr" : {
@@ -285870,6 +286098,12 @@
             "value" : "Deja los libros importados donde están."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب‌های واردشده را همان جا که هستند می‌گذارد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286005,6 +286239,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Deja el archivo original donde está."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل اصلی را همان جا که هست می‌گذارد."
           }
         },
         "fr" : {
@@ -287387,6 +287627,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Queda menos de un minuto"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کمتر از یک دقیقه مانده"
           }
         },
         "fr" : {
@@ -290270,6 +290516,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Lista y descarga"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فهرست و بارگیری"
           }
         },
         "fr" : {
@@ -293419,6 +293671,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "همه مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "همه مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -293790,6 +294060,12 @@
             "value" : "Enumera todos los artículos; nada se descarga solo, y una descarga permanece hasta que la elimines o pasen sus días tras reproducirla."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همه مقاله‌ها را فهرست می‌کند؛ هیچ چیز خودکار بارگیری نمی‌شود و بارگیری می‌ماند تا آن را حذف کنید یا روزهای پس از پخش آن بگذرد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294018,6 +294294,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Enumera todos los episodios y artículos, mantiene descargados los %lld más recientes y quita las descargas anteriores que hizo, conservando su lugar, sus marcadores y sus ajustes."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "همه قسمت‌ها و مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "همه قسمت‌ها و مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
                 }
               }
             }
@@ -294394,6 +294688,12 @@
             "value" : "Enumera todos los episodios y artículos; nada se descarga solo, y una descarga permanece hasta que la elimines o pasen sus días tras reproducirla."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همه قسمت‌ها و مقاله‌ها را فهرست می‌کند؛ هیچ چیز خودکار بارگیری نمی‌شود و بارگیری می‌ماند تا آن را حذف کنید یا روزهای پس از پخش آن بگذرد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294622,6 +294922,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Enumera todos los episodios, mantiene descargados los %lld más recientes y quita las descargas anteriores que hizo, conservando su lugar, sus marcadores y sus ajustes."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "همه قسمت‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "همه قسمت‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
                 }
               }
             }
@@ -294996,6 +295314,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Enumera todos los episodios; nada se descarga solo, y una descarga permanece hasta que la elimines o pasen sus días tras reproducirla."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همه قسمت‌ها را فهرست می‌کند؛ هیچ چیز خودکار بارگیری نمی‌شود و بارگیری می‌ماند تا آن را حذف کنید یا روزهای پس از پخش آن بگذرد."
           }
         },
         "fr" : {
@@ -295505,6 +295829,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld جدیدترین پخش‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld جدیدترین پخش‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -295967,6 +296309,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Enumera los %lld más recientes que no has leído, y todas las descargas. Descarga solo lo que pides; los demás conservan sus registros y vuelven cuando enumeras más."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld جدیدترین خوانده‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld جدیدترین خوانده‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
                 }
               }
             }
@@ -299500,6 +299860,12 @@
             "value" : "Crea un libro a partir de texto que pegas o escribes."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "از متنی که می‌چسبانید یا تایپ می‌کنید کتابی می‌سازد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300602,6 +300968,12 @@
             "value" : "Marcar todo como reproducido"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "علامت‌گذاری همه به‌عنوان پخش‌شده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300737,6 +301109,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Marcar todo como leído"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "علامت‌گذاری همه به‌عنوان خوانده‌شده"
           }
         },
         "fr" : {
@@ -301150,6 +301528,12 @@
             "value" : "Marcar como reproducido"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "علامت‌گذاری به‌عنوان پخش‌شده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301285,6 +301669,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Marcar como leído"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "علامت‌گذاری به‌عنوان خوانده‌شده"
           }
         },
         "fr" : {
@@ -301424,6 +301814,12 @@
             "value" : "Marcar como no reproducido"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "علامت‌گذاری به‌عنوان پخش‌نشده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301559,6 +301955,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Marcar como no leído"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "علامت‌گذاری به‌عنوان خوانده‌نشده"
           }
         },
         "fr" : {
@@ -301926,6 +302328,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Se marcaron %lld artículos de %@ como leídos."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقاله از %@ به‌عنوان خوانده‌شده علامت‌گذاری شد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقاله از %@ به‌عنوان خوانده‌شده علامت‌گذاری شد."
                 }
               }
             }
@@ -302398,6 +302818,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قسمت از %@ به‌عنوان پخش‌شده علامت‌گذاری شد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قسمت از %@ به‌عنوان پخش‌شده علامت‌گذاری شد."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -302865,6 +303303,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مورد از %@ به‌عنوان پخش‌شده علامت‌گذاری شد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مورد از %@ به‌عنوان پخش‌شده علامت‌گذاری شد."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -303236,6 +303692,12 @@
             "value" : "Se marcó “%@” como reproducido."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» به‌عنوان پخش‌شده علامت‌گذاری شد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303371,6 +303833,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se marcó “%@” como leído."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» به‌عنوان خوانده‌شده علامت‌گذاری شد."
           }
         },
         "fr" : {
@@ -303510,6 +303978,12 @@
             "value" : "Se marcó “%@” como no reproducido."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» به‌عنوان پخش‌نشده علامت‌گذاری شد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303645,6 +304119,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se marcó “%@” como no leído."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%@» به‌عنوان خوانده‌نشده علامت‌گذاری شد."
           }
         },
         "fr" : {
@@ -306132,6 +306612,12 @@
           }
         },
         "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Matroska"
+          }
+        },
+        "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Matroska"
@@ -311414,6 +311900,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "انتقال %lld مقاله به کتابخانه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "انتقال %lld مقاله به کتابخانه"
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -312815,6 +313319,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "انتقال %lld قسمت به کتابخانه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "انتقال %lld قسمت به کتابخانه"
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -313277,6 +313799,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Mover %lld elementos a la biblioteca"
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "انتقال %lld مورد به کتابخانه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "انتقال %lld مورد به کتابخانه"
                 }
               }
             }
@@ -315627,6 +316167,12 @@
             "value" : "¿Mover el archivo original a la Papelera?"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل اصلی به سطل زباله منتقل شود؟"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316175,6 +316721,12 @@
             "value" : "¿Mover el archivo original a la Papelera?"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل اصلی به سطل زباله منتقل شود؟"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316310,6 +316862,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "¿Mover el archivo original “%@” a la Papelera?"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل اصلی «%@» به سطل زباله منتقل شود؟"
           }
         },
         "fr" : {
@@ -317134,6 +317692,12 @@
             "value" : "Mover “%@” a la biblioteca"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "انتقال «%@» به کتابخانه"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317933,6 +318497,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقاله به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقاله به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -318400,6 +318982,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قسمت به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قسمت به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -318862,6 +319462,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Se movieron %lld elementos a %@. Ahora son libros de la biblioteca, y sus canales los muestran como %@."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مورد به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مورد به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
                 }
               }
             }
@@ -319796,6 +320414,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se movió “%1$@” a %2$@. Ahora es un libro de la biblioteca, y su canal lo muestra como %3$@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "«%1$@» به %2$@ منتقل شد. اکنون کتاب کتابخانه است و فیدش آن را با عنوان %3$@ نشان می‌دهد."
           }
         },
         "fr" : {
@@ -323416,6 +324040,12 @@
             "value" : "Mueve los libros importados a una carpeta nueva con este nombre."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب‌های واردشده را به پوشه‌ای جدید با این نام منتقل می‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323644,6 +324274,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Mueve estos %lld artículos a una carpeta de la biblioteca como libros que puedes editar; salen de sus canales"
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "این %lld مقاله را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "این %lld مقاله را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
                 }
               }
             }
@@ -324116,6 +324764,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "این %lld قسمت را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "این %lld قسمت را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -324583,6 +325249,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "این %lld مورد را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "این %lld مورد را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -324954,6 +325638,12 @@
             "value" : "Mueve este artículo a una carpeta de la biblioteca como un libro que puedes editar; sale de su canal"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این مقاله را به‌عنوان کتابی قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فید خارج می‌شود"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325091,6 +325781,12 @@
             "value" : "Mueve este episodio a una carpeta de la biblioteca como un libro que puedes editar; sale de su canal"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این قسمت را به‌عنوان کتابی قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فید خارج می‌شود"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325226,6 +325922,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mueve este elemento a una carpeta de la biblioteca como un libro que puedes editar; sale de su canal"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "این مورد را به‌عنوان کتابی قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فید خارج می‌شود"
           }
         },
         "fr" : {
@@ -327471,6 +328173,12 @@
           }
         },
         "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Musepack"
+          }
+        },
+        "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Musepack"
@@ -329942,6 +330650,12 @@
             "value" : "No eliminar nunca las descargas reproducidas"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هرگز بارگیری‌های پخش‌شده حذف نشوند"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330079,6 +330793,12 @@
             "value" : "Nuevo"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدید"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330214,6 +330934,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Artículos nuevos"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مقاله‌های جدید"
           }
         },
         "fr" : {
@@ -330488,6 +331214,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Episodios nuevos"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قسمت‌های جدید"
           }
         },
         "fr" : {
@@ -331318,6 +332050,12 @@
             "value" : "Elementos nuevos"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موردهای جدید"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332140,6 +332878,12 @@
             "value" : "Artículo nuevo: “%@”"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مقاله جدید: «%@»"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332275,6 +333019,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Episodio nuevo: “%@”"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قسمت جدید: «%@»"
           }
         },
         "fr" : {
@@ -332688,6 +333438,12 @@
             "value" : "Elemento nuevo: “%@”"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مورد جدید: «%@»"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332962,6 +333718,12 @@
             "value" : "Cantidad de artículos más recientes que se conservan descargados o en la lista, de 1 a 2000"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدیدترین مقاله‌هایی که بارگیری‌شده یا فهرست‌شده می‌مانند، از 1 تا 2,000"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333097,6 +333859,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cantidad de episodios y artículos más recientes que se conservan descargados o en la lista, de 1 a 2000"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدیدترین قسمت‌ها و مقاله‌هایی که بارگیری‌شده یا فهرست‌شده می‌مانند، از 1 تا 2,000"
           }
         },
         "fr" : {
@@ -333236,6 +334004,12 @@
             "value" : "Cantidad de episodios más recientes que se conservan descargados o en la lista, de 1 a 2000"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدیدترین قسمت‌هایی که بارگیری‌شده یا فهرست‌شده می‌مانند، از 1 تا 2,000"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333371,6 +334145,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cantidad de elementos más recientes que se conservan descargados o en la lista, de 1 a 2000"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جدیدترین موردهایی که بارگیری‌شده یا فهرست‌شده می‌مانند، از 1 تا 2,000"
           }
         },
         "fr" : {
@@ -335565,6 +336345,12 @@
             "value" : "No, gracias"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نه، ممنون"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336659,6 +337445,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se encontraron libros en “%@”."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ کتابی در «%@» پیدا نشد."
           }
         },
         "fr" : {
@@ -338305,6 +339097,12 @@
             "value" : "No hay ninguna descarga de canales en curso."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ بارگیری فیدی در جریان نیست."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338440,6 +339238,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se suscribió a ningún canal."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اشتراک هیچ فیدی انجام نشد."
           }
         },
         "fr" : {
@@ -338988,6 +339792,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No hay ninguna importación en curso."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ وارد کردنی در جریان نیست."
           }
         },
         "fr" : {
@@ -340182,6 +340992,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "کتاب جدیدی در «%1$@» نیست: هر %2$lld کتاب از قبل در کتابخانه شما بود."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "کتاب جدیدی در «%1$@» نیست: هر %2$lld کتاب از قبل در کتابخانه شما بود."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -340553,6 +341381,12 @@
             "value" : "No hay libros nuevos en “%@”: los dos ya estaban en tu biblioteca."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب جدیدی در «%@» نیست: هر دو کتاب از قبل در کتابخانه شما بودند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -340688,6 +341522,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No hay libros nuevos en “%@”: su único libro ya estaba en tu biblioteca."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب جدیدی در «%@» نیست: تنها کتاب آن از قبل در کتابخانه شما بود."
           }
         },
         "fr" : {
@@ -342743,6 +343583,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se encontraron podcasts para “%@”. Prueba con otras palabras o escribe la dirección del canal."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پادکستی برای «%@» پیدا نشد. کلمه‌های دیگری را امتحان کنید یا نشانی فید را تایپ کنید."
           }
         },
         "fr" : {
@@ -345759,6 +346605,12 @@
             "value" : "No se pudo leer texto de este archivo de cómic: el reconocimiento de texto (OCR) no pudo ejecutarse (%@)."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ متنی از این آرشیو کتاب مصور خوانده نشد: OCR اجرا نشد (%@)."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345894,6 +346746,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se pudo leer texto de esta imagen: el reconocimiento de texto (OCR) no pudo ejecutarse (%@)."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ متنی از این تصویر خوانده نشد: OCR اجرا نشد (%@)."
           }
         },
         "fr" : {
@@ -346033,6 +346891,12 @@
             "value" : "No se encontró texto en la única imagen de este archivo de cómic."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ متنی در تنها تصویر این آرشیو کتاب مصور پیدا نشد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346168,6 +347032,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No se encontró texto en esta imagen."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هیچ متنی در این تصویر پیدا نشد."
           }
         },
         "fr" : {
@@ -346398,6 +347268,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "No se encontró texto en ninguna de las %lld páginas de este archivo de cómic."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "در هیچ یک از %lld صفحه این آرشیو کتاب مصور متنی پیدا نشد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "در هیچ یک از %lld صفحه این آرشیو کتاب مصور متنی پیدا نشد."
                 }
               }
             }
@@ -346865,6 +347753,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "No se encontró texto en ninguna de las %lld páginas de esta imagen."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "در هیچ یک از %lld صفحه این تصویر متنی پیدا نشد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "در هیچ یک از %lld صفحه این تصویر متنی پیدا نشد."
                 }
               }
             }
@@ -349601,6 +350507,12 @@
             "value" : "No descargado"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بارگیری نشده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349736,6 +350648,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No hay espacio suficiente para convertir el audio"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فضای کافی برای تبدیل صدا نیست"
           }
         },
         "fr" : {
@@ -350286,6 +351204,12 @@
             "value" : "No disponible en esta ventana."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در این پنجره در دسترس نیست."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -350421,6 +351345,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "No revisado"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بررسی نشده"
           }
         },
         "fr" : {
@@ -350560,6 +351490,12 @@
             "value" : "No revisado desde %@"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "از %@ بررسی نشده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -350695,6 +351631,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aún no revisado"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هنوز بررسی نشده"
           }
         },
         "fr" : {
@@ -350925,6 +351867,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "No se extrajo: TextMouth solo extrae archivos comprimidos dentro de otro hasta %lld niveles de profundidad."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "استخراج نشد: TextMouth آرشیوهای درون آرشیو را فقط تا %lld سطح عمق استخراج می‌کند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "استخراج نشد: TextMouth آرشیوهای درون آرشیو را فقط تا %lld سطح عمق استخراج می‌کند."
                 }
               }
             }
@@ -352806,6 +353766,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nada importado"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "چیزی وارد نشد"
           }
         },
         "fr" : {
@@ -357167,6 +358133,12 @@
             "value" : "Ogg"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Ogg"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -357439,6 +358411,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Una copia se reproduce desde una grabación y la otra se lee en voz alta desde texto, así que reemplazar solo conserva la carpeta y el lugar en la lista de lectura de la copia existente, no su posición de lectura, ni sus marcadores y sus notas, ni sus ajustes."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "یک نسخه از ضبط پخش می‌شود و دیگری از متن با صدای بلند خوانده می‌شود، پس جایگزینی فقط پوشه و جایگاه نسخه موجود را در فهرست مطالعه نگه می‌دارد، نه موقعیت مطالعه، نشانک‌ها و یادداشت‌هایشان یا تنظیمات را."
           }
         },
         "fr" : {
@@ -358126,6 +359104,12 @@
             "value" : "Solo un episodio o artículo descargado en su canal se puede mover a la biblioteca."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فقط قسمت یا مقاله‌ای که در فید خود بارگیری شده می‌تواند به کتابخانه منتقل شود."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358261,6 +359245,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Solo al abrir y cuando lo pido"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فقط هنگام راه‌اندازی و وقتی خودم بخواهم"
           }
         },
         "fr" : {
@@ -359044,6 +360034,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "فقط %lld جدیدترین فهرست می‌شود"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "فقط %lld جدیدترین فهرست می‌شود"
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -359413,6 +360421,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abrir"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "باز کردن"
           }
         },
         "fr" : {
@@ -363662,6 +364676,12 @@
             "value" : "Abre una hoja para abrir un libro, importar una carpeta, crear un libro a partir de texto, grabar audio o agregar un canal"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برگه‌ای باز می‌کند تا کتابی باز کنید، پوشه‌ای وارد کنید، از متن کتاب بسازید، صدا ضبط کنید یا فیدی اضافه کنید"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363797,6 +364817,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abre una hoja para escribir la dirección de un canal y elegir su carpeta"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برگه‌ای باز می‌کند تا نشانی فید را تایپ کنید و پوشه آن را انتخاب کنید"
           }
         },
         "fr" : {
@@ -363936,6 +364962,12 @@
             "value" : "Lo abre"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن را باز می‌کند"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -364071,6 +365103,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abre su libro en tu biblioteca"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب آن را در کتابخانه شما باز می‌کند"
           }
         },
         "fr" : {
@@ -365304,6 +366342,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abre la carpeta del canal"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوشه فید را باز می‌کند"
           }
         },
         "fr" : {
@@ -369335,6 +370379,12 @@
             "value" : "Página %@"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صفحه %@"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370574,6 +371624,12 @@
             "value" : "Una parte de %@ no se pudo decodificar y se conserva como silencio."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بخشی از %@ را نمی‌توان رمزگشایی کرد و به صورت سکوت نگه داشته می‌شود."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370939,6 +371995,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Una parte de %lld archivos, %@, no se pudo decodificar y se conserva como silencio."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بخشی از %1$lld فایل، %2$@، را نمی‌توان رمزگشایی کرد و به صورت سکوت نگه داشته می‌شود."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "بخشی از %1$lld فایل، %2$@، را نمی‌توان رمزگشایی کرد و به صورت سکوت نگه داشته می‌شود."
                 }
               }
             }
@@ -376446,6 +377520,12 @@
             "value" : "http sin cifrar: otras personas pueden leer o cambiar lo que envía este canal."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "http ساده: دیگران می‌توانند آنچه این فید می‌فرستد بخوانند یا تغییر دهند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -379323,6 +380403,12 @@
             "value" : "Reproducido"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پخش‌شده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -379458,6 +380544,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Las descargas reproducidas se conservan hasta que las elimines"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بارگیری‌های پخش‌شده نگه داشته می‌شوند تا خودتان آن‌ها را حذف کنید"
           }
         },
         "fr" : {
@@ -383493,6 +384585,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Enviar una notificación por cada canal con episodios nuevos"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برای هر فید دارای قسمت جدید اعلان ارسال شود"
           }
         },
         "fr" : {
@@ -387885,6 +388983,12 @@
             "value" : "Publicado por"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منتشرکننده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -388707,6 +389811,12 @@
             "value" : "Poner la carpeta del canal en"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوشه فید در این مکان قرار بگیرد"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -388842,6 +389952,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Poner las carpetas de los canales en"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "پوشه‌های فیدها در این مکان قرار بگیرند"
           }
         },
         "fr" : {
@@ -389255,6 +390371,12 @@
             "value" : "Pone la copia nueva en lugar de la que ya está en la biblioteca, conservando solo la carpeta y el lugar en la lista de lectura de la copia existente."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نسخه جدید را به جای نسخه موجود در کتابخانه می‌گذارد و فقط پوشه و جایگاه نسخه موجود را در فهرست مطالعه نگه می‌دارد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -389390,6 +390512,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pone la copia nueva en lugar de la que ya está en la biblioteca, conservando la posición de lectura, los marcadores y los ajustes de la copia existente."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نسخه جدید را به جای نسخه موجود در کتابخانه می‌گذارد و موقعیت مطالعه، نشانک‌ها و تنظیمات نسخه موجود را نگه می‌دارد."
           }
         },
         "fr" : {
@@ -391995,6 +393123,12 @@
             "value" : "Leído"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "خوانده‌شده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -392404,6 +393538,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Leer en la web:"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "خواندن در وب:"
           }
         },
         "fr" : {
@@ -396378,6 +397518,12 @@
             "value" : "RealMedia"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "RealMedia"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -399553,6 +400699,12 @@
             "value" : "Graba desde un micrófono en un audiolibro nuevo."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "از میکروفون در یک کتاب صوتی جدید ضبط می‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -401334,6 +402486,12 @@
             "value" : "Actualizar todos los canales"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تازه‌سازی همه فیدها"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -401469,6 +402627,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Actualizar todos los canales ahora"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تازه‌سازی همه فیدها اکنون"
           }
         },
         "fr" : {
@@ -401608,6 +402772,12 @@
             "value" : "Actualizar todos los canales al abrir TextMouth"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تازه‌سازی همه فیدها هنگام باز شدن TextMouth"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -401743,6 +402913,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Actualizar canales cada"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تازه‌سازی فیدها هر"
           }
         },
         "fr" : {
@@ -401888,6 +403064,12 @@
             "value" : "Actualización de %1$@: %2$@"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ تازه‌سازی شد: %2$@"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -402025,6 +403207,12 @@
             "value" : "Actualización"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تازه‌سازی"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -402160,6 +403348,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Actualizando todos los canales…"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در حال تازه‌سازی همه فیدها…"
           }
         },
         "fr" : {
@@ -410039,6 +411233,12 @@
             "value" : "Reempaqueta las páginas de los cómics RAR como cómics CBZ y luego impórtalos."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صفحه‌های کمیک‌های RAR را به صورت کمیک CBZ دوباره بسته‌بندی کنید، سپس آن‌ها را وارد کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -410722,6 +411922,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reemplazar el existente"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جایگزینی موجود"
           }
         },
         "fr" : {
@@ -411963,6 +413169,12 @@
             "value" : "Al reemplazar, se conservan la posición de lectura y los marcadores de la copia existente, movidos a sus palabras en el texto nuevo donde se encuentren, además de sus ajustes, su carpeta y su lugar en la lista de lectura. Una edición de su texto se conserva como copia junto al texto nuevo, sin aplicarse."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جایگزینی موقعیت مطالعه و نشانک‌های نسخه موجود را نگه می‌دارد و آن‌ها را در صورت یافتن به کلمه‌هایشان در متن جدید منتقل می‌کند، همراه با تنظیمات، پوشه و جایگاه آن در فهرست مطالعه. ویرایش متن آن به صورت نسخه‌ای کنار متن جدید نگه داشته می‌شود و اعمال نمی‌شود."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -412098,6 +413310,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Al reemplazar, se conservan la posición de lectura, los marcadores, los ajustes, la carpeta y el lugar en la lista de lectura de la copia existente, y su transcripción cuando el audio es el mismo, en lugar de la transcripción que se encontró junto al audio de la copia nueva."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه موجود را در فهرست مطالعه نگه می‌دارد، و رونوشت آن را هم وقتی صدا یکی است، نه فایل رونوشتی را که کنار صدای نسخه جدید پیدا شده است."
           }
         },
         "fr" : {
@@ -412237,6 +413455,12 @@
             "value" : "Al reemplazar, se conservan la posición de lectura, los marcadores, los ajustes, la carpeta y el lugar en la lista de lectura de la copia existente, y su transcripción cuando el audio es el mismo."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه موجود را در فهرست مطالعه نگه می‌دارد، و رونوشت آن را هم وقتی صدا یکی است."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -412372,6 +413596,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Al reemplazar, se conservan la posición de lectura, los marcadores, los ajustes, la carpeta y el lugar en la lista de lectura de la copia existente."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه موجود را در فهرست مطالعه نگه می‌دارد."
           }
         },
         "fr" : {
@@ -412646,6 +413876,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Reemplazando “%@”. Esto puede tardar un momento."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در حال جایگزینی «%@». ممکن است کمی طول بکشد."
           }
         },
         "fr" : {
@@ -417580,6 +418816,12 @@
             "value" : "Volver a suscribirse"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اشتراک مجدد"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417715,6 +418957,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Te volviste a suscribir a %@. Revisándolo ahora…"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اشتراک مجدد %@ انجام شد. در حال بررسی آن…"
           }
         },
         "fr" : {
@@ -425283,6 +426531,12 @@
             "value" : "Guarda los documentos de WordPerfect como archivos de Word o HTML en un programa que los lea, como LibreOffice, y luego impórtalos."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سندهای WordPerfect را در برنامه‌ای که آن‌ها را می‌خواند، مانند LibreOffice، به صورت فایل Word یا HTML ذخیره کنید، سپس آن‌ها را وارد کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -427616,6 +428870,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Guarda tus suscripciones como un archivo OPML, que otros lectores de canales importan."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اشتراک‌های خود را به صورت فایل OPML ذخیره کنید که خواننده‌های دیگر فید آن را وارد می‌کنند."
           }
         },
         "fr" : {
@@ -430775,6 +432035,12 @@
             "value" : "Buscar"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جست‌وجو"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -431458,6 +432724,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Buscar un podcast"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جست‌وجوی پادکست"
           }
         },
         "fr" : {
@@ -432373,6 +433645,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Resultados de la búsqueda, %lld podcasts"
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "نتایج جست‌وجو، %lld پادکست"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "نتایج جست‌وجو، %lld پادکست"
                 }
               }
             }
@@ -433770,6 +435060,12 @@
             "value" : "Buscando podcasts…"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در حال جست‌وجوی پادکست‌ها…"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -434590,6 +435886,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Seguridad"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "امنیت"
           }
         },
         "fr" : {
@@ -443546,6 +444848,12 @@
             "value" : "Mostrar descripción…"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نمایش توضیحات…"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -444972,6 +446280,12 @@
             "value" : "Mostrar una alerta cuando una actualización trae episodios nuevos"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هنگام رسیدن قسمت جدید پس از تازه‌سازی، هشدار نمایش داده شود"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -445244,6 +446558,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Mostrar información del libro"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نمایش اطلاعات کتاب"
           }
         },
         "fr" : {
@@ -454617,6 +455937,12 @@
             "value" : "Algunos archivos no se importaron"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "برخی فایل‌ها وارد نشدند"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -460552,6 +461878,12 @@
           }
         },
         "es" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speex"
+          }
+        },
+        "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Speex"
@@ -466519,6 +467851,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بارگیری فید متوقف شد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld بارگیری فید متوقف شد."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -467031,6 +468381,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se detuvo la descarga de “%@”."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بارگیری «%@» متوقف شد."
           }
         },
         "fr" : {
@@ -467581,6 +468937,12 @@
             "value" : "Deja de revisar; el canal y sus descargas se quedan"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بررسی را متوقف می‌کند؛ فید و بارگیری‌هایش می‌مانند"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -467853,6 +469215,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Detiene todas las descargas de canales, incluidas las que esperan, y elimina lo que habían descargado."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "همه بارگیری‌های فید، از جمله آن‌هایی را که منتظرند، متوقف می‌کند و آنچه را بارگیری کرده‌اند حذف می‌کند."
           }
         },
         "fr" : {
@@ -469086,6 +470454,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Detiene la importación en curso y las que esperan. Los libros ya importados se quedan."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وارد کردن در جریان و وارد کردن‌های منتظر را متوقف می‌کند. کتاب‌هایی که پیش از این وارد شده‌اند می‌مانند."
           }
         },
         "fr" : {
@@ -470595,6 +471969,12 @@
             "value" : "Suscribirse"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مشترک شدن"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -470730,6 +472110,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Suscribirse a %@"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مشترک شدن در %@"
           }
         },
         "fr" : {
@@ -470869,6 +472255,12 @@
             "value" : "Suscrito"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مشترک شده"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -471004,6 +472396,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Te suscribiste a %@. Este canal usa http sin cifrar, así que otras personas pueden leer o cambiar lo que envía; TextMouth lo carga de todos modos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در %@ مشترک شدید. این فید از http ساده استفاده می‌کند، پس دیگران می‌توانند آنچه را می‌فرستد بخوانند یا تغییر دهند؛ TextMouth باز هم آن را بارگیری می‌کند."
           }
         },
         "fr" : {
@@ -471147,6 +472545,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Te suscribiste a %1$@: %2$@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در %1$@ مشترک شدید: %2$@."
           }
         },
         "fr" : {
@@ -471377,6 +472781,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Te suscribiste a %lld canales."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "در %lld فید مشترک شدید."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "در %lld فید مشترک شدید."
                 }
               }
             }
@@ -471753,6 +473175,12 @@
             "value" : "Te suscribe a este podcast y completa el campo de dirección"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در این پادکست مشترک می‌شود و فیلد نشانی را پر می‌کند"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -471894,6 +473322,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Suscribiendo a %1$@, %2$lld de %3$lld…"
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "در حال مشترک شدن در %1$@، %2$lld از %3$lld…"
           }
         },
         "fr" : {
@@ -478240,6 +479674,12 @@
             "value" : "El reconocimiento de texto no pudo leer %1$@: %2$@."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تشخیص متن نتوانست %1$@ را بخواند: %2$@."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -478468,6 +479908,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "El reconocimiento de texto no pudo leer ninguna de las %lld páginas: %@."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تشخیص متن نتوانست هیچ یک از %lld صفحه را بخواند: %@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تشخیص متن نتوانست هیچ یک از %lld صفحه را بخواند: %@."
                 }
               }
             }
@@ -478842,6 +480300,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El reconocimiento de texto no pudo leer la única página: %@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تشخیص متن نتوانست تنها صفحه را بخواند: %@."
           }
         },
         "fr" : {
@@ -479940,6 +481404,12 @@
             "value" : "Suscripciones de TextMouth"
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اشتراک‌های TextMouth"
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -480214,6 +481684,12 @@
             "value" : "TextMouth no puede convertir archivos %@ porque falta su conversor en la app."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند فایل‌های %@ را تبدیل کند، چون مبدل آن در برنامه نیست."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -480349,6 +481825,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no puede convertir el sonido de “%@”: está en un tipo de audio que no lee."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند صدای «%@» را تبدیل کند: صدا از نوعی است که آن را نمی‌خواند."
           }
         },
         "fr" : {
@@ -480488,6 +481970,12 @@
             "value" : "TextMouth no puede convertir “%@”: su sonido cambia de frecuencia o de canales a mitad del archivo, más de lo que puede seguir."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند «%@» را تبدیل کند: نرخ یا کانال‌های صدای آن در میانه کار بیشتر از آنچه بتواند دنبال کند تغییر می‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -480625,6 +482113,12 @@
             "value" : "TextMouth no puede convertir “%@”: una parte de su sonido está en un fragmento demasiado grande para decodificarse."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند «%@» را تبدیل کند: بخشی از صدای آن در قطعه‌ای بیش از حد بزرگ برای رمزگشایی است."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -480760,6 +482254,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no puede reproducir este tipo de archivo (%@)."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند این نوع فایل (%@) را پخش کند."
           }
         },
         "fr" : {
@@ -481185,6 +482685,12 @@
             "value" : "TextMouth no puede leer este tipo de imagen (%@). Guárdala como PNG o JPEG y luego importa esa copia."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند این نوع تصویر (%@) را بخواند. آن را به صورت PNG یا JPEG ذخیره کنید، سپس آن نسخه را وارد کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -481326,6 +482832,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no puede leer “%1$@” como %2$@. Puede estar dañado o tener el nombre de otro formato."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند «%1$@» را به صورت %2$@ بخواند. ممکن است آسیب دیده باشد یا نامش برای قالب دیگری باشد."
           }
         },
         "fr" : {
@@ -482585,6 +484097,12 @@
             "value" : "TextMouth no puede abrir archivos con protección contra copia."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نمی‌تواند فایل‌های دارای حفاظت از کپی را باز کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -483282,6 +484800,12 @@
             "value" : "TextMouth no pudo conservar la copia nueva de “%@”. Elige Cancelar para descartar la copia y luego importa el archivo otra vez."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست نسخه جدید «%@» را نگه دارد. لغو را انتخاب کنید تا نسخه دور انداخته شود، سپس فایل را دوباره وارد کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -483830,6 +485354,12 @@
             "value" : "TextMouth no pudo leer el archivo CUE “%@”, así que no se usaron sus encabezados."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست برگه نشانه «%@» را بخواند، پس سرفصل‌های آن استفاده نشد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -483965,6 +485495,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no pudo leer el archivo de etiquetas “%@”, así que no se usaron sus encabezados."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست فایل برچسب «%@» را بخواند، پس سرفصل‌های آن استفاده نشد."
           }
         },
         "fr" : {
@@ -485885,6 +487421,12 @@
             "value" : "TextMouth no pudo conservar el texto anterior junto a la descarga nueva, así que el artículo queda como estaba."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست متن قبلی را کنار بارگیری جدید نگه دارد، پس مقاله همان طور که بود می‌ماند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -486294,6 +487836,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no pudo crear una carpeta para este canal."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست برای این فید پوشه‌ای بسازد."
           }
         },
         "fr" : {
@@ -487317,6 +488865,12 @@
             "value" : "TextMouth no pudo guardar su lista de las descargas de este canal, así que se conservó la descarga. Inténtalo de nuevo cuando se pueda guardar la biblioteca."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست فهرست بارگیری‌های این فید را ذخیره کند، پس بارگیری نگه داشته شد. وقتی کتابخانه قابل ذخیره شد دوباره تلاش کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -487454,6 +489008,12 @@
             "value" : "TextMouth no pudo guardar la lista de elementos del canal, así que no se movió nada."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نتوانست فهرست موردهای فید را ذخیره کند، پس چیزی منتقل نشد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -487589,6 +489149,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth no pudo guardar la biblioteca antes de eliminar el canal “%@”, así que no se eliminó nada."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth پیش از حذف فید «%@» نتوانست کتابخانه را ذخیره کند، پس چیزی حذف نشد."
           }
         },
         "fr" : {
@@ -488413,6 +489979,12 @@
             "value" : "TextMouth no abre archivos RAR. Descomprímelos y luego importa lo que contienen."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth آرشیوهای RAR را باز نمی‌کند. آن‌ها را از حالت فشرده درآورید، سپس آنچه را دارند وارد کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -489113,6 +490685,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth %lld مورد از آن‌ها را در بررسی بعدی فیدهایشان یا دفعه بعد که باز شود دوباره بارگیری می‌کند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth %lld مورد از آن‌ها را در بررسی بعدی فیدهایشان یا دفعه بعد که باز شود دوباره بارگیری می‌کند."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -489484,6 +491074,12 @@
             "value" : "TextMouth vuelve a descargar 1 de ellos en la próxima revisión de su canal, o la próxima vez que se abra."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 1 مورد از آن‌ها را در بررسی بعدی فیدش یا دفعه بعد که باز شود دوباره بارگیری می‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -489619,6 +491215,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth vuelve a descargar los más recientes de cada canal en su próxima revisión, o la próxima vez que se abra."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth جدیدترین‌های هر فید را در بررسی بعدی آن یا دفعه بعد که باز شود دوباره بارگیری می‌کند."
           }
         },
         "fr" : {
@@ -493650,6 +495252,12 @@
             "value" : "TextMouth está reemplazando “%@” por la copia nueva. Inténtalo de nuevo cuando termine."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth در حال جایگزین کردن «%@» با نسخه جدید است. پس از پایان آن دوباره تلاش کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -493787,6 +495395,12 @@
             "value" : "TextMouth sigue procesando tu última respuesta. Espera a que termine."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth هنوز پاسخ قبلی شما را اجرا می‌کند. تا پایان آن صبر کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -493922,6 +495536,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth todavía los está guardando."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth هنوز در حال ذخیره‌ی آن‌هاست."
           }
         },
         "fr" : {
@@ -494472,6 +496092,12 @@
             "value" : "TextMouth no tiene permiso para enviar notificaciones. Actívalas en Ajustes del Sistema, Notificaciones, TextMouth."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth اجازه ارسال اعلان ندارد. آن‌ها را در تنظیمات سیستم، اعلان‌ها، TextMouth روشن کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -494744,6 +496370,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth conserva el archivo original del audio que convierte al importar. Un original ocupa casi tanto espacio en disco como su archivo convertido, o el doble si no está comprimido. Exportar lo ofrece como Archivo original. El original de un episodio de un canal no se conserva: se puede descargar de nuevo."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth فایل اصلی صدایی را که هنگام وارد کردن تبدیل می‌کند نگه می‌دارد. هر اصل تقریباً به اندازه فایل تبدیل‌شده‌اش فضای دیسک می‌گیرد، یا دو برابر آن اگر فشرده نباشد. صادر کردن آن را به صورت فایل اصلی عرضه می‌کند. اصل قسمت فید نگه داشته نمی‌شود: می‌توان آن را دوباره بارگیری کرد."
           }
         },
         "fr" : {
@@ -495157,6 +496789,12 @@
             "value" : "TextMouth omitió %@, que no contienen sonido que pueda leer."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ را که صدای قابل خواندنی ندارند کنار گذاشت."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -495292,6 +496930,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth omitió %@, que no contiene sonido que pueda leer."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ را که صدای قابل خواندنی ندارد کنار گذاشت."
           }
         },
         "fr" : {
@@ -495431,6 +497075,12 @@
             "value" : "TextMouth omitió %@, que necesitan el conversor de TextMouth, que falta en la app."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ را که به مبدل TextMouth نیاز دارند و مبدل در برنامه نیست کنار گذاشت."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -495566,6 +497216,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth omitió %@, que necesita el conversor de TextMouth, que falta en la app."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth %@ را که به مبدل TextMouth نیاز دارد و مبدل در برنامه نیست کنار گذاشت."
           }
         },
         "fr" : {
@@ -495840,6 +497496,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth crea en %@ una carpeta con el nombre del canal, y sus episodios y artículos se descargan en ella."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth در %@ پوشه‌ای به نام فید می‌سازد و قسمت‌ها و مقاله‌های آن در آن بارگیری می‌شوند."
           }
         },
         "fr" : {
@@ -496486,6 +498148,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth %lld نسخه جدید از کتاب‌های تکراری را به سطل زباله منتقل کرد، چون پرسش‌هایی که می‌پرسیدند آن‌ها را به عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماندند. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و برگرداندن را انتخاب کنید."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth %lld نسخه جدید از کتاب‌های تکراری را به سطل زباله منتقل کرد، چون پرسش‌هایی که می‌پرسیدند آن‌ها را به عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماندند. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و برگرداندن را انتخاب کنید."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -496857,6 +498537,12 @@
             "value" : "TextMouth movió a la Papelera las copias nuevas de %@, porque no se respondieron las preguntas sobre si conservarlas como duplicados antes de que TextMouth se cerrara. Para recuperarlas, abre la Papelera y elige Volver a colocar."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نسخه‌های جدید %@ را به سطل زباله منتقل کرد، چون پرسش‌هایی که می‌پرسیدند آن‌ها را به عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماندند. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و برگرداندن را انتخاب کنید."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -496992,6 +498678,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth movió a la Papelera la copia nueva de “%@”, porque no se respondió la pregunta sobre si conservarla como duplicado antes de que TextMouth se cerrara. Para recuperarla, abre la Papelera y elige Volver a colocar."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth نسخه جدید «%@» را به سطل زباله منتقل کرد، چون پرسشی که می‌پرسید آن را به عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماند. برای بازگرداندن آن، سطل زباله را باز کنید و برگرداندن را انتخاب کنید."
           }
         },
         "fr" : {
@@ -499300,6 +500992,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth %1$lld ورودی از «%2$@» را رد کرد: %3$@."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth %1$lld ورودی از «%2$@» را رد کرد: %3$@."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -499951,6 +501661,12 @@
             "value" : "TextMouth dejó de leer este documento porque %@."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth خواندن این سند را متوقف کرد، چون %@."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -500225,6 +501941,12 @@
             "value" : "TextMouth deja de revisar este canal en busca de artículos nuevos."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth بررسی این فید برای مقاله‌های جدید را متوقف می‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -500362,6 +502084,12 @@
             "value" : "TextMouth deja de revisar este canal en busca de episodios nuevos."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth بررسی این فید برای قسمت‌های جدید را متوقف می‌کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -500497,6 +502225,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth deja de revisar este canal en busca de elementos nuevos."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth بررسی این فید برای موردهای جدید را متوقف می‌کند."
           }
         },
         "fr" : {
@@ -501893,6 +503627,12 @@
             "value" : "El conversor de TextMouth no pudo protegerse antes de leer “%@”, así que no leyó el archivo."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مبدل TextMouth پیش از خواندن «%@» نتوانست خود را ایمن کند، پس فایل را نخواند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -502028,6 +503768,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El conversor de TextMouth devolvió audio de “%@” que TextMouth no pudo leer."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مبدل TextMouth صدایی از «%@» برگرداند که TextMouth نتوانست بخواند."
           }
         },
         "fr" : {
@@ -502167,6 +503913,12 @@
             "value" : "El conversor de TextMouth se detuvo antes del final de “%@”, así que no se pudo importar."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مبدل TextMouth پیش از پایان «%@» متوقف شد، پس نمی‌توان آن را وارد کرد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -502302,6 +504054,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El conversor de TextMouth se detuvo inesperadamente al leer “%@”. Puede que el archivo esté dañado."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مبدل TextMouth هنگام خواندن «%@» ناگهان متوقف شد. ممکن است فایل آسیب دیده باشد."
           }
         },
         "fr" : {
@@ -503138,6 +504896,12 @@
             "value" : "Ese archivo OPML está dañado en la línea %1$@: %2$@."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل OPML در خط %1$@ آسیب دیده است: %2$@."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -503273,6 +505037,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ese archivo OPML no incluye canales."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن فایل OPML هیچ فیدی را فهرست نکرده است."
           }
         },
         "fr" : {
@@ -503412,6 +505182,12 @@
             "value" : "Esa dirección no es una dirección web que TextMouth pueda abrir."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن نشانی، نشانی وبی نیست که TextMouth بتواند باز کند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -503547,6 +505323,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ese archivo está vacío."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن فایل خالی است."
           }
         },
         "fr" : {
@@ -503686,6 +505468,12 @@
             "value" : "Ese archivo no es una lista OPML de suscripciones."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن فایل فهرست OPML اشتراک‌ها نیست."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -503821,6 +505609,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Eso no es una dirección web. Escribe la dirección de un canal, o la de una página que nombre uno."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن نشانی وب نیست. نشانی یک فید یا نشانی صفحه‌ای را که فیدی را نام می‌برد وارد کنید."
           }
         },
         "fr" : {
@@ -504371,6 +506165,12 @@
             "value" : "Esa página no nombra ningún canal."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آن صفحه فیدی را نام نمی‌برد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -504599,6 +506399,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Esa página nombra %lld canales. Elige uno y luego Suscribirse."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "آن صفحه %lld فید را نام می‌برد. یکی را انتخاب کنید، سپس مشترک شدن را انتخاب کنید."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "آن صفحه %lld فید را نام می‌برد. یکی را انتخاب کنید، سپس مشترک شدن را انتخاب کنید."
                 }
               }
             }
@@ -506664,6 +508482,24 @@
             }
           }
         },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده حذف شد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده حذف شد."
+                }
+              }
+            }
+          }
+        },
         "fr" : {
           "variations" : {
             "plural" : {
@@ -507126,6 +508962,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Se eliminaron %@, que se habían conservado para %lld descargas quitadas."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده حذف شدند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده حذف شدند."
                 }
               }
             }
@@ -514083,6 +515937,12 @@
             "value" : "La dirección de %@ no contiene un canal que TextMouth pueda leer."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نشانی %@ فیدی را که TextMouth بتواند بخواند ندارد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -514311,6 +516171,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "El archivo comprimido también contiene %lld libros más que no se importaron; descomprímelo para importarlos."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "آرشیو %lld کتاب دیگر هم دارد که وارد نشدند؛ برای وارد کردن آن‌ها آرشیو را از حالت فشرده درآورید."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "آرشیو %lld کتاب دیگر هم دارد که وارد نشدند؛ برای وارد کردن آن‌ها آرشیو را از حالت فشرده درآورید."
                 }
               }
             }
@@ -515259,6 +517137,12 @@
             "value" : "El archivo comprimido contiene un archivo cuya ruta sale de él, que nunca se extrae."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آرشیو فایلی دارد که مسیرش به بیرون از آن می‌رود و هرگز استخراج نمی‌شود."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -515394,6 +517278,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El archivo comprimido contiene un enlace a un archivo fuera de él, que nunca se extrae."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آرشیو پیوندی به فایلی بیرون از آن دارد که هرگز استخراج نمی‌شود."
           }
         },
         "fr" : {
@@ -515668,6 +517558,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El archivo comprimido está dañado, incompleto o no es un archivo ZIP."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "آرشیو آسیب دیده، ناقص یا آرشیو ZIP نیست."
           }
         },
         "fr" : {
@@ -515950,6 +517846,12 @@
             "value" : "El artículo sale de la lista para siempre, y su descarga, si la tiene, se elimina."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مقاله برای همیشه از فهرست خارج می‌شود و بارگیری آن، اگر باشد، حذف می‌شود."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -516085,6 +517987,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El artículo sale de la lista para siempre; el libro en que se convirtió en tu biblioteca se queda."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مقاله برای همیشه از فهرست خارج می‌شود؛ کتابی که در کتابخانه شما شده است می‌ماند."
           }
         },
         "fr" : {
@@ -516361,6 +518269,12 @@
             "value" : "No se pudo poner nombre al audio convertido de %@."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صدای تبدیل‌شده از %@ را نمی‌توان نام‌گذاری کرد."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -516504,6 +518418,12 @@
             "value" : "No se pudo escribir el audio convertido de %1$@ (%2$@)."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صدای تبدیل‌شده از %1$@ را نمی‌توان نوشت (%2$@)."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -516645,6 +518565,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El audio convertido de %1$@ no superó su comprobación: %2$@."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صدای تبدیل‌شده از %1$@ در بررسی ناموفق بود: %2$@."
           }
         },
         "fr" : {
@@ -517332,6 +519258,12 @@
             "value" : "No se pudo leer el archivo de audio %@ para convertirlo."
           }
         },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فایل صوتی %@ را برای تبدیل نمی‌توان خواند."
+          }
+        },
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -517697,6 +519629,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "El archivo de audio %@ tiene %lld canales pero no indica cuál es cuál, así que TextMouth no puede mezclarlo a estéreo."
+                }
+              }
+            }
+          }
+        },
+        "fa" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "فایل صوتی %1$@ %2$lld کانال دارد اما نمی‌گوید کدام کدام است، پس TextMouth نمی‌تواند آن را به استریو ترکیب کند."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "فایل صوتی %1$@ %2$lld کانال دارد اما نمی‌گوید کدام کدام است، پس TextMouth نمی‌تواند آن را به استریو ترکیب کند."
                 }
               }
             }
@@ -519864,6 +521814,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "El libro no tiene un paquete para guardar su texto."
+          }
+        },
+        "fa" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "کتاب بسته‌ای برای نگه‌داری متن خود ندارد."
           }
         },
         "fr" : {
