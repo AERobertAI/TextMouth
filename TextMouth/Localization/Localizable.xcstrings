@@ -2760,7 +2760,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ y cualquier subcarpeta se quitarán de la biblioteca."
+            "value" : "%@ y sus subcarpetas se quitarán de la biblioteca."
           }
         },
         "fr" : {
@@ -25256,19 +25256,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, y %2$lld más"
+                  "value" : "%1$@ y %2$lld más"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, y %2$lld más"
+                  "value" : "%1$@ y %2$lld más"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, y %2$lld más"
+                  "value" : "%1$@ y %2$lld más"
                 }
               }
             }
@@ -25681,19 +25681,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, cualquier subcarpeta y los %2$lld de libros que contiene se quitarán de la biblioteca."
+                  "value" : "%1$@, sus subcarpetas y los %2$lld de libros que contiene se quitarán de la biblioteca."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, cualquier subcarpeta y el libro que contiene se quitarán de la biblioteca."
+                  "value" : "%1$@, sus subcarpetas y el libro que contiene se quitarán de la biblioteca."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%1$@, cualquier subcarpeta y los %2$lld libros que contiene se quitarán de la biblioteca."
+                  "value" : "%1$@, sus subcarpetas y los %2$lld libros que contiene se quitarán de la biblioteca."
                 }
               }
             }
@@ -26025,7 +26025,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@, cualquier subcarpeta y el libro que contiene se quitarán de la biblioteca."
+            "value" : "%@, sus subcarpetas y el libro que contiene se quitarán de la biblioteca."
           }
         },
         "fr" : {
@@ -88243,7 +88243,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Un movimiento desplaza un libro a la vez, y hay varios seleccionados. Selecciona un solo libro e inténtalo de nuevo."
+            "value" : "Solo se puede mover un libro a la vez, y hay varios seleccionados. Selecciona uno solo e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -100383,7 +100383,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Siempre ofrece una vista en todo momento. Cuando corresponda la ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Oculta la deja fuera. Una ventana conserva su vista hasta que elijas otra."
+            "value" : "Con “Siempre”, la vista se ofrece en todo momento. Con “Cuando corresponda”, se ofrece solo mientras muestra algo: la Lista de lectura mientras contiene un libro, episodio o artículo, y Canales mientras hay un canal. Con “Oculta”, no se ofrece. Una ventana conserva su vista hasta que elijas otra."
           }
         },
         "fr" : {
@@ -147611,7 +147611,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comparando esta biblioteca con la copia de la carpeta que elegiste, para decir cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla."
+            "value" : "Comparando esta biblioteca con la copia de la carpeta que elegiste, para saber cuál es más reciente. Puede tardar hasta un minuto; elige Detener comparación para omitirla."
           }
         },
         "fr" : {
@@ -161987,7 +161987,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fecha de incorporación"
+            "value" : "Fecha de agregación"
           }
         },
         "fr" : {
@@ -215932,7 +215932,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Carpetas siempre se muestra: todas las carpetas y los canales se abren allí."
+            "value" : "La vista Carpetas siempre se muestra: todas las carpetas y los canales se abren allí."
           }
         },
         "fr" : {
@@ -222560,7 +222560,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ir a vista"
+            "value" : "Ir a la vista"
           }
         },
         "fr" : {
@@ -287102,7 +287102,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mover el contenido fuera"
+            "value" : "Sacar el contenido"
           }
         },
         "fr" : {
@@ -300890,7 +300890,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ninguna tiene lugares o libros más recientes que la otra no tenga, pero difieren en otros aspectos."
+            "value" : "Ninguna tiene lugares más recientes ni libros que falten en la otra, pero difieren en otros aspectos."
           }
         },
         "fr" : {
@@ -319661,7 +319661,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No dentro de los últimos"
+            "value" : "Fuera de los últimos"
           }
         },
         "fr" : {
@@ -329028,7 +329028,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abrir en editor"
+            "value" : "Abrir en el editor"
           }
         },
         "fr" : {
@@ -349985,7 +349985,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modo de mostrar la posición"
+            "value" : "Mostrar la posición como"
           }
         },
         "fr" : {
@@ -360224,7 +360224,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lista de lectura: “%1$@” es %2$@ en %3$@ y %4$@ en %5$@."
+            "value" : "Lista de lectura: “%1$@” está %2$@ en %3$@ y %4$@ en %5$@."
           }
         },
         "fr" : {
