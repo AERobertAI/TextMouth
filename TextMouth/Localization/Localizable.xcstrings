@@ -65550,7 +65550,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zu Seite springen…"
+            "value" : "Zur Seite springen…"
           }
         },
         "es" : {
@@ -65620,7 +65620,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zu Zeitpunkt gehen"
+            "value" : "Zur Zeit springen"
           }
         },
         "es" : {
@@ -65655,7 +65655,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zu Zeit springen…"
+            "value" : "Zur Zeit springen…"
           }
         },
         "es" : {
@@ -65690,7 +65690,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zur Ansicht gehen"
+            "value" : "Zur Ansicht wechseln"
           }
         },
         "es" : {
