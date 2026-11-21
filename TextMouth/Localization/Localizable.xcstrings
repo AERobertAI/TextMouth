@@ -237552,7 +237552,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "将速度提高每分钟 %lld 个词"
+                  "value" : "将速度提高 %lld 字/分钟"
                 }
               }
             }
@@ -255017,7 +255017,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "将列表中的图书保留下载在这台 Mac 上；每台 Mac 各自选择。取消勾选不会移除已有的下载。"
+            "value" : "让列表中的图书在这台 Mac 上保持下载状态；每台 Mac 各自选择。取消勾选不会移除已有的下载。"
           }
         },
         "zh-Hant" : {
@@ -348732,7 +348732,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "试听 %@ 声音"
+            "value" : "试听“%@”的声音"
           }
         },
         "zh-Hant" : {
@@ -383184,7 +383184,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 和“文本编辑”。"
+            "value" : "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 文稿和“文本编辑”。"
           }
         },
         "zh-Hant" : {
@@ -394301,7 +394301,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已包含章节：%@"
+            "value" : "已包含此部分：%@"
           }
         },
         "zh-Hant" : {
@@ -394420,7 +394420,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已略过章节：%@"
+            "value" : "已跳过此部分：%@"
           }
         },
         "zh-Hant" : {
@@ -418030,7 +418030,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "速度：每分钟 %lld 个词；速率 %@，音调 %@，音量 %@"
+                  "value" : "速度：每分钟 %lld 字；速率 %@，音调 %@，音量 %@"
                 }
               }
             }
@@ -418920,7 +418920,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "图书开头。"
+            "value" : "已到图书开头。"
           }
         },
         "zh-Hant" : {
@@ -419039,7 +419039,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "阅读列表开头"
+            "value" : "已到阅读列表开头"
           }
         },
         "zh-Hant" : {
@@ -419408,7 +419408,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在开始：%@"
+            "value" : "开始播放：%@"
           }
         },
         "zh-Hant" : {
@@ -421220,7 +421220,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "仍在开始：%@"
+            "value" : "仍在打开：%@"
           }
         },
         "zh-Hant" : {
@@ -452845,7 +452845,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 对此后添加的 BRF 和 BRL 文件使用这些字符读取，并自动识别 Unicode 盲文点型。“导出”对话框用它们开始写 BRF。每本图书保留其导入时的字符，可在“图书信息”中更改。"
+            "value" : "TextMouth 会用这些字符读取此后添加的 BRF 和 BRL 文件，并自动识别 Unicode 盲文点型。“导出”对话框导出 BRF 时默认使用这些字符。每本图书保留其导入时的字符，可在“图书信息”中更改。"
           }
         },
         "zh-Hant" : {
@@ -483960,7 +483960,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法足够快地读取文件 %@。"
+            "value" : "文件 %@ 读取速度过慢。"
           }
         },
         "zh-Hant" : {
@@ -490031,7 +490031,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其章节标题所属部分结束于音频末尾的章节标题（含其子标题），或图书结尾。"
+            "value" : "音频结束的位置：某个章节标题所属部分（含其子标题）的末尾，或图书结尾。"
           }
         },
         "zh-Hant" : {
@@ -504574,7 +504574,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "阅读列表为空。要添加图书，请从其上下文菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。"
+            "value" : "阅读列表为空。要添加图书，请从其快捷菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。"
           }
         },
         "zh-Hant" : {
@@ -505648,7 +505648,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "录音的原始状态，编辑之前。"
+            "value" : "录音制作时的原样，未经任何编辑。"
           }
         },
         "zh-Hant" : {
@@ -568043,7 +568043,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每页最后一行是否带有该盲文页码。"
+            "value" : "每页最后一行是否带有其盲文页码。"
           }
         },
         "zh-Hant" : {
@@ -612302,7 +612302,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法足够快地读取文件 %@"
+            "value" : "文件 %@ 读取速度过慢"
           }
         },
         "zh-Hant" : {
