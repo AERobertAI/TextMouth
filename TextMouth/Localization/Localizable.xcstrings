@@ -11281,7 +11281,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata in un altro momento."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata in un altro momento."
           }
         },
         "ja" : {
@@ -11424,7 +11424,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata il %@."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata il %@."
           }
         },
         "ja" : {
@@ -11567,7 +11567,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata su “%@” il %@."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata su “%@” il %@."
           }
         },
         "ja" : {
@@ -11710,7 +11710,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ contiene una versione in conflitto di %@, salvata su “%@”."
+            "value" : "%@ contiene una versione in conflitto del %@, salvata su “%@”."
           }
         },
         "ja" : {
@@ -20567,7 +20567,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ha messo da parte una copia in conflitto di %@: “%@”, in %@."
+            "value" : "%@ ha messo da parte una copia in conflitto del %@: “%@”, in %@."
           }
         },
         "ja" : {
@@ -141969,7 +141969,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Capitolo %@, da %@"
+            "value" : "Capitolo %@, tramite %@"
           }
         },
         "ja" : {
@@ -195269,7 +195269,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Download di %@ da %@ in corso."
+            "value" : "Download di %@ tramite %@ in corso."
           }
         },
         "ja" : {
@@ -237647,7 +237647,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Da %@"
+            "value" : "Tramite %@"
           }
         },
         "ja" : {
@@ -438617,7 +438617,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Risolvi prima il conflitto in %@."
+            "value" : "Risolvi prima il conflitto tramite %@."
           }
         },
         "ja" : {
@@ -580549,7 +580549,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Questo sposta tutti i dati da %@ alla posizione predefinita, %@."
+            "value" : "Questo riporta tutti i dati da %@ alla posizione predefinita, %@."
           }
         },
         "ja" : {
@@ -588096,7 +588096,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Per lasciarlo andare, toglilo dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
+            "value" : "Per non mantenerlo più su questo Mac, toglilo dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
           }
         },
         "ja" : {
@@ -588233,7 +588233,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Per lasciarli andare, toglili dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
+            "value" : "Per non mantenerli più su questo Mac, toglili dall’elenco di lettura, oppure disattiva %@ nelle opzioni dell’elenco di lettura."
           }
         },
         "ja" : {
@@ -621663,7 +621663,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dove TextMouth scrive i propri registri diagnostici. %@ li tiene insieme ai tuoi libri, quindi si spostano e si sincronizzano con la libreria. %@ li tiene in %@, che non si sincronizza mai. Una modifica vale dalla riga successiva; i registri esistenti restano."
+            "value" : "Dove TextMouth scrive i propri registri diagnostici. “%1$@” li tiene insieme ai tuoi libri, quindi si spostano e si sincronizzano con la libreria. “%2$@” li tiene in %3$@, che non si sincronizza mai. Una modifica vale dalla riga successiva; i registri esistenti restano."
           }
         },
         "ja" : {
@@ -631750,7 +631750,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il record di un libro, %@"
+            "value" : "file del record di un libro, %@"
           }
         },
         "ja" : {
@@ -631887,7 +631887,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’indice degli episodi di un feed, %@"
+            "value" : "file dell’indice degli episodi di un feed, %@"
           }
         },
         "ja" : {
@@ -632024,7 +632024,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "il record di un feed, %@"
+            "value" : "file del record di un feed, %@"
           }
         },
         "ja" : {
@@ -645803,7 +645803,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "iCloud Drive potrebbe essere disattivato o senza accesso effettuato, oppure questo Mac potrebbe essere offline. Controlla, poi scegli Riprova."
+            "value" : "iCloud Drive potrebbe essere disattivato o potresti non aver effettuato l’accesso, oppure questo Mac potrebbe essere offline. Controlla, poi scegli Riprova."
           }
         },
         "ja" : {
@@ -645940,7 +645940,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "iCloud Drive potrebbe essere disattivato o senza accesso effettuato."
+            "value" : "iCloud Drive potrebbe essere disattivato o potresti non aver effettuato l’accesso."
           }
         },
         "ja" : {
@@ -672273,7 +672273,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’indice della libreria, %@"
+            "value" : "file dell’indice della libreria, %@"
           }
         },
         "ja" : {
