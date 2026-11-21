@@ -254742,6 +254742,12 @@
             "value" : "커서를 이전 챕터 마커로 이동합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Verplaatst de cursor naar de vorige hoofdstukmarkering."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254853,6 +254859,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "커서를 오디오의 처음으로 이동합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Verplaatst de cursor naar het begin van de audio."
           }
         },
         "pl" : {
@@ -258247,6 +258259,12 @@
             "value" : "이름"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Naam"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260607,6 +260625,12 @@
             "value" : "새 필터 프리셋"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nieuwe voorinstelling voor filters"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261259,6 +261283,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "새 녹음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nieuwe opname"
           }
         },
         "pl" : {
@@ -264584,6 +264614,12 @@
             "value" : "%@에서 오디오 파일을 찾을 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er zijn geen audiobestanden gevonden in %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265446,6 +265482,12 @@
             "value" : "커서 뒤에 챕터 마커가 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen hoofdstukmarkering na de cursor."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265557,6 +265599,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "커서 앞에 챕터 마커가 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen hoofdstukmarkering vóór de cursor."
           }
         },
         "pl" : {
@@ -265672,6 +265720,12 @@
             "value" : "챕터 마커나 마커가 없어서 레이블 파일이 쓰이지 않습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen hoofdstukmarkeringen of markeringen, dus er zou geen labelbestand worden geschreven."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265783,6 +265837,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "취소할 정리가 없습니다. 이전 대본이 없어졌습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen opruiming om ongedaan te maken: de eerdere transcriptie is verdwenen."
           }
         },
         "pl" : {
@@ -266433,6 +266493,12 @@
             "value" : "편집 없음"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen bewerkingen"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266544,6 +266610,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "편집 없음, 저장되지 않음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen bewerkingen, niet bewaard"
           }
         },
         "pl" : {
@@ -266873,6 +266945,12 @@
             "value" : "필터 프리셋이 없습니다. 하나 추가하거나 기본값으로 재설정하십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen voorinstellingen voor filters. Voeg er een toe of herstel de standaardwaarden."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266984,6 +267062,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "필터 프리셋이 없습니다. 저장 공간 설정의 오디오 편집에서 추가하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen voorinstellingen voor filters. Voeg ze toe in de instellingen voor Opslag, onder Audiobewerking."
           }
         },
         "pl" : {
@@ -267420,6 +267504,12 @@
             "value" : "아직 마커가 없습니다. 마커 추가를 선택하면 커서 위치에 마커가 놓입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nog geen markeringen. Met Voeg markering toe plaats je er een bij de cursor."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267640,6 +267730,12 @@
             "value" : "마이크 없음"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen microfoon"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267753,6 +267849,12 @@
             "value" : "연결된 마이크 없음"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen microfoon aangesloten"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267864,6 +267966,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "연결된 마이크가 없습니다. 덮어 녹음하려면 마이크를 연결하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er is geen microfoon aangesloten. Sluit er een aan om erover op te nemen."
           }
         },
         "pl" : {
@@ -269521,6 +269629,12 @@
             "value" : "이 책의 원본 오디오가 보관되어 있지 않으므로, 저장된 편집은 취소할 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er wordt geen origineel van de audio bewaard voor dit boek, dus bewaarde bewerkingen kunnen niet ongedaan worden gemaakt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269632,6 +269746,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "원본이 보관되어 있지 않아 되돌릴 수 없습니다. 실행 취소는 마지막 저장 이후의 편집만 취소합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er wordt geen origineel bewaard, dus terugkeren is niet mogelijk. Met Maak ongedaan maak je bewerkingen sinds de laatste keer bewaren ongedaan."
           }
         },
         "pl" : {
@@ -269747,6 +269867,12 @@
             "value" : "원본을 보관하지 않습니다. 편집하면 오디오가 그 자리에서 바뀌며, 저장된 편집은 취소할 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er wordt geen origineel bewaard: bewerkingen wijzigen de audio ter plekke en bewaarde bewerkingen kunnen niet ongedaan worden gemaakt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269858,6 +269984,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "커서 뒤에 정지 구간이 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen pauze na de cursor."
           }
         },
         "pl" : {
@@ -269973,6 +270105,12 @@
             "value" : "커서 앞에 정지 구간이 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen pauze vóór de cursor."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270084,6 +270222,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "정지 구간을 찾지 못했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er zijn geen pauzes gevonden."
           }
         },
         "pl" : {
@@ -271483,6 +271627,12 @@
             "value" : "이 대본을 변경하는 규칙이 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen enkele regel wijzigt deze transcriptie."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271917,6 +272067,12 @@
             "value" : "단축키 없음."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen toetsenbordcommando."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272028,6 +272184,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@에서 소리가 들어오지 않습니다. 마이크가 켜져 있고 음소거되지 않았는지 확인하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Geen geluid van %@. Controleer of de microfoon aanstaat en niet is gedempt."
           }
         },
         "pl" : {
@@ -275787,6 +275949,12 @@
             "value" : "나중에"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niet nu"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277121,6 +277289,12 @@
             "value" : "아직 책의 오디오에 들어 있지 않습니다. 폐기하면 편집이 취소되며, 다음에 이 책을 편집할 때 다른 편집을 하기 전까지 다시 실행으로 되돌릴 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nog niet in de audio van het boek. Gooi weg maakt ze ongedaan; de volgende keer dat je dit boek wijzigt, brengt Herhaal ze terug tot je een nieuwe bewerking maakt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277232,6 +277406,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "보관 안 됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niet bewaard"
           }
         },
         "pl" : {
@@ -277666,6 +277846,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음 중 아님"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niet aan het opnemen"
           }
         },
         "pl" : {
@@ -278423,6 +278609,12 @@
             "value" : "잘라내거나 복사한 내용이 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er is niets geknipt of gekopieerd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278964,6 +279156,12 @@
             "value" : "재생 중인 항목이 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er wordt niets afgespeeld."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279075,6 +279273,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택된 항목이 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er is niets geselecteerd."
           }
         },
         "pl" : {
@@ -279297,6 +279501,12 @@
             "value" : "되돌릴 내용이 없습니다. 취소할 수 있는 편집이 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niets om naar terug te keren: geen enkele bewerking kan ongedaan worden gemaakt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279408,6 +279618,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "저장할 내용이 없습니다. 책의 오디오에 모든 편집이 들어 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Niets om te bewaren: de audio van het boek bevat elke bewerking."
           }
         },
         "pl" : {
@@ -279737,6 +279953,12 @@
             "value" : "녹음된 내용이 없어 저장할 것이 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Er is niets opgenomen, dus er valt niets te bewaren."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279848,6 +280070,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이제 길이는 %@입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nu %@ lang."
           }
         },
         "pl" : {
@@ -281121,6 +281349,12 @@
             "value" : "확인"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "OK"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281446,6 +281680,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오북을 가져온 후 대본 만들기 제안"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bied aan om te transcriberen na het importeren van een luisterboek"
           }
         },
         "pl" : {
@@ -282203,6 +282443,12 @@
             "value" : "오디오북의 오디오만 편집할 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alleen de audio van een luisterboek kan worden gewijzigd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282528,6 +282774,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오북만 대본을 만들 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alleen luisterboeken kunnen worden getranscribeerd."
           }
         },
         "pl" : {
@@ -283543,6 +283795,12 @@
             "value" : "개인정보 보호 설정 열기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Open privacy-instellingen"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284082,6 +284340,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "리더에서 열기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Open in lezer"
           }
         },
         "pl" : {
@@ -285802,6 +286066,12 @@
             "value" : "%@을(를) 리더 윈도우에서 엽니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opent %@ in een lezervenster."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286127,6 +286397,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오 대본 만들기를 엽니다. 해당 언어의 모델이 이 Mac에 있으면 바로 시작하고, 없으면 거기서 다운로드한 다음 대본 만들기를 선택하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opent Transcribeer audio, dat meteen start als het model van de taal op deze Mac staat; download het anders daar en kies dan Transcribeer."
           }
         },
         "pl" : {
@@ -287633,6 +287909,12 @@
             "value" : "시스템 설정에서 마이크 개인정보 보호 설정을 엽니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opent de privacy-instellingen voor Microfoon in Systeeminstellingen."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288172,6 +288454,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "필터 프리셋을 열어 편집, 추가, 순서 변경, 삭제, 재설정을 할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opent de voorinstellingen voor filters, om te wijzigen, toe te voegen, te herschikken, te verwijderen of opnieuw in te stellen."
           }
         },
         "pl" : {
@@ -289143,6 +289431,12 @@
             "value" : "사용자의 규칙 사본인 transcript-cleanup.json을 텍스트 편집기에서 엽니다. 처음에는 TextMouth 자체 규칙으로 만들어집니다. 변경 사항은 TextMouth로 돌아오면 적용됩니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opent je kopie van de regels, transcript-cleanup.json, in je teksteditor, de eerste keer gemaakt van de eigen regels van TextMouth. Wijzigingen worden toegepast wanneer je terugkeert naar TextMouth."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289470,6 +289764,12 @@
             "value" : "원본 오디오"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originele audio"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289688,6 +289988,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이 책의 원본 오디오"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originele audio voor dit boek"
           }
         },
         "pl" : {
@@ -290393,6 +290699,24 @@
             }
           }
         },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Originelen worden %lld dag bewaard nadat het boek is bewaard of voor het laatst is gewijzigd, en daarna verwijderd."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Originelen worden %lld dagen bewaard nadat het boek is bewaard of voor het laatst is gewijzigd, en daarna verwijderd."
+                }
+              }
+            }
+          }
+        },
         "pl" : {
           "variations" : {
             "plural" : {
@@ -290626,6 +290950,12 @@
             "value" : "원본은 책을 제거할 때까지 보관됩니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Originelen worden bewaard totdat het boek wordt weggehaald."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -290737,6 +291067,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "끝점: %@."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Einde bij %@."
           }
         },
         "pl" : {
@@ -293470,6 +293806,12 @@
             "value" : "%@을(를) 잘라낸 자리에 다시 붙여넣었습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ teruggeplakt op de plek waar het was geknipt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293589,6 +293931,12 @@
             "value" : "%2$@ 위에 %1$@을(를) 붙여넣었습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ geplakt over %2$@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293702,6 +294050,12 @@
             "value" : "%@을(를) 붙여넣었습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ geplakt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -293813,6 +294167,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "커서 위치나 선택 영역 위에 붙여넣습니다. 잘라낸 직후에는 오디오를 이동합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Plakt bij de cursor of over de selectie. Direct na knippen verplaatst het de audio."
           }
         },
         "pl" : {
@@ -294354,6 +294714,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "정지 구간 %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pauze %@"
           }
         },
         "pl" : {
@@ -294952,6 +295318,24 @@
             }
           }
         },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Het boek dat werd afgespeeld, is gepauzeerd."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld boeken die werden afgespeeld, zijn gepauzeerd."
+                }
+              }
+            }
+          }
+        },
         "pl" : {
           "variations" : {
             "plural" : {
@@ -295185,6 +295569,12 @@
             "value" : "%@ 지점에서 일시 정지했습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gepauzeerd bij %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295296,6 +295686,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "일시 정지됨."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gepauzeerd."
           }
         },
         "pl" : {
@@ -295411,6 +295807,12 @@
             "value" : "정지 구간"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pauzes"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295522,6 +295924,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음을 일시 정지합니다. %@을(를) 선택하면 같은 녹음을 계속합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Pauzeert de opname; %@ hervat dezelfde opname."
           }
         },
         "pl" : {
@@ -297240,6 +297648,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이동할 때마다 0.5초 재생"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speel een halve seconde af na elke verplaatsing"
           }
         },
         "pl" : {
@@ -299281,6 +299695,12 @@
             "value" : "재생 중"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Afspelen"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299394,6 +299814,12 @@
             "value" : "처음부터 재생합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Afspelen vanaf het begin."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299505,6 +299931,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "미리 듣기를 재생합니다. 적용하려면 적용을 다시 선택하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speelt een voorvertoning af; kies opnieuw Pas toe om toe te passen."
           }
         },
         "pl" : {
@@ -299727,6 +300159,12 @@
             "value" : "커서 위치부터 재생하거나 일시 정지합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speelt af vanaf de cursor, of pauzeert."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -299838,6 +300276,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이동할 때마다 커서 위치에서 0.5초를 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speelt na elke verplaatsing een halve seconde af bij de cursor."
           }
         },
         "pl" : {
@@ -300593,6 +301037,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택 영역을 재생하고 끝에서 멈춥니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Speelt de selectie af en stopt aan het einde ervan."
           }
         },
         "pl" : {
@@ -301929,6 +302379,12 @@
             "value" : "위치"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Positie"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302696,6 +303152,12 @@
             "value" : "다른 Mac의 프리셋이 방금 도착해 이 프리셋을 대체했습니다. 변경을 다시 하십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voorinstellingen van een andere Mac zijn net binnengekomen en hebben deze vervangen. Maak de wijziging opnieuw."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303130,6 +303592,12 @@
             "value" : "미리 듣기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voorvertoning"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303457,6 +303925,12 @@
             "value" : "적용 전에 필터 미리 듣기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voorvertoning van filters vóór het toepassen"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303677,6 +304151,12 @@
             "value" : "먼저 %@을(를) 미리 듣는 중입니다. 적용하려면 적용을 다시 선택하십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ wordt eerst als voorvertoning afgespeeld. Kies opnieuw Pas toe om het toe te passen."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -303788,6 +304268,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@을(를) 미리 듣는 중입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voorvertoning van %@."
           }
         },
         "pl" : {
@@ -305401,6 +305887,12 @@
             "value" : "문제: %@"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Probleem: %@"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -305512,6 +306004,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "진행 상황"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voortgang"
           }
         },
         "pl" : {
@@ -306697,6 +307195,12 @@
             "value" : "TextMouth의 기본 제공 프리셋을 복원하고, 추가한 프리셋은 제거합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Herstelt de ingebouwde voorinstellingen van TextMouth en verwijdert de voorinstellingen die je hebt toegevoegd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306808,6 +307312,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "마지막 정리 이전의 대본으로 되돌립니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zet de transcriptie terug zoals die was vóór de laatste opruiming."
           }
         },
         "pl" : {
@@ -307137,6 +307647,12 @@
             "value" : "이전 대본으로 되돌리는 중…"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De eerdere transcriptie wordt teruggezet…"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -307462,6 +307978,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "더 작게"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zachter"
           }
         },
         "pl" : {
@@ -312183,6 +312705,12 @@
             "value" : "대본과 규칙을 읽는 중…"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De transcriptie en de regels worden gelezen…"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312401,6 +312929,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@(으)로 녹음할 준비가 되었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Klaar om op te nemen met %@."
           }
         },
         "pl" : {
@@ -313372,6 +313906,12 @@
             "value" : "녹음 시작"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Neem op"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313483,6 +314023,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opname"
           }
         },
         "pl" : {
@@ -313598,6 +314144,12 @@
             "value" : "녹음을 폐기했습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opname weggegooid."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313709,6 +314261,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@(으)로 녹음 중입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opnemen met %@."
           }
         },
         "pl" : {
@@ -313830,6 +314388,12 @@
             "value" : "%1$@의 녹음, %2$@"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opname van %1$@, %2$@"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313941,6 +314505,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "소리가 없는 %@의 녹음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opname van %@, zonder geluid"
           }
         },
         "pl" : {
@@ -314060,6 +314630,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%3$@ 마이크로 신호음 뒤에 %2$@ 지점의 %1$@ 구간에 덮어 녹음합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opnemen over %1$@ bij %2$@, met %3$@, na de pieptoon. Neem erover op of Stop beëindigt de opname; Deselecteer gooit die weg."
           }
         },
         "pl" : {
@@ -314389,6 +314965,12 @@
             "value" : "마이크에 문제가 발생해 녹음이 중지되었습니다. 녹음된 내용은 보관됩니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De opname is gestopt omdat de microfoon een probleem meldde. Wat is opgenomen, blijft bewaard."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314506,6 +315088,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%2$@ 마이크로 신호음 뒤에 %1$@ 지점에 삽입할 녹음을 합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opname om in te voegen bij %1$@, met %2$@, na de pieptoon. Neem erover op of Stop beëindigt de opname; Deselecteer gooit die weg."
           }
         },
         "pl" : {
@@ -314627,6 +315215,12 @@
             "value" : "녹음 중, %1$@, 레벨 %2$@"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opnemen, %1$@, niveau %2$@"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314740,6 +315334,12 @@
             "value" : "녹음 중입니다. 중지하거나 선택 해제로 폐기한 다음 닫으십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opnemen. Stop de opname of gooi die weg met Deselecteer en sluit daarna."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314851,6 +315451,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음 중입니다. 먼저 녹음을 중지하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opnemen. Stop eerst de opname."
           }
         },
         "pl" : {
@@ -315180,6 +315786,12 @@
             "value" : "신호음 뒤에 선택 영역 위나 커서 위치에 녹음합니다. 다시 선택하거나 중지하면 끝납니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Neemt over de selectie of bij de cursor op, na een pieptoon. Nogmaals, of Stop, beëindigt de opname."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315291,6 +315903,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "복구된 녹음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Herstelde opnamen"
           }
         },
         "pl" : {
@@ -315727,6 +316345,12 @@
             "value" : "%@을(를) 다시 실행했습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ herhaald."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315945,6 +316569,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다시 실행: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Herhaal %@"
           }
         },
         "pl" : {
@@ -316379,6 +317009,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "마지막으로 취소한 편집을 다시 적용합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Herhaalt de laatst ongedaan gemaakte bewerking."
           }
         },
         "pl" : {
@@ -320358,6 +320994,12 @@
             "value" : "챕터 마커 제거"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Haal hoofdstukmarkering weg"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320941,6 +321583,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "낮은 소음 제거"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Haal gebrom weg"
           }
         },
         "pl" : {
@@ -322881,6 +323529,12 @@
             "value" : "이름 변경"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Wijzig naam"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323743,6 +324397,12 @@
             "value" : "%@ 교체"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vervang %@"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323963,6 +324623,12 @@
             "value" : "대본 교체"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Vervang transcriptie"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324074,6 +324740,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@의 대본을 교체하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transcriptie van %@ vervangen?"
           }
         },
         "pl" : {
@@ -324300,6 +324972,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@을(를) 새 녹음 %2$@(으)로 교체했으며, 선택되어 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ vervangen door %2$@ nieuwe opname, die is geselecteerd."
           }
         },
         "pl" : {
@@ -325271,6 +325949,12 @@
             "value" : "교체 시 기존 사본의 대본을 유지했습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bij het vervangen is de transcriptie van de bestaande kopie bewaard."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325810,6 +326494,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "모두 기본값으로 재설정"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stel alles opnieuw in op standaard"
           }
         },
         "pl" : {
@@ -329777,6 +330467,12 @@
             "value" : "다시 시작"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hervat"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329888,6 +330584,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다시 시작합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hervatten."
           }
         },
         "pl" : {
@@ -330003,6 +330705,12 @@
             "value" : "대본 다시 만들기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transcribeer opnieuw"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330116,6 +330824,12 @@
             "value" : "%@ 대본 다시 만들기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transcribeer %@ opnieuw"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330227,6 +330941,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오 대본 다시 만들기…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Transcribeer audio opnieuw…"
           }
         },
         "pl" : {
@@ -331412,6 +332132,12 @@
             "value" : "거꾸로 재생"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Omgekeerd"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331632,6 +332358,12 @@
             "value" : "되돌리기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Keer terug"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331850,6 +332582,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "원본 오디오로 되돌리시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Terugkeren naar de originele audio?"
           }
         },
         "pl" : {
@@ -332122,6 +332860,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "원본 오디오로 되돌렸습니다. 다시 실행으로 편집 %lld개를 다시 적용할 수 있습니다."
+                }
+              }
+            }
+          }
+        },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Teruggekeerd naar de originele audio. Herhaal brengt de %lld bewerking terug."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Teruggekeerd naar de originele audio. Herhaal brengt de %lld bewerkingen terug."
                 }
               }
             }
@@ -334020,6 +334776,24 @@
             }
           }
         },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regels: die van TextMouth zelf, versie %@ van %@, %lld regel."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regels: die van TextMouth zelf, versie %@ van %@, %lld regels."
+                }
+              }
+            }
+          }
+        },
         "pl" : {
           "variations" : {
             "plural" : {
@@ -334415,6 +335189,24 @@
             }
           }
         },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regels: jouw kopie, versie %@ van %@, %lld regel."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Regels: jouw kopie, versie %@ van %@, %lld regels."
+                }
+              }
+            }
+          }
+        },
         "pl" : {
           "variations" : {
             "plural" : {
@@ -334646,6 +335438,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택 영역 또는 전체 파일에 필터 프리셋을 실행합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Voert een voorinstelling voor filters uit over de selectie of het hele bestand."
           }
         },
         "pl" : {
@@ -335189,6 +335987,12 @@
             "value" : "다시 저장"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaar opnieuw"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335300,6 +336104,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이름 저장"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaar naam"
           }
         },
         "pl" : {
@@ -335629,6 +336439,12 @@
             "value" : "저장 및 내보내기"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaar en exporteer"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335740,6 +336556,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오북으로 저장"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaar als luisterboek"
           }
         },
         "pl" : {
@@ -335855,6 +336677,12 @@
             "value" : "오디오북으로 저장: %@"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaar als luisterboek: %@"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335966,6 +336794,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "저장 위치"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaar in"
           }
         },
         "pl" : {
@@ -336616,6 +337450,12 @@
             "value" : "“%@”의 편집 내용을 저장하시겠습니까?"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bewerkingen aan “%@” bewaren?"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336840,6 +337680,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음을 저장하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De opname bewaren?"
           }
         },
         "pl" : {
@@ -337383,6 +338229,12 @@
             "value" : "저장됨: %@"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ bewaard"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337603,6 +338455,12 @@
             "value" : "녹음을 %@(으)로 저장했습니다"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opname bewaard als %@"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337716,6 +338574,12 @@
             "value" : "녹음을 %@(으)로 저장했습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Opname bewaard als %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337827,6 +338691,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "저장 포맷"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaard als"
           }
         },
         "pl" : {
@@ -338049,6 +338919,12 @@
             "value" : "저장했습니다. 이제 책의 오디오 길이는 %@입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaard. De audio van het boek is nu %@ lang."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338160,6 +339036,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책이 사용하는 포맷으로 편집 내용을 책의 오디오 파일에 저장합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaart de bewerkingen in het audiobestand van het boek, in het formaat dat het boek gebruikt."
           }
         },
         "pl" : {
@@ -338382,6 +339264,12 @@
             "value" : "이 녹음을 녹음한 시각을 제목으로 하여 %@ 폴더에 오디오북으로 저장합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaart deze opname als luisterboek in de map %@, met als titel het moment van opnemen."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338602,6 +339490,12 @@
             "value" : "저장 중"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bewaren"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338721,6 +339615,12 @@
             "value" : "오디오 %1$@을(를) 이 책이 사용하는 포맷인 %2$@(으)로 저장하는 중입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ audio wordt bewaard als %2$@, het formaat dat dit boek gebruikt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338834,6 +339734,12 @@
             "value" : "오디오 %@을(를) 책에 저장하는 중입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ audio wordt in het boek bewaard."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338945,6 +339851,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음을 저장하는 중…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De opname wordt bewaard…"
           }
         },
         "pl" : {
@@ -339274,6 +340186,12 @@
             "value" : "커서의 위치, 속한 챕터, 선택된 항목을 알려 줍니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zegt waar de cursor staat, in welk hoofdstuk, en wat is geselecteerd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -339385,6 +340303,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택 영역의 시작과 끝 위치, 그리고 길이를 알려 줍니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Zegt waar de selectie begint en eindigt en hoe lang die is."
           }
         },
         "pl" : {
@@ -342376,6 +343300,12 @@
             "value" : "레벨 알림 간격(초)"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seconden tussen niveaumeldingen"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -342487,6 +343417,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "초는 60보다 작아야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Seconden moeten minder dan 60 zijn."
           }
         },
         "pl" : {
@@ -342921,6 +343857,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selecteer"
           }
         },
         "pl" : {
@@ -343722,6 +344664,12 @@
             "value" : "선택 및 마커"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selecteer en markeer"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -343833,6 +344781,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오북을 하나만 선택한 다음 오디오 대본 만들기를 다시 선택하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selecteer één luisterboek en kies dan opnieuw Transcribeer audio."
           }
         },
         "pl" : {
@@ -344483,6 +345437,12 @@
             "value" : "%@을(를) 선택했습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ geselecteerd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -344594,6 +345554,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "전체 %@을(를) 선택했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Alles geselecteerd: %@."
           }
         },
         "pl" : {
@@ -344715,6 +345681,12 @@
             "value" : "챕터 %1$@ 선택: %2$@, %3$@."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Hoofdstuk %1$@ geselecteerd: %2$@, %3$@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -344826,6 +345798,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "챕터 1 이전의 %@을(를) 선택했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ vóór hoofdstuk 1 geselecteerd."
           }
         },
         "pl" : {
@@ -344941,6 +345919,12 @@
             "value" : "선택 영역"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selectie"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345052,6 +346036,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "선택을 해제했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selectie opgeheven."
           }
         },
         "pl" : {
@@ -345173,6 +346163,12 @@
             "value" : "%1$@부터 %2$@까지 선택, 길이 %3$@."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selectie van %1$@ tot %2$@; %3$@ lang."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345284,6 +346280,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오 전체를 선택합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selecteert alle audio."
           }
         },
         "pl" : {
@@ -345399,6 +346401,12 @@
             "value" : "커서부터 다음 정지 구간의 끝까지 선택합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selecteert van de cursor tot het einde van de volgende pauze."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345512,6 +346520,12 @@
             "value" : "이전 정지 구간의 끝부터 커서까지 선택합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selecteert van het einde van de vorige pauze tot de cursor."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345623,6 +346637,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "커서가 있는 챕터를 선택합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Selecteert het hoofdstuk waarin de cursor staat."
           }
         },
         "pl" : {
@@ -346380,6 +347400,12 @@
             "value" : "챕터 마커 설정"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stel hoofdstukmarkering in"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346971,6 +347997,12 @@
             "value" : "입력한 제목으로 커서 위치에 챕터 마커를 설정합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Plaatst bij de cursor een hoofdstukmarkering met een titel die je typt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -347082,6 +348114,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "대본 언어를 설정합니다. 다운로드 필요로 표시된 언어는 오디오 대본 만들기 시트에서만 다운로드됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stelt de taal voor transcriptie in. Een taal met de status download nodig wordt alleen gedownload via het venster Transcribeer audio."
           }
         },
         "pl" : {
@@ -348802,6 +349840,12 @@
             "value" : "단축키: %@."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Toetsenbordcommando: %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349129,6 +350173,12 @@
             "value" : "단축키: %@."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Toetsenbordcommando's: %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349240,6 +350290,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "긴 정지 구간 줄이기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Kort lange pauzes in"
           }
         },
         "pl" : {
@@ -353502,6 +354558,12 @@
             "value" : "길이, 파일, 편집 내용을 보여 주고 원본 오디오의 처리 방식을 설정합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Toont lengte, bestand en bewerkingen; bepaalt wat er met de originele audio gebeurt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354364,6 +355426,12 @@
             "value" : "무음은 최대 하루까지 가능합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stilte mag maximaal een dag duren."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354477,6 +355545,12 @@
             "value" : "무음의 길이는 0보다 길어야 합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stilte moet langer zijn dan nul."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -354588,6 +355662,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "무음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stil"
           }
         },
         "pl" : {
@@ -363576,6 +364656,12 @@
             "value" : "처음부터 다시 시작"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Begin opnieuw"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363794,6 +364880,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오의 처음입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Begin van de audio."
           }
         },
         "pl" : {
@@ -364444,6 +365536,12 @@
             "value" : "시작하는 중…"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Starten…"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -364557,6 +365655,12 @@
             "value" : "%@(으)로 녹음을 시작합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Start de opname met %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -364668,6 +365772,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "마이크가 연결되면 녹음을 시작합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Start de opname zodra een microfoon is aangesloten."
           }
         },
         "pl" : {
@@ -364995,6 +366105,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "상태"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Status"
           }
         },
         "pl" : {
@@ -365796,6 +366912,12 @@
             "value" : "아직 정지 구간을 찾는 중입니다. 잠시 후 다시 시도하십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De pauzes worden nog gezocht. Probeer het zo opnieuw."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -366016,6 +367138,12 @@
             "value" : "마지막 변경 작업이 아직 진행 중입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nog bezig met de laatste wijziging."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -366127,6 +367255,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "작업 중입니다. 변경이 끝난 후에 닫으십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Nog bezig. Sluit het zodra de wijziging klaar is."
           }
         },
         "pl" : {
@@ -367035,6 +368169,12 @@
             "value" : "미리 듣기 중지"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stop voorvertoning"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -367146,6 +368286,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음 중지"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stop opname"
           }
         },
         "pl" : {
@@ -367368,6 +368514,12 @@
             "value" : "중지 및 저장"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stop en bewaar"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -367479,6 +368631,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음을 중지하고 저장하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De opname stoppen en bewaren?"
           }
         },
         "pl" : {
@@ -368607,6 +369765,12 @@
             "value" : "중지했습니다. %@ 지점으로 돌아갔습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Gestopt. Terug bij %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369362,6 +370526,12 @@
             "value" : "재생을 중지하고 재생을 시작한 지점으로 돌아갑니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stopt het afspelen en gaat terug naar waar het afspelen begon."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369473,6 +370643,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "녹음을 중지하고 보관함에 오디오북으로 저장합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stopt de opname en bewaart die als luisterboek in je bibliotheek."
           }
         },
         "pl" : {
@@ -369693,6 +370869,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "다운로드를 중지합니다. 아무것도 설치되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stopt de download. Er wordt niets geïnstalleerd."
           }
         },
         "pl" : {
@@ -370341,6 +371523,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "대본 만들기를 중지합니다. 책은 그대로 유지됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Stopt het transcriberen. Het boek blijft zoals het was."
           }
         },
         "pl" : {
@@ -378623,6 +379811,12 @@
             "value" : "TextMouth는 WebVTT(.vtt) 및 SubRip(.srt) 파일을 첨부할 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth voegt WebVTT-bestanden (.vtt) en SubRip-bestanden (.srt) bij."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -384725,6 +385919,12 @@
             "value" : "TextMouth가 %@(으)로 녹음을 시작할 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth kon niet beginnen met opnemen met %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -385423,6 +386623,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "TextMouth는 %@ 파일에서 챕터 마커를 다시 읽지 않으므로, 저장하면 이 책에 챕터 마커 %lld개가 표시되지 않습니다."
+                }
+              }
+            }
+          }
+        },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth leest hoofdstukmarkeringen niet terug uit %@-bestanden, dus dit boek toont zijn hoofdstukmarkering niet zodra het is bewaard."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth leest hoofdstukmarkeringen niet terug uit %@-bestanden, dus dit boek toont zijn %lld hoofdstukmarkeringen niet zodra het is bewaard."
                 }
               }
             }
@@ -386668,6 +387886,12 @@
             "value" : "TextMouth에는 자체 규칙이 없습니다. 테스트한 모든 책에 맞는 규칙이 없었습니다. 규칙 편집…을 선택하면 사용자 사본이 열리며, 인식기가 항상 다르게 적는 이름 같은 규칙을 추가할 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth heeft geen eigen regels: geen enkele klopte in elk geteste boek. Wijzig regels… opent je kopie, waarin je regels kunt toevoegen, zoals voor een naam die de herkenner steeds anders spelt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -387207,6 +388431,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 이미 %@의 대본을 만드는 중입니다. 끝난 후 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth is %@ al aan het transcriberen. Probeer het opnieuw wanneer dat klaar is."
           }
         },
         "pl" : {
@@ -388541,6 +389771,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth를 종료하는 중이며 책의 오디오에는 아직 이 편집이 들어 있지 않습니다. 폐기하면 편집이 취소되며, 다음에 이 책을 편집할 때 다른 편집을 하기 전까지 다시 실행으로 되돌릴 수 있습니다. 취소하면 TextMouth가 열린 채로 유지됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth wordt afgesloten en de audio van het boek bevat deze bewerkingen nog niet. Gooi weg maakt ze ongedaan; de volgende keer dat je dit boek wijzigt, brengt Herhaal ze terug tot je een nieuwe bewerking maakt. Annuleer houdt TextMouth open."
           }
         },
         "pl" : {
@@ -390045,6 +391281,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth가 마이크를 사용할 수 있도록 허용되어 있지 않습니다. 시스템 설정, 개인정보 보호 및 보안, 마이크에서 켜십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth mag de microfoon niet gebruiken. Schakel dit in via Systeeminstellingen, Privacy en beveiliging, Microfoon."
           }
         },
         "pl" : {
@@ -396187,6 +397429,12 @@
             "value" : "TextMouth의 자체 필터에는 “%1$@”이(가) 없습니다. 자체 필터는 %2$@입니다. ffmpeg를 설치하면 ffmpeg의 모든 필터를 사용할 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De eigen filters van TextMouth bevatten “%1$@” niet. Dat zijn %2$@; met ffmpeg geïnstalleerd werkt elk filter dat het heeft."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -396298,6 +397546,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth의 자체 필터로 이 체인을 실행합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De eigen filters van TextMouth voeren deze keten uit."
           }
         },
         "pl" : {
@@ -396413,6 +397667,12 @@
             "value" : "TextMouth 자체 loudnorm은 게인 하나로 정규화하므로 true만 사용할 수 있습니다"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De eigen loudnorm van TextMouth normaliseert met één versterking, dus accepteert alleen true"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -396524,6 +397784,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 자체 규칙이 더 최신이며 버전은 %@입니다. 사용하려면 사용자 사본을 삭제하거나 해당 규칙을 사본에 복사하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De eigen regels van TextMouth zijn nieuwer, versie %@. Verwijder je kopie of kopieer hun regels erin om ze te gebruiken."
           }
         },
         "pl" : {
@@ -397392,6 +398658,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이 항목은 TextMouth가 읽을 수 있는 일반 파일이 아닙니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dat onderdeel is geen gewoon bestand dat TextMouth kan lezen."
           }
         },
         "pl" : {
@@ -398558,6 +399830,12 @@
             "value" : "오디오의 끝을 넘었습니다. 끝은 %@ 지점입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Dat ligt voorbij het einde van de audio, op %@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -398784,6 +400062,12 @@
             "value" : "%@ 파일에는 TextMouth가 사용할 수 있는 시간 지정 텍스트가 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het %@-bestand bevat geen getimede tekst die TextMouth kan gebruiken."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -398901,6 +400185,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ 필터에는 “%2$@” 옵션이 없습니다. 사용할 수 있는 옵션은 %3$@입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het filter %1$@ heeft hier geen optie “%2$@”. De opties zijn %3$@."
           }
         },
         "pl" : {
@@ -399022,6 +400312,12 @@
             "value" : "%1$@ 필터에는 %2$@이(가) 필요합니다: %3$@."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het filter %1$@ heeft zijn %2$@ nodig: %3$@."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -399133,6 +400429,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 필터에 옵션보다 많은 값이 지정되었습니다. key=value 형식으로 지정하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het filter %@ kreeg meer waarden dan het opties heeft; geef ze op als key=value."
           }
         },
         "pl" : {
@@ -399252,6 +400554,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%1$@ 필터의 %2$@은(는) “%3$@”일 수 없습니다: %4$@."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De %2$@ van het filter %1$@ kan niet “%3$@” zijn: %4$@."
           }
         },
         "pl" : {
@@ -400216,6 +401524,12 @@
             "value" : "%1$@ 모델을 다운로드할 수 없습니다: %2$@"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het %1$@-model kon niet worden gedownload: %2$@"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -400329,6 +401643,12 @@
             "value" : "%@ 모델을 다운로드했습니다. 이제 책의 대본을 만들 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het %@-model is gedownload. Het boek kan nu worden getranscribeerd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -400440,6 +401760,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 모델 다운로드가 취소되었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De download van het %@-model is geannuleerd."
           }
         },
         "pl" : {
@@ -401421,6 +402747,24 @@
             }
           }
         },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De markering is verwijderd en Herhaal brengt die niet terug."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De %lld markeringen zijn verwijderd en Herhaal brengt ze niet terug."
+                }
+              }
+            }
+          }
+        },
         "pl" : {
           "variations" : {
             "plural" : {
@@ -401811,6 +403155,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "마커 %lld개를 삭제했습니다."
+                }
+              }
+            }
+          }
+        },
+        "nl" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De markering is verwijderd."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "De %lld markeringen zijn verwijderd."
                 }
               }
             }
@@ -407114,6 +408476,12 @@
             "value" : "오디오를 편집할 수 없습니다"
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio kan niet worden gewijzigd"
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -407560,6 +408928,12 @@
             "value" : "오디오를 내보낼 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio kon niet worden geëxporteerd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -407671,6 +409045,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오를 읽을 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio kon niet worden gelezen."
           }
         },
         "pl" : {
@@ -407891,6 +409271,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@의 오디오 편집기가 이미 열려 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio-editor voor %@ is al geopend."
           }
         },
         "pl" : {
@@ -408799,6 +410185,12 @@
             "value" : "편집에 필요한 오디오 파일 “%@”이(가) 책에 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het audiobestand “%@” dat de bewerkingen nodig hebben, ontbreekt in het boek."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -408910,6 +410302,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "오디오가 클라우드에만 있고 아직 이 Mac에는 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio staat alleen in de cloud, nog niet op deze Mac."
           }
         },
         "pl" : {
@@ -409025,6 +410423,12 @@
             "value" : "오디오를 아직 재생할 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio is nog niet klaar om af te spelen."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -409136,6 +410540,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@의 오디오를 편집하려고 열 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio van %@ kon niet worden geopend om te wijzigen."
           }
         },
         "pl" : {
@@ -409364,6 +410774,12 @@
             "value" : "오디오북의 오디오, 현재 위치, 북마크는 그대로 유지됩니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio van het luisterboek, je plek en je bladwijzers blijven zoals ze zijn."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -409475,6 +410891,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "보관함에 표시되는 오디오북의 제목입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De titel van het luisterboek in je bibliotheek."
           }
         },
         "pl" : {
@@ -409810,6 +411232,12 @@
             "value" : "책의 대본은 다시 만들 수 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek kan opnieuw worden getranscribeerd."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -409921,6 +411349,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책에 이미 대본이 있어서 TextMouth가 그대로 두었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek heeft al een transcriptie, dus TextMouth heeft die bewaard."
           }
         },
         "pl" : {
@@ -410248,6 +411682,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책의 대본을 다시 만드는 중입니다. 끝난 후에 대본을 정리하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek wordt opnieuw getranscribeerd. Ruim de transcriptie op zodra dat klaar is."
           }
         },
         "pl" : {
@@ -410791,6 +412231,12 @@
             "value" : "책이 더 이상 보관함에 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek staat niet meer in de bibliotheek."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -411011,6 +412457,12 @@
             "value" : "책이 리더에서 열려 있습니다. 리더를 닫은 다음 다시 저장하십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek is geopend in een lezer. Sluit de lezer en bewaar dan opnieuw."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -411229,6 +412681,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "대본을 만드는 동안 책이 보관함에서 사라져서 대본이 저장되지 않았습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het boek verliet de bibliotheek tijdens het transcriberen, dus de transcriptie is niet bewaard."
           }
         },
         "pl" : {
@@ -411665,6 +413123,12 @@
             "value" : "대본을 만든 이후 책의 오디오가 변경되어(%@) 대본이 더 이상 맞지 않습니다. 대본을 다시 만드십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio van het boek is gewijzigd sinds het is getranscribeerd (%@), dus de transcriptie past niet meer. Transcribeer opnieuw."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -411778,6 +413242,12 @@
             "value" : "대본을 만드는 동안 책의 오디오가 변경되었습니다: %@. 대본을 다시 만드십시오."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio van het boek is gewijzigd tijdens het transcriberen: %@. Transcribeer het opnieuw."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -411889,6 +413359,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책의 오디오에 기록이 사라진 편집이 들어 있어 그대로 유지되며, 다음에 이 책을 편집할 때 저장하거나 취소할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De audio van het boek bevat bewerkingen die de geschiedenis kwijt is, dus ze blijven staan, om te bewaren of ongedaan te maken de volgende keer dat je dit boek wijzigt."
           }
         },
         "pl" : {
@@ -412967,6 +414443,12 @@
             "value" : "책의 텍스트에 TextMouth가 복사할 수 없는 변경 사항이 있어서 텍스트를 그대로 둡니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De tekst van het boek heeft wijzigingen die TextMouth niet kon kopiëren, dus laat de tekst zoals die is."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -413078,6 +414560,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책의 텍스트가 iCloud에만 있어서 TextMouth가 그대로 둡니다. 책을 다운로드한 다음 다시 시도하십시오."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De tekst van het boek staat alleen in iCloud, dus TextMouth laat die ongemoeid. Download het boek en probeer het opnieuw."
           }
         },
         "pl" : {
@@ -413298,6 +414786,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "책의 대본을 읽을 수 없어서 내보내지 않았습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De transcriptie van het boek kon niet worden gelezen, dus is niet geëxporteerd."
           }
         },
         "pl" : {
@@ -416314,6 +417808,12 @@
             "value" : "디스크가 거의 가득 차서 녹음이 중지되었습니다. 녹음된 내용은 보관됩니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De schijf is bijna vol, dus de opname is gestopt. Wat is opgenomen, blijft bewaard."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -416425,6 +417925,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "디스크가 너무 가득 차서 붙여넣기용 오디오를 보관할 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De schijf is te vol om deze audio te bewaren voor plakken."
           }
         },
         "pl" : {
@@ -417194,6 +418700,12 @@
             "value" : "편집 기록을 읽을 수 없습니다. 사본이 책 패키지에 보관되어 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bewerkingsgeschiedenis kon niet worden gelezen. Er is een kopie bewaard in het pakket van het boek."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417305,6 +418817,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "편집 기록이 클라우드에만 있고 아직 이 Mac에는 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bewerkingsgeschiedenis staat alleen in de cloud, nog niet op deze Mac."
           }
         },
         "pl" : {
@@ -417420,6 +418938,12 @@
             "value" : "편집 기록이 책 밖의 파일을 가리키고 있어 사용하지 않습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bewerkingsgeschiedenis noemt een bestand buiten het boek, dus wordt niet gebruikt."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417531,6 +419055,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@의 편집 기록을 읽을 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bewerkingsgeschiedenis van %@ kon niet worden gelezen."
           }
         },
         "pl" : {
@@ -417646,6 +419176,12 @@
             "value" : "편집한 오디오를 쓸 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bewerkte audio kon niet worden geschreven."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -417757,6 +419293,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "편집 내용을 저장할 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bewerkingen konden niet worden bewaard."
           }
         },
         "pl" : {
@@ -420823,6 +422365,12 @@
             "value" : "이 파일은 TextMouth가 읽지 못하는 버전 %2$@의 %1$@ 대본입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het bestand is een %1$@-transcriptie van versie %2$@, die TextMouth niet leest."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -420936,6 +422484,12 @@
             "value" : "파일이 대본의 크기 제한인 %lld MB를 초과합니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het bestand is groter dan de limiet van %lld MB voor een transcriptie."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -421047,6 +422601,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "이 파일은 TextMouth가 읽을 수 있는 %@ 대본이 아닙니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Het bestand is geen %@-transcriptie die TextMouth kan lezen."
           }
         },
         "pl" : {
@@ -422488,6 +424048,12 @@
             "value" : "필터 체인이 비어 있습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De filterketen is leeg."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -422599,6 +424165,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "필터 프리셋을 기본값으로 재설정했습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De voorinstellingen voor filters zijn teruggezet naar de standaardwaarden."
           }
         },
         "pl" : {
@@ -426785,6 +428357,12 @@
             "value" : "녹음을 저장할 보관함 폴더입니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bibliotheekmap waarin de opname wordt bewaard."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -428182,6 +429760,12 @@
             "value" : "보관함을 사용할 수 없어 필터 프리셋을 저장할 수 없습니다."
           }
         },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bibliotheek is niet beschikbaar, dus de voorinstellingen voor filters kunnen niet worden bewaard."
+          }
+        },
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -428293,6 +429877,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "보관함을 사용할 수 없어 지금은 규칙을 열 수 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De bibliotheek is niet beschikbaar, dus de regels kunnen nu niet worden geopend."
           }
         },
         "pl" : {
@@ -429066,6 +430656,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "덮어 녹음에 사용하는 마이크입니다. TextMouth는 macOS 입력 설정과 별도로 이 선택을 기억합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "De microfoon waarmee Neem erover op opneemt. TextMouth onthoudt die, los van de invoer van macOS."
           }
         },
         "pl" : {
