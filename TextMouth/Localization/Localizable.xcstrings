@@ -228,7 +228,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” speelt het volgende boek in dezelfde map af, op volgorde van sortering."
+            "value" : "“%@” speelt het volgende boek in dezelfde map af, in de sorteervolgorde."
           }
         },
         "pl" : {
@@ -30427,7 +30427,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@, alle submappen en het %lld boek erin worden uit de bibliotheek weggehaald."
+                  "value" : "%@, alle submappen en het boek erin worden uit de bibliotheek weggehaald."
                 }
               },
               "other" : {
@@ -31814,7 +31814,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, van %2$@, %3$@, in %4$@, toegevoegd %5$@"
+            "value" : "%1$@, van %2$@, %3$@, in %4$@, toegevoegd op %5$@"
           }
         },
         "pl" : {
@@ -118263,7 +118263,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Altijd toont een weergave altijd. Indien van toepassing toont die alleen zolang er iets in staat: de Leeslijst zolang die een boek, aflevering of artikel bevat, en Feeds zolang er een feed is. Verborgen laat de weergave weg. Een venster houdt zijn weergave totdat je een andere kiest."
+            "value" : "Met “Altijd” wordt een weergave steeds aangeboden. Met “Indien van toepassing” alleen zolang die iets toont: de Leeslijst zolang die een boek, aflevering of artikel bevat, en Feeds zolang er een feed is. Met “Verborgen” wordt de weergave weggelaten. Een venster houdt zijn weergave totdat je een andere kiest."
           }
         },
         "pl" : {
@@ -128234,7 +128234,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vraagt of je kiest voor: %@, of voor bewaren in de bibliotheekmap van TextMouth."
+            "value" : "Vraagt of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren."
           }
         },
         "pl" : {
@@ -133541,7 +133541,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Begin automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert."
+            "value" : "Begint automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert."
           }
         },
         "pl" : {
@@ -161232,7 +161232,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kies een stem om mee te lezen. De wijziging gaat direct in."
+            "value" : "Kiest de stem voor het voorlezen. De wijziging gaat direct in."
           }
         },
         "pl" : {
@@ -167788,7 +167788,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gekozen door"
+            "value" : "Gekozen op"
           }
         },
         "pl" : {
@@ -173021,7 +173021,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vergelijk bibliotheken in de instellingen voor Opslag toont elk verschil."
+            "value" : "Met Vergelijk bibliotheken in de instellingen voor Opslag zie je elk verschil."
           }
         },
         "pl" : {
@@ -173915,7 +173915,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deze bibliotheek wordt vergeleken met de kopie in de map die je hebt gekozen, om te zeggen welke de nieuwste is. Dit kan tot een minuut duren; kies Stop met vergelijken om het over te slaan."
+            "value" : "Deze bibliotheek wordt vergeleken met de kopie in de map die je hebt gekozen, om na te gaan welke de nieuwere is. Dit kan tot een minuut duren; kies Stop met vergelijken om het over te slaan."
           }
         },
         "pl" : {
@@ -175703,7 +175703,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vraag bevestiging voordat een boek wordt verwijderd"
+            "value" : "Vraag om bevestiging voordat een boek wordt weggehaald"
           }
         },
         "pl" : {
@@ -183618,7 +183618,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kan de tekst niet terug lezen uit het bestand van de editor, dus de tekst hier is ongewijzigd."
+            "value" : "Kan de tekst niet teruglezen uit het bestand van de editor, dus de tekst hier is ongewijzigd."
           }
         },
         "pl" : {
@@ -193006,7 +193006,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Standaardsnelheid: %lld woorden per minuut"
+                  "value" : "Standaardsnelheid: %lld woord per minuut"
                 }
               },
               "other" : {
@@ -193612,7 +193612,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan dit overschrijven."
+            "value" : "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan hiervan afwijken."
           }
         },
         "pl" : {
@@ -193910,7 +193910,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Standaardsnelheid voor nieuwe boeken. Elk boek kan dit overschrijven met een eigen snelheid."
+            "value" : "Standaardsnelheid voor nieuwe boeken. Elk boek kan een eigen snelheid hebben."
           }
         },
         "pl" : {
@@ -205153,7 +205153,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ga niet terug als de pauze korter is dan dit."
+            "value" : "Spoelt niet terug als de pauze korter is dan dit."
           }
         },
         "pl" : {
@@ -217073,7 +217073,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "EPUB-boeken met dezelfde ISBN-identificatie."
+            "value" : "EPUB-boeken met hetzelfde ISBN."
           }
         },
         "pl" : {
@@ -221400,7 +221400,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wijzig tekst stopt voor dit boek; kies Wijzig tekst opnieuw om de nieuwe versie te wijzigen."
+            "value" : "Het wijzigen van de tekst stopt voor dit boek; kies opnieuw Wijzig tekst om de nieuwe versie te wijzigen."
           }
         },
         "pl" : {
@@ -254501,7 +254501,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mappen en de Leeslijst tonen altijd wat ze altijd hebben. Je kunt ze verplaatsen en de Leeslijst verbergen."
+            "value" : "Mappen en de Leeslijst tonen altijd wat erin staat. Je kunt ze verplaatsen en de Leeslijst verbergen."
           }
         },
         "pl" : {
@@ -264993,7 +264993,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verlaag het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd."
+            "value" : "Verlaagt het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd."
           }
         },
         "pl" : {
@@ -273405,7 +273405,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als het bestand later van %@ aankomt, benoemt het dezelfde bibliotheek."
+            "value" : "Als het bestand later van %@ aankomt, verwijst het naar dezelfde bibliotheek."
           }
         },
         "pl" : {
@@ -275944,7 +275944,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importeer het opnieuw, wat naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap zijn plaats inneemt, of verwijder het uit de bibliotheek en verplaats de gegevensmap dan opnieuw."
+            "value" : "Importeer het opnieuw, waarna TextMouth naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap de plaats ervan inneemt, of haal het uit de bibliotheek weg en verplaats de gegevensmap dan opnieuw."
           }
         },
         "pl" : {
@@ -289118,7 +289118,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het heeft dezelfde boeken, leesposities, bladwijzers, leeslijst en mappen."
+            "value" : "Die heeft dezelfde boeken, leesposities, bladwijzers, leeslijst en mappen."
           }
         },
         "pl" : {
@@ -290334,7 +290334,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het bevat de map van de feed %@."
+            "value" : "Deze map bevat de map van de feed %@."
           }
         },
         "pl" : {
@@ -290483,7 +290483,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het bevat de mappen van de feeds %@."
+            "value" : "Deze map bevat de mappen van de feeds %@."
           }
         },
         "pl" : {
@@ -291091,7 +291091,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het is de map van de feed %@. Hoe dan ook blijven de feed en de downloads ervan bewaard, in geen enkele map vermeld totdat Feedinformatie de feed een andere geeft; Verwijder feed… op de rij van de feed verwijdert die."
+            "value" : "Het is de map van de feed %@. Hoe dan ook blijven de feed en de downloads ervan bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van de feed verwijder je die."
           }
         },
         "pl" : {
@@ -291240,7 +291240,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het is de map van de feeds %@. Hoe dan ook blijven de feeds en hun downloads bewaard, in geen enkele map vermeld totdat Feedinformatie elke feed een andere geeft; Verwijder feed… op de rij van een feed verwijdert die."
+            "value" : "Het is de map van de feeds %@. Hoe dan ook blijven de feeds en hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van een feed verwijder je die."
           }
         },
         "pl" : {
@@ -295934,7 +295934,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De voorwaarden en sortering ervan worden verwijderd. De boeken, afleveringen, artikelen en feeds die erin staan, blijven in de bibliotheek, en een bibliotheekvenster dat de weergave toont, toont een andere weergave."
+            "value" : "De voorwaarden en sortering ervan worden verwijderd. De boeken, afleveringen, artikelen en feeds die erin staan, blijven in de bibliotheek, en een bibliotheekvenster met deze weergave toont dan een andere."
           }
         },
         "pl" : {
@@ -307897,7 +307897,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ is op zijn plaats gelaten: afleveringen en artikelen blijven in hun feeds; %@ maakt er een boek van je bibliotheek van."
+            "value" : "%@ is op zijn plaats gelaten: afleveringen en artikelen blijven in hun feeds; met %@ maak je er een boek in je bibliotheek van."
           }
         },
         "pl" : {
@@ -308052,7 +308052,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ zijn op hun plaats gelaten: afleveringen en artikelen blijven in hun feeds; %@ maakt er een boek van je bibliotheek van."
+            "value" : "%@ zijn op hun plaats gelaten: afleveringen en artikelen blijven in hun feeds; met %@ maak je er een boek in je bibliotheek van."
           }
         },
         "pl" : {
@@ -322524,7 +322524,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Maakt een eigen weergave van de voorwaarden die je kiest."
+            "value" : "Maakt een eigen weergave met de voorwaarden die je kiest."
           }
         },
         "pl" : {
@@ -346072,7 +346072,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verplaatst het één plaats omlaag."
+            "value" : "Verplaatst de weergave één plaats omlaag."
           }
         },
         "pl" : {
@@ -346221,7 +346221,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verplaatst het één plaats omhoog."
+            "value" : "Verplaatst de weergave één plaats omhoog."
           }
         },
         "pl" : {
@@ -376130,7 +376130,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard."
+                  "value" : "Het geselecteerde boek wordt niet op deze Mac bewaard."
                 }
               },
               "other" : {
@@ -380368,7 +380368,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Niets controleert of dit de juiste keuze is. Klinken cijfers en leestekens verkeerd, kies dan een andere."
+            "value" : "Er wordt niet gecontroleerd of dit de juiste keuze is. Klinken cijfers en leestekens verkeerd, kies dan een andere."
           }
         },
         "pl" : {
@@ -386738,7 +386738,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alleen het nieuwste van elke feed"
+            "value" : "Alleen het laatst geopende van elke feed"
           }
         },
         "pl" : {
@@ -435242,7 +435242,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gedrag bij verwijderen"
+            "value" : "Gedrag bij weghalen"
           }
         },
         "pl" : {
@@ -447454,7 +447454,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stel standaardwaarden opnieuw in"
+            "value" : "Zet terug naar standaardwaarden"
           }
         },
         "pl" : {
@@ -452520,7 +452520,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opnieuw proberen staat boven in het bibliotheekvenster."
+            "value" : "De knop Probeer opnieuw staat boven in het bibliotheekvenster."
           }
         },
         "pl" : {
@@ -458201,7 +458201,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dezelfde ISBN"
+            "value" : "Hetzelfde ISBN"
           }
         },
         "pl" : {
@@ -469850,7 +469850,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Selecteer alle %lld boek"
+                  "value" : "Selecteer het boek"
                 }
               },
               "other" : {
@@ -474050,7 +474050,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stel de toets ervoor in met %1$@ in het tabblad %2$@; de standaardtoets is %3$@."
+            "value" : "Stel het toetsenbordcommando ervoor in met %1$@ in het tabblad %2$@; standaard is dat %3$@."
           }
         },
         "pl" : {
@@ -482928,7 +482928,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Groep %1$@ tot %2$@ van %3$@ worden getoond"
+            "value" : "Groepen %1$@ tot en met %2$@ van %3$@ worden getoond"
           }
         },
         "pl" : {
@@ -484623,7 +484623,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toont de groepen voor deze."
+            "value" : "Toont de vorige groepen."
           }
         },
         "pl" : {
@@ -487913,7 +487913,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slaat overeenkomsten naast letters, cijfers of liggende streepjes over."
+            "value" : "Slaat treffers naast letters, cijfers of liggende streepjes over."
           }
         },
         "pl" : {
@@ -505017,7 +505017,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stopt het vergelijken. Er is niets gewijzigd in beide kopieën."
+            "value" : "Stopt het vergelijken. In geen van beide kopieën is iets gewijzigd."
           }
         },
         "pl" : {
@@ -505911,7 +505911,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stopt met zeggen dat de code is geraden. Het boek wordt niet opnieuw gelezen."
+            "value" : "Meldt niet langer dat de code is geraden. Het boek wordt niet opnieuw gelezen."
           }
         },
         "pl" : {
@@ -524905,7 +524905,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus beide kopieën zijn gelaten zoals ze waren."
+            "value" : "TextMouth kon de bewerkte tekst van de kopie in je bibliotheek niet naast de tekst van de nieuwe kopie bewaren, dus blijven beide kopieën zoals ze zijn."
           }
         },
         "pl" : {
@@ -525054,7 +525054,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus het boek is gelaten zoals het was."
+            "value" : "TextMouth kon de tekst die je in “%@” hebt gewijzigd niet naast de nieuwe versie bewaren, dus blijft het boek zoals het was."
           }
         },
         "pl" : {
@@ -526004,7 +526004,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was."
+            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was."
           }
         },
         "pl" : {
@@ -526159,7 +526159,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus het boek is gelaten zoals het was: %@"
+            "value" : "TextMouth kon “%@” niet opnieuw lezen, dus blijft het boek zoals het was: %@"
           }
         },
         "pl" : {
@@ -526755,7 +526755,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon de index van de bibliotheek niet bewaren, dus beide kopieën zijn gelaten zoals ze waren."
+            "value" : "TextMouth kon de bibliotheekindex niet bewaren, dus blijven beide kopieën zoals ze zijn."
           }
         },
         "pl" : {
@@ -531840,7 +531840,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze onbewaard."
+            "value" : "TextMouth start opnieuw met een andere bibliotheek, dus ze worden in deze bibliotheek niet bewaard."
           }
         },
         "pl" : {
@@ -531989,7 +531989,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze waar ze zijn."
+            "value" : "TextMouth start opnieuw met een andere bibliotheek, dus ze blijven in deze bibliotheek waar ze zijn."
           }
         },
         "pl" : {
@@ -533777,7 +533777,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth schakelt over naar een andere bibliotheek en wordt daarmee opnieuw geopend."
+            "value" : "TextMouth schakelt over naar een andere bibliotheek en start daarmee opnieuw."
           }
         },
         "pl" : {
@@ -538619,7 +538619,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth leest zijn bestand zoals het een bestand leest dat je toevoegt: in de codering die het bestand noemt, of anders in de codering die TextMouth vindt."
+            "value" : "TextMouth leest het bestand van het boek zoals een bestand dat je toevoegt: in de codering die het bestand opgeeft, of anders in de codering die TextMouth vindt."
           }
         },
         "pl" : {
@@ -541077,7 +541077,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het opent, maar kon niet zelf opnieuw openen: %2$@"
+            "value" : "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het start, maar kon niet zelf opnieuw starten: %2$@"
           }
         },
         "pl" : {
@@ -541226,7 +541226,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sluit af en opent opnieuw om de bibliotheek te laden."
+            "value" : "TextMouth sluit af en start opnieuw om de bibliotheek te laden."
           }
         },
         "pl" : {
@@ -541375,7 +541375,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sluit af en opent opnieuw om de bibliotheek te starten."
+            "value" : "TextMouth sluit af en start opnieuw om de nieuwe bibliotheek te beginnen."
           }
         },
         "pl" : {
@@ -550980,7 +550980,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het %lld geselecteerde boek wordt al op deze Mac bewaard."
+                  "value" : "Het geselecteerde boek wordt al op deze Mac bewaard."
                 }
               },
               "other" : {
@@ -551483,7 +551483,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het %lld geselecteerde boek wordt op deze Mac bewaard voor de leeslijst."
+                  "value" : "Het geselecteerde boek wordt op deze Mac bewaard voor de leeslijst."
                 }
               },
               "other" : {
@@ -553728,7 +553728,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "The Hobbit sorteert bij de H en wordt getoond als Hobbit, The. Als je H typt, vind je het bij de H."
+            "value" : "The Hobbit wordt bij de H gesorteerd en getoond als Hobbit, The. Als je H typt, vind je het bij de H."
           }
         },
         "pl" : {
@@ -566969,7 +566969,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het braille wordt opnieuw naar print vertaald met deze code. Niets controleert of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere."
+            "value" : "Het braille wordt met deze code opnieuw naar zwartschrift vertaald. Er wordt niet gecontroleerd of dat de juiste keuze is. Worden woorden verkeerd gelezen, kies dan een andere."
           }
         },
         "pl" : {
@@ -573102,7 +573102,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De feed %@ blijft, met de downloads, zonder map totdat Feedinformatie de feed een andere geeft."
+            "value" : "De feed %@ blijft met de downloads bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft."
           }
         },
         "pl" : {
@@ -575107,7 +575107,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De feeds %@ blijven, met hun downloads, zonder map totdat Feedinformatie elke feed een andere geeft."
+            "value" : "De feeds %@ blijven met hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft."
           }
         },
         "pl" : {
@@ -582282,7 +582282,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen betekenen op deze schijf dezelfde map."
+            "value" : "De mappen %@ en %@ kunnen niet allebei naar %@ worden verplaatst: hun namen verwijzen op deze schijf naar dezelfde map."
           }
         },
         "pl" : {
@@ -602703,7 +602703,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De bewaarde kopie op %@ bewaart de oude gegevens."
+            "value" : "De bewaarde kopie op %@ bevat de oude gegevens."
           }
         },
         "pl" : {
@@ -611701,13 +611701,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Er is geen weergave %@. Ga naar weergave bereikt %lld weergave."
+                  "value" : "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergave."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Er is geen weergave %@. Ga naar weergave bereikt %lld weergaven."
+                  "value" : "Er is geen weergave %@. Met Ga naar weergave bereik je %lld weergaven."
                 }
               }
             }
@@ -628349,7 +628349,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deze map heeft geen opgeslagen naam en kan dus niet veilig worden gewijzigd."
+            "value" : "Deze map heeft geen opgeslagen naam, dus die kan niet veilig worden gewijzigd."
           }
         },
         "pl" : {
@@ -637432,7 +637432,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Om de ruimte toch vrij te maken, kies je Toon in Finder en %@."
+            "value" : "Wil je de ruimte toch vrijmaken, kies dan Toon in Finder en %@."
           }
         },
         "pl" : {
@@ -638481,7 +638481,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Om een andere map te gebruiken, open je Instellingen en Opslag en kies je %1$@ of %2$@."
+            "value" : "Om een andere map te gebruiken, open je Opslag in Instellingen en kies je %1$@ of %2$@."
           }
         },
         "pl" : {
@@ -659593,7 +659593,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gebruik overeenkomst met reguliere expressie"
+            "value" : "Gebruik reguliere expressies"
           }
         },
         "pl" : {
@@ -670905,7 +670905,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als lidwoorden worden genegeerd, slaat een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt de lidwoorden van die taal over, zoals Le en Die, en The."
+            "value" : "Als lidwoorden worden genegeerd, worden bij een boek waarvan de metadata Frans, Duits, Spaans, Italiaans, Portugees, Nederlands, Catalaans, Zweeds, Deens of Noors noemt, de lidwoorden van die taal overgeslagen, zoals Le en Die, en ook The."
           }
         },
         "pl" : {
@@ -671054,7 +671054,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als boek eindigt"
+            "value" : "Wanneer een boek eindigt"
           }
         },
         "pl" : {
@@ -671948,7 +671948,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, kun je \\b in het patroon gebruiken voor woordgrenzen."
+            "value" : "Als dit aanstaat, kun je \\b in het patroon gebruiken voor woordgrenzen."
           }
         },
         "pl" : {
@@ -672097,7 +672097,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit uit staat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld."
+            "value" : "Als dit uitstaat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld."
           }
         },
         "pl" : {
@@ -672246,7 +672246,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit uit staat, wordt bij het weghalen van een boek direct het volgende gedaan: %@."
+            "value" : "Als dit uitstaat, zal TextMouth bij het weghalen van een boek meteen %@."
           }
         },
         "pl" : {
@@ -672693,7 +672693,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd."
+            "value" : "Als dit aanstaat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd."
           }
         },
         "pl" : {
@@ -672842,7 +672842,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, wordt bij het weghalen van een boek eerst gevraagd of je kiest voor: %@, of voor bewaren in de bibliotheekmap van TextMouth."
+            "value" : "Als dit aanstaat, vraagt TextMouth bij het weghalen van een boek eerst of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren."
           }
         },
         "pl" : {
@@ -674487,7 +674487,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Waar TextMouth zijn diagnostische logboeken schrijft. %1$@ houdt ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. %2$@ houdt ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven."
+            "value" : "Waar TextMouth zijn diagnostische logboeken schrijft. Met “%1$@” staan ze bij je boeken, zodat ze met de bibliotheek meeverhuizen en synchroniseren. Met “%2$@” staan ze in %3$@, die nooit synchroniseert. Een wijziging geldt vanaf de volgende regel; bestaande logboeken blijven waar ze zijn."
           }
         },
         "pl" : {
@@ -678733,7 +678733,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Met %@ blijven de feed en de downloads ervan bewaard, in geen enkele map vermeld totdat Feedinformatie de feed een andere geeft; Verwijder feed… op de rij van de feed verwijdert die."
+            "value" : "Met %@ blijven de feed en de downloads ervan bewaard, zonder map, totdat je de feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van de feed verwijder je die."
           }
         },
         "pl" : {
@@ -678882,7 +678882,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Met %@ blijven de feeds en hun downloads bewaard, in geen enkele map vermeld totdat Feedinformatie elke feed een andere geeft; Verwijder feed… op de rij van een feed verwijdert die."
+            "value" : "Met %@ blijven de feeds en hun downloads bewaard, zonder map, totdat je elke feed in Feedinformatie een andere map geeft; met Verwijder feed… op de rij van een feed verwijder je die."
           }
         },
         "pl" : {
@@ -691751,7 +691751,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "hoofdstuk %1$@, bewaard %2$@ en %3$@"
+            "value" : "hoofdstuk %1$@, bewaard op %2$@ en %3$@"
           }
         },
         "pl" : {
@@ -694290,7 +694290,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "gedeclareerd in het bestand"
+            "value" : "opgegeven in het bestand"
           }
         },
         "pl" : {
@@ -713964,7 +713964,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "geen plek bewaard en %@"
+            "value" : "geen leespositie bewaard en %@"
           }
         },
         "pl" : {
@@ -716913,7 +716913,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "alleen het nieuwste van elke feed"
+            "value" : "alleen het laatst geopende van elke feed"
           }
         },
         "pl" : {
@@ -722749,7 +722749,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "dus TextMouth kan niet zeggen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken."
+            "value" : "dus TextMouth kan niet bepalen of de twee kopieën één bibliotheek zijn en heeft niets vergeleken."
           }
         },
         "pl" : {
