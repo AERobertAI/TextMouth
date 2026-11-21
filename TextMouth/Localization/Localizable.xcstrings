@@ -157736,6 +157736,12 @@
             "value" : "TextMouth sta ultimando le operazioni prima di uscire: %@. Uscirà al termine."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth は終了前に作業を完了しています：%@。完了すると終了します。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -158721,6 +158727,12 @@
             "value" : "TextMouth ha conservato il testo modificato in %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth は、%@で変更したテキストをそのまま残しました。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159639,6 +159651,12 @@
             "value" : "TextMouth apre il manifest.json del libro nel tuo editor di testo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth は、ブックの manifest.json をテキストエディタで開きます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -159678,6 +159696,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth apre il testo del libro nel tuo editor di testo, come file Markdown."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth は、ブックのテキストを Markdown ファイルとして、テキストエディタで開きます。"
           }
         },
         "pt-BR" : {
@@ -162157,6 +162181,12 @@
             "value" : "L’%@ termina a %@ dall’inizio di “%@”, che dura solo %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@は、「%3$@」の%2$@の位置で終わっていますが、そのファイルの長さは%4$@しかありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163110,6 +163140,12 @@
             "value" : "La %@ pagina con l’etichetta %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ラベル%2$@の%1$@のページ"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163157,6 +163193,12 @@
             "value" : "L’%@ inizia a %@ dall’inizio di “%@”, prima dell’%@ precedente, che inizia a %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@は「%3$@」の%2$@の位置から始まっていますが、それより前にある%4$@（%5$@の位置から始まる）より前になっています。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -163202,6 +163244,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’%@ inizia a %@ dall’inizio di “%@”, che dura solo %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@は「%3$@」の%2$@の位置から始まっていますが、そのファイルの長さは%4$@しかありません。"
           }
         },
         "pt-BR" : {
@@ -164008,6 +164056,12 @@
             "value" : "Non è stato possibile aprire il file DAISY come archivio ZIP."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DAISY ファイルを ZIP アーカイブとして開けませんでした。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164047,6 +164101,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile aprire il file DOCX come archivio ZIP."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX ファイルを ZIP アーカイブとして開けませんでした。"
           }
         },
         "pt-BR" : {
@@ -164090,6 +164150,12 @@
             "value" : "Nel file DOCX manca una voce obbligatoria: %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "DOCX ファイルに必要な項目がありません：%@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164129,6 +164195,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile aprire il file EPUB come archivio ZIP."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB ファイルを ZIP アーカイブとして開けませんでした。"
           }
         },
         "pt-BR" : {
@@ -164277,6 +164349,12 @@
             "value" : "File EPUB non trovato in: %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB ファイルが見つかりませんでした：%@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164316,6 +164394,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’EPUB non ha un ordine di lettura (spine)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB に読み順（スパイン）がありません。"
           }
         },
         "pt-BR" : {
@@ -164359,6 +164443,12 @@
             "value" : "All’EPUB manca META-INF/container.xml."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB に META-INF/container.xml がありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164400,6 +164490,12 @@
             "value" : "All’EPUB manca il documento del pacchetto (file OPF)."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB にパッケージドキュメント（OPF ファイル）がありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -164439,6 +164535,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile analizzare il documento del pacchetto dell’EPUB."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "EPUB のパッケージドキュメントを解析できませんでした。"
           }
         },
         "pt-BR" : {
@@ -164913,6 +165015,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Non è stato possibile aprire il file PDF."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "PDF ファイルを開けませんでした。"
           }
         },
         "pt-BR" : {
@@ -165980,6 +166088,12 @@
             "value" : "Editor audio"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "オーディオエディタ"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166101,6 +166215,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file audio %@ termina prima del suo audio, quindi non è stato possibile convertirlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "オーディオファイル%@は、本来のオーディオより前で終わっているため、変換できませんでした。"
           }
         },
         "pt-BR" : {
@@ -166311,6 +166431,12 @@
             "value" : "Il file audio %@ è danneggiato, quindi non è stato possibile convertirlo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "オーディオファイル%@は壊れているため、変換できませんでした。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -166350,6 +166476,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file audio %@ non è del tipo indicato dal suo nome."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "オーディオファイル%@は、名前が示す種類のファイルではありません。"
           }
         },
         "pt-BR" : {
@@ -167758,6 +167890,12 @@
             "value" : "La navigazione del libro non corrisponde al suo audio; procurati una copia nuova e importalo di nuovo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックのナビゲーションがオーディオと一致しません。新しいコピーを入手して、もう一度読み込んでください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -168729,6 +168867,12 @@
             "value" : "Il file di correzione %@ è danneggiato o appartiene a un’altra registrazione, quindi non è stato possibile convertire %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "補正ファイル%1$@が壊れているか、別の録音のものであるため、%2$@を変換できませんでした。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -168944,6 +169088,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il cursore è %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "カーソルは%@にあります。"
           }
         },
         "pt-BR" : {
@@ -171117,6 +171267,12 @@
             "value" : "Il file “%@”"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ファイル「%@」"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171162,6 +171318,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” dichiara la codifica del testo “%@”, ma contiene byte non validi in quella codifica."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ファイル「%1$@」はテキストエンコーディング「%2$@」を宣言していますが、そのエンコーディングでは無効なバイトが含まれています。"
           }
         },
         "pt-BR" : {
@@ -171211,6 +171373,12 @@
             "value" : "Il file “%@” dichiara la codifica del testo “%@”, che TextMouth non può leggere."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ファイル「%1$@」はテキストエンコーディング「%2$@」を宣言していますが、TextMouth はそれを読み取れません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171256,6 +171424,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” in questo libro DAISY fa riferimento a “%@”, fuori dalla cartella del libro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この DAISY ブック内のファイル「%1$@」が、ブックのフォルダの外にある「%2$@」を参照しています。"
           }
         },
         "pt-BR" : {
@@ -171305,6 +171479,12 @@
             "value" : "Il file “%@” in questo archivio è danneggiato o incompleto: %@. Procurati una copia nuova dell’archivio, poi importalo di nuovo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このアーカイブ内のファイル「%1$@」が壊れているか不完全です：%2$@。アーカイブの新しいコピーを入手してから、もう一度読み込んでください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171350,6 +171530,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” in questo libro è danneggiato o incompleto: %@. Procurati una copia nuova del libro, poi importalo di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このブック内のファイル「%1$@」が壊れているか不完全です：%2$@。ブックの新しいコピーを入手してから、もう一度読み込んでください。"
           }
         },
         "pt-BR" : {
@@ -171399,6 +171585,12 @@
             "value" : "Il file “%@” in questo documento è danneggiato o incompleto: %@. Procurati una copia nuova del documento, poi importalo di nuovo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このドキュメント内のファイル「%1$@」が壊れているか不完全です：%2$@。ドキュメントの新しいコピーを入手してから、もう一度読み込んでください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -171444,6 +171636,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file “%@” è danneggiato o incompleto: inizia con un indicatore dell’ordine dei byte %@, ma il resto non è testo %@ valido."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ファイル「%1$@」は壊れているか不完全です：%2$@ のバイトオーダーマークで始まっていますが、残りは有効な %3$@ テキストではありません。"
           }
         },
         "pt-BR" : {
@@ -172366,6 +172564,18 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "フォルダに DAISY ブックが%lld冊あります（%@）。"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -172488,6 +172698,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La cartella non è un libro DAISY: al suo livello superiore non ha un file ncc.html o .opf."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "フォルダは DAISY ブックではありません：最上位に ncc.html も .opf ファイルもありません。"
           }
         },
         "pt-BR" : {
@@ -174327,6 +174543,12 @@
             "value" : "Impossibile modificare il manifest di %@: %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@のマニフェストは編集できません：%2$@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -175525,6 +175747,12 @@
             "value" : "Non è stato possibile leggere l’unico capitolo"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "唯一のチャプタを読み込めませんでした"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176135,6 +176363,12 @@
             "value" : "Il file originale che hai importato non viene modificato."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "読み込んだ元のファイルは変更されません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -176174,6 +176408,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il file originale che hai importato non viene toccato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "読み込んだ元のファイルには触れません。"
           }
         },
         "pt-BR" : {
@@ -176436,6 +176676,18 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ほかの%lld個のチャプタにはテキストがありません。"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -176517,6 +176769,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’altro capitolo non ha testo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ほかのチャプタ1つにはテキストがありません。"
           }
         },
         "pt-BR" : {
@@ -176798,6 +177056,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La playlist “%@” è troppo grande per essere letta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "プレイリスト「%@」は大きすぎて読み込めません。"
           }
         },
         "pt-BR" : {
@@ -178371,6 +178635,12 @@
             "value" : "La registrazione dura %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "録音の長さは%@です。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -178451,6 +178721,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Finestra di registrazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "録音ウインドウ"
           }
         },
         "pt-BR" : {
@@ -179255,6 +179531,12 @@
             "value" : "Il testo che content.md conteneva prima è stato conservato come %@, nel pacchetto del libro."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "以前の content.md のテキストは、ブックのパッケージ内に%@として保存されました。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179372,6 +179654,12 @@
             "value" : "Il testo di %@ non può essere letto, quindi non può essere modificato."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@のテキストを読み取れないため、編集できません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179413,6 +179701,12 @@
             "value" : "Il testo di %@ non è ancora pronto per essere modificato."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@のテキストは、まだ編集できる状態ではありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -179452,6 +179746,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il testo di %@ è stato letto di nuovo dal suo file."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@のテキストを、元のファイルから再び読み込みました。"
           }
         },
         "pt-BR" : {
@@ -181070,6 +181370,12 @@
             "value" : "Il libro non ha la pagina %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このブックにページ%@はありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182598,6 +182904,12 @@
             "value" : "Questo libro EPUB non ha testo da leggere."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この EPUB ブックには読めるテキストがありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182721,6 +183033,12 @@
             "value" : "Questo libro Kindle non ha testo scorrevole, come in un fumetto o in una replica della stampa, quindi TextMouth non può leggerlo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この Kindle ブックには、コミックや印刷物のレプリカのように、流れるテキストがないため、TextMouth は読み取れません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182760,6 +183078,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo libro Kindle è compresso in un modo che TextMouth non sa ancora leggere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この Kindle ブックは、TextMouth がまだ読み取れない方法で圧縮されています。"
           }
         },
         "pt-BR" : {
@@ -182803,6 +183127,12 @@
             "value" : "Questo libro Kindle è protetto da copia e TextMouth non può leggere i libri protetti da copia."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この Kindle ブックはコピー防止されており、TextMouth はコピー防止されたブックを読み取れません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182844,6 +183174,12 @@
             "value" : "Questo libro Kindle è danneggiato o incompleto. Procurati una copia nuova, poi importalo di nuovo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この Kindle ブックは壊れているか不完全です。新しいコピーを入手してから、もう一度読み込んでください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -182883,6 +183219,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo libro Kindle è danneggiato o incompleto: %@. Procurati una copia nuova, poi importalo di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この Kindle ブックは壊れているか不完全です：%@。新しいコピーを入手してから、もう一度読み込んでください。"
           }
         },
         "pt-BR" : {
@@ -183377,6 +183719,12 @@
             "value" : "Questo PDF richiede una password per essere aperto."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この PDF を開くにはパスワードが必要です。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -183416,6 +183764,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo file SSML è danneggiato o incompleto: %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この SSML ファイルは壊れているか不完全です：%@。"
           }
         },
         "pt-BR" : {
@@ -183976,6 +184330,18 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "このブックは%lldページで、%@から%@までです。"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -184135,6 +184501,12 @@
             "value" : "Questo libro non ha pagine."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このブックにはページがありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -184215,6 +184587,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo libro ha una sola pagina."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このブックには1ページしかありません。"
           }
         },
         "pt-BR" : {
@@ -184741,6 +185119,12 @@
             "value" : "L’unica pagina di questo libro è %@."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このブックの唯一のページは%@です。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -184940,6 +185324,12 @@
             "value" : "Questo documento contiene più di %@, il massimo che TextMouth legge da un documento."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このドキュメントは%@を超えています。TextMouth は1つのドキュメントからそれ以上は読み取りません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -184979,6 +185369,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo documento è protetto da password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このドキュメントはパスワードで保護されています。"
           }
         },
         "pt-BR" : {
@@ -185102,6 +185498,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questa spiegazione compare una sola volta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この説明は一度だけ表示されます。"
           }
         },
         "pt-BR" : {
@@ -185590,6 +185992,12 @@
             "value" : "Questo file contiene solo una parte di un libro Kindle. Apri il file .kfx principale del libro."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このファイルは Kindle ブックの一部にすぎません。ブックのメインの .kfx ファイルを開いてください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185629,6 +186037,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo file è un pacchetto Kindle Create, che TextMouth non sa ancora leggere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このファイルは Kindle Create パッケージで、TextMouth はまだ読み取れません。"
           }
         },
         "pt-BR" : {
@@ -185672,6 +186086,12 @@
             "value" : "Questo file non è SSML: inizia con l’elemento “%@”, non “speak”."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このファイルは SSML ではありません：最初の要素が「speak」ではなく「%@」です。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185713,6 +186133,12 @@
             "value" : "Questo file non è un libro Kindle che TextMouth possa leggere."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このファイルは、TextMouth が読み取れる Kindle ブックではありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185752,6 +186178,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Questo file non è un archivio web che TextMouth possa leggere. Potrebbe essere danneggiato o di un altro tipo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このファイルは、TextMouth が読み取れる Web アーカイブではありません。壊れているか、別の種類のファイルの可能性があります。"
           }
         },
         "pt-BR" : {
@@ -185836,6 +186268,12 @@
             "value" : "Il markup di questo file è annidato per più di %@ livelli, e TextMouth non può leggerlo in sicurezza."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このファイルのマークアップは%@階層を超えてネストされており、TextMouth は安全に読み取れません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -185875,6 +186313,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il markup di questo file richiederebbe a TextMouth un tempo di lettura eccessivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このファイルのマークアップは、TextMouth が読み取るには時間がかかりすぎます。"
           }
         },
         "pt-BR" : {
@@ -187075,6 +187519,12 @@
             "value" : "Questo archivio web contiene un file di tipo “%@”, non una pagina web o testo, quindi non c’è nulla da leggere."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "この Web アーカイブには、Web ページやテキストではなく、タイプ「%@」のファイルがあるため、読み取るものがありません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -187114,6 +187564,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tilde"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "チルダ"
           }
         },
         "pt-BR" : {
@@ -187198,6 +187654,12 @@
             "value" : "Tempo dall’inizio"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブック内の時間"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -187237,6 +187699,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tempo a %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@での時間"
           }
         },
         "pt-BR" : {
@@ -187280,6 +187748,12 @@
             "value" : "Il tempo supera la durata del libro."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "時間がブックの長さを超えています。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -187321,6 +187795,12 @@
             "value" : "Il tempo supera la durata della registrazione."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "時間が録音の長さを超えています。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -187360,6 +187840,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tempo nella registrazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "録音内の時間"
           }
         },
         "pt-BR" : {
@@ -187860,6 +188346,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tempi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "時間"
           }
         },
         "pt-BR" : {
@@ -189173,6 +189665,12 @@
             "value" : "Attiva o disattiva segnalibro"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックマークを切り替え"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -189422,6 +189920,12 @@
             "value" : "Durata totale del libro: %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブック全体の時間：%@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -189498,6 +190002,12 @@
             "value" : "Tempo totale: %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "合計時間：%@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -189537,6 +190047,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Totale: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "合計：%@"
           }
         },
         "pt-BR" : {
@@ -189826,6 +190342,12 @@
             "value" : "Trascrivilo di nuovo, poi modifica la nuova trascrizione."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "もう一度文字起こししてから、新しい文字起こしを編集してください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -189906,6 +190428,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Trascrivilo prima, con Trascrivi audio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "先に「オーディオを文字起こし」で文字起こししてください。"
           }
         },
         "pt-BR" : {
@@ -191074,6 +191602,12 @@
             "value" : "Prova a recuperare di nuovo il libro."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックをもう一度取得しようとします"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191320,6 +191854,12 @@
             "value" : "True Audio"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "True Audio"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191361,6 +191901,12 @@
             "value" : "Riprova"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再試行"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191400,6 +191946,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Prova una doppia pressione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ダブルプレスを試す"
           }
         },
         "pt-BR" : {
@@ -191713,6 +192265,12 @@
             "value" : "Disattiva “%@” per salvare i metadati solo nella libreria."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "「%@」をオフにすると、メタデータはライブラリのみに保存されます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191752,6 +192310,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Due tasti diversi, non una doppia pressione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "異なる2つのキーで、ダブルプレスではありません。"
           }
         },
         "pt-BR" : {
@@ -191801,6 +192365,12 @@
             "value" : "Due pressioni a distanza di %@. Imposta un tempo superiore a %@ per contarle come una sola."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "2回の押下の間隔は%1$@でした。2回を1回と数えるには、時間を%2$@より長くしてください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191846,6 +192416,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Due pressioni a distanza di %@. Il tempo di doppia pressione arriva fino a %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "2回の押下の間隔は%1$@でした。ダブルプレスの時間は最大%2$@までです。"
           }
         },
         "pt-BR" : {
@@ -191930,6 +192506,12 @@
             "value" : "Digita una pagina come la numera il libro, ad esempio 12 o xii."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックのページ番号のとおりにページを入力します。例：12、xii"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -191971,6 +192553,12 @@
             "value" : "Digita un numero di pagina."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ページ番号を入力してください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192010,6 +192598,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Digita una percentuale da 0 a 100, ad esempio 47,5."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "0から100までのパーセントを入力します。例：47.5"
           }
         },
         "pt-BR" : {
@@ -192135,6 +192729,12 @@
             "value" : "Digita un titolo, poi salva di nuovo."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "タイトルを入力してから、もう一度保存してください。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192215,6 +192815,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Digita virgolette dritte: in TextEdit, disattiva Virgolette intelligenti in Modifica, Sostituzioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "まっすぐな引用符を入力してください。TextEdit では、「編集」>「置換」で「スマート引用符」をオフにします。"
           }
         },
         "pt-BR" : {
@@ -192697,6 +193303,12 @@
             "value" : "Trattino basso"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "アンダースコア"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -192818,6 +193430,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Annulla"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "取り消す"
           }
         },
         "pt-BR" : {
@@ -193105,6 +193723,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sconosciuto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "不明"
           }
         },
         "pt-BR" : {
@@ -194051,6 +194675,12 @@
             "value" : "Formato audio non supportato."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未対応のオーディオフォーマットです。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194303,6 +194933,12 @@
             "value" : "Freccia su"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "上矢印"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -194383,6 +195019,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aggiorna voce, velocità e tono predefiniti per ogni libro senza impostazioni proprie."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブック専用の設定がないすべてのブックに対して、デフォルトの声、速度、ピッチを更新します。"
           }
         },
         "pt-BR" : {
@@ -194571,6 +195213,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Usa predefinito globale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全体のデフォルトを使用"
           }
         },
         "pt-BR" : {
@@ -195054,6 +195702,12 @@
             "value" : "Utente"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ユーザ"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195093,6 +195747,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Uso delle impostazioni globali di voce, velocità e tono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "全体の声、速度、ピッチの設定を使用中"
           }
         },
         "pt-BR" : {
@@ -195216,6 +195876,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Barra verticale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "縦線"
           }
         },
         "pt-BR" : {
@@ -195458,6 +196124,12 @@
             "value" : "Voce e velocità"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "声と速度"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -195614,6 +196286,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Filtro lingua delle voci"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "声の言語フィルタ"
           }
         },
         "pt-BR" : {
@@ -196499,6 +197177,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Attenzione: la copia del file EPUB nella libreria verrà riscritta e il suo hash MD5 ricalcolato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "警告：ライブラリ内の EPUB ファイルのコピーを書き換え、MD5 ハッシュを再計算します。"
           }
         },
         "pt-BR" : {
@@ -198681,6 +199365,12 @@
             "value" : "Alla fine di questo libro"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "このブックの終了時"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198722,6 +199412,12 @@
             "value" : "Quando salvi, TextMouth controlla il manifest e riorganizza il libro, mantenendo la tua posizione nella traccia."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保存すると、TextMouth はマニフェストを確認してブックを再編成し、トラック内の現在位置を維持します。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198761,6 +199457,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Quando salvi, il libro si aggiorna e mantiene la tua posizione il più vicino possibile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "保存すると、ブックが更新され、できるだけ近い位置が維持されます。"
           }
         },
         "pt-BR" : {
@@ -198909,6 +199611,12 @@
             "value" : "Dove sono?"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ここはどこ？"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198950,6 +199658,12 @@
             "value" : "Dove sono? Annuncia la posizione corrente nel libro"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ここはどこ？ ブック内の現在位置を読み上げます"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198989,6 +199703,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dove sono? Riepilogo completo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ここはどこ？ 詳細"
           }
         },
         "pt-BR" : {
@@ -199809,6 +200529,12 @@
             "value" : "Windows-1250 (Europa centrale)"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1250（中央ヨーロッパ言語）"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199848,6 +200574,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1251 (cirillico)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1251（キリル文字）"
           }
         },
         "pt-BR" : {
@@ -199891,6 +200623,12 @@
             "value" : "Windows-1252 (Europa occidentale)"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1252（西ヨーロッパ言語）"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -199930,6 +200668,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1253 (greco)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1253（ギリシャ語）"
           }
         },
         "pt-BR" : {
@@ -199973,6 +200717,12 @@
             "value" : "Windows-1254 (turco)"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1254（トルコ語）"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200012,6 +200762,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-1255 (ebraico)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1255（ヘブライ語）"
           }
         },
         "pt-BR" : {
@@ -200055,6 +200811,12 @@
             "value" : "Windows-1256 (arabo)"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1256（アラビア語）"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200096,6 +200858,12 @@
             "value" : "Windows-1257 (baltico)"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-1257（バルト語派）"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200135,6 +200903,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Windows-874 (thai)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows-874（タイ語）"
           }
         },
         "pt-BR" : {
@@ -200799,6 +201573,12 @@
             "value" : "Parole al minuto"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "毎分の語数"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200840,6 +201620,12 @@
             "value" : "Funziona in"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "動作する場所"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -200879,6 +201665,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Funziona in: %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@で使えます"
           }
         },
         "pt-BR" : {
@@ -200961,6 +201753,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Scrive titolo, autore, editore e data nella copia di questo libro nella libreria."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "タイトル、著者、出版社、日付を、このブックのライブラリ内のコピーに書き込みます。"
           }
         },
         "pt-BR" : {
@@ -201072,6 +201870,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Anno"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "年"
           }
         },
         "pt-BR" : {
@@ -201742,6 +202546,12 @@
             "value" : "Il tuo testo modificato è stato conservato anche come %@, nel pacchetto del libro."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "編集したテキストは、ブックのパッケージ内に%@としても保存されました。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202346,6 +203156,12 @@
             "value" : "una voce di menu ha una sola scorciatoia"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "メニューコマンドのショートカットは1つだけです"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -202385,6 +203201,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "la scorciatoia di una voce di menu è la pressione di un tasto con Comando o Control"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "メニューコマンドのショートカットは、コマンドまたはコントロールを押しながらキーを1回押すものです"
           }
         },
         "pt-BR" : {
@@ -203219,6 +204041,12 @@
             "value" : "a %@ di %@ a %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@中%1$@の位置（%3$@）"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203264,6 +204092,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "a %@ di %@ nella registrazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "録音の%2$@中%1$@の位置"
           }
         },
         "pt-BR" : {
@@ -203554,6 +204388,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "prima della pagina %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ページ%@より前"
           }
         },
         "pt-BR" : {
@@ -204400,6 +205240,12 @@
             "value" : "content.md è solo nel cloud, quindi TextMouth lo lascia com’è."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "content.md はクラウドにしかないため、TextMouth はそのままにします。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -204921,6 +205767,12 @@
             "value" : "modificato manualmente"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "手動で編集済み"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -204960,6 +205812,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ottava"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "8番目"
           }
         },
         "pt-BR" : {
@@ -205042,6 +205900,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "tutte le finestre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "すべてのウインドウ"
           }
         },
         "pt-BR" : {
@@ -205372,6 +206236,12 @@
             "value" : "quinta"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "5番目"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -205458,6 +206328,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "prima"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "1番目"
           }
         },
         "pt-BR" : {
@@ -205786,6 +206662,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "quarta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "4番目"
           }
         },
         "pt-BR" : {
@@ -206374,6 +207256,12 @@
             "value" : "intestazione “%@”"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "見出し「%@」"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206878,6 +207766,12 @@
             "value" : "il testo %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il libro si apre."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "編集済みテキストについて、%@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、ブックが開きます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206917,6 +207811,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il testo %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il testo viene mostrato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "編集済みテキストについて、%@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、テキストが表示されます。"
           }
         },
         "pt-BR" : {
@@ -206960,6 +207860,12 @@
             "value" : "la trascrizione aggiunge parole a un capitolo senza parlato, dove non possono essere conservate. Rimuovile e salva di nuovo, e il testo viene mostrato."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "音声のないチャプタに単語が追加されており、保持できません。取り除いてもう一度保存すると、テキストが表示されます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -206999,6 +207905,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "la trascrizione cambia l’intestazione di un capitolo, che deriva dall’audio. Rimettila com’era e salva di nuovo, e il testo viene mostrato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "チャプタの見出しが変更されています。見出しはオーディオから作られます。元に戻してもう一度保存すると、テキストが表示されます。"
           }
         },
         "pt-BR" : {
@@ -207124,6 +208036,12 @@
             "value" : "la trascrizione ha %@, ma l’audiolibro ne ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo, e il testo viene mostrato."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文字起こしは%1$@ですが、オーディオブックは%2$@です。 <!-- chapter: で始まる行をすべて残してもう一度保存すると、テキストが表示されます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207165,6 +208083,12 @@
             "value" : "nessun capitolo ha del testo. Annulla la modifica e salva di nuovo, e il libro si apre."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "テキストのあるチャプタがありません。変更を取り消してもう一度保存すると、ブックが開きます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207204,6 +208128,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "nessun capitolo ha del testo. Annulla la modifica e salva di nuovo, e il testo viene mostrato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "テキストのあるチャプタがありません。変更を取り消してもう一度保存すると、テキストが表示されます。"
           }
         },
         "pt-BR" : {
@@ -207455,6 +208385,12 @@
             "value" : "il testo non è UTF-8. Salvalo come UTF-8, e il libro si apre."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "UTF-8 テキストではありません。UTF-8 で保存すると、ブックが開きます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -207494,6 +208430,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il testo non è UTF-8. Salvalo come UTF-8, e il testo viene mostrato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "UTF-8 テキストではありません。UTF-8 で保存すると、テキストが表示されます。"
           }
         },
         "pt-BR" : {
@@ -208435,6 +209377,12 @@
             "value" : "il suo capitolo %@ %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il libro si apre."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、ブックが開きます。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208480,6 +209428,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il suo capitolo %@ %@, e TextMouth non può leggerlo in sicurezza. Appiattiscilo e salva di nuovo, oppure annulla la modifica, e il testo viene mostrato."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "チャプタ%1$@について、%2$@。TextMouth は安全に読み取れません。平らにしてもう一度保存するか、変更を取り消すと、テキストが表示されます。"
           }
         },
         "pt-BR" : {
@@ -209232,6 +210186,12 @@
             "value" : "Non è stato possibile leggere manifest.json."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json を読み取れませんでした。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -209271,6 +210231,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "manifest.json contiene segmenti, che TextMouth scrive solo per un libro DAISY che converte."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "manifest.json にセグメントがあります。TextMouth がセグメントを書き込むのは、変換した DAISY ブックだけです。"
           }
         },
         "pt-BR" : {
@@ -210181,6 +211147,12 @@
             "value" : "nona"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "9番目"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -210220,6 +211192,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "non è stato possibile conservare una copia del testo modificato, quindi TextMouth lascia content.md com’è."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "編集したテキストのコピーを保持できなかったため、TextMouth は content.md をそのままにします。"
           }
         },
         "pt-BR" : {
@@ -210296,6 +211274,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "nessuna pagina"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ページなし"
           }
         },
         "pt-BR" : {
@@ -211089,6 +212073,12 @@
             "value" : "a pagina %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ページ%@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211134,6 +212124,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "sulla %@ pagina con l’etichetta %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ラベル%2$@の%1$@のページ"
           }
         },
         "pt-BR" : {
@@ -211596,6 +212592,12 @@
             "value" : "pagina %@"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ページ%@"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211635,6 +212637,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "pagine %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ページ%@"
           }
         },
         "pt-BR" : {
@@ -211846,6 +212854,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "finestre del lettore"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "リーダのウインドウ"
           }
         },
         "pt-BR" : {
@@ -212219,6 +213233,18 @@
             }
           }
         },
+        "ja" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld冊のブックのテキストを別のエンコーディングで読み込み直すこと"
+                }
+              }
+            }
+          }
+        },
         "pt-BR" : {
           "variations" : {
             "plural" : {
@@ -212513,6 +213539,12 @@
             "value" : "seconda"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "2番目"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212646,6 +213678,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "settima"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "7番目"
           }
         },
         "pt-BR" : {
@@ -212895,6 +213933,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "sesta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "6番目"
           }
         },
         "pt-BR" : {
@@ -213379,6 +214423,12 @@
             "value" : "decima"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "10番目"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213418,6 +214468,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "i campi di testo lo usano per modificare"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "テキストフィールドが編集に使うキーです"
           }
         },
         "pt-BR" : {
@@ -213675,6 +214731,12 @@
             "value" : "editor audio"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "オーディオエディタ"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213714,6 +214776,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "l’audio dell’audiolibro è cambiato dopo la trascrizione, quindi la sua trascrizione non gli corrisponde più."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文字起こし後にオーディオブックのオーディオが変更されたため、文字起こしがオーディオに合わなくなりました。"
           }
         },
         "pt-BR" : {
@@ -213757,6 +214825,12 @@
             "value" : "la trascrizione dell’audiolibro non può essere letta ora, quindi la modifica non può essere applicata."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "オーディオブックの文字起こしを今は読み取れないため、編集を反映できません。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213796,6 +214870,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "anche il file del libro è cambiato. Apri di nuovo il libro per leggerne il testo da quel file."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブック自体のファイルも変更されました。もう一度ブックを開いて、そのファイルからテキストを読み込んでください。"
           }
         },
         "pt-BR" : {
@@ -213839,6 +214919,12 @@
             "value" : "il record del libro non può essere modificato ora. TextMouth riprova al prossimo salvataggio o ritorno."
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックのレコードを今は変更できません。次に保存するか戻るときに、TextMouth がもう一度試します。"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -213878,6 +214964,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "anche la trascrizione del libro è cambiata. Apri di nuovo il libro per leggerne il testo da quella trascrizione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ブックの文字起こしも変更されました。もう一度ブックを開いて、その文字起こしからテキストを読み込んでください。"
           }
         },
         "pt-BR" : {
@@ -214247,6 +215339,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "la trascrizione modificata non può essere sovrapposta all’audio dell’audiolibro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "編集した文字起こしを、オーディオブックのオーディオに重ねられません。"
           }
         },
         "pt-BR" : {
@@ -214881,6 +215979,12 @@
             "value" : "finestra di registrazione"
           }
         },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "録音ウインドウ"
+          }
+        },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -215166,6 +216270,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "terza"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "3番目"
           }
         },
         "pt-BR" : {
@@ -215693,6 +216803,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "intestazione senza titolo %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "タイトルのない見出し%@"
           }
         },
         "pt-BR" : {
