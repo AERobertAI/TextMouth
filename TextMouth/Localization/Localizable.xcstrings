@@ -302740,7 +302740,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "أُغلق TextMouth لحماية جهاز Mac"
+            "value" : "تم إنهاء TextMouth لحماية جهاز Mac"
           }
         },
         "de" : {
@@ -314206,7 +314206,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "أُغلق TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل %3$@، بسبب عطل في صوت macOS. حُفظ موضعك."
+            "value" : "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل %3$@، بسبب عطل في صوت macOS. حُفظ موضعك."
           }
         },
         "de" : {
@@ -314295,7 +314295,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "أُغلق TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل كتاب، بسبب عطل في صوت macOS. حُفظ موضعك."
+            "value" : "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل كتاب، بسبب عطل في صوت macOS. حُفظ موضعك."
           }
         },
         "de" : {
@@ -314384,7 +314384,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "أُغلق TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB بينما لم يكن شيء قيد التشغيل. حُفظ موضعك."
+            "value" : "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB بينما لم يكن شيء قيد التشغيل. حُفظ موضعك."
           }
         },
         "de" : {
