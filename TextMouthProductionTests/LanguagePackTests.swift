@@ -125,13 +125,19 @@ enum LanguagePackLookups {
         return text == absent ? nil : text
     }
 
-    /// The text of the plural string `key` for `count` in `language`, as the bundle's plural rules pick it; nil when
-    /// the bundle lacks the key or the key has a specifier the lookups cannot feed.
+    /// The text the app shows for `key`: the bundle's table text, or the key itself when no table holds it, as
+    /// `String(localized:)` does. A squeezed table (TL18) leaves out an entry whose text is its key, so a lookup that
+    /// compares texts compares these, not `simpleText`'s.
+    static func effectiveText(_ bundle: Bundle, key: String) -> String {
+        bundle.localizedString(forKey: key, value: nil, table: nil)
+    }
+
+    /// The text of the plural string `key` for `count` in `language`, as the bundle's plural rules pick it (or, in a
+    /// language whose forms are all one text, the plain entry that holds it); nil when the key has a specifier the
+    /// lookups cannot feed.
     static func pluralText(_ bundle: Bundle, key: String, language: String, count: Int) -> String? {
-        guard let format = simpleText(bundle, key: key), let arguments = arguments(forKey: key, count: count) else {
-            return nil
-        }
-        return String(format: format, locale: Locale(identifier: language), arguments: arguments)
+        guard let arguments = arguments(forKey: key, count: count) else { return nil }
+        return String(format: effectiveText(bundle, key: key), locale: Locale(identifier: language), arguments: arguments)
     }
 }
 
@@ -184,14 +190,60 @@ struct LanguagePackCatalog {
 
 /// The plural category a count falls in, by language (CLDR's rules), for the languages TextMouth ships. A language
 /// missing here fails `testEveryShippedLanguageHasAPluralRule`, which names it: add its rule beside the others.
+///
+/// The rules are written out here, independently of the operating system, so that
+/// `testApplesPluralRuleAgreesWithTheTableForEveryLanguage` can check Apple's own rule against them for every language,
+/// whether or not the built app carries it yet.
 enum LanguagePackPluralRules {
-    /// The category (`one`, `many`, `other`) of `count` in `language`, or nil for a language with no rule here.
+    /// The plural categories each language uses, in CLDR's order: the table `Scripts/l10n/catalog.py` keeps in
+    /// `PLURAL_CATEGORIES`. One language to a line: `Scripts/l10n/tests/test_plural_rules_swift.py` reads these lines
+    /// and fails when they differ from that table.
+    static let categories: [String: [String]] = [
+        "de": ["one", "other"],
+        "en": ["one", "other"],
+        "es": ["one", "many", "other"],
+        "fr": ["one", "many", "other"],
+        "it": ["one", "many", "other"],
+        "ja": ["other"],
+        "ko": ["other"],
+        "pt-BR": ["one", "many", "other"],
+        "ru": ["one", "few", "many", "other"],
+        "uk": ["one", "few", "many", "other"],
+        "zh-Hans": ["other"],
+    ]
+
+    /// Whether `count` is a whole number of millions (1 000 000, 2 000 000, ...), the numbers that have `many` in
+    /// Spanish, French, Italian, and Portuguese.
+    private static func isWholeMillions(_ count: Int) -> Bool {
+        count != 0 && count % 1_000_000 == 0
+    }
+
+    /// The category of `count` in `language`, or nil for a language with no rule here. For the whole numbers the
+    /// tests use (0 and up), by CLDR's cardinal rules:
+    /// - English, German: `one` for 1, else `other`.
+    /// - Spanish, Italian: `one` for 1, `many` for a whole number of millions, else `other`.
+    /// - French, Brazilian Portuguese: `one` for 0 and 1, `many` for a whole number of millions, else `other`.
+    /// - Russian, Ukrainian: `one` for a number ending in 1 but not 11, `few` for one ending in 2 to 4 but not 12 to 14,
+    ///   else `many`.
+    /// - Chinese, Japanese, Korean: always `other`.
     static func category(of count: Int, language: String) -> String? {
         switch language {
-        case "en": return count == 1 ? "one" : "other"
-        // Spanish: one for exactly 1; many for a whole number of millions (1 000 000, 2 000 000, ...); else other.
-        case "es": return count == 1 ? "one" : (count != 0 && count % 1_000_000 == 0 ? "many" : "other")
-        default: return nil
+        case "en", "de":
+            return count == 1 ? "one" : "other"
+        case "es", "it":
+            return count == 1 ? "one" : (isWholeMillions(count) ? "many" : "other")
+        case "fr", "pt-BR":
+            return count == 0 || count == 1 ? "one" : (isWholeMillions(count) ? "many" : "other")
+        case "ru", "uk":
+            let lastDigit = count % 10
+            let lastTwoDigits = count % 100
+            if lastDigit == 1 && lastTwoDigits != 11 { return "one" }
+            if (2...4).contains(lastDigit) && !(12...14).contains(lastTwoDigits) { return "few" }
+            return "many"
+        case "zh-Hans", "ja", "ko":
+            return "other"
+        default:
+            return nil
         }
     }
 }
@@ -222,9 +274,10 @@ final class LanguagePackTests: XCTestCase {
         return try handle.read(upToCount: 8) ?? Data()
     }
 
-    /// Every `.strings` the app carries is UTF-8 text (not an XML or binary property list) and every `.stringsdict` is a
-    /// binary property list: the compact forms the build phase writes. A phase that stopped running shows here.
-    func testTheAppsStringsAreTextAndItsStringsdictsAreBinary() throws {
+    /// Every `.strings` the app carries is UTF-8 text or a binary property list (whichever is smaller for its language,
+    /// TL18; never XML) and every `.stringsdict` is a binary property list: the compact forms the build phase writes.
+    /// A phase that stopped running shows here.
+    func testTheAppsStringsAreCompactAndItsStringsdictsAreBinary() throws {
         let (_, languages) = try load()
         var checked = 0
         for language in languages {
@@ -236,9 +289,11 @@ final class LanguagePackTests: XCTestCase {
                     XCTAssertEqual(bytes, Data("bplist00".utf8), "\(language).lproj/\(name) is not a binary property list")
                     checked += 1
                 } else if name.hasSuffix(".strings") {
-                    let isPropertyList = bytes.starts(with: Data("bplist".utf8)) || bytes.starts(with: Data("<?xml".utf8))
-                    XCTAssertFalse(isPropertyList, "\(language).lproj/\(name) is a property list, not the text form")
-                    XCTAssertEqual(bytes.first, UInt8(ascii: "\""), "\(language).lproj/\(name) does not start with a key")
+                    // The text form starts with a quoted key; the binary form with its magic; XML with its prolog.
+                    let isBinary = bytes == Data("bplist00".utf8)
+                    let isXML = bytes.starts(with: Data("<?xml".utf8)) || bytes.starts(with: Data("<plist".utf8))
+                    XCTAssertFalse(isXML, "\(language).lproj/\(name) is an XML property list, not a compact form")
+                    XCTAssertTrue(isBinary || bytes.first == UInt8(ascii: "\""), "\(language).lproj/\(name) is neither text starting with a key nor a binary list")
                     checked += 1
                 }
             }
@@ -246,8 +301,9 @@ final class LanguagePackTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(checked, 3, "English's plurals and Spanish's strings and plurals: \(languages)")
     }
 
-    /// Every simple string of every language the app carries reads back the catalog's text, and a string the catalog
-    /// has no compiled text for is absent from that language's table.
+    /// Every simple string of every language the app carries reads back the catalog's text (a string whose text is its
+    /// key may be absent from the table, which reads as the key), and a string the catalog has no compiled text for is
+    /// absent from that language's table.
     func testEverySimpleLookupEqualsTheCatalog() throws {
         let (catalog, languages) = try load()
         var verified = 0
@@ -257,8 +313,9 @@ final class LanguagePackTests: XCTestCase {
             for (key, byLanguage) in catalog.texts.sorted(by: { $0.key < $1.key }) {
                 guard case .simple(let want)? = byLanguage[language] else { continue }
                 verified += 1
-                let got = LanguagePackLookups.simpleText(bundle, key: key)
-                if got != want { wrong.append("\(language) \(key.debugDescription): \(String(describing: got)), not \(want.debugDescription)") }
+                // The app shows the key when no table holds it, so an entry equal to its key may be left out (TL18).
+                let got = LanguagePackLookups.effectiveText(bundle, key: key)
+                if got != want { wrong.append("\(language) \(key.debugDescription): \(got.debugDescription), not \(want.debugDescription)") }
             }
         }
         XCTAssertGreaterThan(verified, 3000, "Too few simple strings were checked; the languages: \(languages)")
@@ -317,6 +374,45 @@ final class LanguagePackTests: XCTestCase {
         let (_, languages) = try load()
         let without = languages.filter { LanguagePackPluralRules.category(of: 1, language: $0) == nil }
         XCTAssertTrue(without.isEmpty, "Add a plural rule to LanguagePackPluralRules for: \(without)")
+    }
+
+    /// Apple's own plural rule picks, at each count the helpers use, the category `LanguagePackPluralRules` expects (CLDR's,
+    /// and the table `Scripts/l10n/catalog.py` keeps), for every language the table names, whether or not the built app
+    /// carries it yet. Each language gets a small bundle in the test's own sandbox whose `.stringsdict` has a form for every
+    /// category that names it, so the text that comes back is the category Apple chose.
+    func testApplesPluralRuleAgreesWithTheTableForEveryLanguage() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("LanguagePackPluralRules-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+
+        // Every category the nine languages use, each form's text being the category's own name. `zero` is left out
+        // on purpose: Foundation reads an explicit `zero` form as "the count is 0" in every language, which is not
+        // a language's own rule (the first run of this test, on GitHub, showed German at 0 choosing `zero`).
+        let everyCategory = ["one", "two", "few", "many", "other"]
+        var forms: [String: Any] = ["NSStringFormatSpecTypeKey": "NSStringPluralRuleType", "NSStringFormatValueTypeKey": "lld"]
+        for category in everyCategory { forms[category] = "\(category) %lld" }
+        let key = "%lld probe"
+        let table: [String: Any] = [key: ["NSStringLocalizedFormatKey": "%#@value@", "value": forms]]
+        let data = try PropertyListSerialization.data(fromPropertyList: table, format: .binary, options: 0)
+
+        var checked = 0
+        for (language, categories) in LanguagePackPluralRules.categories.sorted(by: { $0.key < $1.key }) {
+            let folder = root.appendingPathComponent("\(language).lproj", isDirectory: true)
+            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            try data.write(to: folder.appendingPathComponent("Localizable.stringsdict"))
+            let bundle = try XCTUnwrap(LanguagePackLookups.bundle(language: language, in: root), language)
+            for count in LanguagePackLookups.counts {
+                let expected = try XCTUnwrap(LanguagePackPluralRules.category(of: count, language: language), "\(language) has no rule")
+                XCTAssertTrue(categories.contains(expected), "\(language): \(expected) is not one of its categories \(categories)")
+                let text = try XCTUnwrap(LanguagePackLookups.pluralText(bundle, key: key, language: language, count: count))
+                // The text is "<category> <count>": the category is the first word.
+                let chosen = text.split(separator: " ").first.map(String.init)
+                XCTAssertEqual(chosen, expected, "\(language) at \(count): Apple picked \(String(describing: chosen))")
+                checked += 1
+            }
+        }
+        XCTAssertEqual(checked, LanguagePackPluralRules.categories.count * LanguagePackLookups.counts.count)
     }
 
     /// The reader of a key's format arguments: sequential and positional specifiers, `%%`, and a precision.

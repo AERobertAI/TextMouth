@@ -16,7 +16,7 @@
 #      reports the app's size either way, so growth is noticed long before
 #      the limit is reached. No file of the app may hold a folder of this
 #      Mac (its home folder, the checkout, or $TMPDIR). Every language file
-#      of each app must be compact (TL16): each `.strings` UTF-8 text and each
+#      of each app must be compact (TL16): each `.strings` UTF-8 text or binary and each
 #      `.stringsdict` binary, as the build phase "Compact language files"
 #      writes them (Scripts/l10n/compact_packs.py); the gate reports each
 #      file's size and fails on one still in XML. Still in step 3, a
@@ -562,9 +562,10 @@ require_app_free_of_mac_paths() {
 # require_language_files_compact <resources folder> <app name>: reports the size
 # of each language file in the folder that holds an app's *.lproj folders, and
 # fails the gate when the app has none, or when one is not in the compact form
-# the build phase "Compact language files" writes: a `.strings` that is XML or
-# binary instead of UTF-8 text, or a `.stringsdict` that is not binary. Such a
-# file means the phase did not run or did not finish (TL16).
+# the build phase "Compact language files" writes: a `.strings` that is XML
+# instead of UTF-8 text or a binary list (whichever is smaller for the language,
+# TL18), or a `.stringsdict` that is not binary. Such a file means the phase did
+# not run or did not finish (TL16).
 require_language_files_compact() {
   local resources=$1 app=$2 report status=0
   if (( dry_run )); then
