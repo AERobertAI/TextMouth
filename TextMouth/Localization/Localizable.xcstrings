@@ -2956,7 +2956,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ cũng có %lld sách do TextMouth bản mới hơn thêm vào, và chúng được giữ nguyên."
+                  "value" : "%@ cũng có %lld sách do phiên bản TextMouth mới hơn thêm vào, và chúng được giữ nguyên."
                 }
               }
             }
@@ -13569,7 +13569,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ được xếp %2$@ trong %3$@ và %4$@ trong %5$@."
+            "value" : "Trong %3$@, %1$@ được xếp %2$@; trong %5$@, sách được xếp %4$@."
           }
         },
         "zh-Hans" : {
@@ -30647,7 +30647,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@, hiển thị khi áp dụng"
+            "value" : "%@, hiển thị khi thích hợp"
           }
         },
         "zh-Hans" : {
@@ -39397,7 +39397,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld đã chọn"
+                  "value" : "%lld sách đã chọn"
                 }
               }
             }
@@ -88306,7 +88306,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld chế độ xem cần TextMouth bản mới hơn. Chúng được giữ nguyên và không được hiển thị."
+                  "value" : "%lld chế độ xem cần phiên bản TextMouth mới hơn. Chúng được giữ nguyên và không được hiển thị."
                 }
               }
             }
@@ -109473,7 +109473,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Luôn luôn hiển thị chế độ xem mọi lúc. Khi áp dụng chỉ hiển thị khi chế độ xem có mục để liệt kê: Danh sách đọc khi có sách, tập hoặc bài viết, và Nguồn cấp khi có nguồn cấp. Ẩn là bỏ chế độ xem đi. Mỗi cửa sổ giữ chế độ xem của nó cho đến khi bạn chọn chế độ khác."
+            "value" : "“Luôn luôn” hiển thị chế độ xem mọi lúc. “Khi thích hợp” chỉ hiển thị chế độ xem khi nó có mục để liệt kê: Danh sách đọc khi có sách, tập hoặc bài viết, và Nguồn cấp khi có nguồn cấp. “Ẩn” không hiển thị chế độ xem. Mỗi cửa sổ giữ chế độ xem của nó cho đến khi bạn chọn chế độ khác."
           }
         },
         "zh-Hans" : {
@@ -110158,7 +110158,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bản sửa văn bản của sách được giữ cạnh cách đọc mới, dưới dạng một bản sao trong gói của sách."
+            "value" : "Bản sửa văn bản của sách được giữ bên cạnh kết quả đọc lại, dưới dạng một bản sao trong gói của sách."
           }
         },
         "zh-Hans" : {
@@ -131476,7 +131476,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không thể di chuyển sách trong chế độ xem này. Hãy vào một thư mục trong Thư mục, hoặc vào Danh sách đọc, rồi thử lại."
+            "value" : "Không thể di chuyển sách trong chế độ xem này. Hãy vào một thư mục trong chế độ xem Thư mục, hoặc vào Danh sách đọc, rồi thử lại."
           }
         },
         "zh-Hans" : {
@@ -133983,7 +133983,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nhưng %@ cũng có %lld sách do TextMouth bản mới hơn thêm vào: chúng được giữ nguyên chỗ, và mọi thư mục chứa chúng cũng vậy."
+                  "value" : "Nhưng %@ cũng có %lld sách do phiên bản TextMouth mới hơn thêm vào: chúng được giữ nguyên chỗ, và mọi thư mục chứa chúng cũng vậy."
                 }
               }
             }
@@ -160983,7 +160983,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Điều kiện %@ số ngày"
+            "value" : "Điều kiện %@, số ngày"
           }
         },
         "zh-Hans" : {
@@ -161120,7 +161120,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Điều kiện %@ thư mục"
+            "value" : "Điều kiện %@, thư mục"
           }
         },
         "zh-Hans" : {
@@ -161257,7 +161257,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Điều kiện %@ định dạng"
+            "value" : "Điều kiện %@, định dạng"
           }
         },
         "zh-Hans" : {
@@ -161394,7 +161394,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Điều kiện %@ gồm cả thư mục con"
+            "value" : "Điều kiện %@, gồm cả thư mục con"
           }
         },
         "zh-Hans" : {
@@ -161668,7 +161668,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Điều kiện %@ trạng thái đọc"
+            "value" : "Điều kiện %@, trạng thái đọc"
           }
         },
         "zh-Hans" : {
@@ -161805,7 +161805,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Điều kiện %@ quan hệ"
+            "value" : "Điều kiện %@, quan hệ"
           }
         },
         "zh-Hans" : {
@@ -161942,7 +161942,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Điều kiện %@ văn bản"
+            "value" : "Điều kiện %@, văn bản"
           }
         },
         "zh-Hans" : {
@@ -199613,7 +199613,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nhân đôi"
+            "value" : "Nhân bản"
           }
         },
         "zh-Hans" : {
@@ -204414,7 +204414,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sửa văn bản dừng lại với sách này; hãy chọn Sửa văn bản lần nữa để sửa cách đọc mới."
+            "value" : "Việc sửa văn bản cho sách này sẽ dừng; hãy chọn Sửa văn bản lần nữa để sửa kết quả đọc lại."
           }
         },
         "zh-Hans" : {
@@ -215809,7 +215809,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mọi thứ"
+            "value" : "mọi thứ"
           }
         },
         "zh-Hans" : {
@@ -215946,7 +215946,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mọi thứ trong %@"
+            "value" : "mọi thứ trong %@"
           }
         },
         "zh-Hans" : {
@@ -229538,7 +229538,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tệp chưa đọc"
+            "value" : "Tệp không đọc được"
           }
         },
         "zh-Hans" : {
@@ -234774,7 +234774,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thư mục và Danh sách đọc không có điều kiện để sao chép."
+            "value" : "Chế độ xem Thư mục và Danh sách đọc không có điều kiện để sao chép."
           }
         },
         "zh-Hans" : {
@@ -234911,7 +234911,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thư mục và Danh sách đọc luôn liệt kê những gì vốn có của chúng. Bạn có thể di chuyển chúng, và ẩn Danh sách đọc."
+            "value" : "Chế độ xem Thư mục và Danh sách đọc luôn liệt kê những gì vốn có của chúng. Bạn có thể di chuyển chúng, và ẩn Danh sách đọc."
           }
         },
         "zh-Hans" : {
@@ -235048,7 +235048,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thư mục luôn được hiển thị: mọi thư mục và nguồn cấp đều mở ở đó."
+            "value" : "Chế độ xem Thư mục luôn được hiển thị: mọi thư mục và nguồn cấp đều mở trong đó."
           }
         },
         "zh-Hans" : {
@@ -275677,7 +275677,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Văn bản của sách sẽ được thay bằng cách đọc mới."
+            "value" : "Văn bản của sách sẽ được thay bằng kết quả đọc lại."
           }
         },
         "zh-Hans" : {
