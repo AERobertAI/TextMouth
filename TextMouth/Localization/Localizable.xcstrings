@@ -85276,19 +85276,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di libri di testo"
+                  "value" : "%lld di libri testuali"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libro di testo"
+                  "value" : "%lld libro testuale"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libri di testo"
+                  "value" : "%lld libri testuali"
                 }
               }
             }
@@ -201465,7 +201465,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Titolo e inizio di ogni intestazione, come foglio CUE che dà all’audio il nome usato da Audio."
+            "value" : "Titolo e inizio di ogni intestazione, come file CUE che dà all’audio il nome usato da Audio."
           }
         },
         "ja" : {
@@ -219884,7 +219884,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Esporta non può scrivere nella cartella della libreria di TextMouth. Scegli un’altra cartella."
+            "value" : "L’esportazione non può scrivere nella cartella della libreria di TextMouth. Scegli un’altra cartella."
           }
         },
         "ja" : {
@@ -220021,7 +220021,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Esporta non può scrivere nella cartella in cui TextMouth conserva i capitoli letti, che viene svuotata. Scegli un’altra cartella."
+            "value" : "L’esportazione non può scrivere nella cartella in cui TextMouth conserva i capitoli letti, che viene svuotata. Scegli un’altra cartella."
           }
         },
         "ja" : {
@@ -475690,7 +475690,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Testo non aggiornato: la trascrizione modificata di %@ ha %@, ma l’audiolibro ne ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo; fino ad allora il libro conserva il suo vecchio testo."
+            "value" : "Testo non aggiornato: la trascrizione modificata di %@ ha %@, ma l’audiolibro ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo; fino ad allora il libro conserva il suo vecchio testo."
           }
         },
         "ja" : {
@@ -589490,7 +589490,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Attiva o disattiva segnalibro"
+            "value" : "Aggiungi o rimuovi segnalibro"
           }
         },
         "ja" : {
@@ -599440,7 +599440,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Digita virgolette dritte: in TextEdit, disattiva Virgolette intelligenti in Modifica, Sostituzioni."
+            "value" : "Digita virgolette dritte: in TextEdit, disattiva Virgolette smart in Modifica, Sostituzioni."
           }
         },
         "ja" : {
@@ -625150,7 +625150,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Windows-874 (thai)"
+            "value" : "Windows-874 (thailandese)"
           }
         },
         "ja" : {
@@ -648007,7 +648007,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "la trascrizione ha %@, ma l’audiolibro ne ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo, e il testo viene mostrato."
+            "value" : "la trascrizione ha %@, mentre l’audiolibro ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo, e il testo viene mostrato."
           }
         },
         "ja" : {
