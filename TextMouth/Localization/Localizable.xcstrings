@@ -60,7 +60,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” reproduz o próximo livro da mesma pasta, na ordem de classificação."
+            "value" : "“%@” reproduz o próximo livro da mesma pasta, conforme a ordenação."
           }
         }
       }
