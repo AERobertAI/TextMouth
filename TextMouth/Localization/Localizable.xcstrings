@@ -2325,7 +2325,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ dodaje zakładkę w bieżącej pozycji."
+            "value" : "%@ dodaje zakładkę w bieżącym miejscu."
           }
         },
         "pt-BR" : {
@@ -2462,7 +2462,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ dodaje ją w bieżącej pozycji."
+            "value" : "%@ dodaje ją w bieżącym miejscu."
           }
         },
         "pt-BR" : {
@@ -16035,7 +16035,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ nie ma na liście czytelniczej."
+            "value" : "%@ nie znajduje się na liście czytelniczej."
           }
         },
         "pt-BR" : {
@@ -19620,7 +19620,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pozostało %@"
+            "value" : "Pozostało: %@"
           }
         },
         "pt-BR" : {
@@ -19894,7 +19894,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Do końca nagłówka pozostało %@"
+            "value" : "Do końca nagłówka pozostało: %@"
           }
         },
         "pt-BR" : {
@@ -21842,7 +21842,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ do %2$@"
+            "value" : "od %1$@ do %2$@"
           }
         },
         "pt-BR" : {
@@ -106635,7 +106635,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Potem Odtwórz ponawia próbę dla tego fragmentu."
+            "value" : "Potem Odtwórz ponownie spróbuje odczytać ten fragment."
           }
         },
         "pt-BR" : {
@@ -122276,7 +122276,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zresetowano prędkość dźwięku do: %@"
+            "value" : "Zresetowano prędkość dźwięku: %@"
           }
         },
         "pt-BR" : {
@@ -133078,7 +133078,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Znaki pliku Braille’a"
+            "value" : "Znaki pliku brajlowskiego"
           }
         },
         "pt-BR" : {
@@ -133215,7 +133215,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Numery stron Braille’a"
+            "value" : "Numery stron brajlowskich"
           }
         },
         "pt-BR" : {
@@ -167672,7 +167672,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można dodać zakładki: „%@” nie ma już w bibliotece."
+            "value" : "Nie można dodać zakładki: „%@” nie znajduje się już w bibliotece."
           }
         },
         "pt-BR" : {
@@ -170001,7 +170001,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można usunąć zakładki: „%@” nie ma już w bibliotece."
+            "value" : "Nie można usunąć zakładki: „%@” nie znajduje się już w bibliotece."
           }
         },
         "pt-BR" : {
@@ -222647,7 +222647,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eksportowanie: %1$lld z %2$@…"
+            "value" : "Eksportowanie: zapisano %1$lld, łącznie %2$@…"
           }
         },
         "pt-BR" : {
@@ -640740,7 +640740,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "edytowane ręcznie"
+            "value" : "edytowano ręcznie"
           }
         },
         "pt-BR" : {
@@ -648168,7 +648168,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "edytowany tekst nie zawiera rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie, a książka się otworzy."
+            "value" : "edytowany tekst nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie, a książka się otworzy."
           }
         },
         "pt-BR" : {
@@ -648305,7 +648305,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "edytowany tekst nie zawiera rozdziału z żadnym tekstem. Cofnij zmianę i zachowaj ponownie, a tekst się pokaże."
+            "value" : "edytowany tekst nie zawiera żadnego rozdziału z tekstem. Cofnij zmianę i zachowaj ponownie, a tekst się pokaże."
           }
         },
         "pt-BR" : {
