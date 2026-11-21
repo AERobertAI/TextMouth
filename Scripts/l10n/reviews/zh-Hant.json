@@ -564,6 +564,822 @@
      "why": "natural: 在失敗的移動之後 copied after a failed move; Chinese says 移動失敗後"
     }
    ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ for %@ now follows the global setting: %@.",
+     "english": "%1$@ for %2$@ now follows the global setting: %3$@.",
+     "before": "%2$@ 的「%1$@」現在依循整體設定：%3$@。",
+     "after": "%2$@ 的「%1$@」現在依循全域設定：%3$@。",
+     "why": "term: every other string says 全域設定 for the global setting (13 of them); 整體設定 was the only other word"
+    },
+    {
+     "key": "%@ in %@.",
+     "english": "%1$@ in %2$@.",
+     "before": "%1$@，位於 %2$@。",
+     "after": "%1$@，涉及 %2$@。",
+     "why": "natural: 位於 19 個句子 places corrections at sentences as at an address; 涉及 says how many sentences they touch"
+    },
+    {
+     "key": "%@ stay in their feeds: %@",
+     "english": "%1$@ stay in their feeds: %2$@",
+     "before": "%1$@ 仍留在其訂閱源中：%2$@",
+     "after": "%1$@仍留在其訂閱源中：%2$@",
+     "why": "punctuation: the titles always come in 「」, so the space after the closing mark split Chinese from Chinese"
+    },
+    {
+     "key": "%@ stays in its feed: %@",
+     "english": "%1$@ stays in its feed: %2$@",
+     "before": "%1$@ 仍留在其訂閱源中：%2$@",
+     "after": "%1$@仍留在其訂閱源中：%2$@",
+     "why": "punctuation: the titles always come in 「」, so the space after the closing mark split Chinese from Chinese"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "other": "已還原 %lld 項編輯。在你進行另一項編輯之前，可以用「重做」將它們帶回。"
+     },
+     "after": {
+      "other": "已還原 %lld 項編輯。在你進行其他編輯之前，可以用「重做」恢復它們。"
+     },
+     "why": "natural: 將它們帶回 copied \"brings them back\"; Chinese says Redo 恢復 the edits"
+    },
+    {
+     "key": "%lld waiting for room on this Mac",
+     "english": {
+      "one": "%lld waiting for room on this Mac",
+      "other": "%lld waiting for room on this Mac"
+     },
+     "before": {
+      "other": "%lld 個正在等待這部 Mac 的空間"
+     },
+     "after": {
+      "other": "%lld 個正在等待這部 Mac 騰出空間"
+     },
+     "why": "natural: 等待這部 Mac 的空間 copied \"waiting for room on this Mac\" word for word; Chinese says the Mac must free room"
+    },
+    {
+     "key": "; %@ stay",
+     "english": "; %@ stay",
+     "before": "；%@ 仍保留",
+     "after": "；%@仍保留",
+     "why": "punctuation: the placeholder is always a Chinese phrase such as 其 5 個已下載的單集, so the space split Chinese from Chinese"
+    },
+    {
+     "key": "; %@ stays",
+     "english": "; %@ stays",
+     "before": "；%@ 仍保留",
+     "after": "；%@仍保留",
+     "why": "punctuation: the same stray space as entry 75"
+    },
+    {
+     "key": "A copy was kept in the book's package. Start over with no edits, or cancel.",
+     "english": "A copy was kept in the book's package. Start over with no edits, or cancel.",
+     "before": "已在書籍套件中保留一份副本。你可以重新開始而不帶任何編輯，或取消。",
+     "after": "已在書籍套件中保留一份副本。你可以從頭開始（不含任何編輯），或取消。",
+     "why": "natural: 重新開始而不帶任何編輯 copied \"start over with no edits\" word for word"
+    },
+    {
+     "key": "A quote isn't closed in “%@”.",
+     "english": "A quote isn't closed in “%@”.",
+     "before": "「%@」中有引號沒有結束。",
+     "after": "「%@」中有引號未閉合。",
+     "why": "natural: 引號沒有結束 says the quote never ended; a quote left open is 未閉合"
+    },
+    {
+     "key": "After a pause of %@, at %@.",
+     "english": "After a pause of %1$@, at %2$@.",
+     "before": "停頓 %1$@ 之後，位於 %2$@。",
+     "after": "停頓 %1$@之後，位於 %2$@。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese"
+    },
+    {
+     "key": "Before: %@ After: %@",
+     "english": "Before: %1$@ After: %2$@",
+     "before": "之前：%1$@ 之後：%2$@",
+     "after": "修正前：%1$@ 修正後：%2$@",
+     "why": "natural: a bare 之前 and 之後 do not say before and after what; the sheet shows one correction"
+    },
+    {
+     "key": "Cancel Feed Downloads",
+     "english": "Cancel Feed Downloads",
+     "before": "取消訂閱源下載",
+     "after": "取消下載訂閱源內容",
+     "why": "meaning: 取消訂閱源下載 is heard as 取消訂閱 (Unsubscribe) plus 源下載, so Cancel now sits next to 下載"
+    },
+    {
+     "key": "Chapter %@",
+     "english": "Chapter %@",
+     "before": "章節 %@",
+     "after": "第 %@ 章",
+     "why": "natural: Chinese titles a chapter by its number as 第 3 章, the glossary’s counter, where 章節 3 copied the English order"
+    },
+    {
+     "key": "Chapter %@: %@, at %@",
+     "english": "Chapter %1$@: %2$@, at %3$@",
+     "before": "章節 %1$@：%2$@，位於 %3$@",
+     "after": "第 %1$@ 章：%2$@，位於 %3$@",
+     "why": "natural: Chinese titles a chapter by its number as 第 3 章, the glossary’s counter, where 章節 3 copied the English order"
+    },
+    {
+     "key": "Chapter %@: %@, at %@.",
+     "english": "Chapter %1$@: %2$@, at %3$@.",
+     "before": "章節 %1$@：%2$@，位於 %3$@。",
+     "after": "第 %1$@ 章：%2$@，位於 %3$@。",
+     "why": "natural: Chinese titles a chapter by its number as 第 3 章, the glossary’s counter, where 章節 3 copied the English order"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "從現在起，並立即再次檢查此訂閱源。",
+     "after": "從現在起再次檢查此訂閱源，並立即檢查一次。",
+     "why": "natural: 從現在起，並立即再次檢查 joined two time phrases with 並 and no verb between them"
+    },
+    {
+     "key": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+     "english": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+     "before": "已播放單集完成後，刪除其下載項目前等待的天數，從 0（立即）到 365；在閱讀器中打開的會等到關閉後。",
+     "after": "單集播放完畢後，刪除其下載項目前等待的天數，從 0（立即）到 365；在閱讀器中打開的單集會等到關閉後才刪除。",
+     "why": "natural: 已播放單集完成後 said twice that the episode was played, and the last clause did not say what waits or for what"
+    },
+    {
+     "key": "Download the %@ model, %@",
+     "english": "Download the %1$@ model, %2$@",
+     "before": "下載 %1$@ 模型，%2$@",
+     "after": "下載%1$@模型，%2$@",
+     "why": "punctuation: the language name is Chinese (英文, as the system names it), so the spaces around it split one word"
+    },
+    {
+     "key": "Downloading the %@ model: %lld percent.",
+     "english": {
+      "one": "Downloading the %@ model: %lld percent.",
+      "other": "Downloading the %@ model: %lld percent."
+     },
+     "before": {
+      "other": "正在下載 %@ 模型：百分之 %lld。"
+     },
+     "after": {
+      "other": "正在下載%@模型：百分之 %lld。"
+     },
+     "why": "punctuation: the language name is Chinese (英文, as the system names it), so the spaces around it split one word"
+    },
+    {
+     "key": "Downloading the %@ model…",
+     "english": "Downloading the %@ model…",
+     "before": "正在下載 %@ 模型…",
+     "after": "正在下載%@模型…",
+     "why": "punctuation: the language name is Chinese (英文, as the system names it), so the spaces around it split one word"
+    },
+    {
+     "key": "Edits of its audio or of its manifest are not kept.",
+     "english": "Edits of its audio or of its manifest are not kept.",
+     "before": "其音訊或資訊清單的編輯不會保留。",
+     "after": "對其音訊或資訊清單所做的編輯不會保留。",
+     "why": "natural: 其音訊或資訊清單的編輯 can be heard as the editor of its audio; 所做的編輯 says the edits made to it"
+    },
+    {
+     "key": "Even Out the Level",
+     "english": "Even Out the Level",
+     "before": "平均音量",
+     "after": "平衡音量",
+     "why": "meaning: 平均音量 reads as the noun \"average volume\"; the preset evens the level out, 平衡音量"
+    },
+    {
+     "key": "Export Keynote presentations from Keynote as PDF files, then import those.",
+     "english": "Export Keynote presentations from Keynote as PDF files, then import those.",
+     "before": "請從 Keynote 將 Keynote 簡報輸出為 PDF 檔案，然後輸入這些檔案。",
+     "after": "請在 Keynote 中將簡報輸出為 PDF 檔案，然後輸入這些檔案。",
+     "why": "natural: 從 Keynote 將 Keynote 簡報 copied the English repetition word for word"
+    },
+    {
+     "key": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "english": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "before": "請從 Numbers 將 Numbers 試算表輸出為 PDF 檔案，然後輸入這些檔案。",
+     "after": "請在 Numbers 中將試算表輸出為 PDF 檔案，然後輸入這些檔案。",
+     "why": "natural: the same repetition as entry 193"
+    },
+    {
+     "key": "Export Pages documents from Pages as Word documents or EPUB books, then import those.",
+     "english": "Export Pages documents from Pages as Word documents or EPUB books, then import those.",
+     "before": "請從 Pages 將 Pages 文件輸出為 Word 文件或 EPUB 書籍，然後輸入這些檔案。",
+     "after": "請在 Pages 中將文件輸出為 Word 文件或 EPUB 書籍，然後輸入這些檔案。",
+     "why": "natural: the same repetition as entry 193"
+    },
+    {
+     "key": "Exporting %@ of audio as %@ to “%@”.",
+     "english": "Exporting %1$@ of audio as %2$@ to “%3$@”.",
+     "before": "正在將 %1$@ 的音訊以 %2$@ 格式輸出到「%3$@」。",
+     "after": "正在將 %1$@的音訊以 %2$@ 格式輸出到「%3$@」。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese"
+    },
+    {
+     "key": "How many of the newest",
+     "english": "How many of the newest",
+     "before": "最新幾個",
+     "after": "最新項目數量",
+     "why": "natural: 最新幾個 reads as a half question; a field label names what it counts"
+    },
+    {
+     "key": "Import cancelled after %@.",
+     "english": "Import cancelled after %@.",
+     "before": "已在 %@ 之後取消輸入。",
+     "after": "輸入已取消，已完成 %@。",
+     "why": "natural: %@ is a count such as 3／10 本書, and 已在 3／10 本書之後 cannot read as a point in time"
+    },
+    {
+     "key": "Insert %@ of Audio",
+     "english": "Insert %@ of Audio",
+     "before": "插入 %@ 的音訊",
+     "after": "插入 %@的音訊",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Insert %@ of Silence",
+     "english": "Insert %@ of Silence",
+     "before": "插入 %@ 的靜音",
+     "after": "插入 %@的靜音",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Inserted %@ of new recording, which is selected.",
+     "english": "Inserted %@ of new recording, which is selected.",
+     "before": "已插入 %@ 的新錄音，並已選取。",
+     "after": "已插入 %@的新錄音，並已選取。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Inserted %@ of silence.",
+     "english": "Inserted %@ of silence.",
+     "before": "已插入 %@ 的靜音。",
+     "after": "已插入 %@的靜音。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "It also deletes %@.",
+     "english": "It also deletes %@.",
+     "before": "同時也會刪除 %@。",
+     "after": "同時也會刪除%@。",
+     "why": "punctuation: the placeholder always starts with 為 (為 3 個已移除的下載項目…), so the space split Chinese from Chinese"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "下載期間，它屬於其訂閱源。「%@」會移除其檔案，並保留其位置與書籤。",
+     "after": "它作為下載項目，屬於其訂閱源。「%@」會移除其檔案，並保留其位置與書籤。",
+     "why": "meaning: 下載期間 means while the file is downloading, but the English means as long as it stays a download"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "刪除%@：它會移到垃圾桶，在清倒垃圾桶前你都可以復原。",
+     "after": "這會刪除%@：該項目會移到垃圾桶，在清空垃圾桶前你都可以復原。",
+     "why": "term: 清倒垃圾桶 half converts the Simplified 清倒废纸篓; Apple’s Finder says 清空垃圾桶, and the sentence lacked its subject, opening on the command word 刪除"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "它會刪除 %@：會永久刪除，無法復原。",
+     "after": "這會刪除%@：該項目會永久刪除，無法復原。",
+     "why": "punctuation: the placeholder is always a Chinese phrase (such as 其 5 個已下載的單集), so the space split Chinese from Chinese; 這會 and the subject as in entry 250"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "它會刪除 %@：該項目會保留在 TextMouth 書庫檔案夾中。",
+     "after": "這會刪除%@：該項目會保留在 TextMouth 書庫檔案夾中。",
+     "why": "punctuation: the placeholder is always a Chinese phrase (such as 其 5 個已下載的單集), so the space split Chinese from Chinese; 這會 and the subject as in entry 250"
+    },
+    {
+     "key": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "english": "It deletes %@: they are deleted permanently and cannot be recovered.",
+     "before": "它會刪除 %@：會永久刪除，無法復原。",
+     "after": "這會刪除%@：這些項目會永久刪除，無法復原。",
+     "why": "punctuation: the placeholder is always a Chinese phrase (such as 其 5 個已下載的單集), so the space split Chinese from Chinese; 這會 and the subject as in entry 250"
+    },
+    {
+     "key": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "english": "It deletes %@: they go to the Trash, where you can recover them until the Trash is emptied.",
+     "before": "它會刪除 %@：它們會移到垃圾桶，在清倒垃圾桶前你都可以復原。",
+     "after": "這會刪除%@：這些項目會移到垃圾桶，在清空垃圾桶前你都可以復原。",
+     "why": "term: Apple’s Finder says 清空垃圾桶, as in entry 250, and the stray space before the Chinese placeholder went too"
+    },
+    {
+     "key": "It deletes %@: they stay in the TextMouth library folder.",
+     "english": "It deletes %@: they stay in the TextMouth library folder.",
+     "before": "它會刪除 %@：這些項目會保留在 TextMouth 書庫檔案夾中。",
+     "after": "這會刪除%@：這些項目會保留在 TextMouth 書庫檔案夾中。",
+     "why": "punctuation: the placeholder is always a Chinese phrase (such as 其 5 個已下載的單集), so the space split Chinese from Chinese; 這會 and the subject as in entry 250"
+    },
+    {
+     "key": "It names no audio file in its own folder that TextMouth can import.",
+     "english": "It names no audio file in its own folder that TextMouth can import.",
+     "before": "其中沒有指向 TextMouth 能輸入、位於其自身檔案夾內的音訊檔案。",
+     "after": "其中沒有列出同一檔案夾內任何 TextMouth 能輸入的音訊檔案。",
+     "why": "natural: 沒有指向…位於其自身檔案夾內的 stacked two clauses before the noun; the plain order names the folder first"
+    },
+    {
+     "key": "Keep for a number of days",
+     "english": "Keep for a number of days",
+     "before": "保留數天",
+     "after": "保留指定天數",
+     "why": "meaning: 保留數天 says keep for a few days; the choice keeps the original for the number of days set beside it"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "列出每篇文章，保留最新 %lld 篇為已下載，並移除它所做的較舊下載項目，同時保留其位置、書籤與設定。"
+     },
+     "after": {
+      "other": "列出每篇文章，保留最新 %lld 篇為已下載，並移除自動下載的較舊項目，同時保留其位置、書籤與設定。"
+     },
+     "why": "natural: 它所做的較舊下載項目 copied \"downloads it made\"; Chinese says the older items it downloaded by itself"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "列出每個單集與文章，保留最新 %lld 個為已下載，並移除它所做的較舊下載項目，同時保留其位置、書籤與設定。"
+     },
+     "after": {
+      "other": "列出每個單集與文章，保留最新 %lld 個為已下載，並移除自動下載的較舊項目，同時保留其位置、書籤與設定。"
+     },
+     "why": "natural: the same calque as entry 287"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "other": "列出每個單集，保留最新 %lld 個為已下載，並移除它所做的較舊下載項目，同時保留其位置、書籤與設定。"
+     },
+     "after": {
+      "other": "列出每個單集，保留最新 %lld 個為已下載，並移除自動下載的較舊項目，同時保留其位置、書籤與設定。"
+     },
+     "why": "natural: the same calque as entry 287"
+    },
+    {
+     "key": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "other": "列出你尚未播放的最新 %lld 個，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時回來。"
+     },
+     "after": {
+      "other": "列出你尚未播放的最新 %lld 個，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時重新出現。"
+     },
+     "why": "natural: 回來 copied \"return\" as if the items walked back; listed items 重新出現"
+    },
+    {
+     "key": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "other": "列出你尚未閱讀的最新 %lld 篇，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時回來。"
+     },
+     "after": {
+      "other": "列出你尚未閱讀的最新 %lld 篇，以及每個下載項目。只下載你要求的項目；其他項目會保留其記錄，並在你列出更多時重新出現。"
+     },
+     "why": "natural: the same calque as entry 293"
+    },
+    {
+     "key": "Moved %@ to %@.",
+     "english": "Moved %1$@ to %2$@.",
+     "before": "已將 %1$@ 移到 %2$@。",
+     "after": "已將 %1$@移到 %2$@。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "尚未寫入書籍的音訊。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。",
+     "after": "尚未寫入書籍的音訊。「捨棄」會還原這些編輯；下次編輯這本書時，在你進行其他編輯之前，可用「重做」恢復它們。",
+     "why": "natural: 將它們帶回 copied \"brings them back\", as in entry 763"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "「%@」有一部分無法解碼，已保留為靜音。",
+     "after": "%@有一部分無法解碼，已以靜音代替。",
+     "why": "punctuation: the code passes the name already in curly quotes, so 「%@」 doubled the quotation marks; 以靜音代替 also says plainly that silence stands in for it"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "other": "%lld 個檔案（%@）有一部分無法解碼，已保留為靜音。"
+     },
+     "after": {
+      "other": "%lld 個檔案（%@）有一部分無法解碼，已以靜音代替。"
+     },
+     "why": "natural: 保留為靜音 copied \"kept as silence\"; Chinese says silence stands in for the lost part"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "已將 %@ 貼回剪下的位置。",
+     "after": "已將 %@貼回剪下的位置。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "已將 %1$@ 貼上，取代 %2$@。",
+     "after": "已貼上 %1$@，取代 %2$@。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Paused at %@.",
+     "english": "Paused at %@.",
+     "before": "已在 %@ 暫停。",
+     "after": "已暫停於 %@。",
+     "why": "punctuation: a length in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "嗶聲之後，將用 %3$@ 覆蓋錄製 %2$@ 處的 %1$@。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
+     "after": "嗶聲之後，將用 %3$@ 覆蓋錄製 %2$@處的 %1$@。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
+     "why": "punctuation: a length or time in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "嗶聲之後，將用 %2$@ 錄音並插入到 %1$@ 處。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
+     "after": "嗶聲之後，將用 %2$@ 錄音並插入到 %1$@處。「覆蓋錄音」或「停止」可結束錄音；「取消選取」會捨棄錄音。",
+     "why": "punctuation: a length or time in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "嗶聲之後，覆蓋錄製選取範圍或游標處。再次選擇或選擇「停止」即可結束。",
+     "after": "嗶聲之後，覆蓋錄製選取範圍，或在游標處錄音。再次選擇或選擇「停止」即可結束。",
+     "why": "meaning: 覆蓋錄製選取範圍或游標處 said it records over the audio at the cursor too, where it inserts"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "已用 %2$@ 的新錄音取代 %1$@，並已選取新錄音。",
+     "after": "已用 %2$@的新錄音取代 %1$@，並已選取新錄音。",
+     "why": "punctuation: a length or time in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Resubscribed to %@. Checking it now…",
+     "english": "Resubscribed to %@. Checking it now…",
+     "before": "已重新訂閱 %@。正在立即檢查…",
+     "after": "已重新訂閱 %@。正在檢查…",
+     "why": "natural: 正在立即檢查 stacked two words for now; 正在 already says it is under way"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "other": "已回復為原始音訊。「重做」可帶回 %lld 項編輯。"
+     },
+     "after": {
+      "other": "已回復為原始音訊。「重做」可恢復 %lld 項編輯。"
+     },
+     "why": "natural: 帶回 copied \"brings back\", as in entry 763; Redo 恢復 edits"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "正在將 %1$@ 的音訊儲存為 %2$@，也就是這本書原有的格式。",
+     "after": "正在將 %1$@的音訊儲存為 %2$@，也就是這本書原有的格式。",
+     "why": "punctuation: a length or time in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Saving %@ of audio into the book.",
+     "english": "Saving %@ of audio into the book.",
+     "before": "正在將 %@ 的音訊儲存到書籍中。",
+     "after": "正在將 %@的音訊儲存到書籍中。",
+     "why": "punctuation: a length or time in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "Selected chapter %@: %@, %@.",
+     "english": "Selected chapter %1$@: %2$@, %3$@.",
+     "before": "已選取章節 %1$@：%2$@，%3$@。",
+     "after": "已選取第 %1$@ 章：%2$@，%3$@。",
+     "why": "natural: Chinese names a chapter by its number as 第 3 章, as in entry 822"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "選取範圍從 %1$@ 到 %2$@，長度 %3$@。",
+     "after": "選取範圍從 %1$@到 %2$@，長度 %3$@。",
+     "why": "punctuation: a length or time in words ends in a unit such as 秒, so the space after it split Chinese from Chinese, as in entry 782"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth 無法轉換「%@」的聲音：它屬於 TextMouth 不讀取的音訊種類。",
+     "after": "TextMouth 無法轉換「%@」的聲音：它屬於 TextMouth 無法讀取的音訊類型。",
+     "why": "natural: 不讀取 says TextMouth chooses not to read it, where the English means it cannot"
+    },
+    {
+     "key": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "english": "TextMouth has no rules of its own: none was right in every book tested. Edit Rules… opens your copy, where you can add rules, such as a name the recognizer always spells another way.",
+     "before": "TextMouth 沒有自己的規則：測試過的每本書中，沒有任何規則都適用。「編輯規則…」會打開你的副本，你可以在其中加入規則，例如辨識器總是寫成另一種寫法的名稱。",
+     "after": "TextMouth 沒有自己的規則：沒有任何一條規則在所有測試過的書中都正確。「編輯規則…」會打開你的副本，你可以在其中加入規則，例如辨識器總是寫成另一種寫法的名稱。",
+     "why": "grammar: 每本書中，沒有任何規則都適用 put 都 after a negated subject, which reads as a broken sentence"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。「取消」會讓 TextMouth 保持打開。",
+     "after": "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，在你進行其他編輯之前，可用「重做」恢復它們。「取消」會讓 TextMouth 保持打開。",
+     "why": "natural: 帶回 copied \"brings back\", as in entry 763; Redo 恢復 edits"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth 不允許發送通知。請在「系統設定」>「通知」>「TextMouth」中，開啟 TextMouth 的通知。",
+     "after": "TextMouth 未獲允許發送通知。請在「系統設定」>「通知」>「TextMouth」中開啟。",
+     "why": "meaning: TextMouth 不允許 said TextMouth forbids notifications; 未獲允許 says it lacks the permission, as the microphone message says"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "other": "TextMouth 已將 %lld 份重複書籍的新拷貝移到垃圾桶，因為在 TextMouth 關閉前，是否將它們保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
+     },
+     "after": {
+      "other": "TextMouth 已將 %lld 份重複書籍的新副本移到垃圾桶，因為在 TextMouth 關閉前，是否將它們保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
+     },
+     "why": "term: 拷貝 is the Copy command; a copy of a book is 副本, as the glossary note and the two sentences beside this one say"
+    },
+    {
+     "key": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
+     "english": "TextMouth's own rules are newer, version %@. To use them, delete your copy or copy their rules into it.",
+     "before": "TextMouth 本身的規則較新，版本為 %@。若要使用，請刪除你的副本，或將它們的規則複製到你的副本中。",
+     "after": "TextMouth 本身的規則較新，版本為 %@。若要使用，請刪除你的副本，或將它們的規則拷貝到你的副本中。",
+     "why": "term: the glossary’s verb for copy is 拷貝, as Apple’s Taiwan interface says"
+    },
+    {
+     "key": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "english": "That isn't a web address. Enter a feed's address, or the address of a page that names one.",
+     "before": "這不是網址。請輸入訂閱源網址，或指名訂閱源的頁面網址。",
+     "after": "這不是網址。請輸入訂閱源網址，或列出訂閱源的網頁網址。",
+     "why": "natural: 指名 is naming someone; a web page 列出 its feed, as entry 78 says"
+    },
+    {
+     "key": "That page doesn't name a feed.",
+     "english": "That page doesn't name a feed.",
+     "before": "該頁面沒有指名任何訂閱源。",
+     "after": "該頁面沒有列出任何訂閱源。",
+     "why": "natural: 指名 as in entry 483"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "other": "該頁面指名了 %lld 個訂閱源。請選擇一個，然後訂閱。"
+     },
+     "after": {
+      "other": "該頁面列出了 %lld 個訂閱源。請選擇一個，然後選擇「訂閱」。"
+     },
+     "why": "natural: 指名 as in entry 483, and Subscribe is the button, so it is quoted as the button is"
+    },
+    {
+     "key": "The %@ model couldn't be downloaded: %@",
+     "english": "The %1$@ model couldn't be downloaded: %2$@",
+     "before": "無法下載 %1$@ 模型：%2$@",
+     "after": "無法下載%1$@模型：%2$@",
+     "why": "punctuation: the language name is Chinese (英文), so the spaces around it split one word, as in entry 870"
+    },
+    {
+     "key": "The %@ model is downloaded. The book can be transcribed now.",
+     "english": "The %@ model is downloaded. The book can be transcribed now.",
+     "before": "%@ 模型已下載。現在可以轉錄這本書了。",
+     "after": "%@模型已下載。現在可以轉錄這本書了。",
+     "why": "punctuation: the language name is Chinese (英文), so the spaces around it split one word, as in entry 870"
+    },
+    {
+     "key": "The %@ model's download was cancelled.",
+     "english": "The %@ model's download was cancelled.",
+     "before": "%@ 模型的下載已取消。",
+     "after": "%@模型的下載已取消。",
+     "why": "punctuation: the language name is Chinese (英文), so the spaces around it split one word, as in entry 870"
+    },
+    {
+     "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "english": {
+      "one": "The marker is deleted, and Redo doesn't bring it back.",
+      "other": "The %lld markers are deleted, and Redo doesn't bring them back."
+     },
+     "before": {
+      "other": "這 %lld 個標記會被刪除，「重做」無法帶回它們。"
+     },
+     "after": {
+      "other": "這 %lld 個標記會被刪除，「重做」也無法恢復它們。"
+     },
+     "why": "natural: 帶回 copied \"brings back\", as in entry 763; Redo 恢復 edits"
+    },
+    {
+     "key": "The article leaves the list for good, and its download, if any, is deleted.",
+     "english": "The article leaves the list for good, and its download, if any, is deleted.",
+     "before": "此文章會永久離開列表，其下載項目（若有）也會刪除。",
+     "after": "此文章會從列表中永久移除，其下載項目（若有）也會刪除。",
+     "why": "natural: 永久離開列表 has the item walk off the list; Chinese says it is removed from it (從列表中永久移除)"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "此文章會永久離開列表；它在你書庫中變成的書籍會保留。",
+     "after": "此文章會從列表中永久移除；它在你書庫中轉成的書籍會保留。",
+     "why": "natural: 永久離開列表 has the item walk off the list; Chinese says it is removed from it (從列表中永久移除)"
+    },
+    {
+     "key": "The book left the library during transcription, so its transcript wasn't saved.",
+     "english": "The book left the library during transcription, so its transcript wasn't saved.",
+     "before": "轉錄期間這本書已離開書庫，因此其逐字稿未儲存。",
+     "after": "轉錄期間這本書已從書庫中移除，因此其逐字稿未儲存。",
+     "why": "natural: 這本書已離開書庫 has the book walk out; Chinese says it was removed, as in entry 515"
+    },
+    {
+     "key": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "english": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "before": "CUE 表單「%@」沒有指名其旁的任何音訊，因此未使用其標題。",
+     "after": "CUE 表單「%@」沒有指向旁邊的任何音訊，因此未使用其標題。",
+     "why": "natural: 指名其旁的任何音訊 as in entry 483; a cue sheet points to its audio files"
+    },
+    {
+     "key": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "english": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "before": "此單集會永久離開列表，其下載項目（若有）也會刪除。",
+     "after": "此單集會從列表中永久移除，其下載項目（若有）也會刪除。",
+     "why": "natural: 永久離開列表 has the item walk off the list; Chinese says it is removed from it (從列表中永久移除)"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "此單集會永久離開列表；它在你書庫中變成的書籍會保留。",
+     "after": "此單集會從列表中永久移除；它在你書庫中轉成的書籍會保留。",
+     "why": "natural: 永久離開列表 has the item walk off the list; Chinese says it is removed from it (從列表中永久移除)"
+    },
+    {
+     "key": "The feed leaves your library, with its list of articles and its settings.",
+     "english": "The feed leaves your library, with its list of articles and its settings.",
+     "before": "此訂閱源會連同其文章列表與設定一起離開你的書庫。",
+     "after": "此訂閱源會連同其文章列表與設定，從你的書庫中移除。",
+     "why": "natural: 離開你的書庫 has the feed walk out of the library; Chinese says it is removed, as in entry 493"
+    },
+    {
+     "key": "The feed leaves your library, with its list of episodes and its settings.",
+     "english": "The feed leaves your library, with its list of episodes and its settings.",
+     "before": "此訂閱源會連同其單集列表與設定一起離開你的書庫。",
+     "after": "此訂閱源會連同其單集列表與設定，從你的書庫中移除。",
+     "why": "natural: 離開你的書庫 has the feed walk out of the library; Chinese says it is removed, as in entry 493"
+    },
+    {
+     "key": "The feed leaves your library, with its list of items and its settings.",
+     "english": "The feed leaves your library, with its list of items and its settings.",
+     "before": "此訂閱源會連同其項目列表與設定一起離開你的書庫。",
+     "after": "此訂閱源會連同其項目列表與設定，從你的書庫中移除。",
+     "why": "natural: 離開你的書庫 has the feed walk out of the library; Chinese says it is removed, as in entry 493"
+    },
+    {
+     "key": "The file is a %@ transcript of version %@, which TextMouth doesn't read.",
+     "english": "The file is a %1$@ transcript of version %2$@, which TextMouth doesn't read.",
+     "before": "這個檔案是版本 %2$@ 的 %1$@ 逐字稿，TextMouth 不會讀取。",
+     "after": "這個檔案是版本 %2$@ 的 %1$@ 逐字稿，TextMouth 不支援這個版本。",
+     "why": "natural: 不會讀取 says TextMouth will not read it, as if by choice; the version is one it does not support"
+    },
+    {
+     "key": "The playlist “%@” uses XML entities of its own, which TextMouth does not read.",
+     "english": "The playlist “%@” uses XML entities of its own, which TextMouth does not read.",
+     "before": "播放列表「%@」使用了它自己的 XML 實體，TextMouth 不讀取。",
+     "after": "播放列表「%@」使用了自訂的 XML 實體，TextMouth 不支援。",
+     "why": "natural: 它自己的 XML 實體…TextMouth 不讀取 copied the English; Chinese says the entities are 自訂 and TextMouth 不支援 them"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "無法儲存錄音：%1$@ 錄音已保留；請選擇「%2$@」或「%3$@」。",
+     "after": "無法儲存錄音：%1$@錄音已保留；請選擇「%2$@」或「%3$@」。",
+     "why": "punctuation: the reason is a sentence that ends with its own 。, so the space after it split two Chinese sentences"
+    },
+    {
+     "key": "The speech model for %@ isn't on this Mac yet. Download it first.",
+     "english": "The speech model for %@ isn't on this Mac yet. Download it first.",
+     "before": "這部 Mac 上還沒有 %@ 的語音模型。請先下載。",
+     "after": "這部 Mac 上還沒有%@的語音模型。請先下載。",
+     "why": "punctuation: the language name is Chinese (英文), so the space beside it split one phrase, as in entry 870"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "此 XML 檔案不是 DTBook 書籍、Word 2003 XML 文件或 PEF 點字檔案，而這是 TextMouth 唯一讀取的 XML。",
+     "after": "此 XML 檔案不是 DTBook 書籍、Word 2003 XML 文件或 PEF 點字檔案；TextMouth 只讀取這幾種 XML。",
+     "why": "grammar: 而這是…唯一讀取的 XML pointed one 這 at three kinds of file"
+    },
+    {
+     "key": "Transcribed on %@, in %@.",
+     "english": "Transcribed on %1$@, in %2$@.",
+     "before": "於 %1$@ 轉錄，語言為 %2$@。",
+     "after": "於 %1$@ 轉錄，語言為%2$@。",
+     "why": "punctuation: the language name is Chinese (英文), so the space beside it split one phrase, as in entry 870"
+    },
+    {
+     "key": "Transcription doesn't support %@.",
+     "english": "Transcription doesn't support %@.",
+     "before": "語音轉文字不支援 %@。",
+     "after": "語音轉文字不支援%@。",
+     "why": "punctuation: the language name is Chinese (英文), so the space beside it split one phrase, as in entry 870"
+    },
+    {
+     "key": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "english": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "before": "輸入 Podcast 的標題或發布者，然後按下 Return 以搜尋 Apple 的目錄。",
+     "after": "輸入 Podcast 的名稱或發布者，然後按下 Return 以搜尋 Apple 的目錄。",
+     "why": "term: 標題 is the glossary word for a heading; a podcast has a 名稱, as Apple Podcasts calls a show"
+    },
+    {
+     "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "english": "Undoes every edit, back to the original; Redo brings them back.",
+     "before": "還原所有編輯，回到原始音訊；「重做」可將它們帶回。",
+     "after": "還原所有編輯，回到原始音訊；「重做」可恢復它們。",
+     "why": "natural: 帶回 copied \"brings them back\", as in entry 763"
+    },
+    {
+     "key": "You can recover it from the Trash until the Trash is emptied.",
+     "english": "You can recover it from the Trash until the Trash is emptied.",
+     "before": "在清倒垃圾桶前，你都可以從垃圾桶復原它。",
+     "after": "在清空垃圾桶前，你都可以從垃圾桶復原它。",
+     "why": "term: Apple’s Finder says 清空垃圾桶, as in entry 250"
+    },
+    {
+     "key": "in chapter %@: %@",
+     "english": "in chapter %1$@: %2$@",
+     "before": "在章節 %1$@：%2$@",
+     "after": "在第 %1$@ 章：%2$@",
+     "why": "natural: Chinese names a chapter by its number as 第 3 章, as in entry 822"
+    },
+    {
+     "key": "its row names no package the library manages",
+     "english": "its row names no package the library manages",
+     "before": "其列沒有指名書庫所管理的套件",
+     "after": "其列沒有指向書庫所管理的任何套件",
+     "why": "natural: 指名 is naming someone, as in entry 483; a row points to a package"
+    },
+    {
+     "key": "keeping the place of your feed downloads for next time",
+     "english": "keeping the place of your feed downloads for next time",
+     "before": "保留你的訂閱源下載位置供下次使用",
+     "after": "保留訂閱源下載的進度，供下次繼續",
+     "why": "meaning: 下載位置 is heard as the downloads folder; the place kept is how far each download had come"
+    },
+    {
+     "key": "none downloaded",
+     "english": "none downloaded",
+     "before": "沒有任何已下載",
+     "after": "沒有下載任何項目",
+     "why": "grammar: 沒有任何已下載 left the adjective with no noun after it"
+    },
+    {
+     "key": "saving the changes to your feed subscriptions",
+     "english": "saving the changes to your feed subscriptions",
+     "before": "儲存對你的訂閱源訂閱項目所做的更改",
+     "after": "儲存你對訂閱項目所做的更改",
+     "why": "natural: 訂閱源訂閱項目 said feed and subscription twice over"
+    }
+   ]
   }
  ]
 }
