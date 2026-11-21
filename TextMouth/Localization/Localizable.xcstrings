@@ -22450,7 +22450,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 會重試儲存，%2$@ 會結束且不儲存，%3$@ 會讓 TextMouth 保持打開。"
+            "value" : "「%1$@」會重試儲存，「%2$@」會結束且不儲存，「%3$@」會讓 TextMouth 保持打開。"
           }
         }
       }
@@ -25836,7 +25836,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@，%2$@ 品質"
+            "value" : "%1$@，%2$@"
           }
         }
       }
@@ -112941,7 +112941,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "單引號"
+            "value" : "撇號"
           }
         }
       }
@@ -156742,7 +156742,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "全部關閉"
+            "value" : "關閉全部"
           }
         }
       }
@@ -190752,7 +190752,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下箭頭"
+            "value" : "向下箭頭"
           }
         }
       }
@@ -208411,7 +208411,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書的結尾行為"
+            "value" : "此書結束時的行為"
           }
         }
       }
@@ -209370,7 +209370,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "加強"
+            "value" : "增強音質"
           }
         }
       }
@@ -249706,7 +249706,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "第二次按鍵必須在多快內跟上第一次。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。"
+            "value" : "第二次按鍵必須在第一次之後多久內按下。單按與連按兩次動作不同的按鍵，會先等候這段時間才執行單按動作。"
           }
         }
       }
@@ -277065,7 +277065,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳至頁面 %1$@：標示為 %3$@ 的頁面中的 %2$@。"
+            "value" : "已跳至第 %1$@ 頁，即標示為 %3$@ 的頁面中的 %2$@。"
           }
         }
       }
@@ -277202,7 +277202,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已跳至頁面 %@。"
+            "value" : "已跳至第 %@ 頁。"
           }
         }
       }
@@ -284375,7 +284375,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "左箭頭"
+            "value" : "向左箭頭"
           }
         }
       }
@@ -305726,7 +305726,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "縮至最小"
+            "value" : "縮到最小"
           }
         }
       }
@@ -305863,7 +305863,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "全部縮至最小"
+            "value" : "將全部縮到最小"
           }
         }
       }
@@ -381577,7 +381577,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "優質"
+            "value" : "高音質"
           }
         }
       }
@@ -388844,7 +388844,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現在結束會使這些更改未儲存："
+            "value" : "現在結束的話，以下更改將不會儲存："
           }
         }
       }
@@ -415388,7 +415388,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "還原此動作的預設快速鍵，日後版本可能會更改這些預設值。"
+            "value" : "還原此動作的預設快速鍵；預設快速鍵會隨日後版本的變更而更新。"
           }
         }
       }
@@ -420239,7 +420239,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "右箭頭"
+            "value" : "向右箭頭"
           }
         }
       }
@@ -432948,7 +432948,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇章節"
+            "value" : "選取章節"
           }
         }
       }
