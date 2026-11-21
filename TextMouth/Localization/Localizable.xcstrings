@@ -5312,7 +5312,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ gibt Abschnitte wieder, die Teile seiner Spuren sind, daher können seine Spuren noch nicht bearbeitet werden."
+            "value" : "%@ gibt Abschnitte wieder, die Teile seiner Tracks sind, daher können seine Tracks noch nicht bearbeitet werden."
           }
         },
         "es" : {
@@ -56189,7 +56189,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bearbeitet jeweils eine Spur, nach Kapitelnamen aufgelistet."
+            "value" : "Bearbeitet jeweils einen Track, nach Kapitelnamen aufgelistet."
           }
         },
         "es" : {
@@ -70789,7 +70789,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kapitelmarker einfügen…"
+            "value" : "Kapitelmarke einfügen…"
           }
         },
         "es" : {
@@ -80240,7 +80240,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stelle sicher, dass in den Ordner geschrieben werden kann, und versuche es dann noch einmal."
+            "value" : "Stelle sicher, dass in den Ordner geschrieben werden kann, und versuche es dann erneut."
           }
         },
         "es" : {
@@ -89419,7 +89419,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nächster Kapitelmarker"
+            "value" : "Nächste Kapitelmarke"
           }
         },
         "es" : {
@@ -101257,7 +101257,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Wiedergabe wurde angehalten: Das Audio reagiert nicht mehr. Wähle „Wiedergeben“, um es erneut zu versuchen; stoppt es wieder, beende TextMouth und öffne es noch einmal."
+            "value" : "Die Wiedergabe wurde angehalten: Das Audio reagiert nicht mehr. Wähle „Wiedergeben“, um es erneut zu versuchen; stoppt es wieder, beende TextMouth und öffne es erneut."
           }
         },
         "es" : {
@@ -102946,7 +102946,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vorheriger Kapitelmarker"
+            "value" : "Vorherige Kapitelmarke"
           }
         },
         "es" : {
@@ -123423,7 +123423,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Pausen werden noch gesucht. Versuche es gleich noch einmal."
+            "value" : "Die Pausen werden noch gesucht. Versuche es gleich erneut."
           }
         },
         "es" : {
@@ -131079,7 +131079,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth liest gerade den Text der Bibliothek erneut. Versuche es noch einmal, wenn das beendet ist."
+            "value" : "TextMouth liest gerade den Text der Bibliothek erneut. Versuche es erneut, wenn das beendet ist."
           }
         },
         "es" : {
@@ -131114,7 +131114,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth liest „%@“ gerade in einer anderen Codierung erneut. Versuche es noch einmal, wenn das beendet ist."
+            "value" : "TextMouth liest „%@“ gerade in einer anderen Codierung erneut. Versuche es erneut, wenn das beendet ist."
           }
         },
         "es" : {
@@ -131149,7 +131149,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth liest „%@“ gerade mit einem anderen Braille-Code erneut. Versuche es noch einmal, wenn das beendet ist."
+            "value" : "TextMouth liest „%@“ gerade mit einem anderen Braille-Code erneut. Versuche es erneut, wenn das beendet ist."
           }
         },
         "es" : {
@@ -131184,7 +131184,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth liest „%@“ gerade mit anderen Zeichen der Braille-Datei erneut. Versuche es noch einmal, wenn das beendet ist."
+            "value" : "TextMouth liest „%@“ gerade mit anderen Zeichen der Braille-Datei erneut. Versuche es erneut, wenn das beendet ist."
           }
         },
         "es" : {
@@ -137668,7 +137668,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Audioeditor für %@ ist bereits geöffnet."
+            "value" : "Der Audio-Editor für %@ ist bereits geöffnet."
           }
         },
         "es" : {
@@ -159160,7 +159160,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Versuche es gleich noch einmal."
+            "value" : "Versuche es gleich erneut."
           }
         },
         "es" : {
@@ -159195,7 +159195,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Versuche es noch einmal, wenn das Verschieben abgeschlossen ist."
+            "value" : "Versuche es erneut, wenn das Verschieben abgeschlossen ist."
           }
         },
         "es" : {
@@ -159265,7 +159265,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Versuche es noch einmal, wenn das beendet ist."
+            "value" : "Versuche es erneut, wenn das beendet ist."
           }
         },
         "es" : {
@@ -165884,7 +165884,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Welche Spur von %@ möchtest du bearbeiten?"
+            "value" : "Welchen Track von %@ möchtest du bearbeiten?"
           }
         },
         "es" : {
