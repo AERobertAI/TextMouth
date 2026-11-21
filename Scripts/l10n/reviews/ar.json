@@ -1660,6 +1660,665 @@
      "why": "grammar: the file is a (masculine) lexicon, so 'not a playlist' takes ليس, not ليست"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ adds one at the current position.",
+     "english": "%@ adds one at the current position.",
+     "before": "%@ يضيف واحدة عند الموضع الحالي.",
+     "after": "يضيف “%@” إشارة مرجعية عند الموضع الحالي.",
+     "why": "grammar: the button name إضافة إشارة مرجعية is feminine and ran unquoted into a masculine verb; verb first and quoted"
+    },
+    {
+     "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "english": "%@ does the same for every such chapter of this export, without asking again.",
+     "before": "%@ يفعل الشيء نفسه لكل فصل كهذا في هذا التصدير، دون أن يسأل مرة أخرى.",
+     "after": "“%@” يفعل الشيء نفسه لكل فصل كهذا في هذا التصدير، دون أن يسأل مرة أخرى.",
+     "why": "punctuation: a button name in a sentence is quoted, as elsewhere in the Arabic, or it runs into the words around it"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ يستخدم مفتاحها الافتراضي، %2$@",
+     "after": "يستخدم %1$@ الاختصار الافتراضي لهذا الإجراء، %2$@",
+     "why": "meaning: the feminine pronoun of مفتاحها pointed at nothing; %1$@ now uses the default shortcut of this row, the action that lost it"
+    },
+    {
+     "key": "%@ stops the whole export. Files already written stay.",
+     "english": "%@ stops the whole export. Files already written stay.",
+     "before": "%@ يوقف التصدير بالكامل. تبقى الملفات التي كُتبت بالفعل.",
+     "after": "“%@” يوقف التصدير بالكامل. تبقى الملفات التي كُتبت بالفعل.",
+     "why": "punctuation: a button name in a sentence is quoted, as elsewhere in the Arabic, or it runs into the words around it"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ يعيد المحاولة، و%2$@ يُنهي التطبيق دون حفظ، و%3$@ يُبقي TextMouth مفتوحًا.",
+     "after": "“%1$@” لإعادة المحاولة، و“%2$@” للإنهاء دون حفظ، و“%3$@” لإبقاء TextMouth مفتوحًا.",
+     "why": "grammar: the button names ran unquoted into masculine verbs (إعادة المحاولة is feminine); name-for-purpose reads right for any name"
+    },
+    {
+     "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ يكتب ذلك الفصل فقرات عادية من أسطره، مع إبقاء علامات الاقتباس والقوائم كأحرف، ويصدّر كل ما عداه كالمعتاد.",
+     "after": "“%@” يكتب ذلك الفصل فقرات عادية من أسطره، مع إبقاء علامات الاقتباس والقوائم كأحرف، ويصدّر كل ما عداه كالمعتاد.",
+     "why": "punctuation: a button name in a sentence is quoted, as elsewhere in the Arabic, or it runs into the words around it"
+    },
+    {
+     "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ يكتب النص فقرات عادية من أسطره، مع إبقاء علامات الاقتباس والقوائم كأحرف، ويصدّر كل ما عداه كالمعتاد.",
+     "after": "“%@” يكتب النص فقرات عادية من أسطره، مع إبقاء علامات الاقتباس والقوائم كأحرف، ويصدّر كل ما عداه كالمعتاد.",
+     "why": "punctuation: a button name in a sentence is quoted, as elsewhere in the Arabic, or it runs into the words around it"
+    },
+    {
+     "key": "%lld books finished all time",
+     "english": {
+      "one": "%lld book finished all time",
+      "other": "%lld books finished all time"
+     },
+     "before": {
+      "few": "%lld كتب منتهية في كل الأوقات",
+      "many": "%lld كتابًا منتهيًا في كل الأوقات",
+      "one": "%lld كتاب منتهٍ في كل الأوقات",
+      "other": "%lld كتاب منتهٍ في كل الأوقات",
+      "two": "%lld كتابان منتهيان في كل الأوقات",
+      "zero": "%lld كتب منتهية في كل الأوقات"
+     },
+     "after": {
+      "zero": "%lld كتب منتهية إجمالًا",
+      "one": "%lld كتاب منتهٍ إجمالًا",
+      "two": "%lld كتابان منتهيان إجمالًا",
+      "few": "%lld كتب منتهية إجمالًا",
+      "many": "%lld كتابًا منتهيًا إجمالًا",
+      "other": "%lld كتاب منتهٍ إجمالًا"
+     },
+     "why": "meaning: في كل الأوقات is at all times (always), not all time; the tile counts the books finished in all"
+    },
+    {
+     "key": "%lld books were already in it.",
+     "english": {
+      "one": "%lld book was already in it.",
+      "other": "%lld books were already in it."
+     },
+     "before": {
+      "few": "%lld كتب موجودة فيها بالفعل.",
+      "many": "%lld كتابًا موجود فيها بالفعل.",
+      "one": "%lld كتاب موجود فيها بالفعل.",
+      "other": "%lld كتاب موجود فيها بالفعل.",
+      "two": "%lld كتابان موجودان فيها بالفعل.",
+      "zero": "%lld كتب موجودة فيها بالفعل."
+     },
+     "after": {
+      "zero": "%lld كتب موجودة فيها بالفعل.",
+      "one": "%lld كتاب موجود فيها بالفعل.",
+      "two": "%lld كتابان موجودان فيها بالفعل.",
+      "few": "%lld كتب موجودة فيها بالفعل.",
+      "many": "%lld كتابًا موجودة فيها بالفعل.",
+      "other": "%lld كتاب موجودة فيها بالفعل."
+     },
+     "why": "grammar: the many and other forms count several books, so the predicate takes the feminine of a non-human plural, موجودة"
+    },
+    {
+     "key": "%lld books were not in it.",
+     "english": {
+      "one": "%lld book was not in it.",
+      "other": "%lld books were not in it."
+     },
+     "before": {
+      "few": "%lld كتب لم يكن فيها.",
+      "many": "%lld كتابًا لم يكن فيها.",
+      "one": "%lld كتاب لم يكن فيها.",
+      "other": "%lld كتاب لم يكن فيها.",
+      "two": "%lld كتابان لم يكن فيها.",
+      "zero": "%lld كتب لم يكن فيها."
+     },
+     "after": {
+      "zero": "%lld كتب لم تكن فيها.",
+      "one": "%lld كتاب لم يكن فيها.",
+      "two": "%lld كتابان لم يكونا فيها.",
+      "few": "%lld كتب لم تكن فيها.",
+      "many": "%lld كتابًا لم تكن فيها.",
+      "other": "%lld كتاب لم تكن فيها."
+     },
+     "why": "grammar: the verb did not agree with several books (لم تكن) or with two (لم يكونا); only one book takes لم يكن"
+    },
+    {
+     "key": "%lld entries give only a phonetic spelling, so they were set aside.",
+     "english": {
+      "one": "%lld entry gives only a phonetic spelling, so it was set aside.",
+      "other": "%lld entries give only a phonetic spelling, so they were set aside."
+     },
+     "before": {
+      "few": "استُبعد %lld إدخالات لأنها تقتصر على تهجئة صوتية.",
+      "many": "استُبعد %lld إدخالًا لأنه يقتصر على تهجئة صوتية.",
+      "one": "استُبعد %lld إدخال لأنه يقتصر على تهجئة صوتية.",
+      "other": "استُبعد %lld إدخال لأنه يقتصر على تهجئة صوتية.",
+      "two": "استُبعد %lld إدخالان لأنهما تقتصران على تهجئة صوتية.",
+      "zero": "استُبعد %lld إدخالات لأنها تقتصر على تهجئة صوتية."
+     },
+     "after": {
+      "zero": "استُبعد %lld إدخالات لأنها تقتصر على تهجئة صوتية.",
+      "one": "استُبعد %lld إدخال لأنه يقتصر على تهجئة صوتية.",
+      "two": "استُبعد %lld إدخالان لأنهما يقتصران على تهجئة صوتية.",
+      "few": "استُبعد %lld إدخالات لأنها تقتصر على تهجئة صوتية.",
+      "many": "استُبعد %lld إدخالًا لأنها تقتصر على تهجئة صوتية.",
+      "other": "استُبعد %lld إدخال لأنها تقتصر على تهجئة صوتية."
+     },
+     "why": "grammar: إدخال is masculine, so two takes يقتصران; many and other count several entries, so the pronoun is لأنها"
+    },
+    {
+     "key": "A number from 2 to 99",
+     "english": "A number from 2 to 99",
+     "before": "رقم من 2 إلى 99",
+     "after": "يقبل رقمًا من 2 إلى 99.",
+     "why": "voiceover: a hint is a sentence that starts with a verb, as the minutes field hint يقبل من … does"
+    },
+    {
+     "key": "A web page of the book's text, with a contents list linking each heading.",
+     "english": "A web page of the book's text, with a contents list linking each heading.",
+     "before": "صفحة ويب بنص الكتاب، مع قائمة محتويات تربط كل عنوان رئيسي.",
+     "after": "صفحة ويب بنص الكتاب، مع قائمة محتويات فيها رابط لكل عنوان رئيسي.",
+     "why": "natural: تربط كل عنوان رئيسي (ties each heading) left the link with no object; the list holds a link to each heading"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "يضيف زر تصدير إلى شريط أدوات كل قارئ. يعمل أمر ملف، تصدير في الحالتين.",
+     "after": "يضيف زر تصدير إلى شريط أدوات كل قارئ. يعمل الأمر ملف > تصدير في الحالتين.",
+     "why": "punctuation: the menu path ملف، تصدير read as a list after أمر; the Arabic glossary writes a path with >"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "بعد ذلك يحاول التشغيل قراءة المقطع مرة أخرى",
+     "after": "بعد ذلك، يحاول “تشغيل” نطق هذا النص مرة أخرى.",
+     "why": "meaning: المقطع is the glossary word for Track, and Play here is the button, not playback; a hint also ends with a period"
+    },
+    {
+     "key": "All Time",
+     "english": "All Time",
+     "before": "كل الأوقات",
+     "after": "الإجمالي",
+     "why": "meaning: كل الأوقات is at all times; beside the tiles Today and This Week, the total listening time is الإجمالي"
+    },
+    {
+     "key": "Available only while this feed's articles go on to another article when one ends",
+     "english": "Available only while this feed's articles go on to another article when one ends",
+     "before": "متاح فقط عندما تنتقل مقالات هذا الموجز إلى مقالة أخرى عند انتهاء إحداها",
+     "after": "متاح فقط عندما تنتقل مقالات هذا الموجز إلى مقالة أخرى عند انتهاء إحداها.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "Available only while this feed's episodes go on to another episode when one ends",
+     "english": "Available only while this feed's episodes go on to another episode when one ends",
+     "before": "متاح فقط عندما تنتقل حلقات هذا الموجز إلى حلقة أخرى عند انتهاء إحداها",
+     "after": "متاح فقط عندما تنتقل حلقات هذا الموجز إلى حلقة أخرى عند انتهاء إحداها.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "Available only while this feed's items go on to another item when one ends",
+     "english": "Available only while this feed's items go on to another item when one ends",
+     "before": "متاح فقط عندما تنتقل عناصر هذا الموجز إلى عنصر آخر عند انتهاء أحدها",
+     "after": "متاح فقط عندما تنتقل عناصر هذا الموجز إلى عنصر آخر عند انتهاء أحدها.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "Available only while this folder's books go on to another book when one ends",
+     "english": "Available only while this folder's books go on to another book when one ends",
+     "before": "متاح فقط عندما تنتقل كتب هذا المجلد إلى كتاب آخر عند انتهاء أحدها",
+     "after": "متاح فقط عندما تنتقل كتب هذا المجلد إلى كتاب آخر عند انتهاء أحدها.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "Bookmark %@, %@, Note: %@, added %@",
+     "english": "Bookmark %1$@, %2$@, Note: %3$@, added %4$@",
+     "before": "إشارة مرجعية %1$@، %2$@، ملاحظة: %3$@، أُضيفت %4$@",
+     "after": "إشارة مرجعية %1$@، %2$@، ملاحظة: %3$@، أُضيفت في %4$@",
+     "why": "grammar: a date after the verb needs في (added on October 9, 2026)"
+    },
+    {
+     "key": "Bookmark %@, %@, added %@",
+     "english": "Bookmark %1$@, %2$@, added %3$@",
+     "before": "إشارة مرجعية %1$@، %2$@، أُضيفت %3$@",
+     "after": "إشارة مرجعية %1$@، %2$@، أُضيفت في %3$@",
+     "why": "grammar: a date after the verb needs في (added on October 9, 2026)"
+    },
+    {
+     "key": "Bookmark %@, Note: %@, added %@",
+     "english": "Bookmark %1$@, Note: %2$@, added %3$@",
+     "before": "إشارة مرجعية %1$@، ملاحظة: %2$@، أُضيفت %3$@",
+     "after": "إشارة مرجعية %1$@، ملاحظة: %2$@، أُضيفت في %3$@",
+     "why": "grammar: a date after the verb needs في (added on October 9, 2026)"
+    },
+    {
+     "key": "Bookmark %@, added %@",
+     "english": "Bookmark %1$@, added %2$@",
+     "before": "إشارة مرجعية %1$@، أُضيفت %2$@",
+     "after": "إشارة مرجعية %1$@، أُضيفت في %2$@",
+     "why": "grammar: a date after the verb needs في (added on October 9, 2026)"
+    },
+    {
+     "key": "Books Finished All Time",
+     "english": "Books Finished All Time",
+     "before": "الكتب المنتهية في كل الأوقات",
+     "after": "الكتب المنتهية إجمالًا",
+     "why": "meaning: في كل الأوقات is at all times; the tile counts the books ever finished, إجمالًا as its VoiceOver label says"
+    },
+    {
+     "key": "Changes the speed in steps of %lld words per minute.",
+     "english": {
+      "one": "Changes the speed in steps of %lld word per minute.",
+      "other": "Changes the speed in steps of %lld words per minute."
+     },
+     "before": {
+      "few": "يغيّر السرعة بخطوات مقدارها %lld كلمات في الدقيقة.",
+      "many": "يغيّر السرعة بخطوات مقدارها %lld كلمة في الدقيقة.",
+      "one": "يغيّر السرعة بخطوات مقدارها %lld كلمة في الدقيقة.",
+      "other": "يغيّر السرعة بخطوات مقدارها %lld كلمة في الدقيقة.",
+      "two": "يغيّر السرعة بخطوات مقدارها %lld كلمتين في الدقيقة.",
+      "zero": "يغيّر السرعة بخطوات مقدارها %lld كلمات في الدقيقة."
+     },
+     "after": {
+      "zero": "يغيّر السرعة بخطوات مقدارها %lld كلمات في الدقيقة.",
+      "one": "يغيّر السرعة بخطوات مقدارها %lld كلمة في الدقيقة.",
+      "two": "يغيّر السرعة بخطوات مقدارها %lld كلمتان في الدقيقة.",
+      "few": "يغيّر السرعة بخطوات مقدارها %lld كلمات في الدقيقة.",
+      "many": "يغيّر السرعة بخطوات مقدارها %lld كلمة في الدقيقة.",
+      "other": "يغيّر السرعة بخطوات مقدارها %lld كلمة في الدقيقة."
+     },
+     "why": "grammar: after مقدارها the dual is the predicate, so nominative كلمتان, not كلمتين"
+    },
+    {
+     "key": "Choose separate forward and backward navigation units for this book",
+     "english": "Choose separate forward and backward navigation units for this book",
+     "before": "يتيح اختيار وحدتي تنقل منفصلتين للأمام وللخلف لهذا الكتاب",
+     "after": "يتيح اختيار وحدتي تنقل منفصلتين للأمام وللخلف لهذا الكتاب.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "يختار الوحدة التي يتنقل بها التشغيل وأزرار التخطي.",
+     "after": "يختار الوحدة التي يتنقل بها زر التشغيل وأزرار التخطي.",
+     "why": "meaning: Play is the button beside the skip buttons, not التشغيل (playback)"
+    },
+    {
+     "key": "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes.",
+     "english": "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes.",
+     "before": "يختار المكان الذي يُفتح فيه الكتاب التالي: في هذه النافذة أو في نافذة جديدة. يظهر الكتاب المفتوح في نافذة أخرى، وعند اختيار %@ تُغلق هذه النافذة.",
+     "after": "يختار المكان الذي يُفتح فيه الكتاب التالي: في هذه النافذة أو في نافذة جديدة. يظهر الكتاب المفتوح في نافذة أخرى، وعند اختيار “%@” تُغلق هذه النافذة.",
+     "why": "meaning: the choice This Window unquoted read as when choosing this window, this window closes; quoted, it is the option"
+    },
+    {
+     "key": "Close the headings screen and return to the book",
+     "english": "Close the headings screen and return to the book",
+     "before": "يغلق ورقة العناوين الرئيسية ويعود إلى الكتاب",
+     "after": "يغلق ورقة العناوين الرئيسية ويعود إلى الكتاب.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "Contraction",
+     "english": "Contraction",
+     "before": "الاختصار",
+     "after": "درجة الاختصار",
+     "why": "meaning: الاختصار alone is the app word for a keyboard shortcut; the pop-up sets how far braille contracts words"
+    },
+    {
+     "key": "Edited",
+     "english": "Edited",
+     "before": "حُرّر",
+     "after": "معدَّل",
+     "why": "natural: a status word after the keys reads as the adjective معدَّل (modified), the pair of افتراضي; the bare past verb حُرّر reads as a sentence fragment, and without marks as حرَّر"
+    },
+    {
+     "key": "Go back to where you were before browsing headings or bookmarks",
+     "english": "Go back to where you were before browsing headings or bookmarks",
+     "before": "يعود إلى المكان الذي كنت فيه قبل تصفح العناوين الرئيسية أو الإشارات المرجعية",
+     "after": "يعود إلى المكان الذي كنت فيه قبل تصفح العناوين الرئيسية أو الإشارات المرجعية.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII.",
+     "english": "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII.",
+     "before": "كيف يكتب ملف BRF أو BRL كل خلية برايل. تستخدم معظم الملفات North American Braille ASCII.",
+     "after": "يحدد طريقة كتابة ملف BRF أو BRL لكل خلية برايل. تستخدم معظم الملفات North American Braille ASCII.",
+     "why": "voiceover: كيف يكتب read as a question with no question mark; a hint starts with a verb in the third person"
+    },
+    {
+     "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "before": "كيف يكتب ملف BRF كل خلية برايل. تقرأ معظم شاشات برايل وطابعاتها North American Braille ASCII؛ وتقرأ الأجهزة المضبوطة للألمانية Eurobraille. للمشاركة مع قارئ في مكان آخر، صدّر ملف PEF.",
+     "after": "يحدد طريقة كتابة ملف BRF لكل خلية برايل. تقرأ معظم شاشات برايل وطابعاتها North American Braille ASCII؛ وتقرأ الأجهزة المضبوطة للألمانية Eurobraille. للمشاركة مع قارئ في مكان آخر، صدّر ملف PEF.",
+     "why": "voiceover: كيف يكتب read as a question with no question mark; a hint starts with a verb in the third person"
+    },
+    {
+     "key": "How the voice reads a symbol written several times in a row",
+     "english": "How the voice reads a symbol written several times in a row",
+     "before": "كيف يقرأ الصوت رمزًا مكتوبًا عدة مرات متتالية",
+     "after": "يحدد طريقة قراءة الصوت لرمز مكتوب عدة مرات متتالية.",
+     "why": "voiceover: كيف يقرأ read as a question; a hint starts with a verb in the third person and ends with a period"
+    },
+    {
+     "key": "Its headings are real headings, and the contents list links them.",
+     "english": "Its headings are real headings, and the contents list links them.",
+     "before": "عناوينه الرئيسية عناوين حقيقية، وتربطها قائمة المحتويات.",
+     "after": "عناوينه الرئيسية عناوين حقيقية، وفي قائمة المحتويات رابط لكل منها.",
+     "why": "natural: وتربطها قائمة المحتويات says the list ties the headings together; it holds a link to each"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "few": "تم الاحتفاظ بكل %lld فصول منطوقة حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منها، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "many": "تم الاحتفاظ بكل %lld فصلًا منطوقًا حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منه، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "one": "تم الاحتفاظ بكل %lld فصل منطوق حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منه، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "other": "تم الاحتفاظ بكل %lld فصل منطوق حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منه، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "two": "تم الاحتفاظ بكل %lld فصلين منطوقين حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منهما، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "zero": "تم الاحتفاظ بكل %lld فصول منطوقة حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منها، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما."
+     },
+     "after": {
+      "zero": "تم الاحتفاظ بكل %lld فصول منطوقة حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منها، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "one": "تم الاحتفاظ بكل %lld فصل منطوق حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منه، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "two": "تم الاحتفاظ بكل %lld فصلين منطوقين حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منهما، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "few": "تم الاحتفاظ بكل %lld فصول منطوقة حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منها، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "many": "تم الاحتفاظ بكل %lld فصلًا منطوقًا حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منها، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما.",
+      "other": "تم الاحتفاظ بكل %lld فصل منطوق حتى يُنهى TextMouth، أو يبدأ تصدير صوتي منطوق مختلف، أو يتغير صوت الكتاب أو نصه أو بدائله أو وقفاته. لإنشاء الملف الصوتي منها، صدّر النطاق نفسه بالسرعة وطبقة الصوت نفسيهما."
+     },
+     "why": "grammar: the many and other forms keep several chapters, so from them is منها, as the few form has it"
+    },
+    {
+     "key": "Make Double Press",
+     "english": "Make Double Press",
+     "before": "جعلها ضغطة مزدوجة",
+     "after": "تحويل إلى ضغطة مزدوجة",
+     "why": "natural: جعلها had a pronoun with nothing to refer to; a menu item names the change, convert to a double press"
+    },
+    {
+     "key": "Make Single Press",
+     "english": "Make Single Press",
+     "before": "جعلها ضغطة واحدة",
+     "after": "تحويل إلى ضغطة واحدة",
+     "why": "natural: جعلها had a pronoun with nothing to refer to; a menu item names the change, convert to a single press"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "لم تُحرَّر عناصر التحكم في الوسائط: هذا الكتاب لا يحتفظ بها.",
+     "after": "لم يتم التخلي عن عناصر التحكم في الوسائط: هذا الكتاب لا يحتفظ بها.",
+     "why": "meaning: تُحرَّر reads as edited (تحرير is Edit); the same verb as the command Release Media Controls, التخلي عن"
+    },
+    {
+     "key": "Media controls released",
+     "english": "Media controls released",
+     "before": "تم تحرير عناصر التحكم في الوسائط",
+     "after": "تم التخلي عن عناصر التحكم في الوسائط",
+     "why": "meaning: تحرير reads as Edit; the same verb as the command Release Media Controls, التخلي عن"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "لا توجد أصوات مثبّتة. أضف أصواتًا في الإعدادات، تسهيلات الاستخدام، القراءة والنطق.",
+     "after": "لا توجد أصوات مثبّتة. أضف أصواتًا في الإعدادات > تسهيلات الاستخدام > القراءة والنطق.",
+     "why": "punctuation: the path read as a list of commas; the Arabic glossary and the Mac message beside it write a path with >"
+    },
+    {
+     "key": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
+     "english": "Only a book that clearly shows English Braille, American Edition changes, when added. Book Information says the code was guessed and can choose another.",
+     "before": "لا يتغير عند الإضافة إلا الكتاب الذي يُظهر بوضوح English Braille, American Edition. تذكر معلومات الكتاب أن الرمز خُمّن ويمكنها اختيار رمز آخر.",
+     "after": "لا يتغير عند الإضافة إلا الكتاب الذي يُظهر بوضوح English Braille, American Edition. تذكر معلومات الكتاب أن الرمز خُمّن، ويمكنك فيها اختيار رمز آخر.",
+     "why": "natural: ويمكنها اختيار رمز آخر had the window choose the code; the listener chooses it there"
+    },
+    {
+     "key": "Overrides the style",
+     "english": "Overrides the style",
+     "before": "يتجاوز النمط",
+     "after": "يتجاوز النمط.",
+     "why": "punctuation: a hint is a sentence that ends with a period, as the other Arabic hints do"
+    },
+    {
+     "key": "Percent through the book",
+     "english": "Percent through the book",
+     "before": "النسبة المئوية داخل الكتاب",
+     "after": "النسبة المئوية من الكتاب",
+     "why": "natural: داخل الكتاب (inside the book) is a calque of through; Arabic says how far of the book, as %@ من الكتاب does"
+    },
+    {
+     "key": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "english": "Playback stopped: the audio stopped responding. Press Play to try again; if it stops again, quit and reopen TextMouth.",
+     "before": "توقف التشغيل: توقف الصوت عن الاستجابة. اضغط على تشغيل للمحاولة مرة أخرى، وإذا توقف مجددًا فأنهِ TextMouth وأعد فتحه.",
+     "after": "توقف التشغيل: توقف الصوت عن الاستجابة. اضغط على “تشغيل” للمحاولة مرة أخرى، وإذا توقف مجددًا فأنهِ TextMouth وأعد فتحه.",
+     "why": "punctuation: Play is a button name, quoted as the other Arabic messages quote one, so it is not read as the word playback"
+    },
+    {
+     "key": "Recording shortcut. Press a key with Command or Control.",
+     "english": "Recording shortcut. Press a key with Command or Control.",
+     "before": "تسجيل الاختصار. اضغط مفتاحًا مع Command أو Control.",
+     "after": "جارٍ تسجيل الاختصار. اضغط مفتاحًا مع Command أو Control.",
+     "why": "natural: the label of a key button waiting for a key says a state; تسجيل الاختصار alone reads as the command Record Shortcut"
+    },
+    {
+     "key": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "english": "Recording shortcut. Press a key, or press it twice for a double press.",
+     "before": "تسجيل الاختصار. اضغط مفتاحًا، أو اضغطه مرتين لضغطة مزدوجة.",
+     "after": "جارٍ تسجيل الاختصار. اضغط مفتاحًا، أو اضغطه مرتين لضغطة مزدوجة.",
+     "why": "natural: the label of a key button waiting for a key says a state; تسجيل الاختصار alone reads as the command Record Shortcut"
+    },
+    {
+     "key": "Release Media Controls",
+     "english": "Release Media Controls",
+     "before": "تحرير عناصر التحكم في الوسائط",
+     "after": "التخلي عن عناصر التحكم في الوسائط",
+     "why": "meaning: تحرير is the glossary word for Edit, so it read as Edit Media Controls; the command gives the media keys back to other apps"
+    },
+    {
+     "key": "Reset all shortcuts to defaults",
+     "english": "Reset all shortcuts to defaults",
+     "before": "إعادة ضبط كل الاختصارات إلى الافتراضية",
+     "after": "إعادة ضبط كل الاختصارات إلى وضعها الافتراضي",
+     "why": "natural: إلى الافتراضية, a bare feminine plural adjective, is a calque of to defaults"
+    },
+    {
+     "key": "Shortcuts reset to defaults.",
+     "english": "Shortcuts reset to defaults.",
+     "before": "أُعيد ضبط الاختصارات إلى الافتراضية.",
+     "after": "أُعيد ضبط الاختصارات إلى وضعها الافتراضي.",
+     "why": "natural: إلى الافتراضية, a bare feminine plural adjective, is a calque of to defaults"
+    },
+    {
+     "key": "Speech paused: the voice did not start. Press Play to try again.",
+     "english": "Speech paused: the voice did not start. Press Play to try again.",
+     "before": "توقف النطق مؤقتًا: لم يبدأ الصوت. اضغط على تشغيل للمحاولة مرة أخرى.",
+     "after": "توقف النطق مؤقتًا: لم يبدأ الصوت. اضغط على “تشغيل” للمحاولة مرة أخرى.",
+     "why": "punctuation: Play is a button name, quoted as the other Arabic messages quote one, so it is not read as the word playback"
+    },
+    {
+     "key": "Speech stopped: the speech engine refused this passage. Details are in the book's window.",
+     "english": "Speech stopped: the speech engine refused this passage. Details are in the book's window.",
+     "before": "توقف النطق: رفض محرك النطق هذا المقطع. التفاصيل في نافذة الكتاب.",
+     "after": "توقف النطق: رفض محرك النطق هذا الجزء من النص. التفاصيل في نافذة الكتاب.",
+     "why": "meaning: المقطع is the glossary word for Track; the engine refused a passage of the text"
+    },
+    {
+     "key": "Switch to a Library or book window, then choose Export again.",
+     "english": "Switch to a Library or book window, then choose Export again.",
+     "before": "انتقل إلى نافذة المكتبة أو الكتاب، ثم اختر تصدير مرة أخرى.",
+     "after": "انتقل إلى نافذة المكتبة أو الكتاب، ثم اختر “تصدير” مرة أخرى.",
+     "why": "punctuation: Export is a command name, quoted as in the other Arabic choose-the-command sentences"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while %@ played, because of a fault in macOS's audio. Your place was saved.",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while %3$@ played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل %3$@، بسبب عطل في صوت macOS. حُفظ موضعك.",
+     "after": "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ غيغابايت أثناء تشغيل %3$@، بسبب عطل في صوت macOS. حُفظ موضعك.",
+     "why": "term: the same memory fault says غيغابايت in the playback message; GB in Latin letters is spelled out by VoiceOver"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while a book played, because of a fault in macOS's audio. Your place was saved.",
+     "before": "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB أثناء تشغيل كتاب، بسبب عطل في صوت macOS. حُفظ موضعك.",
+     "after": "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ غيغابايت أثناء تشغيل كتاب، بسبب عطل في صوت macOS. حُفظ موضعك.",
+     "why": "term: the same memory fault says غيغابايت in the playback message; GB in Latin letters is spelled out by VoiceOver"
+    },
+    {
+     "key": "TextMouth quit on %@: its memory grew to %@ GB while nothing was playing. Your place was saved.",
+     "english": "TextMouth quit on %1$@: its memory grew to %2$@ GB while nothing was playing. Your place was saved.",
+     "before": "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ GB بينما لم يكن شيء قيد التشغيل. حُفظ موضعك.",
+     "after": "تم إنهاء TextMouth في %1$@: تضخمت ذاكرته إلى %2$@ غيغابايت بينما لم يكن شيء قيد التشغيل. حُفظ موضعك.",
+     "why": "term: the same memory fault says غيغابايت in the playback message; GB in Latin letters is spelled out by VoiceOver"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "يقرأ TextMouth ملفات BRF و BRL التي تضيفها من الآن فصاعدًا بهذه الأحرف، ويتعرّف على أنماط برايل Unicode من تلقاء نفسه. يبدأ مربع حوار التصدير ملف BRF بها. يحتفظ الكتاب بأحرف استيراده، ويمكن لمعلومات الكتاب تغييرها.",
+     "after": "يقرأ TextMouth ملفات BRF و BRL التي تضيفها من الآن فصاعدًا بهذه الأحرف، ويتعرّف على أنماط برايل Unicode من تلقاء نفسه. يبدأ مربع حوار التصدير ملف BRF بها. يحتفظ الكتاب بأحرف استيراده، ويمكنك تغييرها في معلومات الكتاب.",
+     "why": "natural: ويمكن لمعلومات الكتاب تغييرها had the window change them; the listener changes them there"
+    },
+    {
+     "key": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "english": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "before": "أوقف TextMouth %@ سابقًا لأنه استغرق وقتًا طويلًا، ولن يحاول مرة أخرى حتى يُغلق TextMouth ويُفتح من جديد.",
+     "after": "أوقف TextMouth %@ سابقًا لأن العملية استغرقت وقتًا طويلًا، ولن يحاول مرة أخرى حتى يُغلق TextMouth ويُفتح من جديد.",
+     "why": "grammar: لأنه could not agree with a feminine work name such as ترجمة برايل; the operation took too long reads right for any name"
+    },
+    {
+     "key": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "english": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "before": "العنوان الرئيسي الذي ينهي قسمه الصوت، مع عناوينه الفرعية، أو نهاية الكتاب.",
+     "after": "العنوان الرئيسي الذي ينتهي الصوت بنهاية قسمه، بما فيه من عناوين فرعية، أو نهاية الكتاب.",
+     "why": "meaning: ينهي قسمه الصوت reads either way round without vowel marks (the audio ends its section, or its section ends the audio); now unambiguous"
+    },
+    {
+     "key": "The passage as the book has it, characters %@ to %@ of chapter %@:",
+     "english": "The passage as the book has it, characters %1$@ to %2$@ of chapter %3$@:",
+     "before": "المقطع كما هو في الكتاب، من الحرف %1$@ إلى %2$@ من الفصل %3$@:",
+     "after": "النص كما هو في الكتاب، من الحرف %1$@ إلى %2$@ من الفصل %3$@:",
+     "why": "meaning: المقطع is the glossary word for Track; the report shows the passage of text, beside the text handed to the engine"
+    },
+    {
+     "key": "The playlist “%@” is too large to read.",
+     "english": "The playlist “%@” is too large to read.",
+     "before": "قائمة التشغيل “%@” كبيرة جدًا لا يمكن قراءتها.",
+     "after": "قائمة التشغيل “%@” أكبر من أن تُقرأ.",
+     "why": "grammar: كبيرة جدًا لا يمكن قراءتها ran two clauses together with no بحيث; أكبر من أن تُقرأ is the Arabic too-large-to idiom"
+    },
+    {
+     "key": "The recording as it was made, before any edits.",
+     "english": "The recording as it was made, before any edits.",
+     "before": "التسجيل كما صُنع، قبل أي تعديلات.",
+     "after": "التسجيل كما سُجّل، قبل أي تعديلات.",
+     "why": "natural: صُنع (was manufactured) is not said of a recording; كما سُجّل is as it was recorded"
+    },
+    {
+     "key": "The refused text began before this passage, at character %@.",
+     "english": "The refused text began before this passage, at character %@.",
+     "before": "بدأ النص المرفوض قبل هذا المقطع، عند الحرف %@.",
+     "after": "بدأ النص المرفوض قبل هذا الجزء، عند الحرف %@.",
+     "why": "meaning: المقطع is the glossary word for Track; the passage is a part of the text"
+    },
+    {
+     "key": "The refused text goes on past this passage, to character %@.",
+     "english": "The refused text goes on past this passage, to character %@.",
+     "before": "يستمر النص المرفوض بعد هذا المقطع، حتى الحرف %@.",
+     "after": "يستمر النص المرفوض بعد هذا الجزء، حتى الحرف %@.",
+     "why": "meaning: المقطع is the glossary word for Track; the passage is a part of the text"
+    },
+    {
+     "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "before": "رفض محرك النطق نطق النص هنا مرتين، لذا توقف النطق. يحاول التشغيل مرة أخرى من المكان نفسه.",
+     "after": "رفض محرك النطق نطق النص هنا مرتين، لذا توقف النطق. يحاول “تشغيل” مرة أخرى من المكان نفسه.",
+     "why": "meaning: Play is the button, not playback (التشغيل); quoted as the other Arabic messages quote it"
+    },
+    {
+     "key": "The voice changed its kind of audio partway through “%@”.",
+     "english": "The voice changed its kind of audio partway through “%@”.",
+     "before": "غيّر الصوت نوع صوته في منتصف “%@”.",
+     "after": "غيّر الصوت تنسيق إخراجه الصوتي في منتصف “%@”.",
+     "why": "meaning: نوع صوته reads as the type of its voice; the voice changed the format of the audio it puts out"
+    },
+    {
+     "key": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "english": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "before": "لم ينطق الصوت أي شيء في “%@”. تأكد من أنه ينطق لغة الكتاب.",
+     "after": "لم ينطق الصوت أي شيء في “%@”. تأكد من أنه يتحدث بلغة الكتاب.",
+     "why": "natural: a voice speaks a language with يتحدث بـ; ينطق لغة الكتاب is pronounces the language"
+    },
+    {
+     "key": "Time In",
+     "english": "Time In",
+     "before": "الوقت المنقضي",
+     "after": "وقت البدء",
+     "why": "meaning: الوقت المنقضي is elapsed time, as a player says it; the choice shows the time into the book at which each heading begins"
+    },
+    {
+     "key": "Time at %@",
+     "english": "Time at %@",
+     "before": "الوقت عند %@",
+     "after": "الوقت بسرعة %@",
+     "why": "natural: عند before a reading speed is a calque of at; Arabic says the time at a speed with بسرعة, as بالسرعة الحالية does"
+    },
+    {
+     "key": "Using global voice, speed, and pitch settings",
+     "english": "Using global voice, speed, and pitch settings",
+     "before": "استخدام إعدادات الصوت والسرعة وطبقة الصوت العامة",
+     "after": "تُستخدم إعدادات الصوت والسرعة وطبقة الصوت العامة",
+     "why": "natural: an announcement of what now happens; the bare masdar استخدام reads as a command, Use global settings"
+    },
+    {
+     "key": "When you save, the book updates and keeps your place as near as it can.",
+     "english": "When you save, the book updates and keeps your place as near as it can.",
+     "before": "عند الحفظ، يتحدّث الكتاب ويحافظ على موضعك بأقرب ما يمكن.",
+     "after": "عند الحفظ، يُحدَّث الكتاب ويحتفظ بموضعك قدر الإمكان.",
+     "why": "meaning: يتحدّث reads first as talks, a real ambiguity in a speech app; the passive يُحدَّث is is updated"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "هل يحمل السطر الأخير من كل صفحة رقم صفحة برايل.",
+     "after": "يحدد ما إذا كان السطر الأخير من كل صفحة يحمل رقم صفحة برايل.",
+     "why": "voiceover: هل … with no question mark read as a broken question; a hint starts with a verb in the third person"
+    },
+    {
+     "key": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "english": "Whether that code's braille is contracted, which writes common words and letter groups in fewer cells.",
+     "before": "هل برايل ذلك الرمز مختصر، أي يكتب الكلمات الشائعة ومجموعات الحروف بخلايا أقل.",
+     "after": "يحدد ما إذا كان برايل ذلك الرمز مختصرًا، أي يكتب الكلمات الشائعة ومجموعات الحروف بخلايا أقل.",
+     "why": "voiceover: هل … with no question mark read as a broken question; a hint starts with a verb in the third person"
+    },
+    {
+     "key": "Whether that code's braille is contracted.",
+     "english": "Whether that code's braille is contracted.",
+     "before": "هل برايل ذلك الرمز مختصر.",
+     "after": "يحدد ما إذا كان برايل ذلك الرمز مختصرًا.",
+     "why": "voiceover: هل … with no question mark read as a broken question; a hint starts with a verb in the third person"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "مع “%1$@”، يقول التشغيل لكتاب منتهٍ إنه منتهٍ؛ ومع “%2$@”، يبدأه من البداية مرة أخرى.",
+     "after": "عند اختيار “%1$@”، يُعلن “تشغيل” في كتاب منتهٍ أنه منتهٍ؛ وعند اختيار “%2$@”، يبدؤه من البداية مرة أخرى.",
+     "why": "meaning: يقول التشغيل لكتاب منتهٍ said playback speaks to a finished book; Play is the button, and مع “X” is a calque of with"
+    },
+    {
+     "key": "Your Mac's library isn't touched.",
+     "english": "Your Mac's library isn't touched.",
+     "before": "مكتبة Mac الخاص بك لا تتأثر.",
+     "after": "لا تتأثر مكتبتك على جهاز Mac.",
+     "why": "natural: مكتبة Mac الخاص بك is a word-for-word copy of Your Mac’s library"
+    }
+   ]
   }
  ]
 }
