@@ -12205,7 +12205,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@，位於 %2$@。"
+            "value" : "%1$@，涉及 %2$@。"
           }
         }
       }
@@ -492417,7 +492417,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 不允許發送通知。請在「系統設定」>「通知」>「TextMouth」中，開啟 TextMouth 的通知。"
+            "value" : "TextMouth 未獲允許發送通知。請在「系統設定」>「通知」>「TextMouth」中開啟。"
           }
         }
       }
@@ -494662,7 +494662,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth 已將 %lld 份重複書籍的新拷貝移到垃圾桶，因為在 TextMouth 關閉前，是否將它們保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
+                  "value" : "TextMouth 已將 %lld 份重複書籍的新副本移到垃圾桶，因為在 TextMouth 關閉前，是否將它們保留為重複項目的問題一直沒有得到回答。若要取回，請打開垃圾桶並選擇「放回原處」。"
                 }
               }
             }
@@ -501768,7 +501768,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這不是網址。請輸入訂閱源網址，或指名訂閱源的頁面網址。"
+            "value" : "這不是網址。請輸入訂閱源網址，或列出訂閱源的網頁網址。"
           }
         }
       }
@@ -502316,7 +502316,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "該頁面沒有指名任何訂閱源。"
+            "value" : "該頁面沒有列出任何訂閱源。"
           }
         }
       }
@@ -502780,7 +502780,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "該頁面指名了 %lld 個訂閱源。請選擇一個，然後訂閱。"
+                  "value" : "該頁面列出了 %lld 個訂閱源。請選擇一個，然後選擇「訂閱」。"
                 }
               }
             }
@@ -513895,7 +513895,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此文章會永久離開列表，其下載項目（若有）也會刪除。"
+            "value" : "此文章會從列表中永久移除，其下載項目（若有）也會刪除。"
           }
         }
       }
@@ -514032,7 +514032,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此文章會永久離開列表；它在你書庫中變成的書籍會保留。"
+            "value" : "此文章會從列表中永久移除；它在你書庫中轉成的書籍會保留。"
           }
         }
       }
@@ -524530,7 +524530,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "CUE 表單「%@」沒有指名其旁的任何音訊，因此未使用其標題。"
+            "value" : "CUE 表單「%@」沒有指向旁邊的任何音訊，因此未使用其標題。"
           }
         }
       }
@@ -527699,7 +527699,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此單集會永久離開列表，其下載項目（若有）也會刪除。"
+            "value" : "此單集會從列表中永久移除，其下載項目（若有）也會刪除。"
           }
         }
       }
@@ -527836,7 +527836,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此單集會永久離開列表；它在你書庫中變成的書籍會保留。"
+            "value" : "此單集會從列表中永久移除；它在你書庫中轉成的書籍會保留。"
           }
         }
       }
@@ -529268,7 +529268,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此訂閱源會連同其文章列表與設定一起離開你的書庫。"
+            "value" : "此訂閱源會連同其文章列表與設定，從你的書庫中移除。"
           }
         }
       }
@@ -529405,7 +529405,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此訂閱源會連同其單集列表與設定一起離開你的書庫。"
+            "value" : "此訂閱源會連同其單集列表與設定，從你的書庫中移除。"
           }
         }
       }
@@ -529542,7 +529542,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此訂閱源會連同其項目列表與設定一起離開你的書庫。"
+            "value" : "此訂閱源會連同其項目列表與設定，從你的書庫中移除。"
           }
         }
       }
@@ -549624,7 +549624,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "播放列表「%@」使用了它自己的 XML 實體，TextMouth 不讀取。"
+            "value" : "播放列表「%@」使用了自訂的 XML 實體，TextMouth 不支援。"
           }
         }
       }
@@ -571330,7 +571330,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此 XML 檔案不是 DTBook 書籍、Word 2003 XML 文件或 PEF 點字檔案，而這是 TextMouth 唯一讀取的 XML。"
+            "value" : "此 XML 檔案不是 DTBook 書籍、Word 2003 XML 文件或 PEF 點字檔案；TextMouth 只讀取這幾種 XML。"
           }
         }
       }
@@ -598970,7 +598970,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "輸入 Podcast 的標題或發布者，然後按下 Return 以搜尋 Apple 的目錄。"
+            "value" : "輸入 Podcast 的名稱或發布者，然後按下 Return 以搜尋 Apple 的目錄。"
           }
         }
       }
@@ -628808,7 +628808,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在清倒垃圾桶前，你都可以從垃圾桶復原它。"
+            "value" : "在清空垃圾桶前，你都可以從垃圾桶復原它。"
           }
         }
       }
@@ -653913,7 +653913,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其列沒有指名書庫所管理的套件"
+            "value" : "其列沒有指向書庫所管理的任何套件"
           }
         }
       }
@@ -654050,7 +654050,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "保留你的訂閱源下載位置供下次使用"
+            "value" : "保留訂閱源下載的進度，供下次繼續"
           }
         }
       }
@@ -658384,7 +658384,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "沒有任何已下載"
+            "value" : "沒有下載任何項目"
           }
         }
       }
@@ -664779,7 +664779,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "儲存對你的訂閱源訂閱項目所做的更改"
+            "value" : "儲存你對訂閱項目所做的更改"
           }
         }
       }
