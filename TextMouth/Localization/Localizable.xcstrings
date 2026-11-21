@@ -178228,7 +178228,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Standaardsnelheid: %lld woorden per minuut"
+                  "value" : "Standaardsnelheid: %lld woord per minuut"
                 }
               },
               "other" : {
@@ -346928,7 +346928,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Geen van de %lld geselecteerde boeken wordt op deze Mac bewaard."
+                  "value" : "Het geselecteerde boek wordt niet op deze Mac bewaard."
                 }
               },
               "other" : {
