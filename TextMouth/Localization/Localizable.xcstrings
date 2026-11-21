@@ -197459,6 +197459,12 @@
             "value" : "Réglages du flux %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הגדרות הערוץ של %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197703,6 +197709,12 @@
             "value" : "Flux"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ערוצים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197822,6 +197834,12 @@
             "value" : "Les flux sont toujours classés par titre."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ערוצים תמיד מוצגים לפי שם היצירה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -197939,6 +197957,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les flux sont classés par titre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ערוצים מוצגים לפי שם היצירה"
           }
         },
         "hi" : {
@@ -198548,6 +198572,12 @@
             "value" : "Taille du fichier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "גודל קובץ"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198780,6 +198810,12 @@
             "value" : "Taille du fichier : %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "גודל הקובץ %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -198897,6 +198933,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fichiers non lus"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קבצים שלא נקראו"
           }
         },
         "hi" : {
@@ -201285,6 +201327,12 @@
             "value" : "Premiers du tri"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הראשונים במיון"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201523,6 +201571,12 @@
             "value" : "Dossier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201646,6 +201700,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dossier %@ créé dans %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה %1$@ נוצרה ב-%2$@."
           }
         },
         "hi" : {
@@ -201773,6 +201833,12 @@
             "value" : "Dossier %@ créé. %@ : %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה %1$@ נוצרה. %2$@: %3$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -201890,6 +201956,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Réglages du dossier"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הגדרות תיקייה"
           }
         },
         "hi" : {
@@ -202612,6 +202684,12 @@
             "value" : "Réglages du dossier %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הגדרות התיקייה %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203094,6 +203172,12 @@
             "value" : "Le dossier « %@ » dans %@ est « %@ » dans %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה “%1$@” ב-%2$@ היא “%3$@” ב-%4$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203219,6 +203303,12 @@
             "value" : "Le dossier « %@ » n’est que dans %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה “%1$@” קיימת רק ב-%2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203336,6 +203426,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dossiers"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיות"
           }
         },
         "hi" : {
@@ -203457,6 +203553,12 @@
             "value" : "Dossiers et la liste de lecture n’ont aucune condition à copier."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין תנאים להעתקה בתיקיות וברשימת הקריאה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203576,6 +203678,12 @@
             "value" : "Dossiers et la liste de lecture listent toujours la même chose. Vous pouvez les déplacer, et masquer la liste de lecture."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיות ורשימת הקריאה מציגות תמיד את מה שהן מציגות. אפשר להזיז אותן ולהסתיר את רשימת הקריאה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -203693,6 +203801,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dossiers est toujours affichée : chaque dossier et chaque flux s’y ouvre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיות מוצגות תמיד: כל תיקייה וכל ערוץ נפתחים שם."
           }
         },
         "hi" : {
@@ -208332,6 +208446,12 @@
             "value" : "Donnez un nom à la vue."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תן שם לתצוגה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -208449,6 +208569,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rend à la vue le nom, les conditions, le tri et la limite que TextMouth lui avait donnés."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מחזיר לתצוגה את השם, התנאים, המיון והמגבלה ש-TextMouth נתן לה."
           }
         },
         "hi" : {
@@ -209819,6 +209945,12 @@
             "value" : "Aller à la vue"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עבור לתצוגה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -211062,6 +211194,12 @@
             "value" : "Remonter d’un niveau de dossier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עלה רמת תיקייה אחת"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212174,6 +212312,12 @@
             "value" : "Deviné d’après le braille du livre. S’il est mal lu, choisissez Unified English Braille dans Code braille."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נוחש מתוך הברייל של הספר. אם הוא נקרא לא נכון, בחר Unified English Braille בקוד ברייל."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212293,6 +212437,12 @@
             "value" : "A de nouveaux épisodes ou articles"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יש אפיזודות או מאמרים חדשים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -212410,6 +212560,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "N’en a aucun de nouveau"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין חדשים"
           }
         },
         "hi" : {
@@ -213979,6 +214135,12 @@
             "value" : "Masquée"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מוסתר"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -214096,6 +214258,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Masquer"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסתר"
           }
         },
         "hi" : {
@@ -218343,6 +218511,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Si le fichier n’est pas écrit en %@, TextMouth le refuse, et rien ne change."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אם הקובץ אינו כתוב ב-%@, TextMouth דוחה אותו, ושום דבר אינו משתנה."
           }
         },
         "hi" : {
@@ -222846,6 +223020,12 @@
             "value" : "Dans %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ב-%@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -222963,6 +223143,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dans %@, un flux"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ב-%@, ערוץ"
           }
         },
         "hi" : {
@@ -223441,6 +223627,12 @@
             "value" : "En cours"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בתהליך"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -223917,6 +224109,12 @@
             "value" : "Dans la liste de lecture, %lld sur %lld"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ברשימת הקריאה, %1$lld מתוך %2$lld"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -224034,6 +224232,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dans la liste de lecture"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ברשימת הקריאה"
           }
         },
         "hi" : {
@@ -224617,6 +224821,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sous-dossiers inclus"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כולל תיקיות משנה"
           }
         },
         "hi" : {
@@ -227685,6 +227895,12 @@
             "value" : "Expression régulière non valide : %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ביטוי רגולרי לא תקין: %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227804,6 +228020,12 @@
             "value" : "Est"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוא"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -227921,6 +228143,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "N’est pas"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אינו"
           }
         },
         "hi" : {
@@ -230537,6 +230765,12 @@
             "value" : "Elle a les mêmes livres, positions, signets, liste de lecture et dossiers."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יש בו אותם ספרים, מקומות, סימניות, רשימת קריאה ותיקיות."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231543,6 +231777,12 @@
             "value" : "Il contient le dossier du flux %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוא מכיל את תיקיית הערוץ %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -231660,6 +231900,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il contient les dossiers des flux %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוא מכיל את תיקיות הערוצים %@."
           }
         },
         "hi" : {
@@ -232162,6 +232408,12 @@
             "value" : "C’est le dossier du flux %@. Dans les deux cas, le flux et ses téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux lui en donne un autre ; Supprimer le flux… sur sa ligne le supprime."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "זו תיקיית הערוץ %@. בכל מקרה, הערוץ וההורדות שלו נשארים, ללא תיקייה, עד ש“פרטי הערוץ” נותנים לו תיקייה אחרת; “מחק ערוץ…” בשורה שלו מוחק אותו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -232279,6 +232531,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "C’est le dossier des flux %@. Dans les deux cas, les flux et leurs téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux en donne un autre à chacun ; Supprimer le flux… sur la ligne d’un flux le supprime."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אלה תיקיות הערוצים %@. בכל מקרה, הערוצים וההורדות שלהם נשארים, ללא תיקייה, עד ש“פרטי הערוץ” נותנים לכל אחד תיקייה אחרת; “מחק ערוץ…” בשורה של ערוץ מוחק אותו."
           }
         },
         "hi" : {
@@ -236075,6 +236333,12 @@
             "value" : "Ses conditions et son tri sont supprimés. Les livres, épisodes, articles et flux qu’elle liste restent dans la bibliothèque, et une fenêtre de bibliothèque qui l’affiche affiche une autre vue."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התנאים והמיון שלה נמחקים. הספרים, האפיזודות, המאמרים והערוצים שהיא מציגה נשארים בספרייה, וחלון ספרייה שמציג אותה יציג תצוגה אחרת."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237259,6 +237523,12 @@
             "value" : "Son nom, ses conditions, son tri et sa limite redeviennent ceux de TextMouth. Sa place dans la liste et le moment où elle est proposée restent inchangés."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השם, התנאים, המיון והמגבלה שלה חוזרים לאלה של TextMouth. מקומה ברשימה ומתי היא מוצעת נשארים כפי שהם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -237985,6 +238255,12 @@
             "value" : "Sa position, ses signets et sa transcription, s’il en a, sont conservés, et il peut être téléchargé de nouveau."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המקום, הסימניות והתמליל שלה, אם יש, נשמרים, ואפשר להוריד אותה שוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -238352,6 +238628,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Son texte est remplacé par la nouvelle lecture."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הטקסט שלו מוחלף בקריאה החדשה."
           }
         },
         "hi" : {
@@ -240716,6 +240998,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Conserver ce code"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השאר קוד זה"
           }
         },
         "hi" : {
@@ -243090,6 +243378,12 @@
             "value" : "Livre Kindle (KFX)"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספר Kindle (KFX)"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -243207,6 +243501,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Livre Kindle (MOBI)"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספר Kindle (MOBI)"
           }
         },
         "hi" : {
@@ -243915,6 +244215,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dernière ouverture"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נפתח לאחרונה"
           }
         },
         "hi" : {
@@ -244635,6 +244941,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dernière ouverture : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נפתח לאחרונה: %@"
           }
         },
         "hi" : {
@@ -245464,6 +245776,12 @@
             "value" : "%@ n’a pas été déplacé : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ נשאר במקומו: אפיזודות ומאמרים נשארים בערוצים שלהם; הפקודה %2$@ הופכת אחד מהם לספר בספרייה שלך."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -245587,6 +245905,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ n’ont pas été déplacés : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ נשארו במקומם: אפיזודות ומאמרים נשארים בערוצים שלהם; הפקודה %2$@ הופכת אחד מהם לספר בספרייה שלך."
           }
         },
         "hi" : {
@@ -246975,6 +247299,12 @@
             "value" : "Bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -247586,6 +247916,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Racine de la bibliothèque"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שורש הספרייה"
           }
         },
         "hi" : {
@@ -248332,6 +248668,12 @@
             "value" : "Vue de la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תצוגת הספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248564,6 +248906,12 @@
             "value" : "Bibliothèque : %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספרייה: %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -248687,6 +249035,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Bibliothèque : %@ (%@)"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספרייה: %1$@ (%2$@)"
           }
         },
         "hi" : {
@@ -249258,6 +249612,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Écoute"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "האזנה"
           }
         },
         "hi" : {
@@ -250064,6 +250424,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג התאמה אחת ב-%2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג %lld התאמות ב-%@"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג %lld התאמות ב-%@"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -250466,6 +250850,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Affichage de %lld sur %@ correspondances : affinez la recherche pour voir le reste"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג %lld מתוך %@ התאמות: צמצם את החיפוש כדי לראות את השאר"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג %lld מתוך %@ התאמות: צמצם את החיפוש כדי לראות את השאר"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג %lld מתוך %@ התאמות: צמצם את החיפוש כדי לראות את השאר"
                 }
               }
             }
@@ -250878,6 +251286,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג את %lld ההתאמות הראשונות מתוך %@ ב-%@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג את %lld ההתאמות הראשונות מתוך %@ ב-%@"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מציג את %lld ההתאמות הראשונות מתוך %@ ב-%@"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -251171,6 +251603,12 @@
             "value" : "Liste"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מציג"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251290,6 +251728,12 @@
             "value" : "Liste %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מציג %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -251407,6 +251851,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Liste %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מציג %@."
           }
         },
         "hi" : {
@@ -251532,6 +251982,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Liste %@ : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מציג %1$@: %2$@"
           }
         },
         "hi" : {
@@ -253350,6 +253806,12 @@
             "value" : "Ne liste rien pour le moment."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מה להציג כרגע."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254283,6 +254745,12 @@
             "value" : "Liste ici jusqu’à 500 correspondances de ce livre."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מציג עד 500 מההתאמות של הספר הזה כאן"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -254858,6 +255326,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Emplacement"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיקום"
           }
         },
         "hi" : {
@@ -256413,6 +256887,12 @@
             "value" : "Vue %@ créée, %lld sur %lld."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נוצר: %1$@, %2$lld מתוך %3$lld."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257127,6 +257607,12 @@
             "value" : "Crée votre propre vue à partir des conditions que vous choisissez."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יוצר תצוגה משלך מהתנאים שתבחר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257363,6 +257849,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Crée votre propre vue avec ces conditions et ce tri."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יוצר תצוגה משלך עם התנאים והמיון האלה."
           }
         },
         "hi" : {
@@ -257716,6 +258208,12 @@
             "value" : "Ordre manuel"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סדר ידני"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257833,6 +258331,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’ordre manuel n’a pas de sens croissant ou décroissant."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לסדר ידני אין כיוון"
           }
         },
         "hi" : {
@@ -262120,6 +262624,12 @@
             "value" : "Correspondance"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התאמה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -262237,6 +262747,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Respecter la casse"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התאם רישיות"
           }
         },
         "hi" : {
@@ -262606,6 +263122,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Correspondances"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התאמות"
           }
         },
         "hi" : {
@@ -265925,6 +266447,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "יותר מהתאמה אחת ב-%2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "יותר מ-%lld התאמות ב-%@"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "יותר מ-%lld התאמות ב-%@"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -266218,6 +266764,12 @@
             "value" : "Maximum de lignes affichées"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מרב השורות המוצגות"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266337,6 +266889,12 @@
             "value" : "Déplacer"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266454,6 +267012,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacer « %@ »"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר את “%@”"
           }
         },
         "hi" : {
@@ -266694,6 +267258,12 @@
             "value" : "Descendre %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר את %@ למטה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -266811,6 +267381,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Monter %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר את %@ למעלה"
           }
         },
         "hi" : {
@@ -266932,6 +267508,12 @@
             "value" : "Placer %@ dans la corbeille"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר %@ לאשפה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267049,6 +267631,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Placer %@ dans la corbeille"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר %@ לאשפה"
           }
         },
         "hi" : {
@@ -267691,6 +268279,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר ספר אחד"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר %lld ספרים"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר %lld ספרים"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -268093,6 +268705,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Déplacer %lld livres vers un dossier…"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר ספר אחד לתיקייה..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר %lld ספרים לתיקייה..."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר %lld ספרים לתיקייה..."
                 }
               }
             }
@@ -269319,6 +269955,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר ספר אחד לתיקייה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר %lld ספרים לתיקייה"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "העבר %lld ספרים לתיקייה"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -269838,6 +270498,12 @@
             "value" : "Déplacer le contenu et supprimer le dossier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר את התכנים ומחק את התיקייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269955,6 +270621,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacer le contenu hors du dossier"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוצא את התכנים"
           }
         },
         "hi" : {
@@ -270076,6 +270748,12 @@
             "value" : "Déplacer le contenu de « %@ »"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר את התכנים של “%@”"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270193,6 +270871,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacer le contenu : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העברת תכנים: %@"
           }
         },
         "hi" : {
@@ -270314,6 +270998,12 @@
             "value" : "Descendre"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הזז למטה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270433,6 +271123,12 @@
             "value" : "Déplacer le dossier…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר תיקייה..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270550,6 +271246,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacer le dossier : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העברת תיקייה: %@"
           }
         },
         "hi" : {
@@ -271040,6 +271742,12 @@
             "value" : "Monter"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הזז למעלה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271282,6 +271990,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacer le contenu vers"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר תכנים אל"
           }
         },
         "hi" : {
@@ -271754,6 +272468,12 @@
             "value" : "Déplacer vers un dossier…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר לתיקייה..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271984,6 +272704,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Placer dans la corbeille"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העבר לאשפה"
           }
         },
         "hi" : {
@@ -272355,6 +273081,12 @@
             "value" : "%@ déplacé au-dessus de %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ הועבר מעל %2$@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272478,6 +273210,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ déplacé sous %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ הועבר מתחת ל-%2$@"
           }
         },
         "hi" : {
@@ -272722,6 +273460,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Placé dans la corbeille : %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצעה העברה לאשפה של %@."
           }
         },
         "hi" : {
@@ -274070,6 +274814,12 @@
             "value" : "Déplacé à %@, %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצע מעבר אל %1$@, %2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274187,6 +274937,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacé à %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצע מעבר אל %@."
           }
         },
         "hi" : {
@@ -274308,6 +275064,12 @@
             "value" : "Déplacé à la correspondance, %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצע מעבר להתאמה, %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274425,6 +275187,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacé à la correspondance."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצע מעבר להתאמה."
           }
         },
         "hi" : {
@@ -275803,6 +276571,12 @@
             "value" : "Fait descendre la vue d’une place."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מזיז אותה מקום אחד למטה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275920,6 +276694,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Fait monter la vue d’une place."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מזיז אותה מקום אחד למעלה"
           }
         },
         "hi" : {
@@ -279613,6 +280393,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מעביר ספר אחד..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מעביר %lld ספרים..."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מעביר %lld ספרים..."
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -280281,6 +281085,12 @@
             "value" : "Déplacement du contenu du dossier…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מעביר את תכני התיקייה..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280398,6 +281208,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Déplacement du dossier…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מעביר את התיקייה..."
           }
         },
         "hi" : {
@@ -281507,6 +282323,12 @@
             "value" : "Des noms qui ne diffèrent que par les majuscules ou le codage des accents désignent le même dossier sur ce disque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שמות שנבדלים רק ברישיות או בקידוד של סימני הטעמה מתייחסים לאותה תיקייה בדיסק הזה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281739,6 +282561,12 @@
             "value" : "Aller à %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עבור אל %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281856,6 +282684,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aller à la racine de la bibliothèque"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עבור אל שורש הספרייה"
           }
         },
         "hi" : {
@@ -282917,6 +283751,12 @@
             "value" : "Aucune n’a de positions plus récentes ni de livres que l’autre n’a pas, mais elles diffèrent par d’autres points."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לאף אחד מהם אין מקומות חדשים יותר או ספרים שחסרים בשני, אבל הם נבדלים בדרכים אחרות."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283034,6 +283874,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aucune n’est plus récente : chacune a des changements que l’autre n’a pas."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אף אחד מהם אינו חדש יותר: לכל אחד יש שינויים שחסרים בשני."
           }
         },
         "hi" : {
@@ -283619,6 +284465,12 @@
             "value" : "Nouveau livre à partir d’un texte"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספר חדש מטקסט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283976,6 +284828,12 @@
             "value" : "Nouveau dossier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקייה חדשה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284093,6 +284951,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nouveau dossier annulé."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יצירת תיקייה חדשה בוטלה."
           }
         },
         "hi" : {
@@ -284220,6 +285084,12 @@
             "value" : "Nouveau dossier annulé. %@ : %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יצירת תיקייה חדשה בוטלה. %1$@: %2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284337,6 +285207,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nouveau dossier…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקייה חדשה..."
           }
         },
         "hi" : {
@@ -284916,6 +285792,12 @@
             "value" : "Nouvelle vue"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תצוגה חדשה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285033,6 +285915,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nouvelle vue…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תצוגה חדשה…"
           }
         },
         "hi" : {
@@ -285392,6 +286280,12 @@
             "value" : "Nom du nouveau dossier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שם התיקייה החדשה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285741,6 +286635,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Nouveau dossier parent"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיית האב החדשה"
           }
         },
         "hi" : {
@@ -287807,6 +288707,12 @@
             "value" : "Aucune fenêtre de bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין חלון ספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288271,6 +289177,12 @@
             "value" : "Aucun livre de la bibliothèque n’a de texte à rechercher."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין בספרייה ספר עם טקסט לחיפוש."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -288501,6 +289413,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aucun livre n’est sélectionné. Sélectionnez le livre à déplacer, puis réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא נבחר ספר. בחר את הספר להעברה ונסה שוב."
           }
         },
         "hi" : {
@@ -289556,6 +290474,12 @@
             "value" : "Aucune condition : la vue liste tous les éléments des types choisis."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין תנאים: התצוגה מציגה כל פריט מהסוגים שנבחרו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289786,6 +290710,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aucune différence entre cette bibliothèque et la copie dans %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין הבדלים בין הספרייה הזו לעותק ב-%@."
           }
         },
         "hi" : {
@@ -291333,6 +292263,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aucune correspondance"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין התאמות"
           }
         },
         "hi" : {
@@ -294892,6 +295828,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Aucune position précédente où revenir."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מיקום קודם לחזור אליו."
           }
         },
         "hi" : {
@@ -300302,6 +301244,12 @@
             "value" : "Pas dans les derniers"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא בתוך"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301417,6 +302365,12 @@
             "value" : "Pas dans un dossier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא בתיקייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301534,6 +302488,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pas dans la liste de lecture"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ברשימת הקריאה"
           }
         },
         "hi" : {
@@ -301893,6 +302853,12 @@
             "value" : "Inconnu tant que le livre n’est pas téléchargé"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ידוע עד שהספר יורד"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302010,6 +302976,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Inconnu, car le fichier ne peut pas être lu"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ידוע, כי אי אפשר לקרוא את הקובץ"
           }
         },
         "hi" : {
@@ -302815,6 +303787,12 @@
             "value" : "Rien ne vérifie que ce choix est le bon. Si les chiffres et la ponctuation sonnent faux, choisissez-en un autre."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שום דבר לא בודק שזו הבחירה הנכונה. אם מספרים וסימני פיסוק נשמעים לא נכון, בחר אחר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302932,6 +303910,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rien n’a pu être comparé avec la copie dans %@, car un fichier nécessaire à la comparaison n’a pas pu être lu."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה להשוות דבר עם העותק ב-%@, כי אי אפשר היה לקרוא קובץ שההשוואה זקוקה לו."
           }
         },
         "hi" : {
@@ -303170,6 +304154,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rien n’est modifié."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "דבר לא משתנה."
           }
         },
         "hi" : {
@@ -303902,6 +304892,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rien ne correspond à cette vue pour le moment."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שום דבר לא מתאים לתצוגה הזו כרגע."
           }
         },
         "hi" : {
@@ -304824,6 +305820,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En cours de lecture"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נקרא כעת"
           }
         },
         "hi" : {
@@ -306078,6 +307080,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour chaque flux, ne liste que l’épisode ou l’article que vous avez ouvert en dernier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מבין האפיזודות והמאמרים של כל ערוץ, מציג רק את זה שנפתח אחרון."
           }
         },
         "hi" : {
@@ -307835,6 +308843,12 @@
             "value" : "Seulement le plus récent de chaque flux"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רק העדכני ביותר מכל ערוץ"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -308950,6 +309964,12 @@
             "value" : "Ouvrez d’abord un dossier pour voir ses réglages"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פתח תיקייה כדי לראות את ההגדרות שלה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309067,6 +310087,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ouvrir dans un éditeur"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פתח בעורך"
           }
         },
         "hi" : {
@@ -309305,6 +310331,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ouvert dans une fenêtre de lecteur"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פתוח בחלון קורא"
           }
         },
         "hi" : {
@@ -310556,6 +311588,12 @@
             "value" : "Texte OpenDocument"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט OpenDocument"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -310673,6 +311711,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ouverts en dernier"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נפתחו אחרונים"
           }
         },
         "hi" : {
@@ -311494,6 +312538,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ouvre un sélecteur de fichiers pour importer des livres dans tout format que TextMouth sait lire."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח בוחר קבצים כדי לייבא ספרים בכל פורמט ש-TextMouth קורא."
           }
         },
         "hi" : {
@@ -313120,6 +314170,12 @@
             "value" : "Ouvre le livre à cette correspondance."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח את הספר בהתאמה הזו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313237,6 +314293,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ouvre le livre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח את הספר."
           }
         },
         "hi" : {
@@ -313477,6 +314539,12 @@
             "value" : "Ouvre les réglages du flux : où vont ses téléchargements, ce qu’il liste et télécharge, et ce qui se passe à la fin d’un épisode."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח את הגדרות הערוץ: לאן יורדות ההורדות שלו, מה הוא מציג ומוריד, ומה קורה כשאפיזודה מסתיימת"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313715,6 +314783,12 @@
             "value" : "Ouvre les réglages du dossier : ce qu’il contient, et ce qui se passe à la fin d’un de ses livres."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח את הגדרות התיקייה: מה היא מכילה, ומה קורה כשאחד מספריה מסתיים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313834,6 +314908,12 @@
             "value" : "Ouvre le dossier."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח את התיקייה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313951,6 +315031,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ouvre le dernier livre que vous lisiez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח את הספר האחרון שקראת"
           }
         },
         "hi" : {
@@ -314518,6 +315604,12 @@
             "value" : "Ouvre le texte dans un éditeur externe."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פותח את הטקסט בעורך חיצוני"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314867,6 +315959,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ordre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סדר"
           }
         },
         "hi" : {
@@ -317584,6 +318682,12 @@
             "value" : "Dossier parent"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיית אב"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317701,6 +318805,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Dossier parent du nouveau dossier"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיית אב לתיקייה החדשה"
           }
         },
         "hi" : {
@@ -319038,6 +320148,12 @@
             "value" : "Coller depuis le presse-papiers"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הדבק מהלוח"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319155,6 +320271,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Collez ou saisissez plutôt le texte ici, ou réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הדבק או הקלד את הטקסט כאן במקום זאת, או נסה שוב."
           }
         },
         "hi" : {
@@ -322259,6 +323381,12 @@
             "value" : "Image"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תמונה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322703,6 +323831,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Texte brut"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט פשוט"
           }
         },
         "hi" : {
@@ -328268,6 +329402,12 @@
             "value" : "Mode d’affichage de la position"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מצב תצוגת מיקום"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328385,6 +329525,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Position dans %@ : diffère, et les deux ont été enregistrées en même temps."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיקום ב-%@: שונה, ושניהם נשמרו באותו זמן."
           }
         },
         "hi" : {
@@ -328510,6 +329656,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Position dans %@ : plus récente dans %@, %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיקום ב-%1$@: חדש יותר ב-%2$@, %3$@."
           }
         },
         "hi" : {
@@ -328867,6 +330019,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Préparation de %@ sur %@…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מכין %1$@ מתוך %2$@…"
           }
         },
         "hi" : {
@@ -336014,6 +337172,12 @@
             "value" : "Relire"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קרא שוב"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336371,6 +337535,12 @@
             "value" : "Relire « %@ » en %@ ?"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לקרוא את “%1$@” שוב כ-%2$@?"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336488,6 +337658,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Relire « %@ » automatiquement ?"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לקרוא את “%@” שוב אוטומטית?"
           }
         },
         "hi" : {
@@ -337150,6 +338326,12 @@
             "value" : "État de lecture"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מצב קריאה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337495,6 +338677,12 @@
             "value" : "Liste de lecture : %@ n’est que sur la liste de %@, à la place %@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רשימת קריאה: %1$@ נמצא רק ברשימה של %2$@, במקום %3$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337612,6 +338800,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Liste de lecture : l’ordre diffère."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רשימת קריאה: הסדר שונה."
           }
         },
         "hi" : {
@@ -337737,6 +338931,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Liste de lecture : « %@ » est %@ dans %@ et %@ dans %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רשימת קריאה: “%1$@” הוא %2$@ ב-%3$@ ו-%4$@ ב-%5$@."
           }
         },
         "hi" : {
@@ -339069,6 +340269,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Relecture du livre…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קורא את הספר שוב..."
           }
         },
         "hi" : {
@@ -345208,6 +346414,12 @@
             "value" : "Expression régulière"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ביטוי רגולרי"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345565,6 +346777,12 @@
             "value" : "Recharger depuis l’éditeur"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טען מחדש מהעורך"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345682,6 +346900,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Recharge le texte depuis le fichier de l’éditeur."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טוען מחדש את הטקסט מקובץ העורך"
           }
         },
         "hi" : {
@@ -346035,6 +347259,12 @@
             "value" : "Retirer %@ de la bibliothèque seulement"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר %@ מהספרייה בלבד"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346154,6 +347384,12 @@
             "value" : "Retirer %@ de la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר %@ מהספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -346271,6 +347507,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retirer %@ de la bibliothèque et conserver les fichiers"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר %@ מהספרייה ושמור את הקבצים"
           }
         },
         "hi" : {
@@ -346501,6 +347743,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Retirer %lld livres de la bibliothèque…"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הסר ספר אחד מהספרייה..."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הסר %lld ספרים מהספרייה..."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הסר %lld ספרים מהספרייה..."
                 }
               }
             }
@@ -347278,6 +348544,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "להסיר ספר אחד?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "להסיר %lld ספרים?"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "להסיר %lld ספרים?"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -347934,6 +349224,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retirer le livre ?"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "להסיר את הספר?"
           }
         },
         "hi" : {
@@ -349170,6 +350466,12 @@
             "value" : "Retirer la condition %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר תנאי %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349402,6 +350704,12 @@
             "value" : "Retirer de la bibliothèque seulement"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר מהספרייה בלבד"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -349519,6 +350827,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retirer de la bibliothèque…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר מהספרייה..."
           }
         },
         "hi" : {
@@ -350110,6 +351424,12 @@
             "value" : "Retirer…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הסר..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -350227,6 +351547,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Retiré de la bibliothèque : %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצעה הסרה של %@ מהספרייה."
           }
         },
         "hi" : {
@@ -351044,6 +352370,12 @@
             "value" : "Renommer le dossier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שנה שם תיקייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -351163,6 +352495,12 @@
             "value" : "Renommer le dossier…"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שנה שם תיקייה..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -351280,6 +352618,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Renommage du dossier…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "משנה את שם התיקייה..."
           }
         },
         "hi" : {
@@ -352567,6 +353911,12 @@
             "value" : "« %@ » remplacé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצעה החלפה של “%@”."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -352934,6 +354284,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Remplace le texte par celui du presse-papiers."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מחליף את הטקסט בטקסט שבלוח"
           }
         },
         "hi" : {
@@ -356779,6 +358135,12 @@
             "value" : "Restaurer par défaut"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שחזר ברירת מחדל"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356896,6 +358258,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Restaurer par défaut…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שחזר ברירת מחדל…"
           }
         },
         "hi" : {
@@ -357392,6 +358760,12 @@
             "value" : "Restaurer « %@ » par défaut ?"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לשחזר את “%@” לברירת המחדל?"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -357509,6 +358883,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Vue %@ restaurée."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצע שחזור של %@."
           }
         },
         "hi" : {
@@ -358213,6 +359593,12 @@
             "value" : "Résultats"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תוצאות"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358330,6 +359716,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Résultats copiés dans le presse-papiers."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התוצאות הועתקו ללוח."
           }
         },
         "hi" : {
@@ -360343,6 +361735,12 @@
             "value" : "Inverse l’ordre des livres."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הופך את סדר הספרים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -361595,6 +362993,12 @@
             "value" : "Texte enrichi"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט עשיר"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -361712,6 +363116,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Texte enrichi avec pièces jointes"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט עשיר עם קבצים מצורפים"
           }
         },
         "hi" : {
@@ -365907,6 +367317,12 @@
             "value" : "Enregistrez le fichier dans l’éditeur, puis choisissez de nouveau %@, ou choisissez %@ pour recommencer."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שמור את הקובץ בעורך ואז בחר שוב ב-%1$@, או בחר ב-%2$@ כדי להתחיל מחדש."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -366714,6 +368130,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Vue %@ enregistrée."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוצעה שמירה של %@."
           }
         },
         "hi" : {
@@ -369328,6 +370750,12 @@
             "value" : "Rechercher dans la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חפש בספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369560,6 +370988,12 @@
             "value" : "Résultats de recherche"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תוצאות חיפוש"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369677,6 +371111,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rechercher des livres"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חפש ספרים"
           }
         },
         "hi" : {
@@ -369915,6 +371355,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rechercher dans le livre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חיפוש בספר"
           }
         },
         "hi" : {
@@ -370274,6 +371720,12 @@
             "value" : "Progression de la recherche"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התקדמות החיפוש"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -370391,6 +371843,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Résultats de recherche"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תוצאות חיפוש"
           }
         },
         "hi" : {
@@ -370919,6 +372377,12 @@
             "value" : "Texte à rechercher"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט לחיפוש"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -371036,6 +372500,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Rechercher dans la bibliothèque"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חפש בספרייה"
           }
         },
         "hi" : {
@@ -371161,6 +372631,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Recherche dans %@ sur %@…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נחפשו %1$@ מתוך %2$@…"
           }
         },
         "hi" : {
@@ -371516,6 +372992,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Recherche dans %lld livres…"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מחפש בספר אחד…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מחפש ב-%lld ספרים…"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מחפש ב-%lld ספרים…"
                 }
               }
             }
@@ -371931,6 +373431,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Recherche…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מחפש…"
           }
         },
         "hi" : {
@@ -373082,6 +374588,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בחר את הספר היחיד"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בחר את כל %lld הספרים"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "בחר את כל %lld הספרים"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -373373,6 +374903,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sélectionner tous les livres"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בחר את כל הספרים"
           }
         },
         "hi" : {
@@ -374194,6 +375730,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sélectionné"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נבחר"
           }
         },
         "hi" : {
@@ -375634,6 +377176,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sélectionne ce livre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בוחר את הספר הזה."
           }
         },
         "hi" : {
@@ -377183,6 +378731,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Définit quand le menu Vue propose cette vue."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובע מתי התפריט הקופץ “תצוגה” מציע את התצוגה הזו"
           }
         },
         "hi" : {
@@ -379978,6 +381532,12 @@
             "value" : "Toujours afficher"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הצג תמיד"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -380912,6 +382472,12 @@
             "value" : "Afficher si applicable"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הצג כשרלוונטי"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -381140,6 +382706,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Afficher les %lld correspondances dans %@"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הצג את התאמה האחת ב-%2$@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הצג את כל %lld ההתאמות ב-%@"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הצג את כל %lld ההתאמות ב-%@"
                 }
               }
             }
@@ -381555,6 +383145,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Afficher au plus"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הצג לכל היותר"
           }
         },
         "hi" : {
@@ -382980,6 +384576,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הצג את %lld הראשונות מתוך %@ התאמות ב-%@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הצג את %lld הראשונות מתוך %@ התאמות ב-%@"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הצג את %lld הראשונות מתוך %@ התאמות ב-%@"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -383762,6 +385382,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מוצגות %lld ההתאמות הראשונות; צמצם את החיפוש"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מוצגות %lld ההתאמות הראשונות; צמצם את החיפוש"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מוצגות %lld ההתאמות הראשונות; צמצם את החיפוש"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -384281,6 +385925,12 @@
             "value" : "Affiche un dossier à la fois."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מציג תיקייה אחת בכל פעם"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -384511,6 +386161,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Affiche les livres dans l’ordre que vous définissez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מציג את הספרים בסדר שקבעת"
           }
         },
         "hi" : {
@@ -389952,6 +391608,12 @@
             "value" : "Certains détails apparaissent une fois le livre téléchargé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פרטים מסוימים מופיעים לאחר שהספר יורד."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -390075,6 +391737,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Certains fichiers de « %@ » ne sont que dans le cloud, et le remplacer maintenant les laisserait de côté. Téléchargez le livre, puis choisissez de nouveau %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חלק מהקבצים של “%1$@” נמצאים רק בענן, וההחלפה עכשיו תשאיר אותם מאחור. הורד את הספר ואז בחר שוב ב-%2$@."
           }
         },
         "hi" : {
@@ -390321,6 +391989,12 @@
             "value" : "Tri"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיון"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -390438,6 +392112,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tri croissant"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיין בסדר עולה"
           }
         },
         "hi" : {
@@ -390559,6 +392239,12 @@
             "value" : "Trier par"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיין לפי"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -390676,6 +392362,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Tri décroissant"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיין בסדר יורד"
           }
         },
         "hi" : {
@@ -390902,6 +392594,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Trier les flux par titre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיין ערוצים לפי שם היצירה"
           }
         },
         "hi" : {
@@ -396812,6 +398510,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ההשוואה עדיין נמשכת: שנייה אחת עד כה. לחץ על Escape כדי לעצור."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ההשוואה עדיין נמשכת: %lld שניות עד כה. לחץ על Escape כדי לעצור."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ההשוואה עדיין נמשכת: %lld שניות עד כה. לחץ על Escape כדי לעצור."
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -397906,6 +399628,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Arrêter la comparaison"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפסק השוואה"
           }
         },
         "hi" : {
@@ -399918,6 +401646,12 @@
             "value" : "Arrêt après %@ sur %@ :"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נעצר לאחר %1$@ מתוך %2$@:"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -400642,6 +402376,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Arrête la comparaison. Aucune des copies n’a été modifiée."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מפסיק את ההשוואה. דבר באף אחד מהעותקים לא שונה."
           }
         },
         "hi" : {
@@ -401370,6 +403110,12 @@
             "value" : "Cesse d’indiquer que le code a été deviné. Le livre n’est pas relu."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מפסיק לומר שהקוד נוחש. הספר אינו נקרא שוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -401939,6 +403685,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Arrête la recherche en gardant les correspondances trouvées jusqu’ici."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "עוצר את החיפוש ושומר את ההתאמות שנמצאו עד כה"
           }
         },
         "hi" : {
@@ -402879,6 +404631,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Sous-dossiers"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תיקיות משנה"
           }
         },
         "hi" : {
@@ -404375,6 +406133,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Abonnement"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הרשמה"
           }
         },
         "hi" : {
@@ -407405,6 +409169,12 @@
             "value" : "Encodage du texte"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קידוד טקסט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -407952,6 +409722,12 @@
             "value" : "Contenu du texte"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תוכן הטקסט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -408069,6 +409845,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Encodage du texte : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קידוד טקסט: %@"
           }
         },
         "hi" : {
@@ -410481,6 +412263,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Texte à trouver dans chaque livre"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "טקסט לחיפוש בכל ספר"
           }
         },
         "hi" : {
