@@ -1177,6 +1177,479 @@
      "why": "natural: masih bekerja is a person at work; the app says masih memproses, as its other busy lines do"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "\"%@\" is not a number.",
+     "english": "\"%@\" is not a number.",
+     "before": "\"%@\" bukan angka.",
+     "after": "“%@” bukan angka.",
+     "why": "punctuation: straight quotes; the language uses “…” as the rest of the catalog does"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ memiliki pintasan default, %2$@",
+     "after": "%1$@ memakai pintasan default tindakan ini, %2$@",
+     "why": "meaning: said in the row of the action that lost its key, the text read as the holder's own default; now this action's default"
+    },
+    {
+     "key": "%lld books finished all time",
+     "english": {
+      "one": "%lld book finished all time",
+      "other": "%lld books finished all time"
+     },
+     "before": {
+      "other": "%lld buku selesai sepanjang waktu"
+     },
+     "after": {
+      "other": "%lld buku selesai sepanjang masa"
+     },
+     "why": "meaning: sepanjang waktu means all the time (constantly); the all-time count is sepanjang masa"
+    },
+    {
+     "key": "About",
+     "english": "About",
+     "before": "Tentang",
+     "after": "Mengenai",
+     "why": "term: Apple says Mengenai for About (iPhone Settings, General, and the app menu About item)"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Menambahkan tombol Ekspor ke bilah alat setiap pembaca. File, Ekspor berfungsi dengan kedua cara.",
+     "after": "Menambahkan tombol Ekspor ke bar alat setiap pembaca. File, Ekspor tetap berfungsi dalam kedua kasus.",
+     "why": "term: Apple says bar alat for toolbar (bilah alat is not Apple word); dengan kedua cara copied either way"
+    },
+    {
+     "key": "All Time",
+     "english": "All Time",
+     "before": "Sepanjang Waktu",
+     "after": "Sepanjang Masa",
+     "why": "meaning: sepanjang waktu means all the time (constantly); the all-time tile is sepanjang masa"
+    },
+    {
+     "key": "Begin",
+     "english": "Begin",
+     "before": "Awal",
+     "after": "Mulai",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Begin = Mulai)"
+    },
+    {
+     "key": "Books Finished All Time",
+     "english": "Books Finished All Time",
+     "before": "Buku Selesai Sepanjang Waktu",
+     "after": "Buku Selesai Sepanjang Masa",
+     "why": "meaning: sepanjang waktu means all the time (constantly); the all-time tile is sepanjang masa"
+    },
+    {
+     "key": "Break",
+     "english": "Break",
+     "before": "Break",
+     "after": "Pemisah",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Break = Pemisah); was left in English"
+    },
+    {
+     "key": "Find",
+     "english": "Find",
+     "before": "Cari",
+     "after": "Temukan",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Find = Temukan), as Apple Edit menu Find also says"
+    },
+    {
+     "key": "Help",
+     "english": "Help",
+     "before": "Help",
+     "after": "Bantuan",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Help = Bantuan); was left in English"
+    },
+    {
+     "key": "Hide Others",
+     "english": "Hide Others",
+     "before": "Sembunyikan yang Lain",
+     "after": "Sembunyikan Lainnya",
+     "why": "term: Apple app menu says Sembunyikan Lainnya, and the sentence names that command"
+    },
+    {
+     "key": "Hides jump to page controls",
+     "english": "Hides jump to page controls",
+     "before": "Menyembunyikan kontrol buka halaman.",
+     "after": "Menyembunyikan kontrol lompat ke halaman.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke halaman, so the hint names it so"
+    },
+    {
+     "key": "Hides jump to percent controls",
+     "english": "Hides jump to percent controls",
+     "before": "Menyembunyikan kontrol buka persentase.",
+     "after": "Menyembunyikan kontrol lompat ke persen.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke persen, so the hint names it so"
+    },
+    {
+     "key": "Hides jump to time controls",
+     "english": "Hides jump to time controls",
+     "before": "Menyembunyikan kontrol buka waktu.",
+     "after": "Menyembunyikan kontrol lompat ke waktu.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke waktu, so the hint names it so"
+    },
+    {
+     "key": "In the spoken text, whose offsets the speech log gives: speech stopped at character %@; the refused text runs from character %@ to %@.",
+     "english": "In the spoken text, whose offsets the speech log gives: speech stopped at character %1$@; the refused text runs from character %2$@ to %3$@.",
+     "before": "Dalam teks yang diucapkan, yang posisinya diberikan log ucapan: ucapan berhenti di karakter %1$@; teks yang ditolak berjalan dari karakter %2$@ hingga %3$@.",
+     "after": "Dalam teks yang diucapkan, yang posisinya diberikan log ucapan: ucapan berhenti di karakter %1$@; teks yang ditolak mencakup karakter %2$@ hingga %3$@.",
+     "why": "natural: berjalan (walks) copied the English runs from; a span of text mencakup its characters"
+    },
+    {
+     "key": "Insert Character",
+     "english": "Insert Character",
+     "before": "Insert Character",
+     "after": "Sisipkan Karakter",
+     "why": "term: left in English; glossary Insert = Sisipkan, matching Hapus Karakter beside it"
+    },
+    {
+     "key": "Insert Line",
+     "english": "Insert Line",
+     "before": "Insert Line",
+     "after": "Sisipkan Baris",
+     "why": "term: left in English; glossary Insert = Sisipkan, matching Hapus Baris beside it"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "Melompat ke halaman %1$@, halaman berlabel %3$@ urutan %2$@.",
+     "after": "Melompat ke halaman %1$@, halaman berlabel %3$@ yang %2$@.",
+     "why": "natural: urutan kedua tacked on without a link; yang kedua is how the language picks one of several same-named pages"
+    },
+    {
+     "key": "Minimize",
+     "english": "Minimize",
+     "before": "Minimalkan",
+     "after": "Minikan",
+     "why": "term: Apple Window menu says Minikan, and the sentence names that command"
+    },
+    {
+     "key": "Minimize All",
+     "english": "Minimize All",
+     "before": "Minimalkan Semua",
+     "after": "Minikan Semua",
+     "why": "term: Apple Window menu says Minikan Semua, and the sentence names that command"
+    },
+    {
+     "key": "Mode Switch",
+     "english": "Mode Switch",
+     "before": "Mode Switch",
+     "after": "Pengalihan Mode",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Mode Switch = Pengalihan Mode); was left in English"
+    },
+    {
+     "key": "Moves back or forward by bookmark.",
+     "english": "Moves back or forward by bookmark.",
+     "before": "Bergerak mundur atau maju menurut markah.",
+     "after": "Bergerak mundur atau maju per markah.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by heading.",
+     "english": "Moves back or forward by heading.",
+     "before": "Bergerak mundur atau maju menurut tajuk.",
+     "after": "Bergerak mundur atau maju per tajuk.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by page.",
+     "english": "Moves back or forward by page.",
+     "before": "Bergerak mundur atau maju menurut halaman.",
+     "after": "Bergerak mundur atau maju per halaman.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by paragraph.",
+     "english": "Moves back or forward by paragraph.",
+     "before": "Bergerak mundur atau maju menurut paragraf.",
+     "after": "Bergerak mundur atau maju per paragraf.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by sentence.",
+     "english": "Moves back or forward by sentence.",
+     "before": "Bergerak mundur atau maju menurut kalimat.",
+     "after": "Bergerak mundur atau maju per kalimat.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Moves back or forward by subheading.",
+     "english": "Moves back or forward by subheading.",
+     "before": "Bergerak mundur atau maju menurut subtajuk.",
+     "after": "Bergerak mundur atau maju per subtajuk.",
+     "why": "natural: menurut (according to) is the sorting word; moving by a unit is per"
+    },
+    {
+     "key": "Next",
+     "english": "Next",
+     "before": "Next",
+     "after": "Berikutnya",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id and glossary (Next = Berikutnya); was left in English"
+    },
+    {
+     "key": "Opens jump to page controls",
+     "english": "Opens jump to page controls",
+     "before": "Membuka kontrol buka halaman.",
+     "after": "Membuka kontrol lompat ke halaman.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke halaman, so the hint names it so"
+    },
+    {
+     "key": "Opens jump to percent controls",
+     "english": "Opens jump to percent controls",
+     "before": "Membuka kontrol buka persentase.",
+     "after": "Membuka kontrol lompat ke persen.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke persen, so the hint names it so"
+    },
+    {
+     "key": "Opens jump to time controls",
+     "english": "Opens jump to time controls",
+     "before": "Membuka kontrol buka waktu.",
+     "after": "Membuka kontrol lompat ke waktu.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke waktu, so the hint names it so"
+    },
+    {
+     "key": "Plays the book; it stops at its end anyway.",
+     "english": "Plays the book; it stops at its end anyway.",
+     "before": "Memutar buku; buku berhenti di akhirnya pula.",
+     "after": "Memutar buku; buku memang berhenti di akhirnya.",
+     "why": "meaning: pula (also) lost the English anyway; memang says the book stops at its end regardless"
+    },
+    {
+     "key": "Press the new key, or Escape to cancel.",
+     "english": "Press the new key, or Escape to cancel.",
+     "before": "Menekan tombol baru, atau Escape untuk membatalkan.",
+     "after": "Tekan tombol baru, atau Escape untuk membatalkan.",
+     "why": "meaning: Menekan made the hint say the button presses a key; the English tells the listener what to press"
+    },
+    {
+     "key": "Previous",
+     "english": "Previous",
+     "before": "Previous",
+     "after": "Sebelumnya",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id and glossary (Previous = Sebelumnya); was left in English"
+    },
+    {
+     "key": "Print",
+     "english": "Print",
+     "before": "Print",
+     "after": "Cetak",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Print = Cetak); was left in English"
+    },
+    {
+     "key": "Print Screen",
+     "english": "Print Screen",
+     "before": "Print Screen",
+     "after": "Cetak Layar",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Print Screen = Cetak Layar); was left in English"
+    },
+    {
+     "key": "Quitting TextMouth",
+     "english": "Quitting TextMouth",
+     "before": "Keluar dari TextMouth",
+     "after": "Sedang keluar dari TextMouth",
+     "why": "meaning: Keluar dari TextMouth reads as the Quit command; the panel says TextMouth is quitting"
+    },
+    {
+     "key": "Reader Toolbar",
+     "english": "Reader Toolbar",
+     "before": "Bilah Alat Pembaca",
+     "after": "Bar Alat Pembaca",
+     "why": "term: Apple says bar alat for toolbar (Tampilkan Bar Alat); bilah alat is not Apple word"
+    },
+    {
+     "key": "Say the page in Where Am I?",
+     "english": "Say the page in Where Am I?",
+     "before": "Ucapkan halaman di Di mana saya?",
+     "after": "Ucapkan halaman dalam Di mana saya?",
+     "why": "natural: di Di mana saya? stutters aloud; dalam names the summary without the repeated di"
+    },
+    {
+     "key": "Scroll Lock",
+     "english": "Scroll Lock",
+     "before": "Scroll Lock",
+     "after": "Kunci Gulir",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (Scroll Lock = Kunci Gulir); was left in English"
+    },
+    {
+     "key": "Show Export in the reader toolbar",
+     "english": "Show Export in the reader toolbar",
+     "before": "Tampilkan Ekspor di bilah alat pembaca",
+     "after": "Tampilkan Ekspor di bar alat pembaca",
+     "why": "term: Apple says bar alat for toolbar (Tampilkan Bar Alat); bilah alat is not Apple word"
+    },
+    {
+     "key": "Show the Export button in the reader toolbar",
+     "english": "Show the Export button in the reader toolbar",
+     "before": "Tampilkan tombol Ekspor di bilah alat pembaca",
+     "after": "Tampilkan tombol Ekspor di bar alat pembaca",
+     "why": "term: Apple says bar alat for toolbar (Tampilkan Bar Alat); bilah alat is not Apple word"
+    },
+    {
+     "key": "Switches to jump to page controls",
+     "english": "Switches to jump to page controls",
+     "before": "Beralih ke kontrol buka halaman.",
+     "after": "Beralih ke kontrol lompat ke halaman.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke halaman, so the hint names it so"
+    },
+    {
+     "key": "Switches to jump to percent controls",
+     "english": "Switches to jump to percent controls",
+     "before": "Beralih ke kontrol buka persentase.",
+     "after": "Beralih ke kontrol lompat ke persen.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke persen, so the hint names it so"
+    },
+    {
+     "key": "Switches to jump to time controls",
+     "english": "Switches to jump to time controls",
+     "before": "Beralih ke kontrol buka waktu.",
+     "after": "Beralih ke kontrol lompat ke waktu.",
+     "why": "natural: kontrol buka halaman put a second buka (open) in the hint; the panel is Lompat ke waktu, so the hint names it so"
+    },
+    {
+     "key": "System",
+     "english": "System",
+     "before": "System",
+     "after": "Sistem",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (System = Sistem); was left in English"
+    },
+    {
+     "key": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "english": "TextMouth exports one spoken audio file at a time. Export this once the current one has finished.",
+     "before": "TextMouth mengekspor satu file audio ucapan dalam satu waktu. Ekspor ini setelah yang sekarang selesai.",
+     "after": "TextMouth mengekspor satu file audio ucapan dalam satu waktu. Ekspor lagi setelah ekspor yang sedang berjalan selesai.",
+     "why": "natural: Ekspor ini setelah reads as the noun phrase this export, not a command; now export again once the running one ends"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth belum membaca simpanan terbaru.",
+     "after": "TextMouth belum membaca versi terakhir yang disimpan.",
+     "why": "meaning: simpanan reads as savings or a stash; the last saved version is meant"
+    },
+    {
+     "key": "The %@ page labelled %@",
+     "english": "The %1$@ page labelled %2$@",
+     "before": "Halaman berlabel %2$@ urutan %1$@",
+     "after": "Halaman berlabel %2$@ yang %1$@",
+     "why": "natural: urutan kedua tacked on without a link; yang kedua picks one of several same-named pages, as in the Jumped to page sentence"
+    },
+    {
+     "key": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each.",
+     "english": {
+      "one": "The MP3 has chapters for the first %@ of its %lld heading; export as M4B for a chapter for each.",
+      "other": "The MP3 has chapters for the first %@ of its %lld headings; export as M4B for a chapter for each."
+     },
+     "before": {
+      "other": "MP3 memiliki bab untuk %@ pertama dari %lld tajuknya; ekspor sebagai M4B untuk satu bab bagi masing-masing."
+     },
+     "after": {
+      "other": "MP3 memiliki bab untuk %@ pertama dari %lld tajuknya; ekspor sebagai M4B agar setiap tajuk memiliki bab."
+     },
+     "why": "natural: untuk satu bab bagi masing-masing copied for a chapter for each word by word; now so that every heading has a chapter"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "File audio %@ berakhir sebelum audionya, sehingga tidak dapat dikonversi.",
+     "after": "File audio %@ berakhir sebelum audionya selesai, sehingga tidak dapat dikonversi.",
+     "why": "natural: berakhir sebelum audionya left out the verb, so it could mean before its audio starts"
+    },
+    {
+     "key": "The braille code the book is written in.",
+     "english": "The braille code the book is written in.",
+     "before": "Kode braille tempat buku ditulis.",
+     "after": "Kode braille yang dipakai untuk menulis buku.",
+     "why": "natural: tempat (a place) for the code a book is written in; now the code used to write the book"
+    },
+    {
+     "key": "The language of the braille code the book is written in.",
+     "english": "The language of the braille code the book is written in.",
+     "before": "Bahasa kode braille tempat buku ditulis.",
+     "after": "Bahasa kode braille yang dipakai untuk menulis buku.",
+     "why": "natural: tempat (a place) for the code a book is written in; now the code used to write the book"
+    },
+    {
+     "key": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+     "english": {
+      "one": "This range has %lld heading, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each.",
+      "other": "This range has %lld headings, but an MP3 has chapters for the first %@ only. Choose M4B for a chapter for each."
+     },
+     "before": {
+      "other": "Rentang ini memiliki %lld tajuk, tetapi MP3 hanya memiliki bab untuk %@ yang pertama. Pilih M4B untuk satu bab bagi masing-masing."
+     },
+     "after": {
+      "other": "Rentang ini memiliki %lld tajuk, tetapi MP3 hanya memiliki bab untuk %@ yang pertama. Pilih M4B agar setiap tajuk memiliki bab."
+     },
+     "why": "natural: untuk satu bab bagi masing-masing copied for a chapter for each word by word; now so that every heading has a chapter"
+    },
+    {
+     "key": "Toggle Bookmark",
+     "english": "Toggle Bookmark",
+     "before": "Aktifkan atau Nonaktifkan Markah",
+     "after": "Tambah atau Buang Markah",
+     "why": "meaning: Aktifkan atau Nonaktifkan (enable or disable) is not what a bookmark toggle does; it adds or removes one, as the bookmark button says"
+    },
+    {
+     "key": "Type a percent from 0 to 100, such as 47.5.",
+     "english": "Type a percent from 0 to 100, such as 47.5.",
+     "before": "Mengetik persentase dari 0 sampai 100, misalnya 47.5.",
+     "after": "Ketik persentase dari 0 sampai 100, misalnya 47.5.",
+     "why": "meaning: Mengetik made the field the one that types; the hint tells the listener what to type (47.5 kept: the field reads only a period)"
+    },
+    {
+     "key": "User",
+     "english": "User",
+     "before": "User",
+     "after": "Pengguna",
+     "why": "term: Apple key name in AppKit FunctionKeyNames for id (User = Pengguna); was left in English"
+    },
+    {
+     "key": "While playing, moves Book content on with the speech, even as you read it.",
+     "english": "While playing, moves Book content on with the speech, even as you read it.",
+     "before": "Saat diputar, menggerakkan Konten buku mengikuti ucapan, bahkan saat Anda membacanya.",
+     "after": "Saat diputar, menggerakkan Isi buku mengikuti ucapan, bahkan saat Anda membacanya.",
+     "why": "term: names the text area, which VoiceOver calls Isi buku (Book content), not Konten buku"
+    },
+    {
+     "key": "it does not load in TextMouth's liblouis %@",
+     "english": "it does not load in TextMouth's liblouis %@",
+     "before": "tidak dapat dimuat di liblouis TextMouth %@",
+     "after": "tidak dapat dimuat di liblouis %@ milik TextMouth",
+     "why": "natural: liblouis TextMouth 3.34 put the version after TextMouth; the number is liblouis own"
+    },
+    {
+     "key": "on the %@ page labelled %@",
+     "english": "on the %1$@ page labelled %2$@",
+     "before": "pada halaman berlabel %2$@ urutan %1$@",
+     "after": "pada halaman berlabel %2$@ yang %1$@",
+     "why": "natural: urutan kedua tacked on without a link; yang kedua picks one of several same-named pages, as in the Jumped to page sentence"
+    },
+    {
+     "key": "the braille helper failed",
+     "english": "the braille helper failed",
+     "before": "pembantu braille gagal",
+     "after": "program bantu braille gagal",
+     "why": "meaning: pembantu alone reads as a person (a household helper); the braille helper is a program, program bantu"
+    },
+    {
+     "key": "the braille helper was stopped because %@",
+     "english": "the braille helper was stopped because %@",
+     "before": "pembantu braille dihentikan karena %@",
+     "after": "program bantu braille dihentikan karena %@",
+     "why": "meaning: pembantu alone reads as a person (a household helper); the braille helper is a program, program bantu"
+    }
+   ]
   }
  ]
 }
