@@ -2186,15 +2186,43 @@
    "areas": [
     "the whole app: words carried across the three parts"
    ],
-   "reviewer": "Claude Sonnet 5.5",
+   "reviewer": "Claude Sonnet 5.5 and Claude Opus 5.5",
    "date": "2026-11-21",
    "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv” > ”Exportera” fungerar i båda fallen.",
+     "after": "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv”, ”Exportera” fungerar i båda fallen.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than'; Swedish writes the steps with commas, as the English and the other Swedish paths do"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Ingen röst är installerad. Lägg till en i ”Systeminställningar” > ”Hjälpmedel” > ”Uppläst innehåll” och exportera sedan igen.",
+     "after": "Ingen röst är installerad. Lägg till en i ”Systeminställningar”, ”Hjälpmedel”, ”Uppläst innehåll”, och exportera sedan igen.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than'; Swedish writes the steps with commas, as the English and the other Swedish paths do"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "Inga röster är installerade. Lägg till röster i ”Inställningar” > ”Hjälpmedel” > ”Uppläst innehåll”.",
+     "after": "Inga röster är installerade. Lägg till röster i ”Inställningar”, ”Hjälpmedel”, ”Uppläst innehåll”.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than'; Swedish writes the steps with commas, as the English and the other Swedish paths do"
+    },
     {
      "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
      "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
      "before": "För att använda en annan mapp, öppna ”Inställningar” > ”Lagring” och välj %1$@ eller %2$@.",
      "after": "För att använda en annan mapp, öppna ”Inställningar”, ”Lagring”, och välj %1$@ eller %2$@.",
      "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera” > ”Ersättningar”.",
+     "after": "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera”, ”Ersättningar”.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than'; Swedish writes the steps with commas, as the English and the other Swedish paths do"
     }
    ]
   }
