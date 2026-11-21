@@ -3738,7 +3738,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można połączyć się z %1$@: %2$@"
+            "value" : "%1$@: nie można nawiązać połączenia (%2$@)"
           }
         },
         "pt-BR" : {
@@ -4154,7 +4154,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Serwer %1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później."
+            "value" : "%1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później."
           }
         },
         "pt-BR" : {
@@ -4261,7 +4261,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Serwer %1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później."
+            "value" : "%1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później."
           }
         },
         "pt-BR" : {
@@ -4818,25 +4818,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekund."
+                  "value" : "%@ nie odpowiedział w ciągu %lld sekund."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekund."
+                  "value" : "%@ nie odpowiedział w ciągu %lld sekund."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekundy."
+                  "value" : "%@ nie odpowiedział w ciągu %lld sekundy."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekundy."
+                  "value" : "%@ nie odpowiedział w ciągu %lld sekundy."
                 }
               }
             }
