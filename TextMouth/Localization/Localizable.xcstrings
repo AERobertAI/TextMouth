@@ -490302,7 +490302,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze worden in deze bibliotheek niet bewaard."
+            "value" : "TextMouth start opnieuw met een andere bibliotheek, dus ze worden in deze bibliotheek niet bewaard."
           }
         },
         "pl" : {
@@ -490439,7 +490439,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wordt opnieuw geopend met een andere bibliotheek, dus ze blijven in deze waar ze zijn."
+            "value" : "TextMouth start opnieuw met een andere bibliotheek, dus ze blijven in deze bibliotheek waar ze zijn."
           }
         },
         "pl" : {
@@ -492083,7 +492083,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth schakelt over naar een andere bibliotheek en wordt daarmee opnieuw geopend."
+            "value" : "TextMouth schakelt over naar een andere bibliotheek en start daarmee opnieuw."
           }
         },
         "pl" : {
@@ -498807,7 +498807,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het opent, maar kon niet zelf opnieuw openen: %2$@"
+            "value" : "TextMouth opent de bibliotheek in %1$@ de volgende keer dat het start, maar kon niet zelf opnieuw starten: %2$@"
           }
         },
         "pl" : {
@@ -498944,7 +498944,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sluit af en opent opnieuw om de bibliotheek te laden."
+            "value" : "TextMouth sluit af en start opnieuw om de bibliotheek te laden."
           }
         },
         "pl" : {
@@ -499081,7 +499081,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sluit af en opent opnieuw om de bibliotheek te starten."
+            "value" : "TextMouth sluit af en start opnieuw om de nieuwe bibliotheek te beginnen."
           }
         },
         "pl" : {
@@ -619346,7 +619346,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, kun je \\b in het patroon gebruiken voor woordgrenzen."
+            "value" : "Als dit aanstaat, kun je \\b in het patroon gebruiken voor woordgrenzen."
           }
         },
         "pl" : {
@@ -619483,7 +619483,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit uit staat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld."
+            "value" : "Als dit uitstaat, worden de bestanden definitief verwijderd en kunnen ze niet worden hersteld."
           }
         },
         "pl" : {
@@ -619620,7 +619620,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit uit staat, zal TextMouth bij het weghalen van een boek meteen %@."
+            "value" : "Als dit uitstaat, zal TextMouth bij het weghalen van een boek meteen %@."
           }
         },
         "pl" : {
@@ -620031,7 +620031,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd."
+            "value" : "Als dit aanstaat, gaan de bestanden van een verwijderd boek naar de prullenmand, waar je ze kunt herstellen totdat de prullenmand is geleegd."
           }
         },
         "pl" : {
@@ -620168,7 +620168,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als dit aan staat, vraagt TextMouth bij het weghalen van een boek eerst of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren."
+            "value" : "Als dit aanstaat, vraagt TextMouth bij het weghalen van een boek eerst of je %@ wilt of ze in de bibliotheekmap van TextMouth wilt bewaren."
           }
         },
         "pl" : {
