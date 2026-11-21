@@ -494590,7 +494590,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth, yinelenen kitapların %lld yeni kopyasını Çöp Sepetine taşıdı; çünkü bunları yinelenen olarak saklayıp saklamama soruları, TextMouth kapanmadan önce yanıtlanmamıştı. Geri almak için Çöp Sepetini açın ve Geri Koy'u seçin."
+                  "value" : "TextMouth, yinelenen bir kitabın %lld yeni kopyasını Çöp Sepetine taşıdı; çünkü onu yinelenen olarak saklayıp saklamama sorusu, TextMouth kapanmadan önce yanıtlanmamıştı. Geri almak için Çöp Sepetini açın ve Geri Koy'u seçin."
                 }
               },
               "other" : {
