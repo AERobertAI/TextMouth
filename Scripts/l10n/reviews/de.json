@@ -2,6 +2,865 @@
  "language": "de",
  "reviews": [
   {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file.",
+     "english": {
+      "one": "%@ files can't hold chapter markers, so its chapter marker is left out of this file.",
+      "other": "%@ files can't hold chapter markers, so its %lld chapter markers are left out of this file."
+     },
+     "before": {
+      "one": "%@-Dateien können keine Kapitelmarken enthalten, daher wurde ihre Kapitelmarke in dieser Datei weggelassen.",
+      "other": "%@-Dateien können keine Kapitelmarken enthalten, daher wurden ihre %lld Kapitelmarken in dieser Datei weggelassen."
+     },
+     "after": {
+      "one": "%@-Dateien können keine Kapitelmarken enthalten, daher wurde die Kapitelmarke in dieser Datei weggelassen.",
+      "other": "%@-Dateien können keine Kapitelmarken enthalten, daher wurden die %lld Kapitelmarken in dieser Datei weggelassen."
+     },
+     "why": "grammar: ihre referred to the WAV files, not to the recording whose markers they are"
+    },
+    {
+     "key": "%@ isn't available, so TextMouth can't record from it. Choose another microphone.",
+     "english": "%@ isn't available, so TextMouth can't record from it. Choose another microphone.",
+     "before": "%@ ist nicht verfügbar, daher kann TextMouth nicht davon aufnehmen. Wähle ein anderes Mikrofon.",
+     "after": "%@ ist nicht verfügbar, daher kann TextMouth nicht damit aufnehmen. Wähle ein anderes Mikrofon.",
+     "why": "natural: one records with (damit) a microphone, not from it (davon)"
+    },
+    {
+     "key": "%@ not recording",
+     "english": "%@ not recording",
+     "before": "%@, nimmt nicht auf",
+     "after": "%@, keine Aufnahme",
+     "why": "natural: nimmt nicht auf has no subject after the level; keine Aufnahme says the state"
+    },
+    {
+     "key": "%@ waits for a network without data limits to refresh by itself.",
+     "english": "%@ waits for a network without data limits to refresh by itself.",
+     "before": "%@ wartet auf ein Netzwerk ohne Datenlimit, um sich selbst zu aktualisieren.",
+     "after": "%@ wartet mit der automatischen Aktualisierung auf ein Netzwerk ohne Datenlimit.",
+     "why": "natural: a feed does not refresh itself (sich selbst aktualisieren); it waits with its automatic refresh"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "one": "%lld Bearbeitung ist widerrufen. Mit „Wiederholen“ wird sie zurückgeholt, bis du erneut bearbeitest.",
+      "other": "%lld Bearbeitungen sind widerrufen. Mit „Wiederholen“ werden sie zurückgeholt, bis du erneut bearbeitest."
+     },
+     "after": {
+      "one": "%lld Bearbeitung wird widerrufen. „Wiederholen“ holt sie zurück, solange du nichts Neues bearbeitest.",
+      "other": "%lld Bearbeitungen werden widerrufen. „Wiederholen“ holt sie zurück, solange du nichts Neues bearbeitest."
+     },
+     "why": "meaning: bis du erneut bearbeitest said the edits stay back until the next edit; Redo can bring them back as long as no new edit is made, and the confirmation speaks before the undo"
+    },
+    {
+     "key": "%lld of %@ listed",
+     "english": {
+      "one": "%lld of %@ listed",
+      "other": "%lld of %@ listed"
+     },
+     "before": {
+      "one": "%lld von %@ aufgelistet",
+      "other": "%lld von %@ aufgelistet"
+     },
+     "after": {
+      "one": "%lld aufgelistet, insgesamt %@",
+      "other": "%lld aufgelistet, insgesamt %@"
+     },
+     "why": "grammar: %@ is a shared count in the nominative (381 Artikel, 381 Einträge), which von cannot take"
+    },
+    {
+     "key": "; %@ stay",
+     "english": "; %@ stay",
+     "before": "; er behält %@",
+     "after": "; %@ bleiben erhalten",
+     "why": "grammar: the downloads phrase is now nominative, as the Delete Feed confirmation needs it, so this host says it stays"
+    },
+    {
+     "key": "; %@ stays",
+     "english": "; %@ stays",
+     "before": "; er behält %@",
+     "after": "; %@ bleibt erhalten",
+     "why": "grammar: the downloads phrase is now nominative, as the Delete Feed confirmation needs it, so this host says it stays"
+    },
+    {
+     "key": "All %lld files",
+     "english": {
+      "one": "All %lld file",
+      "other": "All %lld files"
+     },
+     "before": {
+      "one": "Alle %lld Datei",
+      "other": "Alle %lld Dateien"
+     },
+     "after": {
+      "one": "Die einzige Datei",
+      "other": "Alle %lld Dateien"
+     },
+     "why": "grammar: Alle 1 Datei puts a plural word before one file; a book of one audio file shows this line"
+    },
+    {
+     "key": "Announce level every %lld seconds",
+     "english": {
+      "one": "Announce level every %lld second",
+      "other": "Announce level every %lld seconds"
+     },
+     "before": {
+      "one": "Pegel jede %lld Sekunde ansagen",
+      "other": "Pegel alle %lld Sekunden ansagen"
+     },
+     "after": {
+      "one": "Pegel jede Sekunde ansagen",
+      "other": "Pegel alle %lld Sekunden ansagen"
+     },
+     "why": "natural: jede 1 Sekunde reads the number aloud; German one is exactly 1"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "Audio, das TextMouth beim Import umwandelt, behält nur die umgewandelte Datei.",
+     "after": "Bei Audio, das TextMouth beim Import umwandelt, bleibt nur die umgewandelte Datei erhalten.",
+     "why": "natural: audio cannot keep (behalten) a file; only the converted file is kept"
+    },
+    {
+     "key": "Checking the feed won't bring it back.",
+     "english": "Checking the feed won't bring it back.",
+     "before": "Eine erneute Prüfung des Feeds bringt es nicht zurück.",
+     "after": "Eine erneute Prüfung des Feeds ändert daran nichts.",
+     "why": "grammar: es agrees with neither der Artikel nor die Folge in the sentence before"
+    },
+    {
+     "key": "Closes this without changing the transcript.",
+     "english": "Closes this without changing the transcript.",
+     "before": "Schließt dies, ohne das Transkript zu ändern.",
+     "after": "Schließt das Sheet, ohne das Transkript zu ändern.",
+     "why": "natural: Schließt dies has no noun to close; the hint names the sheet"
+    },
+    {
+     "key": "Closes this without transcribing.",
+     "english": "Closes this without transcribing.",
+     "before": "Schließt dies, ohne zu transkribieren.",
+     "after": "Schließt das Sheet, ohne zu transkribieren.",
+     "why": "natural: Schließt dies has no noun to close; the hint names the sheet"
+    },
+    {
+     "key": "Converting %@ was stopped because %@.",
+     "english": "Converting %1$@ was stopped because %2$@.",
+     "before": "Das Umwandeln von %1$@ wurde gestoppt, weil %2$@.",
+     "after": "Das Umwandeln von %1$@ wurde gestoppt: %2$@.",
+     "why": "grammar: the reason is an English clause from the debug log, which cannot follow weil with its verb-final order"
+    },
+    {
+     "key": "Could not move to the library",
+     "english": "Could not move to the library",
+     "before": "Konnte nicht in die Bibliothek verschoben werden",
+     "after": "Verschieben in die Bibliothek nicht möglich",
+     "why": "natural: German does not leave the subject out of Konnte nicht … verschoben werden; matches Löschen nicht möglich"
+    },
+    {
+     "key": "Couldn't refresh %@.",
+     "english": "Couldn't refresh %@.",
+     "before": "Aktualisierung fehlgeschlagen für %@.",
+     "after": "Fehler beim Aktualisieren von %@.",
+     "why": "natural: Aktualisierung fehlgeschlagen für copies the English order; the list of titles needs a number-neutral sentence"
+    },
+    {
+     "key": "Couldn't subscribe to %@.",
+     "english": "Couldn't subscribe to %@.",
+     "before": "Abonnieren nicht möglich für %@.",
+     "after": "Fehler beim Abonnieren von %@.",
+     "why": "natural: Abonnieren nicht möglich für copies the English order; the list of feeds needs a number-neutral sentence"
+    },
+    {
+     "key": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+     "english": "Days after an episode finishes before its download is deleted, from 0 (at once) to 365; one open in a reader waits until it closes",
+     "before": "Tage nach Ende einer Folge bis zum Löschen ihres Downloads, von 0 (sofort) bis 365; ein Download, der in einer Leseansicht geöffnet ist, wartet bis zu deren Schließen.",
+     "after": "Tage nach Ende einer Folge bis zum Löschen ihres Downloads, von 0 (sofort) bis 365; ein in einer Leseansicht geöffneter Download wartet, bis sie geschlossen wird.",
+     "why": "natural: wartet bis zu deren Schließen is stilted"
+    },
+    {
+     "key": "Duplicate Copies Moved to the Trash",
+     "english": "Duplicate Copies Moved to the Trash",
+     "before": "Doppelte Kopien in den Papierkorb verschoben",
+     "after": "Doppelte Kopien in den Papierkorb gelegt",
+     "why": "term: Move to Trash is in den Papierkorb legen in the glossary and in Apple German; verschoben is the word for Move"
+    },
+    {
+     "key": "Every article listed, newest %lld downloaded",
+     "english": {
+      "one": "Every article listed, newest %lld downloaded",
+      "other": "Every article listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "Alle Artikel aufgelistet, der neueste (%lld) heruntergeladen",
+      "other": "Alle Artikel aufgelistet, die neuesten %lld heruntergeladen"
+     },
+     "after": {
+      "one": "Alle Artikel aufgelistet, der neueste heruntergeladen",
+      "other": "Alle Artikel aufgelistet, die neuesten %lld heruntergeladen"
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "Every episode listed, newest %lld downloaded",
+     "english": {
+      "one": "Every episode listed, newest %lld downloaded",
+      "other": "Every episode listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "Alle Folgen aufgelistet, die neueste (%lld) heruntergeladen",
+      "other": "Alle Folgen aufgelistet, die neuesten %lld heruntergeladen"
+     },
+     "after": {
+      "one": "Alle Folgen aufgelistet, die neueste heruntergeladen",
+      "other": "Alle Folgen aufgelistet, die neuesten %lld heruntergeladen"
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "Every item listed, newest %lld downloaded",
+     "english": {
+      "one": "Every item listed, newest %lld downloaded",
+      "other": "Every item listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "Alle Einträge aufgelistet, der neueste (%lld) heruntergeladen",
+      "other": "Alle Einträge aufgelistet, die neuesten %lld heruntergeladen"
+     },
+     "after": {
+      "one": "Alle Einträge aufgelistet, der neueste heruntergeladen",
+      "other": "Alle Einträge aufgelistet, die neuesten %lld heruntergeladen"
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "Exporting %@ of audio as %@ to “%@”.",
+     "english": "Exporting %1$@ of audio as %2$@ to “%3$@”.",
+     "before": "%1$@ Audio werden als %2$@ nach „%3$@“ exportiert.",
+     "after": "%1$@ Audio wird als %2$@ nach „%3$@“ exportiert.",
+     "why": "grammar: the verb agrees with Audio; werden fails for 1 Minute Audio"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Gelöscht wird %@: Es landet im Papierkorb, wo du es wiederherstellen kannst, bis er geleert wird.",
+     "after": "Gelöscht wird %@ und kommt in den Papierkorb; bis er geleert wird, lässt sich das rückgängig machen.",
+     "why": "grammar: Es does not agree with the one thing deleted, such as der Download; the sentence needs no pronoun"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "Gelöscht wird %@: Es wird endgültig gelöscht und lässt sich nicht wiederherstellen.",
+     "after": "Endgültig gelöscht wird %@; das lässt sich nicht rückgängig machen.",
+     "why": "grammar: Es does not agree with the one thing deleted, such as der Download; also said gelöscht twice"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "Gelöscht wird %@: Es bleibt im Bibliotheksordner von TextMouth.",
+     "after": "Gelöscht wird %@, bleibt aber im Bibliotheksordner von TextMouth.",
+     "why": "grammar: Es does not agree with the one thing deleted, such as der Download"
+    },
+    {
+     "key": "It holds %@, which TextMouth does not import.",
+     "english": "It holds %@, which TextMouth does not import.",
+     "before": "Darin sind %@, die TextMouth nicht importiert.",
+     "after": "Es enthält %@, die TextMouth nicht importiert.",
+     "why": "grammar: Darin sind fails for a single file (1 .ogg-Datei); es is the archive, and die fits every list"
+    },
+    {
+     "key": "It is a streaming playlist for web audio, which TextMouth does not import.",
+     "english": "It is a streaming playlist for web audio, which TextMouth does not import.",
+     "before": "Sie ist eine Streaming-Playlist für Web-Audio, die TextMouth nicht importiert.",
+     "after": "Es handelt sich um eine Streaming-Playlist für Web-Audio, die TextMouth nicht importiert.",
+     "why": "natural: Sie ist eine … after the sentence naming the file; German says Es handelt sich um"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "Darin ist kein Audiotrack mit einem Start verzeichnet, den TextMouth lesen kann.",
+     "after": "Darin ist kein Audiotrack mit einer Startzeit verzeichnet, die TextMouth lesen kann.",
+     "why": "natural: a cue sheet track has a start time (Startzeit), not a Start"
+    },
+    {
+     "key": "It may be damaged, or another kind of file.",
+     "english": "It may be damaged, or another kind of file.",
+     "before": "Möglicherweise ist die Datei beschädigt oder von einer anderen Art.",
+     "after": "Die Datei ist möglicherweise beschädigt oder hat ein anderes Format.",
+     "why": "natural: von einer anderen Art is stilted for another kind of file"
+    },
+    {
+     "key": "Keep for a number of days",
+     "english": "Keep for a number of days",
+     "before": "Eine Anzahl Tage aufbewahren",
+     "after": "Für eine Anzahl Tage aufbewahren",
+     "why": "grammar: without für, Eine Anzahl Tage aufbewahren makes the days what is kept"
+    },
+    {
+     "key": "Label %@",
+     "english": "Label %@",
+     "before": "Marker %@",
+     "after": "Label %@",
+     "why": "term: one word for an Audacity label file and its labels, as the audio editor export strings say Label-Datei; Marker is TextMouth own marker"
+    },
+    {
+     "key": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "english": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "before": "Lässt das Hörbuch untranskribiert; „Audio transkribieren“ erledigt das später.",
+     "after": "Lässt das Hörbuch ohne Transkript; „Audio transkribieren“ erledigt das später.",
+     "why": "natural: untranskribiert is not a German word"
+    },
+    {
+     "key": "Listen and Move",
+     "english": "Listen and Move",
+     "before": "Anhören und Bewegen",
+     "after": "Anhören und Navigieren",
+     "why": "natural: Bewegen alone does not say that the cursor moves; the glossary Verschieben moves books and files, the wrong sense for moving through the audio"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "Listet jeden Artikel auf, hält den neuesten (%lld) heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten.",
+      "other": "Listet jeden Artikel auf, hält die neuesten %lld heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+     },
+     "after": {
+      "one": "Listet jeden Artikel auf, hält den neuesten heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten.",
+      "other": "Listet jeden Artikel auf, hält die neuesten %lld heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "Listet jede Folge und jeden Artikel auf, hält den neuesten (%lld) heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten.",
+      "other": "Listet jede Folge und jeden Artikel auf, hält die neuesten %lld heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+     },
+     "after": {
+      "one": "Listet jede Folge und jeden Artikel auf, hält den neuesten Eintrag heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten.",
+      "other": "Listet jede Folge und jeden Artikel auf, hält die neuesten %lld heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it; Eintrag, as the feed mixes episodes and articles"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "Listet jede Folge auf, hält die neueste (%lld) heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten.",
+      "other": "Listet jede Folge auf, hält die neuesten %lld heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+     },
+     "after": {
+      "one": "Listet jede Folge auf, hält die neueste heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten.",
+      "other": "Listet jede Folge auf, hält die neuesten %lld heruntergeladen und entfernt ältere Downloads, die TextMouth angelegt hat; Stelle, Lesezeichen und Einstellungen bleiben erhalten."
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "Listet die neueste (%lld), die du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest.",
+      "other": "Listet die neuesten %lld, die du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest."
+     },
+     "after": {
+      "one": "Listet den neuesten Eintrag, den du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest.",
+      "other": "Listet die neuesten %lld, die du noch nicht wiedergegeben hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest."
+     },
+     "why": "meaning: the others keep their records, not their Einträge (the word for items); one form named die neueste (1), which fits neither a mixed feed nor German one"
+    },
+    {
+     "key": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "Listet die neueste (%lld), die du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest.",
+      "other": "Listet die neuesten %lld, die du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen behalten ihre Einträge und kommen zurück, wenn du mehr auflistest."
+     },
+     "after": {
+      "one": "Listet den neuesten Artikel, den du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest.",
+      "other": "Listet die neuesten %lld, die du noch nicht gelesen hast, und alle Downloads. Lädt nur herunter, was du anforderst; die übrigen bleiben gespeichert und kommen zurück, wenn du mehr auflistest."
+     },
+     "why": "meaning: the others keep their records, not their Einträge (the word for items); grammar: one form was feminine (die neueste) for der Artikel"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "Verschiebt diesen Artikel (%lld) als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed",
+      "other": "Verschiebt diese %lld Artikel als Bücher, die du bearbeiten kannst, in einen Bibliotheksordner; sie verlassen ihre Feeds"
+     },
+     "after": {
+      "one": "Verschiebt diesen Artikel als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed",
+      "other": "Verschiebt diese %lld Artikel als Bücher, die du bearbeiten kannst, in einen Bibliotheksordner; sie verlassen ihre Feeds"
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "Verschiebt diese Folge (%lld) als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; sie verlässt den Feed",
+      "other": "Verschiebt diese %lld Folgen als Bücher, die du bearbeiten kannst, in einen Bibliotheksordner; sie verlassen ihre Feeds"
+     },
+     "after": {
+      "one": "Verschiebt diese Folge als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; sie verlässt den Feed",
+      "other": "Verschiebt diese %lld Folgen als Bücher, die du bearbeiten kannst, in einen Bibliotheksordner; sie verlassen ihre Feeds"
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "Verschiebt diesen Eintrag (%lld) als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed",
+      "other": "Verschiebt diese %lld Einträge als Bücher, die du bearbeiten kannst, in einen Bibliotheksordner; sie verlassen ihre Feeds"
+     },
+     "after": {
+      "one": "Verschiebt diesen Eintrag als Buch, das du bearbeiten kannst, in einen Bibliotheksordner; er verlässt den Feed",
+      "other": "Verschiebt diese %lld Einträge als Bücher, die du bearbeiten kannst, in einen Bibliotheksordner; sie verlassen ihre Feeds"
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this comic book archive.",
+     "english": {
+      "one": "No text was found on any of the %lld page of this comic book archive.",
+      "other": "No text was found on any of the %lld pages of this comic book archive."
+     },
+     "before": {
+      "one": "Auf der %lld Seite dieses Comic-Archivs wurde kein Text gefunden.",
+      "other": "Auf keiner der %lld Seiten dieses Comic-Archivs wurde Text gefunden."
+     },
+     "after": {
+      "one": "Auf der einzigen Seite dieses Comic-Archivs wurde kein Text gefunden.",
+      "other": "Auf keiner der %lld Seiten dieses Comic-Archivs wurde Text gefunden."
+     },
+     "why": "natural: auf der 1 Seite reads oddly; German one is exactly 1, the only page"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this picture.",
+     "english": {
+      "one": "No text was found on any of the %lld page of this picture.",
+      "other": "No text was found on any of the %lld pages of this picture."
+     },
+     "before": {
+      "one": "Auf der %lld Seite dieses Bilds wurde kein Text gefunden.",
+      "other": "Auf keiner der %lld Seiten dieses Bilds wurde Text gefunden."
+     },
+     "after": {
+      "one": "Auf der einzigen Seite dieses Bilds wurde kein Text gefunden.",
+      "other": "Auf keiner der %lld Seiten dieses Bilds wurde Text gefunden."
+     },
+     "why": "natural: auf der 1 Seite reads oddly; German one is exactly 1, the only page"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "Noch nicht im Audio des Buchs. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, bis du erneut bearbeitest.",
+     "after": "Noch nicht im Audio des Buchs. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, solange du nichts Neues bearbeitest.",
+     "why": "meaning: bis du erneut bearbeitest said the edits stay back until the next edit; Redo can bring them back as long as no new edit is made"
+    },
+    {
+     "key": "Only the newest %lld listed",
+     "english": {
+      "one": "Only the newest %lld listed",
+      "other": "Only the newest %lld listed"
+     },
+     "before": {
+      "one": "Nur der neueste (%lld) aufgelistet",
+      "other": "Nur die neuesten %lld aufgelistet"
+     },
+     "after": {
+      "one": "Nur der neueste Eintrag aufgelistet",
+      "other": "Nur die neuesten %lld aufgelistet"
+     },
+     "why": "natural: German one is exactly 1, so the number in parentheses reads as a stray (1); the noun says it; Eintrag, as the choice serves every kind of feed"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Ein Teil von %@ konnte nicht decodiert werden und bleibt als Stille erhalten.",
+     "after": "Ein Teil von %@ konnte nicht decodiert werden und wurde durch Stille ersetzt.",
+     "why": "natural: bleibt als Stille erhalten (is preserved as silence) for audio replaced by silence"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "one": "Ein Teil von %lld Datei, %@, konnte nicht decodiert werden und bleibt als Stille erhalten.",
+      "other": "Ein Teil von %lld Dateien, %@, konnte nicht decodiert werden und bleibt als Stille erhalten."
+     },
+     "after": {
+      "one": "In %lld Datei (%@) konnte ein Teil nicht decodiert werden und wurde durch Stille ersetzt.",
+      "other": "In %lld Dateien (%@) konnten Teile nicht decodiert werden und wurden durch Stille ersetzt."
+     },
+     "why": "natural: Ein Teil von 3 Dateien … bleibt als Stille erhalten copies the English; the names now sit in parentheses"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "%@ an der Stelle eingesetzt, wo sie ausgeschnitten wurden.",
+     "after": "%@ wieder dort eingesetzt, wo ausgeschnitten wurde.",
+     "why": "grammar: sie … wurden fails for 1 Sekunde; the impersonal passive fits every length"
+    },
+    {
+     "key": "Ready to record from %@.",
+     "english": "Ready to record from %@.",
+     "before": "Bereit zur Aufnahme von %@.",
+     "after": "Bereit zur Aufnahme mit %@.",
+     "why": "natural: one records with (mit) a microphone; Aufnahme von %@ reads as a recording of the microphone"
+    },
+    {
+     "key": "Recording from %@.",
+     "english": "Recording from %@.",
+     "before": "Es wird von %@ aufgenommen.",
+     "after": "Aufnahme mit %@ läuft.",
+     "why": "natural: one records with (mit) a microphone; Aufnahme von %@ reads as a recording of the microphone"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Aufnahme über %1$@ bei %2$@ von %3$@ nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie.",
+     "after": "Aufnahme über die %1$@ lange Auswahl bei %2$@, mit %3$@, nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie.",
+     "why": "meaning: Aufnahme über 5 Sekunden reads as a recording of more than 5 seconds; the recording goes over the selection; mit for the microphone"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Aufnahme zum Einfügen bei %1$@ von %2$@ nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie.",
+     "after": "Aufnahme zum Einfügen bei %1$@, mit %2$@, nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie.",
+     "why": "natural: one records with (mit) a microphone; Aufnahme von %@ reads as a recording of the microphone"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "Nimmt über der Auswahl oder am Cursor nach einem Signalton auf. Erneutes Drücken oder „Stoppen“ beendet es.",
+     "after": "Nimmt nach einem Signalton auf und ersetzt die Auswahl oder fügt am Cursor ein. Ein erneutes „Darüber aufnehmen“ oder „Stoppen“ beendet die Aufnahme.",
+     "why": "voiceover: Erneutes Drücken names a gesture; also über der Auswahl (above it) for recording over it"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "one": "Auf das Originalaudio zurückgesetzt. „Wiederholen“ bringt die %lld Bearbeitung zurück.",
+      "other": "Auf das Originalaudio zurückgesetzt. „Wiederholen“ bringt die %lld Bearbeitungen zurück."
+     },
+     "after": {
+      "one": "Auf das Originalaudio zurückgesetzt. „Wiederholen“ bringt die Bearbeitung zurück.",
+      "other": "Auf das Originalaudio zurückgesetzt. „Wiederholen“ bringt die %lld Bearbeitungen zurück."
+     },
+     "why": "natural: die 1 Bearbeitung reads the number aloud; German one is exactly 1"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "%1$@ Audio werden als %2$@ gesichert, dem Format, das dieses Buch behält.",
+     "after": "%1$@ Audio wird als %2$@ gesichert, dem Format, das dieses Buch behält.",
+     "why": "grammar: the verb agrees with Audio; werden fails for 1 Minute Audio"
+    },
+    {
+     "key": "Saving %@ of audio into the book.",
+     "english": "Saving %@ of audio into the book.",
+     "before": "%@ Audio werden im Buch gesichert.",
+     "after": "%@ Audio wird im Buch gesichert.",
+     "why": "grammar: the verb agrees with Audio; werden fails for 1 Minute Audio"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "Legt die Transkriptionssprache fest. Eine als „Download nötig“ markierte Sprache lässt sich nur im Fenster „Audio transkribieren“ herunterladen.",
+     "after": "Legt die Transkriptionssprache fest. Eine als „Download nötig“ markierte Sprache lässt sich nur im Sheet „Audio transkribieren“ herunterladen.",
+     "why": "term: Transcribe Audio is a sheet, which the glossary calls Sheet; Fenster is a window"
+    },
+    {
+     "key": "Starts recording from %@.",
+     "english": "Starts recording from %@.",
+     "before": "Beginnt die Aufnahme von %@.",
+     "after": "Beginnt die Aufnahme mit %@.",
+     "why": "natural: one records with (mit) a microphone; Aufnahme von %@ reads as a recording of the microphone"
+    },
+    {
+     "key": "Still working. Close once the change is done.",
+     "english": "Still working. Close once the change is done.",
+     "before": "Wird noch bearbeitet. Schließe, sobald die Änderung abgeschlossen ist.",
+     "after": "Wird noch bearbeitet. Schließe das Fenster, sobald die Änderung abgeschlossen ist.",
+     "why": "natural: Schließe needs an object in German"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth kann den Ton von „%@“ nicht umwandeln: Er liegt in einer Audioart vor, die TextMouth nicht liest.",
+     "after": "TextMouth kann den Ton von „%@“ nicht umwandeln: Er liegt in einem Audioformat vor, das TextMouth nicht liest.",
+     "why": "natural: Audioart is not a German word for a kind of audio; Audioformat is"
+    },
+    {
+     "key": "TextMouth could not read the label file “%@”, so its headings were not used.",
+     "english": "TextMouth could not read the label file “%@”, so its headings were not used.",
+     "before": "TextMouth konnte die Marker-Datei „%@“ nicht lesen, daher wurden ihre Überschriften nicht verwendet.",
+     "after": "TextMouth konnte die Label-Datei „%@“ nicht lesen, daher wurden ihre Überschriften nicht verwendet.",
+     "why": "term: one word for an Audacity label file and its labels, as the audio editor export strings say Label-Datei; Marker is TextMouth own marker"
+    },
+    {
+     "key": "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted.",
+     "english": "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted.",
+     "before": "TextMouth konnte die Bibliothek nicht sichern, bevor der Feed „%@“ gelöscht wurde, daher wurde nichts gelöscht.",
+     "after": "TextMouth konnte die Bibliothek vor dem Löschen des Feeds „%@“ nicht sichern, daher wurde nichts gelöscht.",
+     "why": "meaning: bevor der Feed gelöscht wurde says the feed was deleted, against nichts gelöscht"
+    },
+    {
+     "key": "TextMouth couldn't start recording from %@.",
+     "english": "TextMouth couldn't start recording from %@.",
+     "before": "TextMouth konnte die Aufnahme von %@ nicht starten.",
+     "after": "TextMouth konnte die Aufnahme mit %@ nicht starten.",
+     "why": "natural: one records with (mit) a microphone; Aufnahme von %@ reads as a recording of the microphone"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth wird beendet, und das Audio des Buchs enthält diese Bearbeitungen noch nicht. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, bis du erneut bearbeitest. „Abbrechen“ lässt TextMouth geöffnet.",
+     "after": "TextMouth wird beendet, und das Audio des Buchs enthält diese Bearbeitungen noch nicht. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, solange du nichts Neues bearbeitest. „Abbrechen“ lässt TextMouth geöffnet.",
+     "why": "meaning: bis du erneut bearbeitest said the edits stay back until the next edit; Redo can bring them back as long as no new edit is made"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "one": "TextMouth hat %lld neue Kopie doppelter Bücher in den Papierkorb verschoben, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth sich schloss. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen.",
+      "other": "TextMouth hat %lld neue Kopien doppelter Bücher in den Papierkorb verschoben, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth sich schloss. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
+     },
+     "after": {
+      "one": "TextMouth hat %lld neue Kopie doppelter Bücher in den Papierkorb gelegt, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen.",
+      "other": "TextMouth hat %lld neue Kopien doppelter Bücher in den Papierkorb gelegt, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
+     },
+     "why": "natural: a quitting app is beendet, not sich schließen; term: in den Papierkorb gelegt, as the glossary says Move to Trash"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth hat die neuen Kopien von %@ in den Papierkorb verschoben, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth sich schloss. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen.",
+     "after": "TextMouth hat die neuen Kopien von %@ in den Papierkorb gelegt, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen.",
+     "why": "natural: a quitting app is beendet, not sich schließen; term: in den Papierkorb gelegt, as the glossary says Move to Trash"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth hat die neue Kopie von „%@“ in den Papierkorb verschoben, weil die Frage, ob sie als Duplikat behalten werden soll, nicht beantwortet wurde, bevor TextMouth sich schloss. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen.",
+     "after": "TextMouth hat die neue Kopie von „%@“ in den Papierkorb gelegt, weil die Frage, ob sie als Duplikat behalten werden soll, nicht beantwortet wurde, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen.",
+     "why": "natural: a quitting app is beendet, not sich schließen; term: in den Papierkorb gelegt, as the glossary says Move to Trash"
+    },
+    {
+     "key": "TextMouth stopped reading this document because %@.",
+     "english": "TextMouth stopped reading this document because %@.",
+     "before": "TextMouth hat das Lesen dieses Dokuments abgebrochen, weil %@.",
+     "after": "TextMouth hat das Lesen dieses Dokuments abgebrochen: %@.",
+     "why": "grammar: the reason is an English clause from the debug log, which cannot follow weil with its verb-final order"
+    },
+    {
+     "key": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "english": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "before": "Die Adresse von %@ enthält keinen Feed, den TextMouth lesen kann.",
+     "after": "Unter der Adresse von %@ gibt es keinen Feed, den TextMouth lesen kann.",
+     "why": "natural: an address does not contain (enthält) a feed; there is no feed at it"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "Der Feed bleibt in deiner Bibliothek, behält seine Einstellungen und %1$@, und mit %2$@ wird er erneut geprüft.",
+     "after": "Der Feed bleibt in deiner Bibliothek, ebenso seine Einstellungen und %1$@, und mit %2$@ wird er erneut geprüft.",
+     "why": "grammar: the downloads phrase is now nominative, as the Delete Feed confirmation needs it, so this host says it stays"
+    },
+    {
+     "key": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "english": "The label file “%@” matches no audio file beside it by name, so its headings were not used.",
+     "before": "Die Marker-Datei „%@“ passt dem Namen nach zu keiner Audiodatei daneben, daher wurden ihre Überschriften nicht verwendet.",
+     "after": "Die Label-Datei „%@“ passt dem Namen nach zu keiner Audiodatei daneben, daher wurden ihre Überschriften nicht verwendet.",
+     "why": "term: one word for an Audacity label file and its labels, as the audio editor export strings say Label-Datei; Marker is TextMouth own marker"
+    },
+    {
+     "key": "The labels of the label file “%@” run past the end of its audio, so its headings were not used.",
+     "english": "The labels of the label file “%@” run past the end of its audio, so its headings were not used.",
+     "before": "Die Marker der Marker-Datei „%@“ reichen über das Ende ihres Audios hinaus, daher wurden ihre Überschriften nicht verwendet.",
+     "after": "Die Labels der Label-Datei „%@“ reichen über das Ende ihres Audios hinaus, daher wurden ihre Überschriften nicht verwendet.",
+     "why": "term: one word for an Audacity label file and its labels, as the audio editor export strings say Label-Datei; Marker is TextMouth own marker"
+    },
+    {
+     "key": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "english": "The microphone Punch In records from. TextMouth remembers it, apart from macOS's input.",
+     "before": "Das Mikrofon, von dem „Darüber aufnehmen“ aufnimmt. TextMouth merkt es sich, unabhängig vom Eingang von macOS.",
+     "after": "Das Mikrofon, mit dem „Darüber aufnehmen“ aufnimmt. TextMouth merkt es sich, unabhängig vom Eingang von macOS.",
+     "why": "natural: one records with (mit) a microphone, as the Record window strings now say"
+    },
+    {
+     "key": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
+     "english": "The microphone to record from. TextMouth remembers it; the input macOS uses elsewhere is unchanged.",
+     "before": "Das Mikrofon, von dem aufgenommen wird. TextMouth merkt es sich; der Eingang, den macOS sonst verwendet, bleibt unverändert.",
+     "after": "Das Mikrofon, mit dem aufgenommen wird. TextMouth merkt es sich; der Eingang, den macOS sonst verwendet, bleibt unverändert.",
+     "why": "natural: one records with (mit) a microphone, as the Record window strings now say"
+    },
+    {
+     "key": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
+     "english": "This file could not be read as a comic book archive. It may be damaged, or another kind of file.",
+     "before": "Diese Datei konnte nicht als Comic-Archiv gelesen werden. Sie ist möglicherweise beschädigt oder von einer anderen Art.",
+     "after": "Diese Datei konnte nicht als Comic-Archiv gelesen werden. Sie ist möglicherweise beschädigt oder hat ein anderes Format.",
+     "why": "natural: von einer anderen Art is stilted for another kind of file"
+    },
+    {
+     "key": "This file could not be read as a picture. It may be damaged, or another kind of file.",
+     "english": "This file could not be read as a picture. It may be damaged, or another kind of file.",
+     "before": "Diese Datei konnte nicht als Bild gelesen werden. Sie ist möglicherweise beschädigt oder von einer anderen Art.",
+     "after": "Diese Datei konnte nicht als Bild gelesen werden. Sie ist möglicherweise beschädigt oder hat ein anderes Format.",
+     "why": "natural: von einer anderen Art is stilted for another kind of file"
+    },
+    {
+     "key": "To use it, choose %@ on the Text tab in Settings.",
+     "english": "To use it, choose %@ on the Text tab in Settings.",
+     "before": "Zum Verwenden wähle %@ im Tab „Text“ in den Einstellungen.",
+     "after": "Um es zu verwenden, wähle %@ im Tab „Text“ der Einstellungen.",
+     "why": "natural: Zum Verwenden wähle … has no object; es is the pronunciation lexicon named before"
+    },
+    {
+     "key": "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded.",
+     "english": "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded.",
+     "before": "VoiceOver spricht den Pegel während der Aufnahme. Über Lautsprecher kann seine Sprache mit aufgenommen werden.",
+     "after": "VoiceOver spricht den Pegel während der Aufnahme. Über Lautsprecher kann die Sprachausgabe mit aufgenommen werden.",
+     "why": "meaning: seine Sprache reads as its language; what can be recorded is the speech output"
+    },
+    {
+     "key": "Waiting for the data directory move to finish...",
+     "english": "Waiting for the data directory move to finish...",
+     "before": "Warte, bis das Verschieben des Datenordners abgeschlossen ist…",
+     "after": "Warten, bis das Verschieben des Datenordners abgeschlossen ist…",
+     "why": "meaning: Warte is a command to the listener; the line says the import is waiting"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "Wenn aktiviert, folgt dieser Feed der Einstellung in den Einstellungen unter %@; deaktiviere es, um dem Feed eine eigene zu geben.",
+     "after": "Wenn aktiviert, folgt dieser Feed der Einstellung im Tab „%@“ der Einstellungen; deaktiviere die Option, um dem Feed eine eigene zu geben.",
+     "why": "grammar: deaktiviere es had nothing to refer to; also Einstellung in den Einstellungen"
+    },
+    {
+     "key": "all %lld files",
+     "english": {
+      "one": "all %lld file",
+      "other": "all %lld files"
+     },
+     "before": {
+      "one": "alle %lld Datei",
+      "other": "alle %lld Dateien"
+     },
+     "after": {
+      "one": "die einzige Datei",
+      "other": "alle %lld Dateien"
+     },
+     "why": "grammar: alle 1 Datei puts a plural word before one file; a book of one audio file says this"
+    },
+    {
+     "key": "is being transcribed, and %@ now would lose the transcript",
+     "english": "is being transcribed, and %@ now would lose the transcript",
+     "before": "wird gerade transkribiert, und %@ würde jetzt das Transkript verlieren",
+     "after": "wird gerade transkribiert, und %@ würde jetzt zum Verlust des Transkripts führen",
+     "why": "natural: an action cannot lose (verlieren) a transcript; it would lead to its loss"
+    },
+    {
+     "key": "its %lld downloaded articles",
+     "english": {
+      "one": "its %lld downloaded article",
+      "other": "its %lld downloaded articles"
+     },
+     "before": {
+      "one": "seinen %lld heruntergeladenen Artikel",
+      "other": "seine %lld heruntergeladenen Artikel"
+     },
+     "after": {
+      "one": "sein %lld heruntergeladener Artikel",
+      "other": "seine %lld heruntergeladenen Artikel"
+     },
+     "why": "grammar: the phrase also fills Gelöscht wird %@ in the Delete Feed confirmation, which needs the nominative; its hosts now take it so"
+    },
+    {
+     "key": "its %lld downloaded items",
+     "english": {
+      "one": "its %lld downloaded item",
+      "other": "its %lld downloaded items"
+     },
+     "before": {
+      "one": "seinen %lld heruntergeladenen Eintrag",
+      "other": "seine %lld heruntergeladenen Einträge"
+     },
+     "after": {
+      "one": "sein %lld heruntergeladener Eintrag",
+      "other": "seine %lld heruntergeladenen Einträge"
+     },
+     "why": "grammar: the phrase also fills Gelöscht wird %@ in the Delete Feed confirmation, which needs the nominative; its hosts now take it so"
+    },
+    {
+     "key": "its downloaded article",
+     "english": "its downloaded article",
+     "before": "seinen heruntergeladenen Artikel",
+     "after": "sein heruntergeladener Artikel",
+     "why": "grammar: the phrase also fills Gelöscht wird %@ in the Delete Feed confirmation, which needs the nominative; its hosts now take it so"
+    },
+    {
+     "key": "its downloaded item",
+     "english": "its downloaded item",
+     "before": "seinen heruntergeladenen Eintrag",
+     "after": "sein heruntergeladener Eintrag",
+     "why": "grammar: the phrase also fills Gelöscht wird %@ in the Delete Feed confirmation, which needs the nominative; its hosts now take it so"
+    },
+    {
+     "key": "the feed “%@”",
+     "english": "the feed “%@”",
+     "before": "den Feed „%@“",
+     "after": "der Feed „%@“",
+     "why": "grammar: the first item of the list after Gelöscht: is nominative, like the phrases after it"
+    }
+   ]
+  },
+  {
    "part": 3,
    "areas": [
     "reader, formats, and menus",
