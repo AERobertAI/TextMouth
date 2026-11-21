@@ -33,6 +33,7 @@ The reference pages are under `docs/` (see `README.md` and `ARCHITECTURE.md`).
 - [RSS-READER-RESEARCH-2026-10-03.md](RSS-READER-RESEARCH-2026-10-03.md): A podcast and article reader fed by RSS and Atom feeds
 - [SETTINGS-SCOPES-PLAN-2026-11-15.md](SETTINGS-SCOPES-PLAN-2026-11-15.md): Speech and playback settings for a feed, folder, or Reading List (FR23)
 - [SHORTCUT-LABELS-RESEARCH-2026-11-15.md](SHORTCUT-LABELS-RESEARCH-2026-11-15.md): Menu and context menu items that show their keyboard shortcuts (FR22)
+- [STRINGS-SYSTEM-DESIGN-2026-11-21.md](STRINGS-SYSTEM-DESIGN-2026-11-21.md): TextMouth's own interface strings: IDs, one compressed pack, overrides, a picker (FR39)
 - [TEXT-ANCHORS-ADDENDUM-2026-10-10.md](TEXT-ANCHORS-ADDENDUM-2026-10-10.md): Addendum to T06: finding places again by diff when a book's text…
 - [TEXT-ANCHORS-RESEARCH-2026-10-10.md](TEXT-ANCHORS-RESEARCH-2026-10-10.md): Reading places that survive re-extraction (T06)
 - [TITLE-ARTICLES-RESEARCH-2026-11-13.md](TITLE-ARTICLES-RESEARCH-2026-11-13.md): Leading articles in the Library: research and design
