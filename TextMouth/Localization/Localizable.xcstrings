@@ -60147,13 +60147,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld redigering är ogjord. Gör om tar tillbaka den tills du gör en ny redigering."
+                  "value" : "%lld redigering har ångrats. Gör om kan återställa den tills du gör en ny redigering."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld redigeringar är ogjorda. Gör om tar tillbaka dem tills du gör en ny redigering."
+                  "value" : "%lld redigeringar har ångrats. Gör om kan återställa dem tills du gör en ny redigering."
                 }
               }
             }
@@ -108627,7 +108627,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redan vid slutet."
+            "value" : "Redan i slutet."
           }
         },
         "th" : {
@@ -108764,7 +108764,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redan vid början."
+            "value" : "Redan i början."
           }
         },
         "th" : {
@@ -117407,7 +117407,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Frågar efter varje ljudboksimport om den ska transkriberas. Om den är av transkriberas ljudböcker bara med Transkribera ljud."
+            "value" : "Frågar efter varje import av en ljudbok om den ska transkriberas. När det här är avstängt transkriberas ljudböcker bara med Transkribera ljud."
           }
         },
         "th" : {
@@ -158630,7 +158630,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stängning avslutar inspelningen. %1$@ sparar den som en ljudbok, %2$@ raderar den och %3$@ fortsätter spela in."
+            "value" : "Om du stänger fönstret avslutas inspelningen. %1$@ sparar den som en ljudbok, %2$@ raderar den och %3$@ fortsätter spela in."
           }
         },
         "th" : {
@@ -206183,7 +206183,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redigerar ett spår i taget, listade efter kapitelnamn."
+            "value" : "Redigerar ett spår i taget; spåren listas efter kapitelnamn."
           }
         },
         "th" : {
@@ -217211,7 +217211,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Experimentell. Reglerna rättar ord som igenkänningen skriver annorlunda än i upplästa böcker. Kontrollera ändringarna innan du tillämpar dem. Ångra uppstädning lägger tillbaka transkriptionen."
+            "value" : "Experimentell. Reglerna rättar ord som igenkänningen skriver annorlunda än i upplästa böcker. Kontrollera ändringarna innan du tillämpar dem; Ångra uppstädning återställer transkriptionen."
           }
         },
         "th" : {
@@ -239881,7 +239881,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gör sig redo att spela in"
+            "value" : "Förbereder inspelning"
           }
         },
         "th" : {
@@ -262590,7 +262590,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Infogar en tystnad av en längd som du skriver vid markören."
+            "value" : "Infogar vid markören en tystnad med den längd du skriver."
           }
         },
         "th" : {
@@ -273592,7 +273592,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dess fil heter nu ”%@”, eftersom TextMouth inte kan skriva dess gamla format."
+            "value" : "Filen heter nu ”%@”, eftersom TextMouth inte kan skriva det gamla formatet."
           }
         },
         "th" : {
@@ -279825,7 +279825,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Behållet"
+            "value" : "Behålls"
           }
         },
         "th" : {
@@ -283642,7 +283642,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lämnar ljudboken utan transkription. Transkribera ljud gör det senare."
+            "value" : "Lämnar ljudboken utan transkription; Transkribera ljud kan göra det senare."
           }
         },
         "th" : {
@@ -297683,7 +297683,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gör de här rättelserna. Transkriptionen från före sparas, så Ångra uppstädning kan lägga tillbaka den."
+            "value" : "Gör de här rättelserna. Den tidigare transkriptionen sparas, så Ångra uppstädning kan återställa den."
           }
         },
         "th" : {
@@ -342983,7 +342983,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inget ljud från %@. Kontrollera att mikrofonen är på och inte avstängd."
+            "value" : "Inget ljud från %@. Kontrollera att mikrofonen är påslagen och att ljudet inte är avstängt."
           }
         },
         "th" : {
@@ -349484,7 +349484,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Finns inte i bokens ljud än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering."
+            "value" : "Finns inte i bokens ljud än. Kassera ångrar dem; nästa gång du redigerar den här boken kan Gör om återställa dem tills du gör en ny redigering."
           }
         },
         "th" : {
@@ -364722,7 +364722,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnar din kopia av reglerna, transcript-cleanup.json, i din textredigerare. Den görs första gången av TextMouths egna regler. Ändringar börjar gälla när du återvänder till TextMouth."
+            "value" : "Öppnar din kopia av reglerna, transcript-cleanup.json, i din textredigerare. Första gången skapas den utifrån de inbyggda reglerna i TextMouth. Ändringar börjar gälla när du återvänder till TextMouth."
           }
         },
         "th" : {
@@ -386890,7 +386890,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger tillbaka TextMouths färdiga förinställningar och tar bort de du har lagt till."
+            "value" : "Återställer de färdiga förinställningarna i TextMouth och tar bort dem som du har lagt till."
           }
         },
         "th" : {
@@ -387027,7 +387027,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger tillbaka transkriptionen som den var före den senaste uppstädningen."
+            "value" : "Återställer transkriptionen som den var före den senaste uppstädningen."
           }
         },
         "th" : {
@@ -387438,7 +387438,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger tillbaka den tidigare transkriptionen…"
+            "value" : "Återställer den tidigare transkriptionen…"
           }
         },
         "th" : {
@@ -397599,7 +397599,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelar in över markeringen eller vid markören, efter ett pip. Igen, eller Stoppa, avslutar inspelningen."
+            "value" : "Spelar in över markeringen eller vid markören, efter ett pip. Samma kommando igen, eller Stoppa, avslutar inspelningen."
           }
         },
         "th" : {
@@ -404928,7 +404928,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta bort dån"
+            "value" : "Ta bort muller"
           }
         },
         "th" : {
@@ -419175,13 +419175,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Återgick till originalljudet. Gör om tar tillbaka %lld redigering."
+                  "value" : "Återgick till originalljudet. Gör om kan återställa %lld redigering."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Återgick till originalljudet. Gör om tar tillbaka %lld redigeringar."
+                  "value" : "Återgick till originalljudet. Gör om kan återställa %lld redigeringar."
                 }
               }
             }
@@ -435029,7 +435029,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Markerade de %@ före kapitel 1."
+            "value" : "Markerade ljudet före kapitel 1, %@."
           }
         },
         "th" : {
@@ -436953,7 +436953,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ange kapitelmärke"
+            "value" : "Sätt kapitelmärke"
           }
         },
         "th" : {
@@ -437700,7 +437700,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anger ett kapitelmärke vid markören, med en titel som du skriver."
+            "value" : "Sätter ett kapitelmärke vid markören, med en titel som du skriver."
           }
         },
         "th" : {
@@ -490600,7 +490600,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth avslutas och bokens ljud innehåller inte de här redigeringarna än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering. Avbryt håller TextMouth öppet."
+            "value" : "TextMouth avslutas och bokens ljud innehåller inte de här redigeringarna än. Kassera ångrar dem; nästa gång du redigerar den här boken kan Gör om återställa dem tills du gör en ny redigering. Avbryt håller TextMouth öppet."
           }
         },
         "th" : {
@@ -506985,13 +506985,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ljudmärket raderas, och Gör om tar inte tillbaka det."
+                  "value" : "Ljudmärket raderas, och Gör om återställer det inte."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "De %lld ljudmärkena raderas, och Gör om tar inte tillbaka dem."
+                  "value" : "De %lld ljudmärkena raderas, och Gör om återställer dem inte."
                 }
               }
             }
@@ -516947,7 +516947,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ljudbokens ljud, din position och dina bokmärken förblir som de är."
+            "value" : "Ljudbokens ljud, din läsposition och dina bokmärken förblir som de är."
           }
         },
         "th" : {
