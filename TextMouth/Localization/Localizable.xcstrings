@@ -9091,7 +9091,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@を初期設定に戻しました"
+            "value" : "%@をデフォルトに戻しました"
           }
         },
         "pt-BR" : {
@@ -14530,7 +14530,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@：%2$@、初期設定から変更済み"
+            "value" : "%1$@：%2$@、デフォルトから変更済み"
           }
         },
         "pt-BR" : {
@@ -86439,7 +86439,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次の記事のダウンロードを取り消したため、再生を停止しました。"
+            "value" : "次の記事のダウンロードをキャンセルしたため、再生を停止しました。"
           }
         },
         "pt-BR" : {
@@ -86498,7 +86498,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次の記事のダウンロードを取り消しました。"
+            "value" : "次の記事のダウンロードをキャンセルしました。"
           }
         },
         "pt-BR" : {
@@ -86557,7 +86557,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のエピソードのダウンロードを取り消したため、再生を停止しました。"
+            "value" : "次のエピソードのダウンロードをキャンセルしたため、再生を停止しました。"
           }
         },
         "pt-BR" : {
@@ -86616,7 +86616,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のエピソードのダウンロードを取り消しました。"
+            "value" : "次のエピソードのダウンロードをキャンセルしました。"
           }
         },
         "pt-BR" : {
@@ -86675,7 +86675,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前の記事のダウンロードを取り消したため、再生を停止しました。"
+            "value" : "前の記事のダウンロードをキャンセルしたため、再生を停止しました。"
           }
         },
         "pt-BR" : {
@@ -86734,7 +86734,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前の記事のダウンロードを取り消しました。"
+            "value" : "前の記事のダウンロードをキャンセルしました。"
           }
         },
         "pt-BR" : {
@@ -86793,7 +86793,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前のエピソードのダウンロードを取り消したため、再生を停止しました。"
+            "value" : "前のエピソードのダウンロードをキャンセルしたため、再生を停止しました。"
           }
         },
         "pt-BR" : {
@@ -86852,7 +86852,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前のエピソードのダウンロードを取り消しました。"
+            "value" : "前のエピソードのダウンロードをキャンセルしました。"
           }
         },
         "pt-BR" : {
@@ -149852,7 +149852,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィルタプリセットがありません。追加するか、初期設定に戻してください。"
+            "value" : "フィルタプリセットがありません。追加するか、デフォルトに戻してください。"
           }
         },
         "pt-BR" : {
@@ -182475,7 +182475,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "すべて初期設定に戻す"
+            "value" : "すべてデフォルトに戻す"
           }
         },
         "pt-BR" : {
@@ -236310,7 +236310,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "フィルタプリセットを初期設定に戻しました。"
+            "value" : "フィルタプリセットをデフォルトに戻しました。"
           }
         },
         "pt-BR" : {
