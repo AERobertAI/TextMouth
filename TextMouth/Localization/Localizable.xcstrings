@@ -274610,7 +274610,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Originaldatei konnte nicht entfernt werden und wurde daher unter %@ behalten."
+            "value" : "Die Originaldatei konnte nicht entfernt werden und wurde daher unter %@ aufbewahrt."
           }
         },
         "es" : {
@@ -524690,7 +524690,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der aktuelle Datenordner wird als Wiederherstellungsdaten behalten."
+            "value" : "Der aktuelle Datenordner wird als Wiederherstellungsdaten aufbewahrt."
           }
         },
         "es" : {
@@ -537969,7 +537969,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Bibliothek hatte unter ihrem Paketnamen %1$@ bereits anderen Inhalt, daher wurde das Buch in einem neuen Paket, %2$@, gespeichert, und seine Originaldatei wurde unter %3$@ behalten."
+            "value" : "Die Bibliothek hatte unter ihrem Paketnamen %1$@ bereits anderen Inhalt, daher wurde das Buch in einem neuen Paket, %2$@, gespeichert, und seine Originaldatei wurde unter %3$@ aufbewahrt."
           }
         },
         "en" : {
