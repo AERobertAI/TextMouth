@@ -28942,7 +28942,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@：%2$@，已從預設值變更"
+            "value" : "%1$@：%2$@，已從預設值更改"
           }
         }
       }
@@ -85655,7 +85655,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此音訊是由較新的 TextMouth 編輯的，因此這個版本不會更動其編輯內容。"
+            "value" : "此音訊是由較新的 TextMouth 編輯的，因此這個版本不會更改其編輯內容。"
           }
         }
       }
@@ -122150,7 +122150,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "音量變更 %@"
+            "value" : "音量更改 %@"
           }
         }
       }
@@ -122626,7 +122626,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "依規則列出的變更"
+            "value" : "依規則列出的更改"
           }
         }
       }
@@ -123521,7 +123521,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "變更顯示方式的名稱、列出的內容、條件、排序和限制。"
+            "value" : "更改顯示方式的名稱、列出的內容、條件、排序和限制。"
           }
         }
       }
@@ -134721,7 +134721,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇存放這個書庫另一份副本的檔案夾。其中的內容不會變更。"
+            "value" : "選擇存放這個書庫另一份副本的檔案夾。其中的內容不會更改。"
           }
         }
       }
@@ -135209,7 +135209,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇存放這個書庫另一份副本的檔案夾，並列出差異。兩份副本都不會變更。"
+            "value" : "選擇存放這個書庫另一份副本的檔案夾，並列出差異。兩份副本都不會更改。"
           }
         }
       }
@@ -140398,7 +140398,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "關閉此視窗，不更動逐字稿。"
+            "value" : "關閉此視窗，不更改逐字稿。"
           }
         }
       }
@@ -140761,7 +140761,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在關閉「%@」的閱讀器，因為編輯會變更其音訊。"
+            "value" : "正在關閉「%@」的閱讀器，因為編輯會更改其音訊。"
           }
         }
       }
@@ -142237,7 +142237,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已停止比較。沒有任何項目被變更。"
+            "value" : "已停止比較。沒有任何項目被更改。"
           }
         }
       }
@@ -150438,7 +150438,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法從編輯器的檔案讀回文字，因此這裡的文字未變更。"
+            "value" : "無法從編輯器的檔案讀回文字，因此這裡的文字未更改。"
           }
         }
       }
@@ -150688,7 +150688,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法移除檔案夾：其書庫路徑無效或已變更。"
+            "value" : "無法移除檔案夾：其書庫路徑無效或已更改。"
           }
         }
       }
@@ -192581,7 +192581,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "實驗性功能。這些規則會修正辨識器寫法與朗讀書籍不同的字詞。套用前請先檢查變更；「還原清理」可以讓逐字稿恢復原狀。"
+            "value" : "實驗性功能。這些規則會修正辨識器寫法與朗讀書籍不同的字詞。套用前請先檢查更改；「還原清理」可以讓逐字稿恢復原狀。"
           }
         }
       }
@@ -197922,7 +197922,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "輸出到你選擇的檔案；書籍本身的檔案不會變更。"
+            "value" : "輸出到你選擇的檔案；書籍本身的檔案不會更改。"
           }
         }
       }
@@ -223598,7 +223598,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "如果檔案不是以 %@ 撰寫，TextMouth 會拒絕讀取，且不會有任何變更。"
+            "value" : "如果檔案不是以 %@ 撰寫，TextMouth 會拒絕讀取，且不會有任何更改。"
           }
         }
       }
@@ -248189,7 +248189,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已保留 %@ 個章節（共 %lld 個），直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓變更為止。若要從第 %@ 章繼續，請以相同的速度和音調輸出相同範圍。"
+                  "value" : "已保留 %@ 個章節（共 %lld 個），直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。若要從第 %@ 章繼續，請以相同的速度和音調輸出相同範圍。"
                 }
               }
             }
@@ -248596,7 +248596,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "已保留全部 %lld 個朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓變更為止。若要用它們製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
+                  "value" : "已保留全部 %lld 個朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。若要用它們製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
                 }
               }
             }
@@ -248968,7 +248968,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "已保留朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓變更為止。若要用它製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
+            "value" : "已保留朗讀章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。若要用它製作音訊檔案，請以相同的速度和音調輸出相同範圍。"
           }
         }
       }
@@ -270049,7 +270049,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "中介資料僅儲存至書庫；EPUB 檔案未更動。"
+            "value" : "中介資料僅儲存至書庫；EPUB 檔案未更改。"
           }
         }
       }
@@ -290119,7 +290119,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "兩者都不算較新：各自都有對方沒有的變更。"
+            "value" : "兩者都不算較新：各自都有對方沒有的更改。"
           }
         }
       }
@@ -301118,7 +301118,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "不保留原始檔：編輯會直接變更音訊，已儲存的編輯無法還原。"
+            "value" : "不保留原始檔：編輯會直接更改音訊，已儲存的編輯無法還原。"
           }
         }
       }
@@ -303034,7 +303034,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "沒有任何規則會變更這份逐字稿。"
+            "value" : "沒有任何規則會更改這份逐字稿。"
           }
         }
       }
@@ -310945,7 +310945,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "沒有任何項目被變更。"
+            "value" : "沒有任何項目被更改。"
           }
         }
       }
@@ -312040,7 +312040,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "未更動任何內容。"
+            "value" : "未更改任何內容。"
           }
         }
       }
@@ -314895,7 +314895,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "只有明確顯示為 English Braille, American Edition 的書籍，在加入時才會變更。「書籍資訊」會說明點字碼是猜測的，並可選擇其他點字碼。"
+            "value" : "只有明確顯示為 English Braille, American Edition 的書籍，在加入時才會更改。「書籍資訊」會說明點字碼是猜測的，並可選擇其他點字碼。"
           }
         }
       }
@@ -322818,7 +322818,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在你的文字編輯器中打開你的規則副本 transcript-cleanup.json；第一次會由 TextMouth 本身的規則建立。回到 TextMouth 時，變更就會生效。"
+            "value" : "在你的文字編輯器中打開你的規則副本 transcript-cleanup.json；第一次會由 TextMouth 本身的規則建立。回到 TextMouth 時，更改就會生效。"
           }
         }
       }
@@ -337823,7 +337823,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "另一部 Mac 的預設組合剛剛同步過來並取代了這些。請再次進行變更。"
+            "value" : "另一部 Mac 的預設組合剛剛同步過來並取代了這些。請再次進行更改。"
           }
         }
       }
@@ -343946,7 +343946,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現在結束會使這些變更未儲存："
+            "value" : "現在結束會使這些更改未儲存："
           }
         }
       }
@@ -367520,7 +367520,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "還原此動作的預設快速鍵，日後版本可能會更動這些預設值"
+            "value" : "還原此動作的預設快速鍵，日後版本可能會更改這些預設值"
           }
         }
       }
@@ -375400,7 +375400,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "儲存中介資料變更"
+            "value" : "儲存中介資料更改"
           }
         }
       }
@@ -400297,7 +400297,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "部分變更無法儲存"
+            "value" : "部分更改無法儲存"
           }
         }
       }
@@ -408733,7 +408733,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "仍在處理上一項變更。"
+            "value" : "仍在處理上一項更改。"
           }
         }
       }
@@ -408852,7 +408852,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "仍在處理中。請在變更完成後再關閉。"
+            "value" : "仍在處理中。請在更改完成後再關閉。"
           }
         }
       }
@@ -411993,7 +411993,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停止比較。兩份副本中都沒有任何項目被變更。"
+            "value" : "停止比較。兩份副本中都沒有任何項目被更改。"
           }
         }
       }
@@ -412237,7 +412237,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停止移動書庫。書庫會維持原處，不會有任何變更。"
+            "value" : "停止移動書庫。書庫會維持原處，不會有任何更改。"
           }
         }
       }
@@ -412963,7 +412963,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "停止輸出，並保留已朗讀的章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓變更為止。以相同的速度和音調輸出相同範圍，會從這些章節繼續。"
+            "value" : "停止輸出，並保留已朗讀的章節，直到 TextMouth 結束、開始另一次語音音訊輸出，或書籍的語音、文字、替換規則或停頓更改為止。以相同的速度和音調輸出相同範圍，會從這些章節繼續。"
           }
         }
       }
@@ -420196,7 +420196,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%2$@ 編輯後文字的第 %1$@ 章 %3$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原變更；在此之前，書籍會保留舊的文字。"
+            "value" : "文字未更新：%2$@ 編輯後文字的第 %1$@ 章 %3$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。"
           }
         }
       }
@@ -420321,7 +420321,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%1$@ 編輯後的文字 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原變更；在此之前，書籍會保留舊的文字。"
+            "value" : "文字未更新：%1$@ 編輯後的文字 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改；在此之前，書籍會保留舊的文字。"
           }
         }
       }
@@ -420440,7 +420440,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%@ 編輯後的文字沒有任何含文字的章節。請還原變更後再次儲存；在此之前，書籍會保留舊的文字。"
+            "value" : "文字未更新：%@ 編輯後的文字沒有任何含文字的章節。請還原更改後再次儲存；在此之前，書籍會保留舊的文字。"
           }
         }
       }
@@ -421041,7 +421041,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%@ 的原始檔案也已更動。下次打開書籍時，會再次從該檔案讀取書籍的文字。"
+            "value" : "文字未更新：%@ 的原始檔案也已更改。下次打開書籍時，會再次從該檔案讀取書籍的文字。"
           }
         }
       }
@@ -421160,7 +421160,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字未更新：%@ 的逐字稿也已更動。下次打開書籍時，會再次根據它寫入書籍的文字。"
+            "value" : "文字未更新：%@ 的逐字稿也已更改。下次打開書籍時，會再次根據它寫入書籍的文字。"
           }
         }
       }
@@ -439159,7 +439159,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 之後加入的 BRF 和 BRL 檔案會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框會以這些字元開始 BRF。每本書都保留其輸入時的字元，可在「書籍資訊」中變更。"
+            "value" : "TextMouth 之後加入的 BRF 和 BRL 檔案會以這些字元讀取，並自動辨識 Unicode 點字圖樣。輸出對話框會以這些字元開始 BRF。每本書都保留其輸入時的字元，可在「書籍資訊」中更改。"
           }
         }
       }
@@ -459938,7 +459938,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書的音訊在轉錄後已變更（%@），因此逐字稿不再相符。請重新轉錄。"
+            "value" : "這本書的音訊在轉錄後已更改（%@），因此逐字稿不再相符。請重新轉錄。"
           }
         }
       }
@@ -460057,7 +460057,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書的音訊在轉錄期間已變更：%@。請重新轉錄。"
+            "value" : "這本書的音訊在轉錄期間已更改：%@。請重新轉錄。"
           }
         }
       }
@@ -460658,7 +460658,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "對話框打開後，書籍的標題已變更。請重新打開，再次選擇範圍。"
+            "value" : "對話框打開後，書籍的標題已更改。請重新打開，再次選擇範圍。"
           }
         }
       }
@@ -461372,7 +461372,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書的文字有 TextMouth 無法拷貝的變更，因此文字維持原樣。"
+            "value" : "這本書的文字有 TextMouth 無法拷貝的更改，因此文字維持原樣。"
           }
         }
       }
@@ -461491,7 +461491,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書的文字只在 iCloud 中，因此 TextMouth 不會更動。請先下載這本書，然後再試一次。"
+            "value" : "這本書的文字只在 iCloud 中，因此 TextMouth 不會更改。請先下載這本書，然後再試一次。"
           }
         }
       }
@@ -463169,7 +463169,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "剪貼簿中沒有可貼上的文字，因此文字未變更。"
+            "value" : "剪貼簿中沒有可貼上的文字，因此文字未更改。"
           }
         }
       }
@@ -479233,7 +479233,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "列表會立即跟隨「%@」的變更；要下載或移除的內容會等到變更維持十秒後才處理，屆時 VoiceOver 會宣布。"
+            "value" : "列表會立即跟隨「%@」的更改；要下載或移除的內容會等到更改維持十秒後才處理，屆時 VoiceOver 會宣布。"
           }
         }
       }
@@ -484334,7 +484334,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "你輸入的原始檔案不會更動。"
+            "value" : "你輸入的原始檔案不會更改。"
           }
         }
       }
@@ -484453,7 +484453,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "你輸入的原始檔案不會被更動。"
+            "value" : "你輸入的原始檔案不會被更改。"
           }
         }
       }
@@ -484822,7 +484822,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "原始檔是錄音儲存時所依據的無損錄製內容，或有聲書檔案在第一次編輯之前的副本。保留它可以讓每項編輯都無損還原；錄音的原始檔每小時約佔 345 MB。變更也會套用到已保留的原始檔，在雲端書庫中，原始檔會隨書籍一起同步。"
+            "value" : "原始檔是錄音儲存時所依據的無損錄製內容，或有聲書檔案在第一次編輯之前的副本。保留它可以讓每項編輯都無損還原；錄音的原始檔每小時約佔 345 MB。更改也會套用到已保留的原始檔，在雲端書庫中，原始檔會隨書籍一起同步。"
           }
         }
       }
@@ -493053,7 +493053,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文字在搜尋後有所變更；已移到最接近的符合項目。"
+            "value" : "文字在搜尋後有所更改；已移到最接近的符合項目。"
           }
         }
       }
@@ -494731,7 +494731,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "自顯示以來，逐字稿已有變更。請重新打開「清理逐字稿」以查看變更。"
+            "value" : "自顯示以來，逐字稿已有更改。請重新打開「清理逐字稿」以查看更改。"
           }
         }
       }
@@ -495445,7 +495445,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "逐字稿只在 iCloud 中，因此 TextMouth 不會更動。請先下載這本書，然後再試一次。"
+            "value" : "逐字稿只在 iCloud 中，因此 TextMouth 不會更改。請先下載這本書，然後再試一次。"
           }
         }
       }
@@ -496522,7 +496522,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "逐字稿連同你的變更，會與訂閱源中的單集保留在一起，即使刪除其下載內容也一樣。刪除單集或訂閱源會一併刪除逐字稿；「移至書庫」則會將它保留為書籍。"
+            "value" : "逐字稿連同你的更改，會與訂閱源中的單集保留在一起，即使刪除其下載內容也一樣。刪除單集或訂閱源會一併刪除逐字稿；「移至書庫」則會將它保留為書籍。"
           }
         }
       }
@@ -504730,7 +504730,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "自讀取這本書以來，這部 Mac 的點字表「%1$@」已從 liblouis %2$@ 變更為 %3$@，因此 TextMouth 保留這本書原有的文字。"
+            "value" : "自讀取這本書以來，這部 Mac 的點字表「%1$@」已從 liblouis %2$@ 更改為 %3$@，因此 TextMouth 保留這本書原有的文字。"
           }
         }
       }
@@ -504855,7 +504855,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "自 liblouis %2$@ 讀取這本書以來，這部 Mac 的點字表「%1$@」可能已變更，因此 TextMouth 保留這本書原有的文字。"
+            "value" : "自 liblouis %2$@ 讀取這本書以來，這部 Mac 的點字表「%1$@」可能已更改，因此 TextMouth 保留這本書原有的文字。"
           }
         }
       }
@@ -508067,7 +508067,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書不保留原始音訊：已儲存的編輯會直接變更其音訊，之後無法還原。"
+            "value" : "這本書不保留原始音訊：已儲存的編輯會直接更改其音訊，之後無法還原。"
           }
         }
       }
@@ -512369,7 +512369,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此檔案夾沒有儲存的名稱，因此無法安全地變更。"
+            "value" : "此檔案夾沒有儲存的名稱，因此無法安全地更改。"
           }
         }
       }
@@ -539727,7 +539727,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "語音已變更為 %@"
+            "value" : "語音已更改為 %@"
           }
         }
       }
@@ -572587,7 +572587,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原變更，書籍便會打開。"
+            "value" : "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。"
           }
         }
       }
@@ -572706,7 +572706,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原變更，文字便會顯示。"
+            "value" : "它 %@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。"
           }
         }
       }
@@ -573426,7 +573426,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它沒有任何含文字的章節。請還原變更後再次儲存，書籍便會打開。"
+            "value" : "它沒有任何含文字的章節。請還原更改後再次儲存，書籍便會打開。"
           }
         }
       }
@@ -573545,7 +573545,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它沒有任何含文字的章節。請還原變更後再次儲存，文字便會顯示。"
+            "value" : "它沒有任何含文字的章節。請還原更改後再次儲存，文字便會顯示。"
           }
         }
       }
@@ -576826,7 +576826,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原變更，書籍便會打開。"
+            "value" : "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，書籍便會打開。"
           }
         }
       }
@@ -576951,7 +576951,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原變更，文字便會顯示。"
+            "value" : "它的第 %1$@ 章 %2$@，TextMouth 無法安全讀取。請將它攤平後再儲存，或還原更改，文字便會顯示。"
           }
         }
       }
@@ -588045,7 +588045,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "儲存對你的訂閱源訂閱項目所做的變更"
+            "value" : "儲存對你的訂閱源訂閱項目所做的更改"
           }
         }
       }
@@ -591825,7 +591825,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書籍本身的檔案也已更動。請再次打開書籍，從該檔案讀取其文字。"
+            "value" : "書籍本身的檔案也已更改。請再次打開書籍，從該檔案讀取其文字。"
           }
         }
       }
@@ -592063,7 +592063,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "書籍的逐字稿也已更動。請再次打開書籍，從該逐字稿讀取其文字。"
+            "value" : "書籍的逐字稿也已更改。請再次打開書籍，從該逐字稿讀取其文字。"
           }
         }
       }
@@ -599189,7 +599189,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」變成「%2$@」，字詞內部也會變更：%3$@。"
+            "value" : "「%1$@」變成「%2$@」，字詞內部也會更改：%3$@。"
           }
         }
       }
@@ -599570,7 +599570,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法將「%1$@」讀取為 %2$@：%3$@沒有任何項目被變更。"
+            "value" : "無法將「%1$@」讀取為 %2$@：%3$@沒有任何項目被更改。"
           }
         }
       }
@@ -601641,7 +601641,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」仍在處理中。請在變更完成後再結束。"
+            "value" : "「%@」仍在處理中。請在更改完成後再結束。"
           }
         }
       }
