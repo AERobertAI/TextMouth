@@ -485500,7 +485500,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kunde inte spara biblioteket innan flödet ”%@” raderades, så ingenting raderades."
+            "value" : "TextMouth kunde inte spara biblioteket innan flödet ”%@” skulle raderas, så ingenting raderades."
           }
         },
         "th" : {
@@ -491696,7 +491696,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth utför fortfarande ditt senaste svar. Vänta tills det är klart."
+            "value" : "TextMouth arbetar fortfarande med ditt senaste svar. Vänta tills det är klart."
           }
         },
         "th" : {
@@ -492381,7 +492381,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth får inte skicka aviseringar. Slå på dem i Systeminställningar, Aviseringar, TextMouth."
+            "value" : "TextMouth får inte skicka notiser. Slå på dem i Systeminställningar, Notiser, TextMouth."
           }
         },
         "th" : {
@@ -499802,7 +499802,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Konverteraren i TextMouth kunde inte göra sig säker innan den läste ”%@”, så den läste inte filen."
+            "value" : "Konverteraren i TextMouth kunde inte isolera sig innan den läste ”%@”, så den läste inte filen."
           }
         },
         "th" : {
@@ -500076,7 +500076,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Konverteraren i TextMouth stoppade före slutet av ”%@”, så den kunde inte importeras."
+            "value" : "Konverteraren i TextMouth avslutades före slutet av ”%@”, så filen kunde inte importeras."
           }
         },
         "th" : {
@@ -500213,7 +500213,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Konverteraren i TextMouth stoppade oväntat under läsningen av ”%@”. Filen kan vara skadad."
+            "value" : "Konverteraren i TextMouth avslutades oväntat under läsningen av ”%@”. Filen kan vara skadad."
           }
         },
         "th" : {
@@ -524494,7 +524494,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "CUE-filen ”%@” anger inget av ljudet bredvid den, så dess rubriker användes inte."
+            "value" : "CUE-filen ”%@” anger ingen av ljudfilerna bredvid den, så dess rubriker användes inte."
           }
         },
         "th" : {
@@ -529923,7 +529923,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flödet ”%@” finns kvar med det."
+            "value" : "Flödet ”%@” finns också kvar."
           }
         },
         "th" : {
@@ -530060,7 +530060,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flödet ”%@” finns kvar med dem."
+            "value" : "Flödet ”%@” finns också kvar."
           }
         },
         "th" : {
@@ -564177,7 +564177,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det finns inte tillräckligt med ledigt diskutrymme för att konvertera %1$@: det behöver %2$@ ledigt."
+            "value" : "Det finns inte tillräckligt med ledigt diskutrymme för att konvertera %1$@: det behövs %2$@ ledigt."
           }
         },
         "th" : {
@@ -604818,7 +604818,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya artiklar%2$@."
+            "value" : "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya artiklar%2$@."
           }
         },
         "th" : {
@@ -604961,7 +604961,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya avsnitt%2$@."
+            "value" : "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya avsnitt%2$@."
           }
         },
         "th" : {
@@ -605104,7 +605104,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya objekt%2$@."
+            "value" : "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya objekt%2$@."
           }
         },
         "th" : {
@@ -639114,7 +639114,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "konverterar dess DAISY-ljud"
+            "value" : "konverterar DAISY-ljudet"
           }
         },
         "th" : {
@@ -639251,7 +639251,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "konverterar dess ljud"
+            "value" : "konverterar ljudet"
           }
         },
         "th" : {
@@ -639525,7 +639525,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "skapar dess paket"
+            "value" : "skapar paketet"
           }
         },
         "th" : {
@@ -640210,7 +640210,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "att radera dess nedladdning"
+            "value" : "att radera nedladdningen"
           }
         },
         "th" : {
@@ -646947,7 +646947,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "transkriberas, och %@ nu skulle förlora transkriptionen"
+            "value" : "transkriberas, och %@ nu skulle göra att transkriptionen går förlorad"
           }
         },
         "th" : {
@@ -662906,7 +662906,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "läser dess ljud"
+            "value" : "läser ljudet"
           }
         },
         "th" : {
@@ -663043,7 +663043,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "läser dess manifest"
+            "value" : "läser manifestet"
           }
         },
         "th" : {
@@ -663180,7 +663180,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "läser dess text"
+            "value" : "läser texten"
           }
         },
         "th" : {
@@ -664606,7 +664606,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "sparar dess bookInfo.json-fil"
+            "value" : "sparar filen bookInfo.json"
           }
         },
         "th" : {
