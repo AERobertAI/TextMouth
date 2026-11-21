@@ -1,0 +1,407 @@
+{
+ "language": "tr",
+ "reviews": [
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ varsayılan olarak %2$@ tuşunu kullanıyor",
+     "after": "Varsayılan kısayolunu %1$@ kullanıyor: %2$@",
+     "why": "meaning: the key is this row's default, now held by %1$@; the old text said it was %1$@'s own default"
+    },
+    {
+     "key": "%@ not recorded for %@: %@",
+     "english": "%1$@ not recorded for %2$@: %3$@",
+     "before": "%1$@ %2$@ için kaydedilmedi: %3$@",
+     "after": "%1$@, %2$@ için kaydedilmedi: %3$@",
+     "why": "punctuation: a comma between the key and the action, as the matching success announcement has, so the two names do not run together"
+    },
+    {
+     "key": "%@ works in %@.",
+     "english": "%1$@ works in %2$@.",
+     "before": "%1$@ çalıştığı yer: %2$@.",
+     "after": "%1$@ şurada çalışır: %2$@.",
+     "why": "grammar: '%1$@ çalıştığı yer' needs a genitive suffix that a placeholder cannot take"
+    },
+    {
+     "key": "%@, %@ quality",
+     "english": "%1$@, %2$@ quality",
+     "before": "%1$@, %2$@ kalite",
+     "after": "%1$@, kalite: %2$@",
+     "why": "grammar: '%2$@ kalite' breaks for the quality 'Bilinmiyor' (Unknown); naming the quality after a colon reads right for every tier"
+    },
+    {
+     "key": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "english": "Adds the page, such as Page 12 of 300, to Where Am I?'s summaries, for books of more than one page.",
+     "before": "Sayfayı, örneğin Sayfa 12 / 300 gibi, birden çok sayfası olan kitaplar için Neredeyim? özetlerine ekler.",
+     "after": "Birden çok sayfası olan kitaplarda, Sayfa 12 / 300 gibi sayfa bilgisini Neredeyim? özetlerine ekler.",
+     "why": "natural: 'örneğin … gibi' said the example twice; the condition now comes first, as Turkish puts it"
+    },
+    {
+     "key": "At Sign",
+     "english": "At Sign",
+     "before": "At İşareti",
+     "after": "At işareti",
+     "why": "punctuation: lower case after the first word, as the other punctuation key names have"
+    },
+    {
+     "key": "Before page %@",
+     "english": "Before page %@",
+     "before": "%@ sayfasından önce",
+     "after": "%@ numaralı sayfadan önce",
+     "why": "grammar: '3 sayfasından' is not how Turkish names a page by its label; 'numaralı sayfa' takes any label"
+    },
+    {
+     "key": "Changes the number by one, from 2 to 99",
+     "english": "Changes the number by one, from 2 to 99",
+     "before": "Sayıyı birer birer değiştirir, 2 ile 99 arasında.",
+     "after": "Sayıyı 2 ile 99 arasında birer birer değiştirir.",
+     "why": "natural: the range trailed after a comma in English order; Turkish puts it before the verb"
+    },
+    {
+     "key": "Changes the speed in steps of %@ times",
+     "english": "Changes the speed in steps of %@ times",
+     "before": "Hızı %@ kat adımlarla değiştirir.",
+     "after": "Hızı %@ katlık adımlarla değiştirir.",
+     "why": "grammar: a step size before 'adım' takes the adjective form 'katlık', as the words-per-minute hint has 'kelimelik'"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "Seçim kısayolu size özel yapar; Varsayılanı Geri Yükle, varsayılan çalışma yerini geri getirir.",
+     "after": "Bir seçim yapmak kısayolu size özel kılar; Varsayılanı Geri Yükle, varsayılan çalışma yerini geri getirir.",
+     "why": "natural: 'Seçim … özel yapar' read as the noun 'selection' with an unidiomatic verb"
+    },
+    {
+     "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "before": "BRF her braille hücresini nasıl yazar. Çoğu braille ekranı ve kabartma yazıcı Kuzey Amerika Braille ASCII okur; Almanca için ayarlanmış olanlar Eurobraille okur. Başka yerdeki bir okuyucuyla paylaşmak için bir PEF dışa aktarın.",
+     "after": "BRF dosyasının her braille hücresini nasıl yazdığı. Çoğu braille ekranı ve kabartma yazıcı Kuzey Amerika Braille ASCII okur; Almanca için ayarlanmış olanlar Eurobraille okur. Başka yerdeki bir okuyucuyla paylaşmak için bir PEF dışa aktarın.",
+     "why": "grammar: 'BRF … nasıl yazar.' is a question ending in a period; the description takes the noun clause 'nasıl yazdığı', as the matching BRL hint does"
+    },
+    {
+     "key": "Importing %@ was stopped when TextMouth closed.",
+     "english": "Importing %@ was stopped when TextMouth closed.",
+     "before": "%@ içe aktarma, TextMouth kapandığında durdu.",
+     "after": "%@ için içe aktarma, TextMouth kapandığında durdu.",
+     "why": "grammar: '%@ içe aktarma' needs a genitive suffix that a file name cannot take"
+    },
+    {
+     "key": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "english": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "before": "Kitaplık pencerelerinde tek başına bir harf, onunla başlayan ilk kitaba ya da klasöre gider; bu yüzden W gibi tek harflik bir kısayol yalnızca diğer pencerelerde çalışır.",
+     "after": "Kitaplık pencerelerinde tek başına bir harf, onunla başlayan ilk kitaba ya da klasöre gider; bu yüzden W gibi tek harfli bir kısayol yalnızca diğer pencerelerde çalışır.",
+     "why": "grammar: 'tek harflik' is not a word; the adjective is 'tek harfli'"
+    },
+    {
+     "key": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks.",
+     "english": {
+      "one": "It has no headings, so the contents list has %lld entry for its chapters and the places it marks.",
+      "other": "It has no headings, so the contents list has %lld entries for its chapters and the places it marks."
+     },
+     "before": {
+      "one": "Başlığı yok, bu yüzden içindekiler listesinde bölümleri ve işaretlediği yerler için %lld girdi var.",
+      "other": "Başlığı yok, bu yüzden içindekiler listesinde bölümleri ve işaretlediği yerler için %lld girdi var."
+     },
+     "after": {
+      "one": "İçinde hiç başlık yok, bu yüzden içindekiler listesinde bölümleri ve işaretlediği yerler için %lld girdi var.",
+      "other": "İçinde hiç başlık yok, bu yüzden içindekiler listesinde bölümleri ve işaretlediği yerler için %lld girdi var."
+     },
+     "why": "meaning: 'Başlığı yok' also reads as 'it has no title'; 'içinde hiç başlık yok' says the headings inside are missing"
+    },
+    {
+     "key": "It has no headings, so the contents list has one entry for the whole book.",
+     "english": "It has no headings, so the contents list has one entry for the whole book.",
+     "before": "Başlığı yok, bu yüzden içindekiler listesinde tüm kitap için tek bir girdi var.",
+     "after": "İçinde hiç başlık yok, bu yüzden içindekiler listesinde tüm kitap için tek bir girdi var.",
+     "why": "meaning: 'Başlığı yok' also reads as 'it has no title'; 'içinde hiç başlık yok' says the headings inside are missing"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "%1$@ sayfasına gidildi, %3$@ etiketli %2$@ sayfa.",
+     "after": "%1$@ numaralı sayfaya gidildi, %3$@ etiketli %2$@ sayfa.",
+     "why": "grammar: '12 sayfasına' is not how Turkish names a page by its label; 'numaralı sayfa' takes any label"
+    },
+    {
+     "key": "Jumped to page %@.",
+     "english": "Jumped to page %@.",
+     "before": "%@ sayfasına gidildi.",
+     "after": "%@ numaralı sayfaya gidildi.",
+     "why": "grammar: '12 sayfasına' is not how Turkish names a page by its label; 'numaralı sayfa' takes any label"
+    },
+    {
+     "key": "Left Brace",
+     "english": "Left Brace",
+     "before": "Sol Süslü Parantez",
+     "after": "Sol süslü parantez",
+     "why": "punctuation: English title case; the other punctuation key names are lower case after the first word"
+    },
+    {
+     "key": "Left Bracket",
+     "english": "Left Bracket",
+     "before": "Sol Köşeli Parantez",
+     "after": "Sol köşeli parantez",
+     "why": "punctuation: English title case; the other punctuation key names are lower case after the first word"
+    },
+    {
+     "key": "Left Parenthesis",
+     "english": "Left Parenthesis",
+     "before": "Sol Parantez",
+     "after": "Sol parantez",
+     "why": "punctuation: English title case; the other punctuation key names are lower case after the first word"
+    },
+    {
+     "key": "Make Double Press",
+     "english": "Make Double Press",
+     "before": "Çift Basma Yap",
+     "after": "Çift Basmaya Dönüştür",
+     "why": "meaning: 'Çift Basma Yap' reads as an order to press twice; the action turns the single press into a double press"
+    },
+    {
+     "key": "Make Single Press",
+     "english": "Make Single Press",
+     "before": "Tek Basma Yap",
+     "after": "Tek Basmaya Dönüştür",
+     "why": "meaning: 'Tek Basma Yap' reads as an order to press once; the action turns the double press into a single press"
+    },
+    {
+     "key": "Moves back or forward by bookmark.",
+     "english": "Moves back or forward by bookmark.",
+     "before": "Yer imine göre geri veya ileri gider.",
+     "after": "Yer imleri arasında geri veya ileri gider.",
+     "why": "natural: 'X'e göre gider' says 'moves according to X'; Turkish moves among the units, 'X arasında'"
+    },
+    {
+     "key": "Moves back or forward by heading.",
+     "english": "Moves back or forward by heading.",
+     "before": "Başlığa göre geri veya ileri gider.",
+     "after": "Başlıklar arasında geri veya ileri gider.",
+     "why": "natural: 'X'e göre gider' says 'moves according to X'; Turkish moves among the units, 'X arasında'"
+    },
+    {
+     "key": "Moves back or forward by page.",
+     "english": "Moves back or forward by page.",
+     "before": "Sayfaya göre geri veya ileri gider.",
+     "after": "Sayfalar arasında geri veya ileri gider.",
+     "why": "natural: 'X'e göre gider' says 'moves according to X'; Turkish moves among the units, 'X arasında'"
+    },
+    {
+     "key": "Moves back or forward by paragraph.",
+     "english": "Moves back or forward by paragraph.",
+     "before": "Paragrafa göre geri veya ileri gider.",
+     "after": "Paragraflar arasında geri veya ileri gider.",
+     "why": "natural: 'X'e göre gider' says 'moves according to X'; Turkish moves among the units, 'X arasında'"
+    },
+    {
+     "key": "Moves back or forward by sentence.",
+     "english": "Moves back or forward by sentence.",
+     "before": "Cümleye göre geri veya ileri gider.",
+     "after": "Cümleler arasında geri veya ileri gider.",
+     "why": "natural: 'X'e göre gider' says 'moves according to X'; Turkish moves among the units, 'X arasında'"
+    },
+    {
+     "key": "Moves back or forward by subheading.",
+     "english": "Moves back or forward by subheading.",
+     "before": "Alt başlığa göre geri veya ileri gider.",
+     "after": "Alt başlıklar arasında geri veya ileri gider.",
+     "why": "natural: 'X'e göre gider' says 'moves according to X'; Turkish moves among the units, 'X arasında'"
+    },
+    {
+     "key": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "english": "Playback stopped because TextMouth's memory grew to %@ GB while the audio played, a fault in the system's audio.",
+     "before": "Oynatma durduruldu: ses çalarken TextMouth'un belleği büyüdü ve %@ GB oldu; bu, sistemin ses sistemindeki bir hatadır.",
+     "after": "Oynatma durduruldu: ses çalarken TextMouth'un belleği büyüdü ve %@ GB oldu; bu, sistemin ses altyapısındaki bir hatadır.",
+     "why": "natural: 'sistemin ses sistemindeki' said system twice"
+    },
+    {
+     "key": "Quitting now leaves these changes unsaved:",
+     "english": "Quitting now leaves these changes unsaved:",
+     "before": "Şimdi çıkmak bu değişiklikleri kaydedilmemiş bırakır:",
+     "after": "Şimdi çıkarsanız şu değişiklikler kaydedilmemiş kalır:",
+     "why": "natural: 'Şimdi çıkmak … bırakır' copied the English infinitive subject; Turkish says 'if you quit now'"
+    },
+    {
+     "key": "Refused here: %lld times while this window has been open.",
+     "english": {
+      "one": "Refused here: %lld time while this window has been open.",
+      "other": "Refused here: %lld times while this window has been open."
+     },
+     "before": {
+      "one": "Burada reddedilme: bu pencere açıkken %lld kez.",
+      "other": "Burada reddedilme: bu pencere açıkken %lld kez."
+     },
+     "after": {
+      "one": "Bu pencere açıkken burada %lld kez reddedildi.",
+      "other": "Bu pencere açıkken burada %lld kez reddedildi."
+     },
+     "why": "natural: 'Burada reddedilme: … %lld kez' was a noun and a count in English order; Turkish says it as one sentence with the verb"
+    },
+    {
+     "key": "Reset %@ to Default",
+     "english": "Reset %@ to Default",
+     "before": "%@ varsayılanı geri yükle",
+     "after": "%@ için varsayılanı geri yükle",
+     "why": "grammar: '%@ varsayılanı' needs a genitive suffix that the action name cannot take"
+    },
+    {
+     "key": "Right Brace",
+     "english": "Right Brace",
+     "before": "Sağ Süslü Parantez",
+     "after": "Sağ süslü parantez",
+     "why": "punctuation: English title case; the other punctuation key names are lower case after the first word"
+    },
+    {
+     "key": "Right Bracket",
+     "english": "Right Bracket",
+     "before": "Sağ Köşeli Parantez",
+     "after": "Sağ köşeli parantez",
+     "why": "punctuation: English title case; the other punctuation key names are lower case after the first word"
+    },
+    {
+     "key": "Right Parenthesis",
+     "english": "Right Parenthesis",
+     "before": "Sağ Parantez",
+     "after": "Sağ parantez",
+     "why": "punctuation: English title case; the other punctuation key names are lower case after the first word"
+    },
+    {
+     "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "before": "Okunan sayfayı, örneğin Sayfa 12 / 300 gibi, yüzdenin yanında gösterir; birden çok sayfası olan kitaplar için.",
+     "after": "Birden çok sayfası olan kitaplarda, Sayfa 12 / 300 gibi okunan sayfayı yüzdenin yanında gösterir.",
+     "why": "natural: 'örneğin … gibi' said the example twice, and the condition trailed after a semicolon in English order"
+    },
+    {
+     "key": "TextMouth hasn't read the latest save yet.",
+     "english": "TextMouth hasn't read the latest save yet.",
+     "before": "TextMouth en son kaydı henüz okumadı.",
+     "after": "TextMouth, son kaydedilen metni henüz okumadı.",
+     "why": "natural: 'en son kaydı' reads first as 'the latest recording' (Kayıt is Recording); it means the last saved text"
+    },
+    {
+     "key": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "english": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "before": "Mac'in konuşma motoru, ayraçları sessiz yapıldığında bile “%@” bölümünün bir kısmını seslendirmeyi reddetti.",
+     "after": "Mac'in konuşma motoru, ayraçları sessize alındığında bile “%@” bölümünün bir kısmını seslendirmeyi reddetti.",
+     "why": "natural: 'sessiz yapıldığında' is a calque; Turkish mutes with 'sessize almak', as the markup guard line says"
+    },
+    {
+     "key": "The export was stopped before the rest.",
+     "english": "The export was stopped before the rest.",
+     "before": "Dışa aktarma, geri kalanından önce durduruldu.",
+     "after": "Dışa aktarma, geri kalanı yazılmadan önce durduruldu.",
+     "why": "meaning: 'geri kalanından önce durduruldu' did not say what came before what; it stopped before the rest was written"
+    },
+    {
+     "key": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "english": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "before": "Bölümü sesi bitiren başlık, alt başlıklarıyla birlikte; ya da kitabın sonu.",
+     "after": "Kısmı, alt başlıklarıyla birlikte sesi bitiren başlık ya da kitabın sonu.",
+     "why": "term: a heading's section is 'Kısım' in the glossary; 'Bölüm' is Chapter"
+    },
+    {
+     "key": "The part of the book chosen has no words to speak.",
+     "english": "The part of the book chosen has no words to speak.",
+     "before": "Kitabın seçilen bölümünde seslendirilecek kelime yok.",
+     "after": "Kitabın seçilen aralığında seslendirilecek kelime yok.",
+     "why": "meaning: 'seçilen bölümünde' reads as 'in the chosen chapter'; the export chooses a range of headings"
+    },
+    {
+     "key": "There is no page %@ in this book.",
+     "english": "There is no page %@ in this book.",
+     "before": "Bu kitapta %@ sayfası yok.",
+     "after": "Bu kitapta %@ numaralı bir sayfa yok.",
+     "why": "meaning: '%@ sayfası yok' reads as 'it does not have %@ pages'; it means no page carries that label"
+    },
+    {
+     "key": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "english": "This Kindle book has no flowing text, as in a comic or print replica, so TextMouth can't read it.",
+     "before": "Bu Kindle kitabında çizgi roman ya da baskı kopyası gibi akan metin yok, bu yüzden TextMouth onu okuyamıyor.",
+     "after": "Bu Kindle kitabında, çizgi romanlarda ya da baskı kopyalarında olduğu gibi akan metin yok; bu yüzden TextMouth onu okuyamıyor.",
+     "why": "meaning: the old order said a comic or print replica is a kind of flowing text; they are the examples of books without it"
+    },
+    {
+     "key": "This book has no headings, so all of it is exported.",
+     "english": "This book has no headings, so all of it is exported.",
+     "before": "Bu kitabın başlığı yok, bu yüzden tamamı dışa aktarılıyor.",
+     "after": "Bu kitapta hiç başlık yok, bu yüzden tamamı dışa aktarılıyor.",
+     "why": "meaning: 'Bu kitabın başlığı yok' reads as 'this book has no title'; it means it has no headings"
+    },
+    {
+     "key": "Voice: %@ (%@), %@, %@ quality",
+     "english": "Voice: %1$@ (%2$@), %3$@, %4$@ quality",
+     "before": "Ses: %1$@ (%2$@), %3$@, %4$@ kalite",
+     "after": "Ses: %1$@ (%2$@), %3$@, kalite: %4$@",
+     "why": "grammar: '%4$@ kalite' breaks for the quality 'Bilinmiyor' (Unknown); matches the voice label in the voice menu"
+    },
+    {
+     "key": "Writes the title, author, publisher, and date into the library's copy of this book.",
+     "english": "Writes the title, author, publisher, and date into the library's copy of this book.",
+     "before": "Başlığı, yazarı, yayıncıyı ve tarihi bu kitabın kitaplıktaki kopyasına yazar.",
+     "after": "Kitap adını, yazarı, yayıncıyı ve tarihi bu kitabın kitaplıktaki kopyasına yazar.",
+     "why": "term: 'Başlık' is the glossary word for Heading; this sheet calls the book's title 'Kitap adı'"
+    },
+    {
+     "key": "before page %@",
+     "english": "before page %@",
+     "before": "%@ sayfasından önce",
+     "after": "%@ numaralı sayfadan önce",
+     "why": "grammar: '3 sayfasından' is not how Turkish names a page by its label; 'numaralı sayfa' takes any label"
+    },
+    {
+     "key": "built %@",
+     "english": "built %@",
+     "before": "derlenme %@",
+     "after": "derlenme tarihi %@",
+     "why": "natural: 'derlenme %@' before a date reads as a bare noun; Turkish names it 'derlenme tarihi'"
+    },
+    {
+     "key": "dots %@",
+     "english": "dots %@",
+     "before": "noktalar %@",
+     "after": "nokta %@",
+     "why": "natural: Turkish keeps the noun singular before a list of numbers ('noktalar 1 2 5' is a calque), as 'sayfa' does"
+    },
+    {
+     "key": "on page %@",
+     "english": "on page %@",
+     "before": "%@ sayfasında",
+     "after": "%@ numaralı sayfada",
+     "why": "grammar: '8 sayfasında' is not how Turkish names a page by its label; 'numaralı sayfa' takes any label"
+    },
+    {
+     "key": "pages %@",
+     "english": "pages %@",
+     "before": "sayfalar %@",
+     "after": "%@ numaralı sayfalar",
+     "why": "natural: Turkish never puts a plural noun before a list of numbers ('sayfalar 3 ve 7')"
+    },
+    {
+     "key": "stopping %lld speech exports with the chapters they finished kept",
+     "english": {
+      "one": "stopping %lld speech export with the chapters it finished kept",
+      "other": "stopping %lld speech exports with the chapters they finished kept"
+     },
+     "before": {
+      "one": "bitirdikleri bölümler korunarak %lld konuşma dışa aktarması durduruluyor",
+      "other": "bitirdikleri bölümler korunarak %lld konuşma dışa aktarması durduruluyor"
+     },
+     "after": {
+      "one": "bitirdiği bölümler korunarak %lld konuşma dışa aktarması durduruluyor",
+      "other": "bitirdikleri bölümler korunarak %lld konuşma dışa aktarması durduruluyor"
+     },
+     "why": "grammar: the one form had the plural 'bitirdikleri' for a single export"
+    }
+   ]
+  }
+ ]
+}
