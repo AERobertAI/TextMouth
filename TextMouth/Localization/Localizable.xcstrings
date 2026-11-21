@@ -382482,7 +382482,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Voorbeeld van geluid %@"
+            "value" : "Beluister geluid voor %@"
           }
         },
         "pl" : {
@@ -400367,13 +400367,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Hier geweigerd: %lld keer terwijl dit venster open was."
+                  "value" : "Hier geweigerd: %lld keer sinds dit venster is geopend."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Hier geweigerd: %lld keer terwijl dit venster open was."
+                  "value" : "Hier geweigerd: %lld keer sinds dit venster is geopend."
                 }
               }
             }
@@ -413821,7 +413821,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opnieuw starten: %@"
+            "value" : "Begint opnieuw: %@"
           }
         },
         "pl" : {
@@ -432203,7 +432203,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sectie opgenomen: %@"
+            "value" : "Sectie weer meegenomen: %@"
           }
         },
         "pl" : {
@@ -450528,7 +450528,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid uitfaded."
+            "value" : "Slaaptimer geannuleerd, omdat je naar een ander boek ging terwijl het geluid zachter werd."
           }
         },
         "pl" : {
@@ -459675,7 +459675,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opnieuw beginnen: %@"
+            "value" : "Begint opnieuw: %@"
           }
         },
         "pl" : {
@@ -483496,7 +483496,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kon deze braille niet vertalen."
+            "value" : "TextMouth kon deze brailletekst niet vertalen."
           }
         },
         "pl" : {
@@ -575355,7 +575355,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De tekst van dit boek kan niet worden gelezen, dus kan niet in een audiobestand worden uitgesproken."
+            "value" : "De tekst van dit boek kan niet worden gelezen en dus ook niet in een audiobestand worden uitgesproken."
           }
         },
         "pl" : {
@@ -605902,7 +605902,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zonder titel"
+            "value" : "Naamloos"
           }
         },
         "pl" : {
@@ -622229,7 +622229,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Of de laatste regel van elke pagina het braillepaginanummer draagt."
+            "value" : "Of de laatste regel van elke pagina het braillepaginanummer bevat."
           }
         },
         "pl" : {
@@ -622366,7 +622366,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Of de braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven."
+            "value" : "Of het braille van die code verkort is, waarbij gangbare woorden en lettergroepen in minder cellen worden geschreven."
           }
         },
         "pl" : {
@@ -622503,7 +622503,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Of de braille van die code verkort is."
+            "value" : "Of het braille van die code verkort is."
           }
         },
         "pl" : {
@@ -628063,7 +628063,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Schrijft dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's met regels, zonder opnieuw te vragen."
+            "value" : "Schrijft de regels van dit en elk ander te diep genest hoofdstuk van deze export als gewone alinea's, zonder opnieuw te vragen."
           }
         },
         "pl" : {
@@ -628200,7 +628200,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Schrijft dit hoofdstuk als gewone alinea's met zijn regels en exporteert al het andere zoals gewoonlijk."
+            "value" : "Schrijft de regels van dit hoofdstuk als gewone alinea's en exporteert al het andere zoals gewoonlijk."
           }
         },
         "pl" : {
