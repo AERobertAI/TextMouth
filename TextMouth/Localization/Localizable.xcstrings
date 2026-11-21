@@ -3185,7 +3185,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ sono nella tua libreria, ma l’iscrizione è annullata. Scegli %2$@ nella riga di un feed, o nel foglio %3$@, per controllarli di nuovo."
+            "value" : "%1$@ sono nella tua libreria, ma l’iscrizione è annullata. Scegli %2$@ nella riga di un feed, o nel foglio %3$@, per riprendere a controllarli."
           }
         },
         "ja" : {
@@ -13932,7 +13932,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ è nella tua libreria, ma l’iscrizione è annullata. Scegli %2$@ nella sua riga, o nel foglio %3$@, per controllarlo di nuovo."
+            "value" : "%1$@ è nella tua libreria, ma l’iscrizione è annullata. Scegli %2$@ nella sua riga, o nel foglio %3$@, per riprendere a controllarlo."
           }
         },
         "ja" : {
@@ -15326,7 +15326,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’iscrizione a %1$@ è annullata, quindi TextMouth non lo controlla. Scegli %2$@ per controllarlo di nuovo."
+            "value" : "L’iscrizione a %1$@ è annullata, quindi TextMouth non lo controlla. Scegli %2$@ per riprendere a controllarlo."
           }
         },
         "ja" : {
@@ -17312,7 +17312,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ sposta un episodio o un articolo scaricato dal suo feed. Selezionane uno nella cartella del feed."
+            "value" : "Il comando %@ sposta un episodio o un articolo scaricato dal suo feed. Selezionane uno nella cartella del feed."
           }
         },
         "ja" : {
@@ -31427,7 +31427,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "a %@ bit interi"
+            "value" : "interi a %@ bit"
           }
         },
         "ja" : {
@@ -59997,19 +59997,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Vengono annullate %lld di modifiche. Ripeti le ripristina finché non ne fai un’altra."
+                  "value" : "Vengono annullate %lld di modifiche. Il comando Ripeti le ripristina finché non ne fai un’altra."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Viene annullata %lld modifica. Ripeti la ripristina finché non ne fai un’altra."
+                  "value" : "Viene annullata %lld modifica. Il comando Ripeti la ripristina finché non ne fai un’altra."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Vengono annullate %lld modifiche. Ripeti le ripristina finché non ne fai un’altra."
+                  "value" : "Vengono annullate %lld modifiche. Il comando Ripeti le ripristina finché non ne fai un’altra."
                 }
               }
             }
@@ -109681,7 +109681,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "I dettagli di un articolo provengono dal suo feed; %@ ne fa un libro che puoi modificare."
+            "value" : "I dettagli di un articolo provengono dal suo feed; con %@ diventa un libro che puoi modificare."
           }
         },
         "ja" : {
@@ -110366,7 +110366,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "I dettagli di un episodio provengono dal suo feed; %@ ne fa un libro che puoi modificare."
+            "value" : "I dettagli di un episodio provengono dal suo feed; con %@ diventa un libro che puoi modificare."
           }
         },
         "ja" : {
@@ -114787,7 +114787,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Applica filtro li elenca in quest’ordine. Ognuno è una catena di filtri nella sintassi di ffmpeg, come highpass=f=80,volume=3dB. TextMouth esegue i propri filtri, più tutti i filtri di ffmpeg quando ffmpeg è installato e attivato qui sopra."
+            "value" : "Il comando Applica filtro li elenca in quest’ordine. Ognuno è una catena di filtri nella sintassi di ffmpeg, come highpass=f=80,volume=3dB. TextMouth esegue i propri filtri, più tutti i filtri di ffmpeg quando ffmpeg è installato e attivato qui sopra."
           }
         },
         "ja" : {
@@ -114924,7 +114924,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Applica filtro riproduce prima un’anteprima e applica il filtro quando scegli di nuovo Applica."
+            "value" : "Il comando Applica filtro riproduce prima un’anteprima e applica il filtro quando scegli di nuovo Applica."
           }
         },
         "ja" : {
@@ -120552,7 +120552,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Allego “%1$@” a %2$@."
+            "value" : "Si sta allegando “%1$@” a %2$@."
           }
         },
         "ja" : {
@@ -155425,7 +155425,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pulita il %1$@, con regole versione %2$@: %3$@."
+            "value" : "Pulita il %1$@, con la versione %2$@ delle regole: %3$@."
           }
         },
         "ja" : {
@@ -156390,7 +156390,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rimuove la selezione."
+            "value" : "Annulla la selezione."
           }
         },
         "ja" : {
@@ -158588,7 +158588,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chiudendo si termina la registrazione. %1$@ la salva come audiolibro, %2$@ la elimina e %3$@ continua a registrare."
+            "value" : "Se chiudi, la registrazione termina. Scegli %1$@ per salvarla come audiolibro, %2$@ per eliminarla o %3$@ per continuare a registrare."
           }
         },
         "ja" : {
@@ -158725,7 +158725,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chiudo il lettore di %@, perché la modifica ne cambia l’audio."
+            "value" : "Chiusura del lettore di %@, perché la modifica ne cambia l’audio."
           }
         },
         "ja" : {
@@ -206141,7 +206141,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modifica una traccia alla volta, elencate per nome del capitolo."
+            "value" : "Modifica una traccia alla volta; le tracce sono elencate per nome del capitolo."
           }
         },
         "ja" : {
@@ -206415,7 +206415,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trascorso"
+            "value" : "Tempo trascorso"
           }
         },
         "ja" : {
@@ -206552,7 +206552,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trascorso: %@"
+            "value" : "Tempo trascorso: %@"
           }
         },
         "ja" : {
@@ -214454,7 +214454,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hai annullato l’iscrizione a tutti i feed, quindi nessuno è stato controllato. Scegli %1$@ nella riga di un feed, o nel foglio %2$@, per controllarlo di nuovo."
+            "value" : "Hai annullato l’iscrizione a tutti i feed, quindi nessuno è stato controllato. Scegli %1$@ nella riga di un feed, o nel foglio %2$@, per riprendere a controllarlo."
           }
         },
         "ja" : {
@@ -217169,7 +217169,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sperimentale. Queste regole correggono parole che il riconoscimento scrive in modo diverso dai libri letti ad alta voce. Controlla le modifiche prima di applicarle; Annulla pulizia ripristina la trascrizione."
+            "value" : "Sperimentale. Queste regole correggono parole che il riconoscimento scrive in modo diverso dai libri letti ad alta voce. Controlla le modifiche prima di applicarle; il comando Annulla pulizia ripristina la trascrizione."
           }
         },
         "ja" : {
@@ -264192,7 +264192,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Appartiene al suo feed finché è scaricato. %@ rimuove il suo file e conserva il punto di lettura e i segnalibri."
+            "value" : "Appartiene al suo feed finché è scaricato. Il comando %@ rimuove il suo file e conserva il punto di lettura e i segnalibri."
           }
         },
         "ja" : {
@@ -487037,19 +487037,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ne scarica di nuovo %lld alla prossima verifica dei rispettivi feed, o alla prossima apertura."
+                  "value" : "TextMouth ne scarica di nuovo %lld al prossimo controllo dei rispettivi feed, o al prossimo avvio."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ne scarica di nuovo %lld alla prossima verifica dei rispettivi feed, o alla prossima apertura."
+                  "value" : "TextMouth ne scarica di nuovo %lld al prossimo controllo dei rispettivi feed, o al prossimo avvio."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ne scarica di nuovo %lld alla prossima verifica dei rispettivi feed, o alla prossima apertura."
+                  "value" : "TextMouth ne scarica di nuovo %lld al prossimo controllo dei rispettivi feed, o al prossimo avvio."
                 }
               }
             }
@@ -487351,7 +487351,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth ne scarica di nuovo 1 alla prossima verifica del suo feed, o alla prossima apertura."
+            "value" : "TextMouth ne scarica di nuovo 1 al prossimo controllo del suo feed, o al prossimo avvio."
           }
         },
         "ja" : {
@@ -487488,7 +487488,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth scarica di nuovo i più recenti di ogni feed alla prossima verifica, o alla prossima apertura."
+            "value" : "TextMouth scarica di nuovo i più recenti di ogni feed al prossimo controllo, o al prossimo avvio."
           }
         },
         "ja" : {
@@ -491654,7 +491654,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth sta ancora eseguendo la tua ultima risposta. Attendi che finisca."
+            "value" : "TextMouth sta ancora elaborando la tua ultima risposta. Attendi che finisca."
           }
         },
         "ja" : {
@@ -494410,19 +494410,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ha spostato nel Cestino %lld di nuove copie di libri duplicati, perché le domande se conservarli come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarli, apri il Cestino e scegli Rimetti a posto."
+                  "value" : "TextMouth ha spostato nel Cestino %lld di nuove copie di libri duplicati, perché le domande se conservarle come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarle, apri il Cestino e scegli Rimetti a posto."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ha spostato nel Cestino %lld nuova copia di libri duplicati, perché le domande se conservarli come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarli, apri il Cestino e scegli Rimetti a posto."
+                  "value" : "TextMouth ha spostato nel Cestino %lld nuova copia di libri duplicati, perché le domande se conservarle come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarle, apri il Cestino e scegli Rimetti a posto."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth ha spostato nel Cestino %lld nuove copie di libri duplicati, perché le domande se conservarli come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarli, apri il Cestino e scegli Rimetti a posto."
+                  "value" : "TextMouth ha spostato nel Cestino %lld nuove copie di libri duplicati, perché le domande se conservarle come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarle, apri il Cestino e scegli Rimetti a posto."
                 }
               }
             }
@@ -494724,7 +494724,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth ha spostato nel Cestino le nuove copie di %@, perché le domande se conservarli come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarli, apri il Cestino e scegli Rimetti a posto."
+            "value" : "TextMouth ha spostato nel Cestino le nuove copie di %@, perché le domande se conservarle come duplicati non hanno avuto risposta prima della chiusura di TextMouth. Per recuperarle, apri il Cestino e scegli Rimetti a posto."
           }
         },
         "ja" : {
@@ -498092,7 +498092,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth smette di controllare questo feed per nuovi articoli."
+            "value" : "TextMouth smette di controllare se questo feed ha nuovi articoli."
           }
         },
         "ja" : {
@@ -498229,7 +498229,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth smette di controllare questo feed per nuovi episodi."
+            "value" : "TextMouth smette di controllare se questo feed ha nuovi episodi."
           }
         },
         "ja" : {
@@ -498366,7 +498366,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth smette di controllare questo feed per nuovi elementi."
+            "value" : "TextMouth smette di controllare se questo feed ha nuovi elementi."
           }
         },
         "ja" : {
@@ -513954,7 +513954,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’articolo esce dall’elenco per sempre; il libro in cui è diventato nella tua libreria resta."
+            "value" : "L’articolo esce dall’elenco per sempre; il libro in cui si è trasformato resta nella tua libreria."
           }
         },
         "ja" : {
@@ -524452,7 +524452,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il cue sheet “%@” non nomina nessuno degli audio accanto a esso, quindi le sue intestazioni non sono state usate."
+            "value" : "Il cue sheet “%@” non nomina nessuno dei file audio accanto a esso, quindi le sue intestazioni non sono state usate."
           }
         },
         "ja" : {
@@ -527758,7 +527758,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’episodio esce dall’elenco per sempre; il libro in cui è diventato nella tua libreria resta."
+            "value" : "L’episodio esce dall’elenco per sempre; il libro in cui si è trasformato resta nella tua libreria."
           }
         },
         "ja" : {
@@ -529607,7 +529607,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il feed resta nella tua libreria con le sue impostazioni e %1$@; scegli %2$@ per controllarlo di nuovo."
+            "value" : "Il feed resta nella tua libreria con le sue impostazioni e %1$@; scegli %2$@ per riprendere a controllarlo."
           }
         },
         "ja" : {
@@ -529744,7 +529744,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Il feed resta nella tua libreria con le sue impostazioni; scegli %@ per controllarlo di nuovo."
+            "value" : "Il feed resta nella tua libreria con le sue impostazioni; scegli %@ per riprendere a controllarlo."
           }
         },
         "ja" : {
@@ -537040,7 +537040,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le intestazioni da %@ superano la fine dell’audio, quindi le tracce sono state importate senza di esse."
+            "value" : "Le intestazioni di %@ superano la fine dell’audio, quindi le tracce sono state importate senza di esse."
           }
         },
         "ja" : {
@@ -563251,7 +563251,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Non ci sono iscrizioni da esportare: l’iscrizione a ogni feed della tua libreria è annullata."
+            "value" : "Non ci sono iscrizioni da esportare: hai annullato l’iscrizione a tutti i feed della tua libreria."
           }
         },
         "ja" : {
@@ -568226,7 +568226,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Questo feed usa http semplice"
+            "value" : "Questo feed usa http non protetto"
           }
         },
         "ja" : {
@@ -573363,7 +573363,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Questo libro non ha un pacchetto gestito valido. Rimuovilo solo dalla libreria, oppure ripara la sua archiviazione prima di eliminarlo."
+            "value" : "Questo libro non ha un pacchetto gestito valido. Rimuovilo solo dalla libreria, oppure ripara i suoi file prima di eliminarlo."
           }
         },
         "ja" : {
@@ -604776,7 +604776,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annullata l’iscrizione a %1$@: TextMouth non lo controlla più per nuovi articoli%2$@."
+            "value" : "Annullata l’iscrizione a %1$@: TextMouth non controlla più se ha nuovi articoli%2$@."
           }
         },
         "ja" : {
@@ -604919,7 +604919,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annullata l’iscrizione a %1$@: TextMouth non lo controlla più per nuovi episodi%2$@."
+            "value" : "Annullata l’iscrizione a %1$@: TextMouth non controlla più se ha nuovi episodi%2$@."
           }
         },
         "ja" : {
@@ -605062,7 +605062,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Annullata l’iscrizione a %1$@: TextMouth non lo controlla più per nuovi elementi%2$@."
+            "value" : "Annullata l’iscrizione a %1$@: TextMouth non controlla più se ha nuovi elementi%2$@."
           }
         },
         "ja" : {
@@ -613020,7 +613020,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "In attesa del completamento dello spostamento della cartella dei dati…"
+            "value" : "In attesa che termini lo spostamento della cartella dei dati…"
           }
         },
         "ja" : {
@@ -618917,7 +618917,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se selezionata, questo feed segue l’impostazione in Impostazioni, %@; deselezionala per dargli un’impostazione propria."
+            "value" : "Se l’opzione è selezionata, questo feed segue l’impostazione in Impostazioni, %@; deselezionala per dargli un’impostazione propria."
           }
         },
         "ja" : {
@@ -673101,7 +673101,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "la parte superiore della libreria"
+            "value" : "il livello principale della tua libreria"
           }
         },
         "ja" : {
