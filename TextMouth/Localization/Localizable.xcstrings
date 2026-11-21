@@ -6406,7 +6406,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ נכשל: %2$@"
+            "value" : "הייבוא נכשל (%1$@): %2$@"
           }
         },
         "hi" : {
@@ -33177,19 +33177,19 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld קובץ ‎.%@"
+                  "value" : "%lld קובץ .%@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld קבצי ‎.%@"
+                  "value" : "%lld קבצי .%@"
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld קבצי ‎.%@"
+                  "value" : "%lld קבצי .%@"
                 }
               }
             }
@@ -82080,7 +82080,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "קובץ ‎.%@ הוא תמליל, לא ספר. כדי להשתמש בו, ייבא את השמע שלו, פתח את הספר ובחר באפשרות צרף תמליל… בתפריט ספר."
+            "value" : "קובץ .%@ הוא תמליל, לא ספר. כדי להשתמש בו, ייבא את השמע שלו, פתח את הספר ובחר באפשרות צרף תמליל… בתפריט ספר."
           }
         },
         "hi" : {
@@ -83157,7 +83157,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "כתובת של ערוץ, כמו קישור שמסתיים ב-‎.rss או ב-‎.xml, או דף אינטרנט שמציין את הערוץ שלו."
+            "value" : "כתובת של ערוץ, כמו קישור שמסתיים ב-.rss או ב-.xml, או דף אינטרנט שמציין את הערוץ שלו."
           }
         },
         "hi" : {
@@ -131069,7 +131069,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "בחר כל תיקייה לייבוא: תיקיית ספר DAISY, עם קובץ ncc.html או ‎.opf, או תיקייה של רצועות שמע, שהופכת לספר שמע אחד."
+            "value" : "בחר כל תיקייה לייבוא: תיקיית ספר DAISY, עם קובץ ncc.html או .opf, או תיקייה של רצועות שמע, שהופכת לספר שמע אחד."
           }
         },
         "hi" : {
@@ -449528,6 +449528,12 @@
             "value" : "Le livre a été importé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספר יובא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -450789,6 +450795,12 @@
             "value" : "Le paquet et les chemins de contenu du livre ne correspondent pas à un emplacement géré de la bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הנתיבים של חבילת הספר ושל התוכן שלו אינם תואמים למיקום ספרייה מנוהל."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -451798,6 +451810,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier bookInfo.json n’a pas été relu tel qu’il avait été écrit."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקובץ bookInfo.json לא נקרא בחזרה כפי שנכתב."
           }
         },
         "hi" : {
@@ -453138,6 +453156,12 @@
             "value" : "La copie qui vient d’être importée est incomplète."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העותק שיובא זה עתה אינו שלם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -453626,6 +453650,12 @@
             "value" : "Le fichier CUE « %@ » est trop volumineux pour être lu."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ ה-CUE “%@” גדול מדי לקריאה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -453743,6 +453773,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier CUE « %@ » ne désigne aucun des fichiers audio voisins, donc ses en-têtes n’ont pas été utilisés."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ ה-CUE “%@” אינו מציין אף אחד מקובצי השמע שלצדו, ולכן לא השתמשו בכותרות שלו."
           }
         },
         "hi" : {
@@ -455429,6 +455465,12 @@
             "value" : "Le téléchargement a été arrêté."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההורדה נעצרה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -456518,6 +456560,12 @@
             "value" : "L’épisode quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "האפיזודה עוזבת את הרשימה לצמיתות, וההורדה שלה, אם יש, נמחקת."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -456635,6 +456683,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’épisode quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "האפיזודה עוזבת את הרשימה לצמיתות; הספר שהיא הפכה אליו בספרייה שלך נשאר."
           }
         },
         "hi" : {
@@ -456756,6 +456810,12 @@
             "value" : "Les fichiers de la copie existante sont supprimés définitivement et ne peuvent pas être récupérés."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובצי העותק הקיים נמחקים לצמיתות ואי אפשר לשחזר אותם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -456873,6 +456933,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les fichiers de la copie existante vont dans la corbeille, mais les remettre ne ramènera pas cette copie dans votre bibliothèque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובצי העותק הקיים עוברים לאשפה, אבל החזרתם לא תחזיר את העותק הזה לספרייה שלך."
           }
         },
         "hi" : {
@@ -457220,6 +457286,12 @@
             "value" : "Le flux de %@ est vide."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ ב-%@ ריק."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -457448,6 +457520,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Le flux de %@ dépasse les %lld Mo que TextMouth lit."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הערוץ ב-%@ גדול מ-%lld MB ש-TextMouth קורא."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הערוץ ב-%@ גדול מ-%lld MB ש-TextMouth קורא."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הערוץ ב-%@ גדול מ-%lld MB ש-TextMouth קורא."
                 }
               }
             }
@@ -457752,6 +457848,12 @@
             "value" : "Le flux est endommagé à la ligne %1$@ : %2$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ פגום בשורה %1$@: %2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -457869,6 +457971,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux quitte votre bibliothèque, avec sa liste d’articles et ses réglages."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ עוזב את הספרייה שלך, עם רשימת הכתבות וההגדרות שלו."
           }
         },
         "hi" : {
@@ -457990,6 +458098,12 @@
             "value" : "Le flux quitte votre bibliothèque, avec sa liste d’épisodes et ses réglages."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ עוזב את הספרייה שלך, עם רשימת האפיזודות וההגדרות שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -458107,6 +458221,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux quitte votre bibliothèque, avec sa liste d’éléments et ses réglages."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ עוזב את הספרייה שלך, עם רשימת הפריטים וההגדרות שלו."
           }
         },
         "hi" : {
@@ -458234,6 +458354,12 @@
             "value" : "Le flux reste dans votre bibliothèque avec ses réglages et %1$@, et la commande %2$@ le vérifie de nouveau."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ נשאר בספרייה שלך עם ההגדרות שלו ועם %1$@, ו-%2$@ בודק אותו שוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -458351,6 +458477,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux reste dans votre bibliothèque avec ses réglages, et la commande %@ le vérifie de nouveau."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ נשאר בספרייה שלך עם ההגדרות שלו, ו-%@ בודק אותו שוב."
           }
         },
         "hi" : {
@@ -458472,6 +458604,12 @@
             "value" : "Le flux « %@ » reste avec lui."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ “%@” נשאר איתו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -458589,6 +458727,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le flux « %@ » reste avec eux."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ “%@” נשאר איתם."
           }
         },
         "hi" : {
@@ -461155,6 +461299,12 @@
             "value" : "L’adresse du fichier n’est pas une adresse web que TextMouth peut ouvrir."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הכתובת של הקובץ אינה כתובת אינטרנט ש-TextMouth יכול לפתוח."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -461272,6 +461422,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les fichiers de la nouvelle copie de « %@ » ne sont plus dans la bibliothèque, donc elle ne peut pas être conservée. Choisissez Annuler, puis importez de nouveau le fichier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקבצים של העותק החדש של “%@” כבר אינם בספרייה, ולכן אי אפשר לשמור אותו. בחר ביטול, ואז ייבא את הקובץ שוב."
           }
         },
         "hi" : {
@@ -462794,6 +462950,12 @@
             "value" : "Le dossier choisi pour ce flux n’est plus dans la bibliothèque. Choisissez un autre dossier."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה שנבחרה לערוץ הזה כבר אינה בספרייה. בחר תיקייה אחרת."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -462911,6 +463073,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier choisi n’est plus dans la bibliothèque. Choisissez un autre dossier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה שנבחרה כבר אינה בספרייה. בחר תיקייה אחרת."
           }
         },
         "hi" : {
@@ -463032,6 +463200,12 @@
             "value" : "Le dossier choisi pour contenir le dossier du flux n’est plus dans la bibliothèque. Choisissez-en un autre."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה שנבחרה להכיל את תיקיית הערוץ כבר אינה בספרייה. בחר תיקייה אחרת."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -463149,6 +463323,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le dossier de ce flux n’est plus dans la bibliothèque. Choisissez-en un autre pour lui."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה של הערוץ הזה כבר אינה בספרייה. בחר לו תיקייה אחרת."
           }
         },
         "hi" : {
@@ -464272,6 +464452,12 @@
             "value" : "Le dossier de %@ n’est plus dans la bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התיקייה של %@ כבר אינה בספרייה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -464623,6 +464809,12 @@
             "value" : "Les en-têtes de %@ dépassent la fin de l’audio, donc les pistes ont été importées sans eux."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הכותרות מ-%@ חורגות מסוף השמע, ולכן הרצועות יובאו בלעדיהן."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -464740,6 +464932,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’importation a été arrêtée avant la fin."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הייבוא נעצר לפני סופו."
           }
         },
         "hi" : {
@@ -464992,6 +465190,12 @@
             "value" : "Le fichier d’étiquettes « %@ » ne correspond par son nom à aucun fichier audio voisin, donc ses en-têtes n’ont pas été utilisés."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ התוויות “%@” אינו תואם בשמו אף קובץ שמע שלצדו, ולכן לא השתמשו בכותרות שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -465109,6 +465313,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les étiquettes du fichier d’étiquettes « %@ » dépassent la fin de son audio, donc ses en-têtes n’ont pas été utilisés."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התוויות של קובץ התוויות “%@” חורגות מסוף השמע שלו, ולכן לא השתמשו בכותרות שלו."
           }
         },
         "hi" : {
@@ -465700,6 +465910,12 @@
             "value" : "La bibliothèque est inaccessible, donc TextMouth ne peut pas conserver la nouvelle copie de « %@ ». Répondez de nouveau quand elle sera de retour."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן להגיע לספרייה, ולכן TextMouth אינו יכול לשמור את העותק החדש של “%@”. ענה שוב כשהיא תחזור."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -465817,6 +466033,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La bibliothèque ne peut pas déplacer de livres pour le moment. Réessayez quand elle sera disponible."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הספרייה אינה יכולה להעביר ספרים כעת. נסה שוב כשהיא תהיה זמינה."
           }
         },
         "hi" : {
@@ -468668,6 +468890,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La liste suit tout de suite un changement de %@ ; ce qui se télécharge ou disparaît attend que le changement soit resté dix secondes, puis VoiceOver l’annonce."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הרשימה מגיבה מיד לשינוי של %@; מה שמורד או יוסר ממתין עד שהשינוי יישאר עשר שניות, ו-VoiceOver מכריז עליו אז."
           }
         },
         "hi" : {
@@ -472485,6 +472713,12 @@
             "value" : "Le fichier d’origine n’a pas pu être supprimé : %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה למחוק את קובץ המקור: %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -472602,6 +472836,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine n’a pas pu être placé dans la corbeille : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה להעביר את קובץ המקור לאשפה: %@"
           }
         },
         "hi" : {
@@ -472848,6 +473088,12 @@
             "value" : "Le fichier d’origine a été conservé."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור נשמר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -472971,6 +473217,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine a été conservé : TextMouth n’a importé que le livre DAISY « %1$@ » de l’archive « %2$@ »."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור נשמר: TextMouth ייבא רק את ספר ה-DAISY “%1$@” מהארכיון “%2$@”."
           }
         },
         "hi" : {
@@ -473098,6 +473350,12 @@
             "value" : "Le fichier d’origine a été conservé : TextMouth a importé l’audio de « %1$@ » depuis l’archive « %2$@ », et l’archive est la seule copie de son texte."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור נשמר: TextMouth ייבא את השמע של “%1$@” מהארכיון “%2$@”, והארכיון הוא העותק היחיד של הטקסט שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -473215,6 +473473,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine a été conservé : c’est un dossier, et une importation ne supprime jamais un dossier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור נשמר: הוא תיקייה, וייבוא לא מוחק תיקייה לעולם."
           }
         },
         "hi" : {
@@ -473336,6 +473600,12 @@
             "value" : "Le fichier d’origine sera placé dans la corbeille après une importation réussie."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור יועבר לאשפה לאחר ייבוא מוצלח."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -473453,6 +473723,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine sera supprimé définitivement après une importation réussie."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ המקור יימחק לצמיתות לאחר ייבוא מוצלח."
           }
         },
         "hi" : {
@@ -473931,6 +474207,12 @@
             "value" : "Le fichier d’origine « %1$@ » n’a pas pu être supprimé : %2$@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה למחוק את קובץ המקור “%1$@”: %2$@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -474054,6 +474336,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier d’origine « %1$@ » n’a pas pu être placé dans la corbeille : %2$@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה להעביר את קובץ המקור “%1$@” לאשפה: %2$@"
           }
         },
         "hi" : {
@@ -474802,6 +475090,12 @@
             "value" : "La page de %@ est plus volumineuse que ce que TextMouth lit."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הדף ב-%@ גדול ממה ש-TextMouth קורא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -475260,6 +475554,12 @@
             "value" : "La position, les signets et la transcription conservés pour lui sont aussi supprimés."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המקום, הסימניות והתמליל ששמורים עבורו נמחקים גם הם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -475377,6 +475677,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La playlist « %@ » n’est pas un fichier de playlist complet et valide."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפלייליסט “%@” אינו קובץ פלייליסט שלם ותקין."
           }
         },
         "hi" : {
@@ -475611,6 +475917,12 @@
             "value" : "La playlist « %@ » utilise ses propres entités XML, que TextMouth ne lit pas."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפלייליסט “%@” משתמש בישויות XML משלו, ש-TextMouth אינו קורא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -475736,6 +476048,12 @@
             "value" : "L’annuaire de podcasts de %1$@ n’a pas pu répondre à la recherche (erreur %2$@). Réessayez plus tard."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספריית הפודקאסטים ב-%1$@ לא הצליחה לענות על החיפוש (שגיאה %2$@). נסה שוב מאוחר יותר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -475853,6 +476171,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’annuaire de podcasts de %@ est introuvable."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן למצוא את ספריית הפודקאסטים ב-%@."
           }
         },
         "hi" : {
@@ -475978,6 +476302,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’annuaire de podcasts de %1$@ est injoignable : %2$@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן להתחבר לספריית הפודקאסטים ב-%1$@: %2$@"
           }
         },
         "hi" : {
@@ -476208,6 +476538,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "L’annuaire de podcasts de %@ n’a pas répondu pendant %lld secondes."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ספריית הפודקאסטים ב-%@ לא ענתה במשך %lld שנייה."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ספריית הפודקאסטים ב-%@ לא ענתה במשך %lld שניות."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ספריית הפודקאסטים ב-%@ לא ענתה במשך %lld שניות."
                 }
               }
             }
@@ -476506,6 +476860,12 @@
             "value" : "L’annuaire de podcasts ne peut pas être interrogé sur ce réseau, qui limite les données."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אי אפשר לחפש בספריית הפודקאסטים ברשת הזו, שמגבילה נתונים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -476623,6 +476983,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’annuaire de podcasts n’a pas pu répondre à la recherche. Réessayez plus tard."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספריית הפודקאסטים לא הצליחה לענות על החיפוש. נסה שוב מאוחר יותר."
           }
         },
         "hi" : {
@@ -476744,6 +477110,12 @@
             "value" : "L’annuaire de podcasts a refusé la recherche ; il en autorise environ 20 par minute. Attendez une minute et réessayez."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספריית הפודקאסטים סירבה לחיפוש; היא מתירה בערך 20 בדקה. המתן דקה ונסה שוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -476863,6 +477235,12 @@
             "value" : "L’annuaire de podcasts a envoyé une réponse que TextMouth ne peut pas lire. Réessayez plus tard."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ספריית הפודקאסטים שלחה תשובה ש-TextMouth לא יכול לקרוא. נסה שוב מאוחר יותר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -476980,6 +477358,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La réponse de l’annuaire de podcasts est plus volumineuse que ce que TextMouth lit."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התשובה של ספריית הפודקאסטים גדולה ממה ש-TextMouth קורא."
           }
         },
         "hi" : {
@@ -477940,6 +478324,12 @@
             "value" : "L’éditeur a retiré ce flux."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המפרסם הסיר את הערוץ הזה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -478057,6 +478447,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’éditeur a retiré ce fichier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המפרסם הסיר את הקובץ הזה."
           }
         },
         "hi" : {
@@ -480233,6 +480629,12 @@
             "value" : "L’actualisation de %@ a été arrêtée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הרענון של %@ נעצר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -480905,6 +481307,12 @@
             "value" : "La recherche n’a pas pu être envoyée, car l’adresse de l’annuaire n’est pas une adresse web."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לשלוח את החיפוש, כי הכתובת של הספרייה אינה כתובת אינטרנט."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -481022,6 +481430,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "La recherche a été arrêtée."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "החיפוש נעצר."
           }
         },
         "hi" : {
@@ -481387,6 +481801,12 @@
             "value" : "Le serveur %@ est introuvable."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן למצוא את השרת %@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -481506,6 +481926,12 @@
             "value" : "Le serveur %@ est introuvable. Vérifiez l’adresse."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן למצוא את השרת %@. בדוק את הכתובת."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -481623,6 +482049,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le serveur indique que le fichier n’existe plus."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השרת אומר שהקובץ כבר לא שם."
           }
         },
         "hi" : {
@@ -482087,6 +482519,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Les abonnements n’ont pas pu être enregistrés : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לשמור את ההרשמות: %@"
           }
         },
         "hi" : {
@@ -483225,6 +483663,12 @@
             "value" : "Les pistes du fichier CUE « %@ » dépassent la fin de son audio, donc ses en-têtes n’ont pas été utilisés."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הרצועות של קובץ ה-CUE “%@” חורגות מסוף השמע שלו, ולכן לא השתמשו בכותרות שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -483913,6 +484357,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Le fichier de transcription trouvé à côté de l’audio de la nouvelle copie remplace la transcription de la copie existante."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ התמליל שנמצא לצד השמע של העותק החדש מחליף את התמליל של העותק הקיים."
           }
         },
         "hi" : {
@@ -487080,6 +487530,12 @@
             "value" : "Il n’y a aucun flux à actualiser."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין ערוצים לרענון."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -487199,6 +487655,12 @@
             "value" : "Il n’y a aucun abonnement à exporter."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין הרשמות לייצוא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -487316,6 +487778,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a aucun abonnement à exporter : vous êtes désabonné de tous les flux de votre bibliothèque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין הרשמות לייצוא: כל הערוצים בספרייה שלך ללא הרשמה."
           }
         },
         "hi" : {
@@ -488086,6 +488554,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a pas assez d’espace disque libre pour convertir %1$@ : il faut %2$@ de libre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מספיק מקום פנוי בדיסק להמרת %1$@: נדרשים %2$@ פנויים."
           }
         },
         "hi" : {
@@ -489295,6 +489769,12 @@
             "value" : "Il n’y a pas de place sur ce Mac pour cet épisode (%@)."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מקום ב-Mac הזה לאפיזודה הזו (%@)."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -489412,6 +489892,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a pas assez d’espace libre sur le disque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין מספיק מקום פנוי בדיסק."
           }
         },
         "hi" : {
@@ -489769,6 +490255,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Il n’y a plus de flux à cette adresse."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין עוד ערוץ בכתובת הזו."
           }
         },
         "hi" : {
@@ -491681,6 +492173,12 @@
             "value" : "Ce flux utilise http simple"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ערוץ זה משתמש ב-http רגיל"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -491798,6 +492296,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Réglages propres à ce flux"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההגדרות של הערוץ הזה"
           }
         },
         "hi" : {
@@ -492954,6 +493458,12 @@
             "value" : "Ce Mac est hors ligne, donc %@ ne peut pas être actualisé. Connectez-vous à Internet et réessayez."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-Mac הזה אינו מקוון, ולכן אי אפשר לרענן את %@. התחבר לאינטרנט ונסה שוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -493198,6 +493708,12 @@
             "value" : "Ce Mac est hors ligne, donc l’annuaire ne peut pas être interrogé. Connectez-vous à Internet et réessayez."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-Mac הזה אינו מקוון, ולכן אי אפשר לחפש בספרייה. התחבר לאינטרנט ונסה שוב."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -493315,6 +493831,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce Mac est hors ligne, donc « %@ » ne peut pas être téléchargé. Connectez-vous à Internet et réessayez."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ה-Mac הזה אינו מקוון, ולכן אי אפשר להוריד את “%@”. התחבר לאינטרנט ונסה שוב."
           }
         },
         "hi" : {
@@ -494209,6 +494731,12 @@
             "value" : "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls XML que TextMouth lit."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קובץ ה-XML הזה אינו ספר DTBook, מסמך XML של Word 2003 או קובץ ברייל PEF, שהם ה-XML היחיד ש-TextMouth קורא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -494326,6 +494854,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cet article n’a pas de description."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לכתבה הזו אין תיאור."
           }
         },
         "hi" : {
@@ -496002,6 +496536,12 @@
             "value" : "Ce livre n’a pas de paquet géré valide. Retirez-le seulement de la bibliothèque, ou réparez son stockage avant de le supprimer."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לספר הזה אין חבילה מנוהלת תקינה. הסר אותו מהספרייה בלבד, או תקן את האחסון שלו לפני המחיקה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -497212,6 +497752,12 @@
             "value" : "L’audio de ce livre n’a pas pu être converti d’Ogg en AAC. TextMouth réessaiera au prochain démarrage."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה להמיר את השמע של הספר הזה מ-Ogg ל-AAC. TextMouth ינסה שוב בהפעלה הבאה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -497331,6 +497877,12 @@
             "value" : "L’audio de ce livre est en cours de conversion d’Ogg en AAC. Il sera lu à la fin de la conversion."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השמע של הספר הזה מומר כעת מ-Ogg ל-AAC. הוא יתנגן כשזה יסתיים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -497448,6 +498000,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "L’audio de ce livre doit être converti d’Ogg en AAC. TextMouth le convertit maintenant, et il sera lu à la fin de la conversion."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השמע של הספר הזה צריך לעבור המרה מ-Ogg ל-AAC. TextMouth ממיר אותו כעת, והוא יתנגן כשזה יסתיים."
           }
         },
         "hi" : {
@@ -497908,6 +498466,12 @@
             "value" : "Cette archive de bande dessinée contient plus de %@ images, le maximum que TextMouth lit."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ארכיון הקומיקס הזה מכיל יותר מ-%@ תמונות ש-TextMouth קורא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -498025,6 +498589,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cette archive de bande dessinée ne contient aucune image que TextMouth peut lire."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ארכיון הקומיקס הזה אינו מכיל תמונות ש-TextMouth יכול לקרוא."
           }
         },
         "hi" : {
@@ -498372,6 +498942,12 @@
             "value" : "Ce téléchargement n’est pas dans le dossier de son flux, donc TextMouth a laissé ses fichiers tels quels."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההורדה הזו אינה בתיקיית הערוץ שלה, ולכן TextMouth השאיר את הקבצים שלה כפי שהם."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -498489,6 +499065,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Cet épisode n’a pas de description."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לאפיזודה הזו אין תיאור."
           }
         },
         "hi" : {
@@ -498723,6 +499305,12 @@
             "value" : "Ce flux n’est plus dans votre bibliothèque."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ הזה כבר אינו בספרייה שלך."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -498840,6 +499428,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce flux demande un mot de passe, que TextMouth ne peut pas encore envoyer."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ הזה דורש סיסמה, ש-TextMouth עדיין לא יכול לשלוח."
           }
         },
         "hi" : {
@@ -499068,6 +499662,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme un document XML Word 2003."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ הזה כמסמך XML של Word 2003."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -499185,6 +499785,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier n’a pas pu être lu comme un document Word 97-2003."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ הזה כמסמך Word 97-2003."
           }
         },
         "hi" : {
@@ -499306,6 +499912,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme une archive de bande dessinée. Il est peut-être endommagé, ou d’un autre type de fichier."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ הזה כארכיון קומיקס. ייתכן שהוא פגום, או מסוג קובץ אחר."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -499423,6 +500035,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier n’a pas pu être lu comme une image. Il est peut-être endommagé, ou d’un autre type de fichier."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ הזה כתמונה. ייתכן שהוא פגום, או מסוג קובץ אחר."
           }
         },
         "hi" : {
@@ -499544,6 +500162,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme un document de texte enrichi avec pièces jointes."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ הזה כמסמך טקסט עשיר עם קבצים מצורפים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -499661,6 +500285,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier n’a pas pu être lu comme un document de texte enrichi."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ הזה כמסמך טקסט עשיר."
           }
         },
         "hi" : {
@@ -499782,6 +500412,12 @@
             "value" : "Ce fichier n’a pas pu être lu comme un document texte OpenDocument."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ הזה כמסמך טקסט של OpenDocument."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -499899,6 +500535,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier ne contient aucun texte à lire."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין בקובץ הזה טקסט לקריאה."
           }
         },
         "hi" : {
@@ -500583,6 +501225,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Ce fichier demande un mot de passe, que TextMouth ne peut pas encore envoyer."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקובץ הזה דורש סיסמה, ש-TextMouth עדיין לא יכול לשלוח."
           }
         },
         "hi" : {
@@ -502239,6 +502887,12 @@
             "value" : "Cette image n’a pas pu être décodée. Elle est peut-être endommagée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לפענח את התמונה הזו. ייתכן שהיא פגומה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -502467,6 +503121,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Cette image contient %lld pages, plus que les %@ que TextMouth lit."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "התמונה הזו מכילה %lld עמוד, יותר מ-%@ ש-TextMouth קורא."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "התמונה הזו מכילה %lld עמודים, יותר מ-%@ ש-TextMouth קורא."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "התמונה הזו מכילה %lld עמודים, יותר מ-%@ ש-TextMouth קורא."
                 }
               }
             }
@@ -502874,6 +503552,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Cette image fait %@, soit plus que la limite de %lld mégapixels que TextMouth lit."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "התמונה הזו היא %@, גדולה מ-%lld מגה-פיקסל ש-TextMouth קורא."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "התמונה הזו היא %@, גדולה מ-%lld מגה-פיקסלים ש-TextMouth קורא."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "התמונה הזו היא %@, גדולה מ-%lld מגה-פיקסלים ש-TextMouth קורא."
                 }
               }
             }
@@ -507305,6 +508007,12 @@
             "value" : "Pour le télécharger de nouveau, choisissez %@ sur sa ligne."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי להוריד אותו שוב, בחר ב-%@ בשורה שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -507533,6 +508241,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Pour télécharger de nouveau les %lld autres, choisissez %@ sur leurs lignes."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "כדי להוריד שוב את ה-%lld האחר, בחר ב-%@ בשורה שלו."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "כדי להוריד שוב את %lld האחרים, בחר ב-%@ בשורות שלהם."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "כדי להוריד שוב את %lld האחרים, בחר ב-%@ בשורות שלהם."
                 }
               }
             }
@@ -507831,6 +508563,12 @@
             "value" : "Pour télécharger l’autre de nouveau, choisissez %@ sur sa ligne."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי להוריד שוב את האחד האחר, בחר ב-%@ בשורה שלו."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -507948,6 +508686,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour les télécharger de nouveau, choisissez %@ sur leurs lignes."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי להוריד אותם שוב, בחר ב-%@ בשורות שלהם."
           }
         },
         "hi" : {
@@ -508194,6 +508938,12 @@
             "value" : "Pour conserver un article, choisissez d’abord %@ sur sa ligne."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי לשמור כתבה, בחר תחילה ב-%@ בשורה שלה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -508313,6 +509063,12 @@
             "value" : "Pour conserver un épisode, choisissez d’abord %@ sur sa ligne."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי לשמור אפיזודה, בחר תחילה ב-%@ בשורה שלה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -508430,6 +509186,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour conserver un élément, choisissez d’abord %@ sur sa ligne."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי לשמור פריט, בחר תחילה ב-%@ בשורה שלו."
           }
         },
         "hi" : {
@@ -509055,6 +509817,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Pour l’utiliser, choisissez %@ dans l’onglet Texte des Réglages."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כדי להשתמש בו, בחר ב-%@ בלשונית הטקסט בהגדרות."
           }
         },
         "hi" : {
@@ -510997,6 +511765,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Piste %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רצועה %@"
           }
         },
         "hi" : {
@@ -517871,6 +518645,12 @@
             "value" : "Saisissez le titre ou l’éditeur d’un podcast, puis appuyez sur Retour pour rechercher dans l’annuaire d’Apple."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקלד שם או מפרסם של פודקאסט, ואז הקש Return כדי לחפש בספרייה של Apple"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -518220,6 +519000,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Saisissez ou collez l’adresse d’un flux ou d’une page web, puis appuyez sur Retour."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקלד או הדבק כתובת של ערוץ או של דף אינטרנט, ואז הקש Return"
           }
         },
         "hi" : {
@@ -521149,6 +521935,12 @@
             "value" : "Durée inconnue"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "משך לא ידוע"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -522576,6 +523368,12 @@
             "value" : "Se désabonner"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בטל הרשמה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -522695,6 +523493,12 @@
             "value" : "Se désabonner de %@ ?"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לבטל את ההרשמה ל-%@?"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -522812,6 +523616,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Désabonné"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ללא הרשמה"
           }
         },
         "hi" : {
@@ -522939,6 +523749,12 @@
             "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux articles%2$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אותו לגבי כתבות חדשות%2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -523062,6 +523878,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux épisodes%2$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אותו לגבי אפיזודות חדשות%2$@."
           }
         },
         "hi" : {
@@ -523189,6 +524011,12 @@
             "value" : "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux éléments%2$@."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ביטלת את ההרשמה ל-%1$@: TextMouth כבר אינו בודק אותו לגבי פריטים חדשים%2$@."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -523306,6 +524134,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Se désabonner…"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בטל הרשמה…"
           }
         },
         "hi" : {
@@ -523540,6 +524374,12 @@
             "value" : "Format de fichier non pris en charge : .%@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פורמט קובץ לא נתמך: .%@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -523657,6 +524497,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Format de fichier non pris en charge : .%@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פורמט קובץ לא נתמך: .%@."
           }
         },
         "hi" : {
@@ -528567,6 +529413,12 @@
             "value" : "WMA"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WMA"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -528684,6 +529536,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "vidéo WMV"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "וידאו WMV"
           }
         },
         "hi" : {
@@ -528805,6 +529663,12 @@
             "value" : "Attendez la fin de l’exportation"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המתן עד שהייצוא יסתיים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -528922,6 +529786,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Attendez la fin de la transcription, ou annulez-la"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המתן עד שהתמלול יסתיים, או בטל אותו"
           }
         },
         "hi" : {
@@ -530043,6 +530913,12 @@
             "value" : "En attente de la fin du déplacement du dossier de données..."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין לסיום העברת תיקיית הנתונים..."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -530160,6 +531036,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "En attente de téléchargement"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ממתין להורדה"
           }
         },
         "hi" : {
@@ -530513,6 +531395,12 @@
             "value" : "Page web"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "דף אינטרנט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -530632,6 +531520,12 @@
             "value" : "Site web"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אתר אינטרנט"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -530746,6 +531640,12 @@
           }
         },
         "fr" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WebM"
+          }
+        },
+        "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "WebM"
@@ -531943,6 +532843,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "Ce qui était conservé pour %lld téléchargements retirés a été supprimé."
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מה שנשמר עבור %lld הורדה שהוסרה נמחק."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מה שנשמר עבור %lld הורדות שהוסרו נמחק."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מה שנשמר עבור %lld הורדות שהוסרו נמחק."
                 }
               }
             }
@@ -533820,6 +534744,12 @@
             "value" : "À l’arrivée de nouveaux épisodes"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כשמגיעות אפיזודות חדשות"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -534972,6 +535902,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui en donner un propre."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כשהאפשרות מסומנת, הערוץ הזה פועל לפי ההגדרה בהגדרות, %@; בטל את הסימון כדי לתת לערוץ הגדרה משלו"
           }
         },
         "hi" : {
@@ -539242,6 +540178,12 @@
             "value" : "Windows Media"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows Media"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -542038,6 +542980,12 @@
             "value" : "Nombre de mots"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מספר מילים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -543305,6 +544253,12 @@
             "value" : "Vous pouvez le récupérer dans la corbeille jusqu’à ce qu’elle soit vidée."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אפשר לשחזר אותו מהאשפה עד לריקון האשפה."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -544019,6 +544973,12 @@
             "value" : "On vous demandera après chaque importation si le fichier d’origine doit être supprimé définitivement."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תישאל אם למחוק את קובץ המקור לצמיתות לאחר כל ייבוא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -544138,6 +545098,12 @@
             "value" : "On vous demandera après chaque importation si le fichier d’origine doit être placé dans la corbeille."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תישאל אם להעביר את קובץ המקור לאשפה לאחר כל ייבוא."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -544255,6 +545221,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "Vous êtes déjà abonné à %@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "כבר נרשמת ל-%@."
           }
         },
         "hi" : {
@@ -546411,6 +547383,12 @@
             "value" : "un type que le système ne nomme pas"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סוג שהמערכת אינה מציינת בשם"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -546754,6 +547732,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "un paquet de ce nom se trouve à la fois dans son dossier de la bibliothèque et dans celui de son flux"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חבילה בשם שלו נמצאת גם בתיקיית הספרייה שלו וגם בתיקיית הערוץ שלו"
           }
         },
         "hi" : {
@@ -547746,6 +548730,12 @@
             "value" : "ajout à la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוספתו לספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -547863,6 +548853,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ajout au dossier de la bibliothèque"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוספתו לתיקיית הספרייה"
           }
         },
         "hi" : {
@@ -549518,6 +550514,12 @@
             "value" : "immédiatement"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיד"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -549867,6 +550869,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "signets"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "סימניות"
           }
         },
         "hi" : {
@@ -550438,6 +551446,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "de %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מאת %@"
           }
         },
         "hi" : {
@@ -551303,6 +552317,12 @@
             "value" : "vérification de son format"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בדיקת הפורמט שלו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -551422,6 +552442,12 @@
             "value" : "vérification du paquet"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בדיקת החבילה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -551539,6 +552565,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "choisissez de nouveau %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "בחר שוב ב-%@"
           }
         },
         "hi" : {
@@ -552249,6 +553281,12 @@
             "value" : "conversion de son audio DAISY"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המרת שמע ה-DAISY שלו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -552366,6 +553404,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "conversion de son audio"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "המרת השמע שלו"
           }
         },
         "hi" : {
@@ -552487,6 +553531,12 @@
             "value" : "copie dans la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "העתקתו לספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -552604,6 +553654,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "création de son paquet"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יצירת החבילה שלו"
           }
         },
         "hi" : {
@@ -553199,6 +554255,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "supprimer son téléchargement"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מחיקת ההורדה שלו"
           }
         },
         "hi" : {
@@ -554109,6 +555171,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "extraction de l’archive"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "חילוץ הארכיון"
           }
         },
         "hi" : {
@@ -558865,6 +559933,12 @@
             "value" : "est en cours d’exportation, et %@ maintenant l’interromprait"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מיוצא כעת; %@ כעת תעצור את הייצוא"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -558984,6 +560058,12 @@
             "value" : "est en cours de transcription, et %@ maintenant ferait perdre la transcription"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מתומלל כעת; %@ כעת תגרום לאובדן התמליל"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -559101,6 +560181,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "est ouvert dans un lecteur"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "פתוח בקורא"
           }
         },
         "hi" : {
@@ -559781,6 +560867,12 @@
             "value" : "il se téléchargera quand ce Mac sera sur un réseau sans limite de données"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוא יורד ברגע שה-Mac הזה נמצא ברשת ללא מגבלות נתונים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -560359,6 +561451,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הוא %@, גדול מ-%lld מגה-פיקסל"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הוא %@, גדול מ-%lld מגה-פיקסלים"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "הוא %@, גדול מ-%lld מגה-פיקסלים"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -560650,6 +561766,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "c’est un type d’image que TextMouth ne peut pas lire (%@)"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "זהו סוג תמונה ש-TextMouth לא יכול לקרוא (%@)"
           }
         },
         "hi" : {
@@ -560995,6 +562117,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "sa durée est nulle"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "משך הזמן שלו הוא אפס"
           }
         },
         "hi" : {
@@ -561479,6 +562607,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "il lui faut de la place pour %@ sur ce Mac"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הוא זקוק למקום ל-%@ ב-Mac הזה"
           }
         },
         "hi" : {
@@ -562186,6 +563320,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld כתבה שהורדה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld כתבות שהורדו"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld כתבות שהורדו"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -562593,6 +563751,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld אפיזודה שהורדה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld אפיזודות שהורדו"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld אפיזודות שהורדו"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -562995,6 +564177,30 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "ses %lld éléments téléchargés"
+                }
+              }
+            }
+          }
+        },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld פריט שהורד"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld פריטים שהורדו"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld פריטים שהורדו"
                 }
               }
             }
@@ -563531,6 +564737,12 @@
             "value" : "son contenu ne correspond pas à la somme de contrôle enregistrée avec lui"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "התוכן שלו אינו תואם לסכום הביקורת שנשמר איתו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -563648,6 +564860,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son article téléchargé"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הכתבה שהורדה"
           }
         },
         "hi" : {
@@ -563769,6 +564987,12 @@
             "value" : "son épisode téléchargé"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "האפיזודה שהורדה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -563886,6 +565110,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son élément téléchargé"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפריט שהורד"
           }
         },
         "hi" : {
@@ -564007,6 +565237,12 @@
             "value" : "son fichier n’a pas pu être lu comme une image"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לקרוא את הקובץ שלו כתמונה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -564124,6 +565360,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son fichier est endommagé ou incomplet : %@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הקובץ שלו פגום או לא שלם: %@"
           }
         },
         "hi" : {
@@ -564602,6 +565844,12 @@
             "value" : "son paquet n’est ni dans son dossier de la bibliothèque ni dans celui de son flux"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "החבילה שלו אינה נמצאת לא בתיקיית הספרייה שלו ולא בתיקיית הערוץ שלו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -564719,6 +565967,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "son image n’a pas pu être décodée"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא ניתן היה לפענח את התמונה שלו"
           }
         },
         "hi" : {
@@ -564840,6 +566094,12 @@
             "value" : "sa ligne ne désigne aucun paquet géré par la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השורה שלו אינה מציינת חבילה שהספרייה מנהלת"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -564957,6 +566217,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "enregistrement de la position de vos téléchargements de flux pour la prochaine fois"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שמירת המקום של הורדות הערוצים שלך לפעם הבאה"
           }
         },
         "hi" : {
@@ -566306,6 +567572,12 @@
             "value" : "plus de %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "יותר מ-%@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -567184,6 +568456,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מקנן ציטוטים, רשימות או הדגשות ביותר מ-%lld רמה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מקנן ציטוטים, רשימות או הדגשות ביותר מ-%lld רמות"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מקנן ציטוטים, רשימות או הדגשות ביותר מ-%lld רמות"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -567475,6 +568771,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "jamais"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אף פעם"
           }
         },
         "hi" : {
@@ -568691,6 +569993,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "aucun téléchargé"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "לא הורד דבר"
           }
         },
         "hi" : {
@@ -570102,6 +571410,12 @@
             "value" : "rien de nouveau."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אין חדש."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -570689,6 +572003,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "seulement au lancement et à votre demande"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "רק בהפעלה וכשתבקש"
           }
         },
         "hi" : {
@@ -571699,6 +573019,12 @@
             "value" : "réglages propres"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הגדרות משלו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -572169,6 +573495,12 @@
             "value" : "position"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מקום"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -572286,6 +573618,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "positions"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "מקומות"
           }
         },
         "hi" : {
@@ -572639,6 +573977,12 @@
             "value" : "lecture de son audio"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קריאת השמע שלו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -572758,6 +574102,12 @@
             "value" : "lecture de son manifeste"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קריאת המניפסט שלו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -572875,6 +574225,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "lecture de son texte"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קריאת הטקסט שלו"
           }
         },
         "hi" : {
@@ -573232,6 +574588,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "lecture du fichier"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "קריאת הקובץ"
           }
         },
         "hi" : {
@@ -573992,6 +575354,12 @@
             "value" : "retour à la bibliothèque"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "החזרתו לספרייה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -574111,6 +575479,12 @@
             "value" : "enregistrement de son fichier bookInfo.json"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שמירת קובץ ה-bookInfo.json שלו"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -574228,6 +575602,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "enregistrement des modifications de vos abonnements aux flux"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "שמירת השינויים בהרשמות לערוצים שלך"
           }
         },
         "hi" : {
@@ -577198,6 +578578,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ שנשמרו עבור %lld הורדה שהוסרה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ שנשמרו עבור %lld הורדות שהוסרו"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ שנשמרו עבור %lld הורדות שהוסרו"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -578871,6 +580275,12 @@
             "value" : "le téléchargement s’est terminé sans fichier"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ההורדה הסתיימה בלי קובץ"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -579220,6 +580630,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le flux « %@ »"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הערוץ “%@”"
           }
         },
         "hi" : {
@@ -581060,6 +582476,12 @@
             "value" : "le serveur"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השרת"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -581179,6 +582601,12 @@
             "value" : "le serveur n’a envoyé aucune réponse"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "השרת לא שלח תשובה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -581296,6 +582724,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "le haut de votre bibliothèque"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ראש הספרייה שלך"
           }
         },
         "hi" : {
@@ -582113,6 +583547,12 @@
             "value" : "ce format"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "הפורמט הזה"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -582470,6 +583910,12 @@
             "value" : "aujourd’hui à %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "היום בשעה %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -582708,6 +584154,12 @@
             "value" : "transcription"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תמליל"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -582827,6 +584279,12 @@
             "value" : "transcriptions"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "תמלילים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -582944,6 +584402,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "réessayez"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "נסה שוב"
           }
         },
         "hi" : {
@@ -583887,6 +585351,30 @@
             }
           }
         },
+        "he" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מה שנשמר עבור %lld הורדה שהוסרה"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מה שנשמר עבור %lld הורדות שהוסרו"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "מה שנשמר עבור %lld הורדות שהוסרו"
+                }
+              }
+            }
+          }
+        },
         "hi" : {
           "variations" : {
             "plural" : {
@@ -584424,6 +585912,12 @@
             "value" : "hier à %@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "אתמול בשעה %@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -584791,6 +586285,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %1$@ » (%2$@)"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” (%2$@)"
           }
         },
         "hi" : {
@@ -585412,6 +586912,12 @@
             "value" : "« %@ » a changé pendant son remplacement, donc TextMouth a laissé les deux copies telles quelles. Choisissez de nouveau Remplacer l’existant."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” השתנה בזמן שהוחלף, ולכן TextMouth השאיר את שני העותקים כפי שהם. בחר שוב באפשרות החלף את הקיים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -585894,6 +587400,12 @@
             "value" : "« %@ » se téléchargera quand ce Mac sera sur un réseau sans limite de données."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” יורד ברגע שה-Mac הזה נמצא ברשת ללא מגבלות נתונים."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -586013,6 +587525,12 @@
             "value" : "« %@ » ne contient ni livre DAISY ni piste audio à importer comme un seul livre."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” אינו מכיל ספר DAISY ולא רצועות שמע לייבוא כספר אחד."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -586130,6 +587648,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %@ » ne contient aucun son à importer."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” אינו מכיל שמע לייבוא."
           }
         },
         "hi" : {
@@ -586364,6 +587888,12 @@
             "value" : "« %@ » est un lexique de prononciation, pas une playlist."
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” הוא לקסיקון הגייה, לא פלייליסט."
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -586481,6 +588011,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %@ » est déjà en cours d’ajout à la bibliothèque."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” כבר בתהליך הוספה לספרייה."
           }
         },
         "hi" : {
@@ -587780,6 +589316,12 @@
             "value" : "« %1$@ » correspond à « %2$@ », déjà dans votre bibliothèque. Remplacer la copie existante, ou conserver les deux comme livres distincts ?"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” תואם ל-“%2$@”, שכבר נמצא בספרייה שלך. להחליף את העותק הקיים, או לשמור את שניהם כספרים נפרדים?"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -587905,6 +589447,12 @@
             "value" : "« %1$@ » nécessite %2$@ d’espace libre"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” זקוק ל-%2$@ פנויים"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -588028,6 +589576,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %1$@ » n’attend plus pour se télécharger ; il se téléchargera quand vous choisirez %2$@."
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” אינו ממתין עוד להורדה; הוא יורד כשתבחר ב-%2$@."
           }
         },
         "hi" : {
@@ -588875,6 +590429,12 @@
             "value" : "« %1$@ », %2$@"
           }
         },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”, %2$@"
+          }
+        },
         "hi" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -588998,6 +590558,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "« %1$@ », %2$@ : %3$@"
+          }
+        },
+        "he" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”, %2$@: %3$@"
           }
         },
         "hi" : {
