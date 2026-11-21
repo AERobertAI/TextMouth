@@ -2,6 +2,565 @@
  "language": "pt-BR",
  "reviews": [
   {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "many": "%1$@ também contém %2$lld de livros adicionados por um TextMouth mais recente, que são mantidos.",
+      "one": "%1$@ também contém %2$lld livro adicionado por um TextMouth mais recente, que é mantido.",
+      "other": "%1$@ também contém %2$lld livros adicionados por um TextMouth mais recente, que são mantidos."
+     },
+     "after": {
+      "one": "%1$@ também contém %2$lld livro adicionado por uma versão mais recente do TextMouth, e ele é mantido.",
+      "many": "%1$@ também contém %2$lld de livros adicionados por uma versão mais recente do TextMouth, e eles são mantidos.",
+      "other": "%1$@ também contém %2$lld livros adicionados por uma versão mais recente do TextMouth, e eles são mantidos."
+     },
+     "why": "natural: 'um TextMouth mais recente' copies the English, Portuguese says 'uma versão mais recente do TextMouth' as other areas do, and 'que' no longer attaches to TextMouth"
+    },
+    {
+     "key": "%@ elapsed",
+     "english": "%@ elapsed",
+     "before": "%@ decorrido",
+     "after": "Tempo decorrido: %@",
+     "why": "grammar: the spoken time is '1 minuto e 5 segundos', which the singular 'decorrido' cannot agree with, so a label and colon reads right for every time"
+    },
+    {
+     "key": "%@ hasn't downloaded anything for %lld seconds.",
+     "english": {
+      "one": "%@ hasn't downloaded anything for %lld second.",
+      "other": "%@ hasn't downloaded anything for %lld seconds."
+     },
+     "before": {
+      "many": "%@ não baixou nada há %lld de segundos.",
+      "one": "%@ não baixou nada há %lld segundo.",
+      "other": "%@ não baixou nada há %lld segundos."
+     },
+     "after": {
+      "one": "%@ está há %lld segundo sem baixar nada.",
+      "many": "%@ está há %lld de segundos sem baixar nada.",
+      "other": "%@ está há %lld segundos sem baixar nada."
+     },
+     "why": "grammar: 'não baixou nada há 30 segundos' says nothing was downloaded 30 seconds ago, while a state lasting until now takes 'está há ... sem'"
+    },
+    {
+     "key": "%@ is filed %@ in %@ and %@ in %@.",
+     "english": "%1$@ is filed %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "Em %3$@, %1$@ está %2$@; em %5$@, está %4$@.",
+     "after": "Segundo %3$@, %1$@ está %2$@; segundo %5$@, está %4$@.",
+     "why": "grammar: 'em' before the copy name gives 'Em esta cópia' and 'em a outra cópia', which Portuguese must contract, so the copy follows 'segundo', which never contracts"
+    },
+    {
+     "key": "%@ remaining in total",
+     "english": "%@ remaining in total",
+     "before": "%@ restantes no total",
+     "after": "Tempo restante no total: %@",
+     "why": "grammar: the spoken time can be '1 minuto', which the plural 'restantes' cannot agree with, so a label and colon reads right for every time, as part 2's 'Tempo restante: cerca de %@' does"
+    },
+    {
+     "key": "%@ total remaining at current speed",
+     "english": "%@ total remaining at current speed",
+     "before": "%@ restantes no total na velocidade atual",
+     "after": "Tempo restante no total na velocidade atual: %@",
+     "why": "grammar: the spoken time can be '1 minuto', which the plural 'restantes' cannot agree with, so a label and colon reads right for every time, as part 2's 'Tempo restante: cerca de %@' does"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "many": "%lld de visualizações precisam de um TextMouth mais recente. Elas são mantidas como estão e não são oferecidas.",
+      "one": "%lld visualização precisa de um TextMouth mais recente. Ela é mantida como está e não é oferecida.",
+      "other": "%lld visualizações precisam de um TextMouth mais recente. Elas são mantidas como estão e não são oferecidas."
+     },
+     "after": {
+      "one": "%lld visualização precisa de uma versão mais recente do TextMouth. Ela é mantida como está e não é oferecida.",
+      "many": "%lld de visualizações precisam de uma versão mais recente do TextMouth. Elas são mantidas como estão e não são oferecidas.",
+      "other": "%lld visualizações precisam de uma versão mais recente do TextMouth. Elas são mantidas como estão e não são oferecidas."
+     },
+     "why": "natural: 'um TextMouth mais recente' copies the English, Portuguese says 'uma versão mais recente do TextMouth'"
+    },
+    {
+     "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "before": "Um movimento desloca um livro por vez, e há vários selecionados. Selecione um único livro e tente novamente.",
+     "after": "Só é possível mover um livro por vez, e há vários selecionados. Selecione um único livro e tente novamente.",
+     "why": "natural: 'Um movimento desloca um livro' is a word-for-word copy, Portuguese says only one book can be moved at a time"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Sempre oferece uma visualização o tempo todo. Quando aplicável a oferece só enquanto ela lista algo: a Lista de leitura enquanto contém um livro, episódio ou artigo, e Feeds enquanto há um feed. Oculta a deixa de fora. Uma janela mantém a visualização até que você escolha outra.",
+     "after": "Com Sempre, a visualização é oferecida o tempo todo. Com Quando aplicável, só é oferecida enquanto lista algo: a Lista de leitura enquanto contém um livro, episódio ou artigo, e Feeds enquanto há um feed. Com Oculta, fica de fora. Uma janela mantém a visualização até que você escolha outra.",
+     "why": "natural: as subjects the option names read as an adverb ('Quando aplicável a oferece') and a verb ('Oculta a deixa'), so 'Com' plus the option's name says which is meant"
+    },
+    {
+     "key": "Book only in %@: %@.",
+     "english": "Book only in %1$@: %2$@.",
+     "before": "Livro somente em %1$@: %2$@.",
+     "after": "Livro que só %1$@ tem: %2$@.",
+     "why": "grammar: 'somente em esta cópia' and 'em a outra cópia' need contractions a placeholder cannot take, so the copy becomes the subject"
+    },
+    {
+     "key": "Bookmark %@ in %@: only in %@, %@.",
+     "english": "Bookmark %1$@ in %2$@: only in %3$@, %4$@.",
+     "before": "Marcador %1$@ em %2$@: somente em %3$@, %4$@.",
+     "after": "Marcador %1$@ em %2$@: só %3$@ o tem, %4$@.",
+     "why": "grammar: 'somente em esta cópia' and 'em a outra cópia' need contractions a placeholder cannot take, so the copy becomes the subject"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "many": "Mas %1$@ também contém %2$lld de livros adicionados por um TextMouth mais recente: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles.",
+      "one": "Mas %1$@ também contém %2$lld livro adicionado por um TextMouth mais recente: ele é mantido onde está, assim como todas as pastas que o contêm.",
+      "other": "Mas %1$@ também contém %2$lld livros adicionados por um TextMouth mais recente: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles."
+     },
+     "after": {
+      "one": "Mas %1$@ também contém %2$lld livro adicionado por uma versão mais recente do TextMouth: ele é mantido onde está, assim como todas as pastas que o contêm.",
+      "many": "Mas %1$@ também contém %2$lld de livros adicionados por uma versão mais recente do TextMouth: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles.",
+      "other": "Mas %1$@ também contém %2$lld livros adicionados por uma versão mais recente do TextMouth: eles são mantidos onde estão, assim como todas as pastas que contêm algum deles."
+     },
+     "why": "natural: 'um TextMouth mais recente' copies the English, Portuguese says 'uma versão mais recente do TextMouth'"
+    },
+    {
+     "key": "Case sensitive matching",
+     "english": "Case sensitive matching",
+     "before": "Correspondência que diferencia maiúsculas de minúsculas",
+     "after": "Diferenciar maiúsculas de minúsculas",
+     "why": "natural: a switch's label of 55 characters for an English one of 23, the switch's own title 'Diferenciar maiúsculas de minúsculas' says it all"
+    },
+    {
+     "key": "Chapter %@, from %@",
+     "english": "Chapter %1$@, from %2$@",
+     "before": "Capítulo %1$@, de %2$@",
+     "after": "Capítulo %1$@, via %2$@",
+     "why": "grammar: the service can be 'o serviço de nuvem', and 'de o serviço' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "before": "Escolhe nenhum controle por livro, um seletor compartilhado ou um menu com seletores separados para avançar e retroceder.",
+     "after": "Escolhe entre nenhum controle por livro, um seletor compartilhado ou um menu com seletores separados para avançar e retroceder.",
+     "why": "natural: 'Escolhe nenhum controle' says it chooses no control, so the three choices need 'entre'"
+    },
+    {
+     "key": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "english": "Default pitch for new books. 1.0 is normal. Each book can override this.",
+     "before": "Tom padrão para livros novos. 1.0 é o normal. Cada livro pode substituí-lo.",
+     "after": "Tom padrão para livros novos. 1,0 é o normal. Cada livro pode substituí-lo.",
+     "why": "punctuation: Portuguese writes the decimal with a comma, as the slider's own value 'Normal (1,0x)' does"
+    },
+    {
+     "key": "Downloaded %@",
+     "english": "Downloaded %@",
+     "before": "Baixado: %@",
+     "after": "%@ baixados",
+     "why": "grammar: the count is always several books, so the singular 'Baixado:' cannot agree, and the count comes first"
+    },
+    {
+     "key": "Downloading %@ from %@.",
+     "english": "Downloading %1$@ from %2$@.",
+     "before": "Baixando %1$@ de %2$@.",
+     "after": "Baixando %1$@ via %2$@.",
+     "why": "grammar: the service can be 'o serviço de nuvem', and 'de o serviço' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Editar texto é interrompido para este livro; escolha Editar texto novamente para editar a nova leitura.",
+     "after": "A edição do texto deste livro é interrompida; escolha Editar texto novamente para editar a nova leitura.",
+     "why": "natural: the command name as the subject of 'é interrompido' reads as a calque, Portuguese names the activity, 'a edição do texto'"
+    },
+    {
+     "key": "Everything",
+     "english": "Everything",
+     "before": "Tudo",
+     "after": "tudo",
+     "why": "natural: the object always follows a verb, 'Mover %@ para a Lixeira', so English title case gives 'Mover Tudo', where Portuguese writes 'tudo' in lower case"
+    },
+    {
+     "key": "Everything in %@",
+     "english": "Everything in %@",
+     "before": "Tudo em %@",
+     "after": "tudo em %@",
+     "why": "natural: the object always follows a verb, 'Excluir %@ permanentemente', so English title case gives 'Excluir Tudo em', where Portuguese writes 'tudo' in lower case"
+    },
+    {
+     "key": "Failed to rebuild directory",
+     "english": "Failed to rebuild directory",
+     "before": "Falha ao reconstruir o diretório",
+     "after": "Falha ao reconstruir a pasta de dados",
+     "why": "term: the data directory is 'pasta de dados' in its own row, 'Pasta de dados: %@', and in 20 other strings, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "before": "A posição das pastas e a ordem manual que estavam apenas no índice ilegível são perdidas da biblioteca.",
+     "after": "A organização em pastas e a ordem manual que estavam só no índice ilegível se perdem.",
+     "why": "meaning: 'A posição das pastas' says where folders sit, while the English means which folder each book is in, and 'perdidas da biblioteca' is a calque"
+    },
+    {
+     "key": "Folder “%@” in %@ is “%@” in %@.",
+     "english": "Folder “%1$@” in %2$@ is “%3$@” in %4$@.",
+     "before": "A pasta “%1$@” em %2$@ é “%3$@” em %4$@.",
+     "after": "A pasta “%1$@”, segundo %2$@, é “%3$@” segundo %4$@.",
+     "why": "grammar: 'em esta cópia' and 'em a outra cópia' need contractions a placeholder cannot take, so each copy follows 'segundo'"
+    },
+    {
+     "key": "Folder “%@” is only in %@.",
+     "english": "Folder “%1$@” is only in %2$@.",
+     "before": "A pasta “%1$@” só existe em %2$@.",
+     "after": "Só %2$@ tem a pasta “%1$@”.",
+     "why": "grammar: 'só existe em esta cópia' and 'em a outra cópia' need contractions a placeholder cannot take, so the copy becomes the subject"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "Pastas é sempre exibida: todas as pastas e feeds se abrem ali.",
+     "after": "A visualização Pastas é sempre exibida: todas as pastas e feeds se abrem nela.",
+     "why": "grammar: the plural view name 'Pastas' with the singular 'é sempre exibida' reads as an agreement error, so the sentence names the view"
+    },
+    {
+     "key": "From %@",
+     "english": "From %@",
+     "before": "De %@",
+     "after": "Via %@",
+     "why": "grammar: the service can be 'o serviço de nuvem', and 'De o serviço' must contract, so 'Via' takes every value"
+    },
+    {
+     "key": "If %@ arrives from %@ later, %@ may keep two copies of it.",
+     "english": "If %1$@ arrives from %2$@ later, %3$@ may keep two copies of it.",
+     "before": "Se %1$@ chegar de %2$@ mais tarde, %3$@ poderá manter duas cópias dele.",
+     "after": "Se %1$@ chegar via %2$@ mais tarde, %3$@ poderá manter duas cópias dele.",
+     "why": "grammar: the service can be 'a nuvem', and 'de a nuvem' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "If the file arrives from %@ later, it names the same library.",
+     "english": "If the file arrives from %@ later, it names the same library.",
+     "before": "Se o arquivo chegar de %@ mais tarde, ele indicará a mesma biblioteca.",
+     "after": "Se o arquivo chegar via %@ mais tarde, ele indicará a mesma biblioteca.",
+     "why": "grammar: the service can be 'a nuvem', and 'de a nuvem' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "If the library's own %@ arrives from %@ later, %@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "english": "If the library's own %1$@ arrives from %2$@ later, %3$@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "before": "Se o %1$@ da própria biblioteca chegar de %2$@ mais tarde, %3$@ poderá manter duas cópias dele, e este Mac e o outro discordarão sobre qual é esta biblioteca.",
+     "after": "Se o %1$@ da própria biblioteca chegar via %2$@ mais tarde, %3$@ poderá manter duas cópias dele, e este Mac e o outro discordarão sobre qual é esta biblioteca.",
+     "why": "grammar: the service can be 'a nuvem', and 'de a nuvem' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "It may be paused, signed out, or not running.",
+     "english": "It may be paused, signed out, or not running.",
+     "before": "Ele pode estar pausado, sem login ou fora de execução.",
+     "after": "Ele pode estar pausado, ter saído da conta ou não estar em execução.",
+     "why": "natural: 'fora de execução' and 'sem login' are not how Portuguese says an app is not running or signed out, as entry 739 says it"
+    },
+    {
+     "key": "It stays in %@",
+     "english": "It stays in %@",
+     "before": "Permanece em %@",
+     "after": "Continua disponível via %@",
+     "why": "grammar: the service can be 'a nuvem', and 'em a nuvem' must contract, so the book stays available 'via' the service"
+    },
+    {
+     "key": "Last opened %@",
+     "english": "Last opened %@",
+     "before": "Aberto pela última vez %@",
+     "after": "Última abertura: %@",
+     "why": "grammar: the moment is 'hoje às 15:05' or '1 de outubro às 15:05', and a date needs 'em' after 'Aberto pela última vez', so a label and colon reads right for both, as 'Adicionado: %@' does"
+    },
+    {
+     "key": "Not Within the Last",
+     "english": "Not Within the Last",
+     "before": "Não dentro dos últimos",
+     "after": "Não nos últimos",
+     "why": "term: 'Não dentro dos últimos' is a calque, Apple's Finder and Music say 'nos últimos' for this date test"
+    },
+    {
+     "key": "OpenDocument Text",
+     "english": "OpenDocument Text",
+     "before": "Texto do OpenDocument",
+     "after": "Texto OpenDocument",
+     "why": "natural: a format name joins its words without 'do', as 'Texto OpenDocument', and 'Texto do OpenDocument' reads as the text of something named OpenDocument"
+    },
+    {
+     "key": "Position in %@: newer in %@, %@.",
+     "english": "Position in %1$@: newer in %2$@, %3$@.",
+     "before": "Posição em %1$@: mais recente em %2$@, %3$@.",
+     "after": "Posição em %1$@: %2$@ tem a mais recente, %3$@.",
+     "why": "grammar: 'mais recente em esta cópia' and 'em a outra cópia' need contractions a placeholder cannot take, so the copy becomes the subject"
+    },
+    {
+     "key": "Read “%@” again automatically?",
+     "english": "Read “%@” again automatically?",
+     "before": "Ler “%@” novamente automaticamente?",
+     "after": "Ler “%@” de novo automaticamente?",
+     "why": "natural: two -mente adverbs side by side, 'novamente automaticamente', is a clumsy sound in Portuguese"
+    },
+    {
+     "key": "Reading list: %@ is only on %@'s list, at place %@.",
+     "english": "Reading list: %1$@ is only on %2$@'s list, at place %3$@.",
+     "before": "Lista de leitura: %1$@ só está na lista de %2$@, na posição %3$@.",
+     "after": "Lista de leitura: só %2$@ tem %1$@ na lista, na posição %3$@.",
+     "why": "grammar: 'na lista de esta cópia' and 'de a outra cópia' need contractions a placeholder cannot take, so the copy becomes the subject"
+    },
+    {
+     "key": "Reading list: “%@” is %@ in %@ and %@ in %@.",
+     "english": "Reading list: “%1$@” is %2$@ in %3$@ and %4$@ in %5$@.",
+     "before": "Lista de leitura: “%1$@” é %2$@ em %3$@ e %4$@ em %5$@.",
+     "after": "Lista de leitura: %3$@ tem a opção “%1$@” %2$@, e %5$@, %4$@.",
+     "why": "grammar: 'em esta cópia' and 'em a outra cópia' need contractions a placeholder cannot take, and a switched state takes 'estar', not 'é ativada', so each copy is the subject of 'tem a opção'"
+    },
+    {
+     "key": "Rebuild Directory",
+     "english": "Rebuild Directory",
+     "before": "Reconstruir diretório",
+     "after": "Reconstruir pasta de dados",
+     "why": "term: the data directory is 'pasta de dados' in its own row, 'Pasta de dados: %@', and Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "Rebuild TextMouth directory",
+     "english": "Rebuild TextMouth directory",
+     "before": "Reconstruir o diretório do TextMouth",
+     "after": "Reconstruir a pasta de dados do TextMouth",
+     "why": "term: the data directory is 'pasta de dados' in its own row and in the button's title, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "Rebuilding the data directory...",
+     "english": "Rebuilding the data directory...",
+     "before": "Reconstruindo o diretório de dados…",
+     "after": "Reconstruindo a pasta de dados…",
+     "why": "term: the data directory is 'pasta de dados' in its own row and in the button's title, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "Recreates the directory structure and migrates any books using old storage",
+     "english": "Recreates the directory structure and migrates any books using old storage",
+     "before": "Recria a estrutura do diretório e migra os livros que usam o armazenamento antigo.",
+     "after": "Recria a estrutura da pasta de dados e migra os livros que usam o armazenamento antigo.",
+     "why": "term: the structure rebuilt is the data directory's, 'pasta de dados' in its own row, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "Settle the conflict in %@ first.",
+     "english": "Settle the conflict in %@ first.",
+     "before": "Resolva primeiro o conflito em %@.",
+     "after": "Resolva primeiro o conflito com %@.",
+     "why": "grammar: the service can be 'o serviço de nuvem', and 'em o serviço' must contract, so the conflict is settled 'com' the service, which never contracts"
+    },
+    {
+     "key": "Some of the library's files are in %@ and aren't on this Mac yet.",
+     "english": "Some of the library's files are in %@ and aren't on this Mac yet.",
+     "before": "Alguns arquivos da biblioteca estão em %@ e ainda não estão neste Mac.",
+     "after": "Alguns arquivos da biblioteca ainda não chegaram a este Mac via %@.",
+     "why": "grammar: the service can be 'a nuvem', and 'estão em a nuvem' must contract, so the files have not arrived 'via' the service"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "Parar, e Reproduzir recomeça",
+     "after": "Parar e recomeçar ao reproduzir",
+     "why": "natural: 'Parar, e Reproduzir recomeça' makes the command name an infinitive subject after a comma, which reads as a broken sentence, so the choice says stop and start over on playing"
+    },
+    {
+     "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "before": "Trocar de biblioteca perde as alterações que o TextMouth não conseguiu salvar enquanto a biblioteca não está disponível.",
+     "after": "Se você trocar de biblioteca, perderá as alterações que o TextMouth não conseguiu salvar enquanto a biblioteca não está disponível.",
+     "why": "natural: 'Trocar de biblioteca perde as alterações' copies the English, since an act cannot lose something in Portuguese, so the listener is the one who loses them"
+    },
+    {
+     "key": "TextMouth couldn't get the library's files from %@.",
+     "english": "TextMouth couldn't get the library's files from %@.",
+     "before": "O TextMouth não conseguiu obter os arquivos da biblioteca de %@.",
+     "after": "O TextMouth não conseguiu obter os arquivos da biblioteca via %@.",
+     "why": "grammar: the service can be 'a nuvem', and 'de a nuvem' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory.",
+     "english": "TextMouth is rebuilding its data directory.",
+     "before": "O TextMouth está reconstruindo o diretório de dados.",
+     "after": "O TextMouth está reconstruindo a pasta de dados.",
+     "why": "term: the data directory is 'pasta de dados' in its own row and in 20 other strings, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "before": "O TextMouth está reconstruindo seu diretório de dados. Espere até terminar e escolha %@ novamente.",
+     "after": "O TextMouth está reconstruindo a pasta de dados. Espere até terminar e escolha %@ novamente.",
+     "why": "term: the setting is named 'Pasta de dados', as 20 other strings say, so 'diretório de dados' is a second word for it, and 'seu' could read as 'your'"
+    },
+    {
+     "key": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "english": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "before": "O TextMouth os move de volta quando terminar de reconstruir o diretório de dados.",
+     "after": "O TextMouth os move de volta quando terminar de reconstruir a pasta de dados.",
+     "why": "term: the data directory is 'pasta de dados' in its own row and in the next string, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "TextMouth saves them once it has finished rebuilding its data directory.",
+     "english": "TextMouth saves them once it has finished rebuilding its data directory.",
+     "before": "O TextMouth as salva quando terminar de reconstruir o diretório de dados.",
+     "after": "O TextMouth as salva quando terminar de reconstruir a pasta de dados.",
+     "why": "term: the data directory is 'pasta de dados' in its own row and in the next string, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "The folder %@ is in %@ and isn't on this Mac yet.",
+     "english": "The folder %1$@ is in %2$@ and isn't on this Mac yet.",
+     "before": "A pasta %1$@ está em %2$@ e ainda não está neste Mac.",
+     "after": "A pasta %1$@ ainda não chegou a este Mac via %2$@.",
+     "why": "grammar: the service can be 'a nuvem', and 'está em a nuvem' must contract, so the folder has not arrived 'via' the service"
+    },
+    {
+     "key": "The library's identity file is on this Mac, but its index, %@, hasn't arrived from %@.",
+     "english": "The library's identity file is on this Mac, but its index, %1$@, hasn't arrived from %2$@.",
+     "before": "O arquivo de identidade da biblioteca está neste Mac, mas o índice dela, %1$@, não chegou de %2$@.",
+     "after": "O arquivo de identidade da biblioteca está neste Mac, mas o índice dela, %1$@, não chegou via %2$@.",
+     "why": "grammar: the service can be 'a nuvem', and 'de a nuvem' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "The library's index is on this Mac, but its identity file, %@, hasn't arrived from %@.",
+     "english": "The library's index is on this Mac, but its identity file, %1$@, hasn't arrived from %2$@.",
+     "before": "O índice da biblioteca está neste Mac, mas o arquivo de identidade dela, %1$@, não chegou de %2$@.",
+     "after": "O índice da biblioteca está neste Mac, mas o arquivo de identidade dela, %1$@, não chegou via %2$@.",
+     "why": "grammar: the service can be 'a nuvem', and 'de a nuvem' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "They stay in %@",
+     "english": "They stay in %@",
+     "before": "Permanecem em %@",
+     "after": "Continuam disponíveis via %@",
+     "why": "grammar: the service can be 'a nuvem', and 'em a nuvem' must contract, so the books stay available 'via' the service, as for one book"
+    },
+    {
+     "key": "This Mac is offline, so the book can't be downloaded from %@.",
+     "english": "This Mac is offline, so the book can't be downloaded from %@.",
+     "before": "Este Mac está off-line, então o livro não pode ser baixado de %@.",
+     "after": "Este Mac está off-line, então o livro não pode ser baixado via %@.",
+     "why": "grammar: the service can be 'o serviço de nuvem', and 'de o serviço' must contract, so 'via' takes every value"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "Este braille parece braille inglês, edição americana. Escolha o código braille dele em Informações do livro.",
+     "after": "Este braille parece ser English Braille, American Edition. Escolha o código braille dele em Informações do livro.",
+     "why": "term: English Braille, American Edition is the code's own name, kept in English in the Braille Code pop-up and in the other strings, so the listener can find it there"
+    },
+    {
+     "key": "This recreates the directory structure and migrates books using old storage.",
+     "english": "This recreates the directory structure and migrates books using old storage.",
+     "before": "Isso recria a estrutura do diretório e migra os livros que usam o armazenamento antigo.",
+     "after": "Isso recria a estrutura da pasta de dados e migra os livros que usam o armazenamento antigo.",
+     "why": "term: the structure rebuilt is the data directory's, 'pasta de dados' in its own row, Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Para soltá-lo, tire-o da lista de leitura ou desmarque %@ nas opções da Lista de leitura.",
+     "after": "Para liberá-lo, tire-o da lista de leitura ou desmarque %@ nas opções da Lista de leitura.",
+     "why": "natural: 'soltá-lo' is letting go of something held in the hand, while freeing a kept download is 'liberá-lo'"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Para soltá-los, tire-os da lista de leitura ou desmarque %@ nas opções da Lista de leitura.",
+     "after": "Para liberá-los, tire-os da lista de leitura ou desmarque %@ nas opções da Lista de leitura.",
+     "why": "natural: 'soltá-los' is letting go of something held in the hand, while freeing kept downloads is 'liberá-los'"
+    },
+    {
+     "key": "Until then, changing the location and rebuilding the directory are unavailable.",
+     "english": "Until then, changing the location and rebuilding the directory are unavailable.",
+     "before": "Até lá, alterar a localização e reconstruir o diretório ficam indisponíveis.",
+     "after": "Até lá, alterar a localização e reconstruir a pasta de dados ficam indisponíveis.",
+     "why": "term: rebuilding the directory is Rebuild Directory, now 'Reconstruir pasta de dados', and Apple's Portuguese says 'pasta', not 'diretório'"
+    },
+    {
+     "key": "Using one library on two Macs at the same time can lose reading positions and changes.",
+     "english": "Using one library on two Macs at the same time can lose reading positions and changes.",
+     "before": "Usar uma biblioteca em dois Macs ao mesmo tempo pode perder posições de leitura e alterações.",
+     "after": "Usar uma biblioteca em dois Macs ao mesmo tempo pode causar a perda de posições de leitura e de alterações.",
+     "why": "natural: 'Usar uma biblioteca ... pode perder posições' copies the English, since an act cannot lose something in Portuguese, so it 'causes the loss' of them"
+    },
+    {
+     "key": "Web Archive",
+     "english": "Web Archive",
+     "before": "Arquivo da web",
+     "after": "Arquivo Web",
+     "why": "term: Safari's and TextEdit's own Brazilian tables name the format 'Arquivo Web' and 'Documento de Arquivo Web', with Web capitalized"
+    },
+    {
+     "key": "Within the Last",
+     "english": "Within the Last",
+     "before": "Dentro dos últimos",
+     "after": "Nos últimos",
+     "why": "term: 'Dentro dos últimos' is a calque, Apple's Finder and Music say 'nos últimos' for this date test, matching 'Não nos últimos'"
+    },
+    {
+     "key": "so its place and bookmarks there were taken from the library index alone.",
+     "english": "so its place and bookmarks there were taken from the library index alone.",
+     "before": "então a posição e os marcadores dela ali foram tirados apenas do índice da biblioteca.",
+     "after": "então a posição e os marcadores do livro ali foram tirados apenas do índice da biblioteca.",
+     "why": "grammar: 'dela' points at a feminine noun, but the place and bookmarks are the book's, so the sentence names the book"
+    },
+    {
+     "key": "so nothing in %@ was compared.",
+     "english": "so nothing in %@ was compared.",
+     "before": "então nada em %@ foi comparado.",
+     "after": "então nada do que %@ tem foi comparado.",
+     "why": "grammar: 'em' before the copy name gives 'em esta cópia' and 'em a outra cópia', which must contract, so the copy becomes a subject"
+    },
+    {
+     "key": "the identity marker of %@",
+     "english": "the identity marker of %@",
+     "before": "o marcador de identidade de %@",
+     "after": "o marcador de identidade que %@ tem",
+     "why": "grammar: 'de' before the copy name gives 'de esta cópia' and 'de a biblioteca em uso', which must contract, so the copy becomes a subject"
+    },
+    {
+     "key": "the identity marker of the library in %@",
+     "english": "the identity marker of the library in %@",
+     "before": "o marcador de identidade da biblioteca em %@",
+     "after": "o marcador de identidade que %@ tem",
+     "why": "grammar: 'em' before the copy name gives 'em esta cópia' and 'em a outra cópia', which must contract, so the copy becomes a subject"
+    },
+    {
+     "key": "the library index in %@",
+     "english": "the library index in %@",
+     "before": "o índice da biblioteca em %@",
+     "after": "o índice da biblioteca que %@ tem",
+     "why": "grammar: 'em' before the copy name gives 'em esta cópia' and 'em a outra cópia', which must contract, so the copy becomes a subject"
+    },
+    {
+     "key": "the library index of %@",
+     "english": "the library index of %@",
+     "before": "o índice da biblioteca de %@",
+     "after": "o índice da biblioteca que %@ tem",
+     "why": "grammar: 'de' before the copy name gives 'de esta cópia' and 'de a cópia desta pasta', which must contract, so the copy becomes a subject"
+    },
+    {
+     "key": "the record of %@ in %@",
+     "english": "the record of %1$@ in %2$@",
+     "before": "o registro de %1$@ em %2$@",
+     "after": "o registro de %1$@ que %2$@ tem",
+     "why": "grammar: 'em' before the copy name gives 'em esta cópia' and 'em a outra cópia', which must contract, so the copy becomes a subject"
+    }
+   ]
+  },
+  {
    "part": 2,
    "areas": [
     "feeds and import",
