@@ -6,10 +6,11 @@ Part of [TextMouth's documentation](../../README.md).
 This is what a translator, human or agent, reads before translating the app's interface text.
 The text lives in one String Catalog, `TextMouth/Localization/Localizable.xcstrings`, which both apps share.
 Never edit the catalog by hand: `Scripts/l10n/l10n.py` writes it in the layout Xcode expects, and checks what it writes.
-The catalog holds 23 languages.
+The catalog holds 25 languages.
 The first eleven are English, Spanish (`es`), Italian (`it`), French (`fr`), Brazilian Portuguese (`pt-BR`), German (`de`), Russian (`ru`), Ukrainian (`uk`), Simplified Chinese (`zh-Hans`), Japanese (`ja`), and Korean (`ko`).
 The second wave of twelve is Hindi (`hi`), Arabic (`ar`), Bengali (`bn`), Indonesian (`id`), Vietnamese (`vi`), Turkish (`tr`), Thai (`th`), Polish (`pl`), Traditional Chinese (`zh-Hant`), Dutch (`nl`), Swedish (`sv`), and Hebrew (`he`).
-All but English are machine translations, and a native speaker has reviewed none.
+The third wave of two is Urdu (`ur`) and Persian (`fa`).
+All but English are machine translations, and a native speaker has reviewed none; a heavier model has reviewed every one's wording (see Reviewing a language).
 `Scripts/l10n/config.json`'s `languages` list is still empty, so `check` does not yet fail for a string missing in a language; it fails only for a string that is wrong.
 
 ## The steps
@@ -116,6 +117,7 @@ Every state is compiled into the app, so an empty value would ship as empty text
 - Translate meaning, not words: a text that reads as the English reads in the language is a good one, and a label that is a literal copy of the English word order is not.
 - Keep the length near the English where you can: short labels grow most (Spanish runs 15 to 30 percent longer), and a button label must still fit.
 - Keep the same punctuation habits as the language's own interface, but never add or drop a sentence.
+- Write a settings or menu path with the language's own separator between its steps (a comma, the Arabic comma, の in Japanese, 的 in Chinese, a space in Thai), never ">", which VoiceOver reads aloud.
 
 ## What VoiceOver and braille read
 <!-- id: translation-voiceover-text; keys: accessibility label, hint, VoiceOver, braille, accessibility, gesture; src: Scripts/l10n/l10n.py -->
@@ -128,184 +130,15 @@ The rules are the English's, in the language:
 - An announcement says what happened, in the order a listener needs it, with the most important word first.
 - A text that a translation makes much longer is also longer in braille, so keep the word choice short.
 
-## Spanish
-<!-- id: translation-spanish; keys: es, tú, usted, neutral Spanish, Latin America, regional words, glossary, Apple's Spanish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
+## The language sections
+<!-- id: translation-language-sections; keys: Spanish, Urdu, Persian, per-language notes, right-to-left, plural categories; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
 
-One neutral Spanish (`es`) serves every region, until the user says otherwise.
-- Use the familiar "tú", never "usted" and never "vos" or "vosotros": "Elige una carpeta", "tu biblioteca".
-- Avoid words that differ by country.
-  Say "Mac" and "iPhone", not "ordenador" or "computadora" and "móvil" or "celular"; prefer "archivo", "carpeta", "descargar", and "agregar", which every region understands.
-- Use the words Apple's own Spanish interface uses where the glossary has them.
-- Menu items and buttons use the infinitive ("Reproducir", "Abrir"), hints use the third person ("Reproduce el libro."), and a message to the reader speaks to "tú" ("No se pudo abrir tu archivo.").
-- Capitalize as Spanish does, not as English titles do: "Lista de lectura", not "Lista de Lectura".
-- Open questions and exclamations with "¿" and "¡".
-- Avoid a gendered word where a neutral one reads naturally; where none does, use the form the glossary gives.
-- `many` is the exact-millions form: "%lld de libros".
-  The usual counts use `one` and `other`.
-
-## Italian
-<!-- id: translation-italian; keys: it, tu, Apple's Italian, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener as "tu": "Scegli una cartella", "la tua libreria".
-- Menu items and buttons use the imperative ("Apri", "Riproduci"); hints use the third person and end with a period ("Riproduce il libro.").
-- Sentence case: "Elenco di lettura".
-- Plural categories `one`, `many`, `other`; `many` is exact millions ("%lld di libri").
-
-## French
-<!-- id: translation-french; keys: fr, vous, no-break space, Apple's French, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener as "vous": "Choisissez un dossier", "votre bibliothèque".
-- Menu items and buttons use the infinitive ("Ouvrir", "Lire"); hints use the third person and end with a period ("Lit le livre.").
-- Sentence case.
-  A no-break space (U+00A0) goes before `:`, `;`, `?`, and `!` and inside « », never a plain space.
-- Plural categories `one`, `many`, `other`; `one` covers 0 and 1 and keeps the number, and `many` is exact millions ("%lld de livres").
-
-## Brazilian Portuguese
-<!-- id: translation-portuguese-brazil; keys: pt-BR, você, Brazilian words, Apple's Portuguese, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener as "você": "Escolha uma pasta", "sua biblioteca".
-- Menu items and buttons use the infinitive ("Abrir", "Reproduzir"); hints use the third person and end with a period ("Reproduz o livro.").
-- Brazil's words and spelling ("arquivo", "tela", "excluir"), never Portugal's.
-- Plural categories `one`, `many`, `other`; `one` covers 0 and 1 and keeps the number, and `many` is exact millions ("%lld de livros").
-
-## German
-<!-- id: translation-german; keys: de, du, capitalized nouns, long words, Apple's German; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener as "du", as Apple's German does: "Wähle einen Ordner", "deine Bibliothek".
-- Menu items and buttons use the infinitive ("Öffnen", "Wiedergeben"); hints use the third person and end with a period ("Gibt das Buch wieder.").
-- Nouns are capitalized; quotation marks are „…“.
-- German runs long: take the shorter of two good words, and never a compound a button label cannot hold.
-- Plural categories `one`, `other`.
-
-## Russian
-<!-- id: translation-russian; keys: ru, вы, Cyrillic, few, many, Apple's Russian; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener formally, "вы" in lower case: "Выберите папку", "ваша книга".
-- Menu items and buttons use the infinitive ("Открыть", "Воспроизвести"); hints use the third person and end with a period ("Воспроизводит книгу.").
-- Quotation marks «…»; use "ё" only where Apple's Russian does, and consistently.
-- Plural categories `one` (1, 21, not 11), `few` (2 to 4, 22 to 24), `many` (0, 5 to 20, 25 to 30), and `other` (a fraction); every form keeps the number.
-
-## Ukrainian
-<!-- id: translation-ukrainian; keys: uk, ви, Cyrillic, apostrophe, few, many; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Ukrainian words and spelling, never Russian ones; address the listener formally, "ви": "Виберіть папку", "ваша бібліотека".
-- Menu items and buttons use the infinitive ("Відкрити", "Відтворити"); hints use the third person and end with a period ("Відтворює книгу.").
-- Quotation marks «…»; the apostrophe inside a word is the typographic one (U+2019), everywhere.
-- Plural categories `one`, `few`, `many`, `other`, as in Russian; every form keeps the number.
-
-## Simplified Chinese
-<!-- id: translation-chinese; keys: zh-Hans, Mandarin, full-width punctuation, measure word, Apple's Chinese; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Mainland Simplified Chinese as Apple writes it; address the listener as "你" where a sentence needs it.
-- Full-width punctuation in Chinese text (，。：；？！“”（）), and a space between Chinese characters and a Latin word or a placeholder: "在 Mac 上", "%lld 本书".
-- Labels are short noun or verb phrases ("打开", "播放"); hints are sentences that end with "。".
-- One plural category, `other`, with the number and the right measure word.
-
-## Japanese
-<!-- id: translation-japanese; keys: ja, polite style, katakana, counters, Apple's Japanese; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- The polite style (です・ます) in sentences, hints, and messages ("ブックを再生します。"); labels and menu items as Apple writes them ("開く", "再生").
-- Full-width punctuation (、。「」); loanwords in katakana as Apple spells them (ライブラリ, フォルダ).
-- One plural category, `other`, with the number and the right counter (冊, 件, 個, 分).
-
-## Korean
-<!-- id: translation-korean; keys: ko, Hangul, particles, polite endings, Apple's Korean; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Polite formal endings in sentences, hints, and messages ("책을 재생합니다."); labels and menu items as Apple writes them ("열기", "재생").
-- Where a placeholder's last sound is unknown, write both particle forms, as Apple's Korean does: "%@을(를)", "%@이(가)".
-  A name takes its particle straight against it ("TextMouth가").
-- One plural category, `other`, with the number and the right counter (권, 개, 분).
-
-## Hindi
-<!-- id: translation-hindi; keys: hi, Devanagari, आप, danda, Apple's Hindi; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Devanagari, addressing the listener as "आप"; menu items and buttons as Apple writes them ("खोलें", "चलाएँ", "रद्द करें"); hints in the third person ("पुस्तक चलाता है।").
-- Sentences end with "।"; Mac, iPhone, and the glossary's names stay in Latin letters.
-- Plural categories `one` and `other`; `one` covers 0 and 1 and keeps the number.
-
-## Arabic
-<!-- id: translation-arabic; keys: ar, right-to-left, RTL, Modern Standard Arabic, mirrored layout, Apple's Arabic; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: Q18 -->
-
-- Modern Standard Arabic as Apple's Arabic interface writes it: commands in Apple's form, hints in the third person, and the punctuation (، ؛ ؟) and quotation marks Apple's Arabic uses.
-- Arabic is the app's first right-to-left language, with Hebrew.
-  A string holds no direction marks: Foundation lays the text out, SwiftUI mirrors the layout, and a Latin name or a placeholder stays as it is inside the text.
-- Plural categories `zero` (0), `one` (1), `two` (2), `few` (3 to 10), `many` (11 to 99, by the last two digits), and `other`; every form keeps the number.
-- No test yet looks at a mirrored window, so the layout is unchecked.
-
-## Bengali
-<!-- id: translation-bengali; keys: bn, Bengali script, আপনি, Apple's Bengali; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Bengali script, addressing the listener as "আপনি"; commands and hints as Apple's Bengali would write them; sentences end with "।".
-- Plural categories `one` and `other`; `one` covers 0 and 1 and keeps the number.
-
-## Indonesian
-<!-- id: translation-indonesian; keys: id, Anda, base form, Apple's Indonesian; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener as "Anda"; commands in the base form ("Buka", "Putar", "Batalkan"); hints in the third person ("Memutar buku.").
-- One plural category, `other`; a noun after a number stays singular ("%lld buku").
-
-## Vietnamese
-<!-- id: translation-vietnamese; keys: vi, bạn, Apple's Vietnamese, Hiển thị; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener as "bạn"; commands as Apple writes them ("Mở", "Phát", "Hủy"); hints are sentences that end with a period.
-- One plural category, `other`: Foundation on macOS 26.3 gives Vietnamese no other form, though CLDR 49 gives it `one`.
-- The consistency pass settled "Hiển thị" for Show everywhere, with the control's name in quotation marks inside a sentence.
-
-## Turkish
-<!-- id: translation-turkish; keys: tr, apostrophe, suffix, kelime, Apple's Turkish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Commands in the imperative ("Aç", "Oynat", "Vazgeç"); hints in the third person ("Kitabı oynatır."); a sentence that addresses the listener uses Apple's polite form.
-- A suffix on a name takes an apostrophe ("TextMouth'u", "Mac'te"), but not after a translated name such as "Çöp Sepeti" or "Okuma Listesi"; a noun after a number stays singular.
-- Plural categories `one` (exactly 1) and `other`; the two forms are usually the same text.
-- The consistency pass settled "kelime" for word (not "sözcük") and quotation marks around a control's name held by a placeholder.
-
-## Thai
-<!-- id: translation-thai; keys: th, no spaces, full stop, Apple's Thai; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- No space between words, a space between phrases and around Latin words and numbers; no polite particles; commands as Apple writes them ("เปิด", "เล่น", "ยกเลิก").
-- No full stop ends a sentence, as in Apple's Thai.
-- One plural category, `other`.
-
-## Polish
-<!-- id: translation-polish; keys: pl, few, many, Macu, glued ending, Apple's Polish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: TL21 -->
-
-- Commands in the imperative ("Otwórz", "Odtwórz", "Anuluj"); hints in the third person ("Odtwarza książkę."); quotation marks „…”.
-- Plural categories `one` (exactly 1), `few` (2 to 4, 22 to 24, 32 to 34, not 12 to 14), `many` (0, 5 to 21, 25 to 31), and `other` (a fraction); every form but `one` keeps the number.
-- The name check refuses a name with an ending glued on ("Macu"), so translators write "komputer Mac" instead.
-  A follow-up may let Polish endings through.
-
-## Traditional Chinese
-<!-- id: translation-chinese-traditional; keys: zh-Hant, Taiwan, 檔案夾, Apple's Traditional Chinese; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Taiwan's Traditional Chinese as Apple writes it (資料夾, 檔案, 設定, 播放, 書籤, 搜尋), never Simplified words converted character by character; address the listener as "你".
-- The consistency pass settled 檔案夾 for a folder, as Apple's Finder writes it.
-- Full-width punctuation (，。：；？！「」（）) and a space between Chinese and a Latin word or a placeholder.
-- One plural category, `other`.
-
-## Dutch
-<!-- id: translation-dutch; keys: nl, je, Apple's Dutch; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py -->
-
-- Address the listener as "je"; menu items and buttons as Apple writes them ("Open", "Speel af", "Annuleer"); hints in the third person ("Speelt het boek af.").
-- Plural categories `one` and `other`.
-
-## Swedish
-<!-- id: translation-swedish; keys: sv, du, Macen, glued ending, Apple's Swedish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: TL21 -->
-
-- Address the listener as "du"; commands in the imperative ("Öppna", "Spela upp", "Avbryt"); hints in the third person ("Spelar upp boken."); quotation marks ”…”.
-- The name check refuses a name with an ending glued on ("Macen", "TextMouths"), so translators write "Mac-datorn" instead.
-- Plural categories `one` and `other`.
-
-## Hebrew
-<!-- id: translation-hebrew; keys: he, right-to-left, RTL, gendered forms, Apple's Hebrew; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: Q18 -->
-
-- Apple's Hebrew: commands in the forms its interface uses, hints in the third person, a gendered form avoided where Apple avoids it, and its quotation marks and punctuation.
-- Right to left, with no direction marks (see Arabic); no test yet looks at a mirrored window.
-- Plural categories `one` (exactly 1), `two` (exactly 2), and `other`.
+Each language's letters, forms of address, punctuation, plural categories, and glossary doubts are in [The interface languages](translation-languages.md).
 
 ## Translating at scale
 <!-- id: translation-at-scale; keys: partition, key file, disjoint keys, batches, consistency pass, glossary first, 20 agents, extract-report; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json, Scripts/agents/extract-report.py -->
 
-The twenty-one languages added after Spanish were made this way, about 4,200 strings each.
+The twenty-three languages added after Spanish were made this way, about 4,200 strings each.
 Developers who convert code read [Localizing TextMouth's code](localization.md) instead.
 
 1. Glossary first.
@@ -345,7 +178,7 @@ Twenty-one languages were added this way, in two waves.
    Probe it with `LanguagePackPluralRules`; `test_plural_rules_swift.py` fails when the two tables differ, and `Scripts/l10n/tests/test_catalog.py` keeps the catalog's.
 3. Add the language's text to every glossary term in `Scripts/l10n/glossary.json`, each marked `"check": true`, with the glossary's tests green (`Scripts/l10n/tests/test_glossary_file.py`).
    One agent for each language does this, so every translator of the language later uses the same words.
-4. Write the language's rules for translators, as the sections above do: the address (register), the command form of menu items and buttons, the hints, the quotation marks, and how a sentence ends.
+4. Write the language's rules for translators, as the sections of [The interface languages](translation-languages.md) do: the address (register), the command form of menu items and buttons, the hints, the quotation marks, and how a sentence ends.
    Follow Apple's own interface in the language.
 5. Split the keys the language lacks into the six area files (see Translating at scale), and give each file to one translator.
 6. Check each translator's branch before merging it: it changed only its own keys, in its own language, and none of them is left without the language.
@@ -395,7 +228,8 @@ Nobody has read the machine translation for bad wording until then, and the user
 4. Write each chunk's fixes as a batch (`l10n.py apply`, with its refusal loop), and record each fix: the key, the English, the text before, the text after, and the category with one short reason.
    Check the catalog once at the end.
 5. The records go to `Scripts/l10n/reviews/<code>.json`, one file a language, for the native speaker who reviews next.
-   Only the languages that have a file there have been reviewed.
+   Every language but English has a file there, so each has had this one review; what is still open is a native speaker's.
+6. A file may hold a part 4: the words carried across the three parts after they merged (Apple's own names read from this Mac's tables, the settings paths, and a few words the parts disagreed on).
 
 ## The prompt for a translator agent
 <!-- id: translation-agent-prompt; keys: prompt, translator agent, batch file, brief; src: Scripts/l10n/l10n.py -->
