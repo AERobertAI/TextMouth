@@ -200,13 +200,18 @@ PARSERS = ["aac", "ac3", "cook", "dca", "flac", "gsm", "mlp", "mpegaudio", "opus
 # the Opus decoder, which configure leaves out without it.
 LIBRARIES = ["libavformat", "libavcodec", "libswresample", "libavutil"]
 
-# Whether FFmpeg is built for size (--enable-small, -Os and its own smaller code). Off. Measured on
-# November 16, 2026 on the development Mac, decoding 30-minute stereo samples with the helper
-# (best of three runs each), --enable-small was slower by 6% (WMA 2), 10% (AAC), 12% (5.1 AC-3),
-# and 27% (Opus), and FLAC was within noise; either way decoding runs 330 to 1,250 times faster
-# than playback. It would save about 0.59 MB (the research page's 589,520 bytes), which matters
-# little against the app's limits of 30 MB and 40 MB, so speed is kept.
-ENABLE_SMALL = False
+# Whether FFmpeg is built for size (--enable-small, -Os and its own smaller code). On (TL18, November 20, 2026,
+# to fit the eleven interface languages in 25 MB). Measured with research/ffmpeg-minimal/build.py on the parity set,
+# FFmpeg 9.0.2, as the bytes the libraries add to a linked, stripped program: the Mac's 2,356,208 became 1,766,688
+# (589,520 fewer; 591,624 by sections) and the iPhone's 2,274,112 became 1,766,688 (507,424 fewer; 516,220 by
+# sections). Decoding the research samples (2 to 6 seconds of audio; best of 25 runs of the whole harness, about
+# 10 ms each, so process start-up is most of it) took 3% to 46% longer on seven samples and 12% to 13% less on two
+# (the noise is about that size): +6% WMA 2, +3% MP3, +12% AAC, +3% 5.1 AC-3, +10% Opus, +6% Vorbis, +46% Speex,
+# +20% RealAudio 1.0, and -13% FLAC, -12% WMA 1. Earlier, with 30-minute stereo samples and the helper, it was 6%
+# (WMA 2), 10% (AAC), 12% (5.1 AC-3), and 27% (Opus) slower, FLAC within noise. Either way decoding runs hundreds
+# of times faster than playback. The decoded samples are the same as the speed build's (Opus differs from the
+# installed ffmpeg by 9e-8 instead of 9e-6, Vorbis, WMA, FLAC, MP3, and AAC are bit-identical).
+ENABLE_SMALL = True
 
 # The platforms, by Xcode's PLATFORM_NAME: each one's SDK, the target clang compiles for (arm64,
 # at the app's deployment target), whether configure cross-compiles, and the platform every
