@@ -1011,6 +1011,643 @@
      "why": "term: Quit is Salir in Apple Spanish (Salir de TextMouth), as the recording sentence beside it says; Cerrar is Close"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "english": "%1$@ needs “%2$@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have.",
+     "before": "%1$@ necesita «%2$@», una de las tablas de braille propias de una Mac, que TextMouth en el iPhone no tiene.",
+     "after": "%1$@ necesita “%2$@”, una de las tablas de braille propias de una Mac, que TextMouth en el iPhone no tiene.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "%@ nests too deeply",
+     "english": "%@ nests too deeply",
+     "before": "Anidado demasiado profundo: %@",
+     "after": "Demasiados niveles anidados en %@",
+     "why": "natural: 'Anidado demasiado profundo' is word for word and not Spanish; says there are too many nested levels in the chapter"
+    },
+    {
+     "key": "%@ not recorded for %@: %@",
+     "english": "%1$@ not recorded for %2$@: %3$@",
+     "before": "%1$@ no se registró para %2$@: %3$@",
+     "after": "%1$@ no se asignó a %2$@: %3$@",
+     "why": "natural: 'registrar para' copies 'recorded for'; a key is 'asignado a' an action"
+    },
+    {
+     "key": "%@ times speed",
+     "english": "%@ times speed",
+     "before": "Velocidad %@ veces",
+     "after": "%@ veces la velocidad",
+     "why": "grammar: capitalized 'Velocidad %@ veces' lands after 'a' in other strings ('restablecida a Velocidad 1,0 veces'); the Spanish idiom is '1,5 veces la velocidad'"
+    },
+    {
+     "key": "%@, recorded for %@",
+     "english": "%1$@, recorded for %2$@",
+     "before": "%1$@, registrado para %2$@",
+     "after": "%1$@, asignado a %2$@",
+     "why": "natural: 'registrado para' copies 'recorded for'; a key is 'asignado a' an action"
+    },
+    {
+     "key": "%lld entries give only a phonetic spelling, so they were set aside.",
+     "english": {
+      "one": "%lld entry gives only a phonetic spelling, so it was set aside.",
+      "other": "%lld entries give only a phonetic spelling, so they were set aside."
+     },
+     "before": {
+      "many": "%lld de entradas dan solo una ortografía fonética, así que se dejaron aparte.",
+      "one": "%lld entrada da solo una ortografía fonética, así que se dejó aparte.",
+      "other": "%lld entradas dan solo una ortografía fonética, así que se dejaron aparte."
+     },
+     "after": {
+      "one": "%lld entrada da solo una notación fonética, así que se dejó aparte.",
+      "many": "%lld de entradas dan solo una notación fonética, así que se dejaron aparte.",
+      "other": "%lld entradas dan solo una notación fonética, así que se dejaron aparte."
+     },
+     "why": "meaning: 'ortografía fonética' is a spelling system; an entry written in phonetic symbols gives a 'notación fonética'"
+    },
+    {
+     "key": "Added %lld rules from “%@”.",
+     "english": {
+      "one": "Added %lld rule from “%@”.",
+      "other": "Added %lld rules from “%@”."
+     },
+     "before": {
+      "many": "Se agregaron %1$lld de reglas de «%2$@».",
+      "one": "Se agregó %1$lld regla de «%2$@».",
+      "other": "Se agregaron %1$lld reglas de «%2$@»."
+     },
+     "after": {
+      "one": "Se agregó %1$lld regla de “%2$@”.",
+      "many": "Se agregaron %1$lld de reglas de “%2$@”.",
+      "other": "Se agregaron %1$lld reglas de “%2$@”."
+     },
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
+     "english": "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside",
+     "before": "Agrega las entradas del léxico después de tus reglas; las entradas con solo una ortografía fonética se dejan aparte",
+     "after": "Agrega las entradas del léxico después de tus reglas; las entradas con solo una notación fonética se dejan aparte",
+     "why": "meaning: 'ortografía fonética' is a spelling system; an entry written in phonetic symbols gives a 'notación fonética'"
+    },
+    {
+     "key": "Also write to the library's copy of the EPUB file",
+     "english": "Also write to the library's copy of the EPUB file",
+     "before": "Escribir también en la copia de la biblioteca del archivo EPUB",
+     "after": "Escribir también en la copia del archivo EPUB de la biblioteca",
+     "why": "natural: 'la copia de la biblioteca del archivo EPUB' reads as the EPUB file's library; the copy is of the file"
+    },
+    {
+     "key": "Begin",
+     "english": "Begin",
+     "before": "Principio",
+     "after": "Empezar",
+     "why": "term: AppKit's Spanish name for the Begin key is 'Empezar'"
+    },
+    {
+     "key": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "english": "Braille Ready Format: pages of braille, for braille displays and embossers.",
+     "before": "Braille Ready Format: páginas de braille, para líneas braille y para impresoras braille.",
+     "after": "Braille Ready Format: páginas de braille, para pantallas braille y para impresoras braille.",
+     "why": "term: Apple's Spanish VoiceOver calls a braille display 'pantalla braille'"
+    },
+    {
+     "key": "CR LF suits most braille displays and embossers.",
+     "english": "CR LF suits most braille displays and embossers.",
+     "before": "CR LF es lo más adecuado para la mayoría de las líneas braille y de las impresoras braille.",
+     "after": "CR LF es lo más adecuado para la mayoría de las pantallas braille y de las impresoras braille.",
+     "why": "term: Apple's Spanish VoiceOver calls a braille display 'pantalla braille'"
+    },
+    {
+     "key": "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "Chapter %1$@ of this book %2$@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "El capítulo %1$@ de este libro %2$@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, aplana el anidado y guarda; después vuelve a exportar.",
+     "after": "El capítulo %1$@ de este libro %2$@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, simplifica el anidamiento y guarda; después vuelve a exportar.",
+     "why": "natural: 'aplana el anidado' is word for word; the noun is 'anidamiento', and 'simplifica' matches 'Simplifícalo' elsewhere"
+    },
+    {
+     "key": "Clear",
+     "english": "Clear",
+     "before": "Limpiar",
+     "after": "Borrar",
+     "why": "term: Apple's Spanish VoiceOver names the Clear key 'borrar'"
+    },
+    {
+     "key": "Clear Display",
+     "english": "Clear Display",
+     "before": "Limpiar pantalla",
+     "after": "Borrar pantalla",
+     "why": "term: the Clear key is 'borrar' in Apple's Spanish, so Clear Display follows it"
+    },
+    {
+     "key": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
+     "english": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
+     "before": "No se pudieron guardar los metadatos en la copia de la biblioteca de “%@”, porque ese archivo falta en la biblioteca.",
+     "after": "No se pudieron guardar los metadatos en la copia de “%@” de la biblioteca, porque ese archivo falta en la biblioteca.",
+     "why": "natural: 'la copia de la biblioteca de “X”' reads as X's library; the copy is of the file"
+    },
+    {
+     "key": "Could not save metadata to the library's copy of “%@”: %@",
+     "english": "Could not save metadata to the library's copy of “%1$@”: %2$@",
+     "before": "No se pudieron guardar los metadatos en la copia de la biblioteca de “%1$@”: %2$@",
+     "after": "No se pudieron guardar los metadatos en la copia de “%1$@” de la biblioteca: %2$@",
+     "why": "natural: 'la copia de la biblioteca de “X”' reads as X's library; the copy is of the file"
+    },
+    {
+     "key": "Couldn't export %@. The first was %@.",
+     "english": "Couldn't export %1$@. The first was %2$@.",
+     "before": "No se pudo exportar %1$@. El primero fue %2$@.",
+     "after": "No se pudieron exportar %1$@. El primero fue %2$@.",
+     "why": "grammar: the count of several items, such as 5 elementos, needs the plural 'se pudieron'"
+    },
+    {
+     "key": "Couldn't export %@: %@.",
+     "english": "Couldn't export %1$@: %2$@.",
+     "before": "No se pudo exportar %1$@: %2$@.",
+     "after": "No se pudieron exportar %1$@: %2$@.",
+     "why": "grammar: the count of two or three items needs the plural 'se pudieron'"
+    },
+    {
+     "key": "Delete Character",
+     "english": "Delete Character",
+     "before": "Borrar carácter",
+     "after": "Suprimir carácter",
+     "why": "term: AppKit's Spanish name for the Delete Character key is 'Suprimir carácter'"
+    },
+    {
+     "key": "Delete Line",
+     "english": "Delete Line",
+     "before": "Borrar línea",
+     "after": "Suprimir línea",
+     "why": "term: AppKit's Spanish name for the Delete Line key is 'Suprimir línea'"
+    },
+    {
+     "key": "Downloading “%@”",
+     "english": "Downloading “%@”",
+     "before": "Descargando «%@»",
+     "after": "Descargando “%@”",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "Escape",
+     "english": "Escape",
+     "before": "Escape",
+     "after": "Esc",
+     "why": "term: AppKit and VoiceOver name the Escape key 'Esc' in Spanish"
+    },
+    {
+     "key": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "english": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "before": "Todos los atajos y dónde funcionan vuelven a los valores predeterminados. Se pierden tus propias teclas.",
+     "after": "Todos los atajos y dónde funcionan vuelven a los valores predeterminados. Se perderán las teclas que elegiste.",
+     "why": "natural: 'Se pierden tus propias teclas' copies 'Your own keys are lost'; a warning before the reset uses the future"
+    },
+    {
+     "key": "Exported %@ to %@.",
+     "english": "Exported %1$@ to %2$@.",
+     "before": "Exportado: %1$@ a %2$@.",
+     "after": "Exportado a %2$@: %1$@.",
+     "why": "natural: 'Exportado: 3 elementos a Documentos' leaves 'a' dangling after the count; says where first, then how many"
+    },
+    {
+     "key": "Exported %lld rules to “%@”.",
+     "english": {
+      "one": "Exported %lld rule to “%@”.",
+      "other": "Exported %lld rules to “%@”."
+     },
+     "before": {
+      "many": "Se exportaron %1$lld de reglas a «%2$@».",
+      "one": "Se exportó %1$lld regla a «%2$@».",
+      "other": "Se exportaron %1$lld reglas a «%2$@»."
+     },
+     "after": {
+      "one": "Se exportó %1$lld regla a “%2$@”.",
+      "many": "Se exportaron %1$lld de reglas a “%2$@”.",
+      "other": "Se exportaron %1$lld reglas a “%2$@”."
+     },
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "For trying out with a braille display.",
+     "english": "For trying out with a braille display.",
+     "before": "Para probar con una línea braille.",
+     "after": "Para probar con una pantalla braille.",
+     "why": "term: Apple's Spanish VoiceOver calls a braille display 'pantalla braille'"
+    },
+    {
+     "key": "Go to Time…",
+     "english": "Go to Time…",
+     "before": "Ir al tiempo…",
+     "after": "Ir al momento…",
+     "why": "term: the action opens the sheet titled 'Ir al momento'; 'Ir al tiempo' reads as the weather and differs from the sheet"
+    },
+    {
+     "key": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "english": "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF.",
+     "before": "Cómo escribe el BRF cada celda braille. La mayoría de las líneas braille y de las impresoras braille leen North American Braille ASCII; las configuradas para alemán leen Eurobraille. Para compartir con un lector en otro lugar, exporta un PEF.",
+     "after": "Cómo escribe el BRF cada celda braille. La mayoría de las pantallas braille y de las impresoras braille leen North American Braille ASCII; las configuradas para alemán leen Eurobraille. Para compartir con un lector en otro lugar, exporta un PEF.",
+     "why": "term: Apple's Spanish VoiceOver calls a braille display 'pantalla braille'"
+    },
+    {
+     "key": "Jumped to %@ in the recording.",
+     "english": "Jumped to %@ in the recording.",
+     "before": "Salto a %@ en la grabación.",
+     "after": "Saltó a %@ en la grabación.",
+     "why": "grammar: 'Salto' is the noun or 'I jump'; the announcement says what happened, 'Saltó'"
+    },
+    {
+     "key": "Jumped to %@ percent.",
+     "english": "Jumped to %@ percent.",
+     "before": "Salto al %@ por ciento.",
+     "after": "Saltó al %@ por ciento.",
+     "why": "grammar: 'Salto' is the noun or 'I jump'; the announcement says what happened, 'Saltó'"
+    },
+    {
+     "key": "Jumped to %@.",
+     "english": "Jumped to %@.",
+     "before": "Salto a %@.",
+     "after": "Saltó a %@.",
+     "why": "grammar: 'Salto' is the noun or 'I jump'; the announcement says what happened, 'Saltó'"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "Salto a la página %1$@, la %2$@ página con la etiqueta %3$@.",
+     "after": "Saltó a la página %1$@, la %2$@ página con la etiqueta %3$@.",
+     "why": "grammar: 'Salto' is the noun or 'I jump'; the announcement says what happened, 'Saltó'"
+    },
+    {
+     "key": "Jumped to page %@.",
+     "english": "Jumped to page %@.",
+     "before": "Salto a la página %@.",
+     "after": "Saltó a la página %@.",
+     "why": "grammar: 'Salto' is the noun or 'I jump'; the announcement says what happened, 'Saltó'"
+    },
+    {
+     "key": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept all %lld spoken chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from it, export the same range at the same speed and pitch.",
+      "other": "Kept all %lld spoken chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To make the audio file from them, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "many": "Se conservaron los %lld de capítulos hablados hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de ellos, exporta el mismo intervalo con la misma velocidad y el mismo tono.",
+      "one": "Se conservó el capítulo hablado completo (%lld) hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de él, exporta el mismo intervalo con la misma velocidad y el mismo tono.",
+      "other": "Se conservaron los %lld capítulos hablados hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de ellos, exporta el mismo intervalo con la misma velocidad y el mismo tono."
+     },
+     "after": {
+      "one": "Se conservó el único capítulo hablado hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de él, exporta el mismo intervalo con la misma velocidad y el mismo tono.",
+      "many": "Se conservaron los %lld de capítulos hablados hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de ellos, exporta el mismo intervalo con la misma velocidad y el mismo tono.",
+      "other": "Se conservaron los %lld capítulos hablados hasta que TextMouth se cierre, comience otra exportación de audio hablado, o cambien la voz, el texto, las sustituciones o las pausas del libro. Para crear el archivo de audio a partir de ellos, exporta el mismo intervalo con la misma velocidad y el mismo tono."
+     },
+     "why": "natural: 'el capítulo hablado completo (1)' reads the count aloud; Spanish one is exactly 1, so 'el único capítulo hablado'"
+    },
+    {
+     "key": "Make Double Press",
+     "english": "Make Double Press",
+     "before": "Hacer pulsación doble",
+     "after": "Convertir en doble pulsación",
+     "why": "natural: 'Hacer pulsación doble' is word for word; the action turns the key into a double press, as 'doble pulsación' elsewhere"
+    },
+    {
+     "key": "Make Single Press",
+     "english": "Make Single Press",
+     "before": "Hacer pulsación simple",
+     "after": "Convertir en pulsación simple",
+     "why": "natural: 'Hacer pulsación simple' is word for word; the action turns the key into a single press"
+    },
+    {
+     "key": "Metadata saved to the library's copy of “%@”.",
+     "english": "Metadata saved to the library's copy of “%@”.",
+     "before": "Metadatos guardados en la biblioteca y en la copia de la biblioteca de “%@”.",
+     "after": "Metadatos guardados en la biblioteca y en su copia de “%@”.",
+     "why": "natural: 'la copia de la biblioteca de “X”' reads as X's library, and said 'biblioteca' twice"
+    },
+    {
+     "key": "Mode Switch",
+     "english": "Mode Switch",
+     "before": "Cambio de modo",
+     "after": "Cambiar modo",
+     "why": "term: AppKit's Spanish name for the Mode Switch key is 'Cambiar modo'"
+    },
+    {
+     "key": "No rules were added from “%@”.",
+     "english": "No rules were added from “%@”.",
+     "before": "No se agregó ninguna regla de «%@».",
+     "after": "No se agregó ninguna regla de “%@”.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "No hay ninguna voz instalada. Agrega una en Ajustes del Sistema, Accesibilidad, Contenido hablado, y vuelve a exportar.",
+     "after": "No hay ninguna voz instalada. Agrega una en Ajustes del Sistema, Accesibilidad, Contenido leído, y vuelve a exportar.",
+     "why": "term: Apple's Spanish names the Spoken Content pane 'Contenido leído'; 'Contenido hablado' is no pane a listener can find"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "No hay voces instaladas. Agrega voces en Ajustes, Accesibilidad, Contenido hablado.",
+     "after": "No hay voces instaladas. Agrega voces en Ajustes, Accesibilidad, Lectura y voz.",
+     "why": "term: iOS 26's Spanish Settings names Read & Speak 'Lectura y voz' (Apple's iPhone guide); 'Contenido hablado' is no pane there"
+    },
+    {
+     "key": "None of the %lld chapters could be read",
+     "english": {
+      "one": "None of the %lld chapter could be read",
+      "other": "None of the %lld chapters could be read"
+     },
+     "before": {
+      "many": "No se pudo leer ninguno de los %lld de capítulos",
+      "one": "No se pudo leer el único capítulo (%lld)",
+      "other": "No se pudo leer ninguno de los %lld capítulos"
+     },
+     "after": {
+      "one": "No se pudo leer el único capítulo",
+      "many": "No se pudo leer ninguno de los %lld de capítulos",
+      "other": "No se pudo leer ninguno de los %lld capítulos"
+     },
+     "why": "natural: 'el único capítulo (1)' reads the count aloud after 'only'; Spanish one is exactly 1, so the number can go"
+    },
+    {
+     "key": "Paste and Match Style",
+     "english": "Paste and Match Style",
+     "before": "Pegar y adaptar estilo",
+     "after": "Pegar con el mismo estilo",
+     "why": "term: AppKit's Spanish Edit menu names this command 'Pegar con el mismo estilo'"
+    },
+    {
+     "key": "Press the new key, or Escape to cancel.",
+     "english": "Press the new key, or Escape to cancel.",
+     "before": "Pulsa la nueva tecla, o Escape para cancelar.",
+     "after": "Pulsa la nueva tecla, o Esc para cancelar.",
+     "why": "term: the Escape key is 'Esc' in Apple's Spanish, as its key name now says"
+    },
+    {
+     "key": "Save metadata to the library and to the library's copy of the EPUB file",
+     "english": "Save metadata to the library and to the library's copy of the EPUB file",
+     "before": "Guardar metadatos en la biblioteca y en la copia de la biblioteca del archivo EPUB",
+     "after": "Guardar metadatos en la biblioteca y en su copia del archivo EPUB",
+     "why": "natural: 'la copia de la biblioteca del archivo EPUB' reads as the file's library, and said 'biblioteca' twice"
+    },
+    {
+     "key": "Scroll Lock",
+     "english": "Scroll Lock",
+     "before": "Bloqueo de desplazamiento",
+     "after": "Bloquear desplazamiento",
+     "why": "term: AppKit's Spanish name for the Scroll Lock key is 'Bloquear desplazamiento'"
+    },
+    {
+     "key": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "english": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "before": "El habla de las voces de esta Mac es para uso personal y no comercial, según la licencia de Apple.",
+     "after": "El audio de las voces de la Mac es para uso personal y no comercial, según la licencia de Apple.",
+     "why": "natural: 'El habla de las voces de esta Mac' is word for word; the licence covers the audio the Mac's voices make, on any Mac"
+    },
+    {
+     "key": "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@.",
+     "english": "TextMouth can't use the braille table chosen in Settings, “%1$@”, so this export starts from %2$@.",
+     "before": "TextMouth no puede usar la tabla de braille elegida en Ajustes, «%1$@», así que esta exportación empieza con %2$@.",
+     "after": "TextMouth no puede usar la tabla de braille elegida en Ajustes, “%1$@”, así que esta exportación empieza con %2$@.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "TextMouth can't use this Mac's table “%@”: %@.",
+     "english": "TextMouth can't use this Mac's table “%1$@”: %2$@.",
+     "before": "TextMouth no puede usar la tabla «%1$@» de esta Mac: %2$@.",
+     "after": "TextMouth no puede usar la tabla “%1$@” de esta Mac: %2$@.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "TextMouth could not check this Mac's braille table “%@”: %@. Try again.",
+     "english": "TextMouth could not check this Mac's braille table “%1$@”: %2$@. Try again.",
+     "before": "TextMouth no pudo comprobar la tabla de braille «%1$@» de esta Mac: %2$@. Inténtalo de nuevo.",
+     "after": "TextMouth no pudo comprobar la tabla de braille “%1$@” de esta Mac: %2$@. Inténtalo de nuevo.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "TextMouth could not check this Mac's table “%@”: %@. Choose it again to retry.",
+     "english": "TextMouth could not check this Mac's table “%1$@”: %2$@. Choose it again to retry.",
+     "before": "TextMouth no pudo comprobar la tabla «%1$@» de esta Mac: %2$@. Elígela de nuevo para reintentar.",
+     "after": "TextMouth no pudo comprobar la tabla “%1$@” de esta Mac: %2$@. Elígela de nuevo para reintentar.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "TextMouth could not read “%@”.",
+     "english": "TextMouth could not read “%@”.",
+     "before": "TextMouth no pudo leer «%@».",
+     "after": "TextMouth no pudo leer “%@”.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "TextMouth could not save “%@”.",
+     "english": "TextMouth could not save “%@”.",
+     "before": "TextMouth no pudo guardar «%@».",
+     "after": "TextMouth no pudo guardar “%@”.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "TextMouth has no braille table named “%@”.",
+     "english": "TextMouth has no braille table named “%@”.",
+     "before": "TextMouth no tiene ninguna tabla de braille llamada «%@».",
+     "after": "TextMouth no tiene ninguna tabla de braille llamada “%@”.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "english": "The Mac's speech engine refused to speak part of “%@”, even with its brackets made silent.",
+     "before": "El motor de voz de la Mac se negó a leer una parte de «%@», incluso con sus corchetes en silencio.",
+     "after": "El motor de voz de la Mac se negó a leer una parte de “%@”, incluso con sus corchetes en silencio.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "english": "The book's audio as it was before its first edit, which TextMouth keeps while the Original audio setting does.",
+     "before": "El audio del libro antes de su primera edición, que TextMouth conserva mientras lo haga el ajuste Audio original.",
+     "after": "El audio del libro antes de su primera edición, que TextMouth conserva mientras el ajuste Audio original lo indique.",
+     "why": "natural: 'mientras lo haga el ajuste' copies 'while the setting does'; a setting indicates, it does not keep"
+    },
+    {
+     "key": "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only.",
+     "english": "The braille table writes “%@” as an eight-dot cell, but TextMouth's BRF and PEF files are six-dot only.",
+     "before": "La tabla de braille escribe «%@» como una celda de ocho puntos, pero los archivos BRF y PEF de TextMouth son solo de seis puntos.",
+     "after": "La tabla de braille escribe “%@” como una celda de ocho puntos, pero los archivos BRF y PEF de TextMouth son solo de seis puntos.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "The file %@ failed partway through.",
+     "english": "The file %@ failed partway through.",
+     "before": "El archivo %@ falló a medias.",
+     "after": "El archivo %@ falló a mitad de la reproducción.",
+     "why": "meaning: 'falló a medias' says it partly failed; the file failed partway through playing"
+    },
+    {
+     "key": "The other %lld chapters have no text.",
+     "english": {
+      "one": "The other %lld chapter has no text.",
+      "other": "The other %lld chapters have no text."
+     },
+     "before": {
+      "many": "Los otros %lld de capítulos no tienen texto.",
+      "one": "El otro capítulo (%lld) no tiene texto.",
+      "other": "Los otros %lld capítulos no tienen texto."
+     },
+     "after": {
+      "one": "El otro capítulo no tiene texto.",
+      "many": "Los otros %lld de capítulos no tienen texto.",
+      "other": "Los otros %lld capítulos no tienen texto."
+     },
+     "why": "natural: 'El otro capítulo (1)' reads the count aloud; Spanish one is exactly 1, so the number can go"
+    },
+    {
+     "key": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "english": "The text of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again.",
+     "before": "El texto de este libro %@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, aplana el anidado y guarda; después vuelve a exportar.",
+     "after": "El texto de este libro %@, y TextMouth no puede exportarlo con seguridad. Elige Editar texto, simplifica el anidamiento y guarda; después vuelve a exportar.",
+     "why": "natural: 'aplana el anidado' is word for word; the noun is 'anidamiento', and 'simplifica' matches 'Simplifícalo' elsewhere"
+    },
+    {
+     "key": "The voice changed its kind of audio partway through “%@”.",
+     "english": "The voice changed its kind of audio partway through “%@”.",
+     "before": "La voz cambió su tipo de audio a mitad de «%@».",
+     "after": "La voz cambió su tipo de audio a mitad de “%@”.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "english": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "before": "La voz no emitió ningún sonido para «%@». Comprueba que hable el idioma del libro.",
+     "after": "La voz no emitió ningún sonido para “%@”. Comprueba que hable el idioma del libro.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "english": "The voice stopped partway through “%@”, and TextMouth stopped waiting.",
+     "before": "La voz se detuvo a mitad de «%@», y TextMouth dejó de esperar.",
+     "after": "La voz se detuvo a mitad de “%@”, y TextMouth dejó de esperar.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "This Mac no longer has the chosen table, “%@”; choose another.",
+     "english": "This Mac no longer has the chosen table, “%@”; choose another.",
+     "before": "Esta Mac ya no tiene la tabla elegida, «%@»; elige otra.",
+     "after": "Esta Mac ya no tiene la tabla elegida, “%@”; elige otra.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "This Mac's braille table “%@” changed from liblouis %@ to %@ since the book was read, so TextMouth keeps the book's text as it was.",
+     "english": "This Mac's braille table “%1$@” changed from liblouis %2$@ to %3$@ since the book was read, so TextMouth keeps the book's text as it was.",
+     "before": "La tabla de braille «%1$@» de esta Mac cambió de liblouis %2$@ a %3$@ desde que se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
+     "after": "La tabla de braille “%1$@” de esta Mac cambió de liblouis %2$@ a %3$@ desde que se leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "This Mac's braille table “%@” may have changed since liblouis %@ read the book, so TextMouth keeps the book's text as it was.",
+     "english": "This Mac's braille table “%1$@” may have changed since liblouis %2$@ read the book, so TextMouth keeps the book's text as it was.",
+     "before": "La tabla de braille «%1$@» de esta Mac puede haber cambiado desde que liblouis %2$@ leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
+     "after": "La tabla de braille “%1$@” de esta Mac puede haber cambiado desde que liblouis %2$@ leyó el libro, así que TextMouth conserva el texto del libro tal como estaba.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Escribe comillas rectas: en TextEdit, desactiva Comillas inteligentes en Edición, Sustituciones.",
+     "after": "Escribe comillas rectas: en TextEdit, desactiva Comillas tipográficas en Edición, Sustituciones.",
+     "why": "term: TextEdit's Spanish menu item is 'Comillas tipográficas', not 'Comillas inteligentes'"
+    },
+    {
+     "key": "Use the global setting (%@)",
+     "english": "Use the global setting (%@)",
+     "before": "Usar el ajuste general (%@)",
+     "after": "Usar el ajuste global (%@)",
+     "why": "term: every other string says 'global' for these settings ('Usar valor global', 'ajustes globales')"
+    },
+    {
+     "key": "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash.",
+     "english": "Warning: This will rewrite the library's copy of the EPUB file and recalculate its MD5 hash.",
+     "before": "Advertencia: esto reescribirá la copia de la biblioteca del archivo EPUB y recalculará su hash MD5.",
+     "after": "Advertencia: esto reescribirá la copia del archivo EPUB de la biblioteca y recalculará su hash MD5.",
+     "why": "natural: 'la copia de la biblioteca del archivo EPUB' reads as the EPUB file's library; the copy is of the file"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "Con “%1$@”, Play en un libro terminado avisa que ya está terminado; con “%2$@”, Play lo vuelve a empezar desde el principio.",
+     "after": "Con “%1$@”, Reproducir en un libro terminado avisa que ya está terminado; con “%2$@”, Reproducir lo vuelve a empezar desde el principio.",
+     "why": "meaning: the button is 'Reproducir' in Spanish; 'Play' was left in English"
+    },
+    {
+     "key": "Writes the title, author, publisher, and date into the library's copy of this book.",
+     "english": "Writes the title, author, publisher, and date into the library's copy of this book.",
+     "before": "Escribe el título, el autor, la editorial y la fecha en la copia de la biblioteca de este libro.",
+     "after": "Escribe el título, el autor, la editorial y la fecha en la copia que la biblioteca guarda de este libro.",
+     "why": "natural: 'la copia de la biblioteca de este libro' reads as this book's library; the copy is of the book"
+    },
+    {
+     "key": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "english": "Writes this and every other too-deeply nested chapter of this export as plain paragraphs of lines, without asking again.",
+     "before": "Escribe este y cualquier otro capítulo de esta exportación con anidado demasiado profundo como párrafos simples de líneas, sin volver a preguntar.",
+     "after": "Escribe este y cualquier otro capítulo de esta exportación con un anidamiento demasiado profundo como párrafos simples de líneas, sin volver a preguntar.",
+     "why": "natural: 'con anidado demasiado profundo' uses the participle as a noun; the noun is 'anidamiento'"
+    },
+    {
+     "key": "the file %@ failed partway through",
+     "english": "the file %@ failed partway through",
+     "before": "el archivo %@ falló a medias",
+     "after": "el archivo %@ falló a mitad de la reproducción",
+     "why": "meaning: 'falló a medias' says it partly failed; the file failed partway through playing"
+    },
+    {
+     "key": "“%@” couldn't be downloaded from iCloud. Check the connection, then add it again.",
+     "english": "“%@” couldn't be downloaded from iCloud. Check the connection, then add it again.",
+     "before": "No se pudo descargar «%@» desde iCloud. Comprueba la conexión y vuelve a agregarlo.",
+     "after": "No se pudo descargar “%@” desde iCloud. Comprueba la conexión y vuelve a agregarlo.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "«%1$@» es una Voz personal, que macOS no puede grabar en un archivo. Elige otra voz con el botón %2$@ del lector y vuelve a exportar.",
+     "after": "“%1$@” es una Voz personal, que macOS no puede grabar en un archivo. Elige otra voz con el botón %2$@ del lector y vuelve a exportar.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "“%@” is an XML file, but not a pronunciation lexicon.",
+     "english": "“%@” is an XML file, but not a pronunciation lexicon.",
+     "before": "«%@» es un archivo XML, pero no un léxico de pronunciación.",
+     "after": "“%@” es un archivo XML, pero no un léxico de pronunciación.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "“%@” is not a complete, valid XML file.",
+     "english": "“%@” is not a complete, valid XML file.",
+     "before": "«%@» no es un archivo XML completo y válido.",
+     "after": "“%@” no es un archivo XML completo y válido.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "“%@” is too large to read.",
+     "english": "“%@” is too large to read.",
+     "before": "«%@» es demasiado grande para leerlo.",
+     "after": "“%@” es demasiado grande para leerlo.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    },
+    {
+     "key": "“%@” uses XML entities of its own, which TextMouth does not read.",
+     "english": "“%@” uses XML entities of its own, which TextMouth does not read.",
+     "before": "«%@» usa entidades XML propias, que TextMouth no lee.",
+     "after": "“%@” usa entidades XML propias, que TextMouth no lee.",
+     "why": "punctuation: Apple's Spanish and most of the catalog quote with “ ”, not « »"
+    }
+   ]
   }
  ]
 }
