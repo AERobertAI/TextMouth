@@ -306667,6 +306667,12 @@
             "value" : "الميكروفون الذي استخدمه TextMouth آخر مرة غير متصل، لذا تستخدم التسجيلات %@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth যে মাইক্রোফোন সবশেষ ব্যবহার করেছিল তা সংযুক্ত নেই, তাই রেকর্ডিং %@ ব্যবহার করবে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306748,6 +306754,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "الميكروفون الذي يُسجَّل منه. يتذكره TextMouth؛ ولا يتغير الإدخال الذي يستخدمه macOS في أماكن أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যে মাইক্রোফোন থেকে রেকর্ড হবে। TextMouth এটি মনে রাখে; macOS অন্যত্র যে ইনপুট ব্যবহার করে তা বদলায় না।"
           }
         },
         "de" : {
@@ -308759,6 +308771,12 @@
             "value" : "حُذف الصوت الأصلي في %@، لذا لا يمكن التراجع عن التعديلات المحفوظة قبل ذلك."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মূল অডিও %@ তারিখে মুছে ফেলা হয়েছে, তাই তার আগে সংরক্ষিত সম্পাদনা পূর্বাবস্থায় ফেরানো যায় না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309979,6 +309997,12 @@
             "value" : "الأصل هو النسخة بلا فقدان التي يُحفظ منها التسجيل، أو نسخة من ملف الكتاب الصوتي قبل أول تعديل له. يتيح الاحتفاظ به التراجع عن كل تعديل دون فقدان؛ ويكلّف أصل التسجيل نحو 345 ميغابايت في الساعة. ويسري أي تغيير أيضًا على الأصول المحتفَظ بها بالفعل، وفي مكتبة سحابية يُزامَن الأصل مع كتابه."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মূল অডিও হলো সেই ক্ষতিহীন টেক, যা থেকে রেকর্ডিং সংরক্ষিত হয়, অথবা অডিওবুকের ফাইলের প্রথম সম্পাদনার আগের একটি কপি। এটি রাখলে প্রতিটি সম্পাদনা কোনো ক্ষতি ছাড়াই পূর্বাবস্থায় ফেরানো যায়; রেকর্ডিংয়ের মূল অডিওতে প্রতি ঘণ্টায় প্রায় 345 MB লাগে। কোনো পরিবর্তন ইতিমধ্যে রাখা মূল অডিওতেও প্রযোজ্য হয়, এবং ক্লাউড লাইব্রেরিতে মূল অডিও তার বইয়ের সঙ্গে সিঙ্ক হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -310631,6 +310655,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تعذّر العثور على الوقفات."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নীরবতাগুলো খুঁজে পাওয়া যায়নি।"
           }
         },
         "de" : {
@@ -311837,6 +311867,12 @@
             "value" : "النسخة النصية الخاصة بالبودكاست، نُزّلت مع الحلقة في %@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পডকাস্টের নিজস্ব ট্রান্সক্রিপ্ট, %@ তারিখে পর্বের সঙ্গে ডাউনলোড করা।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311918,6 +311954,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "النسخة النصية السابقة للتنظيف موجودة في السحابة فقط. نزّل الكتاب وحاول مرة أخرى."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরিষ্কার করার আগের ট্রান্সক্রিপ্ট শুধু ক্লাউডে আছে। বইটি ডাউনলোড করুন এবং আবার চেষ্টা করুন।"
           }
         },
         "de" : {
@@ -313350,6 +313392,12 @@
             "value" : "تعذّر تحويل التسجيل إلى ملف كتاب صوتي."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ডিং অডিওবুক ফাইলে রূপান্তর করা যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313433,6 +313481,12 @@
             "value" : "تعذّر إنهاء التسجيل بشكل صحيح. تم الاحتفاظ بما سُجّل."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ডিং ঠিকভাবে শেষ করা যায়নি। যা রেকর্ড হয়েছে তা রাখা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313514,6 +313568,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تعذّر حفظ التسجيل: %1$@ تم الاحتفاظ به؛ اختر %2$@ أو %3$@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ডিং সংরক্ষণ করা যায়নি: %1$@ এটি রাখা আছে; %2$@ অথবা %3$@ বেছে নিন।"
           }
         },
         "de" : {
@@ -313682,6 +313742,12 @@
             "value" : "تم تجاهل التسجيل."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ডিং বাদ দেওয়া হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313840,6 +313906,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تعذّرت قراءة صوت التسجيل."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ডিংয়ের অডিও পড়া যায়নি।"
           }
         },
         "de" : {
@@ -314612,6 +314684,12 @@
             "value" : "التحديد هو كل الصوت؛ لا شيء للاقتصاص."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচনই পুরো অডিও; ছাঁটার কিছু নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314985,6 +315063,12 @@
             "value" : "نموذج الكلام للغة %@ غير موجود على هذا الـ Mac بعد. نزّله أولًا."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর স্পিচ মডেল এখনও এই Mac-এ নেই। আগে এটি ডাউনলোড করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315066,6 +315150,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "المقطع المراد استخدامه من اللقطة ليس داخل اللقطة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেকের যে অংশ ব্যবহার করতে হবে তা টেকের ভেতরে নেই।"
           }
         },
         "de" : {
@@ -315968,6 +316058,12 @@
             "value" : "تُحذف النسخة النصية والنص المصنوع منها."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্ট এবং এ থেকে তৈরি টেক্সট মুছে ফেলা হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316205,6 +316301,12 @@
             "value" : "تعذّرت قراءة النسخة النصية. إذا كان الكتاب في السحابة فقط، فنزّله وحاول مرة أخرى."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্ট পড়া যাচ্ছে না। বইটি শুধু ক্লাউডে থাকলে ডাউনলোড করুন এবং আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316286,6 +316388,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تغيّرت النسخة النصية منذ عرض هذا. أعد فتح “تنظيف النسخة النصية” لرؤية التغييرات."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি দেখানোর পর ট্রান্সক্রিপ্ট বদলেছে। পরিবর্তনগুলো দেখতে ট্রান্সক্রিপ্ট পরিষ্কার করুন আবার খুলুন।"
           }
         },
         "de" : {
@@ -316442,6 +316550,12 @@
             "value" : "لم تُرفق ملفات النسخ النصية الموجودة بجوار الصوت: %@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিওর পাশের ট্রান্সক্রিপ্ট ফাইলগুলো সংযুক্ত করা হয়নি: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316523,6 +316637,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تعذّر استخدام النسخة النصية السابقة للتنظيف: %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরিষ্কার করার আগের ট্রান্সক্রিপ্ট ব্যবহার করা যাচ্ছে না: %@।"
           }
         },
         "de" : {
@@ -316608,6 +316728,12 @@
             "value" : "تحلّ النسخة النصية من “%@” محل النسخة النصية للكتاب والنص المصنوع منها."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” থেকে নেওয়া ট্রান্সক্রিপ্ট বইয়ের ট্রান্সক্রিপ্ট এবং এ থেকে তৈরি টেক্সট প্রতিস্থাপন করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316689,6 +316815,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا تحتوي النسخة النصية على نص لإرفاقه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্টে সংযুক্ত করার মতো কোনো টেক্সট নেই।"
           }
         },
         "de" : {
@@ -316774,6 +316906,12 @@
             "value" : "النسخة النصية موجودة في iCloud فقط، لذا يتركها TextMouth. نزّل الكتاب ثم حاول مرة أخرى."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্ট শুধু iCloud-এ আছে, তাই TextMouth সেটি ছেড়ে দেয়। বইটি ডাউনলোড করুন, তারপর আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -316855,6 +316993,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "النسخة النصية موجودة في السحابة فقط. تظهر تفاصيلها بعد تنزيل الكتاب."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্ট শুধু ক্লাউডে আছে। বইটি ডাউনলোড হলে এর বিবরণ দেখা যাবে।"
           }
         },
         "de" : {
@@ -316940,6 +317084,12 @@
             "value" : "تعذّرت قراءة النسخة النصية لـ%@. إذا كان الكتاب في السحابة فقط، فنزّله وحاول مرة أخرى."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর ট্রান্সক্রিপ্ট পড়া যাচ্ছে না। বইটি শুধু ক্লাউডে থাকলে ডাউনলোড করুন এবং আবার চেষ্টা করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317021,6 +317171,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تمتد النسخة النصية إلى %1$@، متجاوزةً نهاية الصوت عند %2$@، لذا فهي لصوت آخر."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্ট %1$@ পর্যন্ত চলে, যা অডিওর শেষ %2$@ ছাড়িয়ে গেছে, তাই এটি অন্য অডিওর জন্য।"
           }
         },
         "de" : {
@@ -317110,6 +317266,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تعذّر فحص ملفات النسخة النصية بعد كتابتها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্টের ফাইলগুলো লেখার পর পরীক্ষা করা যায়নি।"
           }
         },
         "de" : {
@@ -317272,6 +317434,12 @@
             "value" : "لم يُقرأ نص النسخة النصية فصلًا واحدًا لكل فصل من الكتاب."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্টের টেক্সট বইয়ের প্রতিটি অধ্যায়ের জন্য একটি করে অধ্যায় হিসেবে ফেরত পড়া যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317353,6 +317521,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "أزمنة النسخة النصية غير متوافقة، لذا لا يستطيع TextMouth استخدامها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্টের সময়গুলো পরস্পরের সঙ্গে মেলে না, তাই TextMouth এটি ব্যবহার করতে পারে না।"
           }
         },
         "de" : {
@@ -317513,6 +317687,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تبقى النسخة النصية، مع تغييراتك، مع الحلقة في موجزها، حتى بعد حذف تنزيلها. يؤدي حذف الحلقة أو الموجز إلى حذفها؛ ويحتفظ بها “نقل إلى المكتبة” ككتاب."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার পরিবর্তনসহ ট্রান্সক্রিপ্ট ফিডে পর্বের সঙ্গেই থাকে, ডাউনলোড মুছে ফেললেও। পর্ব বা ফিড মুছলে এটিও মুছে যায়; লাইব্রেরিতে স্থানান্তর করুন এটি বই হিসেবে রেখে দেয়।"
           }
         },
         "de" : {
@@ -320081,6 +320261,12 @@
             "value" : "يوجد مرشح فارغ بين فاصلتين."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "দুটি কমার মাঝে একটি খালি ফিল্টার আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320162,6 +320348,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا يوجد صوت بعد المؤشر لمعاينته."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রিভিউ করার মতো কোনো অডিও কার্সরের পরে নেই।"
           }
         },
         "de" : {
@@ -320401,6 +320593,12 @@
             "value" : "لا شيء لإعادته."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পুনরায় করার কিছু নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320482,6 +320680,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا شيء للتراجع عنه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পূর্বাবস্থায় ফেরানোর কিছু নেই।"
           }
         },
         "de" : {
@@ -320827,6 +321031,12 @@
             "value" : "تحتاج هذه التعديلات إلى الصوت الأصلي، وهو لم يعد محتفَظًا به."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই সম্পাদনাগুলোর জন্য মূল অডিও লাগে, যা আর রাখা নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321103,6 +321313,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لم تُرفق ملفات النسخ النصية هذه الموجودة بجوار الصوت: %@. يبيّن سجل التصحيح السبب."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিওর পাশের এই ট্রান্সক্রিপ্ট ফাইলগুলো সংযুক্ত করা হয়নি: %@। ডিবাগ লগে কারণ লেখা আছে।"
           }
         },
         "de" : {
@@ -322017,6 +322233,12 @@
             "value" : "لا يستطيع هذا الـ Mac تشغيل نموذج الكلام الذي يستخدمه التفريغ."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন যে স্পিচ মডেল ব্যবহার করে, এই Mac তা চালাতে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322098,6 +322320,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا يسمح هذا الـ Mac لـ TextMouth باستخدام الميكروفون: ملف تعريف لإدارة الأجهزة أو مدة استخدام الجهاز يقيّده."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই Mac TextMouth-কে মাইক্রোফোন ব্যবহার করতে দেয় না: একটি ডিভাইস ম্যানেজমেন্ট প্রোফাইল বা স্ক্রিন টাইম এটি সীমিত করেছে।"
           }
         },
         "de" : {
@@ -323255,6 +323483,12 @@
             "value" : "لا يحتوي هذا الصوت على علامات فصل."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই অডিওতে কোনো অধ্যায় মার্কার নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323336,6 +323570,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا يحتوي هذا الكتاب الصوتي على صوت لتفريغه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই অডিওবুকে ট্রান্সক্রাইব করার মতো কোনো অডিও নেই।"
           }
         },
         "de" : {
@@ -323693,6 +323933,12 @@
             "value" : "يتبع هذا الكتاب الآن الإعداد العام."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বই এখন গ্লোবাল সেটিং অনুসরণ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324037,6 +324283,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لهذا الكتاب نسخة نصية أنشأها إصدار أحدث من TextMouth."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইয়ের ট্রান্সক্রিপ্ট TextMouth-এর একটি নতুন সংস্করণে তৈরি।"
           }
         },
         "de" : {
@@ -324460,6 +324712,24 @@
             }
           }
         },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সংরক্ষণ বা শেষবার সম্পাদনার পর এই বই তার মূল অডিও %lld দিন রাখে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সংরক্ষণ বা শেষবার সম্পাদনার পর এই বই তার মূল অডিও %lld দিন রাখে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -324729,6 +324999,12 @@
             "value" : "يحتفظ هذا الكتاب بصوته الأصلي حتى تتم إزالة الكتاب."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি সরানো পর্যন্ত এই বই তার মূল অডিও রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324810,6 +325086,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا يحتفظ هذا الكتاب بصوت أصلي: تغيّر التعديلات المحفوظة صوته في مكانه، ولا يمكن التراجع عنها بعد ذلك."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বই কোনো মূল অডিও রাখে না: সংরক্ষিত সম্পাদনা এর অডিওকেই বদলে দেয়, এবং পরে পূর্বাবস্থায় ফেরানো যায় না।"
           }
         },
         "de" : {
@@ -329176,6 +329458,12 @@
             "value" : "هذا التسجيل غير محفوظ. %1$@ يحاول مرة أخرى، و%2$@ يحذفه، و%3$@ يُبقي النافذة مفتوحة."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই রেকর্ডিং সংরক্ষিত হয়নি। %1$@ আবার চেষ্টা করে, %2$@ এটি মুছে ফেলে, আর %3$@ উইন্ডো খোলা রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329565,6 +329853,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "الوقت"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সময়"
           }
         },
         "de" : {
@@ -330100,6 +330394,12 @@
             "value" : "وقت التفريغ: %@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রাইব করতে সময় লাগবে: %@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330181,6 +330481,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "وقت التفريغ: غير معروف بعد."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রাইব করতে সময়: এখনও জানা যায়নি।"
           }
         },
         "de" : {
@@ -331066,6 +331372,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "عنوان لعلامة فصل عند المؤشر. إذا وُجدت علامة هناك، تتم إعادة تسميتها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কার্সরের জায়গার অধ্যায় মার্কারের শিরোনাম। সেখানে একটি থাকলে তার নাম বদলে যায়।"
           }
         },
         "de" : {
@@ -332776,6 +333088,12 @@
             "value" : "لاستخدامه، افتح الكتاب واختر %@ من قائمة الكتاب."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি ব্যবহার করতে বইটি খুলুন এবং বই মেনু থেকে %@ বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333280,6 +333598,12 @@
             "value" : "طويل جدًا بحيث لا يمكن الاحتفاظ به للصق. لنقله، الصق مباشرة بعد القص."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পেস্টের জন্য রাখতে খুব দীর্ঘ। সরাতে চাইলে কাটার ঠিক পরেই পেস্ট করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333394,6 +333718,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "عدد الفقرات الزمنية أكبر من اللازم: الحد هو %lld."
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সময়যুক্ত অংশ অনেক বেশি: সীমা %lld।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সময়যুক্ত অংশ অনেক বেশি: সীমা %lld।"
                 }
               }
             }
@@ -333976,6 +334318,12 @@
             "value" : "المقطع"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্র্যাক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334130,6 +334478,12 @@
             "value" : "تفريغ"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রাইব করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334211,6 +334565,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تفريغ %@"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ট্রান্সক্রাইব করুন"
           }
         },
         "de" : {
@@ -334296,6 +334656,12 @@
             "value" : "تفريغ الصوت"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিও ট্রান্সক্রাইব করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334377,6 +334743,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تفريغ الصوت…"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিও ট্রান্সক্রাইব করুন…"
           }
         },
         "de" : {
@@ -334681,6 +335053,12 @@
             "value" : "هل تريد تفريغه الآن؟"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এখনই ট্রান্সক্রাইব করবেন?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334762,6 +335140,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "هل تريد تفريغ الكتاب الصوتي؟"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিওবুক ট্রান্সক্রাইব করবেন?"
           }
         },
         "de" : {
@@ -334847,6 +335231,12 @@
             "value" : "مفرَّغ"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রাইব করা হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334928,6 +335318,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تم تفريغ %1$@: %2$@ في %3$@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ট্রান্সক্রাইব করা হয়েছে: %3$@-এ %2$@।"
           }
         },
         "de" : {
@@ -335019,6 +335415,12 @@
             "value" : "تم التفريغ في %1$@ باللغة %2$@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ তারিখে %2$@ ভাষায় ট্রান্সক্রাইব করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335108,6 +335510,12 @@
             "value" : "يفرّغ صوت الكتاب مرة أخرى، ويستبدل نسخته النصية."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের অডিও আবার ট্রান্সক্রাইব করে, এর ট্রান্সক্রিপ্ট প্রতিস্থাপন করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335189,6 +335597,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يفرّغ صوت الكتاب على هذا الـ Mac، ليتمكن VoiceOver وبرايل من قراءة السرد كنص."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই Mac-এই বইয়ের অডিও ট্রান্সক্রাইব করে, যাতে VoiceOver ও ব্রেইল বর্ণনা টেক্সট হিসেবে পড়তে পারে।"
           }
         },
         "de" : {
@@ -335274,6 +335688,12 @@
             "value" : "قيد التفريغ"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রাইব করা হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335357,6 +335777,12 @@
             "value" : "جارٍ تفريغ %@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ট্রান্সক্রাইব করা হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335438,6 +335864,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "جارٍ تفريغ %1$@، %2$@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ ট্রান্সক্রাইব করা হচ্ছে, %2$@।"
           }
         },
         "de" : {
@@ -335529,6 +335961,12 @@
             "value" : "جارٍ تفريغ %@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ট্রান্সক্রাইব করা হচ্ছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335610,6 +336048,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يؤدي التفريغ مرة أخرى إلى استبدالها."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার ট্রান্সক্রাইব করলে এটি প্রতিস্থাপিত হয়।"
           }
         },
         "de" : {
@@ -335695,6 +336139,12 @@
             "value" : "يؤدي التفريغ مرة أخرى إلى استبدال هذه النسخة النصية."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার ট্রান্সক্রাইব করলে এই ট্রান্সক্রিপ্ট প্রতিস্থাপিত হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -335776,6 +336226,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يستغرق تفريغه %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি ট্রান্সক্রাইব করতে %@ লাগে।"
           }
         },
         "de" : {
@@ -335938,6 +336394,12 @@
             "value" : "التفريغ النصي"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336019,6 +336481,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا يدعم التفريغ النصي %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন %@ সমর্থন করে না।"
           }
         },
         "de" : {
@@ -336104,6 +336572,12 @@
             "value" : "لغة التفريغ النصي"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশনের ভাষা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336185,6 +336659,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يتطلب التفريغ النصي macOS 26 أو أحدث."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশনের জন্য macOS 26 বা পরবর্তী সংস্করণ লাগে।"
           }
         },
         "de" : {
@@ -336270,6 +336750,12 @@
             "value" : "تقدم التفريغ النصي"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশনের অগ্রগতি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336351,6 +336837,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "توقف التفريغ النصي."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন থেমে গেছে।"
           }
         },
         "de" : {
@@ -336436,6 +336928,12 @@
             "value" : "توقف التفريغ النصي: %@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন থেমে গেছে: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336517,6 +337015,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "توقف التفريغ النصي: %@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন থেমে গেছে: %@।"
           }
         },
         "de" : {
@@ -336602,6 +337106,12 @@
             "value" : "تم إلغاء التفريغ النصي."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন বাতিল করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -336683,6 +337193,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يعمل التفريغ النصي على كتاب صوتي واحد في كل مرة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপশন একবারে একটি অডিওবুকে কাজ করে।"
           }
         },
         "de" : {
@@ -336851,6 +337367,12 @@
             "value" : "يحاول مرة أخرى حفظ التسجيل ككتاب صوتي."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ডিং অডিওবুক হিসেবে সংরক্ষণ করতে আবার চেষ্টা করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337011,6 +337533,12 @@
             "value" : "اقتصاص النهاية"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শেষ ছাঁটুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337092,6 +337620,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "اقتصاص الصمت من الطرفين"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "দুই প্রান্তের নীরবতা ছাঁটুন"
           }
         },
         "de" : {
@@ -337177,6 +337711,12 @@
             "value" : "اقتصاص البداية"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুরু ছাঁটুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337260,6 +337800,12 @@
             "value" : "اقتصاص إلى التحديد"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত অংশে ছাঁটুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -337341,6 +337887,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تم الاقتصاص إلى التحديد: تم الاحتفاظ بـ%@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত অংশে ছাঁটা হয়েছে: %@ রাখা হয়েছে।"
           }
         },
         "de" : {
@@ -337821,6 +338373,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "حاول مرة أخرى بعد تنزيل الكتاب."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইটি ডাউনলোড হলে আবার চেষ্টা করুন।"
           }
         },
         "de" : {
@@ -338457,6 +339015,12 @@
             "value" : "اكتب سلسلة مرشحات."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিল্টারের একটি চেইন টাইপ করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -338840,6 +339404,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "اكتب وقتًا، مثل 12:04.3 أو 1:02:03 أو 75.5."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি সময় টাইপ করুন, যেমন 12:04.3, 1:02:03 বা 75.5।"
           }
         },
         "de" : {
@@ -339966,6 +340536,12 @@
             "value" : "تم التراجع عن %@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ পূর্বাবস্থায় ফেরানো হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -340047,6 +340623,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تم التراجع عن تنظيف النسخة النصية لـ%@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর ট্রান্সক্রিপ্ট পরিষ্কার করা পূর্বাবস্থায় ফেরানো হয়েছে।"
           }
         },
         "de" : {
@@ -340209,6 +340791,12 @@
             "value" : "تراجع عن %@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ পূর্বাবস্থায় ফেরান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -340290,6 +340878,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تراجع عن التنظيف"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরিষ্কার করা পূর্বাবস্থায় ফেরান"
           }
         },
         "de" : {
@@ -340375,6 +340969,12 @@
             "value" : "يعيد “تراجع عن التنظيف” النسخة النصية السابقة."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরিষ্কার করা পূর্বাবস্থায় ফেরান আগের ট্রান্সক্রিপ্ট ফিরিয়ে আনে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -340456,6 +341056,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تراجع أو أعد للرجوع إلى الصوت كما حُفظ آخر مرة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শেষবার সংরক্ষণের সময়ের অডিওতে ফিরতে পূর্বাবস্থায় ফেরান বা পুনরায় করুন।"
           }
         },
         "de" : {
@@ -340541,6 +341147,12 @@
             "value" : "يتراجع عن كل تعديل حتى الأصل؛ وتعيدها “إعادة”."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মূল অডিওতে ফিরে প্রতিটি সম্পাদনা পূর্বাবস্থায় ফেরায়; পুনরায় করুন সেগুলো ফিরিয়ে আনে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -340622,6 +341234,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يتراجع عن أحدث تعديل."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সবচেয়ে নতুন সম্পাদনা পূর্বাবস্থায় ফেরায়।"
           }
         },
         "de" : {
@@ -340782,6 +341400,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "طول غير معروف"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অজানা দৈর্ঘ্য"
           }
         },
         "de" : {
@@ -343453,6 +344077,12 @@
             "value" : "استخدام ffmpeg للمرشحات"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফিল্টারের জন্য ffmpeg ব্যবহার করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -345364,6 +345994,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يقرأ VoiceOver المستوى أثناء التسجيل. عبر مكبرات الصوت، قد يُسجَّل كلامه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রেকর্ড করার সময় VoiceOver লেভেল পড়ে শোনায়। স্পিকারে চালালে এর কণ্ঠ রেকর্ড হয়ে যেতে পারে।"
           }
         },
         "de" : {
@@ -351833,6 +352469,12 @@
             "value" : "أي مقطع من %@ تريد تحريره؟"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর কোন ট্র্যাকটি সম্পাদনা করতে চান?"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -352468,6 +353110,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "الملف كله"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পুরো ফাইল"
           }
         },
         "de" : {
@@ -354654,6 +355302,12 @@
             "value" : "يكتب علامات الفصل والعلامات بجانب الصوت، في ملف تسميات Audacity بالاسم نفسه."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একই নামের একটি Audacity লেবেল ফাইলে অডিওর পাশে অধ্যায় মার্কার ও মার্কার লেখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355282,6 +355936,12 @@
             "value" : "نظّفتها في %@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনি এটি %@ তারিখে পরিষ্কার করেছেন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355363,6 +356023,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "نظّفت هذه النسخة النصية في %@. يؤدي التفريغ مرة أخرى إلى استبدال التنظيف."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনি এই ট্রান্সক্রিপ্ট %@ তারিখে পরিষ্কার করেছেন। আবার ট্রান্সক্রাইব করলে পরিষ্কার করা অংশ প্রতিস্থাপিত হয়।"
           }
         },
         "de" : {
@@ -355448,6 +356114,12 @@
             "value" : "حرّرتها في %@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনি এটি %@ তারিখে সম্পাদনা করেছেন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355531,6 +356203,12 @@
             "value" : "حرّرت النسخة النصية في %@، بعد التنظيف. يتراجع “تراجع عن التنظيف” عن هذه التعديلات أيضًا."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরিষ্কার করার পর আপনি ট্রান্সক্রিপ্ট %@ তারিখে সম্পাদনা করেছেন। পরিষ্কার করা পূর্বাবস্থায় ফেরান সেই সম্পাদনাগুলোও পূর্বাবস্থায় ফেরায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -355612,6 +356290,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "حرّرت هذه النسخة النصية في %@. يؤدي التفريغ مرة أخرى إلى استبدال تعديلاتك."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনি এই ট্রান্সক্রিপ্ট %@ তারিখে সম্পাদনা করেছেন। আবার ট্রান্সক্রাইব করলে আপনার সম্পাদনা প্রতিস্থাপিত হয়।"
           }
         },
         "de" : {
@@ -356070,6 +356754,12 @@
             "value" : "نسختك من القواعد فارغة. يفتحها “تحرير القواعد…” لإضافة بعضها."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিয়মগুলোর আপনার কপি খালি। নিয়ম সম্পাদনা করুন… এটি খোলে, যাতে কিছু যোগ করতে পারেন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356151,6 +356841,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "نسختك من القواعد موجودة في السحابة فقط، لذا طلبها TextMouth ويستخدم قواعده الخاصة في هذه الأثناء."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিয়মগুলোর আপনার কপি শুধু ক্লাউডে আছে, তাই TextMouth সেটি চেয়েছে এবং ততক্ষণ নিজের নিয়ম ব্যবহার করছে।"
           }
         },
         "de" : {
@@ -356313,6 +357009,12 @@
             "value" : "تُحذف تعديلاتك على النسخة النصية أيضًا."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্টে আপনার সম্পাদনাও মুছে ফেলা হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -356394,6 +357096,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تُستبدل تعديلاتك على النسخة النصية أيضًا."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্টে আপনার সম্পাদনাও প্রতিস্থাপিত হয়।"
           }
         },
         "de" : {
@@ -356791,6 +357499,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لا يمكن استخدام ملف قواعدك: %@. يحتفظ TextMouth به وبنسخة منه، ويستخدم قواعده الخاصة إلى أن تصحّحه."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার নিয়ম ফাইল ব্যবহার করা যাচ্ছে না: %@। TextMouth এটি ও একটি কপি রেখে দেয়, এবং আপনি ঠিক না করা পর্যন্ত নিজের নিয়ম ব্যবহার করে।"
           }
         },
         "de" : {
@@ -357628,6 +358342,12 @@
             "value" : "نحو 140 ميغابايت"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রায় 140 MB"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -358247,6 +358967,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "كل الملفات (%lld)"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব %lldটি ফাইল"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সব %lldটি ফাইল"
                 }
               }
             }
@@ -361648,6 +362386,12 @@
             "value" : "قيد التنزيل"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডাউনলোড হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -362323,6 +363067,12 @@
             "value" : "تعذّر تشغيل ffmpeg. تأكد من تثبيته، أو أوقف “استخدام ffmpeg” في إعدادات التخزين."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ffmpeg চালু করা যায়নি। এটি ইনস্টল করা আছে কি না দেখুন, অথবা স্টোরেজ সেটিংসে ফিল্টারের জন্য ffmpeg ব্যবহার করুন বন্ধ করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -362406,6 +363156,12 @@
             "value" : "تعذّر على ffmpeg تشغيل المرشحات: %@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ffmpeg ফিল্টারগুলো চালাতে পারেনি: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -362487,6 +363243,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "ffmpeg غير مثبّت؛ تُستخدم مرشحات TextMouth الخاصة."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ffmpeg ইনস্টল করা নেই; TextMouth-এর নিজস্ব ফিল্টার ব্যবহার হচ্ছে।"
           }
         },
         "de" : {
@@ -362647,6 +363409,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "الملف %1$lld من %2$lld"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$lldটির মধ্যে ফাইল %1$lld"
           }
         },
         "de" : {
@@ -363412,6 +364180,12 @@
             "value" : "أدخل تردّدًا أقل من نصف معدل أخذ العينات للصوت، %@ هرتز"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিওর স্যাম্পল রেটের অর্ধেকের নিচে একটি ফ্রিকোয়েন্সি দিন, %@ Hz"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363495,6 +364269,12 @@
             "value" : "أدخل عرضًا أضيق، لأن هذا العرض لا ينتج مرشحًا صالحًا للاستخدام عند %@ هرتز"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আরও সংকীর্ণ প্রস্থ দিন, কারণ এটি %@ Hz-এ ব্যবহারযোগ্য কোনো ফিল্টার বানায় না"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363576,6 +364356,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "أدخل رقمًا من %1$@ إلى %2$@"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ থেকে %2$@ পর্যন্ত একটি সংখ্যা দিন"
           }
         },
         "de" : {
@@ -363667,6 +364453,12 @@
             "value" : "أدخل رقمًا، مثل 0.5، أو ديسيبل، مثل -6dB"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি সংখ্যা দিন, যেমন 0.5, অথবা ডেসিবেল, যেমন -6dB"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363750,6 +364542,12 @@
             "value" : "أدخل وقتًا مثل 2.5 أو 250ms أو 0:01:30"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি সময় দিন, যেমন 2.5, 250ms বা 0:01:30"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -363831,6 +364629,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "أدخل عددًا صحيحًا من %1$@ إلى %2$@"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ থেকে %2$@ পর্যন্ত একটি পূর্ণসংখ্যা দিন"
           }
         },
         "de" : {
@@ -363922,6 +364726,12 @@
             "value" : "أدخل واحدًا من: %@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@-এর একটি দিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -364005,6 +364815,12 @@
             "value" : "أدخل true أو false"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "true বা false দিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -364086,6 +364902,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "جيد"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ভালো"
           }
         },
         "de" : {
@@ -364674,6 +365496,12 @@
             "value" : "في الفصل %1$@: %2$@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অধ্যায় %1$@-এ: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -364968,6 +365796,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "مثبَّت"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ইনস্টল করা"
           }
         },
         "de" : {
@@ -369004,6 +369838,12 @@
             "value" : "أقل من دقيقة"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এক মিনিটেরও কম"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -369251,6 +370091,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "مرتفع"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "জোরালো"
           }
         },
         "de" : {
@@ -369598,6 +370444,24 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "ناقص %lld ديسيبلات"
+                }
+              }
+            }
+          }
+        },
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "মাইনাস %lld ডেসিবেল"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "মাইনাস %lld ডেসিবেল"
                 }
               }
             }
@@ -370239,6 +371103,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "يحتاج إلى تنزيل"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডাউনলোড দরকার"
           }
         },
         "de" : {
@@ -371270,6 +372140,12 @@
             "value" : "لا شيء"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কিছুই নেই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -372083,6 +372959,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "غير مدعوم"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সমর্থিত নয়"
           }
         },
         "de" : {
@@ -373561,6 +374443,12 @@
             "value" : "منخفض"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আস্তে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -374836,6 +375724,12 @@
             "value" : "التحديد من %1$@ إلى %2$@، %3$@"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ থেকে %2$@ পর্যন্ত নির্বাচন, %3$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -375316,6 +376210,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "صامت"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নীরব"
           }
         },
         "de" : {
@@ -379975,6 +380875,12 @@
             "value" : "مرتفع جدًا"
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "খুব জোরালো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -380269,6 +381175,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "طول غير معروف"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অজানা দৈর্ঘ্য"
           }
         },
         "de" : {
@@ -381434,6 +382346,12 @@
             "value" : "“%1$@” تصبح “%2$@”، داخل الكلمات أيضًا: %3$@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” হয়ে যায় “%2$@”, শব্দের ভেতরেও: %3$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -381523,6 +382441,12 @@
             "value" : "“%1$@” تصبح “%2$@”: %3$@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” হয়ে যায় “%2$@”: %3$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -381610,6 +382534,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لم يُرفق “%1$@” الموجود بجوار الصوت: %2$@"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিওর পাশের “%1$@” সংযুক্ত করা হয়নি: %2$@"
           }
         },
         "de" : {
@@ -382007,6 +382937,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تعذّرت قراءة “%1$@”: %2$@."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” পড়া যায়নি: %2$@।"
           }
         },
         "de" : {
@@ -382832,6 +383768,12 @@
             "value" : "“%@” موجود في السحابة فقط. نزّل الكتاب، ثم فرّغه."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” শুধু ক্লাউডে আছে। বইটি ডাউনলোড করুন, তারপর ট্রান্সক্রাইব করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -382915,6 +383857,12 @@
             "value" : "“%@” قيد التسجيل. أوقفه أو تجاهله باستخدام “إلغاء التحديد”، ثم أنهِ TextMouth."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” রেকর্ড করছে। এটি থামান, অথবা নির্বাচন সাফ করুন দিয়ে বাদ দিন, তারপর প্রস্থান করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -382996,6 +383944,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@” لا يزال قيد العمل. أنهِ TextMouth بعد اكتمال التغيير."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” এখনও কাজ করছে। পরিবর্তন শেষ হলে প্রস্থান করুন।"
           }
         },
         "de" : {
@@ -383156,6 +384110,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%@” ليس اسم مرشح."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” কোনো ফিল্টারের নাম নয়।"
           }
         },
         "de" : {
@@ -383543,6 +384503,12 @@
             "value" : "يستخدم “%1$@” عينات %2$@ لا يستطيع TextMouth تشغيلها."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” %2$@ স্যাম্পল ব্যবহার করে, যা TextMouth চালাতে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -383709,6 +384675,12 @@
             "value" : "تم استيراد “%1$@”، بصوت مدته %2$@."
           }
         },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” আমদানি করা হয়েছে, %2$@ অডিওসহ।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -383796,6 +384768,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "تم استيراد “%@”."
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” আমদানি করা হয়েছে।"
           }
         },
         "de" : {
@@ -383944,6 +384922,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "لم يُرفق “%1$@” بـ%2$@: %3$@"
+          }
+        },
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” %2$@-এ সংযুক্ত করা হয়নি: %3$@"
           }
         },
         "de" : {
