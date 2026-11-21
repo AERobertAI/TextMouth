@@ -21693,7 +21693,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ keer de snelheid"
+            "value" : "%@ keer zo snel"
           }
         },
         "pl" : {
@@ -21836,7 +21836,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ tot %2$@"
+            "value" : "%1$@ tot en met %2$@"
           }
         },
         "pl" : {
@@ -25210,7 +25210,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ schrijft dat hoofdstuk als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk."
+            "value" : "%@ schrijft de regels van dat hoofdstuk als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk."
           }
         },
         "pl" : {
@@ -25347,7 +25347,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ schrijft de tekst als gewone alinea's met zijn regels, met de citaat- en lijsttekens als tekens behouden, en exporteert al het andere zoals gewoonlijk."
+            "value" : "%@ schrijft de regels van de tekst als gewone alinea's, waarbij de citaat- en lijsttekens als tekens behouden blijven, en exporteert al het andere zoals gewoonlijk."
           }
         },
         "pl" : {
@@ -104842,7 +104842,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Bestand, Exporteer werkt in beide gevallen."
+            "value" : "Voegt een knop Exporteer toe aan de knoppenbalk van elke lezer. Archief, Exporteer werkt in beide gevallen."
           }
         },
         "pl" : {
@@ -475845,7 +475845,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit gelezen."
+            "value" : "Tekst niet bijgewerkt: het originele bestand van %@ is ook gewijzigd. De tekst van het boek wordt er opnieuw uit gelezen wanneer het boek de volgende keer wordt geopend."
           }
         },
         "pl" : {
@@ -475982,7 +475982,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt de volgende keer dat het boek opent opnieuw daaruit geschreven."
+            "value" : "Tekst niet bijgewerkt: de transcriptie van %@ is ook gewijzigd. De tekst van het boek wordt op basis daarvan opnieuw geschreven wanneer het boek de volgende keer wordt geopend."
           }
         },
         "pl" : {
@@ -488465,7 +488465,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth heeft de laatste bewaring nog niet gelezen."
+            "value" : "TextMouth heeft de laatst bewaarde versie nog niet gelezen."
           }
         },
         "pl" : {
@@ -492768,7 +492768,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth heeft de tekst die je in %@ hebt gewijzigd bewaard."
+            "value" : "TextMouth heeft de tekst bewaard die je in %@ hebt gewijzigd."
           }
         },
         "pl" : {
@@ -515354,7 +515354,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het audiobestand %@ eindigt vóór de audio zelf, dus het kon niet worden geconverteerd."
+            "value" : "Het audiobestand %@ eindigt voordat de audio is afgelopen, dus het kon niet worden geconverteerd."
           }
         },
         "pl" : {
@@ -532961,7 +532961,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-byteordemarkering, maar de rest is geen geldige %@-tekst."
+            "value" : "Het bestand “%@” is beschadigd of onvolledig: het begint met een %@-bytevolgordemarkering, maar de rest is geen geldige %@-tekst."
           }
         },
         "pl" : {
@@ -535672,7 +535672,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "De map bevat %lld DAISY-boeken (%@)."
+                  "value" : "De map bevat %lld DAISY-boek (%@)."
                 }
               },
               "other" : {
@@ -548178,7 +548178,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Het andere %lld hoofdstuk heeft geen tekst."
+                  "value" : "Het andere hoofdstuk heeft geen tekst."
                 }
               },
               "other" : {
@@ -557783,7 +557783,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De tekst van %@ kan niet worden gelezen, dus kan niet worden gewijzigd."
+            "value" : "De tekst van %@ kan niet worden gelezen en dus ook niet worden gewijzigd."
           }
         },
         "pl" : {
@@ -570722,7 +570722,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Deze PDF heeft een wachtwoord nodig om te openen."
+            "value" : "Deze PDF kan alleen met een wachtwoord worden geopend."
           }
         },
         "pl" : {
@@ -578917,7 +578917,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De opmaak van dit bestand nest meer dan %@ niveaus diep, wat TextMouth niet veilig kan lezen."
+            "value" : "De opmaak van dit bestand is meer dan %@ niveaus diep genest, wat TextMouth niet veilig kan lezen."
           }
         },
         "pl" : {
@@ -579054,7 +579054,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Het zou TextMouth veel te lang duren om de opmaak van dit bestand te lezen."
+            "value" : "Het lezen van de opmaak van dit bestand zou TextMouth veel te veel tijd kosten."
           }
         },
         "pl" : {
@@ -598499,7 +598499,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Typ een pagina zoals het boek die nummert, zoals 12 of xii."
+            "value" : "Typ een pagina zoals het boek die nummert, bijvoorbeeld 12 of xii."
           }
         },
         "pl" : {
@@ -636195,7 +636195,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "voor pagina %@"
+            "value" : "vóór pagina %@"
           }
         },
         "pl" : {
@@ -652066,7 +652066,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent."
+            "value" : "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en het boek opent."
           }
         },
         "pl" : {
@@ -652209,7 +652209,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "zijn hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt."
+            "value" : "hoofdstuk %@ %@, wat TextMouth niet veilig kan lezen. Maak het vlakker en bewaar opnieuw, of maak de wijziging ongedaan, en de tekst verschijnt."
           }
         },
         "pl" : {
