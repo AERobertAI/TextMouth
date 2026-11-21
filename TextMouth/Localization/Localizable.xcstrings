@@ -39983,7 +39983,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escolha %1$@ ou %2$@ em %3$@, na parte superior da janela da Biblioteca."
+            "value" : "Escolha %1$@ ou %2$@ em %3$@, na parte superior da janela da biblioteca."
           }
         }
       }
@@ -50336,7 +50336,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Os detalhes estão na parte superior da janela da Biblioteca."
+            "value" : "Os detalhes estão na parte superior da janela da biblioteca."
           }
         }
       }
@@ -78321,7 +78321,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mac Europa Central"
+            "value" : "Mac europeu central"
           }
         }
       }
@@ -109152,7 +109152,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tentar novamente fica na parte superior da janela da Biblioteca."
+            "value" : "Tentar novamente fica na parte superior da janela da biblioteca."
           }
         }
       }
@@ -140641,7 +140641,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O índice da biblioteca não pode ser lido. Escolha Tentar novamente ou Reconstruir índice da biblioteca na janela da Biblioteca primeiro."
+            "value" : "O índice da biblioteca não pode ser lido. Escolha Tentar novamente ou Reconstruir índice da biblioteca na janela da biblioteca primeiro."
           }
         }
       }
