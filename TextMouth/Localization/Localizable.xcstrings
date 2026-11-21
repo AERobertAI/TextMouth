@@ -13254,7 +13254,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%@」已在閱讀器中開啟。請先關閉，再重新選擇「編輯音訊」。"
+            "value" : "「%@」已在閱讀器中打開。請先關閉，再重新選擇「編輯音訊」。"
           }
         }
       }
@@ -135804,7 +135804,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇從列表開啟的書結束時要執行的操作。"
+            "value" : "選擇從列表打開的書結束時要執行的操作。"
           }
         }
       }
@@ -136518,7 +136518,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇下一本書要開啟的位置：此視窗或新視窗。已在其他視窗開啟的書會移到前面，若選擇 %@，此視窗會關閉。"
+            "value" : "選擇下一本書要打開的位置：此視窗或新視窗。已在其他視窗打開的書會移到前面，若選擇 %@，此視窗會關閉。"
           }
         }
       }
@@ -136637,7 +136637,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇此訂閱源的下一篇文章要開啟的位置。"
+            "value" : "選擇此訂閱源的下一篇文章要打開的位置。"
           }
         }
       }
@@ -136756,7 +136756,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇此訂閱源的下一集要開啟的位置。"
+            "value" : "選擇此訂閱源的下一集要打開的位置。"
           }
         }
       }
@@ -136875,7 +136875,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇此訂閱源的下一個項目要開啟的位置。"
+            "value" : "選擇此訂閱源的下一個項目要打開的位置。"
           }
         }
       }
@@ -136994,7 +136994,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "選擇此檔案夾的下一本書要開啟的位置。"
+            "value" : "選擇此檔案夾的下一本書要打開的位置。"
           }
         }
       }
@@ -152884,7 +152884,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "無法開啟規則：%@"
+            "value" : "無法打開規則：%@"
           }
         }
       }
@@ -295189,7 +295189,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "沒有開啟的書庫視窗或書籍，因此沒有可輸出的內容。"
+            "value" : "沒有打開的書庫視窗或書籍，因此沒有可輸出的內容。"
           }
         }
       }
@@ -318087,7 +318087,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下一篇文章開啟於"
+            "value" : "下一篇文章打開於"
           }
         }
       }
@@ -318206,7 +318206,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下一本書開啟於"
+            "value" : "下一本書打開於"
           }
         }
       }
@@ -318325,7 +318325,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下一集開啟於"
+            "value" : "下一集打開於"
           }
         }
       }
@@ -318444,7 +318444,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "下一個項目開啟於"
+            "value" : "下一個項目打開於"
           }
         }
       }
@@ -318938,7 +318938,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "正在開啟：%@"
+            "value" : "正在打開：%@"
           }
         }
       }
@@ -319301,7 +319301,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟 TextMouth 的設定。"
+            "value" : "打開 TextMouth 的設定。"
           }
         }
       }
@@ -319914,7 +319914,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟書籍文字的搜尋。"
+            "value" : "打開書籍文字的搜尋。"
           }
         }
       }
@@ -320866,7 +320866,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟選項，以開啟書籍或輸入檔案夾。"
+            "value" : "打開選項，以打開書籍或輸入檔案夾。"
           }
         }
       }
@@ -320985,7 +320985,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟輸出對話框：書籍的音訊、文字或其原始檔案。"
+            "value" : "打開輸出對話框：書籍的音訊、文字或其原始檔案。"
           }
         }
       }
@@ -322336,7 +322336,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟書籤列表。"
+            "value" : "打開書籤列表。"
           }
         }
       }
@@ -322455,7 +322455,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟標題列表。"
+            "value" : "打開標題列表。"
           }
         }
       }
@@ -322574,7 +322574,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟睡眠計時器。"
+            "value" : "打開睡眠計時器。"
           }
         }
       }
@@ -354341,7 +354341,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "在此被拒絕：此視窗開啟期間共 %lld 次。"
+                  "value" : "在此被拒絕：此視窗打開期間共 %lld 次。"
                 }
               }
             }
@@ -398569,7 +398569,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "睡眠計時器已取消，因為無法開啟下一本書。"
+            "value" : "睡眠計時器已取消，因為無法打開下一本書。"
           }
         }
       }
@@ -425215,7 +425215,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 在開啟 %@ 時關閉了，因此沒有重新開啟。"
+            "value" : "TextMouth 在打開 %@ 時關閉了，因此沒有重新打開。"
           }
         }
       }
@@ -432328,7 +432328,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 尚未讀取這本書的標題。請先開啟這本書一次，然後再次輸出。"
+            "value" : "TextMouth 尚未讀取這本書的標題。請先打開這本書一次，然後再次輸出。"
           }
         }
       }
@@ -434104,7 +434104,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。「取消」會讓 TextMouth 保持開啟。"
+            "value" : "TextMouth 即將結束，而書籍的音訊尚未包含這些編輯。「捨棄」會還原這些編輯；下次編輯這本書時，可用「重做」將它們帶回，直到你進行另一項編輯為止。「取消」會讓 TextMouth 保持打開。"
           }
         }
       }
@@ -440310,7 +440310,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 已停止 %1$@，原因是 %2$@，在 TextMouth 關閉並重新開啟之前不會再試。"
+            "value" : "TextMouth 已停止 %1$@，原因是 %2$@，在 TextMouth 關閉並重新打開之前不會再試。"
           }
         }
       }
@@ -440429,7 +440429,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 先前因耗時過長而停止了 %@，在 TextMouth 關閉並重新開啟之前不會再試。"
+            "value" : "TextMouth 先前因耗時過長而停止了 %@，在 TextMouth 關閉並重新打開之前不會再試。"
           }
         }
       }
@@ -460658,7 +460658,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "對話框開啟後，書籍的標題已變更。請重新開啟，再次選擇範圍。"
+            "value" : "對話框打開後，書籍的標題已變更。請重新打開，再次選擇範圍。"
           }
         }
       }
@@ -508305,7 +508305,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這本書不是從閱讀列表開啟的。"
+            "value" : "這本書不是從閱讀列表打開的。"
           }
         }
       }
@@ -515203,7 +515203,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "這段錄音尚未儲存。「%1$@」會再試一次，「%2$@」會將它刪除，「%3$@」則會讓視窗保持開啟。"
+            "value" : "這段錄音尚未儲存。「%1$@」會再試一次，「%2$@」會將它刪除，「%3$@」則會讓視窗保持打開。"
           }
         }
       }
