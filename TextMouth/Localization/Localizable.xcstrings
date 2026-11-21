@@ -256772,6 +256772,12 @@
     "The book was imported." : {
       "comment" : "First sentence of the confirmation that asks about deleting the original file of a book just imported. The question about the file follows it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم استيراد الكتاب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -257487,6 +257493,12 @@
     "The book's package and content paths do not match a managed library location." : {
       "comment" : "Why a book's files were not deleted: its paths do not lie inside the library. Follows \"Import failed: \".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا تطابق مسارات حزمة الكتاب ومحتواه موقعًا مُدارًا في المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258072,6 +258084,12 @@
     "The bookInfo.json file did not read back as it was written." : {
       "comment" : "Why an import failed: the book's record file, bookInfo.json, was written but did not read back as written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يُقرأ ملف bookInfo.json كما كُتب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -258852,6 +258870,12 @@
     "The copy just imported is incomplete." : {
       "comment" : "First sentence of the last paragraph of the question asked about a duplicate book whose new copy is missing chapters. What it lacks follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة التي تم استيرادها للتو غير مكتملة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259118,6 +259142,12 @@
     "The cue sheet “%@” is too large to read." : {
       "comment" : "Refusal of a cue sheet that is larger than TextMouth reads. %@ is the cue sheet's file name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملف CUE “%@” كبير جدًا لا يمكن قراءته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -259183,6 +259213,12 @@
     "The cue sheet “%@” names none of the audio beside it, so its headings were not used." : {
       "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because it names none of the audio beside it. %@ is the cue sheet's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يذكر ملف CUE “%@” أيًّا من الصوت المجاور له، لذا لم تُستخدم عناوينه الرئيسية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260105,6 +260141,12 @@
     "The download was stopped." : {
       "comment" : "Why a feed item's download ended: it was stopped.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إيقاف التنزيل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260696,6 +260738,12 @@
     "The episode leaves the list for good, and its download, if any, is deleted." : {
       "comment" : "First sentence of the confirmation before an episode is deleted from its feed.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تغادر الحلقة القائمة نهائيًا، ويُحذف تنزيلها إن وُجد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260761,6 +260809,12 @@
     "The episode leaves the list for good; the book it became in your library stays." : {
       "comment" : "First sentence of the confirmation before an episode that was moved into the library is deleted from its feed.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تغادر الحلقة القائمة نهائيًا؛ ويبقى الكتاب الذي صارت إليه في مكتبتك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260826,6 +260880,12 @@
     "The existing copy's files are deleted permanently and cannot be recovered." : {
       "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files are deleted permanently.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تُحذف ملفات النسخة الموجودة نهائيًا ولا يمكن استرجاعها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -260891,6 +260951,12 @@
     "The existing copy's files go to the Trash, but putting them back won't return that copy to your library." : {
       "comment" : "Part of the question asked about a duplicate book: where the library's copy goes when replaced and files go to the Trash.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تنتقل ملفات النسخة الموجودة إلى سلة المهملات، لكن إرجاعها لن يعيد تلك النسخة إلى مكتبتك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261086,6 +261152,12 @@
     "The feed at %@ is empty." : {
       "comment" : "Why a feed could not be refreshed or subscribed to: its document is empty. %@ is the feed's server, such as example.com.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الموجز على %@ فارغ."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261151,6 +261223,48 @@
     "The feed at %@ is larger than the %lld MB TextMouth reads." : {
       "comment" : "Why a feed could not be read: it is too large. %@ is the server's host name; %lld is the size limit in megabytes.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -261384,6 +261498,12 @@
     "The feed is damaged at line %@: %@." : {
       "comment" : "Why a feed could not be refreshed or subscribed to: its markup is damaged. The first %@ is the line number of the fault, an identifier written without digit grouping. The second is a short technical reason in English, from the parser, kept English as detail for a bug report.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الموجز تالف عند السطر %1$@: %2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261455,6 +261575,12 @@
     "The feed leaves your library, with its list of articles and its settings." : {
       "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of articles.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يغادر الموجز مكتبتك، مع قائمة مقالاته وإعداداته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261520,6 +261646,12 @@
     "The feed leaves your library, with its list of episodes and its settings." : {
       "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of episodes.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يغادر الموجز مكتبتك، مع قائمة حلقاته وإعداداته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261585,6 +261717,12 @@
     "The feed leaves your library, with its list of items and its settings." : {
       "comment" : "The first sentence of the confirmation before Delete Feed, for a feed of episodes and articles.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يغادر الموجز مكتبتك، مع قائمة عناصره وإعداداته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261650,6 +261788,12 @@
     "The feed stays in your library with its settings and %@, and %@ checks it again." : {
       "comment" : "A sentence of the confirmation before Unsubscribe: the feed stays, with its settings and its downloads. The first %@ is the downloads, such as \"its 2 downloaded episodes\"; the second is the name of the Resubscribe command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يبقى الموجز في مكتبتك مع إعداداته و%1$@، ويفحصه %2$@ مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261721,6 +261865,12 @@
     "The feed stays in your library with its settings, and %@ checks it again." : {
       "comment" : "A sentence of the confirmation before Unsubscribe: the feed stays, with its settings. %@ is the name of the Resubscribe command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يبقى الموجز في مكتبتك مع إعداداته، ويفحصه %@ مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261786,6 +261936,12 @@
     "The feed “%@” stays with it." : {
       "comment" : "The last line of the alert when Delete Feed could not delete one of the feed's items: the feed stays with it. %@ is the feed's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يبقى الموجز “%@” معه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -261851,6 +262007,12 @@
     "The feed “%@” stays with them." : {
       "comment" : "The last line of the alert when Delete Feed could not delete several of the feed's items: the feed stays with them. %@ is the feed's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يبقى الموجز “%@” معها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263329,6 +263491,12 @@
     "The file's address isn't a web address TextMouth can open." : {
       "comment" : "Why a feed item's download failed: its address is not an http or https address.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عنوان الملف ليس عنوان ويب يستطيع TextMouth فتحه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -263394,6 +263562,12 @@
     "The files of the new copy of “%@” are no longer in the library, so it can't be kept. Choose Cancel, then import the file again." : {
       "comment" : "What the duplicate question says when the new copy's files are gone while the question waited. %@ is the new copy's title. \"Cancel\" is the sheet's Cancel button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم تعد ملفات النسخة الجديدة من “%@” في المكتبة، لذا لا يمكن الاحتفاظ بها. اختر إلغاء، ثم استورد الملف مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264218,6 +264392,12 @@
     "The folder chosen for this feed is no longer in the library. Choose another folder." : {
       "comment" : "Why Subscribe refused: the folder chosen for the feed was removed from the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد المجلد المختار لهذا الموجز في المكتبة. اختر مجلدًا آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264283,6 +264463,12 @@
     "The folder chosen is no longer in the library. Choose another folder." : {
       "comment" : "Why Move to Library did nothing: the folder chosen was removed from the library. Follows \"Could not move to the library: \".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد المجلد المختار في المكتبة. اختر مجلدًا آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264348,6 +264534,12 @@
     "The folder chosen to hold the feed's folder is no longer in the library. Choose another one." : {
       "comment" : "Why Subscribe could not make the feed's folder: the folder chosen to hold it was removed from the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد المجلد المختار لاحتواء مجلد الموجز في المكتبة. اختر مجلدًا آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -264413,6 +264605,12 @@
     "The folder for this feed is no longer in the library. Choose another folder for it." : {
       "comment" : "Why a feed's episode could not be downloaded: the feed's folder was removed from the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد مجلد هذا الموجز في المكتبة. اختر له مجلدًا آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265036,6 +265234,12 @@
     "The folder of %@ is no longer in the library." : {
       "comment" : "What VoiceOver says when a feed's row is opened and its library folder was removed. %@ is the feed's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد مجلد %@ في المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265237,6 +265441,12 @@
     "The headings from %@ run past the end of the audio, so the tracks were imported without them." : {
       "comment" : "Notice after an import of tracks that came without the headings of some cue sheets and label files, because a heading lay past the end of the audio. %@ is the files' names in curly quotes, listed as a sentence lists them.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تتجاوز العناوين الرئيسية من %@ نهاية الصوت، لذا استُوردت المقاطع بدونها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265302,6 +265512,12 @@
     "The import was stopped before its end." : {
       "comment" : "What the Import OPML sheet says once the listener stopped the import before its end.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توقف الاستيراد قبل نهايته."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265438,6 +265654,12 @@
     "The label file “%@” matches no audio file beside it by name, so its headings were not used." : {
       "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because no audio file beside it has its name. %@ is the label file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يطابق ملف التسميات “%@” أي ملف صوتي مجاور له بالاسم، لذا لم تُستخدم عناوينه الرئيسية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265503,6 +265725,12 @@
     "The labels of the label file “%@” run past the end of its audio, so its headings were not used." : {
       "comment" : "Notice that an Audacity label file of an imported folder or archive was not used, because its labels lie past the end of its audio. %@ is the label file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تتجاوز تسميات ملف التسميات “%@” نهاية صوته، لذا لم تُستخدم عناوينه الرئيسية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265834,6 +266062,12 @@
     "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back." : {
       "comment" : "What the duplicate question says when Keep Both or Replace Existing is chosen while the library cannot be reached. %@ is the new copy's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر الوصول إلى المكتبة، لذا لا يستطيع TextMouth الاحتفاظ بالنسخة الجديدة من “%@”. أجب مرة أخرى عندما تعود."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -265899,6 +266133,12 @@
     "The library can't move books now. Try again once it is available." : {
       "comment" : "Why Move to Library did nothing: the library's index is being recovered or the data directory is away or moving. Follows \"Could not move to the library: \".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا تستطيع المكتبة نقل الكتب الآن. حاول مرة أخرى عندما تصبح متاحة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -267406,6 +267646,12 @@
     "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then." : {
       "comment" : "The note under the List and download controls: when a change takes effect. %@ is the name of the List and download choice.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تتبع القائمة تغيير %@ فورًا؛ أما ما يُنزَّل أو يُزال فينتظر إلى أن يمضي على التغيير عشر ثوانٍ، ثم يعلنه VoiceOver."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269487,6 +269733,12 @@
     "The original file could not be deleted: %@" : {
       "comment" : "Alert about the original file of an imported book that could not be deleted, its name not known. %@ is the reason, a sentence of the system's.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر حذف الملف الأصلي: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269552,6 +269804,12 @@
     "The original file could not be moved to the Trash: %@" : {
       "comment" : "Alert about the original file of an imported book that could not be moved to the Trash, its name not known. %@ is the reason, a sentence of the system's.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر نقل الملف الأصلي إلى سلة المهملات: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269682,6 +269940,12 @@
     "The original file was kept." : {
       "comment" : "Sentence of an import's notice or alert: the original file was kept because something was left out of the book or the batch.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم الاحتفاظ بالملف الأصلي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269747,6 +270011,12 @@
     "The original file was kept: TextMouth imported only the DAISY book “%@” from the archive “%@”." : {
       "comment" : "Notice after one DAISY book was imported from an archive of other books, so the original file was kept. %1$@ is the book's title and %2$@ the archive's file name. A sentence about the other books follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم الاحتفاظ بالملف الأصلي: استورد TextMouth كتاب DAISY “%1$@” فقط من الأرشيف “%2$@”."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269818,6 +270088,12 @@
     "The original file was kept: TextMouth imported the audio of “%@” from the archive “%@”, and the archive is the only copy of its text." : {
       "comment" : "Notice after the audio of a DAISY book was imported from an archive that keeps its text, so the original file was kept. %1$@ is the book's title and %2$@ the archive's file name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم الاحتفاظ بالملف الأصلي: استورد TextMouth صوت “%1$@” من الأرشيف “%2$@”، والأرشيف هو النسخة الوحيدة من نصه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269889,6 +270165,12 @@
     "The original file was kept: it is a folder, and an import never deletes a folder." : {
       "comment" : "Notice after a book was imported from a folder, such as an RTFD: the original was kept because an import never deletes a folder.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم الاحتفاظ بالملف الأصلي: إنه مجلد، ولا يحذف الاستيراد مجلدًا أبدًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -269954,6 +270236,12 @@
     "The original file will be moved to the Trash after a successful import." : {
       "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files go to the Trash.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سيُنقل الملف الأصلي إلى سلة المهملات بعد استيراد ناجح."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270019,6 +270307,12 @@
     "The original file will be permanently deleted after a successful import." : {
       "comment" : "Caption in Storage settings under the choice that deletes the original file after an import, while files are deleted permanently.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سيُحذف الملف الأصلي نهائيًا بعد استيراد ناجح."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270279,6 +270573,12 @@
     "The original file “%@” could not be deleted: %@" : {
       "comment" : "Alert about the original file of an imported book that could not be deleted. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر حذف الملف الأصلي “%1$@”: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270350,6 +270650,12 @@
     "The original file “%@” could not be moved to the Trash: %@" : {
       "comment" : "Alert about the original file of an imported book that could not be moved to the Trash. %1$@ is the file's name and %2$@ the reason, a sentence of the system's.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر نقل الملف الأصلي “%1$@” إلى سلة المهملات: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -270784,6 +271090,12 @@
     "The page at %@ is larger than TextMouth reads." : {
       "comment" : "Why a feed article's download failed: the web page is too large. %@ is the server's host name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الصفحة على %@ أكبر مما يقرؤه TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271050,6 +271362,12 @@
     "The place, bookmarks, and transcript kept for it are deleted too." : {
       "comment" : "A sentence of the confirmation before a feed's episode or article is deleted: what TextMouth kept of the listener's for it goes too.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يُحذف أيضًا الموضع والإشارات المرجعية والنسخة النصية المحفوظة له."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271115,6 +271433,12 @@
     "The playlist “%@” is not a complete, valid playlist file." : {
       "comment" : "Refusal of an XSPF playlist that is not a readable XML playlist. %@ is the playlist's file name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قائمة التشغيل “%@” ليست ملف قائمة تشغيل كاملًا وصالحًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271245,6 +271569,12 @@
     "The playlist “%@” uses XML entities of its own, which TextMouth does not read." : {
       "comment" : "Refusal of an XSPF playlist that declares XML entities of its own. %@ is the playlist's file name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تستخدم قائمة التشغيل “%@” كيانات XML خاصة بها، ولا يقرؤها TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271310,6 +271640,12 @@
     "The podcast directory at %@ couldn't answer the search (error %@). Try again later." : {
       "comment" : "Why a podcast search failed: the directory answered with an error. The first %@ is the server's host name; the second is the error's number, an identifier written without digit grouping, such as 503.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر على دليل البودكاست على %1$@ الرد على البحث (الخطأ %2$@). حاول مرة أخرى لاحقًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271381,6 +271717,12 @@
     "The podcast directory at %@ couldn't be found." : {
       "comment" : "Why a podcast search failed: no server answers at the directory's address. %@ is the server's host name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر العثور على دليل البودكاست على %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271446,6 +271788,12 @@
     "The podcast directory at %@ couldn't be reached: %@" : {
       "comment" : "Why a podcast search failed: the connection failed. The first %@ is the server's host name; the second is the reason, a phrase from the system or from TextMouth, such as \"the server sent no answer\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر الوصول إلى دليل البودكاست على %1$@: %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271517,6 +271865,48 @@
     "The podcast directory at %@ didn't answer for %lld seconds." : {
       "comment" : "Why a podcast search failed: the directory took too long. The first %@ is the server's host name; %lld is the number of seconds waited.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثوانٍ."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانية."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانية."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانية."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانيتين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثوانٍ."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -271750,6 +272140,12 @@
     "The podcast directory can't be searched on this network, which limits data." : {
       "comment" : "Why a podcast search did not run: the network has data limits.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن البحث في دليل البودكاست على هذه الشبكة، فهي تحدّ من البيانات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271815,6 +272211,12 @@
     "The podcast directory couldn't answer the search. Try again later." : {
       "comment" : "Why a podcast search failed: the directory's address answers that nothing is there.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر على دليل البودكاست الرد على البحث. حاول مرة أخرى لاحقًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271880,6 +272282,12 @@
     "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again." : {
       "comment" : "Why a podcast search failed: the directory limits searches to about 20 a minute.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رفض دليل البودكاست البحث؛ فهو يسمح بنحو 20 بحثًا في الدقيقة. انتظر دقيقة وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -271945,6 +272353,12 @@
     "The podcast directory sent an answer TextMouth can't read. Try again later." : {
       "comment" : "Why a podcast search failed: the directory's answer could not be read.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أرسل دليل البودكاست ردًا لا يستطيع TextMouth قراءته. حاول مرة أخرى لاحقًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272010,6 +272424,12 @@
     "The podcast directory's answer is larger than TextMouth reads." : {
       "comment" : "Why a podcast search failed: the answer is too large.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "رد دليل البودكاست أكبر مما يقرؤه TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272530,6 +272950,12 @@
     "The publisher has removed this feed." : {
       "comment" : "Why a feed could not be fetched: the server says the publisher removed it for good (error 410).",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أزال الناشر هذا الموجز."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -272595,6 +273021,12 @@
     "The publisher has removed this file." : {
       "comment" : "Why a feed item's download failed: the server says the publisher removed the file for good (error 410).",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أزال الناشر هذا الملف."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -273809,6 +274241,12 @@
     "The refresh of %@ was stopped." : {
       "comment" : "Why a feed's refresh ended: it was stopped. %@ is the feed's title or server.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إيقاف تحديث %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274199,6 +274637,12 @@
     "The search couldn't be sent, because the directory's address isn't a web address." : {
       "comment" : "Why a podcast search failed: the directory's address is not an http or https address.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر إرسال البحث لأن عنوان الدليل ليس عنوان ويب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274264,6 +274708,12 @@
     "The search was stopped." : {
       "comment" : "Why a podcast search ended: it was stopped.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إيقاف البحث."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274459,6 +274909,12 @@
     "The server %@ couldn't be found." : {
       "comment" : "Why a feed item's download failed: no server answers at its address. %@ is the server's host name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر العثور على الخادم %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274524,6 +274980,12 @@
     "The server %@ couldn't be found. Check the address." : {
       "comment" : "Why a feed could not be fetched: no server answers at its address. %@ is the server's host name, such as example.com.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر العثور على الخادم %@. تحقق من العنوان."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274589,6 +275051,12 @@
     "The server says the file is gone." : {
       "comment" : "Why a feed item's download failed: the server says nothing is at the address (error 404).",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يقول الخادم إن الملف لم يعد موجودًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -274849,6 +275317,12 @@
     "The subscriptions couldn't be saved: %@" : {
       "comment" : "Why the subscriptions could not be exported. %@ is the reason, from the system.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر حفظ الاشتراكات: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275505,6 +275979,12 @@
     "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used." : {
       "comment" : "Notice that a cue sheet of an imported folder or archive was not used, because its tracks lie past the end of its audio. %@ is the cue sheet's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تتجاوز مقاطع ملف CUE “%@” نهاية صوته، لذا لم تُستخدم عناوينه الرئيسية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -275895,6 +276375,12 @@
     "The transcript file found beside the new copy's audio replaces the existing copy's transcript." : {
       "comment" : "Part of the question asked about a duplicate audiobook: the transcript file found beside the new copy's audio takes the place of the library copy's transcript.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحل ملف النسخة النصية الموجود بجوار صوت النسخة الجديدة محل النسخة النصية للنسخة الموجودة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277656,6 +278142,12 @@
     "There are no feeds to refresh." : {
       "comment" : "What VoiceOver says when Refresh All Feeds finds no feed in the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد موجزات لتحديثها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277721,6 +278213,12 @@
     "There are no subscriptions to export." : {
       "comment" : "What Export OPML says when the library has no feed.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد اشتراكات لتصديرها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -277786,6 +278284,12 @@
     "There are no subscriptions to export: every feed in your library is unsubscribed." : {
       "comment" : "What Export OPML says when every feed in the library is unsubscribed, which an export leaves out.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد اشتراكات لتصديرها: كل موجز في مكتبتك غير مشترك فيه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278214,6 +278718,12 @@
     "There is not enough free disk space to convert %@: it needs %@ free." : {
       "comment" : "Why an audio conversion did not start: the disk holds too little free space. %1$@ is the source file's name and %2$@ the free space it needs, with its unit, such as \"1.2 GB\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد مساحة قرصية حرة كافية لتحويل %1$@: يحتاج إلى %2$@ مساحة حرة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278887,6 +279397,12 @@
     "There isn't room on this Mac for this episode (%@)." : {
       "comment" : "Why a feed's episode could not be downloaded: the disk is too full. %@ is the file's size with its unit, such as 61 MB.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد مساحة كافية على هذا الـ Mac لهذه الحلقة (%@)."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -278952,6 +279468,12 @@
     "There isn’t enough free space on the disk." : {
       "comment" : "Why an import failed when the disk is full. Said instead of the system's own sentence, which names a hidden internal file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا توجد مساحة حرة كافية على القرص."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -279147,6 +279669,12 @@
     "There's no feed at that address any more." : {
       "comment" : "Why a feed could not be fetched: the address answers that nothing is there (error 404).",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد هناك موجز في ذلك العنوان."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280187,6 +280715,12 @@
     "This Feed Uses Plain http" : {
       "comment" : "Title of the warning shown once after subscribing to a feed whose address uses plain http, which is not encrypted. Title case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يستخدم هذا الموجز http العادي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280252,6 +280786,12 @@
     "This Feed's Settings" : {
       "comment" : "Heading of the group of settings a feed can have of its own, in Feed Info. Title case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إعدادات هذا الموجز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -280902,6 +281442,12 @@
     "This Mac is offline, so %@ can't be refreshed. Connect to the internet and try again." : {
       "comment" : "Why a feed could not be refreshed: this Mac has no internet. %@ is the feed's title or server.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ Mac غير متصل بالإنترنت، لذا لا يمكن تحديث %@. اتصل بالإنترنت وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281032,6 +281578,12 @@
     "This Mac is offline, so the directory can't be searched. Connect to the internet and try again." : {
       "comment" : "Why a podcast search failed: this Mac has no internet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ Mac غير متصل بالإنترنت، لذا لا يمكن البحث في الدليل. اتصل بالإنترنت وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281097,6 +281649,12 @@
     "This Mac is offline, so “%@” can't be downloaded. Connect to the internet and try again." : {
       "comment" : "Why a feed item's download failed: this Mac has no internet. %@ is the item's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا الـ Mac غير متصل بالإنترنت، لذا لا يمكن تنزيل “%@”. اتصل بالإنترنت وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281629,6 +282187,12 @@
     "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads." : {
       "comment" : "Why an XML file was refused at import: its root element is not one of the three kinds TextMouth reads. DTBook, Word 2003 XML, and PEF are format names.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملف XML هذا ليس كتاب DTBook ولا مستند Word 2003 XML ولا ملف برايل PEF، وهي الأنواع الوحيدة من XML التي يقرؤها TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -281694,6 +282258,12 @@
     "This article has no description." : {
       "comment" : "What Show Description says for an article that has no description.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا وصف لهذه المقالة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -282642,6 +283212,12 @@
     "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it." : {
       "comment" : "Why a book's files were not deleted: it has no package inside the library. Follows \"Import failed: \". \"Remove it from the library only\" is a choice of the removal commands.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ليس لهذا الكتاب حزمة مُدارة صالحة. أزله من المكتبة فقط، أو أصلح تخزينه قبل حذفه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283330,6 +283906,12 @@
     "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts." : {
       "comment" : "What Play says for a book whose Ogg audio failed to convert at this launch.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تحويل صوت هذا الكتاب من Ogg إلى AAC. يحاول TextMouth مرة أخرى عند بدء تشغيله في المرة القادمة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283395,6 +283977,12 @@
     "This book's audio is being converted from Ogg to AAC. It plays when that ends." : {
       "comment" : "What Play says while the book's Ogg audio is being converted to AAC.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يجري تحويل صوت هذا الكتاب من Ogg إلى AAC. سيُشغَّل عندما ينتهي ذلك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283460,6 +284048,12 @@
     "This book's audio needs converting from Ogg to AAC. TextMouth is converting it now, and it plays when that ends." : {
       "comment" : "What Play says for a book found still in Ogg, whose conversion TextMouth starts.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتاج صوت هذا الكتاب إلى التحويل من Ogg إلى AAC. يحوّله TextMouth الآن، وسيُشغَّل عندما ينتهي ذلك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283720,6 +284314,12 @@
     "This comic book archive holds more than the %@ pictures TextMouth reads." : {
       "comment" : "Why a comic book archive was refused at import: it holds more pictures than TextMouth reads. %@ is the limit, already formatted.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتوي أرشيف الكتاب المصوّر هذا على صور أكثر من %@ التي يقرؤها TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283785,6 +284385,12 @@
     "This comic book archive holds no pictures TextMouth can read." : {
       "comment" : "Why a comic book archive was refused at import: it holds no picture TextMouth reads.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يحتوي أرشيف الكتاب المصوّر هذا على أي صورة يستطيع TextMouth قراءتها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -283980,6 +284586,12 @@
     "This download isn't in its feed's folder, so TextMouth left its files as they are." : {
       "comment" : "Why a feed episode's download could not be deleted: it is not in its feed's folder.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا التنزيل ليس في مجلد موجزه، لذا ترك TextMouth ملفاته كما هي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284045,6 +284657,12 @@
     "This episode has no description." : {
       "comment" : "What Show Description says for an episode that has no description.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا وصف لهذه الحلقة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284175,6 +284793,12 @@
     "This feed is no longer in your library." : {
       "comment" : "Feed Info's line for a feed whose record went while the sheet was open.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد هذا الموجز في مكتبتك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284240,6 +284864,12 @@
     "This feed needs a password, which TextMouth can't send yet." : {
       "comment" : "Why a feed could not be fetched: the server asks for a password.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتاج هذا الموجز إلى كلمة مرور، ولا يستطيع TextMouth إرسالها بعد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284370,6 +285000,12 @@
     "This file could not be read as a Word 2003 XML document." : {
       "comment" : "Why a file was refused at import: it could not be read as a Word 2003 XML document. A sentence saying it may be damaged follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة هذا الملف كمستند Word 2003 XML."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284435,6 +285071,12 @@
     "This file could not be read as a Word 97-2003 document." : {
       "comment" : "Why a file was refused at import: it could not be read as a Word 97-2003 (.doc) document. A sentence saying it may be damaged follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة هذا الملف كمستند Word 97-2003."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284500,6 +285142,12 @@
     "This file could not be read as a comic book archive. It may be damaged, or another kind of file." : {
       "comment" : "Why a file was refused at import: it is no ZIP archive, so it cannot be a comic book archive. Two sentences.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة هذا الملف كأرشيف كتاب مصوّر. قد يكون تالفًا، أو من نوع آخر من الملفات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284565,6 +285213,12 @@
     "This file could not be read as a picture. It may be damaged, or another kind of file." : {
       "comment" : "Why a file was refused at import: its bytes are no picture at all. Two sentences.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة هذا الملف كصورة. قد يكون تالفًا، أو من نوع آخر من الملفات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284630,6 +285284,12 @@
     "This file could not be read as a rich text document with attachments." : {
       "comment" : "Why a file was refused at import: it could not be read as a rich text (RTFD) document with attachments. A sentence saying it may be damaged follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة هذا الملف كمستند نص منسّق مع مرفقات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284695,6 +285355,12 @@
     "This file could not be read as a rich text document." : {
       "comment" : "Why a file was refused at import: it could not be read as a rich text (RTF) document. A sentence saying it may be damaged follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة هذا الملف كمستند نص منسّق."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284760,6 +285426,12 @@
     "This file could not be read as an OpenDocument text document." : {
       "comment" : "Why a file was refused at import: it could not be read as an OpenDocument text (.odt) document. A sentence saying it may be damaged follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة هذا الملف كمستند نصي بصيغة OpenDocument."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -284825,6 +285497,12 @@
     "This file has no text to read." : {
       "comment" : "Why a text, Markdown, or HTML file was refused at import: it is empty or holds only white space or markup.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يحتوي هذا الملف على نص للقراءة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -285215,6 +285893,12 @@
     "This file needs a password, which TextMouth can't send yet." : {
       "comment" : "Why a feed item's download failed: the server asks for a password.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتاج هذا الملف إلى كلمة مرور، ولا يستطيع TextMouth إرسالها بعد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286131,6 +286815,12 @@
     "This picture could not be decoded. It may be damaged." : {
       "comment" : "Why a picture was refused at import: the system could not decode it. Two sentences.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر فك ترميز هذه الصورة. قد تكون تالفة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -286196,6 +286886,48 @@
     "This picture holds %lld pages, more than the %@ TextMouth reads." : {
       "comment" : "Why a picture of many pages, such as a TIFF, was refused at import. %1$lld is the number of pages it holds and %2$@ the limit, already formatted.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تحتوي هذه الصورة على %lld صفحات، أكثر من %@ التي يقرؤها TextMouth."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تحتوي هذه الصورة على %lld صفحة، أكثر من %@ التي يقرؤها TextMouth."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تحتوي هذه الصورة على %lld صفحة، أكثر من %@ التي يقرؤها TextMouth."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تحتوي هذه الصورة على %lld صفحة، أكثر من %@ التي يقرؤها TextMouth."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تحتوي هذه الصورة على %lld صفحتين، أكثر من %@ التي يقرؤها TextMouth."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تحتوي هذه الصورة على %lld صفحات، أكثر من %@ التي يقرؤها TextMouth."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -286429,6 +287161,48 @@
     "This picture is %@, larger than the %lld megapixels TextMouth reads." : {
       "comment" : "Why a picture was refused at import: it says it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -289019,6 +289793,12 @@
     "To download it again, choose %@ on its row." : {
       "comment" : "After Cancel stops one feed download that only the listener's Download brings back. %@ is the name of the Download command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لتنزيله مرة أخرى، اختر %@ في صفه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289084,6 +289864,48 @@
     "To download the other %lld again, choose %@ on their rows." : {
       "comment" : "After Cancel stops feed downloads, the rest of which only the listener's Download brings back. The first %lld is how many; %@ is the name of the Download command.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفه."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفيهما."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -289317,6 +290139,12 @@
     "To download the other one again, choose %@ on its row." : {
       "comment" : "After Cancel stops feed downloads, the one other of which only the listener's Download brings back. %@ is the name of the Download command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لتنزيل الآخر مرة أخرى، اختر %@ في صفه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289382,6 +290210,12 @@
     "To download them again, choose %@ on their rows." : {
       "comment" : "After Cancel stops several feed downloads that only the listener's Download brings back. %@ is the name of the Download command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لتنزيلها مرة أخرى، اختر %@ في صفوفها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289512,6 +290346,12 @@
     "To keep an article, choose %@ on its row first." : {
       "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of articles. %@ is the name of the Move to Library command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "للاحتفاظ بمقالة، اختر %@ في صفها أولًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289577,6 +290417,12 @@
     "To keep an episode, choose %@ on its row first." : {
       "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of episodes. %@ is the name of the Move to Library command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "للاحتفاظ بحلقة، اختر %@ في صفها أولًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289642,6 +290488,12 @@
     "To keep an item, choose %@ on its row first." : {
       "comment" : "The last sentence of the confirmation before Delete Feed, for a feed of episodes and articles. %@ is the name of the Move to Library command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "للاحتفاظ بعنصر، اختر %@ في صفه أولًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -289973,6 +290825,12 @@
     "To use it, choose %@ on the Text tab in Settings." : {
       "comment" : "Advice after the refusal of a pronunciation lexicon on the Mac. %@ is the title of the import button on the Text tab of Settings, which is another string of the app.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لاستخدامه، اختر %@ في علامة تبويب النص في الإعدادات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -291069,6 +291927,12 @@
     "Track %@" : {
       "comment" : "Heading of a track that a cue sheet gives no title, made at import. %@ is the track's number from the sheet, an identifier written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المقطع %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -294869,6 +295733,12 @@
     "Type a podcast's title or publisher, then press Return to search Apple's directory" : {
       "comment" : "VoiceOver hint of the podcast search field. Return is the Return key.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اكتب عنوان بودكاست أو ناشره، ثم اضغط Return للبحث في دليل Apple"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -295064,6 +295934,12 @@
     "Type or paste a feed or web page address, then press Return" : {
       "comment" : "VoiceOver hint of the field where the listener types a feed's address. Return is the Return key.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اكتب أو الصق عنوان موجز أو صفحة ويب، ثم اضغط Return"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -296689,6 +297565,12 @@
     "Unknown duration" : {
       "comment" : "Spoken in place of a length of time that is not a usable number, such as an enormous or missing length.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المدة غير معروفة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297492,6 +298374,12 @@
     "Unsubscribe" : {
       "comment" : "Title of the command that stops checking a feed when it acts at once, and of the confirmation's button. Title case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إلغاء الاشتراك"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297557,6 +298445,12 @@
     "Unsubscribe from %@?" : {
       "comment" : "Title of the confirmation before Unsubscribe. %@ is the feed's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل تريد إلغاء الاشتراك في %@؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297622,6 +298516,12 @@
     "Unsubscribed" : {
       "comment" : "Text of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A condition's relation as its relation pop-up names it, by its test and whether it is negated. This is the form for the first case of the condition.\nThe note after a feed's title while the listener is unsubscribed from it, so TextMouth does not check it. Title case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملغى الاشتراك"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297687,6 +298587,12 @@
     "Unsubscribed from %@: TextMouth no longer checks it for new articles%@." : {
       "comment" : "What VoiceOver says once Unsubscribe is done, for a feed of articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إلغاء الاشتراك في %1$@: لم يعد TextMouth يفحص المقالات الجديدة فيه%2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297758,6 +298664,12 @@
     "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@." : {
       "comment" : "What VoiceOver says once Unsubscribe is done, for a feed of episodes. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إلغاء الاشتراك في %1$@: لم يعد TextMouth يفحص الحلقات الجديدة فيه%2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297829,6 +298741,12 @@
     "Unsubscribed from %@: TextMouth no longer checks it for new items%@." : {
       "comment" : "What VoiceOver says once Unsubscribe is done, for a feed of episodes and articles. The first %@ is the feed's title; the second is a clause about the downloads that stay, which may be empty.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم إلغاء الاشتراك في %1$@: لم يعد TextMouth يفحص العناصر الجديدة فيه%2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -297900,6 +298818,12 @@
     "Unsubscribe…" : {
       "comment" : "Title of the command that stops checking a feed, when it asks first because it would delete places and bookmarks kept for removed downloads. The ellipsis says a question follows. Title case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إلغاء الاشتراك…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298030,6 +298954,12 @@
     "Unsupported file format: .%@" : {
       "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. No advice follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تنسيق الملف غير مدعوم: .%@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -298095,6 +299025,12 @@
     "Unsupported file format: .%@." : {
       "comment" : "Why a file was refused at import: TextMouth does not read its format. %@ is the file's extension without its dot. Advice on what to do follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تنسيق الملف غير مدعوم: .%@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300837,6 +301773,12 @@
     "WMA" : {
       "comment" : "The name of the Windows Media Audio format, as people say it. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WMA"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300902,6 +301844,12 @@
     "WMV video" : {
       "comment" : "The name of the Windows Media Video format, as people say it. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فيديو WMV"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -300967,6 +301915,12 @@
     "Wait until the export ends" : {
       "comment" : "What to do before trying again, when a book's download is being exported and cannot be deleted or replaced. Written without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "انتظر حتى ينتهي التصدير"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301032,6 +301986,12 @@
     "Wait until the transcription ends, or cancel it" : {
       "comment" : "What to do before trying again, when a book's download is being transcribed and cannot be deleted or replaced. Written without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "انتظر حتى ينتهي التفريغ النصي، أو ألغِه"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301617,6 +302577,12 @@
     "Waiting for the data directory move to finish..." : {
       "comment" : "Line of the import overlay while a move of the data directory holds an import back. Ends with an ellipsis written as three full stops.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بانتظار انتهاء نقل مجلد البيانات..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301682,6 +302648,12 @@
     "Waiting to Download" : {
       "comment" : "The note on a feed's episode or article row whose automatic download waits for a network without data limits or for room on this Mac. Title case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بانتظار التنزيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301877,6 +302849,12 @@
     "Web page" : {
       "comment" : "Label of an item's web page in Show Description.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "صفحة الويب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -301942,6 +302920,12 @@
     "Web site" : {
       "comment" : "Label of the feed's web site in Feed Info.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موقع الويب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302007,6 +302991,12 @@
     "WebM" : {
       "comment" : "The name of the WebM format. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "WebM"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -302592,6 +303582,48 @@
     "What was kept for %lld removed downloads was deleted." : {
       "comment" : "The last sentence of the announcement of Unsubscribe: what the feed kept for removed downloads whose packages held none of the named parts was deleted. %lld is how many removed downloads.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم حذف ما احتُفظ به لأجل التنزيلات المزالة (%lld)."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم حذف ما احتُفظ به لأجل التنزيلات المزالة (%lld)."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم حذف ما احتُفظ به لأجل التنزيلات المزالة (%lld)."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم حذف ما احتُفظ به لأجل التنزيلات المزالة (%lld)."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم حذف ما احتُفظ به لأجل التنزيلات المزالة (%lld)."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم حذف ما احتُفظ به لأجل التنزيلات المزالة (%lld)."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -303822,6 +304854,12 @@
     "When New Episodes Arrive" : {
       "comment" : "Heading of the third group of the Feeds tab of Settings: alerts and notifications. Title case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند وصول حلقات جديدة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -304472,6 +305510,12 @@
     "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own" : {
       "comment" : "VoiceOver hint of the checkbox that makes a feed follow the global setting. %@ is the name of the Feeds tab of Settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند تحديد الخانة، يتبع هذا الموجز الإعداد الموجود في الإعدادات، %@؛ ألغِ تحديدها ليكون للموجز إعداده الخاص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -306862,6 +307906,12 @@
     "Windows Media" : {
       "comment" : "The name of the Windows Media container format, as people say it. Inside sentences about importing a file of that format.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Windows Media"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -308440,6 +309490,12 @@
     "Word count" : {
       "comment" : "Label of a book's number of words in its read-only Book Information sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عدد الكلمات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309155,6 +310211,12 @@
     "You can recover it from the Trash until the Trash is emptied." : {
       "comment" : "Sentence of the confirmation about the original file of a book just imported, and the hint of its Move to Trash button: the file can be recovered from the Trash.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يمكنك استرجاعه من سلة المهملات إلى أن تُفرَّغ السلة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309545,6 +310607,12 @@
     "You will be asked whether to delete the original file permanently after each import." : {
       "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files are deleted permanently.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ستُسأل بعد كل استيراد عمّا إذا كنت تريد حذف الملف الأصلي نهائيًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309610,6 +310678,12 @@
     "You will be asked whether to move the original file to the Trash after each import." : {
       "comment" : "Caption in Storage settings under the choice that asks about the original file after each import, while files go to the Trash.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ستُسأل بعد كل استيراد عمّا إذا كنت تريد نقل الملف الأصلي إلى سلة المهملات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -309675,6 +310749,12 @@
     "You're already subscribed to %@." : {
       "comment" : "Why Subscribe refused: the feed is already in the library. %@ is the feed's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أنت مشترك في %@ بالفعل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -310851,6 +311931,12 @@
     "a kind the system does not name" : {
       "comment" : "Stands for the system's description of a kind of picture it has no description for, inside parentheses: \"TextMouth can't read this kind of picture (a kind the system does not name).\"",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نوع لا يسميه النظام"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311046,6 +312132,12 @@
     "a package of its name is in both its library folder and its feed's" : {
       "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in both folders. Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "توجد حزمة بالاسم نفسه في كل من مجلد المكتبة ومجلد الموجز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311604,6 +312696,12 @@
     "adding it to the library" : {
       "comment" : "What a feed download is doing once its file has come: it is being imported as a book. Follows the download's progress line after a comma. Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافته إلى المكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -311669,6 +312767,12 @@
     "adding it to the library folder" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, adding it to the library folder\") and, capitalized by the app, starts a failure (\"Adding it to the library folder failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافته إلى مجلد المكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312602,6 +313706,12 @@
     "at once" : {
       "comment" : "The value of the days after playing that a download is deleted, when it is 0: the download is deleted as soon as it has played. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فورًا"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -312797,6 +313907,12 @@
     "bookmarks" : {
       "comment" : "The bookmarks that a deleted download or several kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الإشارات المرجعية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313122,6 +314238,12 @@
     "by %@" : {
       "comment" : "Part of a book's spoken row label, after the title. %@ is the author's name, or Unknown.\nWho publishes a podcast, in the line under its title in the search results. %@ is the publisher's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بواسطة %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313595,6 +314717,12 @@
     "checking its format" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking its format\") and, capitalized by the app, starts a failure (\"Checking its format failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فحص تنسيقه"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313660,6 +314788,12 @@
     "checking the package" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, checking the package\") and, capitalized by the app, starts a failure (\"Checking the package failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "فحص الحزمة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -313725,6 +314859,12 @@
     "choose %@ again" : {
       "comment" : "The next step after a refusal to delete a feed whose download is in use: \"Close it, then choose Delete Feed… again.\" %@ is the name of the Delete Feed command. Lower case, without a full stop, to follow \"then\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر %@ مرة أخرى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314115,6 +315255,12 @@
     "converting its DAISY audio" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its DAISY audio\") and, capitalized by the app, starts a failure (\"Converting its DAISY audio failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تحويل صوت DAISY الخاص به"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314180,6 +315326,12 @@
     "converting its audio" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, converting its audio\") and, capitalized by the app, starts a failure (\"Converting its audio failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تحويل صوته"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314245,6 +315397,12 @@
     "copying it into the library" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, copying it into the library\") and, capitalized by the app, starts a failure (\"Copying it into the library failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نسخه إلى المكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314310,6 +315468,12 @@
     "creating its package" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, creating its package\") and, capitalized by the app, starts a failure (\"Creating its package failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إنشاء حزمته"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -314635,6 +315799,12 @@
     "deleting its download" : {
       "comment" : "What the listener tried, inside the sentence that says why a feed episode's download cannot be deleted yet: \"is being transcribed, and deleting its download now would lose the transcript\". Written as a phrase that can follow \"and\" and start a clause.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حذف تنزيله"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -315155,6 +316325,12 @@
     "extracting the archive" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, extracting the archive\") and, capitalized by the app, starts a failure (\"Extracting the archive failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "استخراج الأرشيف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317779,6 +318955,12 @@
     "is being exported, and %@ now would stop the export" : {
       "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being exported. %@ is what the listener tried, a phrase such as \"deleting its download\" or \"replacing it\", which starts the second part of the sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قيد التصدير، و%@ الآن سيوقف التصدير"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317844,6 +319026,12 @@
     "is being transcribed, and %@ now would lose the transcript" : {
       "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is being transcribed. %@ is what the listener tried, a phrase such as \"deleting its download\" or \"replacing it\", which starts the second part of the sentence.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قيد التفريغ النصي، و%@ الآن سيفقد النسخة النصية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -317909,6 +319097,12 @@
     "is open in a reader" : {
       "comment" : "Why a book's download cannot be deleted or replaced yet, as the words after the book's title: it is open in a reader. A request to close it follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مفتوح في قارئ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318299,6 +319493,12 @@
     "it downloads once this Mac is on a network without data limits" : {
       "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row. Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سيُنزَّل عندما يصبح هذا الـ Mac على شبكة بلا حدود للبيانات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318565,6 +319765,48 @@
     "it is %@, larger than %lld megapixels" : {
       "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: it holds more pixels than TextMouth decodes. %1$@ is its size, such as \"30,000 by 30,000 pixels\", and %2$lld the limit in megapixels. Starts with a lowercase letter, with no full stop.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجمها %@، أكبر من %lld ميغابكسل"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجمها %@، أكبر من %lld ميغابكسل"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجمها %@، أكبر من %lld ميغابكسل"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجمها %@، أكبر من %lld ميغابكسل"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجمها %@، أكبر من %lld ميغابكسل"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "حجمها %@، أكبر من %lld ميغابكسل"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -318798,6 +320040,12 @@
     "it is a kind of picture TextMouth can't read (%@)" : {
       "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: a kind of picture TextMouth does not decode. %@ is the system's description of the kind, such as \"DNG image\". Starts with a lowercase letter, with no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إنها نوع من الصور لا يستطيع TextMouth قراءته (%@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -318993,6 +320241,12 @@
     "it lasts no time" : {
       "comment" : "The reason inside \"The audio converted from <file> failed its check: <reason>.\": the converted file has no length at all. Starts with a lowercase letter and has no full stop, which the sentence adds.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا مدة له"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319291,6 +320545,12 @@
     "it needs room for %@ on this Mac" : {
       "comment" : "Why a feed item's download waits, after the note \"Waiting to Download\" on its row: the disk lacks room. %@ is the size needed with its unit, such as 61 MB. Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتاج إلى %@ من المساحة على هذا الـ Mac"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -319654,6 +320914,48 @@
     "its %lld downloaded articles" : {
       "comment" : "A feed's downloaded articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالات منزَّلة منه"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالة منزَّلة منه"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالة منزَّلة منه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالة منزَّلة منه"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالتان منزَّلتان منه"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالات منزَّلة منه"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -319887,6 +321189,48 @@
     "its %lld downloaded episodes" : {
       "comment" : "A feed's downloaded episodes, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقات منزَّلة منه"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقة منزَّلة منه"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقة منزَّلة منه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقة منزَّلة منه"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقتان منزَّلتان منه"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقات منزَّلة منه"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -320120,6 +321464,48 @@
     "its %lld downloaded items" : {
       "comment" : "A feed's downloaded items, episodes and articles, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many. Lower case.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld عناصر منزَّلة منه"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld عنصرًا منزَّل منه"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld عنصر منزَّل منه"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld عنصر منزَّل منه"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld عنصران منزَّلان منه"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld عناصر منزَّلة منه"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -320495,6 +321881,12 @@
     "its contents do not match the checksum stored with them" : {
       "comment" : "Why a page's file in a comic book archive is damaged, after \"its file is damaged or incomplete:\": its bytes do not match the checksum the archive stores for them. Starts with a lowercase letter, with no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "محتوياته لا تطابق المجموع الاختباري المخزّن معها"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320560,6 +321952,12 @@
     "its downloaded article" : {
       "comment" : "The one downloaded article of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مقالته المنزَّلة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320625,6 +322023,12 @@
     "its downloaded episode" : {
       "comment" : "The one downloaded episode of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حلقته المنزَّلة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320690,6 +322094,12 @@
     "its downloaded item" : {
       "comment" : "The one downloaded item, an episode or an article, of a feed, inside a sentence about what Unsubscribe or Delete Feed does. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عنصره المنزَّل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320755,6 +322165,12 @@
     "its file could not be read as a picture" : {
       "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is no picture. Starts with a lowercase letter, with no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت قراءة ملفها كصورة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -320820,6 +322236,12 @@
     "its file is damaged or incomplete: %@" : {
       "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: its file is damaged. %@ is the reason, which the archive reader gives in English or `failsChecksum`. Starts with a lowercase letter, with no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملفها تالف أو غير مكتمل: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321080,6 +322502,12 @@
     "its package is in neither its library folder nor its feed's" : {
       "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library: its files are in neither folder. Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حزمته ليست في مجلد مكتبته ولا في مجلد موجزه"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321145,6 +322573,12 @@
     "its picture could not be decoded" : {
       "comment" : "Why one page of a comic book archive could not be read, inside parentheses after the page's number: the system could not decode its picture. Starts with a lowercase letter, with no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر فك ترميز صورتها"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321210,6 +322644,12 @@
     "its row names no package the library manages" : {
       "comment" : "Why a downloaded feed item could not be moved between its feed's folder and the library, after \"“Title” stays in its feed:\". Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يذكر صفه أي حزمة تديرها المكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -321275,6 +322715,12 @@
     "keeping the place of your feed downloads for next time" : {
       "comment" : "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حفظ موضع تنزيلات موجزاتك للمرة القادمة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322028,6 +323474,12 @@
     "more than %@" : {
       "comment" : "A feed's size when it is longer than TextMouth reads. %@ is the size, such as \"2000 episodes\" or just \"2000\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أكثر من %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -322456,6 +323908,48 @@
     "nests quotes, lists, or emphasis more than %lld levels deep" : {
       "comment" : "Verb phrase inside the sentences that refuse a text of Markdown that nests too deeply. %lld is the deepest nesting read, a count of levels. The subject comes before it and a clause follows.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يتداخل فيه الاقتباس أو القوائم أو التأكيد بعمق يزيد على %lld مستويات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يتداخل فيه الاقتباس أو القوائم أو التأكيد بعمق يزيد على %lld مستوى"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يتداخل فيه الاقتباس أو القوائم أو التأكيد بعمق يزيد على %lld مستوى"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يتداخل فيه الاقتباس أو القوائم أو التأكيد بعمق يزيد على %lld مستوى"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يتداخل فيه الاقتباس أو القوائم أو التأكيد بعمق يزيد على %lld مستويين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "يتداخل فيه الاقتباس أو القوائم أو التأكيد بعمق يزيد على %lld مستويات"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -322689,6 +324183,12 @@
     "never" : {
       "comment" : "What the caption of the delete-after-playing setting says while the setting is off: \"Delete downloads after playing: never\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أبدًا"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -323377,6 +324877,12 @@
     "none downloaded" : {
       "comment" : "What the announcement that a run of feed downloads ended says when no download finished. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يُنزَّل شيء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324168,6 +325674,12 @@
     "nothing new." : {
       "comment" : "What Refresh All Feeds found when no feed has anything new, after \"Refreshed 3 feeds:\". Lower case, with its full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا جديد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -324499,6 +326011,12 @@
     "only at launch and when you ask" : {
       "comment" : "What the caption of the refresh interval says while the setting is off: \"Refresh feeds every: only at launch and when you ask\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عند التشغيل وعندما تطلب فقط"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325057,6 +326575,12 @@
     "own settings" : {
       "comment" : "The settings of their own that a deleted download or several kept, a noun inside a list such as \"the place and own settings kept for 1 removed download\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الإعدادات الخاصة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325317,6 +326841,12 @@
     "place" : {
       "comment" : "The place in the book that a deleted download kept, a noun inside a list such as \"the place and bookmarks kept for 1 removed download\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الموضع"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325382,6 +326912,12 @@
     "places" : {
       "comment" : "The places in books that several deleted downloads kept, a noun inside a list such as \"the places and bookmarks kept for 3 removed downloads\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المواضع"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325577,6 +327113,12 @@
     "reading its audio" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its audio\") and, capitalized by the app, starts a failure (\"Reading its audio failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قراءة صوته"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325642,6 +327184,12 @@
     "reading its manifest" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its manifest\") and, capitalized by the app, starts a failure (\"Reading its manifest failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قراءة ملف البيان الخاص به"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325707,6 +327255,12 @@
     "reading its text" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading its text\") and, capitalized by the app, starts a failure (\"Reading its text failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قراءة نصه"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -325902,6 +327456,12 @@
     "reading the file" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, reading the file\") and, capitalized by the app, starts a failure (\"Reading the file failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "قراءة الملف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326330,6 +327890,12 @@
     "returning it to the library" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, returning it to the library\") and, capitalized by the app, starts a failure (\"Returning it to the library failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إعادته إلى المكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326395,6 +327961,12 @@
     "saving its bookInfo.json file" : {
       "comment" : "What an import was doing with a file when it stopped, as a phrase that follows the name of a book in the import overlay (\"“Moby Dick.epub”, saving its bookInfo.json file\") and, capitalized by the app, starts a failure (\"Saving its bookInfo.json file failed: ...\"). Starts with a lowercase letter and has no full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حفظ ملف bookInfo.json الخاص به"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -326460,6 +328032,12 @@
     "saving the changes to your feed subscriptions" : {
       "comment" : "What the app is finishing before it quits, after \"TextMouth is finishing up before it quits:\". Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حفظ التغييرات في اشتراكات موجزاتك"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -328102,6 +329680,48 @@
     "the %@ kept for %lld removed downloads" : {
       "comment" : "What a feed kept for downloads the listener removed, inside a sentence about what Unsubscribe or Delete Feed does. %@ is a list of what was kept, such as \"places and bookmarks\"; %lld is how many removed downloads. Lower case.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيلات مُزالة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيلًا مُزال"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيل مُزال"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيل مُزال"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيلين مُزالين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيلات مُزالة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -329115,6 +330735,12 @@
     "the download ended without a file" : {
       "comment" : "The reason a download from a feed's server failed: it ended and left no file. Follows \"<server> couldn't be reached:\". Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "انتهى التنزيل دون ملف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -329310,6 +330936,12 @@
     "the feed “%@”" : {
       "comment" : "The feed itself, first in the list of what Delete Feed deleted, inside the announcement \"Deleted the feed “Finish It!”, its 5 downloaded episodes, and ...\". %@ is the feed's title. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الموجز “%@”"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330356,6 +331988,12 @@
     "the server" : {
       "comment" : "What a message calls a feed's server when its address names no host, as in \"the server sent no answer\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الخادم"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330421,6 +332059,12 @@
     "the server sent no answer" : {
       "comment" : "The reason a connection to a feed's server failed: it sent nothing back. Follows \"<server> couldn't be reached:\". Lower case, without a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يرسل الخادم أي رد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330486,6 +332130,12 @@
     "the top of your library" : {
       "comment" : "Where a book is when it is in no library folder, as in \"Moved “Ep. 368” into the top of your library.\" Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أعلى مكتبتك"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -330941,6 +332591,12 @@
     "this format" : {
       "comment" : "Stands for the name of a file's format inside a sentence about importing it, when the file's name and its bytes name none, as in \"TextMouth can't read “Clip” as this format.\"",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هذا التنسيق"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331136,6 +332792,12 @@
     "today at %@" : {
       "comment" : "A moment on the day of the check. %@ is the time of day, such as 3:05 PM. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اليوم في %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331266,6 +332928,12 @@
     "transcript" : {
       "comment" : "The transcript that a deleted download kept, a noun inside a list such as \"the place and transcript kept for 1 removed download\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخة النصية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331331,6 +332999,12 @@
     "transcripts" : {
       "comment" : "The transcripts that several deleted downloads kept, a noun inside a list such as \"the places and transcripts kept for 3 removed downloads\". Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النسخ النصية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331396,6 +333070,12 @@
     "try again" : {
       "comment" : "The next step after a refusal, when the listener repeats the command: \"Close it, then try again.\" Written in lower case, without a full stop, to follow \"then\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أعد المحاولة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -331851,6 +333531,48 @@
     "what was kept for %lld removed downloads" : {
       "comment" : "What a feed kept for downloads the listener removed, when their packages held none of the parts named, inside a sentence about what Unsubscribe or Delete Feed does. %lld is how many removed downloads. Lower case.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به لأجل %lld تنزيلات مُزالة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به لأجل %lld تنزيلًا مُزال"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به لأجل %lld تنزيل مُزال"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به لأجل %lld تنزيل مُزال"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به لأجل %lld تنزيلين مُزالين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "ما احتُفظ به لأجل %lld تنزيلات مُزالة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -332214,6 +333936,12 @@
     "yesterday at %@" : {
       "comment" : "A moment on the day before the check. %@ is the time of day, such as 9:00 AM. Lower case.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أمس في %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332409,6 +334137,12 @@
     "“%@” (%@)" : {
       "comment" : "One skipped entry of a playlist in a list: its location in curly quotes, then its reason in parentheses. %1$@ is the location and %2$@ the reason.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” (%2$@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -332764,6 +334498,12 @@
     "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again." : {
       "comment" : "What the duplicate question says when the library's copy changed while the new copy was being made ready. %@ is the book's title. \"Replace Existing\" is a button of the question.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تغيّرت “%@” أثناء استبدالها، لذا ترك TextMouth النسختين كما هما. اختر استبدال الموجود مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333036,6 +334776,12 @@
     "“%@” downloads once this Mac is on a network without data limits." : {
       "comment" : "Why a feed item's download did not run now: the network has data limits. Says the same as the row's wait reason. %@ is the item's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ستُنزَّل “%@” عندما يصبح هذا الـ Mac على شبكة بلا حدود للبيانات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333101,6 +334847,12 @@
     "“%@” holds no DAISY book and no audio tracks to import as one book." : {
       "comment" : "What the library says as a folder chosen to import holds no DAISY book and no audio tracks. %@ is the folder's name. A sentence about what it holds follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا تحتوي “%@” على كتاب DAISY ولا على مقاطع صوتية تُستورد ككتاب واحد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333166,6 +334918,12 @@
     "“%@” holds no sound to import." : {
       "comment" : "Why a file was not imported: it holds no sound, such as a video without a sound track. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا تحتوي “%@” على صوت للاستيراد."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333302,6 +335060,12 @@
     "“%@” is a pronunciation lexicon, not a playlist." : {
       "comment" : "Refusal of a .pls file that is a pronunciation lexicon, not a playlist. %@ is the file's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” معجم نطق، وليست قائمة تشغيل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -333367,6 +335131,12 @@
     "“%@” is already being added to the library." : {
       "comment" : "What VoiceOver says when Cancel Download comes too late: the download's book is already being imported. %@ is the title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تتم إضافة “%@” إلى المكتبة بالفعل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334100,6 +335870,12 @@
     "“%@” matches “%@”, already in your library. Replace the existing copy, or keep both as separate books?" : {
       "comment" : "First paragraph of the question asked when a book just imported matches one in the library. %1$@ is the new copy's file name (or its title when it came from no file) and %2$@ the title of the library's copy.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” يطابق “%2$@” الموجود بالفعل في مكتبتك. هل تريد استبدال النسخة الموجودة، أم الاحتفاظ بالاثنين ككتابين منفصلين؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334171,6 +335947,12 @@
     "“%@” needs %@ free" : {
       "comment" : "A book's need for free disk space, inside the alert about Ogg audio that waits for space. %1$@ is the book's title and %2$@ the free space it needs, with its unit, such as \"4.2 GB\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@” يحتاج إلى %2$@ مساحة حرة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334242,6 +336024,12 @@
     "“%@” no longer waits to download; it downloads when you choose %@." : {
       "comment" : "What VoiceOver says once Cancel Download took back a download that waited. The first %@ is the title; the second is the name of the Download command.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يعد “%1$@” ينتظر التنزيل؛ سيُنزَّل عندما تختار %2$@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334721,6 +336509,12 @@
     "“%@”, %@" : {
       "comment" : "Line of the import overlay for the one book being imported. %1$@ is the book's file name and %2$@ what is being done to it, such as \"reading its text\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”، %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -334792,6 +336586,12 @@
     "“%@”, %@: %@" : {
       "comment" : "Line of the import overlay for an archive holding one audiobook, while it is extracted. %1$@ is the archive's file name, %2$@ the step, such as \"extracting the archive\", and %3$@ how far the extraction has got, such as \"12 of 30 items, 120 MB of 340 MB\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%1$@”، %2$@: %3$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
