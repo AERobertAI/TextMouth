@@ -85747,7 +85747,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "데이터 디렉토리: %@"
+            "value" : "데이터 디렉터리: %@"
           }
         },
         "pt-BR" : {
@@ -109200,7 +109200,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "디렉토리를 이동하지 못했습니다"
+            "value" : "디렉터리를 이동하지 못했습니다"
           }
         },
         "pt-BR" : {
@@ -109265,7 +109265,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "디렉토리를 다시 만들지 못했습니다"
+            "value" : "디렉터리를 다시 만들지 못했습니다"
           }
         },
         "pt-BR" : {
@@ -123334,7 +123334,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "다시 가져오면 중복 항목에 대해 묻습니다. 이때 기존 항목 대체를 선택하여 데이터 디렉토리에 저장된 사본이 그 자리를 대신하게 하거나, 보관함에서 해당 항목을 제거한 다음 데이터 디렉토리를 다시 이동하십시오."
+            "value" : "다시 가져오면 중복 항목에 대해 묻습니다. 이때 기존 항목 대체를 선택하여 데이터 디렉터리에 저장된 사본이 그 자리를 대신하게 하거나, 보관함에서 해당 항목을 제거한 다음 데이터 디렉터리를 다시 이동하십시오."
           }
         },
         "pt-BR" : {
@@ -127253,7 +127253,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "데이터 디렉토리 내부"
+            "value" : "데이터 디렉터리 내부"
           }
         },
         "pt-BR" : {
@@ -190554,7 +190554,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "디렉토리 다시 만들기"
+            "value" : "디렉터리 다시 만들기"
           }
         },
         "pt-BR" : {
@@ -190684,7 +190684,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 디렉토리 다시 만들기"
+            "value" : "TextMouth 디렉터리 다시 만들기"
           }
         },
         "pt-BR" : {
@@ -190749,7 +190749,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "데이터 디렉토리를 다시 만드는 중..."
+            "value" : "데이터 디렉터리를 다시 만드는 중..."
           }
         },
         "pt-BR" : {
@@ -192203,7 +192203,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "디렉토리 구조를 다시 만들고 이전 저장 방식을 사용하는 책을 마이그레이션합니다."
+            "value" : "디렉터리 구조를 다시 만들고 이전 저장 방식을 사용하는 책을 마이그레이션합니다."
           }
         },
         "pt-BR" : {
@@ -225587,7 +225587,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "저장 디렉토리"
+            "value" : "저장 디렉터리"
           }
         },
         "pt-BR" : {
@@ -235641,7 +235641,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 이미 데이터 디렉토리를 이동하는 중입니다."
+            "value" : "TextMouth가 이미 데이터 디렉터리를 이동하는 중입니다."
           }
         },
         "pt-BR" : {
@@ -236849,7 +236849,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 데이터 디렉토리를 다시 만드는 중입니다."
+            "value" : "TextMouth가 데이터 디렉터리를 다시 만드는 중입니다."
           }
         },
         "pt-BR" : {
@@ -238707,7 +238707,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 데이터 디렉토리를 다시 만들고 나면 그것들을 다시 옮깁니다."
+            "value" : "TextMouth가 데이터 디렉터리를 다시 만들고 나면 그것들을 다시 옮깁니다."
           }
         },
         "pt-BR" : {
@@ -238772,7 +238772,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 데이터 디렉토리 이동이 끝나면 그것들을 다시 옮깁니다."
+            "value" : "TextMouth가 데이터 디렉터리 이동이 끝나면 그것들을 다시 옮깁니다."
           }
         },
         "pt-BR" : {
@@ -239505,7 +239505,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 데이터 디렉토리를 다시 만들고 나면 그것들을 저장합니다."
+            "value" : "TextMouth가 데이터 디렉터리를 다시 만들고 나면 그것들을 저장합니다."
           }
         },
         "pt-BR" : {
@@ -239570,7 +239570,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth가 데이터 디렉토리 이동이 끝나면 그것들을 저장합니다."
+            "value" : "TextMouth가 데이터 디렉터리 이동이 끝나면 그것들을 저장합니다."
           }
         },
         "pt-BR" : {
@@ -249482,7 +249482,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "책 %1$@은(는) 데이터 디렉토리 밖의 %2$@에 저장되어 있어 이동으로 옮길 수 없습니다."
+            "value" : "책 %1$@은(는) 데이터 디렉터리 밖의 %2$@에 저장되어 있어 이동으로 옮길 수 없습니다."
           }
         },
         "pt-BR" : {
@@ -252933,7 +252933,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "현재 데이터 디렉토리가 없습니다."
+            "value" : "현재 데이터 디렉터리가 없습니다."
           }
         },
         "pt-BR" : {
@@ -252998,7 +252998,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "현재 디렉토리는 복구용 데이터로 유지됩니다."
+            "value" : "현재 디렉터리는 복구용 데이터로 유지됩니다."
           }
         },
         "pt-BR" : {
@@ -253128,7 +253128,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "데이터 디렉토리에 Logs 폴더가 없으므로 생길 때까지 로그는 %@에 기록됩니다."
+            "value" : "데이터 디렉터리에 Logs 폴더가 없으므로 생길 때까지 로그는 %@에 기록됩니다."
           }
         },
         "pt-BR" : {
@@ -253193,7 +253193,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "데이터 디렉토리가 없으므로 다시 생길 때까지 로그는 %@에 기록됩니다."
+            "value" : "데이터 디렉터리가 없으므로 다시 생길 때까지 로그는 %@에 기록됩니다."
           }
         },
         "pt-BR" : {
@@ -253264,7 +253264,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "데이터 디렉토리의 Logs 폴더에 쓸 수 없으므로(%1$@) 쓸 수 있게 될 때까지 로그는 %2$@에 기록됩니다."
+            "value" : "데이터 디렉터리의 Logs 폴더에 쓸 수 없으므로(%1$@) 쓸 수 있게 될 때까지 로그는 %2$@에 기록됩니다."
           }
         },
         "pt-BR" : {
@@ -261830,7 +261830,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %1$@에 현재 데이터 디렉토리 %2$@이(가) 포함되어 있습니다."
+            "value" : "새 위치 %1$@에 현재 데이터 디렉터리 %2$@이(가) 포함되어 있습니다."
           }
         },
         "pt-BR" : {
@@ -262037,7 +262037,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %1$@은(는) 현재 데이터 디렉토리 %2$@ 안에 있습니다."
+            "value" : "새 위치 %1$@은(는) 현재 데이터 디렉터리 %2$@ 안에 있습니다."
           }
         },
         "pt-BR" : {
@@ -262108,7 +262108,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %1$@은(는) 현재 데이터 디렉토리이며, %2$@이(가) 이곳을 가리킵니다."
+            "value" : "새 위치 %1$@은(는) 현재 데이터 디렉터리이며, %2$@이(가) 이곳을 가리킵니다."
           }
         },
         "pt-BR" : {
@@ -262173,7 +262173,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %@은(는) 현재 데이터 디렉토리입니다."
+            "value" : "새 위치 %@은(는) 현재 데이터 디렉터리입니다."
           }
         },
         "pt-BR" : {
@@ -262244,7 +262244,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳에 현재 데이터 디렉토리 %3$@이(가) 포함되어 있습니다."
+            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳에 현재 데이터 디렉터리 %3$@이(가) 포함되어 있습니다."
           }
         },
         "pt-BR" : {
@@ -262315,7 +262315,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳은 현재 데이터 디렉토리 %3$@ 안에 있습니다."
+            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳은 현재 데이터 디렉터리 %3$@ 안에 있습니다."
           }
         },
         "pt-BR" : {
@@ -262386,7 +262386,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳은 현재 데이터 디렉토리이고 %3$@이(가) 이곳을 가리킵니다."
+            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳은 현재 데이터 디렉터리이고 %3$@이(가) 이곳을 가리킵니다."
           }
         },
         "pt-BR" : {
@@ -262457,7 +262457,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳이 현재 데이터 디렉토리입니다."
+            "value" : "새 위치 %1$@은(는) %2$@을(를) 가리키며, 이곳이 현재 데이터 디렉터리입니다."
           }
         },
         "pt-BR" : {
@@ -268014,7 +268014,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "선택한 데이터 디렉토리가 비어 있지 않습니다."
+            "value" : "선택한 데이터 디렉터리가 비어 있지 않습니다."
           }
         },
         "pt-BR" : {
@@ -280716,7 +280716,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "디렉토리 구조를 다시 만들고 이전 저장 방식을 사용하는 책을 마이그레이션합니다."
+            "value" : "디렉터리 구조를 다시 만들고 이전 저장 방식을 사용하는 책을 마이그레이션합니다."
           }
         },
         "pt-BR" : {
@@ -291845,7 +291845,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "그때까지는 위치 변경과 디렉토리 다시 만들기를 사용할 수 없습니다."
+            "value" : "그때까지는 위치 변경과 디렉터리 다시 만들기를 사용할 수 없습니다."
           }
         },
         "pt-BR" : {
