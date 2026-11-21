@@ -511897,7 +511897,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "El texto de la transcripción no se leyó de vuelta como un capítulo por cada capítulo del libro."
+            "value" : "Al volver a leer el texto de la transcripción, no tenía un capítulo por cada capítulo del libro."
           }
         },
         "fr" : {
@@ -544406,7 +544406,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se recortó a la selección: se conservan %@."
+            "value" : "Se recortó a la selección: se conserva un fragmento de %@."
           }
         },
         "fr" : {
@@ -574033,7 +574033,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lo limpiaste el %@."
+            "value" : "La limpiaste el %@."
           }
         },
         "fr" : {
@@ -574283,7 +574283,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lo editaste el %@."
+            "value" : "La editaste el %@."
           }
         },
         "fr" : {
@@ -620673,7 +620673,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” sigue trabajando. Cierra TextMouth cuando termine el cambio."
+            "value" : "“%@” sigue trabajando. Sal de TextMouth cuando termine el cambio."
           }
         },
         "fr" : {
