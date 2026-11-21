@@ -29723,7 +29723,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld件のファイルを読み込めなかったため、比較で相違が見つからない場合があります。"
+                  "value" : "%lld個のファイルを読み込めなかったため、比較で相違が見つからない場合があります。"
                 }
               }
             }
@@ -66824,7 +66824,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「保存を再試行」を選択してから、もう一度試してください。"
+            "value" : "「保存を再試行」を選択してから、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -67886,7 +67886,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "空の場所を選択して、もう一度試してください。"
+            "value" : "空の場所を選択して、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -73568,7 +73568,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "インターネットに接続して、もう一度試してください。"
+            "value" : "インターネットに接続して、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -108385,7 +108385,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示1へ移動"
+            "value" : "ビュー1へ移動"
           }
         },
         "pt-BR" : {
@@ -108444,7 +108444,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示2へ移動"
+            "value" : "ビュー2へ移動"
           }
         },
         "pt-BR" : {
@@ -108503,7 +108503,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示3へ移動"
+            "value" : "ビュー3へ移動"
           }
         },
         "pt-BR" : {
@@ -108562,7 +108562,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示4へ移動"
+            "value" : "ビュー4へ移動"
           }
         },
         "pt-BR" : {
@@ -108621,7 +108621,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示5へ移動"
+            "value" : "ビュー5へ移動"
           }
         },
         "pt-BR" : {
@@ -108680,7 +108680,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示6へ移動"
+            "value" : "ビュー6へ移動"
           }
         },
         "pt-BR" : {
@@ -108739,7 +108739,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示7へ移動"
+            "value" : "ビュー7へ移動"
           }
         },
         "pt-BR" : {
@@ -108798,7 +108798,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示8へ移動"
+            "value" : "ビュー8へ移動"
           }
         },
         "pt-BR" : {
@@ -108857,7 +108857,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "表示9へ移動"
+            "value" : "ビュー9へ移動"
           }
         },
         "pt-BR" : {
@@ -110189,7 +110189,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "見出し、%lld件"
+                  "value" : "見出し、%lld個"
                 }
               }
             }
@@ -118808,7 +118808,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "見出しがないため、目次には、章と印を付けた位置を示す%lld個の項目があります。"
+                  "value" : "見出しがないため、目次には、章と印を付けた位置を示す%lld件の項目があります。"
                 }
               }
             }
@@ -120099,7 +120099,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックのトラックを再生順に、それぞれの見出しのタイトルとともに一覧にします。並べ替え、タイトルの変更、独自の見出しでのグループ化、トラック間のポーズの設定ができます。"
+            "value" : "ブックのトラックを再生順に、それぞれの見出しのタイトルとともに一覧にします。並べ替え、タイトルの変更、独自の見出しでのグループ化、トラック間の無音の設定ができます。"
           }
         },
         "pt-BR" : {
@@ -132548,7 +132548,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "そのフォルダに書き込めることを確認してから、もう一度試してください。"
+            "value" : "そのフォルダに書き込めることを確認してから、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -134946,7 +134946,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "マーカーとポーズ…"
+            "value" : "マーカーと無音…"
           }
         },
         "pt-BR" : {
@@ -136191,7 +136191,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "パンチインのマイク"
+            "value" : "上書き録音のマイク"
           }
         },
         "pt-BR" : {
@@ -147964,7 +147964,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のポーズ"
+            "value" : "次の無音"
           }
         },
         "pt-BR" : {
@@ -150383,7 +150383,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "マイクが接続されていません。パンチインするには接続してください。"
+            "value" : "マイクが接続されていません。上書き録音するには接続してください。"
           }
         },
         "pt-BR" : {
@@ -159732,7 +159732,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ブックを一度開いてから、もう一度試してください。"
+            "value" : "ブックを一度開いてから、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -170611,7 +170611,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前のポーズ"
+            "value" : "前の無音"
           }
         },
         "pt-BR" : {
@@ -175927,7 +175927,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ビープ音のあと、%3$@から録音します。%2$@の位置の%1$@の範囲に上書きします。「パンチイン」または「停止」で終了し、「選択解除」で破棄します。"
+            "value" : "ビープ音のあと、%3$@から録音します。%2$@の位置の%1$@の範囲に上書きします。「上書き録音」または「停止」で終了し、「選択解除」で破棄します。"
           }
         },
         "pt-BR" : {
@@ -176169,7 +176169,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ビープ音のあと、%2$@から録音し、%1$@の位置に挿入します。「パンチイン」または「停止」で終了し、「選択解除」で破棄します。"
+            "value" : "ビープ音のあと、%2$@から録音し、%1$@の位置に挿入します。「上書き録音」または「停止」で終了し、「選択解除」で破棄します。"
           }
         },
         "pt-BR" : {
@@ -176529,7 +176529,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ビープ音のあと、選択範囲に上書き、またはカーソルの位置に録音します。もう一度パンチインするか、「停止」で終了します。"
+            "value" : "ビープ音のあと、選択範囲に上書き、またはカーソルの位置に録音します。「上書き録音」をもう一度選ぶか、「停止」で終了します。"
           }
         },
         "pt-BR" : {
@@ -192433,7 +192433,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "次のポーズまで選択"
+            "value" : "次の無音まで選択"
           }
         },
         "pt-BR" : {
@@ -192492,7 +192492,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "前のポーズまで選択"
+            "value" : "前の無音まで選択"
           }
         },
         "pt-BR" : {
@@ -202412,7 +202412,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "読み上げを一時停止しました：声が始まりませんでした。「再生」を押してもう一度試してください。"
+            "value" : "読み上げを一時停止しました：声が始まりませんでした。「再生」を押してもう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -214668,7 +214668,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth は%lld件のファイルを読み込めなかったため、不完全な可能性があります。"
+                  "value" : "TextMouth は%lld個のファイルを読み込めなかったため、不完全な可能性があります。"
                 }
               }
             }
@@ -236515,7 +236515,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "フォルダ%@には、ほかに%lld個の項目があります: %@。"
+                  "value" : "フォルダ%@には、ほかに%lld件の項目があります: %@。"
                 }
               }
             }
@@ -239921,7 +239921,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "パンチインで録音するマイクです。TextMouth は、macOS の入力とは別に記憶します。"
+            "value" : "「上書き録音」で録音するマイクです。TextMouth は、macOS の入力とは別に記憶します。"
           }
         },
         "pt-BR" : {
@@ -242688,7 +242688,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ほかの%lld個のチャプタにはテキストがありません。"
+                  "value" : "ほかの%lld章にはテキストがありません。"
                 }
               }
             }
@@ -264040,7 +264040,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "しばらくしてから、もう一度試してください。"
+            "value" : "しばらくしてから、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -264099,7 +264099,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "その移動が終わってから、もう一度試してください。"
+            "value" : "その移動が終わってから、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -264217,7 +264217,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "それが終わってから、もう一度試してください。"
+            "value" : "それが終わってから、もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -264276,7 +264276,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "もう一度試してください。"
+            "value" : "もう一度お試しください。"
           }
         },
         "pt-BR" : {
@@ -275475,7 +275475,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth がデータをコピーしている間に、%lld個の項目が%@に現れました: %@。"
+                  "value" : "TextMouth がデータをコピーしている間に、%lld件の項目が%@に現れました: %@。"
                 }
               }
             }
