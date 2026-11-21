@@ -5660,7 +5660,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później."
+            "value" : "Serwer %1$@ nie wysłał kanału (błąd %2$@). Spróbuj ponownie później."
           }
         },
         "pt-BR" : {
@@ -5803,7 +5803,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później."
+            "value" : "Serwer %1$@ nie wysłał pliku (błąd %2$@). Spróbuj ponownie później."
           }
         },
         "pt-BR" : {
@@ -6552,25 +6552,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ nie odpowiedział w ciągu %lld sekund."
+                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekund."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ nie odpowiedział w ciągu %lld sekund."
+                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekund."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ nie odpowiedział w ciągu %lld sekundy."
+                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekundy."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ nie odpowiedział w ciągu %lld sekundy."
+                  "value" : "Serwer %@ nie odpowiedział w ciągu %lld sekundy."
                 }
               }
             }
@@ -16653,7 +16653,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Plik %@ zawiera %lld kanał. Dostaje własny folder o tej samej nazwie."
+                  "value" : "Plik %@ zawiera %lld kanał. Kanał dostaje własny folder o tej samej nazwie."
                 }
               },
               "other" : {
@@ -18929,7 +18929,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ na tej książce"
+            "value" : "Import tej książki: %@"
           }
         },
         "pt-BR" : {
@@ -88611,7 +88611,7 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld czeka na miejsce na tym komputerze Mac"
+                  "value" : "%lld czekają na miejsce na tym komputerze Mac"
                 }
               },
               "many" : {
@@ -89078,7 +89078,7 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld czeka, aż ten komputer Mac połączy się z siecią bez limitów danych"
+                  "value" : "%lld czekają, aż ten komputer Mac połączy się z siecią bez limitów danych"
                 }
               },
               "many" : {
@@ -93590,7 +93590,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "; zostają %@"
+            "value" : "; zachowano %@"
           }
         },
         "pt-BR" : {
@@ -144203,7 +144203,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sprawdzanie teraz"
+            "value" : "Trwa sprawdzanie"
           }
         },
         "pt-BR" : {
@@ -145299,7 +145299,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sprawdza ten kanał ponownie od teraz i od razu."
+            "value" : "Od teraz znów sprawdza ten kanał, zaczynając od razu."
           }
         },
         "pt-BR" : {
@@ -149141,7 +149141,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wybierz plik OPML z subskrypcjami, tak jak eksportuje je inny czytnik kanałów."
+            "value" : "Wybierz plik OPML z subskrypcjami, wyeksportowany z innego czytnika kanałów."
           }
         },
         "pt-BR" : {
@@ -191445,7 +191445,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobieranie %1$lld z %2$lld: „%3$@” z %4$@"
+            "value" : "Pobieranie %1$lld z %2$lld: „%3$@” z kanału %4$@"
           }
         },
         "pt-BR" : {
@@ -206028,7 +206028,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edycje jej dźwięku lub manifestu nie są zachowywane."
+            "value" : "Zmiany w jej dźwięku lub manifeście nie są zachowywane."
           }
         },
         "pt-BR" : {
@@ -212909,7 +212909,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wszystkie artykuły z %@ są już przeczytane."
+            "value" : "Wszystkie artykuły kanału %@ są już przeczytane."
           }
         },
         "pt-BR" : {
@@ -214335,7 +214335,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wszystkie odcinki z %@ są już odtworzone."
+            "value" : "Wszystkie odcinki kanału %@ są już odtworzone."
           }
         },
         "pt-BR" : {
@@ -215219,7 +215219,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wszystkie pozycje z %@ są już odtworzone."
+            "value" : "Wszystkie pozycje kanału %@ są już odtworzone."
           }
         },
         "pt-BR" : {
@@ -221535,25 +221535,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Wyeksportowano %lld subskrypcje do %@."
+                  "value" : "Wyeksportowano %lld subskrypcje do pliku %@."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Wyeksportowano %lld subskrypcji do %@."
+                  "value" : "Wyeksportowano %lld subskrypcji do pliku %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Wyeksportowano %lld subskrypcję do %@."
+                  "value" : "Wyeksportowano %lld subskrypcję do pliku %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Wyeksportowano %lld subskrypcji do %@."
+                  "value" : "Wyeksportowano %lld subskrypcji do pliku %@."
                 }
               }
             }
@@ -228668,7 +228668,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kanały odświeżają się tylko przy uruchomieniu, jeśli to włączone, i gdy wybierzesz %1$@ lub %2$@."
+            "value" : "Kanały odświeżają się tylko przy uruchomieniu, jeśli ta opcja jest włączona, i gdy wybierzesz %1$@ lub %2$@."
           }
         },
         "pt-BR" : {
@@ -254048,7 +254048,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Import anulowany po: %@."
+            "value" : "Import został anulowany po przetworzeniu %@."
           }
         },
         "pt-BR" : {
@@ -264353,7 +264353,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Można ją pobrać ponownie."
+            "value" : "Można go pobrać ponownie."
           }
         },
         "pt-BR" : {
@@ -265175,7 +265175,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usuwa %@: jest to usuwane na stałe i nie można tego odzyskać."
+            "value" : "Usuwa %@ na stałe, bez możliwości odzyskania."
           }
         },
         "pt-BR" : {
@@ -265312,7 +265312,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usuwa %@: zostaje to w folderze biblioteki TextMouth."
+            "value" : "Usuwa %@: zostaje w folderze biblioteki TextMouth."
           }
         },
         "pt-BR" : {
@@ -266875,7 +266875,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zawiera %@, czego TextMouth nie importuje."
+            "value" : "Zawiera %@; TextMouth nie importuje takich plików."
           }
         },
         "pt-BR" : {
@@ -268829,7 +268829,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie zawiera żadnej ścieżki audio z początkiem, który TextMouth potrafi odczytać."
+            "value" : "Nie zawiera żadnej ścieżki audio, której początek TextMouth potrafi odczytać."
           }
         },
         "pt-BR" : {
