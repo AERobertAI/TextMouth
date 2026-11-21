@@ -2945,7 +2945,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在你的资料库中，但已取消订阅。在订阅源所在行或其 %3$@ 中选取 %2$@，即可再次检查。"
+            "value" : "%1$@ 在你的资料库中，但已取消订阅。在订阅源所在行或其“%3$@”中选取“%2$@”，即可再次检查。"
           }
         },
         "zh-Hant" : {
@@ -7346,7 +7346,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ 的%1$@现已生效：%3$@。"
+            "value" : "%2$@ 的“%1$@”现已生效：%3$@。"
           }
         },
         "zh-Hant" : {
@@ -7477,7 +7477,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@ 的%1$@现在遵循全局设置：%3$@。"
+            "value" : "%2$@ 的“%1$@”现在遵循全局设置：%3$@。"
           }
         },
         "zh-Hant" : {
@@ -12840,7 +12840,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在你的资料库中，但已取消订阅。在其所在行或其 %3$@ 中选取 %2$@，即可再次检查。"
+            "value" : "%1$@ 在你的资料库中，但已取消订阅。在其所在行或其“%3$@”中选取“%2$@”，即可再次检查。"
           }
         },
         "zh-Hant" : {
@@ -13352,7 +13352,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@现已生效：%2$@。"
+            "value" : "“%1$@”现已生效：%2$@。"
           }
         },
         "zh-Hant" : {
@@ -14126,7 +14126,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 已取消订阅，因此 TextMouth 不会检查它。选取 %2$@ 可再次检查。"
+            "value" : "%1$@ 已取消订阅，因此 TextMouth 不会检查它。选取“%2$@”即可再次检查。"
           }
         },
         "zh-Hant" : {
@@ -15956,7 +15956,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 用于移动在其订阅源中下载的单集或文章。请在该订阅源的文件夹中选择一项。"
+            "value" : "“%@”用于移动在其订阅源中下载的单集或文章。请在该订阅源的文件夹中选择一项。"
           }
         },
         "zh-Hant" : {
@@ -16456,7 +16456,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 未在录音"
+            "value" : "%@，未在录音"
           }
         },
         "zh-Hant" : {
@@ -19036,7 +19036,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 无声"
+            "value" : "%@，无声"
           }
         },
         "zh-Hant" : {
@@ -21417,7 +21417,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 已连接；请在“%2$@”弹出式菜单中选取它以用其录音。"
+            "value" : "%1$@ 已连接；若要用它录音，请在“%2$@”弹出式菜单中选取它。"
           }
         },
         "zh-Hant" : {
@@ -22735,7 +22735,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 已连接；请在“%2$@”弹出式菜单中选取其一以用其录音。"
+            "value" : "%1$@ 已连接；若要用其中一个录音，请在“%2$@”弹出式菜单中选取它。"
           }
         },
         "zh-Hant" : {
@@ -55011,7 +55011,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "将撤销 %lld 项编辑。重做可将其恢复，直到你进行另一项编辑。"
+                  "value" : "将撤销 %lld 项编辑。“重做”可将其恢复，直到你进行另一项编辑。"
                 }
               }
             }
@@ -85376,7 +85376,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "；%@ 仍保留"
+            "value" : "；%@仍保留"
           }
         },
         "zh-Hant" : {
@@ -85501,7 +85501,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "；%@ 仍保留"
+            "value" : "；%@仍保留"
           }
         },
         "zh-Hant" : {
@@ -86888,7 +86888,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每个订阅源都可以在其 %2$@ 中设置自己的 %1$@ 选项，以及删除已播放下载内容前的天数。"
+            "value" : "每个订阅源都可以在其“%2$@”中设置自己的“%1$@”选项，以及删除已播放下载内容前的天数。"
           }
         },
         "zh-Hant" : {
@@ -99997,7 +99997,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "文章的详细信息来自其订阅源；%@ 可将其变为可编辑的图书。"
+            "value" : "文章的详细信息来自其订阅源；“%@”可将其变为可编辑的图书。"
           }
         },
         "zh-Hant" : {
@@ -100616,7 +100616,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "单集的详细信息来自其订阅源；%@ 可将其变为可编辑的图书。"
+            "value" : "单集的详细信息来自其订阅源；“%@”可将其变为可编辑的图书。"
           }
         },
         "zh-Hant" : {
@@ -195668,7 +195668,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "所有订阅源都已取消订阅，因此没有检查任何订阅源。在订阅源所在行或其 %2$@ 中选取 %1$@，可再次检查。"
+            "value" : "所有订阅源都已取消订阅，因此没有检查任何订阅源。在订阅源所在行或其“%2$@”中选取“%1$@”，即可再次检查。"
           }
         },
         "zh-Hant" : {
@@ -208496,7 +208496,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "订阅源仅在启动时（如已开启）以及你选取 %1$@ 或 %2$@ 时刷新。"
+            "value" : "订阅源仅在启动时（如已开启）以及你选取“%1$@”或“%2$@”时刷新。"
           }
         },
         "zh-Hant" : {
@@ -240954,7 +240954,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它作为下载内容属于其订阅源。%@ 会移除其文件，但保留其位置和书签。"
+            "value" : "它作为下载内容属于其订阅源。“%@”会移除其文件，但保留其位置和书签。"
           }
         },
         "zh-Hant" : {
@@ -448604,7 +448604,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 仍在执行你的上一个回答。请等待其完成。"
+            "value" : "TextMouth 仍在处理你上一次的回答。请等待其完成。"
           }
         },
         "zh-Hant" : {
@@ -449247,7 +449247,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 不被允许发送通知。请在“系统设置”>“通知”>“TextMouth”中打开通知。"
+            "value" : "TextMouth 未获准发送通知。请在“系统设置”>“通知”>“TextMouth”中打开通知。"
           }
         },
         "zh-Hant" : {
@@ -449497,7 +449497,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth 会保留导入时转换的音频的原始文件。原始文件占用的磁盘空间与转换后的文件大致相同，未压缩时则为两倍。“导出”提供它作为“原始文件”。订阅源单集的原始文件不会保留：可以再次下载。"
+            "value" : "TextMouth 会保留导入时转换的音频的原始文件。原始文件占用的磁盘空间与转换后的文件大致相同，未压缩时则为两倍。导出时，它会作为“原始文件”选项提供。订阅源单集的原始文件不会保留：可以再次下载。"
           }
         },
         "zh-Hant" : {
@@ -469086,7 +469086,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "该文章会永久从列表中移除；它在你的资料库中变成的图书会保留。"
+            "value" : "该文章会永久从列表中移除；由它转成的图书仍会保留在你的资料库中。"
           }
         },
         "zh-Hant" : {
@@ -481660,7 +481660,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "该单集会永久从列表中移除；它在你的资料库中变成的图书会保留。"
+            "value" : "该单集会永久从列表中移除；由它转成的图书仍会保留在你的资料库中。"
           }
         },
         "zh-Hant" : {
@@ -483341,7 +483341,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "该订阅源会连同其设置和%1$@保留在你的资料库中，%2$@ 会再次检查它。"
+            "value" : "该订阅源会连同其设置和%1$@保留在你的资料库中，“%2$@”会再次检查它。"
           }
         },
         "zh-Hant" : {
@@ -483466,7 +483466,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "该订阅源及其设置会保留在你的资料库中，%@ 会再次检查它。"
+            "value" : "该订阅源及其设置会保留在你的资料库中，“%@”会再次检查它。"
           }
         },
         "zh-Hant" : {
@@ -494413,7 +494413,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "列表会随 %@ 的更改立即更新；要下载或移除的内容会等到更改保持十秒后再处理，届时 VoiceOver 会播报。"
+            "value" : "列表会随“%@”的更改立即更新；要下载或移除的内容会等到更改保持十秒后再处理，届时 VoiceOver 会播报。"
           }
         },
         "zh-Hant" : {
@@ -502705,7 +502705,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法在此网络上搜索播客目录，因为它限制数据流量。"
+            "value" : "此网络限制数据流量，因此无法搜索播客目录。"
           }
         },
         "zh-Hant" : {
@@ -535568,7 +535568,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要再次下载，请在其所在行选取 %@。"
+            "value" : "要再次下载，请在其所在行选取“%@”。"
           }
         },
         "zh-Hant" : {
@@ -535984,7 +535984,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "要再次下载其余的 %lld 个，请在它们所在行选取 %@。"
+                  "value" : "要再次下载其余的 %lld 个，请在它们所在行选取“%@”。"
                 }
               }
             }
@@ -536118,7 +536118,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要再次下载另外那一个，请在其所在行选取 %@。"
+            "value" : "要再次下载另外那一个，请在其所在行选取“%@”。"
           }
         },
         "zh-Hant" : {
@@ -536243,7 +536243,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要再次下载它们，请在它们所在行选取 %@。"
+            "value" : "要再次下载它们，请在它们所在行选取“%@”。"
           }
         },
         "zh-Hant" : {
@@ -536499,7 +536499,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要保留某篇文章，请先在其所在行选取 %@。"
+            "value" : "要保留某篇文章，请先在其所在行选取“%@”。"
           }
         },
         "zh-Hant" : {
@@ -536624,7 +536624,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要保留某个单集，请先在其所在行选取 %@。"
+            "value" : "要保留某个单集，请先在其所在行选取“%@”。"
           }
         },
         "zh-Hant" : {
@@ -536749,7 +536749,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要保留某个项目，请先在其所在行选取 %@。"
+            "value" : "要保留某个项目，请先在其所在行选取“%@”。"
           }
         },
         "zh-Hant" : {
@@ -537404,7 +537404,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "要使用它，请在“设置”的“文本”标签页中选取 %@。"
+            "value" : "要使用它，请在“设置”的“文本”标签页中选取“%@”。"
           }
         },
         "zh-Hant" : {
@@ -565043,7 +565043,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "勾选后，此订阅源会遵循“设置”中 %@ 的设置；取消勾选可为该订阅源设置专属选项。"
+            "value" : "勾选后，此订阅源会遵循“设置”>“%@”中的设置；取消勾选可为该订阅源设置专属选项。"
           }
         },
         "zh-Hant" : {
@@ -574748,7 +574748,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每次导入后，系统会询问是否永久删除原始文件。"
+            "value" : "每次导入后都会询问你是否要永久删除原始文件。"
           }
         },
         "zh-Hant" : {
@@ -574873,7 +574873,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "每次导入后，系统会询问是否将原始文件移到废纸篓。"
+            "value" : "每次导入后都会询问你是否要将原始文件移到废纸篓。"
           }
         },
         "zh-Hant" : {
@@ -582708,7 +582708,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "再次选取 %@"
+            "value" : "再次选取“%@”"
           }
         },
         "zh-Hant" : {
@@ -597002,7 +597002,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "为下次保留你的订阅源下载位置"
+            "value" : "保留订阅源下载的进度，供下次继续"
           }
         },
         "zh-Hant" : {
@@ -600958,7 +600958,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "没有已下载的"
+            "value" : "未下载任何内容"
           }
         },
         "zh-Hant" : {
@@ -621531,7 +621531,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@”不再等待下载；你选取 %2$@ 时才会下载。"
+            "value" : "“%1$@”不再等待下载；你选取“%2$@”时才会下载。"
           }
         },
         "zh-Hant" : {
