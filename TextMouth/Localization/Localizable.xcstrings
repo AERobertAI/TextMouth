@@ -106677,7 +106677,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sau đó, Phát sẽ thử lại đoạn này."
+            "value" : "Sau đó, nút Phát sẽ thử lại đoạn này."
           }
         },
         "zh-Hans" : {
@@ -118527,7 +118527,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hỏi ghi chú tùy chọn, rồi đánh dấu vị trí đọc."
+            "value" : "Mời bạn nhập ghi chú nếu muốn, rồi đánh dấu vị trí đọc."
           }
         },
         "zh-Hans" : {
@@ -129210,7 +129210,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dấu trang %1$@, %2$@, Ghi chú: %3$@, đã thêm %4$@"
+            "value" : "Dấu trang %1$@, %2$@, Ghi chú: %3$@, đã thêm vào ngày %4$@"
           }
         },
         "zh-Hans" : {
@@ -129353,7 +129353,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dấu trang %1$@, %2$@, đã thêm %3$@"
+            "value" : "Dấu trang %1$@, %2$@, đã thêm vào ngày %3$@"
           }
         },
         "zh-Hans" : {
@@ -129496,7 +129496,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dấu trang %1$@, Ghi chú: %2$@, đã thêm %3$@"
+            "value" : "Dấu trang %1$@, Ghi chú: %2$@, đã thêm vào ngày %3$@"
           }
         },
         "zh-Hans" : {
@@ -129639,7 +129639,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dấu trang %1$@, đã thêm %2$@"
+            "value" : "Dấu trang %1$@, đã thêm vào ngày %2$@"
           }
         },
         "zh-Hans" : {
@@ -152608,7 +152608,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chọn định dạng tệp. M4B là sách nói; M4A và MP3 phát được trong nhiều ứng dụng hơn. M4B và M4A có một chương cho mỗi đề mục; MP3 chỉ có cho %@ đầu tiên."
+            "value" : "Chọn định dạng tệp. M4B là sách nói; M4A và MP3 phát được trong nhiều ứng dụng hơn. M4B và M4A có một chương cho mỗi đề mục; MP3 chỉ có chương cho %@ đề mục đầu tiên."
           }
         },
         "zh-Hans" : {
@@ -153019,7 +153019,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chọn đơn vị mà Phát và các nút tua di chuyển theo."
+            "value" : "Chọn đơn vị mà nút Phát và các nút tua di chuyển theo."
           }
         },
         "zh-Hans" : {
@@ -218717,7 +218717,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Xuất mọi chương như vậy ở dạng đã ghi"
+            "value" : "Xuất nguyên văn mọi chương như vậy"
           }
         },
         "zh-Hans" : {
@@ -219813,7 +219813,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Xuất ở dạng đã ghi"
+            "value" : "Xuất nguyên văn"
           }
         },
         "zh-Hans" : {
@@ -224613,7 +224613,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đang nhỏ dần âm thanh"
+            "value" : "Đang giảm dần âm lượng"
           }
         },
         "zh-Hans" : {
@@ -275951,7 +275951,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "JSON and Markdown"
+            "value" : "JSON và Markdown"
           }
         },
         "zh-Hans" : {
@@ -279712,7 +279712,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Giữ thứ tự bạn đã đặt bằng Di chuyển sách lên, Di chuyển sách xuống, hoặc bằng cách kéo."
+            "value" : "Giữ thứ tự bạn đã đặt bằng các lệnh Di chuyển sách lên, Di chuyển sách xuống, hoặc bằng cách kéo."
           }
         },
         "zh-Hans" : {
@@ -366857,7 +366857,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ghi đè kiểu đã chọn."
+            "value" : "Được ưu tiên hơn kiểu đã chọn."
           }
         },
         "zh-Hans" : {
@@ -400973,7 +400973,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nhả điều khiển đa phương tiện"
+            "value" : "Trả lại điều khiển phương tiện"
           }
         },
         "zh-Hans" : {
