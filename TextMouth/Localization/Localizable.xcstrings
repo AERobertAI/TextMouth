@@ -49915,7 +49915,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld Bücher verarbeitet"
+                  "value" : "%lld Büchern verarbeitet"
                 }
               }
             }
@@ -75413,13 +75413,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld von %@ aufgelistet"
+                  "value" : "%lld aufgelistet, insgesamt %@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld von %@ aufgelistet"
+                  "value" : "%lld aufgelistet, insgesamt %@"
                 }
               }
             }
@@ -199785,7 +199785,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Doppelte Kopien in den Papierkorb verschoben"
+            "value" : "Doppelte Kopien in den Papierkorb gelegt"
           }
         },
         "es" : {
@@ -278514,7 +278514,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eine Anzahl Tage aufbewahren"
+            "value" : "Für eine Anzahl Tage aufbewahren"
           }
         },
         "es" : {
@@ -283564,7 +283564,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lässt das Hörbuch untranskribiert; „Audio transkribieren“ erledigt das später."
+            "value" : "Lässt das Hörbuch ohne Transkript; „Audio transkribieren“ erledigt das später."
           }
         },
         "es" : {
@@ -288240,7 +288240,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anhören und Bewegen"
+            "value" : "Anhören und Navigieren"
           }
         },
         "es" : {
@@ -349406,7 +349406,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Noch nicht im Audio des Buchs. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, bis du erneut bearbeitest."
+            "value" : "Noch nicht im Audio des Buchs. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, solange du nichts Neues bearbeitest."
           }
         },
         "es" : {
@@ -370105,7 +370105,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ an der Stelle eingesetzt, wo sie ausgeschnitten wurden."
+            "value" : "%@ wieder dort eingesetzt, wo ausgeschnitten wurde."
           }
         },
         "es" : {
@@ -394072,7 +394072,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bereit zur Aufnahme von %@."
+            "value" : "Bereit zur Aufnahme mit %@."
           }
         },
         "es" : {
@@ -395716,7 +395716,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Es wird von %@ aufgenommen."
+            "value" : "Aufnahme mit %@ läuft."
           }
         },
         "es" : {
@@ -396133,7 +396133,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aufnahme über %1$@ bei %2$@ von %3$@ nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie."
+            "value" : "Aufnahme über die %1$@ lange Auswahl bei %2$@, mit %3$@, nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie."
           }
         },
         "en" : {
@@ -396687,7 +396687,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aufnahme zum Einfügen bei %1$@ von %2$@ nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie."
+            "value" : "Aufnahme zum Einfügen bei %1$@, mit %2$@, nach dem Signalton. „Darüber aufnehmen“ oder „Stoppen“ beendet sie; „Auswahl aufheben“ verwirft sie."
           }
         },
         "en" : {
@@ -397521,7 +397521,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nimmt über der Auswahl oder am Cursor nach einem Signalton auf. Erneutes Drücken oder „Stoppen“ beendet es."
+            "value" : "Nimmt nach einem Signalton auf und ersetzt die Auswahl oder fügt am Cursor ein. Ein erneutes „Darüber aufnehmen“ oder „Stoppen“ beendet die Aufnahme."
           }
         },
         "es" : {
@@ -418887,7 +418887,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Auf das Originalaudio zurückgesetzt. „Wiederholen“ bringt die %lld Bearbeitung zurück."
+                  "value" : "Auf das Originalaudio zurückgesetzt. „Wiederholen“ bringt die Bearbeitung zurück."
                 }
               },
               "other" : {
@@ -427230,7 +427230,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ Audio werden als %2$@ gesichert, dem Format, das dieses Buch behält."
+            "value" : "%1$@ Audio wird als %2$@ gesichert, dem Format, das dieses Buch behält."
           }
         },
         "en" : {
@@ -427373,7 +427373,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ Audio werden im Buch gesichert."
+            "value" : "%@ Audio wird im Buch gesichert."
           }
         },
         "es" : {
@@ -437759,7 +437759,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Legt die Transkriptionssprache fest. Eine als „Download nötig“ markierte Sprache lässt sich nur im Fenster „Audio transkribieren“ herunterladen."
+            "value" : "Legt die Transkriptionssprache fest. Eine als „Download nötig“ markierte Sprache lässt sich nur im Sheet „Audio transkribieren“ herunterladen."
           }
         },
         "es" : {
@@ -460032,7 +460032,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Beginnt die Aufnahme von %@."
+            "value" : "Beginnt die Aufnahme mit %@."
           }
         },
         "es" : {
@@ -462006,7 +462006,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wird noch bearbeitet. Schließe, sobald die Änderung abgeschlossen ist."
+            "value" : "Wird noch bearbeitet. Schließe das Fenster, sobald die Änderung abgeschlossen ist."
           }
         },
         "es" : {
@@ -485696,7 +485696,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth konnte die Aufnahme von %@ nicht starten."
+            "value" : "TextMouth konnte die Aufnahme mit %@ nicht starten."
           }
         },
         "es" : {
@@ -490522,7 +490522,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth wird beendet, und das Audio des Buchs enthält diese Bearbeitungen noch nicht. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, bis du erneut bearbeitest. „Abbrechen“ lässt TextMouth geöffnet."
+            "value" : "TextMouth wird beendet, und das Audio des Buchs enthält diese Bearbeitungen noch nicht. „Verwerfen“ widerruft sie; wenn du dieses Buch das nächste Mal bearbeitest, bringt „Wiederholen“ sie zurück, solange du nichts Neues bearbeitest. „Abbrechen“ lässt TextMouth geöffnet."
           }
         },
         "es" : {
@@ -494272,13 +494272,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth hat %lld neue Kopie doppelter Bücher in den Papierkorb verschoben, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
+                  "value" : "TextMouth hat %lld neue Kopie doppelter Bücher in den Papierkorb gelegt, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth hat %lld neue Kopien doppelter Bücher in den Papierkorb verschoben, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
+                  "value" : "TextMouth hat %lld neue Kopien doppelter Bücher in den Papierkorb gelegt, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
                 }
               }
             }
@@ -494688,7 +494688,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth hat die neuen Kopien von %@ in den Papierkorb verschoben, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
+            "value" : "TextMouth hat die neuen Kopien von %@ in den Papierkorb gelegt, weil die Fragen, ob sie als Duplikate behalten werden sollen, nicht beantwortet wurden, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
           }
         },
         "es" : {
@@ -494825,7 +494825,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth hat die neue Kopie von „%@“ in den Papierkorb verschoben, weil die Frage, ob sie als Duplikat behalten werden soll, nicht beantwortet wurde, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
+            "value" : "TextMouth hat die neue Kopie von „%@“ in den Papierkorb gelegt, weil die Frage, ob sie als Duplikat behalten werden soll, nicht beantwortet wurde, bevor TextMouth beendet wurde. Öffne den Papierkorb und wähle „Zurücklegen“, um sie zurückzuholen."
           }
         },
         "es" : {
