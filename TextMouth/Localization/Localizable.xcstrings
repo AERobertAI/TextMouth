@@ -1794,7 +1794,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Copie de %@"
+            "value" : "%@ copie"
           }
         },
         "he" : {
@@ -1937,7 +1937,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Copie %2$@ de %1$@"
+            "value" : "%1$@ copie %2$@"
           }
         },
         "he" : {
@@ -14061,7 +14061,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ n’est pas un emplacement valide de dossier de bibliothèque."
+            "value" : "%@ n’est pas un emplacement valide pour un dossier de bibliothèque."
           }
         },
         "he" : {
@@ -19021,7 +19021,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ lu"
+            "value" : "lu à %@"
           }
         },
         "he" : {
@@ -27307,19 +27307,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@, ses sous-dossiers et son contenu de %lld de livres seront retirés de la bibliothèque."
+                  "value" : "%@, ses sous-dossiers et les %lld de livres qu’il contient seront retirés de la bibliothèque."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@, ses sous-dossiers et son contenu de %lld livre seront retirés de la bibliothèque."
+                  "value" : "%@, ses sous-dossiers et %lld livre qu’il contient seront retirés de la bibliothèque."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@, ses sous-dossiers et son contenu de %lld livres seront retirés de la bibliothèque."
+                  "value" : "%@, ses sous-dossiers et les %lld livres qu’il contient seront retirés de la bibliothèque."
                 }
               }
             }
@@ -107115,7 +107115,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toujours propose une vue en permanence. Si applicable la propose seulement quand elle liste quelque chose : la liste de lecture quand elle contient un livre, un épisode ou un article, et les flux quand il y a un flux. Masquée l’omet. Une fenêtre garde sa vue jusqu’à ce que vous en choisissiez une autre."
+            "value" : "« Toujours » propose une vue en permanence. « Si applicable » la propose seulement quand elle liste quelque chose : la liste de lecture quand elle contient un livre, un épisode ou un article, et la vue Flux quand il y a un flux. « Masquée » l’omet. Une fenêtre garde sa vue jusqu’à ce que vous en choisissiez une autre."
           }
         },
         "he" : {
@@ -107770,7 +107770,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Une modification de son texte est conservée à côté de la nouvelle lecture, sous forme de copie dans le paquet du livre."
+            "value" : "Une modification de son texte est conservée à côté du nouveau texte, sous forme de copie dans le paquet du livre."
           }
         },
         "he" : {
@@ -156059,7 +156059,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comparer les bibliothèques, dans les réglages de stockage, liste toutes les différences."
+            "value" : "La commande Comparer les bibliothèques des réglages Stockage liste toutes les différences."
           }
         },
         "he" : {
@@ -156881,7 +156881,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Comparaison de cette bibliothèque avec la copie du dossier que vous avez choisi, pour dire laquelle est la plus récente. Cela peut prendre jusqu’à une minute ; choisissez Arrêter la comparaison pour l’ignorer."
+            "value" : "Comparaison de cette bibliothèque avec la copie du dossier que vous avez choisi, pour savoir laquelle est la plus récente. Cela peut prendre jusqu’à une minute ; choisissez Arrêter la comparaison pour l’interrompre."
           }
         },
         "he" : {
@@ -165642,7 +165642,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossible de relire le texte depuis le fichier de l’éditeur, donc le texte ici est inchangé."
+            "value" : "Impossible de relire le texte depuis le fichier de l’éditeur ; le texte affiché ici n’a donc pas changé."
           }
         },
         "he" : {
@@ -165779,7 +165779,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Impossible de replacer le contenu du dossier"
+            "value" : "Impossible de déplacer le contenu du dossier"
           }
         },
         "he" : {
@@ -179621,7 +179621,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vue %@ supprimée. %@ sélectionnée, %lld sur %lld."
+            "value" : "Vue %@ supprimée. Vue %@ sélectionnée, %lld sur %lld."
           }
         },
         "he" : {
@@ -199530,7 +199530,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modifier le texte s’arrête pour ce livre ; choisissez de nouveau Modifier le texte pour modifier la nouvelle lecture."
+            "value" : "La modification du texte s’arrête pour ce livre ; choisissez de nouveau Modifier le texte pour modifier le nouveau texte."
           }
         },
         "he" : {
@@ -210601,7 +210601,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tout"
+            "value" : "tout"
           }
         },
         "he" : {
@@ -210738,7 +210738,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tout dans %@"
+            "value" : "tout le contenu de %@"
           }
         },
         "he" : {
@@ -229158,7 +229158,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dossiers et la liste de lecture n’ont aucune condition à copier."
+            "value" : "La vue Dossiers et la liste de lecture n’ont aucune condition à copier."
           }
         },
         "he" : {
@@ -229295,7 +229295,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dossiers et la liste de lecture listent toujours la même chose. Vous pouvez les déplacer, et masquer la liste de lecture."
+            "value" : "La vue Dossiers et la liste de lecture listent toujours la même chose. Vous pouvez les déplacer et masquer la liste de lecture."
           }
         },
         "he" : {
@@ -229432,7 +229432,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dossiers est toujours affichée : chaque dossier et chaque flux s’y ouvre."
+            "value" : "La vue Dossiers est toujours affichée : chaque dossier et chaque flux s’y ouvre."
           }
         },
         "he" : {
@@ -261709,7 +261709,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "C’est le dossier du flux %@. Dans les deux cas, le flux et ses téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux lui en donne un autre ; Supprimer le flux… sur sa ligne le supprime."
+            "value" : "C’est le dossier du flux %@. Dans les deux cas, le flux et ses téléchargements restent, sans dossier, jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux ; la commande Supprimer le flux… de sa ligne le supprime."
           }
         },
         "he" : {
@@ -261846,7 +261846,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "C’est le dossier des flux %@. Dans les deux cas, les flux et leurs téléchargements restent, sans dossier, jusqu’à ce que Informations sur le flux en donne un autre à chacun ; Supprimer le flux… sur la ligne d’un flux le supprime."
+            "value" : "C’est le dossier des flux %@. Dans les deux cas, les flux et leurs téléchargements restent, sans dossier, jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux ; la commande Supprimer le flux… de la ligne d’un flux le supprime."
           }
         },
         "he" : {
@@ -266132,7 +266132,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ses conditions et son tri sont supprimés. Les livres, épisodes, articles et flux qu’elle liste restent dans la bibliothèque, et une fenêtre de bibliothèque qui l’affiche affiche une autre vue."
+            "value" : "Ses conditions et son tri sont supprimés. Les livres, épisodes, articles et flux qu’elle liste restent dans la bibliothèque, et une fenêtre de bibliothèque qui l’affiche passe à une autre vue."
           }
         },
         "he" : {
@@ -268693,7 +268693,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Son texte est remplacé par la nouvelle lecture."
+            "value" : "Son texte est remplacé par le nouveau texte lu dans le fichier."
           }
         },
         "he" : {
@@ -276817,7 +276817,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ n’a pas été déplacé : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque."
+            "value" : "%@ n’a pas été déplacé : les épisodes et les articles restent dans leurs flux ; la commande %@ en fait un livre de votre bibliothèque."
           }
         },
         "he" : {
@@ -276960,7 +276960,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ n’ont pas été déplacés : les épisodes et les articles restent dans leurs flux ; %@ en fait un livre de votre bibliothèque."
+            "value" : "%@ n’ont pas été déplacés : les épisodes et les articles restent dans leurs flux ; la commande %@ en fait un livre de votre bibliothèque."
           }
         },
         "he" : {
@@ -283280,7 +283280,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Liste"
+            "value" : "Éléments listés"
           }
         },
         "he" : {
@@ -381436,7 +381436,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Liste de lecture : %@ n’est que sur la liste de %@, à la place %@."
+            "value" : "Liste de lecture : %@ n’est que sur la liste de %@, au rang %@."
           }
         },
         "he" : {
@@ -403234,7 +403234,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Restaurer par défaut"
+            "value" : "Restaurer les valeurs par défaut"
           }
         },
         "he" : {
@@ -403371,7 +403371,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Restaurer par défaut…"
+            "value" : "Restaurer les valeurs par défaut…"
           }
         },
         "he" : {
@@ -403919,7 +403919,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Restaurer « %@ » par défaut ?"
+            "value" : "Restaurer les valeurs par défaut de « %@ » ?"
           }
         },
         "he" : {
