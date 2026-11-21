@@ -106653,7 +106653,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Därefter försöker Spela upp stycket igen."
+            "value" : "Därefter gör Spela upp ett nytt försök med stycket."
           }
         },
         "th" : {
@@ -120992,13 +120992,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audacity-etiketter markerar en ljudfil, och den här bokens ljud finns i %lld fil."
+                  "value" : "Audacity-etiketter gäller bara en ljudfil, men den här bokens ljud finns i %lld fil."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audacity-etiketter markerar en ljudfil, och den här bokens ljud finns i %lld filer."
+                  "value" : "Audacity-etiketter gäller bara en ljudfil, men den här bokens ljud finns i %lld filer."
                 }
               }
             }
@@ -123664,7 +123664,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets artiklar går vidare till en annan artikel när en tar slut."
+            "value" : "Tillgänglig bara så länge det här flödets artiklar går vidare till en annan artikel när en tar slut."
           }
         },
         "th" : {
@@ -123801,7 +123801,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut."
+            "value" : "Tillgänglig bara så länge det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut."
           }
         },
         "th" : {
@@ -123938,7 +123938,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets objekt går vidare till ett annat objekt när ett tar slut."
+            "value" : "Tillgänglig bara så länge det här flödets objekt går vidare till ett annat objekt när ett tar slut."
           }
         },
         "th" : {
@@ -124075,7 +124075,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när den här mappens böcker går vidare till en annan bok när en tar slut."
+            "value" : "Tillgänglig bara så länge den här mappens böcker går vidare till en annan bok när en tar slut."
           }
         },
         "th" : {
@@ -133507,7 +133507,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flyttar texten till meningen som läses upp."
+            "value" : "Rullar texten till meningen som läses upp."
           }
         },
         "th" : {
@@ -201370,7 +201370,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Varje rubriks titel och start, som Audacity-etiketter, för en bok med en ljudfil."
+            "value" : "Varje rubriks titel och starttid, som Audacity-etiketter, för en bok med en ljudfil."
           }
         },
         "th" : {
@@ -201507,7 +201507,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Varje rubriks titel och start, som en CUE-fil som namnger ljudet så som Ljud exporterar det."
+            "value" : "Varje rubriks titel och starttid, som en CUE-fil som namnger ljudet så som Ljud exporterar det."
           }
         },
         "th" : {
@@ -218693,7 +218693,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exportera alla sådana kapitel som skrivet"
+            "value" : "Exportera alla sådana kapitel som de är skrivna"
           }
         },
         "th" : {
@@ -219789,7 +219789,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exportera som skrivet"
+            "value" : "Exportera som det är skrivet"
           }
         },
         "th" : {
@@ -219926,7 +219926,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Export kan inte skriva i mappen där TextMouth har sitt bibliotek. Välj en annan mapp."
+            "value" : "Det går inte att exportera till mappen där TextMouth har sitt bibliotek. Välj en annan mapp."
           }
         },
         "th" : {
@@ -220063,7 +220063,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Export kan inte skriva i mappen där TextMouth sparar upplästa kapitel, som töms. Välj en annan mapp."
+            "value" : "Det går inte att exportera till mappen där TextMouth sparar upplästa kapitel, eftersom den töms. Välj en annan mapp."
           }
         },
         "th" : {
@@ -243854,7 +243854,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Går tillbaka till där det senaste hoppet började."
+            "value" : "Går tillbaka dit det senaste hoppet började."
           }
         },
         "th" : {
@@ -243991,7 +243991,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Går till en sida, en procentsats eller en tid."
+            "value" : "Går till en sida, en procentsats eller en tidpunkt."
           }
         },
         "th" : {
@@ -248848,7 +248848,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hur snabbt rösten talar i filen. Den börjar med bokens hastighet."
+            "value" : "Hur snabbt rösten talar i filen. Från början gäller bokens hastighet."
           }
         },
         "th" : {
@@ -248985,7 +248985,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hur högt rösten låter i filen. Den börjar med bokens tonhöjd."
+            "value" : "Hur ljus eller mörk rösten låter i filen. Från början gäller bokens tonhöjd."
           }
         },
         "th" : {
@@ -280223,13 +280223,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "%@ av %lld kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "%@ av %lld kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               }
             }
@@ -280690,13 +280690,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "Det upplästa kapitlet sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "Alla %lld upplästa kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               }
             }
@@ -281170,7 +281170,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Behöll det upplästa kapitlet tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
+            "value" : "Det upplästa kapitlet sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
           }
         },
         "th" : {
@@ -303224,7 +303224,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Märkningsskydd: det vanliga, som bara tystar parenteserna i text som ser ut som taggar."
+            "value" : "Märkningsskydd: det vanliga, som bara tystar vinkelparenteserna i text som ser ut som taggar."
           }
         },
         "th" : {
@@ -333337,7 +333337,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inget biblioteksfönster eller ingen bok är öppen, så det finns inget att exportera."
+            "value" : "Varken något biblioteksfönster eller någon bok är öppen, så det finns inget att exportera."
           }
         },
         "th" : {
@@ -355761,7 +355761,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. Bokinformation säger att koden gissades och kan välja en annan."
+            "value" : "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. I Bokinformation står det att koden gissades, och där kan du välja en annan."
           }
         },
         "th" : {
