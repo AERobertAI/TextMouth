@@ -86,12 +86,11 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.6 (tag `v0.5.6`), and the user still runs 0.4.2.
-- 0.5.6 has eleven interface languages, machine-translated (FR36): the Mac app is 25.5 MB, the iPhone's 20.5 MB (TL18, TL19).
+- Main is version 0.5.7 (tag `v0.5.7`), and the user still runs 0.4.2.
+- 0.5.7 has 23 interface languages (FR36, FR37), nine reviewed (`Scripts/l10n/reviews/`): the Mac app is 31.1 MB, the iPhone's 26.1 MB, and compressing them is TL19.
 - Localization (FR34, `docs/developer/localization.md`): the catalog, its tools, the pilot (FR35: the sleep timer, bookmarks, and Reading List, in Spanish), and the shared counts are on main.
   Every file is converted and its English cut, keeping every fact; the user reads the cut lists (`build/orchestrator/nov18/*/cuts.md`, local).
   Every language covers the whole app, for a native speaker's review; the user's questions are 16 to 25 of `humanQuestions/2026-11-18.md`.
-  FR36's second wave is on `integrate/l10n-wave2-1120`.
 - Waiting for the user: `humanQuestions/2026-11-15.md` (the plans for FR22 and FR23 and the iCloud store, the audio decoders, C11's follow-ups), and the hand checks there.
 - Open: `issuelib list`, the files in `Issues/`, among them Ogg and Apple's converter's formats on the iPhone (FMT55), FFmpeg's leftovers (FU-FFMPEG2, FU01, B19, Q13), and braille's abandonment sentence (B20).
-  Also the train's census (TL08), cache (TL09), and iPhone log reader (TL17), localization's follow-ups (TL14, B23), and the iPhone hang Q-HANG.
+  Also the train's census (TL08), cache (TL09), and iPhone log reader (TL17), localization's follow-ups (TL14, TL20, TL21, B23, B24, Q18), and the iPhone hang Q-HANG.

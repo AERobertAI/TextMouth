@@ -224,7 +224,7 @@ One neutral Spanish (`es`) serves every region, until the user says otherwise.
 - Plural categories `one` and `other`; `one` covers 0 and 1 and keeps the number.
 
 ## Arabic
-<!-- id: translation-arabic; keys: ar, right-to-left, RTL, Modern Standard Arabic, mirrored layout, Apple's Arabic; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: FR36 -->
+<!-- id: translation-arabic; keys: ar, right-to-left, RTL, Modern Standard Arabic, mirrored layout, Apple's Arabic; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: Q18 -->
 
 - Modern Standard Arabic as Apple's Arabic interface writes it: commands in Apple's form, hints in the third person, and the punctuation (، ؛ ؟) and quotation marks Apple's Arabic uses.
 - Arabic is the app's first right-to-left language, with Hebrew.
@@ -267,7 +267,7 @@ One neutral Spanish (`es`) serves every region, until the user says otherwise.
 - One plural category, `other`.
 
 ## Polish
-<!-- id: translation-polish; keys: pl, few, many, Macu, glued ending, Apple's Polish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: FR36 -->
+<!-- id: translation-polish; keys: pl, few, many, Macu, glued ending, Apple's Polish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: TL21 -->
 
 - Commands in the imperative ("Otwórz", "Odtwórz", "Anuluj"); hints in the third person ("Odtwarza książkę."); quotation marks „…”.
 - Plural categories `one` (exactly 1), `few` (2 to 4, 22 to 24, 32 to 34, not 12 to 14), `many` (0, 5 to 21, 25 to 31), and `other` (a fraction); every form but `one` keeps the number.
@@ -289,14 +289,14 @@ One neutral Spanish (`es`) serves every region, until the user says otherwise.
 - Plural categories `one` and `other`.
 
 ## Swedish
-<!-- id: translation-swedish; keys: sv, du, Macen, glued ending, Apple's Swedish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: FR36 -->
+<!-- id: translation-swedish; keys: sv, du, Macen, glued ending, Apple's Swedish; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: TL21 -->
 
 - Address the listener as "du"; commands in the imperative ("Öppna", "Spela upp", "Avbryt"); hints in the third person ("Spelar upp boken."); quotation marks ”…”.
 - The name check refuses a name with an ending glued on ("Macen", "TextMouths"), so translators write "Mac-datorn" instead.
 - Plural categories `one` and `other`.
 
 ## Hebrew
-<!-- id: translation-hebrew; keys: he, right-to-left, RTL, gendered forms, Apple's Hebrew; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: FR36 -->
+<!-- id: translation-hebrew; keys: he, right-to-left, RTL, gendered forms, Apple's Hebrew; src: Scripts/l10n/glossary.json, Scripts/l10n/catalog.py; status: incomplete; issues: Q18 -->
 
 - Apple's Hebrew: commands in the forms its interface uses, hints in the third person, a gendered form avoided where Apple avoids it, and its quotation marks and punctuation.
 - Right to left, with no direction marks (see Arabic); no test yet looks at a mirrored window.
@@ -362,7 +362,7 @@ Twenty-one languages were added this way, in two waves.
 11. Name the language in the opening of this page, in the list in [Settings](../user/settings.md) (the interface language), and in the changelog.
 
 ## What adding a language still does by hand
-<!-- id: translation-adding-by-hand; keys: orchestrator scripts, area split, branch check, fit glossary changes, review dump, not in the repository, limitation; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json; status: incomplete; issues: FR36 -->
+<!-- id: translation-adding-by-hand; keys: orchestrator scripts, area split, branch check, fit glossary changes, review dump, not in the repository, limitation; src: Scripts/l10n/l10n.py, Scripts/l10n/glossary.json; status: incomplete; issues: TL20, Q18 -->
 
 These steps of Adding a language are done with the orchestrator's own scripts, which are not in the repository yet:
 - the area split of step 5 (the six key files);
