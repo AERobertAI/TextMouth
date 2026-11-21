@@ -6747,7 +6747,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ditempatkan %@ di %@ dan %@ di %@."
+            "value" : "%@ ditempatkan %@ pada %@ dan %@ pada %@."
           }
         },
         "it" : {
