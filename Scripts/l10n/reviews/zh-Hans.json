@@ -1727,6 +1727,107 @@
      "why": "natural: 无法足够快地读取 is a word-for-word “could not be read quickly enough”"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "在每个阅读器的工具栏中添加“导出”按钮。使用“文件”>“导出”同样可以导出。",
+     "after": "在每个阅读器的工具栏中添加“导出”按钮。使用“文件”菜单中的“导出”同样可以导出。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Choose the language in Settings, Playback, Transcription.",
+     "english": "Choose the language in Settings, Playback, Transcription.",
+     "before": "请在“设置”>“播放功能”>“转录”中选取语言。",
+     "after": "请在“设置”的“播放功能”中，于“转录”选取语言。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "“设置”>“存储”中的“比较资料库”会列出每一处差异。",
+     "after": "“设置”的“存储”中的“比较资料库”会列出每一处差异。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "english": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "before": "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“设置”>“存储”中已关闭。",
+     "after": "无法写入 MP3：TextMouth 的编码器无法启动，并且 ffmpeg 缺失或在“设置”的“存储”中已关闭。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "english": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "before": "没有滤波器预设。请在“设置”>“存储”>“音频编辑”下添加。",
+     "after": "没有滤波器预设。请在“设置”的“存储”中，于“音频编辑”下添加。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "未安装语音。请在“系统设置”>“辅助功能”>“朗读内容”中添加，然后再次导出。",
+     "after": "未安装语音。请在“系统设置”的“辅助功能”中，于“朗读内容”添加，然后再次导出。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "english": "No voices are installed. Add voices in Settings, Accessibility, Read & Speak.",
+     "before": "未安装语音。请在“设置”>“辅助功能”>“朗读内容”中添加语音。",
+     "after": "未安装语音。请在“设置”的“辅助功能”中，于“朗读内容”添加语音。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth 未获准发送通知。请在“系统设置”>“通知”>“TextMouth”中打开通知。",
+     "after": "TextMouth 未获准发送通知。请在“系统设置”的“通知”中，于“TextMouth”打开通知。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "english": "TextMouth isn't allowed to use the microphone. Turn it on in System Settings, Privacy & Security, Microphone.",
+     "before": "TextMouth 无权使用麦克风。请在“系统设置”>“隐私与安全性”>“麦克风”中打开。",
+     "after": "TextMouth 无权使用麦克风。请在“系统设置”的“隐私与安全性”中，于“麦克风”打开。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "要使用其他文件夹，请打开“设置”>“存储”，然后选取 %1$@ 或 %2$@。",
+     "after": "要使用其他文件夹，请打开“设置”的“存储”，然后选取 %1$@ 或 %2$@。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "请输入直引号：在“文本编辑”中，到“编辑”>“替换”下关闭“智能引号”。",
+     "after": "请输入直引号：在“文本编辑”中，到“编辑”的“替换”下关闭“智能引号”。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "勾选后，此订阅源会遵循“设置”>“%@”中的设置；取消勾选可为该订阅源设置专属选项。",
+     "after": "勾选后，此订阅源会遵循“设置”的“%@”中的设置；取消勾选可为该订阅源设置专属选项。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    },
+    {
+     "key": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "english": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "before": "无法启动 ffmpeg。请检查是否已安装，或在“设置”>“存储”中关闭“使用 ffmpeg”。",
+     "after": "无法启动 ffmpeg。请检查是否已安装，或在“设置”的“存储”中关闭“使用 ffmpeg”。",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    }
+   ]
   }
  ]
 }
