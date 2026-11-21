@@ -1820,6 +1820,583 @@
      "why": "natural: \"32-бітні з плаваючою комою семпли\" put a prepositional phrase before its noun; the sample form now follows it"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ can't open while its edited text can't be used: %@",
+     "english": "%1$@ can't open while its edited text can't be used: %2$@",
+     "before": "%1$@ не відкривається, поки його відредагований текст непридатний: %2$@",
+     "after": "%1$@ не відкривається, поки її відредагований текст непридатний: %2$@",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ має типову комбінацію: %2$@",
+     "after": "«%1$@» має типову комбінацію цієї дії: %2$@",
+     "why": "meaning: its default is this row's action's key, which the other action now holds; the name is quoted since it is an infinitive"
+    },
+    {
+     "key": "%@ reset to default: %@",
+     "english": "%1$@ reset to default: %2$@",
+     "before": "%1$@ повернуто до типового: %2$@",
+     "after": "«%1$@» скинуто до типових: %2$@",
+     "why": "natural: повернуто до типового lacks its noun; now matches the Reset to Default button (Скинути до типових)"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "%@ не додано назад: не вдалося спершу зберегти копію тексту з його пакета, тому TextMouth залишив текст без змін.",
+     "after": "%@ не додано назад: не вдалося спершу зберегти копію тексту з її пакета, тому TextMouth залишив текст без змін.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "%lld books were not in it.",
+     "english": {
+      "one": "%lld book was not in it.",
+      "other": "%lld books were not in it."
+     },
+     "before": {
+      "few": "%lld книг не було в ньому.",
+      "many": "%lld книг не було в ньому.",
+      "one": "%lld книги не було в ньому.",
+      "other": "%lld книги не було в ньому."
+     },
+     "after": {
+      "one": "%lld книга не була в ньому.",
+      "few": "%lld книги не були в ньому.",
+      "many": "%lld книг не було в ньому.",
+      "other": "%lld книги не було в ньому."
+     },
+     "why": "grammar: 1 книги and 2 книг did not agree with the number; each form now agrees, as the forms of Book was already in it do"
+    },
+    {
+     "key": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "english": "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol.",
+     "before": "Послідовність — це один символ, що повторюється окремо або через одинарні пробіли, наприклад * * * * чи ====. Озвучення переписує послідовності перед правилами вище; екран і брайль зберігають кожен символ.",
+     "after": "Послідовність — це один символ, що повторюється окремо або через одинарні пробіли, наприклад * * * * чи ====. Озвучення переписує послідовності до застосування правил, наведених вище; екран і брайль зберігають кожен символ.",
+     "why": "natural: перед правилами вище copied before the rules above and read as a place in the list"
+    },
+    {
+     "key": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "english": "Adds an Export button to each reader's toolbar. File, Export works either way.",
+     "before": "Додає кнопку «Експортувати» на панель інструментів кожного вікна читання. Команда «Файл» > «Експортувати» працює в обох випадках.",
+     "after": "Додає кнопку «Експортувати» на панель інструментів кожного вікна читання. Команда «Експортувати» в меню «Файл» працює в обох випадках.",
+     "why": "voiceover: VoiceOver reads > as більше; the menu path is said in words"
+    },
+    {
+     "key": "Also write to the library's copy of the EPUB file",
+     "english": "Also write to the library's copy of the EPUB file",
+     "before": "Також записати в копію файлу EPUB у бібліотеці",
+     "after": "Також записувати в копію файлу EPUB у бібліотеці",
+     "why": "natural: a switch's label is a standing setting, so imperfective (записувати), as part 1 chose"
+    },
+    {
+     "key": "At Sign",
+     "english": "At Sign",
+     "before": "Знак at",
+     "after": "Символ електронної пошти",
+     "why": "term: Apple's Ukrainian VoiceOver names @ символ електронної пошти; Знак at mixed in a Latin word"
+    },
+    {
+     "key": "Caret",
+     "english": "Caret",
+     "before": "Карет",
+     "after": "Символ вставки",
+     "why": "term: Apple's Ukrainian VoiceOver names ^ символ вставки; Карет is not a Ukrainian word"
+    },
+    {
+     "key": "Choose the app to edit the manifest of %@ with.",
+     "english": "Choose the app to edit the manifest of %@ with.",
+     "before": "Виберіть програму, якою редагувати маніфест «%@».",
+     "after": "Виберіть програму для редагування маніфесту «%@».",
+     "why": "natural: програму, якою редагувати copies the English with"
+    },
+    {
+     "key": "Choose the app to edit the text of %@ with.",
+     "english": "Choose the app to edit the text of %@ with.",
+     "before": "Виберіть програму, якою редагувати текст «%@».",
+     "after": "Виберіть програму для редагування тексту «%@».",
+     "why": "natural: програму, якою редагувати copies the English with"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "Вибір робить комбінацію вашою; «Скинути до типових» відновлює типове місце її дії.",
+     "after": "Ваш вибір замінює типове значення; «Скинути до типових» відновлює вікна, де комбінація діє типово.",
+     "why": "natural: Вибір робить комбінацію вашою and типове місце її дії were literal copies"
+    },
+    {
+     "key": "Close All",
+     "english": "Close All",
+     "before": "Закрити все",
+     "after": "Закрити всі",
+     "why": "term: the File menu macOS shows in Ukrainian says Закрити всі (SwiftUI and AppKit menus)"
+    },
+    {
+     "key": "Copies the whole report as plain text",
+     "english": "Copies the whole report as plain text",
+     "before": "Копіює весь звіт як звичайний текст.",
+     "after": "Копіює весь звіт як простий текст.",
+     "why": "term: Apple's Ukrainian calls plain text простий текст (TextEdit), not звичайний текст"
+    },
+    {
+     "key": "Display",
+     "english": "Display",
+     "before": "Показ",
+     "after": "Показувати",
+     "why": "natural: a picker that chooses what is shown is Показувати, as Apple labels such pickers; Показ is a noun for a showing"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "Назва й початок кожного заголовка як аркуш CUE, що називає аудіо так, як його експортує «Аудіо».",
+     "after": "Назва й початок кожного заголовка як файл CUE, що називає аудіо так, як його експортує «Аудіо».",
+     "why": "meaning: a CUE sheet is a file, not the window sheet Аркуш names"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "english": "Edit Text has stopped for %@, since a new copy replaced it.",
+     "before": "Редагування тексту «%@» зупинено, бо його замінила нова копія.",
+     "after": "Редагування тексту «%@» зупинено, бо її замінила нова копія.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "Edit Text has stopped for %@, since its file was read again.",
+     "english": "Edit Text has stopped for %@, since its file was read again.",
+     "before": "Редагування тексту «%@» зупинено, бо його файл було прочитано ще раз.",
+     "after": "Редагування тексту «%@» зупинено, бо її файл було прочитано ще раз.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "Editable",
+     "english": "Editable",
+     "before": "Редаговані",
+     "after": "Можна редагувати",
+     "why": "meaning: Редаговані reads as edited (fields already changed), not as fields that can be changed"
+    },
+    {
+     "key": "Enable Sound Effects",
+     "english": "Enable Sound Effects",
+     "before": "Увімкнути звукові ефекти",
+     "after": "Відтворювати звукові ефекти",
+     "why": "natural: a switch's label is a standing setting, so imperfective, as Apple's Відтворювати звукові ефекти інтерфейсу and part 1 have it"
+    },
+    {
+     "key": "Enhanced",
+     "english": "Enhanced",
+     "before": "Покращена",
+     "after": "Вдосконалена",
+     "why": "term: Apple's Ukrainian names the Enhanced voice tier вдосконалений (TextToSpeech); feminine to agree with якість"
+    },
+    {
+     "key": "Exported %@ to %@.",
+     "english": "Exported %1$@ to %2$@.",
+     "before": "Експортовано %1$@ до %2$@.",
+     "after": "Експортовано %1$@ до папки «%2$@».",
+     "why": "grammar: до needs the genitive, which a folder name as Finder shows it cannot take; it is named as папка and quoted"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "Експортується %1$lld з %2$@…",
+     "after": "Експортовано %1$lld, усього %2$@…",
+     "why": "grammar: з needs the genitive, but the count comes in the nominative (з 3 елементи); the total now follows усього"
+    },
+    {
+     "key": "Exports the checked items once the braille table just chosen is checked.",
+     "english": "Exports the checked items once the braille table just chosen is checked.",
+     "before": "Експортує позначені елементи, щойно буде перевірено щойно вибрану брайлівську таблицю.",
+     "after": "Експортує позначені елементи після перевірки щойно вибраної брайлівської таблиці.",
+     "why": "natural: щойно ... щойно used the same word for as soon as and just"
+    },
+    {
+     "key": "Failed to load book",
+     "english": "Failed to load book",
+     "before": "Не вдалося завантажити книгу",
+     "after": "Не вдалося відкрити книгу",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "For trying out with a braille display.",
+     "english": "For trying out with a braille display.",
+     "before": "Для спроби з брайлівським дисплеєм.",
+     "after": "Для випробування з брайлівським дисплеєм.",
+     "why": "natural: Для спроби з is a literal copy of for trying out"
+    },
+    {
+     "key": "Hide Others",
+     "english": "Hide Others",
+     "before": "Сховати інші",
+     "after": "Сховати решту",
+     "why": "term: the application menu macOS shows in Ukrainian says Сховати решту"
+    },
+    {
+     "key": "Hide TextMouth",
+     "english": "Hide TextMouth",
+     "before": "Сховати TextMouth",
+     "after": "Сховати програму TextMouth",
+     "why": "term: the application menu macOS shows in Ukrainian says Сховати програму «TextMouth»; the inner quotes are left out since the sentence quotes the command"
+    },
+    {
+     "key": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "english": "In Library windows, a letter alone moves to the first book or folder starting with it, so a shortcut that is a letter alone, such as W, works only in other windows.",
+     "before": "У вікнах бібліотеки літера без інших клавіш переходить до першої книги або папки, що починається з неї, тому комбінація з однієї літери, як-от W, працює лише в інших вікнах.",
+     "after": "У вікнах бібліотеки натискання самої літери переводить до першої книги або папки, що починається з неї, тому комбінація з однієї літери, як-от W, працює лише в інших вікнах.",
+     "why": "natural: a letter does not go anywhere; pressing a letter alone moves to the book"
+    },
+    {
+     "key": "Jumped to %@ in the recording.",
+     "english": "Jumped to %@ in the recording.",
+     "before": "Перехід до %@ у записі.",
+     "after": "Перехід у записі: %@.",
+     "why": "grammar: до needs the genitive, but the time comes in the nominative (2 години, 13 хвилин), so it follows a colon"
+    },
+    {
+     "key": "Jumped to %@ percent.",
+     "english": "Jumped to %@ percent.",
+     "before": "Перехід, відсоток: %@.",
+     "after": "Перехід до %@ відсотка.",
+     "why": "natural: Перехід, відсоток: was a list, not a sentence; a number with a decimal takes відсотка"
+    },
+    {
+     "key": "Jumped to %@.",
+     "english": "Jumped to %@.",
+     "before": "Перехід до %@.",
+     "after": "Перехід: %@.",
+     "why": "grammar: до needs the genitive, but the time comes in the nominative (2 години, 13 хвилин), so it follows a colon"
+    },
+    {
+     "key": "Loading",
+     "english": "Loading",
+     "before": "Завантаження",
+     "after": "Відкриття",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "Loading %@",
+     "english": "Loading %@",
+     "before": "Завантаження: %@",
+     "after": "Відкриття: %@",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "Loading book...",
+     "english": "Loading book...",
+     "before": "Завантаження книги...",
+     "after": "Відкриття книги...",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "Manifest not updated: %@ Fix it in your editor and save again; until then, %@ keeps its headings.",
+     "english": "Manifest not updated: %1$@ Fix it in your editor and save again; until then, %2$@ keeps its headings.",
+     "before": "Маніфест не оновлено: %1$@ Виправте його в редакторі й збережіть знову; до того «%2$@» зберігає свої заголовки.",
+     "after": "Маніфест не оновлено: %1$@ Виправте його в редакторі й збережіть знову; до того часу «%2$@» зберігає свої заголовки.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "Елементи керування медіа не віддано: ця книга їх не утримує.",
+     "after": "Керування медіа не звільнено: ця книга його не утримує.",
+     "why": "natural: matches the command Звільнити керування медіа, which gives the media keys back"
+    },
+    {
+     "key": "Media controls released",
+     "english": "Media controls released",
+     "before": "Елементи керування медіа віддано",
+     "after": "Керування медіа звільнено",
+     "why": "natural: matches the command Звільнити керування медіа, which gives the media keys back"
+    },
+    {
+     "key": "Minimize All",
+     "english": "Minimize All",
+     "before": "Згорнути все",
+     "after": "Згорнути всі",
+     "why": "term: the Window menu macOS shows in Ukrainian says Згорнути всі"
+    },
+    {
+     "key": "Next",
+     "english": "Next",
+     "before": "Наступна",
+     "after": "Далі",
+     "why": "term: AppKit's Ukrainian key names call the Next key Далі; Наступна had no noun to agree with"
+    },
+    {
+     "key": "No book is loaded.",
+     "english": "No book is loaded.",
+     "before": "Жодної книги не завантажено.",
+     "after": "Жодної книги не відкрито.",
+     "why": "meaning: завантажити is the glossary's Download; a book that loads is opened (Відкриття), as part 1 chose"
+    },
+    {
+     "key": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "english": "No voice is installed. Add one in System Settings, Accessibility, Spoken Content, then export again.",
+     "before": "Жодного голосу не встановлено. Додайте голос: Системні налаштування, Універсальний доступ, Вимовлений вміст, а потім експортуйте знову.",
+     "after": "Жодного голосу не встановлено. Додайте голос: Системні налаштування, Універсальний доступ, Усний вміст, а потім експортуйте знову.",
+     "why": "term: Apple's Ukrainian names the Spoken Content pane Усний вміст"
+    },
+    {
+     "key": "Number Sign",
+     "english": "Number Sign",
+     "before": "Знак номера",
+     "after": "Решітка",
+     "why": "meaning: Знак номера is the numero sign №; # is решітка, as Apple's Ukrainian VoiceOver says it"
+    },
+    {
+     "key": "Paste and Match Style",
+     "english": "Paste and Match Style",
+     "before": "Вставити та узгодити стиль",
+     "after": "Вставити і допасувати стиль",
+     "why": "term: the Edit menu macOS shows in Ukrainian says Вставити і допасувати стиль"
+    },
+    {
+     "key": "Release Media Controls",
+     "english": "Release Media Controls",
+     "before": "Відпустити елементи керування медіа",
+     "after": "Звільнити керування медіа",
+     "why": "natural: Відпустити елементи керування reads as letting go of controls by hand; the command gives the media keys back to other apps"
+    },
+    {
+     "key": "Remove shortcut %@ from %@",
+     "english": "Remove shortcut %1$@ from %2$@",
+     "before": "Вилучити комбінацію %1$@ з %2$@",
+     "after": "Вилучити комбінацію %1$@ з дії «%2$@»",
+     "why": "grammar: an action name (an infinitive phrase) cannot take the genitive after з, so it is named as дія and quoted"
+    },
+    {
+     "key": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "english": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "before": "Форматований текст із заголовками на їхніх рівнях структури, для Word, Pages і TextEdit.",
+     "after": "Форматований текст із заголовками на їхніх рівнях структури, для Word, Pages і Мініредактора.",
+     "why": "term: Apple's Ukrainian names TextEdit Мініредактор"
+    },
+    {
+     "key": "Save your rules as a pronunciation lexicon file.",
+     "english": "Save your rules as a pronunciation lexicon file.",
+     "before": "Збережіть ваші правила як файл словника вимови.",
+     "after": "Збережіть свої правила як файл словника вимови.",
+     "why": "natural: Ukrainian uses the reflexive свої for the subject's own things; ваші copies your"
+    },
+    {
+     "key": "Say how many",
+     "english": "Say how many",
+     "before": "Казати кількість",
+     "after": "Називати кількість",
+     "why": "natural: a reading style says the count; Казати is colloquial beside Повторювати and Пропускати"
+    },
+    {
+     "key": "Stop At",
+     "english": "Stop At",
+     "before": "Зупинити на",
+     "after": "Місце зупинки",
+     "why": "natural: Зупинити на left its preposition hanging before the choices Кінець книги and Кінець заголовка"
+    },
+    {
+     "key": "Tab",
+     "english": "Tab",
+     "before": "Tab",
+     "after": "Табуляція",
+     "why": "term: Apple's Ukrainian VoiceOver and AppKit key names call the Tab key табуляція"
+    },
+    {
+     "key": "Text as plain text",
+     "english": "Text as plain text",
+     "before": "Текст як звичайний текст",
+     "after": "Текст як простий текст",
+     "why": "term: Apple's Ukrainian calls plain text простий текст (TextEdit), not звичайний текст"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "Текст не оновлено: «%@» вилучено або його завантаження видалено, тому редагування тексту для нього зупинено.",
+     "after": "Текст не оновлено: «%@» вилучено або її завантаження видалено, тому редагування тексту для неї зупинено.",
+     "why": "grammar: the title stands for the book, which is feminine (її), as part 1 chose"
+    },
+    {
+     "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "Текст не оновлено: у розділі %1$@ відредагованого тексту «%2$@» — %3$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: у розділі %1$@ відредагованого тексту «%2$@» — %3$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "Текст не оновлено: відредагований текст «%1$@» — %2$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: відредагований текст «%1$@» — %2$@; TextMouth не може безпечно його прочитати. Спростіть структуру й збережіть знову або скасуйте зміну; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited text of %@ has no chapter with any text. Undo the change and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: у відредагованому тексті «%@» немає жодного розділу з текстом. Скасуйте зміну й збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: у відредагованому тексті «%@» немає жодного розділу з текстом. Скасуйте зміну й збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then.",
+     "english": "Text not updated: the edited text of %@ isn't UTF-8 text. Save it as UTF-8; the book keeps its old text until then.",
+     "before": "Текст не оновлено: відредагований текст «%@» не є текстом UTF-8. Збережіть його як UTF-8; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: відредагований текст «%@» не є текстом UTF-8. Збережіть його як UTF-8; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %@ adds words to a chapter with no speech, where they can't be kept. Remove them and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: у відредагованій транскрипції «%@» додано слова до розділу без мовлення, де їх не можна зберегти. Вилучіть їх і збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: у відредагованій транскрипції «%@» додано слова до розділу без мовлення, де їх не можна зберегти. Вилучіть їх і збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %@ changes a chapter's heading, which comes from its audio. Put it back and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: відредагована транскрипція «%@» змінює заголовок розділу, який береться з його аудіо. Поверніть його й збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: відредагована транскрипція «%@» змінює заголовок розділу, який береться з його аудіо. Поверніть його й збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "before": "Текст не оновлено: кількість розділів у відредагованій транскрипції «%1$@» (%2$@) не збігається з аудіокнигою (%3$@). Залиште кожен рядок, що починається з <!-- chapter:, і збережіть знову; до того книга зберігає старий текст.",
+     "after": "Текст не оновлено: кількість розділів у відредагованій транскрипції «%1$@» (%2$@) не збігається з аудіокнигою (%3$@). Залиште кожен рядок, що починається з <!-- chapter:, і збережіть знову; до того часу книга зберігає старий текст.",
+     "why": "natural: до того alone reads as before that; until then is до того часу"
+    },
+    {
+     "key": "TextMouth can't use the braille table chosen in Settings, “%@”, so this export starts from %@.",
+     "english": "TextMouth can't use the braille table chosen in Settings, “%1$@”, so this export starts from %2$@.",
+     "before": "TextMouth не може використати брайлівську таблицю, вибрану в Налаштуваннях, «%1$@», тому цей експорт починається з %2$@.",
+     "after": "TextMouth не може використати брайлівську таблицю «%1$@», вибрану в Налаштуваннях, тому цей експорт починається з %2$@.",
+     "why": "natural: the table's name follows the noun it names, not the participle phrase, as the English order had it"
+    },
+    {
+     "key": "TextMouth kept the text you changed in %@.",
+     "english": "TextMouth kept the text you changed in %@.",
+     "before": "TextMouth залишив без змін текст, який ви змінили в «%@».",
+     "after": "TextMouth зберіг змінений вами текст «%@».",
+     "why": "natural: залишив без змін текст, який ви змінили sounded self-contradictory; the rebuild kept the edited text"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth читає файли BRF і BRL, які ви додаєте відтепер, із цими символами та сам розпізнає брайлівські шаблони Unicode. Діалог експорту починає BRF з них. Книга зберігає символи свого імпорту, які можна змінити у вікні «Інформація про книгу».",
+     "after": "TextMouth читає файли BRF і BRL, які ви додаєте відтепер, із цими символами та сам розпізнає брайлівські шаблони Unicode. Діалог експорту типово використовує їх для BRF. Книга зберігає символи свого імпорту, які можна змінити у вікні «Інформація про книгу».",
+     "why": "natural: починає BRF з них copied starts a BRF with them; the dialog uses these characters by default"
+    },
+    {
+     "key": "The %lld selected books are already in the reading list.",
+     "english": "The %lld selected books are already in the reading list.",
+     "before": "Усі %lld вибраних книг уже є у списку читання.",
+     "after": "Вибрані книги (%lld) уже є у списку читання.",
+     "why": "grammar: Усі 3 вибраних книг did not agree with 2 to 4; the count now stands apart"
+    },
+    {
+     "key": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "english": "The words TextMouth reads aloud, as plain text, each chapter under its title.",
+     "before": "Слова, які TextMouth читає вголос, як звичайний текст, кожен розділ під своєю назвою.",
+     "after": "Слова, які TextMouth читає вголос, як простий текст, кожен розділ під своєю назвою.",
+     "why": "term: Apple's Ukrainian calls plain text простий текст (TextEdit), not звичайний текст"
+    },
+    {
+     "key": "There is nothing to export.",
+     "english": "There is nothing to export.",
+     "before": "Немає що експортувати.",
+     "after": "Немає чого експортувати.",
+     "why": "grammar: the Ukrainian construction is немає чого + infinitive; Немає що is a calque"
+    },
+    {
+     "key": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "english": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "before": "Цей файл — не веб-архів, який може прочитати TextMouth. Він може бути пошкоджений або іншого типу.",
+     "after": "Цей файл — не вебархів, який може прочитати TextMouth. Він може бути пошкоджений або іншого типу.",
+     "why": "punctuation: the 2019 spelling joins веб (вебархів), as Apple's TextEdit and the rest of the catalog write it"
+    },
+    {
+     "key": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "english": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "before": "Цей веб-архів містить файл типу «%@», а не вебсторінку чи текст, тому читати нічого.",
+     "after": "Цей вебархів містить файл типу «%@», а не вебсторінку чи текст, тому читати нічого.",
+     "why": "punctuation: the 2019 spelling joins веб (вебархів), as Apple's TextEdit and the rest of the catalog write it"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "Вводьте прямі лапки: у TextEdit вимкніть «Розумні лапки» в меню «Редагувати» > «Заміни».",
+     "after": "Вводьте прямі лапки: у Мініредакторі вимкніть «Динамічні лапки» (меню «Редагування», підменю «Підстановки»).",
+     "why": "term: Apple's Ukrainian names TextEdit Мініредактор and its items Редагування, Підстановки, Динамічні лапки; no > for VoiceOver to read as більше"
+    },
+    {
+     "key": "Use Global Default",
+     "english": "Use Global Default",
+     "before": "Використовувати глобальне типове",
+     "after": "Використовувати глобальне налаштування",
+     "why": "natural: глобальне типове lacks its noun; the button uses the global end of book setting"
+    },
+    {
+     "key": "What a book of this kind moves by until it has a unit of its own.",
+     "english": "What a book of this kind moves by until it has a unit of its own.",
+     "before": "На що переходить книга такого виду, доки не має власної одиниці.",
+     "after": "На яку одиницю переходить книга цього типу, доки не має власної.",
+     "why": "natural: На що переходить книга read as what the book turns into; it is the unit it moves by"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "Чи несе останній рядок кожної сторінки її брайлівський номер.",
+     "after": "Чи містить останній рядок кожної сторінки її брайлівський номер.",
+     "why": "natural: несе copied carries; a line містить its number"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "З «%1$@» «Відтворити» для завершеної книги повідомляє, що вона завершена; із «%2$@» «Відтворити» починає її знову з початку.",
+     "after": "Якщо вибрано «%1$@», «Відтворити» для завершеної книги повідомляє, що вона завершена; якщо вибрано «%2$@», «Відтворити» починає її знову з початку.",
+     "why": "natural: З «X» copied the English with; the choice is Якщо вибрано «X»"
+    },
+    {
+     "key": "it does not load in TextMouth's liblouis %@",
+     "english": "it does not load in TextMouth's liblouis %@",
+     "before": "вона не завантажується в liblouis %@ у TextMouth",
+     "after": "liblouis %@ у TextMouth не може її зчитати",
+     "why": "meaning: a braille table that does not load is not read (зчитати), never downloaded, as part 1 chose"
+    },
+    {
+     "key": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "english": "the audiobook's audio changed since it was transcribed, so its transcript no longer fits it.",
+     "before": "аудіо аудіокниги змінилося після транскрибування, тому її транскрипція більше не відповідає йому.",
+     "after": "звук аудіокниги змінився після транскрибування, тому її транскрипція йому більше не відповідає.",
+     "why": "natural: аудіо аудіокниги repeated the same word; звук аудіокниги"
+    },
+    {
+     "key": "the edited transcript can't be laid over the audiobook's audio.",
+     "english": "the edited transcript can't be laid over the audiobook's audio.",
+     "before": "відредаговану транскрипцію не вдається накласти на аудіо аудіокниги.",
+     "after": "відредаговану транскрипцію не вдається накласти на звук аудіокниги.",
+     "why": "natural: аудіо аудіокниги repeated the same word; звук аудіокниги"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "«%1$@» — це Особистий голос, який macOS не може записати у файл. Виберіть інший голос кнопкою «%2$@» у вікні читання, а потім експортуйте знову.",
+     "after": "«%1$@» — це Власний голос, який macOS не може записати у файл. Виберіть інший голос кнопкою «%2$@» у вікні читання, а потім експортуйте знову.",
+     "why": "term: Apple's Ukrainian names Personal Voice Власний голос (Accessibility settings)"
+    },
+    {
+     "key": "“%@” is not a complete, valid XML file.",
+     "english": "“%@” is not a complete, valid XML file.",
+     "before": "«%@» — не повний чи чинний файл XML.",
+     "after": "«%@» не є повним і коректним файлом XML.",
+     "why": "meaning: чинний means in legal force; a valid XML file is коректний"
+    }
+   ]
   }
  ]
 }
