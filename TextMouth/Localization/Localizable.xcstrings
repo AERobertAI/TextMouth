@@ -99017,7 +99017,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ein Teil von %@ konnte nicht dekodiert werden und bleibt als Stille erhalten."
+            "value" : "Ein Teil von %@ konnte nicht decodiert werden und bleibt als Stille erhalten."
           }
         },
         "es" : {
@@ -99090,13 +99090,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ein Teil von %lld Datei, %@, konnte nicht dekodiert werden und bleibt als Stille erhalten."
+                  "value" : "Ein Teil von %lld Datei, %@, konnte nicht decodiert werden und bleibt als Stille erhalten."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Ein Teil von %lld Dateien, %@, konnte nicht dekodiert werden und bleibt als Stille erhalten."
+                  "value" : "Ein Teil von %lld Dateien, %@, konnte nicht decodiert werden und bleibt als Stille erhalten."
                 }
               }
             }
@@ -127846,7 +127846,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kann „%@“ nicht umwandeln: Ein Teil des Tons liegt in einem Stück vor, das zu groß zum Dekodieren ist."
+            "value" : "TextMouth kann „%@“ nicht umwandeln: Ein Teil des Tons liegt in einem Stück vor, das zu groß zum Decodieren ist."
           }
         },
         "es" : {
@@ -154860,7 +154860,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dieses Bild konnte nicht dekodiert werden. Es ist möglicherweise beschädigt."
+            "value" : "Dieses Bild konnte nicht decodiert werden. Es ist möglicherweise beschädigt."
           }
         },
         "es" : {
@@ -174076,7 +174076,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "sein Bild konnte nicht dekodiert werden"
+            "value" : "sein Bild konnte nicht decodiert werden"
           }
         },
         "es" : {
