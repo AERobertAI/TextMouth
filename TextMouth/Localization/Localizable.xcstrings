@@ -49,7 +49,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "\"%@\" bukan angka."
+            "value" : "“%@” bukan angka."
           }
         },
         "it" : {
@@ -9134,7 +9134,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ memiliki pintasan default, %2$@"
+            "value" : "%1$@ memakai pintasan default tindakan ini, %2$@"
           }
         },
         "it" : {
@@ -125814,7 +125814,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Awal"
+            "value" : "Mulai"
           }
         },
         "it" : {
@@ -133322,7 +133322,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Break"
+            "value" : "Pemisah"
           }
         },
         "it" : {
@@ -230288,7 +230288,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cari"
+            "value" : "Temukan"
           }
         },
         "it" : {
@@ -247019,7 +247019,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Help"
+            "value" : "Bantuan"
           }
         },
         "it" : {
@@ -247430,7 +247430,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sembunyikan yang Lain"
+            "value" : "Sembunyikan Lainnya"
           }
         },
         "it" : {
@@ -261720,7 +261720,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Insert Character"
+            "value" : "Sisipkan Karakter"
           }
         },
         "it" : {
@@ -261857,7 +261857,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Insert Line"
+            "value" : "Sisipkan Baris"
           }
         },
         "it" : {
@@ -276981,7 +276981,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Melompat ke halaman %1$@, halaman berlabel %3$@ urutan %2$@."
+            "value" : "Melompat ke halaman %1$@, halaman berlabel %3$@ yang %2$@."
           }
         },
         "it" : {
@@ -305642,7 +305642,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Minimalkan"
+            "value" : "Minikan"
           }
         },
         "it" : {
@@ -305779,7 +305779,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Minimalkan Semua"
+            "value" : "Minikan Semua"
           }
         },
         "it" : {
@@ -307205,7 +307205,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mode Switch"
+            "value" : "Pengalihan Mode"
           }
         },
         "it" : {
@@ -331371,7 +331371,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Next"
+            "value" : "Berikutnya"
           }
         },
         "it" : {
