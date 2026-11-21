@@ -2,6 +2,1293 @@
  "language": "fa",
  "reviews": [
   {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ didn't answer for %lld seconds.",
+     "english": {
+      "one": "%@ didn't answer for %lld second.",
+      "other": "%@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "one": "%@ تا %lld ثانیه پاسخ نداد.",
+      "other": "%@ تا %lld ثانیه پاسخ نداد."
+     },
+     "after": {
+      "one": "%@ ظرف %lld ثانیه پاسخ نداد.",
+      "other": "%@ ظرف %lld ثانیه پاسخ نداد."
+     },
+     "why": "natural: تا reads as until; ظرف says within the timeout"
+    },
+    {
+     "key": "%@ not recording",
+     "english": "%@ not recording",
+     "before": "%@ در حال ضبط نیست",
+     "after": "%@، در حال ضبط نیست",
+     "why": "grammar: without a pause the level (سطح) became the one not recording"
+    },
+    {
+     "key": "%@ silent",
+     "english": "%@ silent",
+     "before": "%@ ساکت",
+     "after": "%@، ساکت",
+     "why": "grammar: without a pause سطح ساکت read as an ezafe phrase, the silent level"
+    },
+    {
+     "key": "%@ so far",
+     "english": "%@ so far",
+     "before": "%@ تاکنون",
+     "after": "تاکنون %@",
+     "why": "natural: the adverb comes first in Persian, not after the amount"
+    },
+    {
+     "key": "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.",
+     "english": "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.",
+     "before": "%@ برای تبدیل صدای Ogg آن به AAC لازم است. کمی فضا آزاد کنید تا TextMouth در اجرای بعدی آن را تبدیل کند.",
+     "after": "%@ تا صدای Ogg آن به AAC تبدیل شود. کمی فضا آزاد کنید تا TextMouth در اجرای بعدی آن را تبدیل کند.",
+     "why": "grammar: the placeholder already ends in needs 4.2 GB free, so لازم است doubled the verb"
+    },
+    {
+     "key": "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.",
+     "english": "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.",
+     "before": "%@ برای تبدیل صدای Ogg آن‌ها به AAC لازم است. کمی فضا آزاد کنید تا TextMouth در اجرای بعدی آن‌ها را تبدیل کند.",
+     "after": "%@ تا صدای Ogg آن‌ها به AAC تبدیل شود. کمی فضا آزاد کنید تا TextMouth در اجرای بعدی آن‌ها را تبدیل کند.",
+     "why": "grammar: the placeholder already ends in needs N GB free, so لازم است doubled the verb"
+    },
+    {
+     "key": "%@ waits for a network without data limits to refresh by itself.",
+     "english": "%@ waits for a network without data limits to refresh by itself.",
+     "before": "%@ منتظر شبکه‌ای بدون محدودیت داده می‌ماند تا خودش تازه‌سازی شود.",
+     "after": "%@ برای تازه‌سازی خودکار منتظر شبکه‌ای بدون محدودیت داده می‌ماند.",
+     "why": "grammar: a reflexive with a passive verb (خودش تازه‌سازی شود) read oddly"
+    },
+    {
+     "key": "%lld books have pages that could not be read:",
+     "english": {
+      "one": "%lld book has pages that could not be read:",
+      "other": "%lld books have pages that could not be read:"
+     },
+     "before": {
+      "one": "%lld کتاب صفحه‌هایی دارند که خوانده نشدند:",
+      "other": "%lld کتاب صفحه‌هایی دارند که خوانده نشدند:"
+     },
+     "after": {
+      "one": "%lld کتاب صفحه‌هایی دارد که خوانده نشدند:",
+      "other": "%lld کتاب صفحه‌هایی دارند که خوانده نشدند:"
+     },
+     "why": "grammar: one book took the plural verb دارند"
+    },
+    {
+     "key": "%lld downloaded",
+     "english": {
+      "one": "%lld downloaded",
+      "other": "%lld downloaded"
+     },
+     "before": {
+      "one": "%lld بارگیری شد",
+      "other": "%lld بارگیری شد"
+     },
+     "after": {
+      "one": "%lld بارگیری‌شده",
+      "other": "%lld بارگیری‌شده"
+     },
+     "why": "natural: a count beside unplayed and failed takes the adjective (glossary Download noun), not a past verb"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "one": "%lld ویرایش واگرد می‌شود. «انجام مجدد» آن‌ها را برمی‌گرداند، تا وقتی که ویرایش دیگری انجام دهید.",
+      "other": "%lld ویرایش واگرد می‌شود. «انجام مجدد» آن‌ها را برمی‌گرداند، تا وقتی که ویرایش دیگری انجام دهید."
+     },
+     "after": {
+      "one": "%lld ویرایش واگرد می‌شود. «انجام مجدد» آن را برمی‌گرداند، تا وقتی که ویرایش دیگری انجام دهید.",
+      "other": "%lld ویرایش واگرد می‌شود. «انجام مجدد» آن‌ها را برمی‌گرداند، تا وقتی که ویرایش دیگری انجام دهید."
+     },
+     "why": "grammar: the one form brought back them for one edit"
+    },
+    {
+     "key": "%lld feeds you unsubscribed from were left out.",
+     "english": {
+      "one": "%lld feed you unsubscribed from was left out.",
+      "other": "%lld feeds you unsubscribed from were left out."
+     },
+     "before": {
+      "one": "%lld فید که اشتراکشان را لغو کرده بودید کنار گذاشته شد.",
+      "other": "%lld فید که اشتراکشان را لغو کرده بودید کنار گذاشته شد."
+     },
+     "after": {
+      "one": "%lld فیدی که اشتراکش را لغو کرده بودید کنار گذاشته شد.",
+      "other": "%lld فیدی که اشتراکشان را لغو کرده بودید کنار گذاشته شدند."
+     },
+     "why": "grammar: a relative clause needs فیدی که, and one feed took their (اشتراکشان)"
+    },
+    {
+     "key": "%lld more imports waiting",
+     "english": {
+      "one": "%lld more import waiting",
+      "other": "%lld more imports waiting"
+     },
+     "before": {
+      "one": "%lld وارد کردن دیگر در انتظار",
+      "other": "%lld وارد کردن دیگر در انتظار"
+     },
+     "after": {
+      "one": "%lld مورد دیگر در صف وارد کردن",
+      "other": "%lld مورد دیگر در صف وارد کردن"
+     },
+     "why": "natural: the verbal noun وارد کردن cannot be counted; says N more in the import queue"
+    },
+    {
+     "key": "%lld skipped as duplicates",
+     "english": {
+      "one": "%lld skipped as a duplicate",
+      "other": "%lld skipped as duplicates"
+     },
+     "before": {
+      "one": "%lld تکراری رد شد",
+      "other": "%lld تکراری رد شد"
+     },
+     "after": {
+      "one": "%lld مورد تکراری رد شد",
+      "other": "%lld مورد تکراری رد شد"
+     },
+     "why": "natural: the count needs a noun (مورد) before the adjective"
+    },
+    {
+     "key": "A chapter marker needs a title.",
+     "english": "A chapter marker needs a title.",
+     "before": "علامت فصل به‌عنوان نیاز دارد.",
+     "after": "علامت فصل باید عنوان داشته باشد.",
+     "why": "meaning: به‌عنوان with the non-joiner is the preposition as, so the sentence said needs as"
+    },
+    {
+     "key": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "english": "A feed address, such as a link ending in .rss or .xml, or a web page that names its feed.",
+     "before": "نشانی فید، مانند پیوندی که به .rss یا .xml ختم می‌شود، یا صفحه‌ای وب که فید خود را معرفی می‌کند.",
+     "after": "نشانی فید، مانند پیوندی که به .rss یا .xml ختم می‌شود، یا صفحه‌ی وبی که فید خود را معرفی می‌کند.",
+     "why": "grammar: the indefinite ی goes on وب before که, not on صفحه"
+    },
+    {
+     "key": "A feed can have its own %@ choice and its own days before deleting played downloads, in its %@.",
+     "english": "A feed can have its own %1$@ choice and its own days before deleting played downloads, in its %2$@.",
+     "before": "هر فید می‌تواند انتخاب %1$@ و تعداد روزهای خودش را پیش از حذف بارگیری‌های پخش‌شده داشته باشد، در %2$@.",
+     "after": "هر فید می‌تواند در %2$@ خود، انتخاب %1$@ و تعداد روزهای پیش از حذف بارگیری‌های پخش‌شده‌ی خودش را داشته باشد.",
+     "why": "natural: the trailing ، در %2$@ copied the English order"
+    },
+    {
+     "key": "A filter preset needs a name.",
+     "english": "A filter preset needs a name.",
+     "before": "پیش‌تنظیم فیلتر به نام نیاز دارد.",
+     "after": "پیش‌تنظیم فیلتر باید نام داشته باشد.",
+     "why": "natural: به نام reads as the idiom named, not needs a name"
+    },
+    {
+     "key": "Already at the end.",
+     "english": "Already at the end.",
+     "before": "از قبل در پایان است.",
+     "after": "در پایان هستید.",
+     "why": "natural: از قبل در پایان است copied already word for word"
+    },
+    {
+     "key": "Already at the start.",
+     "english": "Already at the start.",
+     "before": "از قبل در ابتدا است.",
+     "after": "در ابتدا هستید.",
+     "why": "natural: از قبل در ابتدا است copied already word for word"
+    },
+    {
+     "key": "Also write the markers as Audacity labels",
+     "english": "Also write the markers as Audacity labels",
+     "before": "نوشتن علامت‌ها به‌صورت برچسب‌های Audacity نیز",
+     "after": "علامت‌ها به‌صورت برچسب‌های Audacity هم نوشته شوند",
+     "why": "natural: a trailing نیز after a verbal noun; the other checkboxes are clauses"
+    },
+    {
+     "key": "An episode in its feed can't be edited.",
+     "english": "An episode in its feed can't be edited.",
+     "before": "قسمتی از یک فید را نمی‌توان ویرایش کرد.",
+     "after": "قسمتی را که هنوز در فید خود است نمی‌توان ویرایش کرد.",
+     "why": "meaning: an episode of a feed lost in its feed, which is the reason it cannot be edited"
+    },
+    {
+     "key": "Attached from %@ files at import, on %@.",
+     "english": "Attached from %1$@ files at import, on %2$@.",
+     "before": "هنگام وارد کردن، از فایل‌های %1$@ پیوست شد، در %2$@.",
+     "after": "در %2$@ هنگام وارد کردن از فایل‌های %1$@ پیوست شد.",
+     "why": "natural: the date trailed after the verb as in English; Persian puts the time first"
+    },
+    {
+     "key": "Attached from a %@ file on %@.",
+     "english": "Attached from a %1$@ file on %2$@.",
+     "before": "از یک فایل %1$@ پیوست شد، در %2$@.",
+     "after": "در %2$@ از یک فایل %1$@ پیوست شد.",
+     "why": "natural: the date trailed after the verb as in English; Persian puts the time first"
+    },
+    {
+     "key": "Attached from a file on %@.",
+     "english": "Attached from a file on %@.",
+     "before": "از یک فایل پیوست شد، در %@.",
+     "after": "در %@ از یک فایل پیوست شد.",
+     "why": "natural: the date trailed after the verb as in English; Persian puts the time first"
+    },
+    {
+     "key": "Attached from files at import, on %@.",
+     "english": "Attached from files at import, on %@.",
+     "before": "هنگام وارد کردن، از فایل‌ها پیوست شد، در %@.",
+     "after": "در %@ هنگام وارد کردن از فایل‌ها پیوست شد.",
+     "why": "natural: the date trailed after the verb as in English; Persian puts the time first"
+    },
+    {
+     "key": "Attached from “%@” at import, on %@.",
+     "english": "Attached from “%1$@” at import, on %2$@.",
+     "before": "هنگام وارد کردن، از «%1$@» پیوست شد، در %2$@.",
+     "after": "در %2$@ هنگام وارد کردن از «%1$@» پیوست شد.",
+     "why": "natural: the date trailed after the verb as in English; Persian puts the time first"
+    },
+    {
+     "key": "Attached from “%@” on %@.",
+     "english": "Attached from “%1$@” on %2$@.",
+     "before": "از «%1$@» پیوست شد، در %2$@.",
+     "after": "در %2$@ از «%1$@» پیوست شد.",
+     "why": "natural: the date trailed after the verb as in English; Persian puts the time first"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "صدایی که TextMouth هنگام وارد کردن تبدیل می‌کند، فقط فایل تبدیل‌شده را نگه می‌دارد.",
+     "after": "برای صدایی که TextMouth هنگام وارد کردن تبدیل می‌کند، فقط فایل تبدیل‌شده نگه داشته می‌شود.",
+     "why": "meaning: the sentence made the audio the one that keeps the file"
+    },
+    {
+     "key": "Checks every subscribed feed and says what came",
+     "english": "Checks every subscribed feed and says what came",
+     "before": "همه فیدهای مشترک را بررسی می‌کند و می‌گوید چه چیزی رسیده است.",
+     "after": "همه فیدهای دارای اشتراک را بررسی می‌کند و می‌گوید چه چیزی رسیده است.",
+     "why": "meaning: فیدهای مشترک reads as shared feeds; دارای اشتراک pairs with the glossary بدون اشتراک"
+    },
+    {
+     "key": "Checks every subscribed feed once the library has opened",
+     "english": "Checks every subscribed feed once the library has opened",
+     "before": "همه فیدهای مشترک را پس از باز شدن کتابخانه بررسی می‌کند.",
+     "after": "همه فیدهای دارای اشتراک را پس از باز شدن کتابخانه بررسی می‌کند.",
+     "why": "meaning: فیدهای مشترک reads as shared feeds; دارای اشتراک pairs with the glossary بدون اشتراک"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "فایل OPML اشتراک‌ها را همان‌گونه که برنامه‌های خواندن فید دیگر صادر می‌کنند انتخاب کنید.",
+     "after": "فایل OPML اشتراک‌ها را انتخاب کنید، همان فایلی که فیدخوان‌های دیگر صادر می‌کنند.",
+     "why": "meaning: دیگر modified فید (other feeds), not the other reader apps"
+    },
+    {
+     "key": "Continues the paused recording.",
+     "english": "Continues the paused recording.",
+     "before": "ضبط متوقف‌شده را ادامه می‌دهد.",
+     "after": "ضبط مکث‌شده را ادامه می‌دهد.",
+     "why": "meaning: متوقف‌شده is stopped; the Resume button continues a paused (مکث) recording"
+    },
+    {
+     "key": "Convert it to 16-bit or 24-bit integer samples, then import it again.",
+     "english": "Convert it to 16-bit or 24-bit integer samples, then import it again.",
+     "before": "آن را به نمونه‌های صحیح 16 بیتی یا 24 بیتی تبدیل کنید، سپس دوباره وارد کنید.",
+     "after": "آن را به نمونه‌های عدد صحیح 16 بیتی یا 24 بیتی تبدیل کنید، سپس دوباره وارد کنید.",
+     "why": "meaning: صحیح alone is correct; integer is عدد صحیح"
+    },
+    {
+     "key": "Downloads it again, then opens it where you left off",
+     "english": "Downloads it again, then opens it where you left off",
+     "before": "دوباره بارگیری می‌کند، سپس آن را از جایی که ماندید باز می‌کند.",
+     "after": "آن را دوباره بارگیری می‌کند، سپس از جایی که مانده بودید باز می‌کند.",
+     "why": "grammar: where you left off needs the past perfect مانده بودید, not ماندید (you stayed)"
+    },
+    {
+     "key": "Drops a marker at the cursor, even while the audio plays.",
+     "english": "Drops a marker at the cursor, even while the audio plays.",
+     "before": "یک علامت در مکان‌نما می‌گذارد، حتی وقتی صدا پخش می‌شود.",
+     "after": "یک علامت در محل مکان‌نما می‌گذارد، حتی وقتی صدا پخش می‌شود.",
+     "why": "natural: در مکان‌نما said in the cursor; at the cursor is در محل مکان‌نما"
+    },
+    {
+     "key": "Every article listed, newest %lld downloaded",
+     "english": {
+      "one": "Every article listed, newest %lld downloaded",
+      "other": "Every article listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "همه مقاله‌ها فهرست می‌شوند، %lld جدیدترین بارگیری می‌شود",
+      "other": "همه مقاله‌ها فهرست می‌شوند، %lld جدیدترین بارگیری می‌شود"
+     },
+     "after": {
+      "one": "همه مقاله‌ها فهرست می‌شوند، جدیدترین %lld مقاله بارگیری می‌شود",
+      "other": "همه مقاله‌ها فهرست می‌شوند، جدیدترین %lld مقاله بارگیری می‌شود"
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Every episode listed, newest %lld downloaded",
+     "english": {
+      "one": "Every episode listed, newest %lld downloaded",
+      "other": "Every episode listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "همه قسمت‌ها فهرست می‌شوند، %lld جدیدترین بارگیری می‌شود",
+      "other": "همه قسمت‌ها فهرست می‌شوند، %lld جدیدترین بارگیری می‌شود"
+     },
+     "after": {
+      "one": "همه قسمت‌ها فهرست می‌شوند، جدیدترین %lld قسمت بارگیری می‌شود",
+      "other": "همه قسمت‌ها فهرست می‌شوند، جدیدترین %lld قسمت بارگیری می‌شود"
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Every item listed, newest %lld downloaded",
+     "english": {
+      "one": "Every item listed, newest %lld downloaded",
+      "other": "Every item listed, newest %lld downloaded"
+     },
+     "before": {
+      "one": "همه موردها فهرست می‌شوند، %lld جدیدترین بارگیری می‌شود",
+      "other": "همه موردها فهرست می‌شوند، %lld جدیدترین بارگیری می‌شود"
+     },
+     "after": {
+      "one": "همه موردها فهرست می‌شوند، جدیدترین %lld مورد بارگیری می‌شود",
+      "other": "همه موردها فهرست می‌شوند، جدیدترین %lld مورد بارگیری می‌شود"
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Exported %lld subscriptions to %@.",
+     "english": {
+      "one": "Exported %lld subscription to %@.",
+      "other": "Exported %lld subscriptions to %@."
+     },
+     "before": {
+      "one": "%lld اشتراک در %@ صادر شد.",
+      "other": "%lld اشتراک در %@ صادر شد."
+     },
+     "after": {
+      "one": "%lld اشتراک به %@ صادر شد.",
+      "other": "%lld اشتراک به %@ صادر شد."
+     },
+     "why": "grammar: exported to a file takes به, not در (in)"
+    },
+    {
+     "key": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+     "english": {
+      "one": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+      "other": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
+     },
+     "before": {
+      "one": "پیش از آخرین خروج TextMouth، %lld ضبط زیر %@ پیدا شد. هر کدام را ذخیره کنید یا دور بیندازید.",
+      "other": "پیش از آخرین خروج TextMouth، %lld ضبط زیر %@ پیدا شد. هر کدام را ذخیره کنید یا دور بیندازید."
+     },
+     "after": {
+      "one": "%lld ضبط از پیش از آخرین خروج TextMouth باقی مانده است که زیر %@ فهرست شده است. آن را ذخیره کنید یا دور بیندازید.",
+      "other": "%lld ضبط از پیش از آخرین خروج TextMouth باقی مانده است که زیر %@ فهرست شده‌اند. هر کدام را ذخیره کنید یا دور بیندازید."
+     },
+     "why": "meaning: پیش از آخرین خروج TextMouth ... پیدا شد said they were found before the last quit, not left from before it"
+    },
+    {
+     "key": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
+     "english": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
+     "before": "پیش از آخرین خروج TextMouth، یک ضبط زیر %@ پیدا شد. آن را ذخیره کنید یا دور بیندازید.",
+     "after": "یک ضبط از پیش از آخرین خروج TextMouth باقی مانده است که زیر %@ فهرست شده است. آن را ذخیره کنید یا دور بیندازید.",
+     "why": "meaning: پیش از آخرین خروج TextMouth ... پیدا شد said they were found before the last quit, not left from before it"
+    },
+    {
+     "key": "Inserts a silence of a length you type at the cursor.",
+     "english": "Inserts a silence of a length you type at the cursor.",
+     "before": "سکوتی به طولی که تایپ می‌کنید در مکان‌نما درج می‌کند.",
+     "after": "سکوتی به طولی که تایپ می‌کنید در محل مکان‌نما درج می‌کند.",
+     "why": "natural: در مکان‌نما says in the cursor; Persian editors say در محل مکان‌نما (at the cursor)"
+    },
+    {
+     "key": "It names no audio file in its own folder that TextMouth can import.",
+     "english": "It names no audio file in its own folder that TextMouth can import.",
+     "before": "هیچ فایل صوتی را در پوشه خودش که TextMouth بتواند وارد کند نام نبرده است.",
+     "after": "هیچ فایل صوتی‌ای را که TextMouth بتواند وارد کند در پوشه‌ی خودش نام نبرده است.",
+     "why": "grammar: the relative clause hung on the folder instead of the audio file"
+    },
+    {
+     "key": "Its %@ are kept for when you download it again.",
+     "english": "Its %@ are kept for when you download it again.",
+     "before": "%@ آن برای زمانی که دوباره بارگیری کنید نگه داشته می‌شوند.",
+     "after": "%@ برای وقتی که دوباره آن را بارگیری کنید نگه داشته می‌شوند.",
+     "why": "grammar: a list ending in نشانک‌ها cannot carry the ezafe ی that a following آن needs; آن moves into the clause"
+    },
+    {
+     "key": "Its %@ are kept.",
+     "english": "Its %@ are kept.",
+     "before": "%@ آن نگه داشته می‌شوند.",
+     "after": "%@ نگه داشته می‌شوند.",
+     "why": "grammar: a list ending in نشانک‌ها cannot carry the ezafe ی that a following آن needs"
+    },
+    {
+     "key": "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package.",
+     "english": "Keeps each audio file an import converts, such as Ogg or AC-3, inside the book's package.",
+     "before": "هر فایل صوتی را که وارد کردن تبدیل می‌کند، مانند Ogg یا AC-3، درون بسته‌ی کتاب نگه می‌دارد.",
+     "after": "هر فایل صوتی را که هنگام وارد کردن تبدیل می‌شود، مانند Ogg یا AC-3، درون بسته‌ی کتاب نگه می‌دارد.",
+     "why": "natural: the verbal noun وارد کردن was made the subject that converts"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "همه مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد.",
+      "other": "همه مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+     },
+     "after": {
+      "one": "همه مقاله‌ها را فهرست می‌کند، جدیدترین %lld مقاله را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد.",
+      "other": "همه مقاله‌ها را فهرست می‌کند، جدیدترین %lld مقاله را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "همه قسمت‌ها و مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد.",
+      "other": "همه قسمت‌ها و مقاله‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+     },
+     "after": {
+      "one": "همه قسمت‌ها و مقاله‌ها را فهرست می‌کند، جدیدترین %lld مورد را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد.",
+      "other": "همه قسمت‌ها و مقاله‌ها را فهرست می‌کند، جدیدترین %lld مورد را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "همه قسمت‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد.",
+      "other": "همه قسمت‌ها را فهرست می‌کند، %lld جدیدترین را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+     },
+     "after": {
+      "one": "همه قسمت‌ها را فهرست می‌کند، جدیدترین %lld قسمت را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد.",
+      "other": "همه قسمت‌ها را فهرست می‌کند، جدیدترین %lld قسمت را بارگیری‌شده نگه می‌دارد و بارگیری‌های قدیمی‌تری را که خودش ساخته برمی‌دارد، اما جایگاه، نشانک‌ها و تنظیمات آن‌ها را نگه می‌دارد."
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "%lld جدیدترین پخش‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند.",
+      "other": "%lld جدیدترین پخش‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
+     },
+     "after": {
+      "one": "جدیدترین %lld مورد پخش‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند.",
+      "other": "جدیدترین %lld مورد پخش‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "%lld جدیدترین خوانده‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند.",
+      "other": "%lld جدیدترین خوانده‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
+     },
+     "after": {
+      "one": "جدیدترین %lld مقاله‌ی خوانده‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند.",
+      "other": "جدیدترین %lld مقاله‌ی خوانده‌نشده و همه بارگیری‌ها را فهرست می‌کند. فقط آنچه بخواهید بارگیری می‌کند؛ بقیه سوابق خود را نگه می‌دارند و وقتی بیشتر فهرست کنید برمی‌گردند."
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N articles), not a bare جدیدترین"
+    },
+    {
+     "key": "Marks the selection's end at the cursor.",
+     "english": "Marks the selection's end at the cursor.",
+     "before": "پایان انتخاب را در مکان‌نما علامت می‌زند.",
+     "after": "پایان انتخاب را در محل مکان‌نما علامت می‌زند.",
+     "why": "natural: در مکان‌نما says in the cursor; Persian editors say در محل مکان‌نما (at the cursor)"
+    },
+    {
+     "key": "Marks the selection's start at the cursor.",
+     "english": "Marks the selection's start at the cursor.",
+     "before": "شروع انتخاب را در مکان‌نما علامت می‌زند.",
+     "after": "شروع انتخاب را در محل مکان‌نما علامت می‌زند.",
+     "why": "natural: در مکان‌نما says in the cursor; Persian editors say در محل مکان‌نما (at the cursor)"
+    },
+    {
+     "key": "Moved %lld articles into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld article into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%lld مقاله به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند.",
+      "other": "%lld مقاله به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+     },
+     "after": {
+      "one": "%lld مقاله به %@ منتقل شد. اکنون کتابی در کتابخانه است و فیدش آن را با وضعیت «%@» نشان می‌دهد.",
+      "other": "%lld مقاله به %@ منتقل شد. اکنون کتاب‌هایی در کتابخانه هستند و فیدهایشان آن‌ها را با وضعیت «%@» نشان می‌دهند."
+     },
+     "why": "grammar: the one form spoke of several books and feeds; با عنوان (titled) misread the In Library note as a title"
+    },
+    {
+     "key": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld episode into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%lld قسمت به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند.",
+      "other": "%lld قسمت به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+     },
+     "after": {
+      "one": "%lld قسمت به %@ منتقل شد. اکنون کتابی در کتابخانه است و فیدش آن را با وضعیت «%@» نشان می‌دهد.",
+      "other": "%lld قسمت به %@ منتقل شد. اکنون کتاب‌هایی در کتابخانه هستند و فیدهایشان آن‌ها را با وضعیت «%@» نشان می‌دهند."
+     },
+     "why": "grammar: the one form spoke of several books and feeds; با عنوان (titled) misread the In Library note as a title"
+    },
+    {
+     "key": "Moved %lld items into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld item into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld items into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "one": "%lld مورد به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند.",
+      "other": "%lld مورد به %@ منتقل شد. اکنون کتاب کتابخانه هستند و فیدهایشان آن‌ها را با عنوان %@ نشان می‌دهند."
+     },
+     "after": {
+      "one": "%lld مورد به %@ منتقل شد. اکنون کتابی در کتابخانه است و فیدش آن را با وضعیت «%@» نشان می‌دهد.",
+      "other": "%lld مورد به %@ منتقل شد. اکنون کتاب‌هایی در کتابخانه هستند و فیدهایشان آن‌ها را با وضعیت «%@» نشان می‌دهند."
+     },
+     "why": "grammar: the one form spoke of several books and feeds; با عنوان (titled) misread the In Library note as a title"
+    },
+    {
+     "key": "Moved “%@” into %@. It's a library book now, and its feed lists it %@.",
+     "english": "Moved “%1$@” into %2$@. It's a library book now, and its feed lists it %3$@.",
+     "before": "«%1$@» به %2$@ منتقل شد. اکنون کتاب کتابخانه است و فیدش آن را با عنوان %3$@ نشان می‌دهد.",
+     "after": "«%1$@» به %2$@ منتقل شد. اکنون کتابی در کتابخانه است و فیدش آن را با وضعیت «%3$@» نشان می‌دهد.",
+     "why": "meaning: با عنوان (titled) misread the In Library note as a title; کتاب کتابخانه است was a bare calque"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "این %lld مقاله را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند",
+      "other": "این %lld مقاله را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+     },
+     "after": {
+      "one": "این %lld مقاله را به‌عنوان کتابی قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فید خود خارج می‌شود",
+      "other": "این %lld مقاله را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+     },
+     "why": "grammar: the one form spoke of several books and feeds"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "این %lld قسمت را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند",
+      "other": "این %lld قسمت را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+     },
+     "after": {
+      "one": "این %lld قسمت را به‌عنوان کتابی قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فید خود خارج می‌شود",
+      "other": "این %lld قسمت را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+     },
+     "why": "grammar: the one form spoke of several books and feeds"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "one": "این %lld مورد را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند",
+      "other": "این %lld مورد را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+     },
+     "after": {
+      "one": "این %lld مورد را به‌عنوان کتابی قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فید خود خارج می‌شود",
+      "other": "این %lld مورد را به‌عنوان کتاب‌های قابل ویرایش به پوشه‌ای از کتابخانه منتقل می‌کند؛ از فیدهای خود خارج می‌شوند"
+     },
+     "why": "grammar: the one form spoke of several books and feeds"
+    },
+    {
+     "key": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "english": "No filter presets. Add some in Storage settings, under Audio Editing.",
+     "before": "پیش‌تنظیم فیلتری نیست. در تنظیمات ذخیره‌سازی، زیر ویرایش صدا، چند تا اضافه کنید.",
+     "after": "پیش‌تنظیم فیلتری نیست. در تنظیمات ذخیره‌سازی، در بخش «ویرایش صدا»، چند پیش‌تنظیم اضافه کنید.",
+     "why": "register: چند تا is colloquial; the section name is quoted"
+    },
+    {
+     "key": "No import is under way.",
+     "english": "No import is under way.",
+     "before": "هیچ وارد کردنی در جریان نیست.",
+     "after": "اکنون چیزی در حال وارد شدن نیست.",
+     "why": "natural: the verbal noun وارد کردن cannot take the indefinite ی (هیچ وارد کردنی)"
+    },
+    {
+     "key": "No markers yet. Add Marker drops one at the cursor.",
+     "english": "No markers yet. Add Marker drops one at the cursor.",
+     "before": "هنوز علامتی نیست. «افزودن علامت» یکی را در مکان‌نما می‌گذارد.",
+     "after": "هنوز علامتی نیست. «افزودن علامت» یکی را در محل مکان‌نما می‌گذارد.",
+     "why": "natural: در مکان‌نما says in the cursor; Persian editors say در محل مکان‌نما (at the cursor)"
+    },
+    {
+     "key": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "english": "One copy is played from a recording and the other is read aloud from text, so replacing keeps only the existing copy's folder and place on the reading list, not its reading position, bookmarks and their notes, or settings.",
+     "before": "یک نسخه از ضبط پخش می‌شود و دیگری از متن با صدای بلند خوانده می‌شود، پس جایگزینی فقط پوشه و جایگاه نسخه‌ی موجود را در فهرست مطالعه نگه می‌دارد، نه موقعیت مطالعه، نشانک‌ها و یادداشت‌هایشان یا تنظیمات را.",
+     "after": "یک نسخه از ضبط پخش می‌شود و دیگری از متن با صدای بلند خوانده می‌شود، پس جایگزینی فقط پوشه و جایگاه نسخه‌ی موجود در فهرست مطالعه را نگه می‌دارد، نه موقعیت مطالعه، نشانک‌ها و یادداشت‌هایشان یا تنظیمات را.",
+     "why": "grammar: را before در فهرست مطالعه made the reading list where things are kept, not the place on it"
+    },
+    {
+     "key": "Only the newest %lld listed",
+     "english": {
+      "one": "Only the newest %lld listed",
+      "other": "Only the newest %lld listed"
+     },
+     "before": {
+      "one": "فقط %lld جدیدترین فهرست می‌شود",
+      "other": "فقط %lld جدیدترین فهرست می‌شود"
+     },
+     "after": {
+      "one": "فقط جدیدترین %lld مورد فهرست می‌شود",
+      "other": "فقط جدیدترین %lld مورد فهرست می‌شود"
+     },
+     "why": "natural: the number needs its noun after جدیدترین (the newest N items), not a bare جدیدترین"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "بخشی از %@ را نمی‌توان رمزگشایی کرد و به‌صورت سکوت نگه داشته می‌شود.",
+     "after": "بخشی از %@ رمزگشایی نشد و به‌صورت سکوت نگه داشته می‌شود.",
+     "why": "grammar: could not be decoded is past; نمی‌توان رمزگشایی کرد said it cannot be"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "one": "بخشی از %1$lld فایل، %2$@، را نمی‌توان رمزگشایی کرد و به‌صورت سکوت نگه داشته می‌شود.",
+      "other": "بخشی از %1$lld فایل، %2$@، را نمی‌توان رمزگشایی کرد و به‌صورت سکوت نگه داشته می‌شود."
+     },
+     "after": {
+      "one": "بخشی از %1$lld فایل، %2$@، رمزگشایی نشد و به‌صورت سکوت نگه داشته می‌شود.",
+      "other": "بخشی از %1$lld فایل، %2$@، رمزگشایی نشد و به‌صورت سکوت نگه داشته می‌شود."
+     },
+     "why": "grammar: could not be decoded is past; نمی‌توان رمزگشایی کرد said it cannot be"
+    },
+    {
+     "key": "Pastes at the cursor, or over the selection. Right after a cut, it moves the audio.",
+     "english": "Pastes at the cursor, or over the selection. Right after a cut, it moves the audio.",
+     "before": "در مکان‌نما یا روی انتخاب می‌چسباند. بلافاصله پس از برش، صدا را جابه‌جا می‌کند.",
+     "after": "در محل مکان‌نما یا روی انتخاب می‌چسباند. بلافاصله پس از برش، صدا را جابه‌جا می‌کند.",
+     "why": "natural: در مکان‌نما says in the cursor; Persian editors say در محل مکان‌نما (at the cursor)"
+    },
+    {
+     "key": "Paused %lld books that were playing.",
+     "english": {
+      "one": "Paused the book that was playing.",
+      "other": "Paused %lld books that were playing."
+     },
+     "before": {
+      "one": "%lld کتاب که پخش می‌شد مکث شد.",
+      "other": "%lld کتاب که پخش می‌شدند مکث شدند."
+     },
+     "after": {
+      "one": "%lld کتابی که پخش می‌شد مکث شد.",
+      "other": "%lld کتابی که پخش می‌شدند مکث شدند."
+     },
+     "why": "grammar: a relative clause needs کتابی که, not کتاب که"
+    },
+    {
+     "key": "Plain http: others can read or change what this feed sends.",
+     "english": "Plain http: others can read or change what this feed sends.",
+     "before": "http ساده: دیگران می‌توانند آنچه این فید می‌فرستد بخوانند یا تغییر دهند.",
+     "after": "http ساده: دیگران می‌توانند آنچه را این فید می‌فرستد بخوانند یا تغییر دهند.",
+     "why": "grammar: the object آنچه lacked را"
+    },
+    {
+     "key": "Plays from the cursor, or pauses.",
+     "english": "Plays from the cursor, or pauses.",
+     "before": "از مکان‌نما پخش می‌کند، یا مکث می‌کند.",
+     "after": "از محل مکان‌نما پخش می‌کند، یا مکث می‌کند.",
+     "why": "natural: plays from the place of the cursor, از محل مکان‌نما, as the other cursor hints now say"
+    },
+    {
+     "key": "Plays half a second at the cursor after each move.",
+     "english": "Plays half a second at the cursor after each move.",
+     "before": "پس از هر حرکت، نیم ثانیه در مکان‌نما پخش می‌کند.",
+     "after": "پس از هر حرکت، نیم ثانیه از محل مکان‌نما پخش می‌کند.",
+     "why": "natural: plays from the place of the cursor, از محل مکان‌نما, as the other cursor hints now say"
+    },
+    {
+     "key": "Published by",
+     "english": "Published by",
+     "before": "منتشرکننده",
+     "after": "ناشر",
+     "why": "term: the glossary gives Publisher as ناشر"
+    },
+    {
+     "key": "Puts back the transcript as it was before the last cleanup.",
+     "english": "Puts back the transcript as it was before the last cleanup.",
+     "before": "رونوشت را به‌صورت پیش از آخرین پاک‌سازی برمی‌گرداند.",
+     "after": "رونوشت را به حالت پیش از آخرین پاک‌سازی برمی‌گرداند.",
+     "why": "natural: به‌صورت پیش از (in the form before) is not said; to the state before is به حالت پیش از"
+    },
+    {
+     "key": "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.",
+     "english": "Puts the new copy in place of the one already in the library, keeping only the existing copy's folder and place on the reading list.",
+     "before": "نسخه‌ی جدید را به جای نسخه‌ی موجود در کتابخانه می‌گذارد و فقط پوشه و جایگاه نسخه‌ی موجود را در فهرست مطالعه نگه می‌دارد.",
+     "after": "نسخه‌ی جدید را به جای نسخه‌ی موجود در کتابخانه می‌گذارد و فقط پوشه و جایگاه نسخه‌ی موجود در فهرست مطالعه را نگه می‌دارد.",
+     "why": "grammar: را before در فهرست مطالعه made the reading list where things are kept, not the place on it"
+    },
+    {
+     "key": "Putting back the transcript from before…",
+     "english": "Putting back the transcript from before…",
+     "before": "در حال برگرداندن رونوشت پیش از آن…",
+     "after": "در حال برگرداندن رونوشت قبلی…",
+     "why": "natural: رونوشت پیش از آن (the transcript before it) left it unclear; the earlier transcript is رونوشت قبلی"
+    },
+    {
+     "key": "Recording. Stop or discard it with Clear Selection, then close.",
+     "english": "Recording. Stop or discard it with Clear Selection, then close.",
+     "before": "در حال ضبط. آن را با «لغو انتخاب» متوقف یا دور بیندازید، سپس ببندید.",
+     "after": "در حال ضبط. آن را متوقف کنید، یا با «لغو انتخاب» دور بیندازید، سپس ببندید.",
+     "why": "grammar: متوقف cannot share the light verb of دور بیندازید; Clear Selection only discards"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "پس از یک بوق، روی انتخاب یا در مکان‌نما ضبط می‌کند. دوباره آن، یا «توقف»، ضبط را پایان می‌دهد.",
+     "after": "پس از یک بوق، روی انتخاب یا در محل مکان‌نما ضبط می‌کند. انتخاب دوباره‌ی آن، یا «توقف»، ضبط را پایان می‌دهد.",
+     "why": "natural: دوباره آن (again it) had no verb; says choosing it again; at the cursor"
+    },
+    {
+     "key": "Redid %@.",
+     "english": "Redid %@.",
+     "before": "%@ انجام مجدد شد.",
+     "after": "%@ دوباره انجام شد.",
+     "why": "natural: the noun انجام مجدد made into a verb; redone is دوباره انجام شد"
+    },
+    {
+     "key": "Refresh All Feeds Now",
+     "english": "Refresh All Feeds Now",
+     "before": "تازه‌سازی همه فیدها اکنون",
+     "after": "تازه‌سازی فوری همه فیدها",
+     "why": "natural: اکنون after a verbal noun copied the English order"
+    },
+    {
+     "key": "Repack the pages of RAR comics as CBZ comics, then import those.",
+     "english": "Repack the pages of RAR comics as CBZ comics, then import those.",
+     "before": "صفحه‌های کمیک‌های RAR را به‌صورت کمیک CBZ دوباره بسته‌بندی کنید، سپس آن‌ها را وارد کنید.",
+     "after": "صفحه‌های کتاب‌های مصور RAR را به‌صورت کتاب مصور CBZ دوباره بسته‌بندی کنید، سپس آن‌ها را وارد کنید.",
+     "why": "term: the glossary gives Comic book as کتاب مصور, not کمیک"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "%1$@ با %2$@ ضبط جدید جایگزین شد، که انتخاب شده است.",
+     "after": "%1$@ با %2$@ ضبط جدید جایگزین شد و انتخاب شده است.",
+     "why": "natural: a trailing ، که had no clear antecedent; matches Inserted ... which is selected"
+    },
+    {
+     "key": "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied.",
+     "english": "Replacing keeps the existing copy's reading position and bookmarks, moved to their words in the new text where found, and its settings, folder, and place on the reading list. An edit of its text is kept as a copy beside the new text, not applied.",
+     "before": "جایگزینی موقعیت مطالعه و نشانک‌های نسخه‌ی موجود را نگه می‌دارد و آن‌ها را در صورت یافتن به کلمه‌هایشان در متن جدید منتقل می‌کند، همراه با تنظیمات، پوشه و جایگاه آن در فهرست مطالعه. ویرایش متن آن به‌صورت نسخه‌ای کنار متن جدید نگه داشته می‌شود و اعمال نمی‌شود.",
+     "after": "جایگزینی موقعیت مطالعه و نشانک‌های نسخه‌ی موجود را نگه می‌دارد و در صورت یافتن، آن‌ها را به کلمه‌هایشان در متن جدید منتقل می‌کند؛ تنظیمات، پوشه و جایگاه آن در فهرست مطالعه نیز نگه داشته می‌شود. ویرایش متن آن به‌صورت نسخه‌ای کنار متن جدید نگه داشته می‌شود و اعمال نمی‌شود.",
+     "why": "meaning: همراه با after the moving clause made the settings and folder move to words too"
+    },
+    {
+     "key": "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same, rather than the transcript file found beside the new copy's audio.",
+     "english": "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same, rather than the transcript file found beside the new copy's audio.",
+     "before": "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه‌ی موجود را در فهرست مطالعه نگه می‌دارد، و رونوشت آن را هم وقتی صدا یکی است، نه فایل رونوشتی را که کنار صدای نسخه‌ی جدید پیدا شده است.",
+     "after": "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه‌ی موجود در فهرست مطالعه را نگه می‌دارد و اگر صدا یکسان باشد، رونوشت آن را هم به جای فایل رونوشتی که کنار صدای نسخه‌ی جدید پیدا شده است نگه می‌دارد.",
+     "why": "grammar: را before در فهرست مطالعه made the reading list where things are kept, not the place on it; the transcript clause trailed without its verb"
+    },
+    {
+     "key": "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same.",
+     "english": "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list, and its transcript when the audio is the same.",
+     "before": "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه‌ی موجود را در فهرست مطالعه نگه می‌دارد، و رونوشت آن را هم وقتی صدا یکی است.",
+     "after": "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه‌ی موجود در فهرست مطالعه را نگه می‌دارد و اگر صدا یکسان باشد، رونوشت آن را هم نگه می‌دارد.",
+     "why": "grammar: را before در فهرست مطالعه made the reading list where things are kept, not the place on it"
+    },
+    {
+     "key": "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list.",
+     "english": "Replacing keeps the existing copy's reading position, bookmarks, settings, folder, and place on the reading list.",
+     "before": "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه‌ی موجود را در فهرست مطالعه نگه می‌دارد.",
+     "after": "جایگزینی موقعیت مطالعه، نشانک‌ها، تنظیمات، پوشه و جایگاه نسخه‌ی موجود در فهرست مطالعه را نگه می‌دارد.",
+     "why": "grammar: را before در فهرست مطالعه made the reading list where things are kept, not the place on it"
+    },
+    {
+     "key": "Rules: TextMouth's own, version %@ of %@, %lld rules.",
+     "english": {
+      "one": "Rules: TextMouth's own, version %@ of %@, %lld rule.",
+      "other": "Rules: TextMouth's own, version %@ of %@, %lld rules."
+     },
+     "before": {
+      "one": "قاعده‌ها: خود TextMouth، نسخه %@ از %@، %lld قاعده.",
+      "other": "قاعده‌ها: خود TextMouth، نسخه %@ از %@، %lld قاعده."
+     },
+     "after": {
+      "one": "قاعده‌ها: خود TextMouth، نسخه %@ به تاریخ %@، %lld قاعده.",
+      "other": "قاعده‌ها: خود TextMouth، نسخه %@ به تاریخ %@، %lld قاعده."
+     },
+     "why": "meaning: نسخه ۳ از ۴ اکتبر read as a count (3 of 4); the second placeholder is the version date"
+    },
+    {
+     "key": "Rules: your copy, version %@ of %@, %lld rules.",
+     "english": {
+      "one": "Rules: your copy, version %@ of %@, %lld rule.",
+      "other": "Rules: your copy, version %@ of %@, %lld rules."
+     },
+     "before": {
+      "one": "قاعده‌ها: نسخه شما، نسخه %@ از %@، %lld قاعده.",
+      "other": "قاعده‌ها: نسخه شما، نسخه %@ از %@، %lld قاعده."
+     },
+     "after": {
+      "one": "قاعده‌ها: نسخه شما، نسخه %@ به تاریخ %@، %lld قاعده.",
+      "other": "قاعده‌ها: نسخه شما، نسخه %@ به تاریخ %@، %lld قاعده."
+     },
+     "why": "meaning: نسخه ۳ از ۴ اکتبر read as a count (3 of 4); the second placeholder is the version date"
+    },
+    {
+     "key": "Save your subscriptions as an OPML file, which other feed readers import.",
+     "english": "Save your subscriptions as an OPML file, which other feed readers import.",
+     "before": "اشتراک‌های خود را به‌صورت فایل OPML ذخیره کنید که خواننده‌های دیگر فید آن را وارد می‌کنند.",
+     "after": "اشتراک‌های خود را به‌صورت فایل OPML ذخیره کنید؛ فیدخوان‌های دیگر این فایل را وارد می‌کنند.",
+     "why": "meaning: خواننده‌های دیگر فید said the readers (people) of another feed, not other feed reader apps"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "انتخاب از %1$@ تا %2$@؛ %3$@ طول.",
+     "after": "انتخاب از %1$@ تا %2$@؛ به طول %3$@.",
+     "why": "natural: %3$@ طول (N length) copied N long; Persian says به طول N"
+    },
+    {
+     "key": "Sets a chapter marker at the cursor, with a title you type.",
+     "english": "Sets a chapter marker at the cursor, with a title you type.",
+     "before": "علامت فصلی با عنوانی که تایپ می‌کنید در مکان‌نما می‌گذارد.",
+     "after": "علامت فصلی با عنوانی که تایپ می‌کنید در محل مکان‌نما می‌گذارد.",
+     "why": "natural: در مکان‌نما says in the cursor; Persian editors say در محل مکان‌نما (at the cursor)"
+    },
+    {
+     "key": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "english": "Sets the transcription language. A language marked needs download downloads only from the Transcribe Audio sheet.",
+     "before": "زبان رونویسی را تنظیم می‌کند. زبانی که «نیازمند بارگیری» دارد فقط از برگه «رونویسی صدا» بارگیری می‌شود.",
+     "after": "زبان رونویسی را تنظیم می‌کند. زبانی که با «نیازمند بارگیری» مشخص شده است فقط از برگه «رونویسی صدا» بارگیری می‌شود.",
+     "why": "grammar: زبانی که «نیازمند بارگیری» دارد said a language that has needs download, not one marked with it"
+    },
+    {
+     "key": "Stops the import under way and those waiting. Books already imported stay.",
+     "english": "Stops the import under way and those waiting. Books already imported stay.",
+     "before": "وارد کردن در جریان و وارد کردن‌های منتظر را متوقف می‌کند. کتاب‌هایی که پیش از این وارد شده‌اند می‌مانند.",
+     "after": "وارد کردن در جریان و موردهای منتظر در صف را متوقف می‌کند. کتاب‌هایی که پیش از این وارد شده‌اند می‌مانند.",
+     "why": "natural: the verbal noun وارد کردن cannot take a plural (وارد کردن‌های منتظر)"
+    },
+    {
+     "key": "TextMouth could not read the cue sheet “%@”, so its headings were not used.",
+     "english": "TextMouth could not read the cue sheet “%@”, so its headings were not used.",
+     "before": "TextMouth نتوانست برگه نشانه «%@» را بخواند، پس سرفصل‌های آن استفاده نشد.",
+     "after": "TextMouth نتوانست فایل CUE «%@» را بخواند، پس سرفصل‌های آن استفاده نشد.",
+     "why": "term: برگه نشانه is a literal cue sheet no reader knows; the thing is a .cue file"
+    },
+    {
+     "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "before": "TextMouth فایل اصلی صدایی را که هنگام وارد کردن تبدیل می‌کند نگه می‌دارد. هر نسخه‌ی اصلی تقریباً به اندازه فایل تبدیل‌شده‌اش فضای دیسک می‌گیرد، یا دو برابر آن اگر فشرده نباشد. صادر کردن آن را به‌صورت فایل اصلی عرضه می‌کند. نسخه‌ی اصلی قسمت فید نگه داشته نمی‌شود: می‌توان آن را دوباره بارگیری کرد.",
+     "after": "TextMouth فایل اصلی صدایی را که هنگام وارد کردن تبدیل می‌کند نگه می‌دارد. هر نسخه‌ی اصلی تقریباً به اندازه فایل تبدیل‌شده‌اش فضای دیسک می‌گیرد، یا دو برابر آن اگر فشرده نباشد. هنگام صادر کردن، به‌صورت گزینه‌ی «فایل اصلی» عرضه می‌شود. نسخه‌ی اصلی قسمت فید نگه داشته نمی‌شود: می‌توان آن را دوباره بارگیری کرد.",
+     "why": "natural: the verbal noun صادر کردن was the subject that offers; the choice name is quoted"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "one": "TextMouth %lld نسخه‌ی جدید از کتاب‌های تکراری را به سطل زباله منتقل کرد، چون پرسش‌هایی که می‌پرسیدند آن‌ها را به‌عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماندند. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و «Put Back» را انتخاب کنید.",
+      "other": "TextMouth %lld نسخه‌ی جدید از کتاب‌های تکراری را به سطل زباله منتقل کرد، چون پرسش‌هایی که می‌پرسیدند آن‌ها را به‌عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماندند. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و «Put Back» را انتخاب کنید."
+     },
+     "after": {
+      "one": "TextMouth %lld نسخه‌ی جدید از کتاب‌های تکراری را به سطل زباله منتقل کرد، چون پیش از بسته شدن TextMouth به این پرسش‌ها که آیا آن‌ها به‌عنوان تکراری نگه داشته شوند پاسخی داده نشد. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و «Put Back» را انتخاب کنید.",
+      "other": "TextMouth %lld نسخه‌ی جدید از کتاب‌های تکراری را به سطل زباله منتقل کرد، چون پیش از بسته شدن TextMouth به این پرسش‌ها که آیا آن‌ها به‌عنوان تکراری نگه داشته شوند پاسخی داده نشد. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و «Put Back» را انتخاب کنید."
+     },
+     "why": "grammar: پرسش‌هایی که می‌پرسیدند ... نگه دارد gave keep no subject; says whether they should be kept"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth نسخه‌های جدید %@ را به سطل زباله منتقل کرد، چون پرسش‌هایی که می‌پرسیدند آن‌ها را به‌عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماندند. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و «Put Back» را انتخاب کنید.",
+     "after": "TextMouth نسخه‌های جدید %@ را به سطل زباله منتقل کرد، چون پیش از بسته شدن TextMouth به این پرسش‌ها که آیا آن‌ها به‌عنوان تکراری نگه داشته شوند پاسخی داده نشد. برای بازگرداندن آن‌ها، سطل زباله را باز کنید و «Put Back» را انتخاب کنید.",
+     "why": "grammar: پرسش‌هایی که می‌پرسیدند ... نگه دارد gave keep no subject; says whether they should be kept"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth نسخه‌ی جدید «%@» را به سطل زباله منتقل کرد، چون پرسشی که می‌پرسید آن را به‌عنوان تکراری نگه دارد پیش از بسته شدن TextMouth بی‌پاسخ ماند. برای بازگرداندن آن، سطل زباله را باز کنید و «Put Back» را انتخاب کنید.",
+     "after": "TextMouth نسخه‌ی جدید «%@» را به سطل زباله منتقل کرد، چون پیش از بسته شدن TextMouth به این پرسش که آیا به‌عنوان تکراری نگه داشته شود پاسخی داده نشد. برای بازگرداندن آن، سطل زباله را باز کنید و «Put Back» را انتخاب کنید.",
+     "why": "grammar: پرسش‌هایی که می‌پرسیدند ... نگه دارد gave keep no subject; says whether they should be kept"
+    },
+    {
+     "key": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "english": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "before": "مبدل TextMouth پیش از پایان «%@» متوقف شد، پس نمی‌توان آن را وارد کرد.",
+     "after": "مبدل TextMouth پیش از پایان «%@» متوقف شد، پس وارد نشد.",
+     "why": "grammar: a past event takes the past (وارد نشد), not the general نمی‌توان (it can never be)"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "one": "آن صفحه %lld فید را نام می‌برد. یکی را انتخاب کنید، سپس مشترک شدن را انتخاب کنید.",
+      "other": "آن صفحه %lld فید را نام می‌برد. یکی را انتخاب کنید، سپس مشترک شدن را انتخاب کنید."
+     },
+     "after": {
+      "one": "آن صفحه %lld فید را نام می‌برد. یکی را انتخاب کنید، سپس «مشترک شدن» را انتخاب کنید.",
+      "other": "آن صفحه %lld فید را نام می‌برد. یکی را انتخاب کنید، سپس «مشترک شدن» را انتخاب کنید."
+     },
+     "why": "punctuation: the button name is quoted, as the other command names are"
+    },
+    {
+     "key": "The %@ filter was given more values than it has options; give them as key=value.",
+     "english": "The %@ filter was given more values than it has options; give them as key=value.",
+     "before": "به فیلتر %@ مقدارهای بیشتری از گزینه‌هایش داده شده است؛ آن‌ها را به‌صورت key=value بدهید.",
+     "after": "به فیلتر %@ مقدارهای بیشتری از گزینه‌هایش داده شده است؛ آن‌ها را به‌صورت key=value بنویسید.",
+     "why": "natural: بدهید (give) copied give; values typed as key=value are written, بنویسید"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads were deleted.",
+     "english": {
+      "one": "The %@ kept for %lld removed download were deleted.",
+      "other": "The %@ kept for %lld removed downloads were deleted."
+     },
+     "before": {
+      "one": "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده حذف شدند.",
+      "other": "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده حذف شدند."
+     },
+     "after": {
+      "one": "%1$@، که برای %2$lld بارگیری برداشته‌شده نگه داشته شده بودند، حذف شدند.",
+      "other": "%1$@، که برای %2$lld بارگیری برداشته‌شده نگه داشته شده بودند، حذف شدند."
+     },
+     "why": "grammar: a list ending in نشانک‌ها cannot carry the ezafe ی before نگه‌داری‌شده"
+    },
+    {
+     "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "english": {
+      "one": "The marker is deleted, and Redo doesn't bring it back.",
+      "other": "The %lld markers are deleted, and Redo doesn't bring them back."
+     },
+     "before": {
+      "one": "%lld علامت حذف می‌شود و «انجام مجدد» آن‌ها را برنمی‌گرداند.",
+      "other": "%lld علامت حذف می‌شود و «انجام مجدد» آن‌ها را برنمی‌گرداند."
+     },
+     "after": {
+      "one": "%lld علامت حذف می‌شود و «انجام مجدد» آن را برنمی‌گرداند.",
+      "other": "%lld علامت حذف می‌شود و «انجام مجدد» آن‌ها را برنمی‌گرداند."
+     },
+     "why": "grammar: the one form said them for one marker"
+    },
+    {
+     "key": "The archive also holds %lld other books that were not imported; unzip it to import them.",
+     "english": {
+      "one": "The archive also holds %lld other book that was not imported; unzip it to import it.",
+      "other": "The archive also holds %lld other books that were not imported; unzip it to import them."
+     },
+     "before": {
+      "one": "آرشیو %lld کتاب دیگر هم دارد که وارد نشدند؛ برای وارد کردن آن‌ها آرشیو را از حالت فشرده درآورید.",
+      "other": "آرشیو %lld کتاب دیگر هم دارد که وارد نشدند؛ برای وارد کردن آن‌ها آرشیو را از حالت فشرده درآورید."
+     },
+     "after": {
+      "one": "آرشیو %lld کتاب دیگر هم دارد که وارد نشد؛ برای وارد کردن آن، آرشیو را از حالت فشرده درآورید.",
+      "other": "آرشیو %lld کتاب دیگر هم دارد که وارد نشدند؛ برای وارد کردن آن‌ها آرشیو را از حالت فشرده درآورید."
+     },
+     "why": "grammar: the one form spoke of several books"
+    },
+    {
+     "key": "The archive is damaged, incomplete, or not a ZIP archive.",
+     "english": "The archive is damaged, incomplete, or not a ZIP archive.",
+     "before": "آرشیو آسیب دیده، ناقص یا آرشیو ZIP نیست.",
+     "after": "آرشیو آسیب دیده یا ناقص است، یا آرشیو ZIP نیست.",
+     "why": "meaning: the one final نیست negated every item (not damaged, not incomplete)"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "مقاله برای همیشه از فهرست خارج می‌شود؛ کتابی که در کتابخانه‌ی شما شده است می‌ماند.",
+     "after": "مقاله برای همیشه از فهرست خارج می‌شود؛ کتابی که از آن در کتابخانه‌ی شما ساخته شده است می‌ماند.",
+     "why": "grammar: کتابی که ... شده است lacked its complement (the book it became)"
+    },
+    {
+     "key": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "english": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "before": "متن کتاب فقط در iCloud است، پس TextMouth آن را رها می‌کند. کتاب را بارگیری کنید، سپس دوباره تلاش کنید.",
+     "after": "متن کتاب فقط در iCloud است، پس TextMouth به آن دست نمی‌زند. کتاب را بارگیری کنید، سپس دوباره تلاش کنید.",
+     "why": "meaning: رها می‌کند says abandons it; leaves it alone is به آن دست نمی‌زند"
+    },
+    {
+     "key": "The cue sheet “%@” is too large to read.",
+     "english": "The cue sheet “%@” is too large to read.",
+     "before": "برگه نشانه «%@» برای خواندن بیش از حد بزرگ است.",
+     "after": "فایل CUE «%@» برای خواندن بیش از حد بزرگ است.",
+     "why": "term: برگه نشانه is a literal cue sheet no reader knows; the thing is a .cue file"
+    },
+    {
+     "key": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "english": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "before": "برگه نشانه «%@» هیچ یک از صداهای کنار خود را نام نمی‌برد، پس سرفصل‌های آن استفاده نشد.",
+     "after": "فایل CUE «%@» هیچ یک از فایل‌های صوتی کنار خود را نام نمی‌برد، پس سرفصل‌های آن استفاده نشد.",
+     "why": "term: برگه نشانه is a literal cue sheet no reader knows; the thing is a .cue file; the audio beside it is its audio files"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "قسمت برای همیشه از فهرست خارج می‌شود؛ کتابی که در کتابخانه‌ی شما شده است می‌ماند.",
+     "after": "قسمت برای همیشه از فهرست خارج می‌شود؛ کتابی که از آن در کتابخانه‌ی شما ساخته شده است می‌ماند.",
+     "why": "grammar: کتابی که ... شده است lacked its complement (the book it became)"
+    },
+    {
+     "key": "The podcast directory at %@ didn't answer for %lld seconds.",
+     "english": {
+      "one": "The podcast directory at %@ didn't answer for %lld second.",
+      "other": "The podcast directory at %@ didn't answer for %lld seconds."
+     },
+     "before": {
+      "one": "فهرست پادکست در %@ تا %lld ثانیه پاسخ نداد.",
+      "other": "فهرست پادکست در %@ تا %lld ثانیه پاسخ نداد."
+     },
+     "after": {
+      "one": "فهرست پادکست در %@ ظرف %lld ثانیه پاسخ نداد.",
+      "other": "فهرست پادکست در %@ ظرف %lld ثانیه پاسخ نداد."
+     },
+     "why": "natural: تا reads as until; ظرف says within the timeout"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "ضبط ذخیره نشد: %1$@ نگه داشته شده است؛ %2$@ یا %3$@ را انتخاب کنید.",
+     "after": "ضبط ذخیره نشد: %1$@ این ضبط نگه داشته شده است؛ %2$@ یا %3$@ را انتخاب کنید.",
+     "why": "natural: after the inserted reason, a bare نگه داشته شده است had no clear subject"
+    },
+    {
+     "key": "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used.",
+     "english": "The tracks of the cue sheet “%@” run past the end of its audio, so its headings were not used.",
+     "before": "تراک‌های برگه نشانه «%@» از انتهای صدای آن فراتر می‌روند، پس سرفصل‌های آن استفاده نشد.",
+     "after": "تراک‌های فایل CUE «%@» از انتهای صدای آن فراتر می‌روند، پس سرفصل‌های آن استفاده نشد.",
+     "why": "term: برگه نشانه is a literal cue sheet no reader knows; the thing is a .cue file"
+    },
+    {
+     "key": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "english": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "before": "رونوشت فقط در iCloud است، پس TextMouth آن را رها می‌کند. کتاب را بارگیری کنید، سپس دوباره تلاش کنید.",
+     "after": "رونوشت فقط در iCloud است، پس TextMouth به آن دست نمی‌زند. کتاب را بارگیری کنید، سپس دوباره تلاش کنید.",
+     "why": "meaning: رها می‌کند says abandons it; leaves it alone is به آن دست نمی‌زند"
+    },
+    {
+     "key": "This Mac doesn't allow TextMouth to use the microphone: a device management profile or Screen Time restricts it.",
+     "english": "This Mac doesn't allow TextMouth to use the microphone: a device management profile or Screen Time restricts it.",
+     "before": "این Mac به TextMouth اجازه استفاده از میکروفون را نمی‌دهد: یک نمایه مدیریت دستگاه یا زمان استفاده از صفحه آن را محدود کرده است.",
+     "after": "این Mac به TextMouth اجازه استفاده از میکروفون را نمی‌دهد: یک نمایه مدیریت دستگاه یا Screen Time آن را محدود کرده است.",
+     "why": "term: macOS has no Persian; its Screen Time stays English as System Settings does, so it can be found"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "این فایل XML کتاب DTBook، سند XML Word 2003 یا فایل بریل PEF نیست، که تنها XML هایی هستند که TextMouth می‌خواند.",
+     "after": "این فایل XML کتاب DTBook، سند XML Word 2003 یا فایل بریل PEF نیست، و TextMouth فقط همین قالب‌های XML را می‌خواند.",
+     "why": "natural: XML هایی split a plural off a Latin word; says the only XML formats"
+    },
+    {
+     "key": "This book keeps no original audio: saved edits change its audio in place, and can't be undone after.",
+     "english": "This book keeps no original audio: saved edits change its audio in place, and can't be undone after.",
+     "before": "این کتاب صدای اصلی نگه نمی‌دارد: ویرایش‌های ذخیره شده صدای آن را در جا تغییر می‌دهند و بعد از آن نمی‌توان آن‌ها را واگرد کرد.",
+     "after": "این کتاب صدای اصلی نگه نمی‌دارد: ویرایش‌های ذخیره شده صدای آن را مستقیماً تغییر می‌دهند و بعد از آن نمی‌توان آن‌ها را واگرد کرد.",
+     "why": "natural: در جا copied in place; Persian says مستقیماً"
+    },
+    {
+     "key": "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts.",
+     "english": "This book's audio could not be converted from Ogg to AAC. TextMouth tries again the next time it starts.",
+     "before": "صدای این کتاب را نمی‌توان از Ogg به AAC تبدیل کرد. TextMouth دفعه بعد که شروع شود دوباره تلاش می‌کند.",
+     "after": "صدای این کتاب از Ogg به AAC تبدیل نشد. TextMouth دفعه بعد که شروع شود دوباره تلاش می‌کند.",
+     "why": "meaning: نمی‌توان ... تبدیل کرد (it cannot be converted) contradicted tries again"
+    },
+    {
+     "key": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "english": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "before": "این آرشیو کتاب مصور بیش از %@ تصویری دارد که TextMouth می‌خواند.",
+     "after": "این آرشیو کتاب مصور بیش از %@ تصویر دارد و TextMouth بیش از این تعداد را نمی‌خواند.",
+     "why": "meaning: the relative clause said TextMouth reads those pictures, not that it reads at most that many"
+    },
+    {
+     "key": "Title for a chapter marker at the cursor. One already there is renamed.",
+     "english": "Title for a chapter marker at the cursor. One already there is renamed.",
+     "before": "عنوان برای علامت فصل در مکان‌نما. اگر یکی از قبل آنجا باشد، تغییر نام می‌دهد.",
+     "after": "عنوان برای علامت فصل در محل مکان‌نما. اگر یکی از قبل آنجا باشد، نام آن تغییر می‌کند.",
+     "why": "grammar: تغییر نام می‌دهد had no object; the marker already there is renamed; at the cursor"
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "one": "برای بارگیری دوباره %lld مورد دیگر، %@ را در ردیف آن‌ها انتخاب کنید.",
+      "other": "برای بارگیری دوباره %lld مورد دیگر، %@ را در ردیف آن‌ها انتخاب کنید."
+     },
+     "after": {
+      "one": "برای بارگیری دوباره %lld مورد دیگر، %@ را در ردیف آن انتخاب کنید.",
+      "other": "برای بارگیری دوباره %lld مورد دیگر، %@ را در ردیف آن‌ها انتخاب کنید."
+     },
+     "why": "grammar: the one form said their rows"
+    },
+    {
+     "key": "Trim to Selection",
+     "english": "Trim to Selection",
+     "before": "کوتاه کردن به انتخاب",
+     "after": "کوتاه کردن به اندازه‌ی انتخاب",
+     "why": "natural: کوتاه کردن به انتخاب copied trim to; Persian says to the size of the selection"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "به انتخاب کوتاه شد: %@ نگه داشته شد.",
+     "after": "به اندازه‌ی انتخاب کوتاه شد: %@ نگه داشته شد.",
+     "why": "natural: کوتاه کردن به انتخاب copied trim to; Persian says to the size of the selection"
+    },
+    {
+     "key": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "english": "Type a podcast's title or publisher, then press Return to search Apple's directory",
+     "before": "عنوان یا ناشر یک پادکست را تایپ کنید، سپس Return را برای جست‌وجو در فهرست Apple فشار دهید.",
+     "after": "عنوان یا ناشر یک پادکست را تایپ کنید، سپس برای جست‌وجو در فهرست Apple، Return را فشار دهید.",
+     "why": "natural: the purpose clause goes before the verb in Persian, not after Return را"
+    },
+    {
+     "key": "Type or paste a feed or web page address, then press Return",
+     "english": "Type or paste a feed or web page address, then press Return",
+     "before": "نشانی فید یا صفحه‌ی وب را تایپ یا جای‌گذاری کنید، سپس Return را فشار دهید.",
+     "after": "نشانی فید یا صفحه‌ی وب را تایپ کنید یا بچسبانید، سپس Return را فشار دهید.",
+     "why": "term: the glossary gives Paste as چسباندن, not جای‌گذاری"
+    },
+    {
+     "key": "Waiting for the data directory move to finish...",
+     "english": "Waiting for the data directory move to finish...",
+     "before": "در انتظار پایان انتقال پوشه داده...",
+     "after": "در انتظار پایان انتقال دایرکتوری داده...",
+     "why": "term: the glossary gives the data directory as دایرکتوری"
+    },
+    {
+     "key": "give a frequency below half the audio's sample rate, %@ Hz",
+     "english": "give a frequency below half the audio's sample rate, %@ Hz",
+     "before": "بسامدی کمتر از نصف نرخ نمونه‌برداری صدا بدهید، %@ هرتز",
+     "after": "بسامدی کمتر از نصف نرخ نمونه‌برداری صدا، یعنی %@ هرتز، وارد کنید",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید; the limit goes before the verb"
+    },
+    {
+     "key": "give a narrower width, since this one makes no usable filter at %@ Hz",
+     "english": "give a narrower width, since this one makes no usable filter at %@ Hz",
+     "before": "عرض باریک‌تری بدهید، چون این عرض در %@ هرتز فیلتر قابل استفاده‌ای نمی‌سازد",
+     "after": "عرض باریک‌تری وارد کنید، چون این عرض در %@ هرتز فیلتر قابل استفاده‌ای نمی‌سازد",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید"
+    },
+    {
+     "key": "give a number from %@ to %@",
+     "english": "give a number from %1$@ to %2$@",
+     "before": "عددی از %1$@ تا %2$@ بدهید",
+     "after": "عددی از %1$@ تا %2$@ وارد کنید",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید"
+    },
+    {
+     "key": "give a number, such as 0.5, or decibels, such as -6dB",
+     "english": "give a number, such as 0.5, or decibels, such as -6dB",
+     "before": "عددی بدهید، مانند 0.5، یا دسی‌بل، مانند -6dB",
+     "after": "عددی وارد کنید، مانند 0.5، یا دسی‌بل، مانند -6dB",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید"
+    },
+    {
+     "key": "give a time such as 2.5, 250ms, or 0:01:30",
+     "english": "give a time such as 2.5, 250ms, or 0:01:30",
+     "before": "زمانی بدهید، مانند 2.5، 250ms یا 0:01:30",
+     "after": "زمانی وارد کنید، مانند 2.5، 250ms یا 0:01:30",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید"
+    },
+    {
+     "key": "give a whole number from %@ to %@",
+     "english": "give a whole number from %1$@ to %2$@",
+     "before": "عدد صحیحی از %1$@ تا %2$@ بدهید",
+     "after": "عدد صحیحی از %1$@ تا %2$@ وارد کنید",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید"
+    },
+    {
+     "key": "give one of %@",
+     "english": "give one of %@",
+     "before": "یکی از %@ را بدهید",
+     "after": "یکی از %@ را وارد کنید",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید"
+    },
+    {
+     "key": "give true or false",
+     "english": "give true or false",
+     "before": "true یا false بدهید",
+     "after": "true یا false وارد کنید",
+     "why": "natural: بدهید (give) copied give; a typed value is entered, وارد کنید"
+    },
+    {
+     "key": "the %@ kept for %lld removed downloads",
+     "english": {
+      "one": "the %@ kept for %lld removed download",
+      "other": "the %@ kept for %lld removed downloads"
+     },
+     "before": {
+      "one": "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده",
+      "other": "%1$@ نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده"
+     },
+     "after": {
+      "one": "%1$@ (نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده)",
+      "other": "%1$@ (نگه‌داری‌شده برای %2$lld بارگیری برداشته‌شده)"
+     },
+     "why": "grammar: a list ending in نشانک‌ها cannot carry the ezafe ی before نگه‌داری‌شده; the parentheses need none"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "«%@» در حال ضبط است. آن را با «لغو انتخاب» متوقف یا دور بیندازید، سپس خارج شوید.",
+     "after": "«%@» در حال ضبط است. آن را متوقف کنید، یا با «لغو انتخاب» دور بیندازید، سپس خارج شوید.",
+     "why": "grammar: متوقف cannot share the light verb of دور بیندازید; Clear Selection only discards"
+    }
+   ]
+  },
+  {
    "part": 3,
    "areas": [
     "reader, formats, and menus",
