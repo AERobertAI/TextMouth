@@ -2504,7 +2504,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ thêm một dấu trang tại vị trí hiện tại."
+            "value" : "Nút %@ thêm một dấu trang tại vị trí hiện tại."
           }
         },
         "zh-Hans" : {
@@ -6866,7 +6866,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ làm tương tự cho mọi chương như vậy trong lần xuất này, không hỏi lại."
+            "value" : "Nút %@ làm tương tự cho mọi chương như vậy trong lần xuất này, không hỏi lại."
           }
         },
         "zh-Hans" : {
@@ -21467,7 +21467,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ dừng toàn bộ quá trình xuất. Các tệp đã ghi vẫn được giữ lại."
+            "value" : "Nút %@ dừng toàn bộ quá trình xuất. Các tệp đã ghi vẫn được giữ lại."
           }
         },
         "zh-Hans" : {
@@ -21741,7 +21741,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "tốc độ %@ lần"
+            "value" : "tốc độ gấp %@ lần"
           }
         },
         "zh-Hans" : {
@@ -25258,7 +25258,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ghi chương đó thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường."
+            "value" : "Nút %@ ghi chương đó thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường."
           }
         },
         "zh-Hans" : {
@@ -25395,7 +25395,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ ghi văn bản thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường."
+            "value" : "Nút %@ ghi văn bản thành các đoạn văn thường gồm các dòng của nó, giữ dấu trích dẫn và dấu danh sách dưới dạng ký tự, và xuất mọi thứ khác như bình thường."
           }
         },
         "zh-Hans" : {
@@ -29813,7 +29813,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, đã đọc xong %2$@"
+            "value" : "%1$@, đã đọc xong vào ngày %2$@"
           }
         },
         "zh-Hans" : {
@@ -36386,7 +36386,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: tắt khi Không bao giờ thu gọn được chọn"
+            "value" : "%@: tắt khi “Không bao giờ thu gọn” được chọn"
           }
         },
         "zh-Hans" : {
@@ -82235,7 +82235,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld quy tắc bị bỏ ra: biểu thức chính quy và các quy tắc đang tắt không thể ghi vào từ điển phát âm."
+                  "value" : "%lld quy tắc đã bị loại ra: biểu thức chính quy và các quy tắc đang tắt không thể ghi vào từ điển phát âm."
                 }
               }
             }
@@ -454885,7 +454885,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Space"
+            "value" : "Dấu cách"
           }
         },
         "zh-Hans" : {
@@ -471473,7 +471473,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "System"
+            "value" : "Hệ thống"
           }
         },
         "zh-Hans" : {
@@ -472021,7 +472021,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lấy từ %@"
+            "value" : "Đã lấy từ %@"
           }
         },
         "zh-Hans" : {
@@ -474779,7 +474779,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Chưa cập nhật văn bản: %@ đã bị gỡ, hoặc bản tải về của nó đã bị xóa, nên Sửa văn bản đã dừng cho nó."
+            "value" : "Chưa cập nhật văn bản: %@ đã bị gỡ, hoặc bản tải về của nó đã bị xóa, nên việc sửa văn bản cho sách đã dừng."
           }
         },
         "zh-Hans" : {
@@ -506468,7 +506468,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Phần %1$@ bắt đầu ở %2$@ trong “%3$@”, trước %4$@ đứng trước nó, vốn bắt đầu ở %5$@."
+            "value" : "Phần %1$@ bắt đầu ở %2$@ trong “%3$@”, sớm hơn phần %4$@ đứng trước nó, vốn bắt đầu ở %5$@."
           }
         },
         "zh-Hans" : {
@@ -508753,7 +508753,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không thể mở tệp DAISY như một kho lưu trữ ZIP."
+            "value" : "Không thể mở tệp DAISY dưới dạng tệp lưu trữ ZIP."
           }
         },
         "zh-Hans" : {
@@ -508890,7 +508890,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không thể mở tệp DOCX như một kho lưu trữ ZIP."
+            "value" : "Không thể mở tệp DOCX dưới dạng tệp lưu trữ ZIP."
           }
         },
         "zh-Hans" : {
@@ -509164,7 +509164,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Không thể mở tệp EPUB như một kho lưu trữ ZIP."
+            "value" : "Không thể mở tệp EPUB dưới dạng tệp lưu trữ ZIP."
           }
         },
         "zh-Hans" : {
@@ -532580,7 +532580,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tệp “%1$@” trong kho lưu trữ này bị hỏng hoặc không đầy đủ: %2$@. Hãy lấy một bản sao mới của kho lưu trữ, rồi nhập lại."
+            "value" : "Tệp “%1$@” trong tệp lưu trữ này bị hỏng hoặc không đầy đủ: %2$@. Hãy lấy một bản sao mới của tệp lưu trữ, rồi nhập lại."
           }
         },
         "zh-Hans" : {
@@ -557414,7 +557414,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Văn bản content.md có trước đó được giữ là %@, trong gói của sách."
+            "value" : "Văn bản mà content.md có trước đó được giữ lại dưới tên %@, trong gói của sách."
           }
         },
         "zh-Hans" : {
@@ -578691,7 +578691,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tệp này không phải kho lưu trữ web mà TextMouth đọc được. Có thể nó bị hỏng, hoặc là loại tệp khác."
+            "value" : "Tệp này không phải tệp lưu trữ web mà TextMouth đọc được. Có thể nó bị hỏng, hoặc là loại tệp khác."
           }
         },
         "zh-Hans" : {
@@ -578965,7 +578965,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đánh dấu của tệp này lồng nhau hơn %@ cấp, mà TextMouth không thể đọc an toàn."
+            "value" : "Mã đánh dấu của tệp này lồng nhau hơn %@ cấp, mà TextMouth không thể đọc an toàn."
           }
         },
         "zh-Hans" : {
@@ -579102,7 +579102,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đánh dấu của tệp này sẽ khiến TextMouth đọc quá lâu."
+            "value" : "Mã đánh dấu của tệp này sẽ khiến TextMouth mất quá nhiều thời gian để đọc."
           }
         },
         "zh-Hans" : {
@@ -582844,7 +582844,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kho lưu trữ web này chứa một tệp thuộc loại “%@”, không phải trang web hay văn bản, nên không có gì để đọc."
+            "value" : "Tệp lưu trữ web này chứa một tệp thuộc loại “%@”, không phải trang web hay văn bản, nên không có gì để đọc."
           }
         },
         "zh-Hans" : {
@@ -583392,7 +583392,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Thời điểm tại %@"
+            "value" : "Thời điểm ở tốc độ %@"
           }
         },
         "zh-Hans" : {
@@ -591941,7 +591941,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy chép lời trước, bằng Chép lời âm thanh."
+            "value" : "Hãy chép lời trước, bằng lệnh Chép lời âm thanh."
           }
         },
         "zh-Hans" : {
@@ -599506,7 +599506,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hãy gõ dấu nháy thẳng: trong TextEdit, tắt Trích dẫn thông minh trong Chỉnh sửa, Thay thế."
+            "value" : "Hãy gõ dấu nháy thẳng: trong TextEdit, tắt Trích dẫn thông minh trong menu Sửa, Phương án thay thế."
           }
         },
         "zh-Hans" : {
@@ -608559,7 +608559,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "User"
+            "value" : "Người dùng"
           }
         },
         "zh-Hans" : {
@@ -630577,7 +630577,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Văn bản đã sửa của bạn cũng được giữ là %@, trong gói của sách."
+            "value" : "Văn bản đã sửa của bạn cũng được giữ lại dưới tên %@, trong gói của sách."
           }
         },
         "zh-Hans" : {
@@ -635222,7 +635222,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "tại %1$@ trên tổng %2$@ ở %3$@"
+            "value" : "tại %1$@ trên tổng %2$@ ở tốc độ %3$@"
           }
         },
         "zh-Hans" : {
@@ -647245,7 +647245,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và sách sẽ mở."
+            "value" : "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để mở được sách."
           }
         },
         "zh-Hans" : {
@@ -647382,7 +647382,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và văn bản sẽ hiện ra."
+            "value" : "nó %@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để văn bản hiện ra."
           }
         },
         "zh-Hans" : {
@@ -647519,7 +647519,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó thêm từ vào một chương không có lời nói, nơi chúng không thể được giữ lại. Hãy gỡ chúng rồi lưu lại, và văn bản sẽ hiện ra."
+            "value" : "nó thêm từ vào một chương không có lời nói, nơi chúng không thể được giữ lại. Hãy gỡ chúng rồi lưu lại để văn bản hiện ra."
           }
         },
         "zh-Hans" : {
@@ -647656,7 +647656,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó đổi đề mục của một chương, vốn lấy từ âm thanh. Hãy đặt lại như cũ rồi lưu lại, và văn bản sẽ hiện ra."
+            "value" : "nó đổi đề mục của một chương, vốn lấy từ âm thanh. Hãy đặt lại như cũ rồi lưu lại để văn bản hiện ra."
           }
         },
         "zh-Hans" : {
@@ -648073,7 +648073,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó có %1$@, trong khi sách nói có %2$@. Hãy giữ mọi dòng bắt đầu bằng <!-- chapter: rồi lưu lại, và văn bản sẽ hiện ra."
+            "value" : "nó có %1$@, trong khi sách nói có %2$@. Hãy giữ mọi dòng bắt đầu bằng <!-- chapter: rồi lưu lại để văn bản hiện ra."
           }
         },
         "zh-Hans" : {
@@ -648210,7 +648210,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại, và sách sẽ mở."
+            "value" : "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại để mở được sách."
           }
         },
         "zh-Hans" : {
@@ -648347,7 +648347,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại, và văn bản sẽ hiện ra."
+            "value" : "nó không có chương nào có văn bản. Hãy hoàn tác thay đổi rồi lưu lại để văn bản hiện ra."
           }
         },
         "zh-Hans" : {
@@ -649088,7 +649088,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8, và sách sẽ mở."
+            "value" : "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8 để mở được sách."
           }
         },
         "zh-Hans" : {
@@ -649225,7 +649225,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8, và văn bản sẽ hiện ra."
+            "value" : "nó không phải là văn bản UTF-8. Hãy lưu dưới dạng UTF-8 để văn bản hiện ra."
           }
         },
         "zh-Hans" : {
@@ -652114,7 +652114,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và sách sẽ mở."
+            "value" : "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để mở được sách."
           }
         },
         "zh-Hans" : {
@@ -652257,7 +652257,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, và văn bản sẽ hiện ra."
+            "value" : "chương %1$@ của nó %2$@, mà TextMouth không thể đọc an toàn. Hãy làm phẳng nó rồi lưu lại, hoặc hoàn tác thay đổi, để văn bản hiện ra."
           }
         },
         "zh-Hans" : {
