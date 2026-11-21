@@ -699475,7 +699475,7 @@
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "یکی از %@ را بدهید"
+            "value" : "یکی از %@ را وارد کنید"
           }
         },
         "fr" : {
@@ -699624,7 +699624,7 @@
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "true یا false بدهید"
+            "value" : "true یا false وارد کنید"
           }
         },
         "fr" : {
@@ -737686,7 +737686,7 @@
         "fa" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "«%@» در حال ضبط است. آن را با «لغو انتخاب» متوقف یا دور بیندازید، سپس خارج شوید."
+            "value" : "«%@» در حال ضبط است. آن را متوقف کنید، یا با «لغو انتخاب» دور بیندازید، سپس خارج شوید."
           }
         },
         "fr" : {
