@@ -1,0 +1,812 @@
+{
+ "language": "fr",
+ "reviews": [
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ of %@ transcribed",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "%1$@ transcrites sur %2$@",
+     "after": "Transcription : %1$@ sur %2$@",
+     "why": "grammar: transcrites agreed only with minutes; 1 heure or 1 minute read wrong"
+    },
+    {
+     "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "before": "%@ utilisent http simple, donc d’autres peuvent lire ou modifier ce qu’ils envoient ; TextMouth les charge quand même.",
+     "after": "%@ utilisent http non chiffré, donc d’autres peuvent lire ou modifier ce qu’ils envoient ; TextMouth les charge quand même.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@ utilise http simple, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "after": "%@ utilise http non chiffré, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "%@ waits for a network without data limits to refresh by itself.",
+     "english": "%@ waits for a network without data limits to refresh by itself.",
+     "before": "%@ attend un réseau sans limite de données pour s’actualiser tout seul.",
+     "after": "%@ attend un réseau sans limite de données pour s’actualiser automatiquement.",
+     "why": "register: tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "%lld edits, all saved",
+     "english": {
+      "one": "%lld edit, all saved",
+      "other": "%lld edits, all saved"
+     },
+     "before": {
+      "many": "%lld de modifications, toutes enregistrées",
+      "one": "%lld modification, toutes enregistrées",
+      "other": "%lld modifications, toutes enregistrées"
+     },
+     "after": {
+      "one": "%lld modification, enregistrée",
+      "other": "%lld modifications, toutes enregistrées",
+      "many": "%lld de modifications, toutes enregistrées"
+     },
+     "why": "grammar: toutes enregistrées is plural for one edit; zero edits reads No edits instead"
+    },
+    {
+     "key": "%lld edits, not all saved",
+     "english": {
+      "one": "%lld edit, not all saved",
+      "other": "%lld edits, not all saved"
+     },
+     "before": {
+      "many": "%lld de modifications, pas toutes enregistrées",
+      "one": "%lld modification, pas toutes enregistrées",
+      "other": "%lld modifications, pas toutes enregistrées"
+     },
+     "after": {
+      "one": "%lld modification, non enregistrée",
+      "other": "%lld modifications, pas toutes enregistrées",
+      "many": "%lld de modifications, pas toutes enregistrées"
+     },
+     "why": "grammar: pas toutes enregistrées is plural for one edit; zero edits reads No edits instead"
+    },
+    {
+     "key": "%lld were subscribed already.",
+     "english": {
+      "one": "%lld was subscribed already.",
+      "other": "%lld were subscribed already."
+     },
+     "before": {
+      "many": "%lld étaient déjà abonnés.",
+      "one": "%lld était déjà abonné.",
+      "other": "%lld étaient déjà abonnés."
+     },
+     "after": {
+      "one": "Vous étiez déjà abonné à %lld flux.",
+      "other": "Vous étiez déjà abonné à %lld flux.",
+      "many": "Vous étiez déjà abonné à %lld de flux."
+     },
+     "why": "meaning: était déjà abonné said the feed had subscribed; the listener is the one subscribed"
+    },
+    {
+     "key": "%lld%% of %@",
+     "english": {
+      "one": "%lld%% of %@",
+      "other": "%lld%% of %@"
+     },
+     "before": {
+      "many": "%lld %% sur %@",
+      "one": "%lld %% sur %@",
+      "other": "%lld %% sur %@"
+     },
+     "after": {
+      "one": "%lld %% de %@",
+      "other": "%lld %% de %@",
+      "many": "%lld %% de %@"
+     },
+     "why": "natural: a percent of a size is de in French (45 % de 63 Mo), not sur"
+    },
+    {
+     "key": "A chapter marker needs a title.",
+     "english": "A chapter marker needs a title.",
+     "before": "Un marqueur de chapitre a besoin d’un titre.",
+     "after": "Un marqueur de chapitre doit avoir un titre.",
+     "why": "natural: a besoin d’un copies needs a; French says doit avoir"
+    },
+    {
+     "key": "A filter preset needs a name.",
+     "english": "A filter preset needs a name.",
+     "before": "Un préréglage de filtre a besoin d’un nom.",
+     "after": "Un préréglage de filtre doit avoir un nom.",
+     "why": "natural: a besoin d’un copies needs a; French says doit avoir"
+    },
+    {
+     "key": "An episode in its feed can't be edited.",
+     "english": "An episode in its feed can't be edited.",
+     "before": "Un épisode de son flux ne peut pas être modifié.",
+     "after": "Un épisode encore dans son flux ne peut pas être modifié.",
+     "why": "meaning: Un épisode de son flux lost that the episode is still in its feed, which is why it can't be edited"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "Demande après chaque importation de livre audio s’il faut le transcrire. Désactivé, les livres audio ne sont transcrits qu’avec Transcrire l’audio.",
+     "after": "Demande après chaque importation de livre audio s’il faut le transcrire. Si l’option est désactivée, les livres audio ne sont transcrits qu’avec Transcrire l’audio.",
+     "why": "grammar: Désactivé, les livres audio… made the audiobooks the ones turned off"
+    },
+    {
+     "key": "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed",
+     "english": "Asks first, then deletes this feed, its downloads, and what it kept of downloads you removed",
+     "before": "Demande d’abord, puis supprime ce flux, ses téléchargements et ce qu’il a conservé des téléchargements retirés.",
+     "after": "Demande confirmation, puis supprime ce flux, ses téléchargements et ce qu’il a conservé des téléchargements retirés.",
+     "why": "natural: Demande d’abord has no object; French asks for confirmation"
+    },
+    {
+     "key": "Asks first, then stops checking; the feed and its downloads stay",
+     "english": "Asks first, then stops checking; the feed and its downloads stay",
+     "before": "Demande d’abord, puis cesse de vérifier ; le flux et ses téléchargements restent.",
+     "after": "Demande confirmation, puis cesse de vérifier ce flux, qui reste avec ses téléchargements.",
+     "why": "natural: Demande d’abord and cesse de vérifier had no object"
+    },
+    {
+     "key": "Attaching “%@” to %@.",
+     "english": "Attaching “%1$@” to %2$@.",
+     "before": "Jonction du fichier « %1$@ » à %2$@.",
+     "after": "Ajout du fichier « %1$@ » à %2$@.",
+     "why": "natural: Jonction means a junction; attaching a file is un ajout"
+    },
+    {
+     "key": "Audio that TextMouth converts at import keeps only the converted file.",
+     "english": "Audio that TextMouth converts at import keeps only the converted file.",
+     "before": "L’audio que TextMouth convertit à l’importation ne conserve que le fichier converti.",
+     "after": "Pour l’audio que TextMouth convertit à l’importation, seul le fichier converti est conservé.",
+     "why": "natural: the audio itself kept the file, a literal copy of the English subject"
+    },
+    {
+     "key": "Audiobook Loudness",
+     "english": "Audiobook Loudness",
+     "before": "Intensité des livres audio",
+     "after": "Niveau sonore des livres audio",
+     "why": "natural: Intensité des livres audio is vague; the preset sets the loudness, niveau sonore"
+    },
+    {
+     "key": "Cancelling after this book...",
+     "english": "Cancelling after this book...",
+     "before": "Annulation après ce livre...",
+     "after": "Annulation après ce livre…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Cancelling...",
+     "english": "Cancelling...",
+     "before": "Annulation...",
+     "after": "Annulation…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "Vérifie de nouveau ce flux à partir de maintenant, et immédiatement.",
+     "after": "Reprend la vérification de ce flux et le vérifie tout de suite.",
+     "why": "natural: à partir de maintenant, et immédiatement copied the English word order"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "Choisissez un fichier OPML d’abonnements, tel qu’un autre lecteur de flux les exporte.",
+     "after": "Choisissez un fichier OPML d’abonnements, comme en exportent les autres lecteurs de flux.",
+     "why": "natural: tel qu’un autre lecteur de flux les exporte copied the English clause"
+    },
+    {
+     "key": "Deletes the recording without saving it.",
+     "english": "Deletes the recording without saving it.",
+     "before": "Supprime l’enregistrement sans l’enregistrer.",
+     "after": "Supprime l’enregistrement sans le conserver.",
+     "why": "natural: sans l’enregistrer clashed with enregistrement; French says sans le conserver"
+    },
+    {
+     "key": "Deletes this recording without saving it.",
+     "english": "Deletes this recording without saving it.",
+     "before": "Supprime cet enregistrement sans l’enregistrer.",
+     "after": "Supprime cet enregistrement sans le conserver.",
+     "why": "natural: sans l’enregistrer clashed with enregistrement; French says sans le conserver"
+    },
+    {
+     "key": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "english": "Export Numbers spreadsheets from Numbers as PDF files, then import those.",
+     "before": "Exportez les tableurs Numbers depuis Numbers en fichiers PDF, puis importez-les.",
+     "after": "Exportez les feuilles de calcul Numbers depuis Numbers en fichiers PDF, puis importez-les.",
+     "why": "meaning: un tableur is the spreadsheet program; Apple's French calls Numbers documents feuilles de calcul"
+    },
+    {
+     "key": "Extracting archive...",
+     "english": "Extracting archive...",
+     "before": "Extraction de l’archive...",
+     "after": "Extraction de l’archive…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Extracting “%@”: %@...",
+     "english": "Extracting “%1$@”: %2$@...",
+     "before": "Extraction de « %1$@ » : %2$@...",
+     "after": "Extraction de « %1$@ » : %2$@…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "english": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "before": "Trouvé à %@. Quand c’est activé, les filtres de l’éditeur passent par ffmpeg, avec tous ses filtres.",
+     "after": "Trouvé à %@. Si l’option est activée, les filtres de l’éditeur passent par ffmpeg, avec tous ses filtres.",
+     "why": "register: Quand c’est activé is spoken French; the interface says Si l’option est activée"
+    },
+    {
+     "key": "Import cancelled while extracting the archive, before any book was imported.",
+     "english": "Import cancelled while extracting the archive, before any book was imported.",
+     "before": "Importation annulée pendant l’extraction de l’archive, avant l’importation de tout livre.",
+     "after": "Importation annulée pendant l’extraction de l’archive, avant qu’aucun livre ne soit importé.",
+     "why": "natural: avant l’importation de tout livre is stilted; French says avant qu’aucun livre ne soit importé"
+    },
+    {
+     "key": "It holds no files.",
+     "english": "It holds no files.",
+     "before": "Elle ne contient aucun fichier.",
+     "after": "Aucun fichier ne s’y trouve.",
+     "why": "grammar: Elle fits an archive, but the sentence also follows a folder (dossier is masculine)"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "Elle ne répertorie aucune piste audio dont TextMouth puisse lire le début.",
+     "after": "Il ne répertorie aucune piste audio dont TextMouth reconnaisse le point de départ.",
+     "why": "grammar: the catalog calls a cue sheet fichier CUE (masculine); lire le début also read as playing the start"
+    },
+    {
+     "key": "It names no audio file in its own folder that TextMouth can import.",
+     "english": "It names no audio file in its own folder that TextMouth can import.",
+     "before": "Elle ne désigne aucun fichier audio de son propre dossier que TextMouth puisse importer.",
+     "after": "Il ne désigne aucun fichier audio de son propre dossier que TextMouth puisse importer.",
+     "why": "grammar: also said of a cue sheet (fichier CUE, masculine); Il stands for the file the sentence before names"
+    },
+    {
+     "key": "It skipped %lld entries: %@.",
+     "english": {
+      "one": "It skipped %lld entry: %@.",
+      "other": "It skipped %lld entries: %@."
+     },
+     "before": {
+      "many": "Elle a ignoré %lld d’entrées : %@.",
+      "one": "Elle a ignoré %lld entrée : %@.",
+      "other": "Elle a ignoré %lld entrées : %@."
+     },
+     "after": {
+      "one": "%lld entrée a été ignorée : %@.",
+      "other": "%lld entrées ont été ignorées : %@.",
+      "many": "%lld d’entrées ont été ignorées : %@."
+     },
+     "why": "grammar: Elle a ignoré gave the skipping to a feminine file the sentence before no longer names; the passive fits both kinds"
+    },
+    {
+     "key": "Its %@ are kept for when you download it again.",
+     "english": "Its %@ are kept for when you download it again.",
+     "before": "Conservés pour quand vous le téléchargerez de nouveau : %@.",
+     "after": "Conservés en vue d’un nouveau téléchargement : %@.",
+     "why": "register: pour quand vous le téléchargerez is spoken French"
+    },
+    {
+     "key": "Its %@ is kept for when you download it again.",
+     "english": "Its %@ is kept for when you download it again.",
+     "before": "Conservé pour quand vous le téléchargerez de nouveau : %@.",
+     "after": "Conservée en vue d’un nouveau téléchargement : %@.",
+     "why": "grammar: the one part kept is position or transcription, both feminine; pour quand is spoken French"
+    },
+    {
+     "key": "Its %@ is kept.",
+     "english": "Its %@ is kept.",
+     "before": "Conservé : %@.",
+     "after": "Conservée : %@.",
+     "why": "grammar: the one part kept is position or transcription, both feminine"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "Ses pistes dépassent la fin de l’audio qu’elle désigne, donc elle a été faite pour une autre copie de cet audio.",
+     "after": "Ses pistes dépassent la fin de l’audio qu’il désigne, donc il a été fait pour une autre copie de cet audio.",
+     "why": "grammar: the catalog calls a cue sheet fichier CUE (masculine), so elle and faite were wrong"
+    },
+    {
+     "key": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Répertorie tous les articles ; rien ne se télécharge tout seul, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "after": "Répertorie tous les articles ; rien n’est téléchargé automatiquement, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "why": "register: rien ne se télécharge tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode and article; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Répertorie tous les épisodes et articles ; rien ne se télécharge tout seul, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "after": "Répertorie tous les épisodes et articles ; rien n’est téléchargé automatiquement, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "why": "register: rien ne se télécharge tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "english": "Lists every episode; nothing downloads by itself, and a download stays until you delete it or its days after playing pass.",
+     "before": "Répertorie tous les épisodes ; rien ne se télécharge tout seul, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "after": "Répertorie tous les épisodes ; rien n’est téléchargé automatiquement, et un téléchargement reste jusqu’à ce que vous le supprimiez ou que son délai après lecture soit écoulé.",
+     "why": "register: rien ne se télécharge tout seul is colloquial; the interface says automatiquement"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "Effectue ces corrections. La transcription d’avant est conservée, donc Annuler le nettoyage peut la remettre.",
+     "after": "Effectue ces corrections. La transcription précédente est conservée, donc Annuler le nettoyage peut la rétablir.",
+     "why": "register: la transcription d’avant is spoken French; the sheet says précédente elsewhere"
+    },
+    {
+     "key": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "english": "No original is kept, so it can't be reverted. Undo takes back edits since the last save.",
+     "before": "Aucun original n’est conservé, donc le retour à l’original est impossible. Annuler reprend les modifications faites depuis le dernier enregistrement.",
+     "after": "Aucun original n’est conservé, donc le retour à l’original est impossible. Annuler défait les modifications faites depuis le dernier enregistrement.",
+     "why": "meaning: Annuler reprend les modifications can read as resuming them; Undo takes them back"
+    },
+    {
+     "key": "Nothing Imported",
+     "english": "Nothing Imported",
+     "before": "Rien d’importé",
+     "after": "Aucun livre importé",
+     "why": "natural: Rien d’importé is colloquial for an alert title"
+    },
+    {
+     "key": "Now %@ long.",
+     "english": "Now %@ long.",
+     "before": "Durée maintenant : %@.",
+     "after": "Nouvelle durée : %@.",
+     "why": "natural: Durée maintenant copies the English word order"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Une partie de %@ n’a pas pu être décodée et est conservée en silence.",
+     "after": "Une partie de %@ n’a pas pu être décodée et est remplacée par du silence.",
+     "why": "meaning: conservée en silence said the part is kept quietly; it is replaced by silence"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "many": "Une partie de %lld de fichiers, %@, n’a pas pu être décodée et est conservée en silence.",
+      "one": "Une partie de %lld fichier, %@, n’a pas pu être décodée et est conservée en silence.",
+      "other": "Une partie de %lld fichiers, %@, n’a pas pu être décodée et est conservée en silence."
+     },
+     "after": {
+      "one": "Une partie de %lld fichier, %@, n’a pas pu être décodée et est remplacée par du silence.",
+      "other": "Une partie de %lld fichiers, %@, n’a pas pu être décodée et est remplacée par du silence.",
+      "many": "Une partie de %lld de fichiers, %@, n’a pas pu être décodée et est remplacée par du silence."
+     },
+     "why": "meaning: conservée en silence said the part is kept quietly; it is replaced by silence"
+    },
+    {
+     "key": "Plain http: others can read or change what this feed sends.",
+     "english": "Plain http: others can read or change what this feed sends.",
+     "before": "http simple : d’autres peuvent lire ou modifier ce que ce flux envoie.",
+     "after": "http non chiffré : d’autres peuvent lire ou modifier ce que ce flux envoie.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "Post a notification for each feed with new episodes",
+     "english": "Post a notification for each feed with new episodes",
+     "before": "Publier une notification pour chaque flux ayant de nouveaux épisodes",
+     "after": "Afficher une notification pour chaque flux ayant de nouveaux épisodes",
+     "why": "natural: Publier copies post; French shows a notification, as the alert switch beside it does"
+    },
+    {
+     "key": "Putting back the transcript from before…",
+     "english": "Putting back the transcript from before…",
+     "before": "Remise en place de la transcription d’avant…",
+     "after": "Rétablissement de la transcription précédente…",
+     "why": "register: la transcription d’avant is spoken French; précédente as elsewhere in the sheet"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "Enregistre sur la sélection, ou au curseur, après un bip. Appuyer à nouveau, ou Arrêter, le termine.",
+     "after": "Enregistre sur la sélection, ou au curseur, après un bip. Enregistrer par-dessus à nouveau, ou Arrêter, le termine.",
+     "why": "voiceover: Appuyer à nouveau named a gesture; the command's name says it, as the status line does"
+    },
+    {
+     "key": "Refreshed %@: %@",
+     "english": "Refreshed %1$@: %2$@",
+     "before": "Actualisation de %1$@ : %2$@",
+     "after": "Actualisation terminée pour %1$@ : %2$@",
+     "why": "meaning: Actualisation de read as a refresh under way; VoiceOver says it once the refresh is done"
+    },
+    {
+     "key": "Save the recording?",
+     "english": "Save the recording?",
+     "before": "Enregistrer l’enregistrement ?",
+     "after": "Sauvegarder l’enregistrement ?",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saved Recording as %@",
+     "english": "Saved Recording as %@",
+     "before": "Enregistrement enregistré sous %@",
+     "after": "Enregistrement sauvegardé sous %@",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saved Recording as %@.",
+     "english": "Saved Recording as %@.",
+     "before": "Enregistrement enregistré sous %@.",
+     "after": "Enregistrement sauvegardé sous %@.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saves this recording as an audiobook in the %@ folder, titled by when it was recorded.",
+     "english": "Saves this recording as an audiobook in the %@ folder, titled by when it was recorded.",
+     "before": "Enregistre cet enregistrement comme livre audio dans le dossier choisi dans %@, avec un titre indiquant quand il a été fait.",
+     "after": "Sauvegarde cet enregistrement comme livre audio dans le dossier choisi dans %@, avec un titre indiquant quand il a été fait.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Saving %@ of audio as %@, the format this book keeps.",
+     "english": "Saving %1$@ of audio as %2$@, the format this book keeps.",
+     "before": "Enregistrement de %1$@ d’audio en %2$@, le format que ce livre conserve.",
+     "after": "Écriture de %1$@ d’audio en %2$@, le format que ce livre conserve.",
+     "why": "meaning: Enregistrement de … d’audio read as recording audio; the editor is writing the edits into the book"
+    },
+    {
+     "key": "Saving %@ of audio into the book.",
+     "english": "Saving %@ of audio into the book.",
+     "before": "Enregistrement de %@ d’audio dans le livre.",
+     "after": "Écriture de %@ d’audio dans le livre.",
+     "why": "meaning: Enregistrement de … d’audio read as recording audio; the editor is writing the edits into the book"
+    },
+    {
+     "key": "Stop and save the recording?",
+     "english": "Stop and save the recording?",
+     "before": "Arrêter et enregistrer l’enregistrement ?",
+     "after": "Arrêter et sauvegarder l’enregistrement ?",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Stops checking; the feed and its downloads stay",
+     "english": "Stops checking; the feed and its downloads stay",
+     "before": "Cesse de vérifier ; le flux et ses téléchargements restent.",
+     "after": "Cesse de vérifier ce flux, qui reste avec ses téléchargements.",
+     "why": "natural: cesse de vérifier had no object; the same hint as Unsubscribe’s"
+    },
+    {
+     "key": "Stops recording and saves it in your library as an audiobook.",
+     "english": "Stops recording and saves it in your library as an audiobook.",
+     "before": "Arrête l’enregistrement et l’enregistre dans votre bibliothèque comme livre audio.",
+     "after": "Arrête l’enregistrement et le sauvegarde dans votre bibliothèque comme livre audio.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "Abonné à %@. Ce flux utilise http simple, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "after": "Abonné à %@. Ce flux utilise http non chiffré, donc d’autres peuvent lire ou modifier ce qu’il envoie ; TextMouth le charge quand même.",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "english": "TextMouth can't convert the sound of “%@”: it is in a kind of audio it does not read.",
+     "before": "TextMouth ne peut pas convertir le son de « %@ » : il est dans un type d’audio qu’il ne lit pas.",
+     "after": "TextMouth ne peut pas convertir le son de « %@ » : il ne sait pas lire ce type d’audio.",
+     "why": "grammar: il est dans un type d’audio qu’il ne lit pas used il for both the sound and TextMouth"
+    },
+    {
+     "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
+     "before": "TextMouth ne peut pas lire « %1$@ » comme %2$@. Il est peut-être endommagé, ou nommé pour un autre format.",
+     "after": "TextMouth ne peut pas lire « %1$@ » en tant que %2$@. Il est peut-être endommagé, ou son nom correspond à un autre format.",
+     "why": "natural: nommé pour un autre format copies named for another format"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth exécute encore votre dernière réponse. Attendez qu’il ait terminé.",
+     "after": "TextMouth traite encore votre dernière réponse. Attendez qu’il ait terminé.",
+     "why": "natural: exécuter une réponse is not said; French says traiter"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth n’est pas autorisé à publier des notifications. Activez-les dans Réglages Système, Notifications, TextMouth.",
+     "after": "TextMouth n’est pas autorisé à envoyer des notifications. Activez-les dans Réglages Système, Notifications, TextMouth.",
+     "why": "term: Apple's French asks to send notifications (envoyer); publier copies post"
+    },
+    {
+     "key": "TextMouth left out %@, which hold no sound it can read.",
+     "english": "TextMouth left out %@, which hold no sound it can read.",
+     "before": "TextMouth a écarté %@, qui ne contiennent aucun son qu’il peut lire.",
+     "after": "TextMouth a écarté %@, qui ne contiennent aucun son qu’il puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "TextMouth left out %@, which holds no sound it can read.",
+     "english": "TextMouth left out %@, which holds no sound it can read.",
+     "before": "TextMouth a écarté %@, qui ne contient aucun son qu’il peut lire.",
+     "after": "TextMouth a écarté %@, qui ne contient aucun son qu’il puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "That address isn't a web address TextMouth can open.",
+     "english": "That address isn't a web address TextMouth can open.",
+     "before": "Cette adresse n’est pas une adresse web que TextMouth peut ouvrir.",
+     "after": "Cette adresse n’est pas une adresse web que TextMouth puisse ouvrir.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "That item isn't a plain file TextMouth can read.",
+     "english": "That item isn't a plain file TextMouth can read.",
+     "before": "Cet élément n’est pas un fichier ordinaire que TextMouth peut lire.",
+     "after": "Cet élément n’est pas un fichier ordinaire que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "many": "Cette page désigne %lld de flux. Choisissez-en un, puis S’abonner.",
+      "one": "Cette page désigne %lld flux. Choisissez-le, puis S’abonner.",
+      "other": "Cette page désigne %lld flux. Choisissez-en un, puis S’abonner."
+     },
+     "after": {
+      "one": "Cette page désigne %lld flux. Sélectionnez-le, puis choisissez S’abonner.",
+      "other": "Cette page désigne %lld flux. Sélectionnez-en un, puis choisissez S’abonner.",
+      "many": "Cette page désigne %lld de flux. Sélectionnez-en un, puis choisissez S’abonner."
+     },
+     "why": "grammar: puis S’abonner left the button name as a bare infinitive after an imperative"
+    },
+    {
+     "key": "The %@ file holds no timed text TextMouth can use.",
+     "english": "The %@ file holds no timed text TextMouth can use.",
+     "before": "Le fichier %@ ne contient aucun texte minuté que TextMouth peut utiliser.",
+     "after": "Le fichier %@ ne contient aucun texte minuté que TextMouth puisse utiliser.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads was deleted.",
+     "english": {
+      "one": "The %@ kept for %lld removed download was deleted.",
+      "other": "The %@ kept for %lld removed downloads was deleted."
+     },
+     "before": {
+      "many": "Supprimé : %@, conservé pour %lld de téléchargements retirés.",
+      "one": "Supprimé : %@, conservé pour %lld téléchargement retiré.",
+      "other": "Supprimé : %@, conservé pour %lld téléchargements retirés."
+     },
+     "after": {
+      "one": "Ce qui était conservé pour %2$lld téléchargement retiré a été supprimé : %1$@.",
+      "other": "Ce qui était conservé pour %2$lld téléchargements retirés a été supprimé : %1$@.",
+      "many": "Ce qui était conservé pour %2$lld de téléchargements retirés a été supprimé : %1$@."
+     },
+     "why": "grammar: the one part is position or transcription, both feminine; the neutral clause fits every part"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads were deleted.",
+     "english": {
+      "one": "The %@ kept for %lld removed download were deleted.",
+      "other": "The %@ kept for %lld removed downloads were deleted."
+     },
+     "before": {
+      "many": "Supprimés : %@, conservés pour %lld de téléchargements retirés.",
+      "one": "Supprimés : %@, conservés pour %lld téléchargement retiré.",
+      "other": "Supprimés : %@, conservés pour %lld téléchargements retirés."
+     },
+     "after": {
+      "one": "Ce qui était conservé pour %2$lld téléchargement retiré a été supprimé : %1$@.",
+      "other": "Ce qui était conservé pour %2$lld téléchargements retirés a été supprimé : %1$@.",
+      "many": "Ce qui était conservé pour %2$lld de téléchargements retirés a été supprimé : %1$@."
+     },
+     "why": "grammar: Supprimés was wrong for positions or transcriptions alone; the neutral clause fits every list"
+    },
+    {
+     "key": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "english": "The address of %@ doesn't hold a feed TextMouth can read.",
+     "before": "L’adresse de %@ ne contient pas un flux que TextMouth peut lire.",
+     "after": "L’adresse de %@ ne contient aucun flux que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The article leaves the list for good, and its download, if any, is deleted.",
+     "english": "The article leaves the list for good, and its download, if any, is deleted.",
+     "before": "L’article quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé.",
+     "after": "L’article quitte définitivement la liste, et son téléchargement, s’il y en a un, est supprimé.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The article leaves the list for good; the book it became in your library stays.",
+     "english": "The article leaves the list for good; the book it became in your library stays.",
+     "before": "L’article quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "after": "L’article quitte définitivement la liste ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The audio converted from %@ could not be given its name.",
+     "english": "The audio converted from %@ could not be given its name.",
+     "before": "L’audio converti à partir de %@ n’a pas pu recevoir son nom.",
+     "after": "L’audio converti à partir de %@ n’a pas pu être renommé.",
+     "why": "natural: recevoir son nom copies be given its name; the file is renamed"
+    },
+    {
+     "key": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "english": "The episode leaves the list for good, and its download, if any, is deleted.",
+     "before": "L’épisode quitte la liste pour de bon, et son téléchargement, s’il y en a un, est supprimé.",
+     "after": "L’épisode quitte définitivement la liste, et son téléchargement, s’il y en a un, est supprimé.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The episode leaves the list for good; the book it became in your library stays.",
+     "english": "The episode leaves the list for good; the book it became in your library stays.",
+     "before": "L’épisode quitte la liste pour de bon ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "after": "L’épisode quitte définitivement la liste ; le livre qu’il est devenu dans votre bibliothèque reste.",
+     "why": "register: pour de bon is colloquial; the interface says définitivement"
+    },
+    {
+     "key": "The file isn't a %@ transcript TextMouth can read.",
+     "english": "The file isn't a %@ transcript TextMouth can read.",
+     "before": "Le fichier n’est pas une transcription %@ que TextMouth peut lire.",
+     "after": "Le fichier n’est pas une transcription %@ que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The file's address isn't a web address TextMouth can open.",
+     "english": "The file's address isn't a web address TextMouth can open.",
+     "before": "L’adresse du fichier n’est pas une adresse web que TextMouth peut ouvrir.",
+     "after": "L’adresse du fichier n’est pas une adresse web que TextMouth puisse ouvrir.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "The library folder the recording is saved in.",
+     "english": "The library folder the recording is saved in.",
+     "before": "Le dossier de la bibliothèque où l’enregistrement est enregistré.",
+     "after": "Le dossier de la bibliothèque où l’enregistrement est sauvegardé.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "The recording couldn't be saved: %@ It is kept; choose %@ or %@.",
+     "english": "The recording couldn't be saved: %1$@ It is kept; choose %2$@ or %3$@.",
+     "before": "L’enregistrement n’a pas pu être enregistré : %1$@ Il est conservé ; choisissez %2$@ ou %3$@.",
+     "after": "L’enregistrement n’a pas pu être sauvegardé : %1$@ Il est conservé ; choisissez %2$@ ou %3$@.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "The selection is all the audio; nothing to trim.",
+     "english": "The selection is all the audio; nothing to trim.",
+     "before": "La sélection est tout l’audio ; rien à rogner.",
+     "after": "La sélection couvre tout l’audio ; rien à rogner.",
+     "why": "natural: La sélection est tout l’audio copies the English; French says couvre"
+    },
+    {
+     "key": "These edits need the original audio, which is no longer kept.",
+     "english": "These edits need the original audio, which is no longer kept.",
+     "before": "Ces modifications ont besoin de l’audio original, qui n’est plus conservé.",
+     "after": "Ces modifications nécessitent l’audio original, qui n’est plus conservé.",
+     "why": "natural: ont besoin de copies need; French says nécessitent"
+    },
+    {
+     "key": "This Feed Uses Plain http",
+     "english": "This Feed Uses Plain http",
+     "before": "Ce flux utilise http simple",
+     "after": "Ce flux utilise http non chiffré",
+     "why": "natural: http simple copies plain http; French says unencrypted http"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls XML que TextMouth lit.",
+     "after": "Ce fichier XML n’est ni un livre DTBook, ni un document XML Word 2003, ni un fichier braille PEF, les seuls formats XML que TextMouth lit.",
+     "why": "natural: les seuls XML lacked a noun; French says les seuls formats XML"
+    },
+    {
+     "key": "This comic book archive holds no pictures TextMouth can read.",
+     "english": "This comic book archive holds no pictures TextMouth can read.",
+     "before": "Cette archive de bande dessinée ne contient aucune image que TextMouth peut lire.",
+     "after": "Cette archive de bande dessinée ne contient aucune image que TextMouth puisse lire.",
+     "why": "grammar: a relative clause after a negative antecedent takes the subjunctive (puisse)"
+    },
+    {
+     "key": "This recording isn't saved. %@ tries again, %@ deletes it, and %@ keeps the window open.",
+     "english": "This recording isn't saved. %1$@ tries again, %2$@ deletes it, and %3$@ keeps the window open.",
+     "before": "Cet enregistrement n’est pas enregistré. %1$@ réessaie, %2$@ le supprime, et %3$@ garde la fenêtre ouverte.",
+     "after": "Cet enregistrement n’est pas sauvegardé. %1$@ réessaie, %2$@ le supprime, et %3$@ garde la fenêtre ouverte.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Tries again to save the recording as an audiobook.",
+     "english": "Tries again to save the recording as an audiobook.",
+     "before": "Réessaie d’enregistrer l’enregistrement comme livre audio.",
+     "after": "Réessaie de sauvegarder l’enregistrement comme livre audio.",
+     "why": "natural: enregistrer and enregistrement collide (Save and Recording); sauvegarder, as Sauvegarde de l’enregistrement already says"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Rogné à la sélection : %@ conservé.",
+     "after": "Rogné à la sélection ; durée conservée : %@.",
+     "why": "grammar: %@ conservé could not agree with every length (2 minutes, 1 heure)"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "Annuler le nettoyage remet la transcription d’avant.",
+     "after": "Annuler le nettoyage rétablit la transcription précédente.",
+     "why": "register: la transcription d’avant is spoken French; précédente as elsewhere in the sheet"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux articles%2$@.",
+     "after": "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux articles%2$@.",
+     "why": "meaning: ne vérifie plus ses nouveaux articles said it no longer checks the new ones; it no longer looks for new ones"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux épisodes%2$@.",
+     "after": "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux épisodes%2$@.",
+     "why": "meaning: ne vérifie plus ses nouveaux articles said it no longer checks the new ones; it no longer looks for new ones"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Désabonné de %1$@ : TextMouth ne vérifie plus ses nouveaux éléments%2$@.",
+     "after": "Désabonné de %1$@ : TextMouth n’y recherche plus de nouveaux éléments%2$@.",
+     "why": "meaning: ne vérifie plus ses nouveaux articles said it no longer checks the new ones; it no longer looks for new ones"
+    },
+    {
+     "key": "Waiting for the data directory move to finish...",
+     "english": "Waiting for the data directory move to finish...",
+     "before": "En attente de la fin du déplacement du dossier de données...",
+     "after": "En attente de la fin du déplacement du dossier de données…",
+     "why": "punctuation: French uses the ellipsis character, not three periods"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui en donner un propre.",
+     "after": "Si la case est cochée, ce flux suit le réglage de l’onglet %@ des Réglages ; décochez-la pour lui donner son propre réglage.",
+     "why": "natural: lui en donner un propre is awkward, and un propre can read as a clean one"
+    },
+    {
+     "key": "it is %@, larger than %lld megapixels",
+     "english": {
+      "one": "it is %@, larger than %lld megapixel",
+      "other": "it is %@, larger than %lld megapixels"
+     },
+     "before": {
+      "many": "il fait %@, plus que %lld de mégapixels",
+      "one": "il fait %@, plus que %lld mégapixel",
+      "other": "il fait %@, plus que %lld mégapixels"
+     },
+     "after": {
+      "one": "elle fait %@, plus que %lld mégapixel",
+      "other": "elle fait %@, plus que %lld mégapixels",
+      "many": "elle fait %@, plus que %lld de mégapixels"
+     },
+     "why": "grammar: the subject is the page of a comic book archive, feminine in French"
+    },
+    {
+     "key": "keeping the place of your feed downloads for next time",
+     "english": "keeping the place of your feed downloads for next time",
+     "before": "enregistrement de la position de vos téléchargements de flux pour la prochaine fois",
+     "after": "enregistrement de l’avancement de vos téléchargements de flux pour la prochaine fois",
+     "why": "meaning: la position read as a reading position; it is how far each download got"
+    }
+   ]
+  }
+ ]
+}
