@@ -105313,7 +105313,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在你的規則之後加入詞典的詞條；只有拼音的詞條會被略過。"
+            "value" : "在你的規則之後加入詞典的詞條；只有音標的詞條會被略過。"
           }
         }
       }
@@ -118539,7 +118539,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "詢問選用的備註，然後標記閱讀位置。"
+            "value" : "先讓你輸入選填的備註，再標記閱讀位置。"
           }
         }
       }
@@ -141904,7 +141904,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "此書的第 %1$@ 章 %2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，將巢狀結構攤平並儲存，然後再次輸出。"
+            "value" : "此書的第 %1$@ 章中，%2$@，TextMouth 無法安全輸出。請選擇「編輯文字」，減少巢狀層級並儲存，然後再次輸出。"
           }
         }
       }
@@ -237588,7 +237588,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "從"
+            "value" : "起點"
           }
         }
       }
@@ -266378,7 +266378,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "它沒有標題，因此目錄列有 %lld 個項目，對應其章節和它標記的位置。"
+                  "value" : "它沒有標題，因此目錄中有 %lld 個項目，對應其章節和它標記的位置。"
                 }
               }
             }
@@ -266518,7 +266518,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它沒有標題，因此目錄列只有一個項目，對應整本書。"
+            "value" : "它沒有標題，因此目錄中只有一個項目，對應整本書。"
           }
         }
       }
@@ -274313,7 +274313,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它的標題是真正的標題，目錄列有連結指向它們。"
+            "value" : "它的標題是真正的標題，目錄會連結到這些標題。"
           }
         }
       }
@@ -345186,7 +345186,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "尚未安裝語音。請在「系統設定」>「輔助使用」>「語音內容」中加入語音，然後再次輸出。"
+            "value" : "尚未安裝語音。請在「系統設定」的「輔助使用」中，於「語音內容」加入語音，然後再次輸出。"
           }
         }
       }
@@ -345323,7 +345323,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "尚未安裝語音。請在「設定」>「輔助使用」>「閱讀與朗讀」中加入語音。"
+            "value" : "尚未安裝語音。請在「設定」的「輔助使用」中，於「閱讀與朗讀」加入語音。"
           }
         }
       }
@@ -369534,7 +369534,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "從列表中的書結束時，略過已完成的書。"
+            "value" : "列表中的書結束時，略過已完成的書。"
           }
         }
       }
