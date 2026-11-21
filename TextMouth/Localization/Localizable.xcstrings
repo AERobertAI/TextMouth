@@ -464207,7 +464207,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dur ve Oynat Baştan Başlatır"
+            "value" : "Dur ve Sonraki Oynatmada Baştan Başla"
           }
         },
         "uk" : {
@@ -470776,7 +470776,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geçiş yapmak, kitaplık kullanılamıyorken TextMouth'un kaydedemediği değişiklikleri kaybettirir."
+            "value" : "Geçiş yaparsanız, kitaplık kullanılamıyorken TextMouth'un kaydedemediği değişiklikler kaybolur."
           }
         },
         "uk" : {
@@ -473254,7 +473254,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu kuralı girdiye karşı sına"
+            "value" : "Bu kuralı girdi üzerinde sına"
           }
         },
         "uk" : {
@@ -494037,7 +494037,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth geçerli kitaplık biçimine kitap taşıdı (%@), ancak bir sorunla:"
+            "value" : "%@, TextMouth tarafından geçerli kitaplık biçimine taşındı, ancak bir sorun çıktı:"
           }
         },
         "uk" : {
@@ -494174,7 +494174,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth geçerli kitaplık biçimine kitap taşıdı (%@), ancak sorunlarla:"
+            "value" : "%@, TextMouth tarafından geçerli kitaplık biçimine taşındı, ancak sorunlar çıktı:"
           }
         },
         "uk" : {
@@ -498843,7 +498843,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth bir sonraki açılışında şu kitaplığı açacak: %1$@, ancak kendi kendine yeniden açılamadı: %2$@"
+            "value" : "TextMouth bir sonraki açılışında %1$@ içindeki kitaplığı açacak, ancak kendi kendine yeniden açılamadı: %2$@"
           }
         },
         "uk" : {
@@ -504352,7 +504352,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Listedeki %1$@, TextMouth'un %2$@ ile değiştirilecek."
+            "value" : "Listedeki %1$@, TextMouth'un sunduğu %2$@ ile değiştirilecek."
           }
         },
         "uk" : {
@@ -510385,7 +510385,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“The Hobbit” yazarken H harfi sayılır. Liste sırasını korur ve her başlığı yazıldığı gibi gösterir."
+            "value" : "Yazarken “The Hobbit”, H ile başlayan bir başlık sayılır. Liste sırasını korur ve her başlığı yazıldığı gibi gösterir."
           }
         },
         "uk" : {
@@ -510522,7 +510522,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“The Hobbit” H'ler arasında sıralanır ve “Hobbit, The” olarak görünür. H yazmak onu H'ler arasında bulur."
+            "value" : "“The Hobbit” H'ler arasında sıralanır ve “Hobbit, The” olarak görünür. H yazdığınızda H'ler arasında bulunur."
           }
         },
         "uk" : {
@@ -517376,7 +517376,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitap “%1$@” veri klasörünün dışında depolanıyor (%2$@); bu yüzden taşıma onu taşıyamaz."
+            "value" : "“%1$@” kitabı veri klasörünün dışında (%2$@) depolanıyor; bu yüzden taşımaya dahil edilemez."
           }
         },
         "uk" : {
@@ -524089,7 +524089,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vazgeç düğmesine basıldığında kopya zaten tamamlanmıştı; bu yüzden taşıma sürdü."
+            "value" : "Vazgeç düğmesine basıldığında kopya zaten tamamlanmıştı; bu yüzden taşıma yine de yapıldı."
           }
         },
         "uk" : {
@@ -566225,7 +566225,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Şurada kullanılacak kitaplık yok ve kitaplık kullanılamıyorken oraya taşınacak bir kitaplık da yok: %@."
+            "value" : "%@ içinde kullanılacak bir kitaplık yok; kitaplık kullanılamıyorken oraya taşınacak bir kitaplık da yok."
           }
         },
         "uk" : {
@@ -588567,7 +588567,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Başka bir klasör kullanmak için Ayarlar'ı açın, Depolama'yı seçin ve “%1$@” veya “%2$@” seçeneğini seçin."
+            "value" : "Başka bir klasör kullanmak için Ayarları açın, Depolama sekmesini seçin ve “%1$@” veya “%2$@” seçeneğini seçin."
           }
         },
         "uk" : {
@@ -614170,7 +614170,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bir kitabın oynatılması bittiğinde ne olacağı."
+            "value" : "Bir kitabın oynatılması bittiğinde ne olacağını belirler."
           }
         },
         "uk" : {
@@ -614307,7 +614307,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift tuşunu basılı tutup geri atladığınızda ne olacağı."
+            "value" : "Shift tuşunu basılı tutup geri atladığınızda ne olacağını belirler."
           }
         },
         "uk" : {
@@ -614444,7 +614444,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Shift tuşunu basılı tutup ileri atladığınızda ne olacağı."
+            "value" : "Shift tuşunu basılı tutup ileri atladığınızda ne olacağını belirler."
           }
         },
         "uk" : {
@@ -614581,7 +614581,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geri atladığınızda ne olacağı."
+            "value" : "Geri atladığınızda ne olacağını belirler."
           }
         },
         "uk" : {
@@ -614718,7 +614718,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "İleri atladığınızda ne olacağı."
+            "value" : "İleri atladığınızda ne olacağını belirler."
           }
         },
         "uk" : {
@@ -614855,7 +614855,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bir kitabı içe aktardıktan sonra orijinal dosyayla ne yapılacağı."
+            "value" : "Bir kitabı içe aktardıktan sonra orijinal dosyayla ne yapılacağını belirler."
           }
         },
         "uk" : {
@@ -618423,7 +618423,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Artikeller yoksayıldığında, meta verisi Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe olan bir kitap, o dilin Le ve Die gibi artiklerini ve The kelimeyi atlar."
+            "value" : "Artikeller yoksayıldığında, meta verisinde dil olarak Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe belirtilen bir kitap, o dilin Le ve Die gibi artikellerini ve The kelimesini atlar."
           }
         },
         "uk" : {
@@ -620341,7 +620341,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Oynatma devam ederken bu birimin başına geri sarar."
+            "value" : "Oynatma sürdürüldüğünde bu birimin başına geri sarar."
           }
         },
         "uk" : {
@@ -621717,7 +621717,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth'un tanılama günlüklerini nereye yazacağı. %1$@ bunları kitaplarınızla birlikte tutar; böylece kitaplıkla birlikte taşınır ve eşzamanlanır. %2$@ bunları şurada tutar: %3$@; burası hiçbir zaman eşzamanlanmaz. Değişiklik bir sonraki satırdan itibaren uygulanır; mevcut günlükler kalır."
+            "value" : "TextMouth'un tanılama günlüklerini nereye yazacağını seçer. “%1$@” bunları kitaplarınızla birlikte tutar; böylece kitaplıkla birlikte taşınır ve eşzamanlanır. “%2$@” bunları şurada tutar: %3$@; burası hiçbir zaman eşzamanlanmaz. Değişiklik bir sonraki satırdan itibaren uygulanır; mevcut günlükler kalır."
           }
         },
         "uk" : {
