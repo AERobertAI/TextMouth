@@ -25085,7 +25085,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ funciona em %2$@."
+            "value" : "%1$@ vale para %2$@."
           }
         },
         "ru" : {
@@ -129174,7 +129174,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$@, %2$@, Nota: %3$@, adicionado %4$@"
+            "value" : "Marcador %1$@, %2$@, Nota: %3$@, adicionado em %4$@"
           }
         },
         "ru" : {
@@ -129317,7 +129317,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$@, %2$@, adicionado %3$@"
+            "value" : "Marcador %1$@, %2$@, adicionado em %3$@"
           }
         },
         "ru" : {
@@ -129460,7 +129460,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$@, Nota: %2$@, adicionado %3$@"
+            "value" : "Marcador %1$@, Nota: %2$@, adicionado em %3$@"
           }
         },
         "ru" : {
@@ -129603,7 +129603,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Marcador %1$@, adicionado %2$@"
+            "value" : "Marcador %1$@, adicionado em %2$@"
           }
         },
         "ru" : {
@@ -152983,7 +152983,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escolhe a unidade pela qual Reproduzir e os botões de pular avançam."
+            "value" : "Escolhe a unidade pela qual Reproduzir e os botões Avançar e Retroceder se movem."
           }
         },
         "ru" : {
@@ -220742,7 +220742,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exportado: %1$@, para %2$@."
+            "value" : "Exportação concluída: %1$@ para %2$@."
           }
         },
         "ru" : {
@@ -449432,7 +449432,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ignorada"
+            "value" : "Ignorado"
           }
         },
         "ru" : {
@@ -449575,7 +449575,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ignorada, %1$@ (cabeçalho atual) - nível %2$lld"
+            "value" : "Ignorado, %1$@ (cabeçalho atual) - nível %2$lld"
           }
         },
         "ru" : {
@@ -449718,7 +449718,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ignorada, %1$@ - nível %2$lld"
+            "value" : "Ignorado, %1$@ - nível %2$lld"
           }
         },
         "ru" : {
@@ -457739,7 +457739,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Velocidade: %lld de PPM"
+                  "value" : "Velocidade: %lld PPM"
                 }
               },
               "one" : {
@@ -458591,7 +458591,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Padrão"
+            "value" : "Normal"
           }
         },
         "ru" : {
@@ -547447,7 +547447,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O arquivo original que você importou não é tocado."
+            "value" : "O arquivo original que você importou permanece intacto."
           }
         },
         "ru" : {
@@ -598511,7 +598511,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Digite uma página como o livro a numera, como 12 ou xii."
+            "value" : "Digite uma página como o livro a numera, por exemplo, 12 ou xii."
           }
         },
         "ru" : {
@@ -627664,7 +627664,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Funciona em %@"
+            "value" : "Vale para %@"
           }
         },
         "ru" : {
@@ -669152,7 +669152,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o registro do livro não pode ser alterado agora. O TextMouth tenta novamente quando você salvar ou voltar na próxima vez."
+            "value" : "o registro do livro não pode ser alterado agora. O TextMouth tenta novamente na próxima vez que você salvar ou voltar."
           }
         },
         "ru" : {
