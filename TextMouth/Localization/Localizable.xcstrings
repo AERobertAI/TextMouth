@@ -259198,7 +259198,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dalam teks yang diucapkan, yang posisinya diberikan log ucapan: ucapan berhenti di karakter %1$@; teks yang ditolak berjalan dari karakter %2$@ hingga %3$@."
+            "value" : "Dalam teks yang diucapkan, yang posisinya diberikan log ucapan: ucapan berhenti di karakter %1$@; teks yang ditolak mencakup karakter %2$@ hingga %3$@."
           }
         },
         "it" : {
@@ -318263,7 +318263,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bergerak mundur atau maju menurut markah."
+            "value" : "Bergerak mundur atau maju per markah."
           }
         },
         "it" : {
@@ -318400,7 +318400,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bergerak mundur atau maju menurut tajuk."
+            "value" : "Bergerak mundur atau maju per tajuk."
           }
         },
         "it" : {
@@ -318537,7 +318537,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bergerak mundur atau maju menurut halaman."
+            "value" : "Bergerak mundur atau maju per halaman."
           }
         },
         "it" : {
@@ -318674,7 +318674,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bergerak mundur atau maju menurut paragraf."
+            "value" : "Bergerak mundur atau maju per paragraf."
           }
         },
         "it" : {
@@ -318811,7 +318811,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bergerak mundur atau maju menurut kalimat."
+            "value" : "Bergerak mundur atau maju per kalimat."
           }
         },
         "it" : {
@@ -318948,7 +318948,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bergerak mundur atau maju menurut subtajuk."
+            "value" : "Bergerak mundur atau maju per subtajuk."
           }
         },
         "it" : {
@@ -378965,7 +378965,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Memutar buku; buku berhenti di akhirnya pula."
+            "value" : "Memutar buku; buku memang berhenti di akhirnya."
           }
         },
         "it" : {
@@ -390684,7 +390684,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bilah Alat Pembaca"
+            "value" : "Bar Alat Pembaca"
           }
         },
         "it" : {
@@ -441544,7 +441544,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tampilkan Ekspor di bilah alat pembaca"
+            "value" : "Tampilkan Ekspor di bar alat pembaca"
           }
         },
         "it" : {
@@ -444340,7 +444340,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tampilkan tombol Ekspor di bilah alat pembaca"
+            "value" : "Tampilkan tombol Ekspor di bar alat pembaca"
           }
         },
         "it" : {
@@ -487619,7 +487619,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth mengekspor satu file audio ucapan dalam satu waktu. Ekspor ini setelah yang sekarang selesai."
+            "value" : "TextMouth mengekspor satu file audio ucapan dalam satu waktu. Ekspor lagi setelah ekspor yang sedang berjalan selesai."
           }
         },
         "it" : {
