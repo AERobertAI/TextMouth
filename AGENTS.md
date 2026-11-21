@@ -86,8 +86,8 @@ The agent:
 
 ## Where things stand
 
-- Main is version 0.5.7 (tag `v0.5.7`), and the user still runs 0.4.2.
-- 0.5.7 has 23 interface languages (FR36, FR37), nine reviewed (`Scripts/l10n/reviews/`): the Mac app is 31.1 MB, the iPhone's 26.1 MB, and compressing them is TL19.
+- Main is version 0.5.8 (tag `v0.5.8`), and the user still runs 0.4.2.
+- 0.5.8 has 25 interface languages (FR36-FR38), each reviewed once (`Scripts/l10n/reviews/`): the Mac app is 32.2 MB, the iPhone's 27.1 MB; compressing them is TL19.
 - Localization (FR34, `docs/developer/localization.md`): the catalog, its tools, the pilot (FR35: the sleep timer, bookmarks, and Reading List, in Spanish), and the shared counts are on main.
   Every file is converted and its English cut, keeping every fact; the user reads the cut lists (`build/orchestrator/nov18/*/cuts.md`, local).
   Every language covers the whole app, for a native speaker's review; the user's questions are 16 to 25 of `humanQuestions/2026-11-18.md`.
