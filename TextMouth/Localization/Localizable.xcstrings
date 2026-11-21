@@ -69,6 +69,12 @@
     "\"%@\" plays the next book in the same folder by sort order." : {
       "comment" : "Explanation under the When book ends pop-up in the Playback settings. %@ is the title of the pop-up's choice that plays the next book, as the pop-up shows it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يشغّل “%@” الكتاب التالي في المجلد نفسه بحسب ترتيب الفرز."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1597,6 +1603,12 @@
     "%@ aren't downloaded." : {
       "comment" : "Why an operation left several books as it is: their files are only in the cloud. %@ is a count of books, such as \"5 books\".\nWhy an operation left two or three books as it is: their files are only in the cloud. %@ is the books' titles as a list.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ غير منزّلة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1875,6 +1887,12 @@
     "%@ can't be made, because the folder that would hold it, %@, can't be found." : {
       "comment" : "Why the chosen location can't be used: the folder that would hold it is missing. %1$@ is the chosen path; %2$@ is the missing folder's path.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر إنشاء %@ لأن المجلد الذي سيحتويه، %@، غير موجود."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2593,6 +2611,12 @@
     "%@ couldn't download the book: %@" : {
       "comment" : "Why a book download failed. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$@ is the service's own message.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر على %@ تنزيل الكتاب: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2664,6 +2688,12 @@
     "%@ couldn't remove the book's download: %@" : {
       "comment" : "Why Remove Download failed. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$@ is the service's own message.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر على %@ إزالة تنزيل الكتاب: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -2877,6 +2907,12 @@
     "%@ couldn't upload this book: %@" : {
       "comment" : "First sentence of why Remove Download was refused: the upload failed. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$@ is the service's own message, which ends with a full stop.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر على %@ رفع هذا الكتاب: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3376,6 +3412,12 @@
     "%@ doesn't say whether the copy of this book on this Mac is the latest, so its download can't be removed, and waiting won't change that." : {
       "comment" : "First sentence of why Remove Download was refused: the cloud service never says whether the copy here is current. %@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يذكر %@ ما إذا كانت نسخة هذا الكتاب على هذا الـ Mac هي الأحدث، لذا لا يمكن إزالة تنزيله، ولن يغيّر الانتظار ذلك."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3441,6 +3483,12 @@
     "%@ downloaded" : {
       "comment" : "Announcement that Download Now brought one book to this Mac. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم تنزيل %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3506,6 +3554,12 @@
     "%@ elapsed" : {
       "comment" : "The time a download has waited, in the download view's progress value. %@ is the time, such as \"1:05\" on screen or \"1 minute, 5 seconds\" spoken.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "انقضى %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5066,6 +5120,12 @@
     "%@ hasn't arrived on this Mac yet. %@ may still be syncing it." : {
       "comment" : "Shown and spoken when the book's files have not arrived from the sync service. %1$@ is the book's title; %2$@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يصل %@ إلى هذا الـ Mac بعد. ربما لا يزال %@ يزامنه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5137,6 +5197,48 @@
     "%@ hasn't downloaded anything for %lld seconds." : {
       "comment" : "First sentence of why a book download stopped: the cloud service made no progress. %1$@ is the cloud service's name, or \"The cloud service\" when it is unknown; %2$lld is the number of seconds.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ لم ينزّل أي شيء منذ %lld ثوانٍ."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ لم ينزّل أي شيء منذ %lld ثانية."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ لم ينزّل أي شيء منذ %lld ثانية."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ لم ينزّل أي شيء منذ %lld ثانية."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ لم ينزّل أي شيء منذ %lld ثانيتين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%@ لم ينزّل أي شيء منذ %lld ثانية."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -5370,6 +5472,12 @@
     "%@ hasn't said that every file of this book is uploaded, so its download can't be removed: the only copy might be on this Mac." : {
       "comment" : "First sentence of why Remove Download was refused: the cloud service gave no upload state. %@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يذكر %@ أن كل ملفات هذا الكتاب قد رُفعت، لذا لا يمكن إزالة تنزيله: فقد تكون النسخة الوحيدة على هذا الـ Mac."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5435,6 +5543,12 @@
     "%@ hasn't said that the copy of this book on this Mac is the latest, so its download can't be removed." : {
       "comment" : "First sentence of why Remove Download was refused: the cloud service has not said the copy here is current. %@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم يذكر %@ أن نسخة هذا الكتاب على هذا الـ Mac هي الأحدث، لذا لا يمكن إزالة تنزيله."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5500,6 +5614,12 @@
     "%@ holds a conflicting version of %@, saved at another time." : {
       "comment" : "First sentence of the report of an unresolved version of a file whose computer and time of saving are not known. %1$@ is the sync service's name; %2$@ is a phrase naming the file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتفظ %@ بإصدار متعارض من %@ حُفظ في وقت آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5571,6 +5691,12 @@
     "%@ holds a conflicting version of %@, saved on %@." : {
       "comment" : "First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the date and time it was saved.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتفظ %@ بإصدار متعارض من %@ حُفظ في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5642,6 +5768,12 @@
     "%@ holds a conflicting version of %@, saved on “%@” on %@." : {
       "comment" : "First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the name of the computer that saved it; %4$@ is the date and time it was saved.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتفظ %@ بإصدار متعارض من %@ حُفظ على “%@” في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5713,6 +5845,12 @@
     "%@ holds a conflicting version of %@, saved on “%@”." : {
       "comment" : "First sentence of the report of an unresolved version of a file. %1$@ is the sync service's name; %2$@ is a phrase naming the file; %3$@ is the name of the computer that saved it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتفظ %@ بإصدار متعارض من %@ حُفظ على “%@”."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -5784,6 +5922,12 @@
     "%@ holds two versions of a file of this book, so its download can't be removed." : {
       "comment" : "First sentence of why Remove Download was refused: the cloud service holds conflicting versions. %@ is the cloud service's name, or \"The cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يحتفظ %@ بإصدارين من أحد ملفات هذا الكتاب، لذا لا يمكن إزالة تنزيله."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -6180,6 +6324,12 @@
     "%@ is already kept on this Mac." : {
       "comment" : "Why Keep on This Mac changed nothing: the selected book is already kept. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ محتفَظ به بالفعل على هذا الـ Mac."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -6854,6 +7004,12 @@
     "%@ is kept on this Mac for the reading list." : {
       "comment" : "First sentence of why Stop Keeping on This Mac changed nothing for one book: the reading list keeps it. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ محتفَظ به على هذا الـ Mac من أجل قائمة القراءة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -7120,6 +7276,12 @@
     "%@ is only in the cloud and isn't on this Mac yet, so nothing was written over it." : {
       "comment" : "First sentence of why a file was not saved: it is only in the cloud. %@ is the file's name, which stays as written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ موجود في السحابة فقط وليس على هذا الـ Mac بعد، لذا لم يُكتب فوقه أي شيء."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -7723,6 +7885,12 @@
     "%@ isn't downloaded." : {
       "comment" : "Shown and spoken when the book's download is cancelled. %@ is the book's title.\nWhy an operation left one book as it is: its files are only in the cloud. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ غير منزّل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -7853,6 +8021,12 @@
     "%@ isn't kept on this Mac." : {
       "comment" : "Why Stop Keeping on This Mac changed nothing: the selected book is not kept. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ غير محتفَظ به على هذا الـ Mac."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -8216,6 +8390,12 @@
     "%@ may be signed out or not running." : {
       "comment" : "The likely cause of a missing cloud service's folder when the service's own folder is missing too. %@ is the cloud service's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ربما تم تسجيل الخروج من %@ أو أنه غير قيد التشغيل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -8281,6 +8461,12 @@
     "%@ moved to position %@ of %@" : {
       "comment" : "Announcement after a substitution rule moves in the list. %1$@ is the rule's name, %2$@ is its new place counting from one, and %3$@ is how many rules the list holds.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم نقل %@ إلى الموضع %@ من %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -9998,6 +10184,12 @@
     "%@ set aside a conflicting copy of %@: “%@”, in %@." : {
       "comment" : "First sentence of the report of a conflicting copy. %1$@ is the sync service's name; %2$@ is a phrase naming the original file; %3$@ is the copy's name; %4$@ is the folder's path.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وضع %@ جانبًا نسخة متعارضة من %@: “%@”، في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -11730,6 +11922,12 @@
     "%@ wasn't downloaded" : {
       "comment" : "Announcement that Download Now could not bring one book to this Mac. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تنزيل %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14279,6 +14477,12 @@
     "%@, by %@, %@, in %@, added %@" : {
       "comment" : "A duplicate book's row, spoken and shown as one label in Find Duplicate Books. %1$@ is the title, %2$@ the author, %3$@ the format, %4$@ the library folder it is in, and %5$@ the date it was added.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@، تأليف %@، %@، في %@، أُضيف %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14953,6 +15157,12 @@
     "%@, then %@" : {
       "comment" : "Joins two steps of the restart gesture's summary in the Miscellaneous settings. %1$@ is the steps so far and %2$@ is the next step, such as \"Previous track, then Play\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@، ثم %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15095,6 +15305,12 @@
     "%@, where %@ leads" : {
       "comment" : "A folder's real path followed by the link that leads to it. %1$@ is the real path; %2$@ is the link's path.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@، ويؤدي إليه %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15166,6 +15382,12 @@
     "%@, which leads to %@" : {
       "comment" : "A link's path followed by the real folder it leads to. %1$@ is the link's path; %2$@ is the real path.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@، ويؤدي إلى %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -15432,6 +15654,12 @@
     "%@. %@" : {
       "comment" : "Joins two spoken clauses of an announcement. %1$@ is the clauses so far and %2$@ the next one. English ends the first with a full stop and a space; a language that writes no full stop, or another mark, changes only that.\nWhat VoiceOver says when the Library Not Available screen appears. %1$@ is the screen's heading; %2$@ is why the library can't be used.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@. %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -17088,6 +17316,12 @@
     "%@: Some changes are not saved, and switching libraries would lose them." : {
       "comment" : "First sentence of why Use This Library was refused: changes could not be saved yet. %@ is the failure's lead-in, \"Failed to switch libraries\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: بعض التغييرات غير محفوظة، وسيؤدي تبديل المكتبات إلى فقدانها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19505,6 +19739,48 @@
     "%lld articles" : {
       "comment" : "A count of news articles in a list, counted beside books. %lld is the number of articles.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مقالة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -19971,6 +20247,48 @@
     "%lld bookmarks" : {
       "comment" : "A count of bookmarks standing alone, as Speak Info and a feed item's row say it. %lld is the number of bookmarks.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld إشارات مرجعية"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld إشارة مرجعية"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld إشارة مرجعية"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld إشارة مرجعية"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld إشارتان مرجعيتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld إشارة مرجعية"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -21369,6 +21687,48 @@
     "%lld books aren't downloaded." : {
       "comment" : "First sentence of why a move of the library was refused: some books' files are only in the cloud. %lld is how many books.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتب غير منزّل."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابًا غير منزّل."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب غير منزّل."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب غير منزّل."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابان غير منزّل."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب غير منزّل."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -22301,6 +22661,48 @@
     "%lld books from the library" : {
       "comment" : "An entry in the list of what was not opened: books the listener asked to open that have no file name. %lld is how many books. The English one form is \"one book from the library\".",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتب من المكتبة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابًا من المكتبة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب من المكتبة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب من المكتبة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابان من المكتبة"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب من المكتبة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -23466,6 +23868,48 @@
     "%lld books in the cloud were skipped." : {
       "comment" : "Part of the message after Redo Text Extraction finished: books whose files are only in the cloud were left out. %lld is how many books.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتب موجود في السحابة."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتابًا موجود في السحابة."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتاب موجود في السحابة."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتاب موجود في السحابة."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتابين موجود في السحابة."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتاب موجود في السحابة."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -23932,6 +24376,12 @@
     "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown." : {
       "comment" : "Storage settings note: several books of the library were added by a newer TextMouth, which this one keeps but can't show. %lld is how many books.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عدد الكتب في هذه المكتبة التي تحتاج إلى إصدار أحدث من TextMouth: %lld. يُحتفظ بها كما هي، لكنها لا تُعرض."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -24230,6 +24680,48 @@
     "%lld books on the reading list" : {
       "comment" : "A count of the books on the reading list in a list of counts about a conflicting copy of the library. %lld is the number of books.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتب في قائمة القراءة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابًا في قائمة القراءة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب في قائمة القراءة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب في قائمة القراءة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتابان في قائمة القراءة"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld كتاب في قائمة القراءة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -25628,6 +26120,48 @@
     "%lld books weren't downloaded: %@" : {
       "comment" : "Announcement that Download Now could not bring several books to this Mac. %1$lld is how many; %2$@ is their titles as a list.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر تنزيل %lld كتب: %@"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر تنزيل %lld كتابًا: %@"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر تنزيل %lld كتاب: %@"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر تنزيل %lld كتاب: %@"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر تنزيل %lld كتابين: %@"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر تنزيل %lld كتاب: %@"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -25861,6 +26395,48 @@
     "%lld books whose edited text can't be used yet were skipped." : {
       "comment" : "Part of the message after Redo Text Extraction finished: books whose edited text is not taken yet were left out. %lld is how many books.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتب لا يمكن استخدام نصه المحرَّر بعد."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتابًا لا يمكن استخدام نصه المحرَّر بعد."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتاب لا يمكن استخدام نصه المحرَّر بعد."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتاب لا يمكن استخدام نصه المحرَّر بعد."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتابين لا يمكن استخدام نصه المحرَّر بعد."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم تخطي %lld كتاب لا يمكن استخدام نصه المحرَّر بعد."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -27796,6 +28372,48 @@
     "%lld default rules" : {
       "comment" : "A count of TextMouth's default substitution rules inside a longer sentence. %lld is the number of default rules.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قواعد افتراضية"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة افتراضية"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة افتراضية"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة افتراضية"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدتان افتراضيتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة افتراضية"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -29194,6 +29812,48 @@
     "%lld duplicate groups found" : {
       "comment" : "Spoken and read when a scan of Find Duplicate Books ends. %lld is the number of groups of duplicate books found.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم العثور على %lld مجموعات مكررة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم العثور على %lld مجموعة مكررة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم العثور على %lld مجموعة مكررة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم العثور على %lld مجموعة مكررة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم العثور على %lld مجموعتين مكررتين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تم العثور على %lld مجموعة مكررة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -30592,6 +31252,48 @@
     "%lld episodes" : {
       "comment" : "A count of podcast episodes in a list, counted beside books. %lld is the number of episodes.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld حلقة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -31058,6 +31760,48 @@
     "%lld feeds" : {
       "comment" : "A count of podcast and news feeds standing alone, such as a library summary. %lld is the number of feeds.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld موجزات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld موجزًا"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld موجز"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld موجز"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld موجزان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld موجز"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -32689,6 +33433,48 @@
     "%lld folders" : {
       "comment" : "A count of folders in a list of counts about a conflicting copy of the library. %lld is the number of folders.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مجلدات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مجلدًا"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مجلد"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مجلد"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مجلدان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld مجلد"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -32922,6 +33708,48 @@
     "%lld hours" : {
       "comment" : "A count of hours inside a duration, such as \"2 hours, 3 minutes\". %lld is the number of hours.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ساعات"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ساعة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ساعة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ساعة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ساعتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ساعة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -37420,6 +38248,12 @@
     "%lld of %@, %lld percent" : {
       "comment" : "Spoken download progress value. %1$lld is how many files are done; %2$@ is the count of all the files, such as \"3 files\"; %3$lld is the percent done, from 0 to 100.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld من %@، %lld في المئة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -37491,6 +38325,12 @@
     "%lld of %@, %lld%%" : {
       "comment" : "Shown download progress value. %1$lld is how many files are done; %2$@ is the count of all the files, such as \"3 files\"; %3$lld is the percent done, from 0 to 100, and the percent sign follows it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld من %@، %lld%%"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -38241,6 +39081,48 @@
     "%lld other original files could not be removed either." : {
       "comment" : "Sentence after a failure notice: more original files could not be removed too. %lld is how many more.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا إزالة %lld ملفات أصلية أخرى."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا إزالة %lld ملفًا أصليًا آخر."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا إزالة %lld ملف أصلي آخر."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا إزالة %lld ملف أصلي آخر."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا إزالة %lld ملفين أصليين آخرين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا إزالة %lld ملف أصلي آخر."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -38940,6 +39822,12 @@
     "%lld percent downloaded." : {
       "comment" : "Spoken as a download reaches a milestone. %lld is the percent done, from 0 to 100.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم تنزيل %lld في المئة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -39704,6 +40592,48 @@
     "%lld rules" : {
       "comment" : "A count of substitution rules inside a longer sentence. %lld is the number of rules.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قواعد"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -39937,6 +40867,48 @@
     "%lld rules (%@ enabled)" : {
       "comment" : "The footer of the Substitutions settings: how many rules the list holds and how many of them are turned on. %1$lld is the number of rules, which the noun agrees with, and %2$@ is the number enabled.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قواعد (%@ مفعّلة)"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة (%@ مفعّلة)"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة (%@ مفعّلة)"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة (%@ مفعّلة)"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدتان (%@ مفعّلة)"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld قاعدة (%@ مفعّلة)"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -40636,6 +41608,48 @@
     "%lld seconds" : {
       "comment" : "A count of whole seconds inside a duration or a setting's length. %lld is the number of seconds.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ثوانٍ"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ثانية"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ثانية"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ثانية"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ثانيتان"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ثانية"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -45529,6 +46543,12 @@
     "%lld/%lld" : {
       "comment" : "How far Redo Text Extraction has got, beside its progress bar. %1$lld is how many books are done; %2$lld is how many books there are.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%lld/%lld"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45898,6 +46918,12 @@
     "(none)" : {
       "comment" : "The restart gesture's summary when it has no steps, which the editor does not normally allow.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "(لا شيء)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -45963,6 +46989,12 @@
     "(skip)" : {
       "comment" : "Shown in a substitution rule's row where its replacement would be, when the rule skips the matched text.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "(تخطي)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46028,6 +47060,12 @@
     "0 = %@, 1 = %@ (periods), 2 = %@ (+ commas), 3 = %@ (+ paragraph breaks)" : {
       "comment" : "Explanation under the punctuation pause level slider in the Playback settings. %1$@ to %4$@ are the names of levels 0 to 3, as the slider speaks them: Off, Subtle, Moderate, and Heavy. The words in parentheses say what pauses at that level.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "0 = %@، 1 = %@ (نقاط)، 2 = %@ (+ فواصل)، 3 = %@ (+ فواصل الفقرات)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46099,6 +47137,12 @@
     "1 book in this library needs a newer version of TextMouth. It is kept as it is, but not shown." : {
       "comment" : "Storage settings note: one book of the library was added by a newer TextMouth, which this one keeps but can't show.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كتاب واحد في هذه المكتبة يحتاج إلى إصدار أحدث من TextMouth. يُحتفظ به كما هو، لكنه لا يُعرض."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46164,6 +47208,12 @@
     "1 file left" : {
       "comment" : "Part of the download progress value when one file is all that is left and no percentage is known.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملف واحد متبقٍّ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46554,6 +47604,12 @@
     "A book that's only in %@ needs an internet connection to open." : {
       "comment" : "What using a library in a cloud folder means. %@ is the cloud service's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتاب الموجود في %@ فقط يحتاج إلى اتصال بالإنترنت لفتحه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -46619,6 +47675,12 @@
     "A book that's only in the cloud needs an internet connection to open." : {
       "comment" : "Last sentence of what moving the library into a cloud folder means.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الكتاب الموجود في السحابة فقط يحتاج إلى اتصال بالإنترنت لفتحه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48722,6 +49784,12 @@
     "Aa" : {
       "comment" : "A small tag in a substitution rule's row: the rule is case sensitive. A capital and a small letter of the language's alphabet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Aa"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -48917,6 +49985,12 @@
     "Action: skip" : {
       "comment" : "A part of a substitution rule's spoken summary: the rule removes the text it matches.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الإجراء: تخطي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -49047,6 +50121,12 @@
     "Active" : {
       "comment" : "Storage settings status: the data directory exists and is working.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نشط"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50033,6 +51113,12 @@
     "Add Rule" : {
       "comment" : "Title of the button in the Substitutions settings that opens the editor for a new substitution rule.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافة قاعدة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50098,6 +51184,12 @@
     "Add Substitution Rule" : {
       "comment" : "Heading and navigation title of the editor of a new substitution rule.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافة قاعدة استبدال"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50163,6 +51255,12 @@
     "Add a new substitution rule" : {
       "comment" : "VoiceOver label of the Add Rule button in the Substitutions settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافة قاعدة استبدال جديدة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50293,6 +51391,12 @@
     "Add gesture step" : {
       "comment" : "VoiceOver label of the button that adds a step to the restart gesture in the Miscellaneous settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافة خطوة إيماءة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50488,6 +51592,12 @@
     "Add rules to change how text is spoken. They apply top to bottom." : {
       "comment" : "Shown under \"No substitution rules.\" in the Substitutions settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أضف قواعد لتغيير طريقة نطق النص. تُطبَّق من الأعلى إلى الأسفل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -50618,6 +51728,12 @@
     "Add step" : {
       "comment" : "Title of the button that adds a step to the restart gesture in the Miscellaneous settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إضافة خطوة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -51702,6 +52818,12 @@
     "Adds or removes a bookmark at the current position" : {
       "comment" : "VoiceOver hint of the Show bookmark button checkbox in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يضيف إشارة مرجعية عند الموضع الحالي أو يزيلها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -51767,6 +52889,12 @@
     "Adds speed buttons and the current speed" : {
       "comment" : "VoiceOver hint of the Show speed controls checkbox in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يضيف أزرار السرعة والسرعة الحالية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -52222,6 +53350,12 @@
     "After Importing a Book" : {
       "comment" : "Label of the pop-up in Storage settings that says what to do with a book's original file after importing it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "بعد استيراد كتاب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53176,6 +54310,12 @@
     "All books by the same author" : {
       "comment" : "Hint of the Same Author criterion of Find Duplicate Books.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كل الكتب لنفس المؤلف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54476,6 +55616,48 @@
     "And %lld more copies, which the log lists." : {
       "comment" : "Last paragraph of the report of conflicting copies: how many more copies there are than the report names. %lld is the number of copies.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "و%lld نسخ أخرى مدرجة في السجل."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "و%lld نسخة أخرى مدرجة في السجل."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "و%lld نسخة أخرى مدرجة في السجل."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "و%lld نسخة أخرى مدرجة في السجل."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "و%lld نسختان أخريان مدرجة في السجل."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "و%lld نسخة أخرى مدرجة في السجل."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -55305,6 +56487,12 @@
     "Answer this one when the move ends." : {
       "comment" : "Last sentence of what an import question says when it is answered while the library is being moved.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أجب عن هذا السؤال عند انتهاء النقل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55435,6 +56623,12 @@
     "Any other book passes over The, A, and An." : {
       "comment" : "Second sentence of the note under the Leading Articles pop-up: the articles skipped for a book in any other language. The, A, and An are the English articles and stay as written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أي كتاب آخر يتجاوز The وA وAn."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55565,6 +56759,12 @@
     "Appends a new step to the gesture sequence" : {
       "comment" : "VoiceOver hint of the Add gesture step button in the Miscellaneous settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يُلحق خطوة جديدة بتسلسل الإيماءة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55961,6 +57161,12 @@
     "Applies the rules to text before it is spoken" : {
       "comment" : "VoiceOver hint of the Enable text substitutions switch in the Substitutions settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يطبّق القواعد على النص قبل نطقه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57597,6 +58803,12 @@
     "Ask Each Time" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: TextMouth asks what to do with the original file after each import.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "السؤال في كل مرة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57857,6 +59069,12 @@
     "Asks first, then gives the library a new identity and opens it." : {
       "comment" : "VoiceOver hint of the button that gives the library a new identity file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يسأل أولًا، ثم يمنح المكتبة هوية جديدة ويفتحها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57922,6 +59140,12 @@
     "Asks first, then makes a new library index from the books in this folder and opens the library." : {
       "comment" : "VoiceOver hint of the button that opens the library without its index file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يسأل أولًا، ثم ينشئ فهرس مكتبة جديدًا من الكتب في هذا المجلد ويفتح المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57987,6 +59211,12 @@
     "Asks first, then replaces every rule with the defaults." : {
       "comment" : "VoiceOver hint of the Reset to Defaults button in the Substitutions settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يسأل أولًا، ثم يستبدل كل قاعدة بالقواعد الافتراضية."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58117,6 +59347,12 @@
     "Asks first, then writes the identity this Mac knows for the library and opens it." : {
       "comment" : "VoiceOver hint of the button that restores the library's identity file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يسأل أولًا، ثم يكتب الهوية التي يعرفها هذا الـ Mac للمكتبة ويفتحها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60466,6 +61702,12 @@
     "Auto-play after navigation" : {
       "comment" : "Title and VoiceOver label of the checkbox in the Playback settings that starts playing after a jump to a heading, bookmark, or search result.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التشغيل التلقائي بعد التنقل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60596,6 +61838,12 @@
     "Automatically start playing when you navigate to a heading, bookmark, or search result." : {
       "comment" : "Explanation under the Auto-play after navigation checkbox in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ابدأ التشغيل تلقائيًا عند الانتقال إلى عنوان رئيسي أو إشارة مرجعية أو نتيجة بحث."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61441,6 +62689,12 @@
     "Backward navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the backward button moves by. %@ is the unit now chosen, such as \"Sentence\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وحدة التنقل للخلف: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61967,6 +63221,12 @@
     "Blocks the spurious play command macOS sends when Bluetooth headphones are removed." : {
       "comment" : "Explanation under the Enable Bluetooth monitoring switch in the Miscellaneous settings. macOS is the name of the operating system.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يمنع أمر التشغيل الزائف الذي يرسله macOS عند إزالة سماعات Bluetooth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62032,6 +63292,12 @@
     "Bluetooth" : {
       "comment" : "Heading of the Bluetooth group in the Miscellaneous settings. Bluetooth is a trademark and stays as written in most languages.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "Bluetooth"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62097,6 +63363,12 @@
     "Bluetooth disconnect delay" : {
       "comment" : "VoiceOver label of the Bluetooth disconnect delay slider in the Miscellaneous settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مهلة قطع اتصال Bluetooth"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -62895,6 +64167,12 @@
     "Bookmark" : {
       "comment" : "A unit a skip or navigation picker moves by: one bookmark.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إشارة مرجعية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64269,6 +65547,12 @@
     "Books can't be added while the library is moving." : {
       "comment" : "What a Library window says when a command that adds a book is chosen while the library is being moved.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن إضافة كتب أثناء نقل المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64334,6 +65618,12 @@
     "Books can't be added while the library isn't available." : {
       "comment" : "What the Library window says when a command that adds a book is chosen while the library can't be used.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن إضافة كتب بينما المكتبة غير متاحة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64464,6 +65754,12 @@
     "Books can't be opened while the library is moving." : {
       "comment" : "What a Library window says when a command that opens a book is chosen while the library is being moved.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن فتح كتب أثناء نقل المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64529,6 +65825,12 @@
     "Books can't be opened while the library isn't available." : {
       "comment" : "What the Library window says when a command that opens a book is chosen while the library can't be used.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يمكن فتح كتب بينما المكتبة غير متاحة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64594,6 +65896,12 @@
     "Books stay on this Mac until you remove their downloads or macOS needs space." : {
       "comment" : "Second sentence of what moving the library into a cloud folder means.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تبقى الكتب على هذا الـ Mac إلى أن تزيل تنزيلاتها أو يحتاج macOS إلى مساحة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64659,6 +65967,12 @@
     "Books with the same title, regardless of author" : {
       "comment" : "Hint of the Same Title criterion of Find Duplicate Books.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كتب بالعنوان نفسه، بغض النظر عن المؤلف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66387,6 +67701,12 @@
     "Cancel Move" : {
       "comment" : "VoiceOver label of the button that cancels the move of the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إلغاء النقل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66582,6 +67902,12 @@
     "Cancelling" : {
       "comment" : "VoiceOver value of the move's progress bar while the move is being cancelled.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ الإلغاء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66712,6 +68038,12 @@
     "Cancelling the move." : {
       "comment" : "Announcement when the listener cancels the move of the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ إلغاء النقل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66777,6 +68109,12 @@
     "Cancelling the move…" : {
       "comment" : "Status line of the move sheet while the move is being cancelled.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ إلغاء النقل…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67108,6 +68446,12 @@
     "Case sensitive" : {
       "comment" : "A part of a substitution rule's spoken summary: capital and small letters are told apart.\nTitle of the switch in the substitution rule editor that makes the pattern tell capital and small letters apart.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "حساس لحالة الأحرف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67173,6 +68517,12 @@
     "Case sensitive matching" : {
       "comment" : "VoiceOver label of the Case sensitive switch in the substitution rule editor.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مطابقة حساسة لحالة الأحرف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67368,6 +68718,12 @@
     "Change Location..." : {
       "comment" : "Button in Storage settings that opens a folder chooser to move the library. The three dots show that a chooser opens.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تغيير الموقع..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67758,6 +69114,12 @@
     "Changes not saved" : {
       "comment" : "Storage settings status: some changes could not be saved.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التغييرات غير محفوظة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -68251,6 +69613,48 @@
     "Changes to %lld other books could not be saved either." : {
       "comment" : "Sentence after a failure notice: more books' records failed to save too. %lld is how many more.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld كتب أخرى."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld كتابًا آخر."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld كتاب آخر."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld كتاب آخر."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld كتابين آخرين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld كتاب آخر."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -68484,6 +69888,48 @@
     "Changes to %lld other feeds could not be saved either." : {
       "comment" : "Sentence after a failure notice: more feeds' records failed to save too. %lld is how many more.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld موجزات أخرى."
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld موجزًا آخر."
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld موجز آخر."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld موجز آخر."
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld موجزين آخرين."
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تعذّر أيضًا حفظ التغييرات على %lld موجز آخر."
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -68717,6 +70163,12 @@
     "Changes to books saved." : {
       "comment" : "Announcement after a retry saved the changes to books' records that had failed to save.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم حفظ التغييرات على الكتب."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -68782,6 +70234,12 @@
     "Changes to the feed “%@” could not be saved: %@" : {
       "comment" : "Failure notice: a feed's changes could not be saved. %1$@ is the feed's title; %2$@ is the reason, a sentence from the system.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر حفظ التغييرات على الموجز “%@”: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -68853,6 +70311,12 @@
     "Changes to “%@” could not be saved: %@" : {
       "comment" : "Failure notice: a book's changes could not be saved. %1$@ is the book's title; %2$@ is the reason, a sentence from the system.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر حفظ التغييرات على “%@”: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69131,6 +70595,12 @@
     "Chapter %@ isn't on this Mac." : {
       "comment" : "Spoken as a chapter's download starts. %@ is the chapter's number, an identifier written without digit grouping.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الفصل %@ غير موجود على هذا الـ Mac."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69338,6 +70808,12 @@
     "Chapter %@ of %@ isn't downloaded." : {
       "comment" : "Spoken when a chapter's download is cancelled. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الفصل %@ من %@ غير منزّل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69480,6 +70956,12 @@
     "Chapter %@, from %@" : {
       "comment" : "Line under the download view's heading: which chapter is waited for and where it comes from. %1$@ is the chapter's number, an identifier written without digit grouping; %2$@ is the cloud service's name, or \"the cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الفصل %@، من %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70089,6 +71571,12 @@
     "Check that %@ is running and that this Mac is online, then choose Try Again." : {
       "comment" : "What to check when the library's files could not come from a cloud service. %@ is the service's name, or \"the cloud service\" when it is unknown. Try Again is the name of a button on the same screen.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تأكد من أن %@ قيد التشغيل وأن هذا الـ Mac متصل بالإنترنت، ثم اختر إعادة المحاولة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70219,6 +71707,12 @@
     "Check the criteria above, then %@." : {
       "comment" : "What Find Duplicate Books shows before its first scan. %@ is the title of the scan button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "راجع المعايير أعلاه، ثم اختر %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70414,6 +71908,12 @@
     "Checking %@..." : {
       "comment" : "Storage settings status line while a chosen folder is looked at. %@ is the folder's path.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ فحص %@..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70999,6 +72499,12 @@
     "Checks the library's location again, and opens the library when it is there." : {
       "comment" : "VoiceOver hint of Try Again on the Library Not Available screen.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يتحقق من موقع المكتبة مرة أخرى، ويفتح المكتبة عندما تكون موجودة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71194,6 +72700,12 @@
     "Choose %@ first." : {
       "comment" : "Sentence of why Remove Download was refused: the listener must first choose a command. %@ is the command's name, Stop Keeping on This Mac, as the Library menu shows it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر %@ أولًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71324,6 +72836,12 @@
     "Choose %@ or %@ from %@ at the top of the Library window." : {
       "comment" : "Second sentence of the Storage settings explanation while the library index can't be read. %1$@ and %2$@ are the names of the Try Again and Rebuild Library Index buttons; %3$@ is the name of the Recovery Options button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر %@ أو %@ من %@ أعلى نافذة المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71395,6 +72913,12 @@
     "Choose Another Library" : {
       "comment" : "Title of the folder chooser that Choose Another Library opens.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختيار مكتبة أخرى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71460,6 +72984,12 @@
     "Choose Another Library..." : {
       "comment" : "Button in Storage settings, shown while the library isn't available, that opens a folder chooser to pick another library. The three dots show that a chooser opens.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختيار مكتبة أخرى..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71720,6 +73250,12 @@
     "Choose Library" : {
       "comment" : "Button of the folder chooser that Choose Another Library opens: picks the folder.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختيار المكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71785,6 +73321,12 @@
     "Choose Location" : {
       "comment" : "Button of the folder chooser that Change Location opens: picks the folder.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختيار الموقع"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71915,6 +73457,12 @@
     "Choose Retry Saving, then try again." : {
       "comment" : "Last sentence of why Use This Library was refused. Retry Saving is the name of a button on the failure banner.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر إعادة محاولة الحفظ، ثم حاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72045,6 +73593,12 @@
     "Choose a Location for the Library" : {
       "comment" : "Title of the folder chooser that Change Location opens.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختيار موقع للمكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72305,6 +73859,12 @@
     "Choose a folder outside it." : {
       "comment" : "Last sentence of why the chosen folder can't be used because it is in the Trash. \"It\" is the Trash.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر مجلدًا خارجها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72370,6 +73930,12 @@
     "Choose a folder that holds a TextMouth library to use it instead." : {
       "comment" : "Message of the folder chooser that Choose Another Library opens.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر مجلدًا يحتوي على مكتبة TextMouth لاستخدامها بدلًا منها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72435,6 +74001,12 @@
     "Choose a folder that holds a TextMouth library, or use the default location." : {
       "comment" : "Last sentence of why the chosen folder can't be used, while the library in use is not available: what to choose instead.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر مجلدًا يحتوي على مكتبة TextMouth، أو استخدم الموقع الافتراضي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72500,6 +74072,12 @@
     "Choose a folder." : {
       "comment" : "Last sentence of why the chosen location can't be used because it is a file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر مجلدًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72565,6 +74143,12 @@
     "Choose a location outside it." : {
       "comment" : "Last sentence of why a move of the data directory was refused because the new location is inside the current data directory. \"It\" is the current data directory.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر موقعًا خارجه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72630,6 +74214,12 @@
     "Choose a location that does not contain it." : {
       "comment" : "Last sentence of why a move of the data directory was refused because the new location contains the current data directory. \"It\" is the current data directory.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر موقعًا لا يحتوي عليه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72695,6 +74285,12 @@
     "Choose a new location for the library" : {
       "comment" : "VoiceOver label of the Change Location button in Storage settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختيار موقع جديد للمكتبة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72825,6 +74421,12 @@
     "Choose a voice for reading. Change takes effect immediately." : {
       "comment" : "VoiceOver hint of the voice pop-up in the Voice settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يختار صوتًا للقراءة. يسري التغيير فورًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72955,6 +74557,12 @@
     "Choose an empty folder to move the library into, or a folder that holds a TextMouth library to use it." : {
       "comment" : "First sentence of the message of the folder chooser that Change Location opens.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر مجلدًا فارغًا لنقل المكتبة إليه، أو مجلدًا يحتوي على مكتبة TextMouth لاستخدامها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73020,6 +74628,12 @@
     "Choose an empty folder, or one that holds a TextMouth library." : {
       "comment" : "Last sentence of why the chosen folder can't be used, while the library in use is available: what to choose instead.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر مجلدًا فارغًا، أو مجلدًا يحتوي على مكتبة TextMouth."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73085,6 +74699,12 @@
     "Choose an empty location and try again." : {
       "comment" : "Last sentence of why a move of the data directory did not finish because the new location changed while the data was copied: what to do.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر موقعًا فارغًا وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73150,6 +74770,12 @@
     "Choose an empty location." : {
       "comment" : "Last sentence of why a move of the data directory was refused: what to do.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر موقعًا فارغًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73345,6 +74971,12 @@
     "Choose another folder." : {
       "comment" : "Last sentence of why the chosen location can't be used: what to do.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر مجلدًا آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73475,6 +75107,12 @@
     "Choose another library" : {
       "comment" : "VoiceOver label of the Choose Another Library button in Storage settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختيار مكتبة أخرى"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73540,6 +75178,12 @@
     "Choose another location." : {
       "comment" : "Last sentence of why a move of the data directory was refused: what to do about the new location.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اختر موقعًا آخر."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73800,6 +75444,12 @@
     "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers" : {
       "comment" : "VoiceOver hint of the Navigation unit controls pop-up in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يختار عدم وجود عنصر تحكم لكل كتاب، أو منتقيًا مشتركًا واحدًا، أو قائمة بمنتقيين منفصلين للأمام والخلف."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75490,6 +77140,12 @@
     "Chooses whether The, A, and An at the start of a title count when sorting and when typing a title's first letters." : {
       "comment" : "Hint and tooltip of the Leading Articles pop-up in the Library settings. The, A, and An are the English articles the setting skips.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يختار ما إذا كانت The وA وAn في بداية العنوان تُحتسب عند الفرز وعند كتابة الأحرف الأولى من العنوان."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76672,6 +78328,12 @@
     "Close sheet after setting timer" : {
       "comment" : "Title of the checkbox in the Playback settings that closes the sleep timer sheet once a timer is set.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إغلاق الورقة بعد ضبط المؤقت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76737,6 +78399,12 @@
     "Close sleep timer sheet after setting a timer" : {
       "comment" : "VoiceOver label of the Close sheet after setting timer checkbox in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إغلاق ورقة مؤقت النوم بعد ضبط المؤقت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76867,6 +78535,12 @@
     "Close these first: %@." : {
       "comment" : "Last sentence of why a move of the library was refused: which books to close. %@ is their titles in quotation marks, as a short list.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أغلق هذه الكتب أولًا: %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77062,6 +78736,12 @@
     "Closes these options so you can keep reading." : {
       "comment" : "First sentence of what Continue Reading does on the library index recovery sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يغلق هذه الخيارات لتتمكن من مواصلة القراءة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -78173,6 +79853,12 @@
     "Comparing" : {
       "comment" : "VoiceOver label of the progress bar of the Compare Libraries sheet while the two copies of the library are being compared.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ المقارنة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79148,6 +80834,12 @@
     "Confirm before removing a book" : {
       "comment" : "Checkbox in Storage settings: ask before a book is removed.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التأكيد قبل إزالة كتاب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79213,6 +80905,12 @@
     "Conflicting Copies Found" : {
       "comment" : "Title of the alert that reports conflicting copies of the library's files, set aside by a sync service.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم العثور على نسخ متعارضة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79343,6 +81041,12 @@
     "Connect to the internet and try again." : {
       "comment" : "Second sentence of why a book can't be downloaded: what to do about being offline.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اتصل بالإنترنت وحاول مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79603,6 +81307,12 @@
     "Continue Reading" : {
       "comment" : "Button of the library index recovery sheet that closes it so the listener can keep reading.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مواصلة القراءة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79733,6 +81443,12 @@
     "Continue to Next Book" : {
       "comment" : "A choice of the When a Book Ends picker: the next book in the folder plays.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المتابعة إلى الكتاب التالي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81506,6 +83222,12 @@
     "Copy all TextMouth data to %@, validate it, and use the new location?" : {
       "comment" : "First sentence of the question asked before moving the library. %@ is the new folder's path.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل تريد نسخ كل بيانات TextMouth إلى %@ والتحقق منها واستخدام الموقع الجديد؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84804,6 +86526,12 @@
     "Current pattern: %@" : {
       "comment" : "A summary of the restart gesture's steps under its editor in the Miscellaneous settings, shown and read by VoiceOver. %@ is the steps in order, such as \"Previous track, then Play\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "النمط الحالي: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -84934,6 +86662,12 @@
     "Custom location" : {
       "comment" : "Under the data directory's path in Storage settings: the library is not in the default location.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "موقع مخصص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85714,6 +87448,12 @@
     "Data directory: %@" : {
       "comment" : "VoiceOver label of the data directory's row in Storage settings. %@ is the folder's path.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مجلد البيانات: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85779,6 +87519,12 @@
     "Data is now at %@." : {
       "comment" : "Second sentence of the message after the data directory moved. %@ is the new location's path, with where it leads when it is a link.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "أصبحت البيانات الآن في %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86467,6 +88213,12 @@
     "Default Pitch" : {
       "comment" : "Heading of the default pitch group in the Voice settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طبقة الصوت الافتراضية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86532,6 +88284,12 @@
     "Default Pitch: %@" : {
       "comment" : "The default pitch shown above its slider in the Voice settings. %@ is the pitch, such as Normal (1.0x).",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طبقة الصوت الافتراضية: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86597,6 +88355,12 @@
     "Default Speed" : {
       "comment" : "Heading of the default speed group in the Voice settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "السرعة الافتراضية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86662,6 +88426,48 @@
     "Default Speed: %lld WPM" : {
       "comment" : "The default reading speed shown above its slider in the Voice settings. %lld is the speed in words per minute; WPM is the abbreviation of words per minute.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "السرعة الافتراضية: %lld كلمات في الدقيقة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "السرعة الافتراضية: %lld كلمة في الدقيقة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "السرعة الافتراضية: %lld كلمة في الدقيقة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "السرعة الافتراضية: %lld كلمة في الدقيقة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "السرعة الافتراضية: %lld كلمتان في الدقيقة"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "السرعة الافتراضية: %lld كلمة في الدقيقة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -86895,6 +88701,12 @@
     "Default location" : {
       "comment" : "Under the data directory's path in Storage settings: the library is in the default location.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الموقع الافتراضي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86960,6 +88772,12 @@
     "Default pitch" : {
       "comment" : "VoiceOver label of the default pitch slider in the Voice settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طبقة الصوت الافتراضية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -87025,6 +88843,12 @@
     "Default pitch for new books. 1.0 is normal. Each book can override this." : {
       "comment" : "Explanation under the default pitch slider in the Voice settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "طبقة الصوت الافتراضية للكتب الجديدة. القيمة 1.0 هي الطبيعية. يمكن لكل كتاب تجاوزها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -87090,6 +88914,12 @@
     "Default speed" : {
       "comment" : "VoiceOver label of the default speed slider in the Voice settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "السرعة الافتراضية"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -87155,6 +88985,12 @@
     "Default speed for new books. Each book can override this with its own speed." : {
       "comment" : "Explanation under the default speed slider in the Voice settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "السرعة الافتراضية للكتب الجديدة. يمكن لكل كتاب تجاوزها بسرعته الخاصة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -87713,6 +89549,12 @@
     "Delete After Import" : {
       "comment" : "A choice of the After Importing a Book pop-up in the Storage settings: the original file is deleted once the book is imported.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الحذف بعد الاستيراد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -90839,6 +92681,12 @@
     "Details are at the top of the Library window." : {
       "comment" : "Said after a failure notice: where to find its details.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التفاصيل في أعلى نافذة المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -90969,6 +92817,12 @@
     "Differences" : {
       "comment" : "VoiceOver label of the list of differences the Compare Libraries sheet found between the two copies of the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الاختلافات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91034,6 +92888,12 @@
     "Disable" : {
       "comment" : "Title of the context menu item that turns a substitution rule off.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعطيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91495,6 +93355,12 @@
     "Disconnect delay" : {
       "comment" : "Title of the slider in the Miscellaneous settings that sets how long media commands are suppressed after a Bluetooth device disconnects.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مهلة قطع الاتصال"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91560,6 +93426,12 @@
     "Disconnect delay: %@" : {
       "comment" : "The Bluetooth disconnect delay shown above its slider in the Miscellaneous settings. %@ is the delay in seconds, such as \"3 seconds\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مهلة قطع الاتصال: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91625,6 +93497,12 @@
     "Dismiss" : {
       "comment" : "Button on a failure notice that hides it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تجاهل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91690,6 +93568,12 @@
     "Dismiss the notice about %@" : {
       "comment" : "VoiceOver label of the failure banner's Dismiss button. %@ is what the notice is about, as a noun phrase, such as \"settings\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تجاهل الإشعار المتعلق بـ%@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92080,6 +93964,12 @@
     "Don't rewind if paused for less than this." : {
       "comment" : "Explanation under the minimum pause stepper in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لا يُرجَّع التشغيل إذا كان الإيقاف المؤقت أقصر من هذه المدة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92210,6 +94100,12 @@
     "Done." : {
       "comment" : "First sentence of the message after Redo Text Extraction finished with some books skipped.\nFirst sentence of the message after the data directory moved.\nStorage settings status line after an operation finished and has nothing more to say.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92275,6 +94171,12 @@
     "Done. %@ in library." : {
       "comment" : "Message after Rebuild Directory finished. %@ is a count of the library's books, such as \"743 books\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم. %@ في المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92833,6 +94735,48 @@
     "Download %lld Books" : {
       "comment" : "Library menu command that downloads the selected books. %lld is the number of books selected.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تنزيل %lld كتب"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تنزيل %lld كتابًا"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تنزيل %lld كتاب"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تنزيل %lld كتاب"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تنزيل %lld كتابين"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "تنزيل %lld كتاب"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -93202,6 +95146,12 @@
     "Download Not Removed" : {
       "comment" : "Title of the alert that says Remove Download did not remove one book's files.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم تتم إزالة التنزيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -93267,6 +95217,12 @@
     "Download Now" : {
       "comment" : "Library menu command that downloads the one book a row's menu is for, or the selected book.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تنزيل الآن"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -93397,6 +95353,12 @@
     "Download it first: select it in the library, then choose %@." : {
       "comment" : "What to do about a book only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نزّله أولًا: حدده في المكتبة، ثم اختر %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -93982,6 +95944,12 @@
     "Download progress" : {
       "comment" : "VoiceOver label of the progress bar of a book downloading from the cloud.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تقدم التنزيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94443,6 +96411,12 @@
     "Download them first: select them in the library, then choose %@." : {
       "comment" : "What to do about several books only in the cloud before an operation that never downloads. %@ is the name of the Library menu command Download Now.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نزّلها أولًا: حددها في المكتبة، ثم اختر %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94573,6 +96547,12 @@
     "Downloaded %@" : {
       "comment" : "Announcement that Download Now brought several books to this Mac. %@ is a count of books, such as \"3 books\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم تنزيل %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94638,6 +96618,12 @@
     "Downloaded." : {
       "comment" : "Spoken when a chapter's download is done and playback goes on.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم التنزيل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94703,6 +96689,12 @@
     "Downloaded. Loading." : {
       "comment" : "Spoken when the book's download is done and the book loads.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم التنزيل. جارٍ التحميل."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94833,6 +96825,12 @@
     "Downloading %@" : {
       "comment" : "Announcement when Download Now starts. %@ is the book's title, or a count of books such as \"3 books\".\nAnnouncement when the reading list's books start downloading after a command of the listener's. %@ is a count of books, such as \"3 books\".\nHeading of the view that shows a book downloading from the cloud before it opens. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تنزيل %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94898,6 +96896,12 @@
     "Downloading %@ from %@." : {
       "comment" : "Spoken as a book's download starts. %1$@ is the book's title; %2$@ is the cloud service's name, or \"the cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تنزيل %@ من %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94969,6 +96973,12 @@
     "Downloading %@, a reading list book" : {
       "comment" : "Announcement when the reading list's book starts downloading. %@ is the book's title.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تنزيل %@، وهو كتاب في قائمة القراءة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -95034,6 +97044,48 @@
     "Downloading %lld of them now" : {
       "comment" : "Second part of the Keep on This Mac announcement when some kept books are only in the cloud. %lld is how many start downloading.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld منها الآن"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld منها الآن"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld منها الآن"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld منها الآن"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld منها الآن"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld منها الآن"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -95267,6 +97319,48 @@
     "Downloading %lld reading list books" : {
       "comment" : "Announcement when the reading list's books start downloading with no command of the listener's. %lld is the number of books.",
       "localizations" : {
+        "ar" : {
+          "variations" : {
+            "plural" : {
+              "few" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld كتب من قائمة القراءة"
+                }
+              },
+              "many" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld كتابًا من قائمة القراءة"
+                }
+              },
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld كتاب من قائمة القراءة"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld كتاب من قائمة القراءة"
+                }
+              },
+              "two" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld كتابين من قائمة القراءة"
+                }
+              },
+              "zero" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "جارٍ تنزيل %lld كتاب من قائمة القراءة"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -95500,6 +97594,12 @@
     "Downloading %lld%%" : {
       "comment" : "Note in the library list while a book downloads. %lld is the percent done, from 0 to 100; the percent sign follows it.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ التنزيل %lld%%"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -95565,6 +97665,12 @@
     "Downloading it now" : {
       "comment" : "Second part of the Keep on This Mac announcement for one book that is only in the cloud: it starts downloading.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تنزيله الآن"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96188,6 +98294,12 @@
     "Downloading them now" : {
       "comment" : "Second part of the Keep on This Mac announcement when every kept book is only in the cloud: they start downloading.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ تنزيلها الآن"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96448,6 +98560,12 @@
     "Downloading, %lld percent" : {
       "comment" : "What VoiceOver says of a book that is downloading, in the library list. %lld is the percent done, from 0 to 100.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ التنزيل، %lld في المئة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96513,6 +98631,12 @@
     "Downloads Not Removed" : {
       "comment" : "Title of the alert that says Remove Download did not remove several books' files.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "لم تتم إزالة التنزيلات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97358,6 +99482,12 @@
     "EPUB books with the same ISBN identifier" : {
       "comment" : "Hint of the Same ISBN criterion of Find Duplicate Books. EPUB is a book format and ISBN is the book's international number; both stay as written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كتب EPUB بمعرّف ISBN نفسه"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -98859,6 +100989,12 @@
     "Edit Substitution Rule" : {
       "comment" : "Heading and navigation title of the editor of an existing substitution rule.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تحرير قاعدة استبدال"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -100431,6 +102567,12 @@
     "Enable" : {
       "comment" : "Title of the context menu item that turns a substitution rule on.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفعيل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -100496,6 +102638,12 @@
     "Enable %@" : {
       "comment" : "VoiceOver label of the checkbox that turns a substitution rule on or off. %@ is the rule's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفعيل %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -100561,6 +102709,12 @@
     "Enable Bluetooth monitoring" : {
       "comment" : "Title and VoiceOver label of the switch in the Miscellaneous settings that turns on Bluetooth monitoring.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفعيل مراقبة Bluetooth"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -100691,6 +102845,12 @@
     "Enable restart-timer gesture" : {
       "comment" : "Title of the switch in the Miscellaneous settings that turns on the experimental gesture that restarts the sleep timer.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفعيل إيماءة إعادة تشغيل المؤقت"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -100756,6 +102916,12 @@
     "Enable text substitutions" : {
       "comment" : "Title and VoiceOver label of the switch in the Substitutions settings that turns text substitution rules on.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تفعيل استبدالات النص"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -101081,6 +103247,12 @@
     "End of book behavior" : {
       "comment" : "VoiceOver label of the When book ends pop-up in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سلوك نهاية الكتاب"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -104852,6 +107024,12 @@
     "Exact file content match — the strongest indicator" : {
       "comment" : "Hint of the Identical File criterion of Find Duplicate Books.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تطابق تام في محتوى الملف — أقوى مؤشر"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -105345,6 +107523,12 @@
     "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires." : {
       "comment" : "Explanation under the Enable restart-timer gesture switch in the Miscellaneous settings. AirPods is a product name and stays as written.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تجريبي. تسلسل من مفاتيح الوسائط أو عناصر تحكم AirPods خلال فترة زمنية قصيرة يعيد تفعيل آخر مؤقت نوم، وهو مفيد بعد انتهاء أحدها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -108842,6 +111026,12 @@
     "Fade out duration" : {
       "comment" : "VoiceOver label of the sleep timer's fade out stepper in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "مدة التلاشي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -108907,6 +111097,12 @@
     "Fade out: %@" : {
       "comment" : "The sleep timer's fade out shown above its stepper in the Playback settings. %@ is the fade as a length of time, such as 3 seconds, or Off.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "التلاشي: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -109167,6 +111363,12 @@
     "Failed to move directory" : {
       "comment" : "Begins the message when moving the data directory failed; the reason follows after a colon.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر نقل الدليل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -109232,6 +111434,12 @@
     "Failed to rebuild directory" : {
       "comment" : "Begins the message when Rebuild Directory failed; the reason follows after a colon.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت إعادة بناء الدليل"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -109297,6 +111505,12 @@
     "Failed to rebuild to default" : {
       "comment" : "Begins the message when Reset to Default failed; the reason follows after a colon.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّرت إعادة الضبط إلى الافتراضي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -109362,6 +111576,12 @@
     "Failed to switch libraries" : {
       "comment" : "Begins the message when Use This Library failed; the reason follows after a colon.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تعذّر تبديل المكتبات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -110614,6 +112834,12 @@
     "Feed subscriptions saved." : {
       "comment" : "Announcement after a retry saved the feed subscriptions that had failed to save.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تم حفظ اشتراكات الموجزات."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -111796,6 +114022,12 @@
     "Find Duplicate Books" : {
       "comment" : "Heading of the Find Duplicate Books sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "البحث عن كتب مكررة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -111861,6 +114093,12 @@
     "Find Duplicate Books..." : {
       "comment" : "Button in Storage settings that opens the duplicate finder. The three dots show that a window opens.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "البحث عن كتب مكررة..."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -111926,6 +114164,12 @@
     "Find Duplicates" : {
       "comment" : "Navigation title of the Find Duplicate Books sheet.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "البحث عن مكررات"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -111991,6 +114235,12 @@
     "Find duplicate books" : {
       "comment" : "VoiceOver label of the Find Duplicate Books button in Storage settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "البحث عن كتب مكررة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112121,6 +114371,12 @@
     "Finds duplicate books in all folders by file content, title, or author." : {
       "comment" : "Caption under the Find Duplicate Books button in Storage settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يبحث عن كتب مكررة في كل المجلدات بحسب محتوى الملف أو العنوان أو المؤلف."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112517,6 +114773,12 @@
     "Finishing" : {
       "comment" : "VoiceOver value of the move's progress bar while the move is being finished.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ الإنهاء"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112582,6 +114844,12 @@
     "Finishing the move…" : {
       "comment" : "Status line of the move sheet while the move is being finished.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ إنهاء النقل…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -113179,6 +115447,12 @@
     "Folder names stay as you typed them." : {
       "comment" : "Last sentence of the note under the Leading Articles pop-up: folder names are never changed by the setting.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "تبقى أسماء المجلدات كما كتبتها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -113309,6 +115583,12 @@
     "Folder placement and manual order that were stored only in the unreadable index are lost from the library." : {
       "comment" : "Second sentence of what Rebuild Library Index does: what is lost.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يُفقد من المكتبة موضع المجلدات والترتيب اليدوي اللذان كانا مخزّنين في الفهرس غير المقروء فقط."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114621,6 +116901,12 @@
     "Forward navigation unit: %@" : {
       "comment" : "VoiceOver label of the playback bar's menu that picks the unit the forward button moves by. %@ is the unit now chosen, such as \"Sentence\".",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وحدة التنقل للأمام: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115120,6 +117406,12 @@
     "Free up space, then import it again." : {
       "comment" : "Last sentence of why an import's archive was refused for want of disk space: what to do. \"It\" is the archive.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "وفّر مساحة، ثم استورده مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115250,6 +117542,12 @@
     "From %@" : {
       "comment" : "Line under the download view's heading: where the book comes from. %@ is the cloud service's name, or \"the cloud service\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "من %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115705,6 +118003,12 @@
     "Gesture pattern" : {
       "comment" : "Heading of the list of steps that make up the restart gesture, in the Miscellaneous settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "نمط الإيماءة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115770,6 +118074,12 @@
     "Gesture time window" : {
       "comment" : "VoiceOver label of the restart gesture's time window slider in the Miscellaneous settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "الإطار الزمني للإيماءة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115835,6 +118145,12 @@
     "Get a fresh copy of the archive, then import it again." : {
       "comment" : "Last sentence of why an import's archive stopped extracting: what to do.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "احصل على نسخة جديدة من الأرشيف، ثم استورده مرة أخرى."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116095,6 +118411,12 @@
     "Getting Your Library" : {
       "comment" : "Heading of the screen shown while TextMouth gets the library's files from the cloud; the library opens by itself when they arrive.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ الحصول على مكتبتك"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116160,6 +118482,12 @@
     "Getting ready" : {
       "comment" : "VoiceOver value of the move's progress bar before the copy starts.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ التجهيز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116225,6 +118553,12 @@
     "Getting ready to move the library…" : {
       "comment" : "Status line of the move sheet before the copy starts.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "جارٍ التجهيز لنقل المكتبة…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116355,6 +118689,12 @@
     "Give It a New Identity…" : {
       "comment" : "Button that gives the library a new identity file, after asking. The ellipsis shows that a question follows.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منحها هوية جديدة…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116420,6 +118760,12 @@
     "Give a New Identity" : {
       "comment" : "Button of the question that gives the library a new identity file: gives it and opens the library.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "منح هوية جديدة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116485,6 +118831,12 @@
     "Give the library a new identity?" : {
       "comment" : "Title of the question asked before giving the library a new identity file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "هل تريد منح المكتبة هوية جديدة؟"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -118500,6 +120852,12 @@
     "Gradually reduce volume before pausing when the sleep timer expires. 0 pauses instantly." : {
       "comment" : "Explanation under the sleep timer's fade out stepper in the Playback settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يخفض مستوى الصوت تدريجيًا قبل الإيقاف المؤقت عند انتهاء مؤقت النوم. تؤدي القيمة 0 إلى الإيقاف المؤقت فورًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -118955,6 +121313,12 @@
     "Heading" : {
       "comment" : "A unit of text a picker moves or rewinds by: one heading. Used by the rewind, skip, and navigation unit pickers.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "عنوان رئيسي"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -119649,6 +122013,12 @@
     "Heavy" : {
       "comment" : "The name of punctuation pause level 3: periods, commas, and paragraph breaks pause.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "كثيف"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -120234,6 +122604,12 @@
     "Hides this notice without saving anything." : {
       "comment" : "First sentence of the VoiceOver hint of the failure banner's Dismiss button.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يخفي هذا الإشعار دون حفظ أي شيء."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -120299,6 +122675,12 @@
     "Hold Shift while skipping to use a secondary skip amount." : {
       "comment" : "Explanation under the Shift+Skip pop-ups in the Playback settings. Shift is the key's name.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "اضغط مع الاستمرار على Shift أثناء التخطي لاستخدام مقدار تخطٍّ ثانوي."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -120689,6 +123071,12 @@
     "How long media commands are blocked after a Bluetooth device disconnects. Raise it if playback resumes after removing headphones." : {
       "comment" : "Explanation under the Bluetooth disconnect delay slider in the Miscellaneous settings.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "المدة التي تُحجب فيها أوامر الوسائط بعد قطع اتصال جهاز Bluetooth. ارفعها إذا استؤنف التشغيل بعد إزالة سماعات الرأس."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121859,6 +124247,12 @@
     "Identical File (MD5)" : {
       "comment" : "A match criterion of Find Duplicate Books: the files' contents are exactly the same. MD5 is the name of the checksum used to compare them.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ملف مطابق (MD5)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122054,6 +124448,12 @@
     "If %@ arrives from %@ later, %@ may keep two copies of it." : {
       "comment" : "Last sentence of the question asked before opening the library without its index file. %1$@ is the index file's name, which stays as written; %2$@ and %3$@ are the cloud service's name, or \"the cloud\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إذا وصل %@ من %@ لاحقًا، فقد يحتفظ %@ بنسختين منه."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122125,6 +124525,12 @@
     "If it is gone, choose %@." : {
       "comment" : "Last sentence of why the library can't open, pointing to the button that opens it anyway. %@ is that button's name, without its ellipsis. \"It\" is the missing file.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إذا لم يعد موجودًا، فاختر %@."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122190,6 +124596,12 @@
     "If the file arrives from %@ later, it names the same library." : {
       "comment" : "Last sentence of the question asked before restoring the library's identity file. %@ is the cloud service's name, or \"the cloud\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إذا وصل الملف من %@ لاحقًا، فإنه يحدد المكتبة نفسها."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122320,6 +124732,12 @@
     "If the library's own %@ arrives from %@ later, %@ may keep two copies of it, and this Mac and the other would disagree about which library this is." : {
       "comment" : "Last sentence of the question asked before giving the library a new identity file. %1$@ is the identity file's name, which stays as written; %2$@ and %3$@ are the cloud service's name, or \"the cloud\" when it is unknown.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "إذا وصل %@ الخاص بالمكتبة من %@ لاحقًا، فقد يحتفظ %@ بنسختين منه، ولن يتفق هذا الـ Mac والآخر على تحديد هذه المكتبة."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122391,6 +124809,12 @@
     "Ignored When Typing" : {
       "comment" : "A choice of the Leading Articles pop-up: a title's leading article does not count when typing a title's first letters, but the list keeps its order.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يُتجاهل عند الكتابة"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122456,6 +124880,12 @@
     "Ignored When Typing and Sorting" : {
       "comment" : "A choice of the Leading Articles pop-up: a title's leading article does not count when typing or when sorting.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "يُتجاهل عند الكتابة والفرز"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122586,6 +125016,12 @@
     "Import Behavior" : {
       "comment" : "Heading of the section of Storage settings about what an import does.",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "سلوك الاستيراد"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
