@@ -16571,7 +16571,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ n’est peut-être pas connecté ou ne fonctionne pas."
+            "value" : "%@ est peut-être déconnecté ou n’est pas ouvert."
           }
         },
         "he" : {
@@ -34233,7 +34233,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ : des modifications ne sont pas enregistrées, et changer de bibliothèque les perdrait."
+            "value" : "%@ : des modifications ne sont pas enregistrées, et elles seraient perdues si vous changiez de bibliothèque."
           }
         },
         "he" : {
@@ -174544,7 +174544,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hauteur par défaut pour les nouveaux livres. 1.0 est la valeur normale. Chaque livre peut la remplacer."
+            "value" : "Hauteur par défaut pour les nouveaux livres. 1,0 est la valeur normale. Chaque livre peut la remplacer."
           }
         },
         "he" : {
@@ -419352,7 +419352,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Recherche dans %@ sur %@…"
+            "value" : "Recherche : %@ sur %@…"
           }
         },
         "he" : {
@@ -470844,7 +470844,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth n’a pas pu conserver le texte que vous avez modifié dans « %@ » à côté de la nouvelle lecture, donc il a laissé le livre tel quel."
+            "value" : "TextMouth n’a pas pu conserver le texte que vous avez modifié dans « %@ » à côté du nouveau texte, donc il a laissé le livre tel quel."
           }
         },
         "he" : {
@@ -471354,19 +471354,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth n’a pas pu lire %lld de fichiers, donc ceci peut être incomplet."
+                  "value" : "TextMouth n’a pas pu lire %lld de fichiers, ce résultat est donc peut-être incomplet."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth n’a pas pu lire %lld fichier, donc ceci peut être incomplet."
+                  "value" : "TextMouth n’a pas pu lire %lld fichier, ce résultat est donc peut-être incomplet."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "TextMouth n’a pas pu lire %lld fichiers, donc ceci peut être incomplet."
+                  "value" : "TextMouth n’a pas pu lire %lld fichiers, ce résultat est donc peut-être incomplet."
                 }
               }
             }
@@ -472681,7 +472681,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth n’a pas pu dire quelle copie est la plus récente (%@)."
+            "value" : "TextMouth n’a pas pu déterminer quelle copie est la plus récente (%@)."
           }
         },
         "he" : {
@@ -472818,7 +472818,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth n’a pas pu dire quelle copie est la plus récente."
+            "value" : "TextMouth n’a pas pu déterminer quelle copie est la plus récente."
           }
         },
         "he" : {
@@ -492409,19 +492409,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Les %@ de %lld d’entre eux sont conservés."
+                  "value" : "%2$lld d’entre eux gardent leurs %1$@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Les %@ de %lld d’entre eux sont conservés."
+                  "value" : "%2$lld d’entre eux garde ses %1$@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Les %@ de %lld d’entre eux sont conservés."
+                  "value" : "%2$lld d’entre eux gardent leurs %1$@."
                 }
               }
             }
@@ -514176,7 +514176,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le flux %@ reste, avec ses téléchargements, sans dossier jusqu’à ce que Informations sur le flux lui en donne un autre."
+            "value" : "Le flux %@ reste, avec ses téléchargements, sans dossier jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux."
           }
         },
         "he" : {
@@ -516025,7 +516025,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Les flux %@ restent, avec leurs téléchargements, sans dossier jusqu’à ce que Informations sur le flux en donne un autre à chacun."
+            "value" : "Les flux %@ restent, avec leurs téléchargements, sans dossier jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux."
           }
         },
         "he" : {
@@ -547531,7 +547531,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Leurs %@ sont conservés."
+            "value" : "Ils gardent leurs %@."
           }
         },
         "he" : {
@@ -548851,19 +548851,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Il n’y a pas de vue %@. Aller à la vue en atteint %lld."
+                  "value" : "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Il n’y a pas de vue %@. Aller à la vue en atteint %lld."
+                  "value" : "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Il n’y a pas de vue %@. Aller à la vue en atteint %lld."
+                  "value" : "Il n’y a pas de vue %@. La commande Aller à la vue en atteint %lld."
                 }
               }
             }
@@ -605162,7 +605162,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Là où aucun de leurs mots ne reste, %@, chacun va à peu près au même point de son chapitre, ou au passage le plus proche que les deux lectures partagent."
+            "value" : "Là où il ne reste aucun de leurs mots, %@, chacun va à peu près au même point de son chapitre, ou au passage le plus proche commun aux deux textes."
           }
         },
         "he" : {
@@ -605299,7 +605299,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Là où aucun de leurs mots ne reste, chacun va à peu près au même point de son chapitre, ou au passage le plus proche que les deux lectures partagent."
+            "value" : "Là où il ne reste aucun de leurs mots, chacun va à peu près au même point de son chapitre, ou au passage le plus proche commun aux deux textes."
           }
         },
         "he" : {
@@ -608642,7 +608642,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec %@, %@."
+            "value" : "Si vous choisissez %@, %@."
           }
         },
         "he" : {
@@ -608779,7 +608779,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec %@, le flux et ses téléchargements restent, sans dossier jusqu’à ce que Informations sur le flux lui en donne un autre ; Supprimer le flux… sur sa ligne le supprime."
+            "value" : "Si vous choisissez %@, le flux et ses téléchargements restent, sans dossier jusqu’à ce que vous lui en donniez un autre dans Informations sur le flux ; la commande Supprimer le flux… de sa ligne le supprime."
           }
         },
         "he" : {
@@ -608916,7 +608916,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec %@, les flux et leurs téléchargements restent, sans dossier jusqu’à ce que Informations sur le flux en donne un autre à chacun ; Supprimer le flux… sur la ligne d’un flux le supprime."
+            "value" : "Si vous choisissez %@, les flux et leurs téléchargements restent, sans dossier jusqu’à ce que vous en donniez un autre à chacun dans Informations sur le flux ; la commande Supprimer le flux… de la ligne d’un flux le supprime."
           }
         },
         "he" : {
@@ -609059,7 +609059,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec %@, le dossier et tout ce qu’il contient quittent la bibliothèque, et %@."
+            "value" : "Si vous choisissez %@, le dossier et tout ce qu’il contient quittent la bibliothèque, et %@."
           }
         },
         "he" : {
@@ -609196,7 +609196,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec Déplacer le contenu hors du dossier, le dossier du flux est déplacé avec le reste."
+            "value" : "Si vous choisissez Déplacer le contenu hors du dossier, le dossier du flux est déplacé avec le reste."
           }
         },
         "he" : {
@@ -609333,7 +609333,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec Déplacer le contenu hors du dossier, leurs dossiers sont déplacés avec le reste."
+            "value" : "Si vous choisissez Déplacer le contenu hors du dossier, leurs dossiers sont déplacés avec le reste."
           }
         },
         "he" : {
@@ -609470,7 +609470,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Avec Déplacer le contenu hors du dossier, ils restent dans la bibliothèque et seul le dossier est supprimé."
+            "value" : "Si vous choisissez Déplacer le contenu hors du dossier, ils restent dans la bibliothèque et seul le dossier est supprimé."
           }
         },
         "he" : {
@@ -648367,7 +648367,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "donc TextMouth ne peut pas dire si les deux copies sont une seule bibliothèque, et n’a rien comparé."
+            "value" : "donc TextMouth ne peut pas déterminer si les deux copies sont la même bibliothèque, et n’a rien comparé."
           }
         },
         "he" : {
@@ -648504,7 +648504,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "donc sa position et ses signets ont été pris dans l’index de la bibliothèque seul."
+            "value" : "donc sa position et ses signets ont été tirés du seul index de la bibliothèque."
           }
         },
         "he" : {
