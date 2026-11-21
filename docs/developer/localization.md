@@ -6,7 +6,9 @@ Part of [TextMouth's documentation](../../README.md).
 This page is for the developer or agent who converts a part of the app's code to localized text.
 A translator reads [Translating TextMouth](translation.md) instead; it covers the translation steps, the glossary, and the rules for every language, and this page does not repeat it.
 Every Swift file of the app is converted, in three rounds of waves, and the interface text was cut by the user's rules with every fact kept (FR34).
-The catalog holds eleven languages: English, Spanish, Italian, French, Brazilian Portuguese, German, Russian, Ukrainian, Simplified Chinese, Japanese, and Korean.
+The catalog holds 23 languages.
+The first eleven are English, Spanish, Italian, French, Brazilian Portuguese, German, Russian, Ukrainian, Simplified Chinese, Japanese, and Korean.
+The second wave of twelve is Hindi, Arabic, Bengali, Indonesian, Vietnamese, Turkish, Thai, Polish, Traditional Chinese, Dutch, Swedish, and Hebrew.
 The plan and its measurements are in `research/LOCALIZATION-RESEARCH-2026-11-18.md`.
 
 ## The String Catalog

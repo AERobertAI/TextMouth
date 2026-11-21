@@ -22,7 +22,9 @@ Four tabs have pages of their own, and this page holds the rest:
 ## The language of the interface
 <!-- id: interface-language; keys: language, Spanish, Japanese, Korean, Language & Region, localization, translated interface, String Catalog; src: TextMouth/Localization/Localizable.xcstrings; status: incomplete; issues: FR34 -->
 
-TextMouth's own words, its menus, buttons, hints, and messages, are in eleven languages: English, Spanish, Italian, French, Brazilian Portuguese, German, Russian, Ukrainian, Simplified Chinese, Japanese, and Korean.
+TextMouth's own words, its menus, buttons, hints, and messages, are in 23 languages.
+The first eleven are English, Spanish, Italian, French, Brazilian Portuguese, German, Russian, Ukrainian, Simplified Chinese, Japanese, and Korean.
+The other twelve are Hindi, Arabic, Bengali, Indonesian, Vietnamese, Turkish, Thai, Polish, Traditional Chinese, Dutch, Swedish, and Hebrew.
 All but English are machine translations, which a native speaker will review.
 TextMouth follows the language order of the Mac or iPhone and shows the first of those languages it has.
 To set TextMouth's language alone, on the Mac choose it in System Settings, General, Language & Region, Applications; on the iPhone, in Settings, TextMouth, Language.
