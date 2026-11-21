@@ -638505,7 +638505,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "För att använda en annan mapp, öppna ”Inställningar” > ”Lagring” och välj %1$@ eller %2$@."
+            "value" : "För att använda en annan mapp, öppna ”Inställningar”, ”Lagring”, och välj %1$@ eller %2$@."
           }
         },
         "th" : {
