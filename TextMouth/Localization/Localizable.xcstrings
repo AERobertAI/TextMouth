@@ -141393,7 +141393,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Capítulo %1$@, de %2$@"
+            "value" : "Capítulo %1$@, via %2$@"
           }
         },
         "ru" : {
@@ -193726,7 +193726,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Baixado: %@"
+            "value" : "%@ baixados"
           }
         },
         "ru" : {
@@ -194417,7 +194417,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Baixando %1$@ de %2$@."
+            "value" : "Baixando %1$@ via %2$@."
           }
         },
         "ru" : {
@@ -224021,7 +224021,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Falha ao reconstruir o diretório"
+            "value" : "Falha ao reconstruir a pasta de dados"
           }
         },
         "ru" : {
@@ -232502,7 +232502,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "A posição das pastas e a ordem manual que estavam apenas no índice ilegível são perdidas da biblioteca."
+            "value" : "A organização em pastas e a ordem manual que estavam só no índice ilegível se perdem."
           }
         },
         "ru" : {
@@ -236507,7 +236507,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De %@"
+            "value" : "Via %@"
           }
         },
         "ru" : {
@@ -250487,7 +250487,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se %1$@ chegar de %2$@ mais tarde, %3$@ poderá manter duas cópias dele."
+            "value" : "Se %1$@ chegar via %2$@ mais tarde, %3$@ poderá manter duas cópias dele."
           }
         },
         "ru" : {
@@ -250761,7 +250761,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se o arquivo chegar de %@ mais tarde, ele indicará a mesma biblioteca."
+            "value" : "Se o arquivo chegar via %@ mais tarde, ele indicará a mesma biblioteca."
           }
         },
         "ru" : {
@@ -251041,7 +251041,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Se o %1$@ da própria biblioteca chegar de %2$@ mais tarde, %3$@ poderá manter duas cópias dele, e este Mac e o outro discordarão sobre qual é esta biblioteca."
+            "value" : "Se o %1$@ da própria biblioteca chegar via %2$@ mais tarde, %3$@ poderá manter duas cópias dele, e este Mac e o outro discordarão sobre qual é esta biblioteca."
           }
         },
         "ru" : {
@@ -267805,7 +267805,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ele pode estar pausado, sem login ou fora de execução."
+            "value" : "Ele pode estar pausado, ter saído da conta ou não estar em execução."
           }
         },
         "ru" : {
@@ -268820,7 +268820,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Permanece em %@"
+            "value" : "Continua disponível via %@"
           }
         },
         "ru" : {
@@ -392166,7 +392166,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reconstruir diretório"
+            "value" : "Reconstruir pasta de dados"
           }
         },
         "ru" : {
@@ -392440,7 +392440,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reconstruir o diretório do TextMouth"
+            "value" : "Reconstruir a pasta de dados do TextMouth"
           }
         },
         "ru" : {
@@ -392577,7 +392577,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reconstruindo o diretório de dados…"
+            "value" : "Reconstruindo a pasta de dados…"
           }
         },
         "ru" : {
@@ -395597,7 +395597,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Recria a estrutura do diretório e migra os livros que usam o armazenamento antigo."
+            "value" : "Recria a estrutura da pasta de dados e migra os livros que usam o armazenamento antigo."
           }
         },
         "ru" : {
@@ -435827,7 +435827,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Resolva primeiro o conflito em %@."
+            "value" : "Resolva primeiro o conflito com %@."
           }
         },
         "ru" : {
@@ -450259,7 +450259,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alguns arquivos da biblioteca estão em %@ e ainda não estão neste Mac."
+            "value" : "Alguns arquivos da biblioteca ainda não chegaram a este Mac via %@."
           }
         },
         "ru" : {
@@ -461159,7 +461159,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Parar, e Reproduzir recomeça"
+            "value" : "Parar e recomeçar ao reproduzir"
           }
         },
         "ru" : {
@@ -467704,7 +467704,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trocar de biblioteca perde as alterações que o TextMouth não conseguiu salvar enquanto a biblioteca não está disponível."
+            "value" : "Se você trocar de biblioteca, perderá as alterações que o TextMouth não conseguiu salvar enquanto a biblioteca não está disponível."
           }
         },
         "ru" : {
@@ -480453,7 +480453,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth não conseguiu obter os arquivos da biblioteca de %@."
+            "value" : "O TextMouth não conseguiu obter os arquivos da biblioteca via %@."
           }
         },
         "ru" : {
@@ -488069,7 +488069,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth está reconstruindo o diretório de dados."
+            "value" : "O TextMouth está reconstruindo a pasta de dados."
           }
         },
         "ru" : {
@@ -491955,7 +491955,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth os move de volta quando terminar de reconstruir o diretório de dados."
+            "value" : "O TextMouth os move de volta quando terminar de reconstruir a pasta de dados."
           }
         },
         "ru" : {
@@ -493605,7 +493605,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth as salva quando terminar de reconstruir o diretório de dados."
+            "value" : "O TextMouth as salva quando terminar de reconstruir a pasta de dados."
           }
         },
         "ru" : {
@@ -531146,7 +531146,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "A pasta %1$@ está em %2$@ e ainda não está neste Mac."
+            "value" : "A pasta %1$@ ainda não chegou a este Mac via %2$@."
           }
         },
         "ru" : {
@@ -537909,7 +537909,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O arquivo de identidade da biblioteca está neste Mac, mas o índice dela, %1$@, não chegou de %2$@."
+            "value" : "O arquivo de identidade da biblioteca está neste Mac, mas o índice dela, %1$@, não chegou via %2$@."
           }
         },
         "ru" : {
@@ -538052,7 +538052,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O índice da biblioteca está neste Mac, mas o arquivo de identidade dela, %1$@, não chegou de %2$@."
+            "value" : "O índice da biblioteca está neste Mac, mas o arquivo de identidade dela, %1$@, não chegou via %2$@."
           }
         },
         "ru" : {
