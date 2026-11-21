@@ -59799,37 +59799,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "التراجع عن %lld تعديلات. تعيد الإعادة التعديلات ما لم تُجرِ تعديلًا آخر."
+                  "value" : "تم التراجع عن %lld تعديلات. يعيدها الأمر “إعادة” ما لم تُجرِ تعديلًا آخر."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "التراجع عن %lld تعديلًا. تعيد الإعادة التعديلات ما لم تُجرِ تعديلًا آخر."
+                  "value" : "تم التراجع عن %lld تعديلًا. يعيدها الأمر “إعادة” ما لم تُجرِ تعديلًا آخر."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "التراجع عن %lld تعديل. تعيد الإعادة التعديلات ما لم تُجرِ تعديلًا آخر."
+                  "value" : "تم التراجع عن %lld تعديل. يعيده الأمر “إعادة” ما لم تُجرِ تعديلًا آخر."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "التراجع عن %lld تعديل. تعيد الإعادة التعديلات ما لم تُجرِ تعديلًا آخر."
+                  "value" : "تم التراجع عن %lld تعديل. يعيدها الأمر “إعادة” ما لم تُجرِ تعديلًا آخر."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "التراجع عن %lld تعديلين. تعيد الإعادة التعديلات ما لم تُجرِ تعديلًا آخر."
+                  "value" : "تم التراجع عن %lld تعديلين. يعيدهما الأمر “إعادة” ما لم تُجرِ تعديلًا آخر."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "التراجع عن %lld تعديلات. تعيد الإعادة التعديلات ما لم تُجرِ تعديلًا آخر."
+                  "value" : "تم التراجع عن %lld تعديلات. يعيدها الأمر “إعادة” ما لم تُجرِ تعديلًا آخر."
                 }
               }
             }
@@ -60290,7 +60290,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld تعديلان، كلها محفوظة"
+                  "value" : "%lld تعديلان، كلاهما محفوظ"
                 }
               },
               "zero" : {
@@ -60757,7 +60757,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld تعديلان، ليست كلها محفوظة"
+                  "value" : "%lld تعديلان، ليس كلاهما محفوظًا"
                 }
               },
               "zero" : {
@@ -85545,37 +85545,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "اقتُطع لطوله الزائد: %lld فقرات زمنية."
+                  "value" : "اقتُطعت %lld فقرات زمنية لطولها الزائد."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "اقتُطع لطوله الزائد: %lld فقرة زمنية."
+                  "value" : "اقتُطعت %lld فقرة زمنية لطولها الزائد."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "اقتُطع لطوله الزائد: %lld فقرة زمنية."
+                  "value" : "اقتُطعت %lld فقرة زمنية لطولها الزائد."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "اقتُطع لطوله الزائد: %lld فقرة زمنية."
+                  "value" : "اقتُطعت %lld فقرة زمنية لطولها الزائد."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "اقتُطع لطوله الزائد: %lld فقرتان زمنيتان."
+                  "value" : "اقتُطعت %lld فقرتان زمنيتان لطولهما الزائد."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "اقتُطع لطوله الزائد: %lld فقرات زمنية."
+                  "value" : "اقتُطعت %lld فقرات زمنية لطولها الزائد."
                 }
               }
             }
@@ -86012,37 +86012,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تُرك لتعذّر قراءته: %lld فقرات زمنية."
+                  "value" : "استُبعدت %lld فقرات زمنية لتعذّر قراءتها."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تُرك لتعذّر قراءته: %lld فقرة زمنية."
+                  "value" : "استُبعدت %lld فقرة زمنية لتعذّر قراءتها."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تُرك لتعذّر قراءته: %lld فقرة زمنية."
+                  "value" : "استُبعدت %lld فقرة زمنية لتعذّر قراءتها."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تُرك لتعذّر قراءته: %lld فقرة زمنية."
+                  "value" : "استُبعدت %lld فقرة زمنية لتعذّر قراءتها."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تُرك لتعذّر قراءته: %lld فقرتان زمنيتان."
+                  "value" : "استُبعدت %lld فقرتان زمنيتان لتعذّر قراءتهما."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تُرك لتعذّر قراءته: %lld فقرات زمنية."
+                  "value" : "استُبعدت %lld فقرات زمنية لتعذّر قراءتها."
                 }
               }
             }
@@ -166367,7 +166367,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ينسخ التحديد ليُلصق."
+            "value" : "ينسخ التحديد للصق."
           }
         },
         "bn" : {
@@ -202519,7 +202519,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "تحرير إعداد المرشح المسبق"
+            "value" : "تحرير الإعداد المسبق للمرشح"
           }
         },
         "bn" : {
@@ -206093,7 +206093,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "يحرّر مقطعًا واحدًا في كل مرة، مرتبة حسب اسم الفصل."
+            "value" : "يحرّر مقطعًا واحدًا في كل مرة، والمقاطع مدرجة حسب اسم الفصل."
           }
         },
         "bn" : {
@@ -494236,7 +494236,7 @@
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "نقل TextMouth %lld نسختين جديدتين من كتب مكررة إلى سلة المهملات، لأن أسئلة الاحتفاظ بهما كنسخ مكررة لم تُجَب قبل إغلاق TextMouth. لاسترجاعها، افتح سلة المهملات واختر “إرجاع”."
+                  "value" : "نقل TextMouth %lld نسختين جديدتين من كتب مكررة إلى سلة المهملات، لأن أسئلة الاحتفاظ بهما كنسخ مكررة لم تُجَب قبل إغلاق TextMouth. لاسترجاعهما، افتح سلة المهملات واختر “إرجاع”."
                 }
               },
               "zero" : {
@@ -512048,7 +512048,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "يحتوي الأرشيف أيضًا على %lld كتابًا آخر لم يُستورد؛ فك ضغطه لاستيراده."
+                  "value" : "يحتوي الأرشيف أيضًا على %lld كتابًا آخر لم تُستورد؛ فك ضغطه لاستيرادها."
                 }
               },
               "one" : {
@@ -512060,7 +512060,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "يحتوي الأرشيف أيضًا على %lld كتاب آخر لم يُستورد؛ فك ضغطه لاستيراده."
+                  "value" : "يحتوي الأرشيف أيضًا على %lld كتاب آخر لم تُستورد؛ فك ضغطه لاستيرادها."
                 }
               },
               "two" : {
@@ -524267,7 +524267,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ملف CUE “%@” كبير جدًا لا يمكن قراءته."
+            "value" : "ملف CUE “%@” أكبر من أن يُقرأ."
           }
         },
         "bn" : {
@@ -528535,37 +528535,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت، وهو الحد الأقصى الذي يقرؤه TextMouth."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت، وهو الحد الأقصى الذي يقرؤه TextMouth."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت، وهو الحد الأقصى الذي يقرؤه TextMouth."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت، وهو الحد الأقصى الذي يقرؤه TextMouth."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت، وهو الحد الأقصى الذي يقرؤه TextMouth."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "الموجز على %@ أكبر من %lld ميغابايت التي يقرؤها TextMouth."
+                  "value" : "الموجز على %@ أكبر من %lld ميغابايت، وهو الحد الأقصى الذي يقرؤه TextMouth."
                 }
               }
             }
@@ -533169,7 +533169,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "لم تعد ملفات النسخة الجديدة من “%@” في المكتبة، لذا لا يمكن الاحتفاظ بها. اختر إلغاء، ثم استورد الملف مرة أخرى."
+            "value" : "لم تعد ملفات النسخة الجديدة من “%@” في المكتبة، لذا لا يمكن الاحتفاظ بها. اختر “إلغاء”، ثم استورد الملف مرة أخرى."
           }
         },
         "bn" : {
@@ -549635,7 +549635,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "تعذّر على دليل البودكاست على %1$@ الرد على البحث (الخطأ %2$@). حاول مرة أخرى لاحقًا."
+            "value" : "تعذّر على دليل البودكاست في %1$@ الرد على البحث (الخطأ %2$@). حاول مرة أخرى لاحقًا."
           }
         },
         "bn" : {
@@ -550061,37 +550061,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثوانٍ."
+                  "value" : "لم يرد دليل البودكاست في %@ خلال %lld ثوانٍ."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانية."
+                  "value" : "لم يرد دليل البودكاست في %@ خلال %lld ثانية."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانية."
+                  "value" : "لم يرد دليل البودكاست في %@ خلال %lld ثانية."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانية."
+                  "value" : "لم يرد دليل البودكاست في %@ خلال %lld ثانية."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثانيتين."
+                  "value" : "لم يرد دليل البودكاست في %@ خلال %lld ثانيتين."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لم يرد دليل البودكاست على %@ خلال %lld ثوانٍ."
+                  "value" : "لم يرد دليل البودكاست في %@ خلال %lld ثوانٍ."
                 }
               }
             }
@@ -568178,7 +568178,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "يستخدم هذا الموجز http العادي."
+            "value" : "يستخدم هذا الموجز http العادي"
           }
         },
         "bn" : {
@@ -575563,7 +575563,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "يحتوي أرشيف الكتاب المصوّر هذا على صور أكثر من %@ التي يقرؤها TextMouth."
+            "value" : "يحتوي أرشيف الكتاب المصوّر هذا على أكثر من %@ صورة، وهو الحد الأقصى الذي يقرؤه TextMouth."
           }
         },
         "bn" : {
@@ -580778,37 +580778,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تحتوي هذه الصورة على %lld صفحات، أكثر من %@ التي يقرؤها TextMouth."
+                  "value" : "تحتوي هذه الصورة على %lld صفحات، أي أكثر من الحد الأقصى الذي يقرؤه TextMouth وهو %@."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تحتوي هذه الصورة على %lld صفحة، أكثر من %@ التي يقرؤها TextMouth."
+                  "value" : "تحتوي هذه الصورة على %lld صفحة، أي أكثر من الحد الأقصى الذي يقرؤه TextMouth وهو %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تحتوي هذه الصورة على %lld صفحة، أكثر من %@ التي يقرؤها TextMouth."
+                  "value" : "تحتوي هذه الصورة على %lld صفحة، أي أكثر من الحد الأقصى الذي يقرؤه TextMouth وهو %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تحتوي هذه الصورة على %lld صفحة، أكثر من %@ التي يقرؤها TextMouth."
+                  "value" : "تحتوي هذه الصورة على %lld صفحة، أي أكثر من الحد الأقصى الذي يقرؤه TextMouth وهو %@."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تحتوي هذه الصورة على %lld صفحتين، أكثر من %@ التي يقرؤها TextMouth."
+                  "value" : "تحتوي هذه الصورة على %lld صفحتين، أي أكثر من الحد الأقصى الذي يقرؤه TextMouth وهو %@."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "تحتوي هذه الصورة على %lld صفحات، أكثر من %@ التي يقرؤها TextMouth."
+                  "value" : "تحتوي هذه الصورة على %lld صفحات، أي أكثر من الحد الأقصى الذي يقرؤه TextMouth وهو %@."
                 }
               }
             }
@@ -581245,37 +581245,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                  "value" : "حجم هذه الصورة %@، أي أكبر من الحد الأقصى الذي يقرؤه TextMouth وهو %lld ميغابكسل."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                  "value" : "حجم هذه الصورة %@، أي أكبر من الحد الأقصى الذي يقرؤه TextMouth وهو %lld ميغابكسل."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                  "value" : "حجم هذه الصورة %@، أي أكبر من الحد الأقصى الذي يقرؤه TextMouth وهو %lld ميغابكسل."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                  "value" : "حجم هذه الصورة %@، أي أكبر من الحد الأقصى الذي يقرؤه TextMouth وهو %lld ميغابكسل."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                  "value" : "حجم هذه الصورة %@، أي أكبر من الحد الأقصى الذي يقرؤه TextMouth وهو %lld ميغابكسل."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "حجم هذه الصورة %@، أكبر من %lld ميغابكسل التي يقرؤها TextMouth."
+                  "value" : "حجم هذه الصورة %@، أي أكبر من الحد الأقصى الذي يقرؤه TextMouth وهو %lld ميغابكسل."
                 }
               }
             }
@@ -586762,37 +586762,37 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                  "value" : "لتنزيل %lld الأخرى من جديد، اختر %@ في صفوفها."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                  "value" : "لتنزيل %lld الأخرى من جديد، اختر %@ في صفوفها."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفه."
+                  "value" : "لتنزيل %lld الأخرى من جديد، اختر %@ في صفه."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                  "value" : "لتنزيل %lld الأخرى من جديد، اختر %@ في صفوفها."
                 }
               },
               "two" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفيهما."
+                  "value" : "لتنزيل %lld الأخرى من جديد، اختر %@ في صفيهما."
                 }
               },
               "zero" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "لتنزيل %lld الأخرى مرة أخرى، اختر %@ في صفوفها."
+                  "value" : "لتنزيل %lld الأخرى من جديد، اختر %@ في صفوفها."
                 }
               }
             }
@@ -651536,7 +651536,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld عنصرًا منزَّل منه"
+                  "value" : "%lld عنصرًا منزَّلًا منه"
                 }
               },
               "one" : {
@@ -660568,7 +660568,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "عند التشغيل وعندما تطلب فقط"
+            "value" : "عند فتح TextMouth وعندما تطلب فقط"
           }
         },
         "bn" : {
@@ -668068,7 +668068,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيلًا مُزال"
+                  "value" : "ما احتُفظ به من %@ لأجل %lld تنزيلًا مُزالًا"
                 }
               },
               "one" : {
@@ -675939,7 +675939,7 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "ما احتُفظ به لأجل %lld تنزيلًا مُزال"
+                  "value" : "ما احتُفظ به لأجل %lld تنزيلًا مُزالًا"
                 }
               },
               "one" : {
@@ -678911,7 +678911,7 @@
         "ar" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” معجم نطق، وليست قائمة تشغيل."
+            "value" : "“%@” معجم نطق، وليس قائمة تشغيل."
           }
         },
         "bn" : {
