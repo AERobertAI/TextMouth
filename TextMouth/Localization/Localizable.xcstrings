@@ -2690,7 +2690,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ lägger till ett vid den aktuella positionen."
+            "value" : "”%@” lägger till ett vid den aktuella positionen."
           }
         },
         "th" : {
@@ -7412,7 +7412,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ görs detsamma för varje sådant kapitel i den här exporten, utan att fråga igen."
+            "value" : "Med ”%@” görs detsamma för varje sådant kapitel i den här exporten, utan att fråga igen."
           }
         },
         "th" : {
@@ -9944,7 +9944,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ har sin standardgenväg, %@"
+            "value" : "”%@” har standardgenvägen, %@"
           }
         },
         "th" : {
@@ -13028,7 +13028,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ in"
+            "value" : "%@ in i inspelningen"
           }
         },
         "th" : {
@@ -19575,7 +19575,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ väntar nu innan %@ utförs, ifall den trycks två gånger."
+            "value" : "%@ väntar nu innan ”%@” utförs, ifall tangenten trycks två gånger."
           }
         },
         "th" : {
@@ -21890,7 +21890,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ återställd till standard: %@"
+            "value" : "”%@” återställd till standard: %@"
           }
         },
         "th" : {
@@ -23249,7 +23249,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ stoppas hela exporten. Redan skrivna filer finns kvar."
+            "value" : "Med ”%@” stoppas hela exporten. Redan skrivna filer finns kvar."
           }
         },
         "th" : {
@@ -24304,7 +24304,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ försöker igen, %@ avslutar utan att spara, %@ låter TextMouth vara öppet."
+            "value" : "”%@” försöker igen, ”%@” avslutar utan att spara, ”%@” låter TextMouth vara öppet."
           }
         },
         "th" : {
@@ -24751,7 +24751,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ använder den i menyerna"
+            "value" : "”%@” använder den genvägen i menyerna"
           }
         },
         "th" : {
@@ -25955,7 +25955,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ lades inte tillbaka: ingen kopia av texten som dess paket innehöll kunde sparas först, så TextMouth lämnade texten som den var."
+            "value" : "%@ lades inte till i biblioteket igen: ingen kopia av texten som dess paket innehöll kunde sparas först, så TextMouth lämnade texten som den var."
           }
         },
         "th" : {
@@ -27215,7 +27215,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ fungerar i %@."
+            "value" : "”%@” fungerar i %@."
           }
         },
         "th" : {
@@ -27364,7 +27364,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ skrivs det kapitlet som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt."
+            "value" : "Med ”%@” skrivs det kapitlet som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt."
           }
         },
         "th" : {
@@ -27513,7 +27513,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med %@ skrivs texten som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt."
+            "value" : "Med ”%@” skrivs texten som vanliga stycken av sina rader, med citat- och listtecknen kvar som tecken, och allt annat exporteras som vanligt."
           }
         },
         "th" : {
@@ -27978,7 +27978,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@, %@ kvalitet"
+            "value" : "%@, kvalitet %@"
           }
         },
         "th" : {
@@ -39404,7 +39404,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@: av så länge Komprimera aldrig är markerat"
+            "value" : "%@: av så länge ”Komprimera aldrig” är markerat"
           }
         },
         "th" : {
@@ -110564,7 +110564,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägg till den på din Mac och skicka sedan boken hit."
+            "value" : "Lägg till filen på din Mac och skicka sedan boken hit."
           }
         },
         "th" : {
@@ -113308,7 +113308,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till en Exportera-knapp i varje läsares verktygsfält. Arkiv, Exportera fungerar i båda fallen."
+            "value" : "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv” > ”Exportera” fungerar i båda fallen."
           }
         },
         "th" : {
@@ -114053,7 +114053,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till sidan, till exempel sidan 12 av 300, i sammanfattningarna från Var är jag? för böcker med mer än en sida."
+            "value" : "Lägger till sidan, till exempel sidan 12 av 300, i sammanfattningarna från ”Var är jag?” för böcker med mer än en sida."
           }
         },
         "th" : {
@@ -114351,7 +114351,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till hastigheten de räknas i, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, Var är jag?, Kopiera läsposition och rubrikarkets längder."
+            "value" : "Lägger till hastigheten som tiderna räknas med, till exempel 2,0x för en ljudbok som inte spelas i 1x eller 500 ord i minuten för en textbok, i läsaren, ”Var är jag?”, ”Kopiera läsposition” och rubrikarkets längder."
           }
         },
         "th" : {
@@ -115251,7 +115251,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Därefter försöker Spela upp stycket igen."
+            "value" : "Därefter gör ”Spela upp” ett nytt försök med stycket."
           }
         },
         "th" : {
@@ -130802,13 +130802,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audacity-etiketter markerar en ljudfil, och den här bokens ljud finns i %lld fil."
+                  "value" : "Audacity-etiketter gäller bara en ljudfil, men den här bokens ljud finns i %lld fil."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Audacity-etiketter markerar en ljudfil, och den här bokens ljud finns i %lld filer."
+                  "value" : "Audacity-etiketter gäller bara en ljudfil, men den här bokens ljud finns i %lld filer."
                 }
               }
             }
@@ -133714,7 +133714,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets artiklar går vidare till en annan artikel när en tar slut."
+            "value" : "Tillgänglig bara så länge det här flödets artiklar går vidare till en annan artikel när en tar slut."
           }
         },
         "th" : {
@@ -133863,7 +133863,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut."
+            "value" : "Tillgänglig bara så länge det här flödets avsnitt går vidare till ett annat avsnitt när ett tar slut."
           }
         },
         "th" : {
@@ -134012,7 +134012,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när det här flödets objekt går vidare till ett annat objekt när ett tar slut."
+            "value" : "Tillgänglig bara så länge det här flödets objekt går vidare till ett annat objekt när ett tar slut."
           }
         },
         "th" : {
@@ -134161,7 +134161,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tillgänglig bara när den här mappens böcker går vidare till en annan bok när en tar slut."
+            "value" : "Tillgänglig bara så länge den här mappens böcker går vidare till en annan bok när en tar slut."
           }
         },
         "th" : {
@@ -144409,7 +144409,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flyttar texten till meningen som läses upp."
+            "value" : "Rullar texten till meningen som läses upp."
           }
         },
         "th" : {
@@ -158276,7 +158276,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Välj Redigera text igen för att redigera den nya kopians text."
+            "value" : "Välj ”Redigera text” igen för att redigera den nya kopians text."
           }
         },
         "th" : {
@@ -158425,7 +158425,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Välj Redigera text igen för att redigera den nya texten."
+            "value" : "Välj ”Redigera text” igen för att redigera den nya texten."
           }
         },
         "th" : {
@@ -164534,7 +164534,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Välj mappen att exportera till. Med Ny mapp skapar du en."
+            "value" : "Välj mappen att exportera till. Med ”Ny mapp” skapar du en."
           }
         },
         "th" : {
@@ -165577,7 +165577,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väljer vad Spela upp och hoppknapparna flyttar med."
+            "value" : "Väljer vad ”Spela upp” och hoppknapparna flyttar med."
           }
         },
         "th" : {
@@ -166620,7 +166620,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Väljer var nästa bok öppnas: i det här fönstret eller i ett nytt. En bok som är öppen i ett annat fönster kommer fram, och med %@ valt stängs det här fönstret."
+            "value" : "Väljer var nästa bok öppnas: i det här fönstret eller i ett nytt. En bok som är öppen i ett annat fönster kommer fram, och med ”%@” valt stängs det här fönstret."
           }
         },
         "th" : {
@@ -167663,7 +167663,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ett val gör genvägen till din egen; Återställ till standard återställer var den fungerar som standard."
+            "value" : "Ett val gör genvägen till din egen; ”Återställ till standard” återställer var den fungerar som standard."
           }
         },
         "th" : {
@@ -207977,7 +207977,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen avbröts, så uppspelningen stoppades."
+            "value" : "Nedladdningen avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -218140,7 +218140,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Varje rubriks titel och start, som Audacity-etiketter, för en bok med en ljudfil."
+            "value" : "Varje rubriks titel och starttid, som Audacity-etiketter, för en bok med en ljudfil."
           }
         },
         "th" : {
@@ -218289,7 +218289,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Varje rubriks titel och start, som en CUE-fil som namnger ljudet så som Ljud exporterar det."
+            "value" : "Varje rubriks titel och starttid, som en CUE-fil som namnger ljudet så som ”Ljud” exporterar det."
           }
         },
         "th" : {
@@ -220977,7 +220977,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redigera text har stoppats för %@, eftersom en ny kopia ersatte den."
+            "value" : "”Redigera text” har avslutats för %@, eftersom en ny kopia ersatte den."
           }
         },
         "th" : {
@@ -221126,7 +221126,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redigera text har stoppats för %@, eftersom dess fil lästes in igen."
+            "value" : "”Redigera text” har avslutats för %@, eftersom dess fil lästes in igen."
           }
         },
         "th" : {
@@ -231438,7 +231438,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla kapitel lästes."
+            "value" : "Alla kapitel lästes in."
           }
         },
         "th" : {
@@ -233344,7 +233344,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alla sidor lästes."
+            "value" : "Alla sidor lästes in."
           }
         },
         "th" : {
@@ -236939,7 +236939,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exportera alla sådana kapitel som skrivet"
+            "value" : "Exportera alla sådana kapitel som de är skrivna"
           }
         },
         "th" : {
@@ -238131,7 +238131,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exportera som skrivet"
+            "value" : "Exportera som det är skrivet"
           }
         },
         "th" : {
@@ -238280,7 +238280,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Export kan inte skriva i mappen där TextMouth har sitt bibliotek. Välj en annan mapp."
+            "value" : "Det går inte att exportera till mappen där TextMouth har sitt bibliotek. Välj en annan mapp."
           }
         },
         "th" : {
@@ -238429,7 +238429,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Export kan inte skriva i mappen där TextMouth sparar upplästa kapitel, som töms. Välj en annan mapp."
+            "value" : "Det går inte att exportera till mappen där TextMouth sparar upplästa kapitel, eftersom den töms. Välj en annan mapp."
           }
         },
         "th" : {
@@ -254972,7 +254972,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Under fem sekunder är de nästa två tangenttrycken inte genvägar; TextMouth säger om de blir ett dubbeltryck."
+            "value" : "Under fem sekunder räknas nästa två tangenttryck inte som genvägar; TextMouth säger om de blir ett dubbeltryck."
           }
         },
         "th" : {
@@ -261441,7 +261441,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Går tillbaka till där du var innan du bläddrade bland rubriker eller bokmärken."
+            "value" : "Går tillbaka dit du var innan du bläddrade bland rubriker eller bokmärken."
           }
         },
         "th" : {
@@ -264272,7 +264272,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Går tillbaka till där det senaste hoppet började."
+            "value" : "Går tillbaka dit det senaste hoppet började."
           }
         },
         "th" : {
@@ -264421,7 +264421,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Går till en sida, en procentsats eller en tid."
+            "value" : "Går till en sida, en procentsats eller en tidpunkt."
           }
         },
         "th" : {
@@ -269698,7 +269698,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hur snabbt rösten talar i filen. Den börjar med bokens hastighet."
+            "value" : "Hur snabbt rösten talar i filen. Från början gäller bokens hastighet."
           }
         },
         "th" : {
@@ -269847,7 +269847,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hur högt rösten låter i filen. Den börjar med bokens tonhöjd."
+            "value" : "Hur ljus eller mörk rösten låter i filen. Från början gäller bokens tonhöjd."
           }
         },
         "th" : {
@@ -281431,7 +281431,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ta med hastigheten vid återstående tid och total tid"
+            "value" : "Ta med hastigheten i återstående tid och total tid"
           }
         },
         "th" : {
@@ -303029,7 +303029,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Behåller listans böcker hämtade på den här Mac-datorn; varje Mac väljer själv. Om du avmarkerar det tas ingen nedladdning bort."
+            "value" : "Behåller listans böcker hämtade på den här Mac-datorn; varje Mac väljer själv. Om du avmarkerar alternativet tas ingen nedladdning bort."
           }
         },
         "th" : {
@@ -303178,7 +303178,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Behåller ordningen du ställt in med Flytta boken uppåt, Flytta boken nedåt eller genom att dra."
+            "value" : "Behåller ordningen du ställt in med ”Flytta boken uppåt”, ”Flytta boken nedåt” eller genom att dra."
           }
         },
         "th" : {
@@ -303749,13 +303749,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "%@ av %lld kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll %@ av %lld kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "%@ av %lld kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill fortsätta från kapitel %@ exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               }
             }
@@ -304252,13 +304252,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "Det upplästa kapitlet sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Behöll alla %lld upplästa kapitel tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
+                  "value" : "Alla %lld upplästa kapitel sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av dem exporterar du samma intervall med samma hastighet och tonhöjd."
                 }
               }
             }
@@ -304780,7 +304780,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Behöll det upplästa kapitlet tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
+            "value" : "Det upplästa kapitlet sparas tills TextMouth avslutas, en annan export av uppläst ljud startar eller bokens röst, text, ersättningar eller pauser ändras. Om du vill göra ljudfilen av det exporterar du samma intervall med samma hastighet och tonhöjd."
           }
         },
         "th" : {
@@ -328706,7 +328706,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Märkningsskydd: det vanliga, som bara tystar parenteserna i text som ser ut som taggar."
+            "value" : "Märkningsskydd: det vanliga, som bara tystar vinkelparenteserna i text som ser ut som taggar."
           }
         },
         "th" : {
@@ -361375,7 +361375,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inget biblioteksfönster eller ingen bok är öppen, så det finns inget att exportera."
+            "value" : "Varken något biblioteksfönster eller någon bok är öppen, så det finns inget att exportera."
           }
         },
         "th" : {
@@ -374208,7 +374208,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ingen röst är installerad. Lägg till en i Systeminställningar, Hjälpmedel, Uppläst innehåll och exportera sedan igen."
+            "value" : "Ingen röst är installerad. Lägg till en i ”Systeminställningar” > ”Hjälpmedel” > ”Uppläst innehåll” och exportera sedan igen."
           }
         },
         "th" : {
@@ -374357,7 +374357,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inga röster är installerade. Lägg till röster i Inställningar, Hjälpmedel, Uppläst innehåll."
+            "value" : "Inga röster är installerade. Lägg till röster i ”Inställningar” > ”Hjälpmedel” > ”Uppläst innehåll”."
           }
         },
         "th" : {
@@ -375580,7 +375580,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Inget av de %lld kapitlen kunde läsas"
+                  "value" : "Det enda kapitlet kunde inte läsas"
                 }
               },
               "other" : {
@@ -383496,7 +383496,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "OCR kunde inte köras på %@ av %lld sidor, så text som bara finns i deras bilder saknas: %@."
+                  "value" : "OCR kunde inte köras på %@ av %lld sida, så text som bara finns i dess bilder saknas: %@."
                 }
               },
               "other" : {
@@ -385719,7 +385719,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. Bokinformation säger att koden gissades och kan välja en annan."
+            "value" : "Bara en bok som tydligt visar English Braille, American Edition ändras när den läggs till. I Bokinformation står det att koden gissades, och där kan du välja en annan."
           }
         },
         "th" : {
@@ -400942,7 +400942,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Klistra in och anpassa stil"
+            "value" : "Klistra in och matcha stil"
           }
         },
         "th" : {
@@ -411285,7 +411285,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när Var är jag? har läst klart."
+            "value" : "Spelas upp när ”Var är jag?” har läst klart."
           }
         },
         "th" : {
@@ -411434,7 +411434,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Spelas upp när Var är jag? börjar läsa upp."
+            "value" : "Spelas upp när ”Var är jag?” börjar läsa upp."
           }
         },
         "th" : {
@@ -426985,7 +426985,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Läser bokens rubriker…"
+            "value" : "Läser in bokens rubriker…"
           }
         },
         "th" : {
@@ -445541,7 +445541,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Återställ %@ till standard"
+            "value" : "Återställ ”%@” till standard"
           }
         },
         "th" : {
@@ -478954,7 +478954,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Visa Exportera i läsarens verktygsfält"
+            "value" : "Visa ”Exportera” i läsarens verktygsfält"
           }
         },
         "th" : {
@@ -484796,7 +484796,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet för böcker med mer än en sida."
+            "value" : "Visar sidan som läses, till exempel sidan 12 av 300, bredvid procenttalet, för böcker med mer än en sida."
           }
         },
         "th" : {
@@ -510026,7 +510026,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Växla till ett biblioteks- eller bokfönster och välj sedan Exportera igen."
+            "value" : "Växla till ett biblioteks- eller bokfönster och välj sedan ”Exportera” igen."
           }
         },
         "th" : {
@@ -512118,7 +512118,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tar %1$lld till %2$lld minuter."
+            "value" : "Tar emot %1$lld till %2$lld minuter."
           }
         },
         "th" : {
@@ -512273,7 +512273,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tar %1$lld till %2$lld minuter. Retur ställer in timern och spelar upp boken."
+            "value" : "Tar emot %1$lld till %2$lld minuter. Retur ställer in timern och spelar upp boken."
           }
         },
         "th" : {
@@ -512422,7 +512422,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tar bort varje avslutad bok från listan när dess fönster går vidare eller stängs. Böcker som avslutades innan du slår på det finns kvar."
+            "value" : "Tar bort varje avslutad bok från listan när dess fönster går vidare eller stängs. Böcker som avslutades innan du slår på alternativet finns kvar."
           }
         },
         "th" : {
@@ -514961,7 +514961,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Texten uppdaterades inte: %@ har tagits bort, eller dess nedladdning har raderats, så Redigera text har stoppats för den."
+            "value" : "Texten uppdaterades inte: %@ har tagits bort, eller dess nedladdning har raderats, så ”Redigera text” har avslutats för den."
           }
         },
         "th" : {
@@ -515867,7 +515867,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Texten uppdaterades inte: den redigerade transkriptionen för %@ ändrar ett kapitels rubrik, som kommer från dess ljud. Sätt tillbaka den och spara igen; boken behåller sin gamla text tills dess."
+            "value" : "Texten uppdaterades inte: den redigerade transkriptionen för %@ ändrar ett kapitels rubrik, som kommer från dess ljud. Återställ den och spara igen; boken behåller sin gamla text tills dess."
           }
         },
         "th" : {
@@ -516320,7 +516320,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skrivs från den igen nästa gång boken öppnas."
+            "value" : "Texten uppdaterades inte: transkriptionen för %@ ändrades också. Bokens text skapas på nytt från den nästa gång boken öppnas."
           }
         },
         "th" : {
@@ -519976,7 +519976,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom den definierar egna entiteter."
+            "value" : "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom filen definierar egna entiteter."
           }
         },
         "th" : {
@@ -520131,7 +520131,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom den är skriven med teckenkodningen %@."
+            "value" : "TextMouth kan inte läsa filen ”%@” i den här boken på ett säkert sätt, eftersom filen är skriven med teckenkodningen %@."
           }
         },
         "th" : {
@@ -529871,7 +529871,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth har inte läst det senaste sparandet än."
+            "value" : "TextMouth har inte läst in den senast sparade versionen än."
           }
         },
         "th" : {
@@ -530020,7 +530020,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth har inte läst bokens rubriker än. Öppna boken en gång och exportera sedan igen."
+            "value" : "TextMouth har inte läst in bokens rubriker än. Öppna boken en gång och exportera sedan igen."
           }
         },
         "th" : {
@@ -531119,7 +531119,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth gör sig klart innan det avslutas: %@. Det avslutas när det är klart."
+            "value" : "TextMouth gör klart innan det avslutas: %@. Det avslutas när det är klart."
           }
         },
         "th" : {
@@ -539748,7 +539748,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth stoppade %1$@ eftersom %2$@ och försöker inte igen förrän TextMouth har stängts och öppnats på nytt."
+            "value" : "TextMouth stoppade %1$@ eftersom %2$@, och försöker inte igen förrän TextMouth har stängts och öppnats på nytt."
           }
         },
         "th" : {
@@ -539897,7 +539897,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth stoppade %@ tidigare eftersom det tog för lång tid och försöker inte igen förrän TextMouth har stängts och öppnats på nytt."
+            "value" : "TextMouth stoppade %@ tidigare eftersom det tog för lång tid, och försöker inte igen förrän TextMouth har stängts och öppnats på nytt."
           }
         },
         "th" : {
@@ -554907,7 +554907,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mac-datorns talmotor vägrade läsa upp en del av ”%@”, även med parenteserna tystade."
+            "value" : "Mac-datorns talmotor vägrade läsa upp en del av ”%@”, även med vinkelparenteserna tystade."
           }
         },
         "th" : {
@@ -563715,7 +563715,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bokens ljud som det var före första redigeringen, vilket TextMouth behåller så länge inställningen Originalljud är på."
+            "value" : "Bokens ljud som det var före första redigeringen, vilket TextMouth behåller så länge inställningen ”Originalljud” är på."
           }
         },
         "th" : {
@@ -566248,7 +566248,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bokens röst kan inte spelas in till en fil. Välj en annan röst med knappen %@ i läsaren och exportera sedan igen."
+            "value" : "Bokens röst kan inte spelas in till en fil. Välj en annan röst med knappen ”%@” i läsaren och exportera sedan igen."
           }
         },
         "th" : {
@@ -572977,7 +572977,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Exporten stoppades före resten."
+            "value" : "Exporten stoppades innan resten hann exporteras."
           }
         },
         "th" : {
@@ -575429,7 +575429,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Filen %@ misslyckades halvvägs."
+            "value" : "Filen %@ slutade fungera under uppspelningen."
           }
         },
         "th" : {
@@ -581176,7 +581176,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mappen innehåller %lld DAISY-böcker (%@)."
+                  "value" : "Mappen innehåller %lld DAISY-bok (%@)."
                 }
               },
               "other" : {
@@ -594762,13 +594762,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "De andra %lld kapitlen har ingen text."
+                  "value" : "Det övriga kapitlet har ingen text."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "De andra %lld kapitlen har ingen text."
+                  "value" : "De övriga %lld kapitlen har ingen text."
                 }
               }
             }
@@ -594992,7 +594992,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det andra kapitlet har ingen text."
+            "value" : "Det övriga kapitlet har ingen text."
           }
         },
         "th" : {
@@ -595445,7 +595445,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stycket som boken har det, tecken %1$@ till %2$@ i kapitel %3$@:"
+            "value" : "Stycket så som det står i boken, tecken %1$@ till %2$@ i kapitel %3$@:"
           }
         },
         "th" : {
@@ -603919,7 +603919,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Talmotorn vägrade läsa upp texten här, två gånger, så uppläsningen stoppades. Spela upp försöker igen från samma ställe."
+            "value" : "Talmotorn vägrade läsa upp texten här, två gånger, så uppläsningen stoppades. ”Spela upp” försöker igen från samma ställe."
           }
         },
         "th" : {
@@ -606309,7 +606309,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkriptionen som TextMouth behåller den, i JSON, med dess text som Markdown."
+            "value" : "Transkriptionen så som TextMouth behåller den, i JSON, med dess text som Markdown."
           }
         },
         "th" : {
@@ -609593,7 +609593,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rösten ändrade typ av ljud halvvägs genom ”%@”."
+            "value" : "Rösten ändrade typ av ljud mitt i ”%@”."
           }
         },
         "th" : {
@@ -609891,7 +609891,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rösten stannade halvvägs genom ”%@”, och TextMouth slutade vänta."
+            "value" : "Rösten stannade mitt i ”%@”, och TextMouth slutade vänta."
           }
         },
         "th" : {
@@ -618868,7 +618868,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Den här Mac-datorns punktskriftstabell ”%1$@” ändrades från liblouis %2$@ till %3$@ sedan boken lästes, så TextMouth behåller bokens text som den var."
+            "value" : "Den här Mac-datorns punktskriftstabell ”%1$@” ändrades från liblouis %2$@ till %3$@ sedan boken lästes in, så TextMouth behåller bokens text som den var."
           }
         },
         "th" : {
@@ -619023,7 +619023,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Den här Mac-datorns punktskriftstabell ”%1$@” kan ha ändrats sedan liblouis %2$@ läste boken, så TextMouth behåller bokens text som den var."
+            "value" : "Den här Mac-datorns punktskriftstabell ”%1$@” kan ha ändrats sedan liblouis %2$@ läste in boken, så TextMouth behåller bokens text som den var."
           }
         },
         "th" : {
@@ -621382,7 +621382,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Den här boken har %lld sidor, från %@ till %@."
+                  "value" : "Den här boken har %lld sida, från %@ till %@."
                 }
               },
               "other" : {
@@ -624201,7 +624201,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bokens text kan inte läsas, så den kan inte läsas upp till en ljudfil."
+            "value" : "Bokens text kan inte läsas in, så den kan inte läsas upp till en ljudfil."
           }
         },
         "th" : {
@@ -632725,7 +632725,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tid in"
+            "value" : "Starttid"
           }
         },
         "th" : {
@@ -634513,7 +634513,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Timern startad om: %@."
+            "value" : "Timern startades om: %@."
           }
         },
         "th" : {
@@ -642155,7 +642155,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transkribera den först med Transkribera ljud."
+            "value" : "Transkribera den först med ”Transkribera ljud”."
           }
         },
         "th" : {
@@ -650380,7 +650380,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv raka citattecken: i TextEdit stänger du av Smarta citattecken under Redigera, Ersättningar."
+            "value" : "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera” > ”Ersättningar”."
           }
         },
         "th" : {
@@ -672568,7 +672568,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "När det är på läses en punktskriftsfil som lästs som kortskrift i Unified English Braille men tydligt är English Braille, American Edition som den i stället."
+            "value" : "När inställningen är på läses en punktskriftsfil som tydligt är English Braille, American Edition som den koden i stället för som kortskrift i Unified English Braille."
           }
         },
         "th" : {
@@ -674958,7 +674958,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Där ljudet börjar: bokens början eller en rubrik."
+            "value" : "Var ljudet börjar: bokens början eller en rubrik."
           }
         },
         "th" : {
@@ -678453,7 +678453,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Med ”%1$@” säger Spela upp på en avslutad bok att den är avslutad; med ”%2$@” startar Spela upp den igen från början."
+            "value" : "Med ”%1$@” säger ”Spela upp” på en avslutad bok att den är avslutad; med ”%2$@” startar ”Spela upp” den igen från början."
           }
         },
         "th" : {
@@ -684729,7 +684729,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ditt bibliotek är tomt. Med Lägg till i biblioteket lägger du till en bok."
+            "value" : "Ditt bibliotek är tomt. Med ”Lägg till i biblioteket” lägger du till en bok."
           }
         },
         "th" : {
@@ -702682,7 +702682,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "den ändrar ett kapitels rubrik, som kommer från ljudet. Sätt tillbaka den och spara igen, så visas texten."
+            "value" : "den ändrar ett kapitels rubrik, som kommer från ljudet. Återställ den och spara igen, så visas texten."
           }
         },
         "th" : {
@@ -710486,7 +710486,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "manifest.json har segment, som TextMouth bara skriver för en DAISY-bok som den konverterar."
+            "value" : "manifest.json har segment, som TextMouth bara skriver vid konvertering av en DAISY-bok."
           }
         },
         "th" : {
@@ -724617,7 +724617,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "textfält använder den för redigering"
+            "value" : "textfält använder den tangenten för redigering"
           }
         },
         "th" : {
@@ -726312,7 +726312,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "punktskriftshjälpen misslyckades"
+            "value" : "hjälpprogrammet för punktskrift misslyckades"
           }
         },
         "th" : {
@@ -726461,7 +726461,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "punktskriftshjälpen stoppades eftersom %@"
+            "value" : "hjälpprogrammet för punktskrift stoppades eftersom %@"
           }
         },
         "th" : {
@@ -727951,7 +727951,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "filen %@ misslyckades halvvägs"
+            "value" : "filen %@ slutade fungera under uppspelningen"
           }
         },
         "th" : {
@@ -736554,7 +736554,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "”%1$@” är en Personlig röst, som macOS inte kan spela in till en fil. Välj en annan röst med knappen %2$@ i läsaren och exportera sedan igen."
+            "value" : "”%1$@” är en Personlig röst, som macOS inte kan spela in till en fil. Välj en annan röst med knappen ”%2$@” i läsaren och exportera sedan igen."
           }
         },
         "th" : {
