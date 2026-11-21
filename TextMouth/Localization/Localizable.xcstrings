@@ -672759,7 +672759,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "開啟時，已刪除書籍的檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原。"
+            "value" : "開啟時，已刪除書籍的檔案會移到垃圾桶，在清空垃圾桶之前都可以復原。"
           }
         }
       }
@@ -708889,7 +708889,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "其檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原"
+            "value" : "其檔案會移到垃圾桶，在清空垃圾桶之前都可以復原"
           }
         }
       }
@@ -730681,7 +730681,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它們的檔案會移到垃圾桶，在清倒垃圾桶之前都可以復原"
+            "value" : "它們的檔案會移到垃圾桶，在清空垃圾桶之前都可以復原"
           }
         }
       }
