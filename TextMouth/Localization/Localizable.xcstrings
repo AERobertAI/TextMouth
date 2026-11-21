@@ -16883,7 +16883,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ mungkin sudah keluar atau tidak berjalan."
+            "value" : "%@ mungkin sudah keluar dari akun atau tidak berjalan."
           }
         },
         "it" : {
@@ -24159,7 +24159,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ tidak diunduh"
+            "value" : "%@ gagal diunduh"
           }
         },
         "it" : {
@@ -52370,7 +52370,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld buku tidak diunduh: %@"
+                  "value" : "%lld buku gagal diunduh: %@"
                 }
               }
             }
@@ -102016,7 +102016,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tambah langkah gestur"
+            "value" : "Tambah langkah gerakan"
           }
         },
         "it" : {
@@ -112994,7 +112994,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Menambahkan langkah baru di akhir urutan gestur."
+            "value" : "Menambahkan langkah baru di akhir urutan gerakan."
           }
         },
         "it" : {
@@ -151029,7 +151029,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Memilih tanpa kontrol per buku, satu pemilih bersama, atau menu dengan pemilih maju dan mundur terpisah."
+            "value" : "Memilih antara tidak ada kontrol per buku, satu pemilih bersama, atau menu dengan pemilih maju dan mundur yang terpisah."
           }
         },
         "it" : {
@@ -167231,7 +167231,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salin semua data TextMouth ke %@, validasi, dan gunakan lokasi baru?"
+            "value" : "Salin semua data TextMouth ke %@, validasikan, dan gunakan lokasi baru?"
           }
         },
         "it" : {
@@ -621794,7 +621794,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jika tidak ada kata mereka yang tersisa, %@, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang sama dalam kedua pembacaan."
+            "value" : "Jika kata-katanya tidak tersisa lagi, %@, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang ada di kedua pembacaan."
           }
         },
         "it" : {
@@ -621931,7 +621931,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jika tidak ada kata mereka yang tersisa, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang sama dalam kedua pembacaan."
+            "value" : "Jika kata-katanya tidak tersisa lagi, masing-masing berpindah ke titik yang kira-kira sama di babnya, atau ke bagian terdekat yang ada di kedua pembacaan."
           }
         },
         "it" : {
@@ -625984,7 +625984,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dengan Pindahkan Isi Keluar, folder feed ikut dipindahkan bersama yang lain."
+            "value" : "Dengan Pindahkan Isi ke Luar, folder feed ikut dipindahkan bersama yang lain."
           }
         },
         "it" : {
@@ -626121,7 +626121,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dengan Pindahkan Isi Keluar, folder mereka ikut dipindahkan bersama yang lain."
+            "value" : "Dengan Pindahkan Isi ke Luar, folder feed tersebut ikut dipindahkan bersama yang lain."
           }
         },
         "it" : {
@@ -626258,7 +626258,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dengan Pindahkan Isi Keluar, semuanya tetap berada di pustaka dan hanya folder yang dihapus."
+            "value" : "Dengan Pindahkan Isi ke Luar, semuanya tetap berada di pustaka dan hanya folder yang dihapus."
           }
         },
         "it" : {
@@ -666401,7 +666401,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "sehingga tidak ada yang di %@ dibandingkan."
+            "value" : "sehingga tidak ada apa pun di %@ yang dibandingkan."
           }
         },
         "it" : {
