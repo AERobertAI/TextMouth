@@ -5231,7 +5231,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie można odczytać %1$@: %2$@"
+            "value" : "Nie można odczytać pliku %1$@: %2$@"
           }
         },
         "pt-BR" : {
@@ -28087,25 +28087,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki z jego wnętrza."
+                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki znajdujące się w środku."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książek z jego wnętrza."
+                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książek znajdujących się w środku."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książka z jego wnętrza."
+                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książka znajdująca się w środku."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki z jego wnętrza."
+                  "value" : "Z biblioteki zostaną usunięte: %1$@, wszystkie podfoldery oraz %2$lld książki znajdujące się w środku."
                 }
               }
             }
@@ -64733,25 +64733,25 @@
               "few" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic."
+                  "value" : "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic."
                 }
               },
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic."
+                  "value" : "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %lld pliku, więc w porównaniu mogą brakować różnic."
+                  "value" : "Nie udało się odczytać %lld pliku, więc w porównaniu może brakować różnic."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nie udało się odczytać %lld plików, więc w porównaniu mogą brakować różnic."
+                  "value" : "Nie udało się odczytać %lld plików, więc w porównaniu może brakować różnic."
                 }
               }
             }
@@ -127911,7 +127911,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Książka tylko w: %1$@. %2$@."
+            "value" : "Książka tylko w: %1$@ – %2$@."
           }
         },
         "pt-BR" : {
@@ -135737,7 +135737,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Anuluj nowy folder"
+            "value" : "Anuluj tworzenie folderu"
           }
         },
         "pt-BR" : {
@@ -275224,7 +275224,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pozycja czytania, zakładki i transkrypcja, jeśli istnieje, zostają zachowane, a pobrany plik można pobrać ponownie."
+            "value" : "Pozycja czytania, zakładki i transkrypcja, jeśli istnieje, zostają zachowane, a plik można pobrać ponownie."
           }
         },
         "pt-BR" : {
