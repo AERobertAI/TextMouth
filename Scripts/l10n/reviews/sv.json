@@ -671,6 +671,627 @@
      "why": "natural: 'molndrivenhet' is not a Swedish word; the cloud service's own command"
     }
    ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ finns i ditt bibliotek, utan prenumeration. Välj %2$@ på flödets rad, eller i dess %3$@, för att kontrollera dem igen.",
+     "after": "%1$@ finns i ditt bibliotek, utan prenumeration. Välj %2$@ på ett flödes rad, eller i dess %3$@, för att kontrollera det igen.",
+     "why": "meaning: the choice on one feed’s row checks that feed (it), not all of them (dem), and “flödets rad” named no feed"
+    },
+    {
+     "key": "%@ failed: %@",
+     "english": "%1$@ failed: %2$@",
+     "before": "Misslyckades vid steget %1$@: %2$@",
+     "after": "Steget ”%1$@” misslyckades: %2$@",
+     "why": "grammar: the step is a capitalized verb phrase (“Läser dess text”), so it reads as a quoted step name, not mid-sentence after “vid steget”"
+    },
+    {
+     "key": "%lld edits are undone. Redo brings them back until you make another edit.",
+     "english": {
+      "one": "%lld edit is undone. Redo brings them back until you make another edit.",
+      "other": "%lld edits are undone. Redo brings them back until you make another edit."
+     },
+     "before": {
+      "one": "%lld redigering är ogjord. Gör om tar tillbaka den tills du gör en ny redigering.",
+      "other": "%lld redigeringar är ogjorda. Gör om tar tillbaka dem tills du gör en ny redigering."
+     },
+     "after": {
+      "one": "%lld redigering har ångrats. Gör om kan återställa den tills du gör en ny redigering.",
+      "other": "%lld redigeringar har ångrats. Gör om kan återställa dem tills du gör en ny redigering."
+     },
+     "why": "natural: an undone edit “har ångrats” (Apple’s Ångra), and “tar tillbaka” reads as retract; Redo restores it"
+    },
+    {
+     "key": "%lld were subscribed already.",
+     "english": {
+      "one": "%lld was subscribed already.",
+      "other": "%lld were subscribed already."
+     },
+     "before": {
+      "one": "%lld prenumererades redan på.",
+      "other": "%lld prenumererades redan på."
+     },
+     "after": {
+      "one": "%lld fanns redan bland dina prenumerationer.",
+      "other": "%lld fanns redan bland dina prenumerationer."
+     },
+     "why": "natural: “%lld prenumererades redan på” is a broken stranded-preposition passive; says the feeds were already among the subscriptions"
+    },
+    {
+     "key": "After an automatic refresh, a notification names each feed with new episodes and articles",
+     "english": "After an automatic refresh, a notification names each feed with new episodes and articles",
+     "before": "Efter en automatisk uppdatering nämns varje flöde med nya avsnitt och artiklar i en avisering.",
+     "after": "Efter en automatisk uppdatering nämner en notis varje flöde med nya avsnitt och artiklar.",
+     "why": "term: Apple’s Swedish calls a notification “notis” (Notiser), not “avisering”; active voice reads more simply"
+    },
+    {
+     "key": "Already at the end.",
+     "english": "Already at the end.",
+     "before": "Redan vid slutet.",
+     "after": "Redan i slutet.",
+     "why": "natural: Swedish says “i slutet”, not “vid slutet”, for being at the end"
+    },
+    {
+     "key": "Already at the start.",
+     "english": "Already at the start.",
+     "before": "Redan vid början.",
+     "after": "Redan i början.",
+     "why": "natural: Swedish says “i början”, not “vid början”, for being at the start"
+    },
+    {
+     "key": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "english": "Asks after each audiobook import whether to transcribe it. Off, audiobooks are transcribed only with Transcribe Audio.",
+     "before": "Frågar efter varje ljudboksimport om den ska transkriberas. Om den är av transkriberas ljudböcker bara med Transkribera ljud.",
+     "after": "Frågar efter varje import av en ljudbok om den ska transkriberas. När det här är avstängt transkriberas ljudböcker bara med Transkribera ljud.",
+     "why": "grammar: “Om den är av” points at the audiobook or the import, not the switch, and “den” after “ljudboksimport” had no clear noun"
+    },
+    {
+     "key": "Checking the feed won't bring it back.",
+     "english": "Checking the feed won't bring it back.",
+     "before": "Att kontrollera flödet igen tar inte tillbaka det.",
+     "after": "Det går inte att få tillbaka genom att kontrollera flödet igen.",
+     "why": "meaning: “ta tillbaka” means retract, not bring back; the new wording also avoids a pronoun whose gender differs for episode and article"
+    },
+    {
+     "key": "Checks every subscribed feed and says what came",
+     "english": "Checks every subscribed feed and says what came",
+     "before": "Kontrollerar alla flöden du prenumererar på och säger vad som kom in.",
+     "after": "Kontrollerar alla flöden du prenumererar på och berättar vad som är nytt.",
+     "why": "natural: “säger vad som kom in” is a literal copy of “says what came”"
+    },
+    {
+     "key": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "english": "Choose an OPML file of subscriptions, as another feed reader exports them.",
+     "before": "Välj en OPML-fil med prenumerationer, som en annan flödesläsare exporterar dem.",
+     "after": "Välj en OPML-fil med prenumerationer, till exempel en som en annan flödesläsare har exporterat.",
+     "why": "grammar: “som en annan flödesläsare exporterar dem” reads as a broken relative clause"
+    },
+    {
+     "key": "Closing ends the recording. %@ saves it as an audiobook, %@ deletes it, and %@ keeps recording.",
+     "english": "Closing ends the recording. %1$@ saves it as an audiobook, %2$@ deletes it, and %3$@ keeps recording.",
+     "before": "Stängning avslutar inspelningen. %1$@ sparar den som en ljudbok, %2$@ raderar den och %3$@ fortsätter spela in.",
+     "after": "Om du stänger fönstret avslutas inspelningen. %1$@ sparar den som en ljudbok, %2$@ raderar den och %3$@ fortsätter spela in.",
+     "why": "natural: the noun “Stängning” as a subject is stiff; Swedish says “Om du stänger fönstret”"
+    },
+    {
+     "key": "Converting audio: %@ of “%@”",
+     "english": "Converting audio: %1$@ of “%2$@”",
+     "before": "Konverterar ljud: %1$@ av ”%2$@”",
+     "after": "Konverterar ljud: %1$@ i ”%2$@”",
+     "why": "natural: “12 av 176 spår av ”titel”” doubles av; the tracks are in the book"
+    },
+    {
+     "key": "Duplicate Book Found",
+     "english": "Duplicate Book Found",
+     "before": "Dubblettbok hittades",
+     "after": "Dubblett hittades",
+     "why": "natural: “Dubblettbok” is an unusual coinage; “Dubblett hittades” is the plain title"
+    },
+    {
+     "key": "Edits one track at a time, listed by chapter name.",
+     "english": "Edits one track at a time, listed by chapter name.",
+     "before": "Redigerar ett spår i taget, listade efter kapitelnamn.",
+     "after": "Redigerar ett spår i taget; spåren listas efter kapitelnamn.",
+     "why": "grammar: the plural “listade” cannot agree with “ett spår”; the tracks are what is listed"
+    },
+    {
+     "key": "Every article listed, downloads by hand",
+     "english": "Every article listed, downloads by hand",
+     "before": "Alla artiklar listade, hämtning för hand",
+     "after": "Alla artiklar listade, manuell hämtning",
+     "why": "natural: “hämtning för hand” copies “by hand”; Apple’s Swedish says manuell/manuellt for such choices"
+    },
+    {
+     "key": "Every episode listed, downloads by hand",
+     "english": "Every episode listed, downloads by hand",
+     "before": "Alla avsnitt listade, hämtning för hand",
+     "after": "Alla avsnitt listade, manuell hämtning",
+     "why": "natural: “hämtning för hand” copies “by hand”; Apple’s Swedish says manuell/manuellt for such choices"
+    },
+    {
+     "key": "Every item listed, downloads by hand",
+     "english": "Every item listed, downloads by hand",
+     "before": "Alla objekt listade, hämtning för hand",
+     "after": "Alla objekt listade, manuell hämtning",
+     "why": "natural: “hämtning för hand” copies “by hand”; Apple’s Swedish says manuell/manuellt for such choices"
+    },
+    {
+     "key": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "english": "Experimental. These rules correct words the recognizer writes differently from books read aloud. Check the changes before you apply them; Undo Cleanup puts the transcript back.",
+     "before": "Experimentell. Reglerna rättar ord som igenkänningen skriver annorlunda än i upplästa böcker. Kontrollera ändringarna innan du tillämpar dem. Ångra uppstädning lägger tillbaka transkriptionen.",
+     "after": "Experimentell. Reglerna rättar ord som igenkänningen skriver annorlunda än i upplästa böcker. Kontrollera ändringarna innan du tillämpar dem; Ångra uppstädning återställer transkriptionen.",
+     "why": "natural: “lägger tillbaka transkriptionen” copies “puts back”; the command restores (återställer) it, and the semicolon stays as in the English"
+    },
+    {
+     "key": "Getting ready to record",
+     "english": "Getting ready to record",
+     "before": "Gör sig redo att spela in",
+     "after": "Förbereder inspelning",
+     "why": "natural: “Gör sig redo att spela in” copies “getting ready”; a status line says “Förbereder”"
+    },
+    {
+     "key": "Imports a folder holding a DAISY book or audio tracks as one book.",
+     "english": "Imports a folder holding a DAISY book or audio tracks as one book.",
+     "before": "Importerar en mapp som innehåller en DAISY-bok eller ljudspår som en bok.",
+     "after": "Importerar en mapp med en DAISY-bok eller ljudspår som en enda bok.",
+     "why": "natural: “ljudspår som en bok” could be heard as a relative clause; “som en enda bok” says as one book"
+    },
+    {
+     "key": "Inserts a silence of a length you type at the cursor.",
+     "english": "Inserts a silence of a length you type at the cursor.",
+     "before": "Infogar en tystnad av en längd som du skriver vid markören.",
+     "after": "Infogar vid markören en tystnad med den längd du skriver.",
+     "why": "natural: “som du skriver vid markören” said you type at the cursor; the silence goes there"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Det raderar %@: det flyttas till papperskorgen, där du kan återställa det tills papperskorgen töms.",
+     "after": "Det raderar %@, som flyttas till papperskorgen och kan återställas tills papperskorgen töms.",
+     "why": "grammar: the pronoun “det” is wrong for a common-gender item (artikel, läsposition); a “som” clause fits every item"
+    },
+    {
+     "key": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "english": "It deletes %@: it is deleted permanently and cannot be recovered.",
+     "before": "Det raderar %@: det raderas permanent och kan inte återställas.",
+     "after": "Det raderar %@ permanent, och det går inte att återställa.",
+     "why": "grammar: the pronoun “det” is wrong for a common-gender item; the impersonal “det går inte att” fits every item"
+    },
+    {
+     "key": "It deletes %@: it stays in the TextMouth library folder.",
+     "english": "It deletes %@: it stays in the TextMouth library folder.",
+     "before": "Det raderar %@: det finns kvar i biblioteksmappen för TextMouth.",
+     "after": "Det raderar %@, som finns kvar i biblioteksmappen för TextMouth.",
+     "why": "grammar: the pronoun “det” is wrong for a common-gender item; a “som” clause fits every item"
+    },
+    {
+     "key": "It lists no audio track with a start that TextMouth can read.",
+     "english": "It lists no audio track with a start that TextMouth can read.",
+     "before": "Den listar inget ljudspår med en start som TextMouth kan läsa.",
+     "after": "Den listar inget ljudspår med en starttid som TextMouth kan läsa.",
+     "why": "natural: a cue sheet gives each track a start time (starttid), not “en start”"
+    },
+    {
+     "key": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "english": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "before": "Dess fil heter nu ”%@”, eftersom TextMouth inte kan skriva dess gamla format.",
+     "after": "Filen heter nu ”%@”, eftersom TextMouth inte kan skriva det gamla formatet.",
+     "why": "natural: two “dess” copy the English “its”; Swedish uses the definite form"
+    },
+    {
+     "key": "Kept",
+     "english": "Kept",
+     "before": "Behållet",
+     "after": "Behålls",
+     "why": "natural: “Behållet” is an odd status word, and its pair “Not kept” reads “Behålls inte”"
+    },
+    {
+     "key": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "english": "Leaves the audiobook untranscribed; Transcribe Audio does it later.",
+     "before": "Lämnar ljudboken utan transkription. Transkribera ljud gör det senare.",
+     "after": "Lämnar ljudboken utan transkription; Transkribera ljud kan göra det senare.",
+     "why": "natural: “gör det senare” says it happens by itself; the command can do it later, and the semicolon stays"
+    },
+    {
+     "key": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "english": "Makes these corrections. The transcript from before is kept, so Undo Cleanup can put it back.",
+     "before": "Gör de här rättelserna. Transkriptionen från före sparas, så Ångra uppstädning kan lägga tillbaka den.",
+     "after": "Gör de här rättelserna. Den tidigare transkriptionen sparas, så Ångra uppstädning kan återställa den.",
+     "why": "grammar: “Transkriptionen från före” is broken; “lägga tillbaka” copies “put back”"
+    },
+    {
+     "key": "No feed was subscribed to.",
+     "english": "No feed was subscribed to.",
+     "before": "Inget flöde prenumererades på.",
+     "after": "Ingen ny prenumeration lades till.",
+     "why": "natural: “Inget flöde prenumererades på” is a stranded-preposition passive; says no subscription was added"
+    },
+    {
+     "key": "No sound from %@. Check that the microphone is on and not muted.",
+     "english": "No sound from %@. Check that the microphone is on and not muted.",
+     "before": "Inget ljud från %@. Kontrollera att mikrofonen är på och inte avstängd.",
+     "after": "Inget ljud från %@. Kontrollera att mikrofonen är påslagen och att ljudet inte är avstängt.",
+     "why": "meaning: “på och inte avstängd” reads “on and not off”; muted is “ljudet avstängt”"
+    },
+    {
+     "key": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "english": "Not in the book's audio yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit.",
+     "before": "Finns inte i bokens ljud än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering.",
+     "after": "Finns inte i bokens ljud än. Kassera ångrar dem; nästa gång du redigerar den här boken kan Gör om återställa dem tills du gör en ny redigering.",
+     "why": "meaning: “Gör om tar tillbaka dem” reads as Redo retracting them; Redo restores (återställer) them"
+    },
+    {
+     "key": "Opens its book in your library",
+     "english": "Opens its book in your library",
+     "before": "Öppnar dess bok i ditt bibliotek.",
+     "after": "Öppnar boken i ditt bibliotek.",
+     "why": "natural: “dess bok” copies “its book”; Swedish uses the definite form"
+    },
+    {
+     "key": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "english": "Opens your copy of the rules, transcript-cleanup.json, in your text editor, made from TextMouth's own rules the first time. Changes apply when you return to TextMouth.",
+     "before": "Öppnar din kopia av reglerna, transcript-cleanup.json, i din textredigerare. Den görs första gången av TextMouths egna regler. Ändringar börjar gälla när du återvänder till TextMouth.",
+     "after": "Öppnar din kopia av reglerna, transcript-cleanup.json, i din textredigerare. Första gången skapas den utifrån de inbyggda reglerna i TextMouth. Ändringar börjar gälla när du återvänder till TextMouth.",
+     "why": "natural: “Den görs första gången av” reads as made by the rules, not from them"
+    },
+    {
+     "key": "Post a notification for each feed with new episodes",
+     "english": "Post a notification for each feed with new episodes",
+     "before": "Skicka en avisering för varje flöde med nya avsnitt",
+     "after": "Skicka en notis för varje flöde med nya avsnitt",
+     "why": "term: Apple’s Swedish calls a notification “notis” (Notiser), not “avisering”"
+    },
+    {
+     "key": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "english": "Puts back TextMouth's premade presets, removing the ones you added.",
+     "before": "Lägger tillbaka TextMouths färdiga förinställningar och tar bort de du har lagt till.",
+     "after": "Återställer de färdiga förinställningarna i TextMouth och tar bort dem som du har lagt till.",
+     "why": "grammar: the object pronoun is “dem”, not “de”; “Lägger tillbaka” copies “puts back” where Swedish says återställer"
+    },
+    {
+     "key": "Puts back the transcript as it was before the last cleanup.",
+     "english": "Puts back the transcript as it was before the last cleanup.",
+     "before": "Lägger tillbaka transkriptionen som den var före den senaste uppstädningen.",
+     "after": "Återställer transkriptionen som den var före den senaste uppstädningen.",
+     "why": "natural: “Lägger tillbaka” copies “puts back”; Swedish says återställer"
+    },
+    {
+     "key": "Putting back the transcript from before…",
+     "english": "Putting back the transcript from before…",
+     "before": "Lägger tillbaka den tidigare transkriptionen…",
+     "after": "Återställer den tidigare transkriptionen…",
+     "why": "natural: “Lägger tillbaka” copies “putting back”; Swedish says återställer"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "Spelar in över markeringen eller vid markören, efter ett pip. Igen, eller Stoppa, avslutar inspelningen.",
+     "after": "Spelar in över markeringen eller vid markören, efter ett pip. Samma kommando igen, eller Stoppa, avslutar inspelningen.",
+     "why": "grammar: “Igen” cannot be a subject; “Samma kommando igen” says choosing it again"
+    },
+    {
+     "key": "Refresh feeds every",
+     "english": "Refresh feeds every",
+     "before": "Uppdatera flöden var",
+     "after": "Uppdateringsintervall",
+     "why": "grammar: the caption reads “label: 6 timmar”, and “Uppdatera flöden var: 6 timmar” cannot work (Swedish says “var 6:e timme”); a noun label fits every value and the off phrase"
+    },
+    {
+     "key": "Remove Rumble",
+     "english": "Remove Rumble",
+     "before": "Ta bort dån",
+     "after": "Ta bort muller",
+     "why": "term: low rumble in audio is “muller”; “dån” is a roar"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "one": "Återgick till originalljudet. Gör om tar tillbaka %lld redigering.",
+      "other": "Återgick till originalljudet. Gör om tar tillbaka %lld redigeringar."
+     },
+     "after": {
+      "one": "Återgick till originalljudet. Gör om kan återställa %lld redigering.",
+      "other": "Återgick till originalljudet. Gör om kan återställa %lld redigeringar."
+     },
+     "why": "meaning: “Gör om tar tillbaka” reads as Redo retracting the edits; Redo restores (återställer) them"
+    },
+    {
+     "key": "Save your subscriptions as an OPML file, which other feed readers import.",
+     "english": "Save your subscriptions as an OPML file, which other feed readers import.",
+     "before": "Spara dina prenumerationer som en OPML-fil, som andra flödesläsare importerar.",
+     "after": "Spara dina prenumerationer som en OPML-fil, som andra flödesläsare kan importera.",
+     "why": "natural: “som andra flödesläsare importerar” states a fact; the sense is that they can import it"
+    },
+    {
+     "key": "Selected the %@ before chapter 1.",
+     "english": "Selected the %@ before chapter 1.",
+     "before": "Markerade de %@ före kapitel 1.",
+     "after": "Markerade ljudet före kapitel 1, %@.",
+     "why": "grammar: “de 3 minuter” needs the definite form after “de”, which a duration placeholder cannot give"
+    },
+    {
+     "key": "Set Chapter Marker",
+     "english": "Set Chapter Marker",
+     "before": "Ange kapitelmärke",
+     "after": "Sätt kapitelmärke",
+     "why": "natural: “Ange” means specify; a marker is placed (sätts), as the announcement “sattes vid” already says"
+    },
+    {
+     "key": "Sets a chapter marker at the cursor, with a title you type.",
+     "english": "Sets a chapter marker at the cursor, with a title you type.",
+     "before": "Anger ett kapitelmärke vid markören, med en titel som du skriver.",
+     "after": "Sätter ett kapitelmärke vid markören, med en titel som du skriver.",
+     "why": "natural: “Anger” means specifies; a marker is placed (sätts)"
+    },
+    {
+     "key": "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted.",
+     "english": "TextMouth couldn't save the library before deleting the feed “%@”, so nothing was deleted.",
+     "before": "TextMouth kunde inte spara biblioteket innan flödet ”%@” raderades, så ingenting raderades.",
+     "after": "TextMouth kunde inte spara biblioteket innan flödet ”%@” skulle raderas, så ingenting raderades.",
+     "why": "meaning: “innan flödet raderades” says the feed was deleted, which the sentence then denies"
+    },
+    {
+     "key": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "english": "TextMouth is quitting and the book's audio doesn't hold these edits yet. Discard undoes them; next time you edit this book, Redo brings them back until you make another edit. Cancel keeps TextMouth open.",
+     "before": "TextMouth avslutas och bokens ljud innehåller inte de här redigeringarna än. Kassera ångrar dem. Nästa gång du redigerar den här boken tar Gör om tillbaka dem tills du gör en ny redigering. Avbryt håller TextMouth öppet.",
+     "after": "TextMouth avslutas och bokens ljud innehåller inte de här redigeringarna än. Kassera ångrar dem; nästa gång du redigerar den här boken kan Gör om återställa dem tills du gör en ny redigering. Avbryt håller TextMouth öppet.",
+     "why": "meaning: “Gör om tar tillbaka” reads as Redo retracting the edits; Redo restores (återställer) them"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth utför fortfarande ditt senaste svar. Vänta tills det är klart.",
+     "after": "TextMouth arbetar fortfarande med ditt senaste svar. Vänta tills det är klart.",
+     "why": "natural: one does not “utföra” an answer; “arbetar med” is the idiom"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth får inte skicka aviseringar. Slå på dem i Systeminställningar, Aviseringar, TextMouth.",
+     "after": "TextMouth får inte skicka notiser. Slå på dem i Systeminställningar, Notiser, TextMouth.",
+     "why": "term: the System Settings pane is “Notiser” in Apple’s Swedish, so the path must name it; “aviseringar” is not on the screen"
+    },
+    {
+     "key": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
+     "english": "TextMouth's converter could not make itself safe before reading “%@”, so it did not read the file.",
+     "before": "Konverteraren i TextMouth kunde inte göra sig säker innan den läste ”%@”, så den läste inte filen.",
+     "after": "Konverteraren i TextMouth kunde inte isolera sig innan den läste ”%@”, så den läste inte filen.",
+     "why": "natural: “göra sig säker” reads as “make sure of itself”; the converter confines (isolates) itself"
+    },
+    {
+     "key": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "english": "TextMouth's converter stopped before the end of “%@”, so it could not be imported.",
+     "before": "Konverteraren i TextMouth stoppade före slutet av ”%@”, så den kunde inte importeras.",
+     "after": "Konverteraren i TextMouth avslutades före slutet av ”%@”, så filen kunde inte importeras.",
+     "why": "natural: intransitive “stoppade” is colloquial, and “den kunde inte importeras” could mean the converter"
+    },
+    {
+     "key": "TextMouth's converter stopped unexpectedly while reading “%@”. The file may be damaged.",
+     "english": "TextMouth's converter stopped unexpectedly while reading “%@”. The file may be damaged.",
+     "before": "Konverteraren i TextMouth stoppade oväntat under läsningen av ”%@”. Filen kan vara skadad.",
+     "after": "Konverteraren i TextMouth avslutades oväntat under läsningen av ”%@”. Filen kan vara skadad.",
+     "why": "term: Apple’s Swedish says a process “avslutades oväntat”; intransitive “stoppade” is colloquial"
+    },
+    {
+     "key": "The %lld markers are deleted, and Redo doesn't bring them back.",
+     "english": {
+      "one": "The marker is deleted, and Redo doesn't bring it back.",
+      "other": "The %lld markers are deleted, and Redo doesn't bring them back."
+     },
+     "before": {
+      "one": "Ljudmärket raderas, och Gör om tar inte tillbaka det.",
+      "other": "De %lld ljudmärkena raderas, och Gör om tar inte tillbaka dem."
+     },
+     "after": {
+      "one": "Ljudmärket raderas, och Gör om återställer det inte.",
+      "other": "De %lld ljudmärkena raderas, och Gör om återställer dem inte."
+     },
+     "why": "meaning: “Gör om tar tillbaka” reads as Redo retracting the edits; Redo restores (återställer) them"
+    },
+    {
+     "key": "The audiobook's audio, your place, and your bookmarks stay as they are.",
+     "english": "The audiobook's audio, your place, and your bookmarks stay as they are.",
+     "before": "Ljudbokens ljud, din position och dina bokmärken förblir som de är.",
+     "after": "Ljudbokens ljud, din läsposition och dina bokmärken förblir som de är.",
+     "why": "term: the listener’s place is “läsposition” everywhere else (glossary Reading Position)"
+    },
+    {
+     "key": "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.",
+     "english": "The book's text has changes TextMouth couldn't copy, so it leaves the text as it is.",
+     "before": "Bokens text har ändringar som TextMouth inte kunde kopiera, så den lämnar texten som den är.",
+     "after": "Bokens text har ändringar som TextMouth inte kunde kopiera, så texten lämnas som den är.",
+     "why": "natural: in “så den lämnar texten som den är” the two “den” point at different things"
+    },
+    {
+     "key": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "english": "The book's text is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "before": "Bokens text finns bara i iCloud, så TextMouth lämnar den. Hämta boken och försök sedan igen.",
+     "after": "Bokens text finns bara i iCloud, så TextMouth låter den vara. Hämta boken och försök sedan igen.",
+     "why": "natural: “TextMouth lämnar den” says it abandons it; “låter den vara” says it leaves it alone"
+    },
+    {
+     "key": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "english": "The cue sheet “%@” names none of the audio beside it, so its headings were not used.",
+     "before": "CUE-filen ”%@” anger inget av ljudet bredvid den, så dess rubriker användes inte.",
+     "after": "CUE-filen ”%@” anger ingen av ljudfilerna bredvid den, så dess rubriker användes inte.",
+     "why": "natural: “inget av ljudet” counts uncountable audio; the cue sheet names files"
+    },
+    {
+     "key": "The feed “%@” stays with it.",
+     "english": "The feed “%@” stays with it.",
+     "before": "Flödet ”%@” finns kvar med det.",
+     "after": "Flödet ”%@” finns också kvar.",
+     "why": "natural: “finns kvar med det” is not idiomatic, and “det” mismatches an article; “också” says the feed stays with the item"
+    },
+    {
+     "key": "The feed “%@” stays with them.",
+     "english": "The feed “%@” stays with them.",
+     "before": "Flödet ”%@” finns kvar med dem.",
+     "after": "Flödet ”%@” finns också kvar.",
+     "why": "natural: “finns kvar med dem” is not idiomatic; “också” says the feed stays with the items"
+    },
+    {
+     "key": "The library folder the recording is saved in.",
+     "english": "The library folder the recording is saved in.",
+     "before": "Bibliotekets mapp som inspelningen sparas i.",
+     "after": "Biblioteksmappen som inspelningen sparas i.",
+     "why": "term: a folder in the library is a “biblioteksmapp” everywhere else, not “bibliotekets mapp”"
+    },
+    {
+     "key": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "english": "The transcript is only in iCloud, so TextMouth leaves it. Download the book, then try again.",
+     "before": "Transkriptionen finns bara i iCloud, så TextMouth lämnar den. Hämta boken och försök sedan igen.",
+     "after": "Transkriptionen finns bara i iCloud, så TextMouth låter den vara. Hämta boken och försök sedan igen.",
+     "why": "natural: “TextMouth lämnar den” says it abandons it; “låter den vara” says it leaves it alone"
+    },
+    {
+     "key": "There is not enough free disk space to convert %@: it needs %@ free.",
+     "english": "There is not enough free disk space to convert %1$@: it needs %2$@ free.",
+     "before": "Det finns inte tillräckligt med ledigt diskutrymme för att konvertera %1$@: det behöver %2$@ ledigt.",
+     "after": "Det finns inte tillräckligt med ledigt diskutrymme för att konvertera %1$@: det behövs %2$@ ledigt.",
+     "why": "grammar: “det behöver” makes the file (common gender, “filen”) a neuter subject; the impersonal “det behövs” fits"
+    },
+    {
+     "key": "Time to transcribe: %@.",
+     "english": "Time to transcribe: %@.",
+     "before": "Tid att transkribera: %@.",
+     "after": "Tid för transkribering: %@.",
+     "why": "natural: “Tid att transkribera” reads as “time to transcribe now”; the line is an estimate"
+    },
+    {
+     "key": "Time to transcribe: not known yet.",
+     "english": "Time to transcribe: not known yet.",
+     "before": "Tid att transkribera: inte känd än.",
+     "after": "Tid för transkribering: inte känd än.",
+     "why": "natural: “Tid att transkribera” reads as “time to transcribe now”; the line is an estimate"
+    },
+    {
+     "key": "Undo Cleanup puts back the transcript from before.",
+     "english": "Undo Cleanup puts back the transcript from before.",
+     "before": "Ångra uppstädning lägger tillbaka transkriptionen från före.",
+     "after": "Ångra uppstädning återställer den tidigare transkriptionen.",
+     "why": "grammar: “transkriptionen från före” ends in a bare preposition; “lägger tillbaka” copies “puts back”"
+    },
+    {
+     "key": "Undo or redo back to the audio as last saved.",
+     "english": "Undo or redo back to the audio as last saved.",
+     "before": "Ångra eller gör om tillbaka till ljudet som det senast sparades.",
+     "after": "Ångra eller gör om tills ljudet är som när det senast sparades.",
+     "why": "natural: “gör om tillbaka till ljudet” copies the English; the steps go until the audio is as last saved"
+    },
+    {
+     "key": "Undoes every edit, back to the original; Redo brings them back.",
+     "english": "Undoes every edit, back to the original; Redo brings them back.",
+     "before": "Ångrar varje redigering, tillbaka till originalet. Gör om tar tillbaka dem.",
+     "after": "Ångrar varje redigering, tillbaka till originalet; Gör om återställer dem.",
+     "why": "meaning: “Gör om tar tillbaka dem” reads as Redo retracting them; Redo restores them, and the semicolon stays"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya artiklar%2$@.",
+     "after": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya artiklar%2$@.",
+     "why": "grammar: “den” points at “prenumerationen”, not the feed (neuter); naming “flödet” fixes it"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya avsnitt%2$@.",
+     "after": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya avsnitt%2$@.",
+     "why": "grammar: “den” points at “prenumerationen”, not the feed (neuter); naming “flödet” fixes it"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar den inte längre efter nya objekt%2$@.",
+     "after": "Prenumerationen på %1$@ är avslutad: TextMouth kontrollerar inte längre flödet efter nya objekt%2$@.",
+     "why": "grammar: “den” points at “prenumerationen”, not the feed (neuter); naming “flödet” fixes it"
+    },
+    {
+     "key": "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded.",
+     "english": "VoiceOver speaks the level while recording. Over speakers, its speech can be recorded.",
+     "before": "VoiceOver läser upp nivån under inspelning. Över högtalare kan dess tal spelas in.",
+     "after": "VoiceOver läser upp nivån under inspelning. Om du använder högtalare kan talet spelas in.",
+     "why": "natural: “Över högtalare kan dess tal” copies “Over speakers, its speech”"
+    },
+    {
+     "key": "converting its DAISY audio",
+     "english": "converting its DAISY audio",
+     "before": "konverterar dess DAISY-ljud",
+     "after": "konverterar DAISY-ljudet",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
+    },
+    {
+     "key": "converting its audio",
+     "english": "converting its audio",
+     "before": "konverterar dess ljud",
+     "after": "konverterar ljudet",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
+    },
+    {
+     "key": "creating its package",
+     "english": "creating its package",
+     "before": "skapar dess paket",
+     "after": "skapar paketet",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
+    },
+    {
+     "key": "deleting its download",
+     "english": "deleting its download",
+     "before": "att radera dess nedladdning",
+     "after": "att radera nedladdningen",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form"
+    },
+    {
+     "key": "is being transcribed, and %@ now would lose the transcript",
+     "english": "is being transcribed, and %@ now would lose the transcript",
+     "before": "transkriberas, och %@ nu skulle förlora transkriptionen",
+     "after": "transkriberas, och %@ nu skulle göra att transkriptionen går förlorad",
+     "why": "grammar: “förlora” needs the one who loses as its subject, not an action; the transcript “går förlorad”"
+    },
+    {
+     "key": "reading its audio",
+     "english": "reading its audio",
+     "before": "läser dess ljud",
+     "after": "läser ljudet",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
+    },
+    {
+     "key": "reading its manifest",
+     "english": "reading its manifest",
+     "before": "läser dess manifest",
+     "after": "läser manifestet",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
+    },
+    {
+     "key": "reading its text",
+     "english": "reading its text",
+     "before": "läser dess text",
+     "after": "läser texten",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
+    },
+    {
+     "key": "saving its bookInfo.json file",
+     "english": "saving its bookInfo.json file",
+     "before": "sparar dess bookInfo.json-fil",
+     "after": "sparar filen bookInfo.json",
+     "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
+    }
+   ]
   }
  ]
 }
