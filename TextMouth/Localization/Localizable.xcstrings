@@ -139291,7 +139291,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "設定計時器後關閉面板"
+            "value" : "設定計時器後關閉工作表"
           }
         }
       }
@@ -139416,7 +139416,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "設定計時器後關閉睡眠計時器面板"
+            "value" : "設定計時器後關閉睡眠計時器工作表"
           }
         }
       }
@@ -387365,7 +387365,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "設定語音轉文字的語言。標示為「需要下載」的語言，只能在「轉錄音訊」面板中下載。"
+            "value" : "設定語音轉文字的語言。標示為「需要下載」的語言，只能在「轉錄音訊」工作表中下載。"
           }
         }
       }
@@ -548243,7 +548243,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "關閉時，面板會保持打開，並顯示剩餘時間和重置按鈕。"
+            "value" : "關閉時，工作表會保持打開，並顯示剩餘時間和重置按鈕。"
           }
         }
       }
