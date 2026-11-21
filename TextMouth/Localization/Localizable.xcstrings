@@ -17129,7 +17129,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ no se registró para %2$@: %3$@"
+            "value" : "%1$@ no se asignó a %2$@: %3$@"
           }
         },
         "fr" : {
@@ -29227,7 +29227,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, registrado para %2$@"
+            "value" : "%1$@, asignado a %2$@"
           }
         },
         "fr" : {
@@ -104495,7 +104495,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escribir también en la copia de la biblioteca del archivo EPUB"
+            "value" : "Escribir también en la copia del archivo EPUB de la biblioteca"
           }
         },
         "fr" : {
@@ -149380,7 +149380,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Limpiar"
+            "value" : "Borrar"
           }
         },
         "fr" : {
@@ -149505,7 +149505,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Limpiar pantalla"
+            "value" : "Borrar pantalla"
           }
         },
         "fr" : {
@@ -163607,7 +163607,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudieron guardar los metadatos en la copia de la biblioteca de “%@”, porque ese archivo falta en la biblioteca."
+            "value" : "No se pudieron guardar los metadatos en la copia de “%@” de la biblioteca, porque ese archivo falta en la biblioteca."
           }
         },
         "fr" : {
@@ -163738,7 +163738,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "No se pudieron guardar los metadatos en la copia de la biblioteca de “%1$@”: %2$@"
+            "value" : "No se pudieron guardar los metadatos en la copia de “%1$@” de la biblioteca: %2$@"
           }
         },
         "fr" : {
@@ -206541,7 +206541,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Todos los atajos y dónde funcionan vuelven a los valores predeterminados. Se pierden tus propias teclas."
+            "value" : "Todos los atajos y dónde funcionan vuelven a los valores predeterminados. Se perderán las teclas que elegiste."
           }
         },
         "fr" : {
@@ -231879,7 +231879,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ir al tiempo…"
+            "value" : "Ir al momento…"
           }
         },
         "fr" : {
@@ -264570,7 +264570,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salto a %@ en la grabación."
+            "value" : "Saltó a %@ en la grabación."
           }
         },
         "fr" : {
@@ -264695,7 +264695,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salto al %@ por ciento."
+            "value" : "Saltó al %@ por ciento."
           }
         },
         "fr" : {
@@ -264820,7 +264820,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salto a %@."
+            "value" : "Saltó a %@."
           }
         },
         "fr" : {
@@ -264951,7 +264951,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salto a la página %1$@, la %2$@ página con la etiqueta %3$@."
+            "value" : "Saltó a la página %1$@, la %2$@ página con la etiqueta %3$@."
           }
         },
         "fr" : {
@@ -265076,7 +265076,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salto a la página %@."
+            "value" : "Saltó a la página %@."
           }
         },
         "fr" : {
@@ -283931,7 +283931,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hacer pulsación doble"
+            "value" : "Convertir en doble pulsación"
           }
         },
         "fr" : {
@@ -284056,7 +284056,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hacer pulsación simple"
+            "value" : "Convertir en pulsación simple"
           }
         },
         "fr" : {
@@ -291732,7 +291732,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Metadatos guardados en la biblioteca y en la copia de la biblioteca de “%@”."
+            "value" : "Metadatos guardados en la biblioteca y en su copia de “%@”."
           }
         },
         "fr" : {
@@ -330994,7 +330994,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "No se pudo leer el único capítulo (%lld)"
+                  "value" : "No se pudo leer el único capítulo"
                 }
               },
               "other" : {
@@ -405723,7 +405723,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Guardar metadatos en la biblioteca y en la copia de la biblioteca del archivo EPUB"
+            "value" : "Guardar metadatos en la biblioteca y en su copia del archivo EPUB"
           }
         },
         "fr" : {
