@@ -1292,6 +1292,23 @@
      "why": "natural: “dess” copies the English “its”; Swedish uses the definite form in a progress phrase"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Sonnet 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "För att använda en annan mapp, öppna ”Inställningar” > ”Lagring” och välj %1$@ eller %2$@.",
+     "after": "För att använda en annan mapp, öppna ”Inställningar”, ”Lagring”, och välj %1$@ eller %2$@.",
+     "why": "voiceover: a path joined by > is read aloud as 'greater than' and spelled out in braille; the steps are separated as the language reads a sequence of names"
+    }
+   ]
   }
  ]
 }
