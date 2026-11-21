@@ -155491,7 +155491,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã dọn dẹp vào %1$@, với phiên bản quy tắc %2$@: %3$@."
+            "value" : "Đã dọn dẹp vào ngày %1$@, với phiên bản quy tắc %2$@: %3$@."
           }
         },
         "zh-Hans" : {
@@ -184102,7 +184102,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã xóa vào %@"
+            "value" : "Đã xóa vào ngày %@"
           }
         },
         "zh-Hans" : {
@@ -541931,7 +541931,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Micrô mà Ghi đè dùng để ghi. TextMouth ghi nhớ micrô này, tách biệt với đầu vào của macOS."
+            "value" : "Micrô mà lệnh Ghi đè dùng để ghi âm. TextMouth ghi nhớ micrô này, tách biệt với đầu vào của macOS."
           }
         },
         "zh-Hans" : {
@@ -545690,7 +545690,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Âm thanh gốc đã bị xóa vào %@, nên không thể hoàn tác các chỉnh sửa đã lưu trước đó."
+            "value" : "Âm thanh gốc đã bị xóa vào ngày %@, nên không thể hoàn tác các chỉnh sửa đã lưu trước đó."
           }
         },
         "zh-Hans" : {
@@ -551324,7 +551324,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bản chép lời riêng của podcast, được tải về cùng tập vào %@."
+            "value" : "Bản chép lời riêng của podcast, được tải về cùng tập vào ngày %@."
           }
         },
         "zh-Hans" : {
@@ -559475,7 +559475,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Các tệp chép lời bên cạnh âm thanh không được đính kèm: %@"
+            "value" : "Các tệp bản chép lời bên cạnh âm thanh không được đính kèm: %@"
           }
         },
         "zh-Hans" : {
@@ -561262,7 +561262,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bản chép lời, cùng các thay đổi của bạn, vẫn ở cùng tập trong nguồn cấp, kể cả sau khi bản tải về bị xóa. Xóa tập hoặc nguồn cấp sẽ xóa nó; Chuyển vào thư viện giữ nó thành sách."
+            "value" : "Bản chép lời, cùng các thay đổi của bạn, vẫn ở cùng tập trong nguồn cấp, kể cả sau khi bản tải về bị xóa. Xóa tập hoặc nguồn cấp sẽ xóa nó; lệnh Chuyển vào thư viện sẽ giữ nó thành sách."
           }
         },
         "zh-Hans" : {
@@ -567744,7 +567744,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Các tệp chép lời này bên cạnh âm thanh không được đính kèm: %@. Nhật ký gỡ lỗi cho biết lý do."
+            "value" : "Các tệp bản chép lời này bên cạnh âm thanh không được đính kèm: %@. Nhật ký gỡ lỗi cho biết lý do."
           }
         },
         "zh-Hans" : {
@@ -589693,7 +589693,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Quá dài để giữ lại để dán. Để di chuyển, hãy dán ngay sau khi cắt."
+            "value" : "Quá dài nên không thể giữ lại để dán. Để di chuyển, hãy dán ngay sau khi cắt."
           }
         },
         "zh-Hans" : {
@@ -590145,7 +590145,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Quá nhiều đoạn có thời gian: giới hạn là %lld."
+                  "value" : "Quá nhiều đoạn có mốc thời gian: giới hạn là %lld."
                 }
               }
             }
@@ -592638,7 +592638,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Đã chép lời vào %1$@, bằng %2$@."
+            "value" : "Đã chép lời vào ngày %1$@, bằng %2$@."
           }
         },
         "zh-Hans" : {
@@ -628933,7 +628933,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bạn đã dọn dẹp nó vào %@."
+            "value" : "Bạn đã dọn dẹp nó vào ngày %@."
           }
         },
         "zh-Hans" : {
@@ -629070,7 +629070,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bạn đã dọn dẹp bản chép lời này vào %@. Chép lời lại sẽ thay thế kết quả dọn dẹp."
+            "value" : "Bạn đã dọn dẹp bản chép lời này vào ngày %@. Chép lời lại sẽ thay thế kết quả dọn dẹp."
           }
         },
         "zh-Hans" : {
@@ -629207,7 +629207,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bạn đã sửa nó vào %@."
+            "value" : "Bạn đã sửa nó vào ngày %@."
           }
         },
         "zh-Hans" : {
@@ -629344,7 +629344,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bạn đã sửa bản chép lời vào %@, sau lần dọn dẹp. Hoàn tác dọn dẹp cũng hoàn tác các chỉnh sửa đó."
+            "value" : "Bạn đã sửa bản chép lời vào ngày %@, sau lần dọn dẹp. Hoàn tác dọn dẹp cũng hoàn tác các chỉnh sửa đó."
           }
         },
         "zh-Hans" : {
@@ -629481,7 +629481,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bạn đã sửa bản chép lời này vào %@. Chép lời lại sẽ thay thế các chỉnh sửa của bạn."
+            "value" : "Bạn đã sửa bản chép lời này vào ngày %@. Chép lời lại sẽ thay thế các chỉnh sửa của bạn."
           }
         },
         "zh-Hans" : {
@@ -630303,7 +630303,7 @@
         "vi" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bản sao các quy tắc của bạn đang trống. Sửa quy tắc… mở nó để thêm quy tắc."
+            "value" : "Bản sao các quy tắc của bạn đang trống. Nút Sửa quy tắc… mở bản sao này để bạn thêm quy tắc."
           }
         },
         "zh-Hans" : {
