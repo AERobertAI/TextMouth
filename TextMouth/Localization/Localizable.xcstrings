@@ -138684,7 +138684,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "清除選取範圍。"
+            "value" : "取消選取。"
           }
         }
       }
@@ -234732,7 +234732,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "刪除%@：它會移到垃圾桶，在清空垃圾桶前你都可以復原。"
+            "value" : "刪除%@：它會移到垃圾桶，在清倒垃圾桶前你都可以復原。"
           }
         }
       }
@@ -235208,7 +235208,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "它會刪除 %@：它們會移到垃圾桶，在清空垃圾桶前你都可以復原。"
+            "value" : "它會刪除 %@：它們會移到垃圾桶，在清倒垃圾桶前你都可以復原。"
           }
         }
       }
@@ -556214,7 +556214,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "在清空垃圾桶前，你都可以從垃圾桶復原它。"
+            "value" : "在清倒垃圾桶前，你都可以從垃圾桶復原它。"
           }
         }
       }
