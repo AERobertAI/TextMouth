@@ -176,14 +176,15 @@ extension InterfaceTextTests {
         XCTAssertEqual(other.arguments, [.number(200)])
     }
 
-    /// A `%` in the literal is doubled: the key `Volume: %lld%%`.
-    func testAPercentSignInTheLiteralIsDoubled() {
+    /// In a literal with interpolations a `%` is doubled: the key `Volume: %lld%%`. A literal with none is kept as
+    /// written, since a line with no arguments never reaches the formatter.
+    func testAPercentSignIsDoubledOnlyWithInterpolations() {
         let volume = 40
         let format: InterfaceText.Format = "Volume: \(number: volume)%"
         XCTAssertEqual(format.format, "Volume: %lld%%")
-        let alone: InterfaceText.Format = "100%"
-        XCTAssertEqual(alone.format, "100%%")
-        XCTAssertEqual(String(format: alone.format, arguments: []), "100%")
+        let alone: InterfaceText.Format = "Volume 100%"
+        XCTAssertEqual(alone.format, "Volume 100%")
+        XCTAssertTrue(alone.arguments.isEmpty)
     }
 
     /// Two numbers and a string: the keys `%lld of %@, %lld%%` and `%@ - level %lld`.
@@ -495,8 +496,58 @@ extension InterfaceTextTests {
     func testAFailingTextShowsEnglishAndReportsOnce() {
         let log = InterfaceTextReportLog()
         let engine = makeInterfaceTextEngine(["greeting.hello": ["es": "%s hola"]], log: log)
-        for _ in 0..<5 { XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hello") }
+        let name = "N"
+        for _ in 0..<5 { XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello \(name)"), "Hello N") }
         XCTAssertEqual(log.messages.count, 1)
+    }
+
+    /// A line with no arguments is never formatted (as Apple's `String(localized:)` does not): a lone `%` stays, in the
+    /// code's English and in a translation, and a translation that looks like a specifier is shown as it is.
+    func testALineWithNoArgumentsIsNeverFormatted() {
+        let log = InterfaceTextReportLog()
+        let engine = makeInterfaceTextEngine(["volume.full": ["es": "Volumen 100%"], "odd.line": ["es": "50%% %s %@"]], log: log)
+        XCTAssertEqual(interfaceLine(engine, "volume.full", "Volume 100%", language: "en"), "Volume 100%")
+        XCTAssertEqual(interfaceLine(engine, "volume.full", "Volume 100%"), "Volumen 100%")
+        XCTAssertEqual(interfaceLine(engine, "odd.line", "Odd"), "50%% %s %@")
+        XCTAssertEqual(log.messages, [])
+    }
+
+    /// A plural form may leave out its number ("Un libro") and may name only some arguments; a form that drops the
+    /// first argument and then uses an unnumbered `%@` reads slot 1, which holds the number: refused, English shown.
+    func testAPluralFormMayLeaveOutItsNumber() {
+        let log = InterfaceTextReportLog()
+        let engine = makeInterfaceTextEngine([
+            "common.books": ["es": pluralEntry("Un libro", "%lld libros", "%lld libros")],
+            "common.by": ["es": pluralEntry("Uno de %2$@", "%1$lld de %2$@", "%1$lld de %2$@")],
+            "common.bad": ["es": pluralEntry("Uno de %@", "%lld de %@", "%lld de %@")],
+        ], log: log)
+        let one = 1, many = 5, name = "Ana"
+        XCTAssertEqual(interfaceLine(engine, "common.books", "\(number: one) books"), "Un libro")
+        XCTAssertEqual(interfaceLine(engine, "common.books", "\(number: many) books"), "5 libros")
+        XCTAssertEqual(interfaceLine(engine, "common.by", "\(number: one) by \(name)"), "Uno de Ana")
+        XCTAssertEqual(interfaceLine(engine, "common.by", "\(number: many) by \(name)"), "5 de Ana")
+        // The whole entry is refused, so every count shows English.
+        XCTAssertEqual(interfaceLine(engine, "common.bad", "\(number: one) by \(name)"), "1 by Ana")
+        XCTAssertEqual(interfaceLine(engine, "common.bad", "\(number: many) by \(name)"), "5 by Ana")
+        XCTAssertEqual(log.messages.count, 1, "\(log.messages)")
+    }
+
+    /// Apple's own behavior, which the engine matches: `String(localized:)` of a key with no interpolation keeps its
+    /// `%` and does not format a translation. A sandbox bundle holds the key `Volume 100%` translated with a lone `%`.
+    func testAppleKeepsALonePercentInALineWithNoArguments() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("InterfaceTextPercent-\(UUID().uuidString)", isDirectory: true)
+        let folder = root.appendingPathComponent("es.lproj", isDirectory: true)
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: root) }
+        let table = ["Volume 100%": "Volumen 100%"]
+        try PropertyListSerialization.data(fromPropertyList: table, format: .binary, options: 0)
+            .write(to: folder.appendingPathComponent("Localizable.strings"))
+        let bundle = try XCTUnwrap(Bundle(path: folder.path))
+        let key: String.LocalizationValue = "Volume 100%"
+        let apple = String(localized: key, bundle: bundle, locale: Locale(identifier: "es_US"))
+        XCTAssertEqual(apple, "Volumen 100%")
+        let engine = makeInterfaceTextEngine(["volume.full": ["es": "Volumen 100%"]], log: InterfaceTextReportLog())
+        XCTAssertEqual(interfaceLine(engine, "volume.full", "Volume 100%"), apple)
     }
 
     /// Every hostile text, as a pack entry, shows English: none reaches Foundation's formatter (which `%s` or `%n`
@@ -537,7 +588,8 @@ extension InterfaceTextTests {
         XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Buenas")
         XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello", language: "en"), "Hello", "another language is unchanged")
         engine.setOverrides(["es": ["greeting.hello": .plain("%s")]])
-        XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hello", "a hostile own line shows English")
+        let name = "N"
+        XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello \(name)"), "Hello N", "a hostile own line shows English")
         engine.setOverrides([:])
         XCTAssertEqual(interfaceLine(engine, "greeting.hello", "Hello"), "Hola")
     }
@@ -570,7 +622,7 @@ extension InterfaceTextTests {
                     let language = (thread + round) % 2 == 0 ? "es" : "ru"
                     if interfaceLine(engine, "greeting.hello", "Hello", language: language) != (language == "es" ? "Hola" : "Привет") { wrong.withLock { $0 += 1 } }
                     if interfaceLine(engine, "common.books", "\(number: 1) books", language: language) != (language == "es" ? "1 libro" : "1 книга") { wrong.withLock { $0 += 1 } }
-                    if interfaceLine(engine, "bad.line", "Bad", language: "es") != "Bad" { wrong.withLock { $0 += 1 } }
+                    if interfaceLine(engine, "bad.line", "Bad \(number: thread)", language: "es") != "Bad \(thread)" { wrong.withLock { $0 += 1 } }
                     if interfaceLine(engine, "no.such", "None", language: language) != "None" { wrong.withLock { $0 += 1 } }
                 }
                 group.leave()
@@ -806,7 +858,6 @@ final class InterfaceTextPackTests: XCTestCase {
         cases.append(("overlong UTF-8", InterfaceTextPackBytes.blob("es", raw: [0xC0, 0xAF, 0, 0x78, 0, 0x79, 0], count: 3)))
         cases.append(("surrogate", InterfaceTextPackBytes.blob("es", raw: [0xED, 0xA0, 0x80, 0, 0x78, 0, 0x79, 0], count: 3)))
         cases.append(("a plural of the wrong size", InterfaceTextPackBytes.blob("es", entries: ["Hola", pluralEntry("a", "b", "c"), "x"])))
-        cases.append(("a hostile text", InterfaceTextPackBytes.blob("es", entries: ["%s", pluralEntry("%lld libro", "%lld libros"), "x"])))
         for (name, blob) in cases {
             var bytes = InterfaceTextPackBytes.sample()
             bytes.blobs[2] = blob

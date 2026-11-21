@@ -14,8 +14,9 @@ enum InterfaceText {
     /// - `\(number: n)`, any integer, adds `%lld`.
     ///
     /// Nothing else compiles (a `Double`, an enum, an `Int` without `number:`), so the format equals, character for
-    /// character, the key Xcode extracts from `String(localized:)` today. A `%` in a literal segment is doubled, so
-    /// the format reads back as the text the code wrote.
+    /// character, the key Xcode extracts from `String(localized:)` today. In a literal with interpolations, a `%` in a
+    /// literal segment is doubled, so the format reads back as the text the code wrote; a literal with none is kept
+    /// as written, since it has no arguments and never reaches the formatter.
     struct Format: ExpressibleByStringInterpolation, Sendable, Equatable {
         /// One argument of the call, in the order of its specifiers.
         enum Argument: Sendable, Equatable {
@@ -45,9 +46,11 @@ enum InterfaceText {
             self.arguments = arguments
         }
 
-        /// A plain literal: the text with each `%` doubled, and no arguments.
+        /// A plain literal, with no interpolation: the text exactly as written, `%` included, and no arguments. A line
+        /// with no arguments is never given to Foundation's formatter, so nothing in it is a specifier; this is what
+        /// `String.LocalizationValue(stringLiteral:)` does, and `String(localized:)` formats only with arguments.
         init(stringLiteral value: String) {
-            self.init(format: Self.escaped(value), arguments: [])
+            self.init(format: value, arguments: [])
         }
 
         /// A literal with interpolations, collected by `StringInterpolation`.

@@ -14,7 +14,8 @@ import os
 /// 4. a plural entry gives the form `PluralRules` picks for the call's first number;
 /// 5. the text's specifiers are checked against the call's arguments, once for each language and ID with the verdict
 ///    kept; a text that fails shows English and is reported once;
-/// 6. a text without `%` is returned as it is, any other goes to `String(format:locale:arguments:)`.
+/// 6. a text without `%`, or for a call with no arguments, is returned as it is; any other goes to
+///    `String(format:locale:arguments:)`.
 ///
 /// The decoded entries of each language asked for are kept, so a second lookup of a line decodes nothing. The pack is
 /// opened and the ID list decoded at the first lookup, a language at its first need, English only for a call with a
@@ -46,14 +47,19 @@ final class InterfaceTextEngine: Sendable {
             return accepted
         }
 
-        /// Whether every text of `entry` passes `FormatSpecifiers.accepts` for `kinds`, and no form is empty.
+        /// Whether every text of `entry` fits `kinds` (see below) and no form is empty.
         static func fits(_ entry: InterfaceTextEntry, kinds: [FormatSpecifiers.Kind]) -> Bool {
             switch entry {
             case .absent: return true
-            case .plain(let text): return !text.isEmpty && FormatSpecifiers.accepts(text, arguments: kinds)
-            case .plural(let forms):
-                return forms.allSatisfy { !$0.isEmpty && FormatSpecifiers.accepts($0, arguments: kinds) }
+            case .plain(let text): return fits(text, kinds: kinds)
+            case .plural(let forms): return forms.allSatisfy { fits($0, kinds: kinds) }
             }
+        }
+
+        /// Whether `text` is not empty and passes `FormatSpecifiers.accepts` for `kinds`. A call with no arguments never
+        /// formats its text, so any non-empty text fits it, a lone `%` included (as with Apple's `String(localized:)`).
+        private static func fits(_ text: String, kinds: [FormatSpecifiers.Kind]) -> Bool {
+            !text.isEmpty && (kinds.isEmpty || FormatSpecifiers.accepts(text, arguments: kinds))
         }
     }
 
@@ -206,10 +212,11 @@ final class InterfaceTextEngine: Sendable {
         return form
     }
 
-    /// `pattern` with the call's arguments: returned as it is when it has no `%`, else through Foundation's formatter
-    /// with `locale`. Only a pattern that passed the check, or the call's own format, gets here.
+    /// `pattern` with the call's arguments: returned as it is when the call has none (as Apple's `String(localized:)`
+    /// does) or the pattern has no `%`, else through Foundation's formatter with `locale`. Only a pattern that passed
+    /// the check, or the call's own format, gets here.
     private func render(_ pattern: String, english: InterfaceText.Format, locale: Locale) -> String {
-        guard pattern.utf8.contains(UInt8(ascii: "%")) else { return pattern }
+        guard !english.arguments.isEmpty, pattern.utf8.contains(UInt8(ascii: "%")) else { return pattern }
         return String(format: pattern, locale: locale, arguments: english.formatterArguments)
     }
 
