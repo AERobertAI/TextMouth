@@ -141784,7 +141784,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kapitel %1$@ dieses Buchs %2$@, und TextMouth kann das nicht sicher exportieren. Wähle „Text bearbeiten“, ebne die Verschachtelung ein und sichere; exportiere dann erneut."
+            "value" : "Kapitel %1$@ dieses Buchs %2$@, und TextMouth kann das nicht sicher exportieren. Wähle „Text bearbeiten“, verringere die Verschachtelung und sichere; exportiere dann erneut."
           }
         },
         "en" : {
@@ -171877,7 +171877,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ konnten nicht exportiert werden. Das erste war %2$@."
+            "value" : "%1$@ konnten nicht exportiert werden. Der erste war %2$@."
           }
         },
         "en" : {
@@ -174510,7 +174510,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Eigene Minuten"
+            "value" : "Eigene Minutenzahl"
           }
         },
         "es" : {
@@ -222581,7 +222581,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$lld von %2$@ werden exportiert…"
+            "value" : "%1$lld exportiert, insgesamt %2$@…"
           }
         },
         "en" : {
@@ -273377,7 +273377,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sein früherer Text wurde im Paket des Buchs als %@ behalten."
+            "value" : "Sein früherer Text wurde als %@ im Paket des Buchs aufbewahrt."
           }
         },
         "es" : {
@@ -454920,7 +454920,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fortschritt beim Herunterladen vorlesen"
+            "value" : "Download-Fortschritt vorlesen"
           }
         },
         "es" : {
@@ -474814,7 +474814,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Text nicht aktualisiert: Kapitel %1$@ des bearbeiteten Texts von %2$@ %3$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text."
+            "value" : "Text nicht aktualisiert: Kapitel %1$@ des bearbeiteten Texts von %2$@ %3$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text."
           }
         },
         "en" : {
@@ -474957,7 +474957,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Text nicht aktualisiert: Der bearbeitete Text von %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text."
+            "value" : "Text nicht aktualisiert: Der bearbeitete Text von %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig; bis dahin behält das Buch seinen alten Text."
           }
         },
         "en" : {
@@ -475374,7 +475374,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Text nicht aktualisiert: Im bearbeiteten Transkript von %@ stehen Wörter in einem Kapitel ohne Sprache, wo sie nicht behalten werden können. Entferne sie und sichere erneut; bis dahin behält das Buch seinen alten Text."
+            "value" : "Text nicht aktualisiert: Das bearbeitete Transkript von %@ fügt einem Kapitel ohne gesprochenen Text Wörter hinzu, die dort nicht behalten werden können. Entferne sie und sichere erneut; bis dahin behält das Buch seinen alten Text."
           }
         },
         "es" : {
@@ -488411,7 +488411,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth hat die letzte Sicherung noch nicht gelesen."
+            "value" : "TextMouth hat die zuletzt gesicherte Fassung noch nicht gelesen."
           }
         },
         "es" : {
@@ -492714,7 +492714,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth hat den Text, den du in %@ geändert hast, unverändert gelassen."
+            "value" : "TextMouth hat deine Änderungen am Text von %@ behalten."
           }
         },
         "es" : {
@@ -506360,7 +506360,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die %1$@ beginnt bei %2$@ in der Datei „%3$@“, vor der früheren %4$@, die bei %5$@ beginnt."
+            "value" : "Die %1$@ beginnt bei %2$@ in der Datei „%3$@“ und damit früher als die vorangehende %4$@, die bei %5$@ beginnt."
           }
         },
         "en" : {
@@ -515300,7 +515300,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Die Audiodatei %@ endet vor ihrem Audio, daher konnte sie nicht konvertiert werden."
+            "value" : "Die Audiodatei %@ bricht vor dem Ende ihres Audios ab, daher konnte sie nicht konvertiert werden."
           }
         },
         "es" : {
@@ -547992,7 +547992,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Das andere Kapitel (%lld) hat keinen Text."
+                  "value" : "Das andere Kapitel hat keinen Text."
                 }
               },
               "other" : {
@@ -557312,7 +557312,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Der Text, den content.md zuvor enthielt, wurde als %@ im Paket des Buchs behalten."
+            "value" : "Der Text, den content.md zuvor enthielt, wurde als %@ im Paket des Buchs aufbewahrt."
           }
         },
         "es" : {
@@ -583290,7 +583290,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zeit bei %@"
+            "value" : "Zeit (%@)"
           }
         },
         "es" : {
@@ -630475,7 +630475,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dein bearbeiteter Text wurde außerdem als %@ im Paket des Buchs behalten."
+            "value" : "Dein bearbeiteter Text wurde außerdem als %@ im Paket des Buchs aufbewahrt."
           }
         },
         "es" : {
@@ -635114,7 +635114,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "bei %1$@ von %2$@ mit %3$@"
+            "value" : "bei %1$@ von %2$@ (%3$@)"
           }
         },
         "en" : {
@@ -647143,7 +647143,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es %@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch."
+            "value" : "er %@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch."
           }
         },
         "es" : {
@@ -647280,7 +647280,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es %@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt."
+            "value" : "er %@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt."
           }
         },
         "es" : {
@@ -647417,7 +647417,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es fügt Wörter zu einem Kapitel ohne Sprache hinzu, wo sie nicht behalten werden können. Entferne sie und sichere erneut, dann wird der Text angezeigt."
+            "value" : "er fügt einem Kapitel ohne gesprochenen Text Wörter hinzu, die dort nicht behalten werden können. Entferne sie und sichere erneut, dann wird der Text angezeigt."
           }
         },
         "es" : {
@@ -647554,7 +647554,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es ändert die Überschrift eines Kapitels, die aus dem Audio stammt. Setze sie zurück und sichere erneut, dann wird der Text angezeigt."
+            "value" : "er ändert die Überschrift eines Kapitels, die aus dem Audio stammt. Setze sie zurück und sichere erneut, dann wird der Text angezeigt."
           }
         },
         "es" : {
@@ -647965,7 +647965,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es enthält %1$@, das Hörbuch aber %2$@. Behalte jede Zeile, die mit <!-- chapter: beginnt, und sichere erneut, dann wird der Text angezeigt."
+            "value" : "er enthält %1$@, das Hörbuch aber %2$@. Behalte jede Zeile, die mit <!-- chapter: beginnt, und sichere erneut, dann wird der Text angezeigt."
           }
         },
         "en" : {
@@ -648108,7 +648108,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann öffnet sich das Buch."
+            "value" : "er enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann öffnet sich das Buch."
           }
         },
         "es" : {
@@ -648245,7 +648245,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann wird der Text angezeigt."
+            "value" : "er enthält kein Kapitel mit Text. Mache die Änderung rückgängig und sichere erneut, dann wird der Text angezeigt."
           }
         },
         "es" : {
@@ -648986,7 +648986,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es ist kein UTF-8-Text. Sichere es als UTF-8, dann öffnet sich das Buch."
+            "value" : "er ist kein UTF-8-Text. Sichere ihn als UTF-8, dann öffnet sich das Buch."
           }
         },
         "es" : {
@@ -649123,7 +649123,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es ist kein UTF-8-Text. Sichere es als UTF-8, dann wird der Text angezeigt."
+            "value" : "er ist kein UTF-8-Text. Sichere ihn als UTF-8, dann wird der Text angezeigt."
           }
         },
         "es" : {
@@ -652006,7 +652006,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch."
+            "value" : "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann öffnet sich das Buch."
           }
         },
         "en" : {
@@ -652149,7 +652149,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verflache die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt."
+            "value" : "sein Kapitel %1$@ %2$@, was TextMouth nicht sicher lesen kann. Verringere die Verschachtelung und sichere erneut oder mache die Änderung rückgängig, dann wird der Text angezeigt."
           }
         },
         "en" : {
@@ -657585,7 +657585,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "es konnte keine Kopie des bearbeiteten Texts behalten werden, daher lässt TextMouth content.md unverändert."
+            "value" : "es konnte keine Kopie des bearbeiteten Texts angelegt werden, daher lässt TextMouth content.md unverändert."
           }
         },
         "es" : {
@@ -662691,7 +662691,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Leseansichtsfenster"
+            "value" : "Leseansichten"
           }
         },
         "es" : {
