@@ -1,8 +1,8 @@
-"""Keeps the plural categories of `LanguagePackTests.swift` equal to the catalog tool's table (TL18).
+"""Keeps the plural categories of the app's `PluralRules.swift` equal to the catalog tool's table (TL18).
 
 Run with: python3 -I -B -m unittest discover -s Scripts/l10n/tests
 
-The Swift test checks Apple's plural rule against `LanguagePackPluralRules.categories`; this test checks that
+The Swift test checks Apple's plural rule against `PluralRules.categories`; this test checks that
 table against `catalog.PLURAL_CATEGORIES`, so the two cannot drift apart.
 """
 import re
@@ -14,7 +14,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 import catalog  # noqa: E402  (imported by path, after sys.path is set)
 
-SWIFT = HERE.parent.parent.parent / "TextMouthProductionTests" / "LanguagePackTests.swift"
+SWIFT = HERE.parent.parent.parent / "TextMouth" / "Localization" / "InterfaceText" / "PluralRules.swift"
 # One language to a line: `"pt-BR": ["one", "many", "other"],`.
 LINE = re.compile(r'^\s*"([A-Za-z-]+)": \[((?:"[a-z]+"(?:, )?)+)\],$')
 
