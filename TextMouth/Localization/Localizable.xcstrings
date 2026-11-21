@@ -195293,7 +195293,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobieranie %1$@, źródło: %2$@."
+            "value" : "Pobieranie: %1$@, źródło: %2$@."
           }
         },
         "pt-BR" : {
@@ -195430,7 +195430,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobieranie %@, książki z listy czytelniczej"
+            "value" : "Pobieranie: %@, książka z listy czytelniczej"
           }
         },
         "pt-BR" : {
@@ -206987,7 +206987,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Włącz %@"
+            "value" : "Włącz regułę %@"
           }
         },
         "pt-BR" : {
@@ -225256,7 +225256,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie udało się przywrócić ustawień domyślnych"
+            "value" : "Nie udało się przywrócić lokalizacji domyślnej"
           }
         },
         "pt-BR" : {
@@ -259365,7 +259365,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "W folderze Dzienniki na tym komputerze Mac."
+            "value" : "W folderze Dzienniki na tym komputerze Mac"
           }
         },
         "pt-BR" : {
@@ -269514,7 +269514,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mógł zostać przeniesiony lub zmieniony albo nie został jeszcze zsynchronizowany z tym komputerem Mac (usługa: %@)."
+            "value" : "Mógł zostać przeniesiony lub mogła zostać zmieniona jego nazwa albo usługa %@ nie zsynchronizowała go jeszcze z tym komputerem Mac."
           }
         },
         "pt-BR" : {
@@ -304850,7 +304850,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zmiany w menu są zapisywane jako ustawienia domyślne bieżącej książki. Ukrycie menu używa globalnych wyborów przewijania; ustawienia domyślne książek zostają zachowane."
+            "value" : "Zmiany w menu są zapisywane jako ustawienia domyślne bieżącej książki. Po ukryciu menu używane są globalne ustawienia przewijania; ustawienia domyślne książek zostają zachowane."
           }
         },
         "pt-BR" : {
@@ -314888,7 +314888,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przenoś do Kosza zamiast usuwać"
+            "value" : "Przenoś do kosza zamiast usuwać"
           }
         },
         "pt-BR" : {
@@ -345543,7 +345543,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Brak (użyj globalnych)"
+            "value" : "Brak (użyj ustawień globalnych)"
           }
         },
         "pt-BR" : {
@@ -389338,7 +389338,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ponownie wyodrębnia tekst z pamięci podręcznej wszystkich książek. Przydatne po poprawkach parsera lub ulepszeniach formatów."
+            "value" : "Ponownie wyodrębnia tekst wszystkich książek, odświeżając jego kopię w pamięci podręcznej. Przydatne po poprawkach parsera lub ulepszeniach formatów."
           }
         },
         "pt-BR" : {
@@ -389475,7 +389475,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ponownie wyodrębnia tekst z pamięci podręcznej każdej książki."
+            "value" : "Ponownie wyodrębnia tekst każdej książki, odświeżając jego kopię w pamięci podręcznej."
           }
         },
         "pt-BR" : {
@@ -392376,7 +392376,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pozycje czytania są zachowane, ale przesunięcia znaków mogą się nieco zmienić, jeśli tekst się zmieni."
+            "value" : "Pozycje czytania są zachowane, ale jeśli tekst się zmieni, mogą się przesunąć o kilka znaków."
           }
         },
         "pt-BR" : {
@@ -392513,7 +392513,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Odczyt dźwięku przekroczył limit czasu (sekundy: %@); TextMouth przestał czekać."
+            "value" : "Odczyt dźwięku trwał dłużej niż %@ sekundy; TextMouth przestał czekać."
           }
         },
         "pt-BR" : {
@@ -443274,7 +443274,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pokaż przycisk zakładki"
+            "value" : "Pokazuj przycisk zakładki"
           }
         },
         "pt-BR" : {
@@ -443411,7 +443411,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pokaż przycisk zakładki w elementach sterujących odtwarzaniem"
+            "value" : "Pokazuj przycisk zakładki w elementach sterujących odtwarzaniem"
           }
         },
         "pt-BR" : {
@@ -444096,7 +444096,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pokaż elementy sterujące prędkością"
+            "value" : "Pokazuj elementy sterujące prędkością"
           }
         },
         "pt-BR" : {
@@ -444233,7 +444233,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pokaż elementy sterujące prędkością w elementach sterujących odtwarzaniem"
+            "value" : "Pokazuj elementy sterujące prędkością w elementach sterujących odtwarzaniem"
           }
         },
         "pt-BR" : {
@@ -458722,7 +458722,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rozpocznij nową bibliotekę"
+            "value" : "Utwórz nową bibliotekę"
           }
         },
         "pt-BR" : {
@@ -458996,7 +458996,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rozpocząć nową bibliotekę?"
+            "value" : "Utworzyć nową bibliotekę?"
           }
         },
         "pt-BR" : {
