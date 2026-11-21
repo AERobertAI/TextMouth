@@ -1,0 +1,676 @@
+{
+ "language": "sv",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ also holds %lld books a newer TextMouth added, which are kept.",
+     "english": {
+      "one": "%@ also holds %lld book a newer TextMouth added, which is kept.",
+      "other": "%@ also holds %lld books a newer TextMouth added, which are kept."
+     },
+     "before": {
+      "one": "%@ innehåller också %lld bok som en nyare TextMouth lade till. Den behålls.",
+      "other": "%@ innehåller också %lld böcker som en nyare TextMouth lade till. De behålls."
+     },
+     "after": {
+      "one": "%@ innehåller också %lld bok som en nyare version av TextMouth har lagt till, och den behålls.",
+      "other": "%@ innehåller också %lld böcker som en nyare version av TextMouth har lagt till, och de behålls."
+     },
+     "why": "natural: 'en nyare TextMouth' reads as an object, Swedish says 'en nyare version av TextMouth'; one sentence as in English"
+    },
+    {
+     "key": "%lld books kept on this Mac",
+     "english": {
+      "one": "%lld book kept on this Mac",
+      "other": "%lld books kept on this Mac"
+     },
+     "before": {
+      "one": "%lld bok behållen på den här Mac-datorn",
+      "other": "%lld böcker behållna på den här Mac-datorn"
+     },
+     "after": {
+      "one": "%lld bok behålls på den här Mac-datorn",
+      "other": "%lld böcker behålls på den här Mac-datorn"
+     },
+     "why": "natural: the participle 'behållen/behållna' is stilted; the present passive reads as Swedish"
+    },
+    {
+     "key": "%lld files couldn't be read, so the comparison may be missing differences.",
+     "english": {
+      "one": "%lld file couldn't be read, so the comparison may be missing differences.",
+      "other": "%lld files couldn't be read, so the comparison may be missing differences."
+     },
+     "before": {
+      "one": "%lld fil kunde inte läsas, så jämförelsen kan sakna skillnader.",
+      "other": "%lld filer kunde inte läsas, så jämförelsen kan sakna skillnader."
+     },
+     "after": {
+      "one": "%lld fil kunde inte läsas, så jämförelsen kan ha missat skillnader.",
+      "other": "%lld filer kunde inte läsas, så jämförelsen kan ha missat skillnader."
+     },
+     "why": "meaning: 'kan sakna skillnader' can be heard as 'may have no differences'; 'kan ha missat' says differences may be missed"
+    },
+    {
+     "key": "%lld views need a newer TextMouth. They are kept as they are, and not offered.",
+     "english": {
+      "one": "%lld view needs a newer TextMouth. It is kept as it is, and not offered.",
+      "other": "%lld views need a newer TextMouth. They are kept as they are, and not offered."
+     },
+     "before": {
+      "one": "%lld vy kräver en nyare TextMouth. Den behålls som den är och visas inte.",
+      "other": "%lld vyer kräver en nyare TextMouth. De behålls som de är och visas inte."
+     },
+     "after": {
+      "one": "%lld vy kräver en nyare version av TextMouth. Den behålls som den är och visas inte.",
+      "other": "%lld vyer kräver en nyare version av TextMouth. De behålls som de är och visas inte."
+     },
+     "why": "natural: 'en nyare version av TextMouth', as the catalog says elsewhere"
+    },
+    {
+     "key": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "english": "A move shifts one book at a time, and several are selected. Select one book, then try again.",
+     "before": "En flytt flyttar en bok i taget, och flera är markerade. Markera en bok och försök igen.",
+     "after": "Det går bara att flytta en bok i taget, och flera är markerade. Markera en bok och försök igen.",
+     "why": "natural: 'En flytt flyttar' is a word-for-word echo of the English"
+    },
+    {
+     "key": "Added Last",
+     "english": "Added Last",
+     "before": "Senast tillagd",
+     "after": "Senast tillagda",
+     "why": "grammar: the limit keeps several rows, so plural, as the description's 'senast tillagda' says"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "Alltid erbjuder en vy hela tiden. När det är tillämpligt erbjuder den bara medan den listar något: Läslistan medan den innehåller en bok, ett avsnitt eller en artikel, och Flöden medan det finns ett flöde. Dold utelämnar den. Ett fönster behåller sin vy tills du väljer en annan.",
+     "after": "”Alltid” erbjuder en vy hela tiden. ”När det är tillämpligt” erbjuder den bara medan den listar något: Läslistan medan den innehåller en bok, ett avsnitt eller en artikel, och Flöden medan det finns ett flöde. ”Dold” utelämnar den. Ett fönster behåller sin vy tills du väljer en annan.",
+     "why": "grammar: the option names begin the sentences unmarked, so 'Alltid erbjuder' reads as an adverb; quoted as names"
+    },
+    {
+     "key": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one.",
+     "english": {
+      "one": "But %@ also holds %lld book a newer TextMouth added: it is kept where it is, and so is every folder that holds it.",
+      "other": "But %@ also holds %lld books a newer TextMouth added: they are kept where they are, and so is every folder that holds one."
+     },
+     "before": {
+      "one": "Men %@ innehåller också %lld bok som en nyare TextMouth lade till: den behålls där den är, och det gör även varje mapp som innehåller en.",
+      "other": "Men %@ innehåller också %lld böcker som en nyare TextMouth lade till: de behålls där de är, och det gör även varje mapp som innehåller en."
+     },
+     "after": {
+      "one": "Men %@ innehåller också %lld bok som en nyare version av TextMouth har lagt till: den behålls där den är, och det gör även varje mapp som innehåller den.",
+      "other": "Men %@ innehåller också %lld böcker som en nyare version av TextMouth har lagt till: de behålls där de är, och det gör även varje mapp som innehåller någon av dem."
+     },
+     "why": "grammar: the one form said 'every folder that holds one' (en) for 'holds it'; 'en nyare version av TextMouth'"
+    },
+    {
+     "key": "Choose Retry Saving, then try again.",
+     "english": "Choose Retry Saving, then try again.",
+     "before": "Välj Försök spara igen och försök sedan igen.",
+     "after": "Välj ”Försök spara igen” och försök sedan igen.",
+     "why": "natural: the command 'Försök spara igen' runs into 'försök sedan igen'; quoted so the name stands apart"
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "Jämför bibliotek under Lagring i inställningarna listar varje skillnad.",
+     "after": "”Jämför bibliotek” under Lagring i inställningarna listar varje skillnad.",
+     "why": "grammar: the command name begins the sentence unmarked and reads as an imperative; quoted as a name"
+    },
+    {
+     "key": "Comparing",
+     "english": "Comparing",
+     "before": "Jämför",
+     "after": "Jämförelse",
+     "why": "voiceover: the progress bar's label 'Jämför' is also the Compare button's name; the noun names the bar"
+    },
+    {
+     "key": "Condition %@ needs the text to look for.",
+     "english": "Condition %@ needs the text to look for.",
+     "before": "Villkor %@ behöver texten att leta efter.",
+     "after": "Villkor %@ behöver en text att söka efter.",
+     "why": "natural: no text exists yet, so the indefinite 'en text', and 'söka efter' for looking for text"
+    },
+    {
+     "key": "Could not relocate folder contents",
+     "english": "Could not relocate folder contents",
+     "before": "Det gick inte att flytta mappens innehåll till sin nya plats",
+     "after": "Det gick inte att flytta mappens innehåll",
+     "why": "grammar: reflexive 'sin' cannot point back to 'mappens innehåll' in an infinitive clause; 'flytta' already says relocate"
+    },
+    {
+     "key": "Download of the next article cancelled, so playback stopped.",
+     "english": "Download of the next article cancelled, so playback stopped.",
+     "before": "Hämtningen av nästa artikel avbröts, så uppspelningen stoppades.",
+     "after": "Nedladdningen av nästa artikel avbröts, så uppspelningen stoppades.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download of the next article cancelled.",
+     "english": "Download of the next article cancelled.",
+     "before": "Hämtningen av nästa artikel avbröts.",
+     "after": "Nedladdningen av nästa artikel avbröts.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download of the next episode cancelled, so playback stopped.",
+     "english": "Download of the next episode cancelled, so playback stopped.",
+     "before": "Hämtningen av nästa avsnitt avbröts, så uppspelningen stoppades.",
+     "after": "Nedladdningen av nästa avsnitt avbröts, så uppspelningen stoppades.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download of the next episode cancelled.",
+     "english": "Download of the next episode cancelled.",
+     "before": "Hämtningen av nästa avsnitt avbröts.",
+     "after": "Nedladdningen av nästa avsnitt avbröts.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download of the previous article cancelled, so playback stopped.",
+     "english": "Download of the previous article cancelled, so playback stopped.",
+     "before": "Hämtningen av föregående artikel avbröts, så uppspelningen stoppades.",
+     "after": "Nedladdningen av föregående artikel avbröts, så uppspelningen stoppades.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download of the previous article cancelled.",
+     "english": "Download of the previous article cancelled.",
+     "before": "Hämtningen av föregående artikel avbröts.",
+     "after": "Nedladdningen av föregående artikel avbröts.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download of the previous episode cancelled, so playback stopped.",
+     "english": "Download of the previous episode cancelled, so playback stopped.",
+     "before": "Hämtningen av föregående avsnitt avbröts, så uppspelningen stoppades.",
+     "after": "Nedladdningen av föregående avsnitt avbröts, så uppspelningen stoppades.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download of the previous episode cancelled.",
+     "english": "Download of the previous episode cancelled.",
+     "before": "Hämtningen av föregående avsnitt avbröts.",
+     "after": "Nedladdningen av föregående avsnitt avbröts.",
+     "why": "term: the glossary's noun for a download is 'nedladdning', as most of the catalog says"
+    },
+    {
+     "key": "Download progress",
+     "english": "Download progress",
+     "before": "Hämtningsförlopp",
+     "after": "Nedladdningsförlopp",
+     "why": "term: the glossary's noun for a download is 'nedladdning'"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Redigera text stoppas för den här boken; välj Redigera text igen för att redigera den nya läsningen.",
+     "after": "”Redigera text” avslutas för den här boken; välj ”Redigera text” igen för att redigera den nya läsningen.",
+     "why": "grammar: the command name as subject reads as an imperative; quoted, and an editing session 'avslutas'"
+    },
+    {
+     "key": "Everything",
+     "english": "Everything",
+     "before": "Allt",
+     "after": "allt",
+     "why": "grammar: the object sits inside a title ('Lägg allt i papperskorgen'); Swedish writes it in lower case"
+    },
+    {
+     "key": "Everything in %@",
+     "english": "Everything in %@",
+     "before": "Allt i %@",
+     "after": "allt i %@",
+     "why": "grammar: the object sits inside a title; Swedish writes it in lower case"
+    },
+    {
+     "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "before": "Mappplacering och manuell ordning som bara lagrades i det oläsliga indexet går förlorade från biblioteket.",
+     "after": "Mappplacering och manuell ordning som bara lagrades i det oläsbara indexet går förlorade från biblioteket.",
+     "why": "term: an unreadable file is 'oläsbar' everywhere else in the catalog; 'oläslig' is illegible handwriting"
+    },
+    {
+     "key": "Gesture time window",
+     "english": "Gesture time window",
+     "before": "Gesttidsfönster",
+     "after": "Tidsfönster för gesten",
+     "why": "natural: the compound 'Gesttidsfönster' is hard to read aloud and in braille"
+    },
+    {
+     "key": "Ignored When Typing",
+     "english": "Ignored When Typing",
+     "before": "Ignoreras vid inskrivning",
+     "after": "Ignoreras vid skrivning",
+     "why": "natural: 'inskrivning' first means enrolment or registration; typing a title's letters is 'skrivning'"
+    },
+    {
+     "key": "Ignored When Typing and Sorting",
+     "english": "Ignored When Typing and Sorting",
+     "before": "Ignoreras vid inskrivning och sortering",
+     "after": "Ignoreras vid skrivning och sortering",
+     "why": "natural: 'inskrivning' first means enrolment or registration; typing a title's letters is 'skrivning'"
+    },
+    {
+     "key": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "english": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "before": "Importera den igen, vilket frågar om dubbletten, och välj Ersätt befintlig så att kopian i datamappen ersätts, eller ta bort den från biblioteket, och flytta sedan datamappen igen.",
+     "after": "Importera den igen – då får du en fråga om dubbletten – och välj ”Ersätt befintlig” så att kopian som lagras i datamappen tar dess plats, eller ta bort den från biblioteket, och flytta sedan datamappen igen.",
+     "why": "meaning: 'så att kopian i datamappen ersätts' said that copy is replaced; it takes the book's place. An import cannot ask, so 'du får en fråga'"
+    },
+    {
+     "key": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "It is the folder of the feed %@. Either way, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Det är mappen för flödet %@. Oavsett val finns flödet och dess nedladdningar kvar, utan mapp, tills Flödesinformation ger flödet en ny; Radera flöde… på dess rad raderar det.",
+     "after": "Det är mappen för flödet %@. Oavsett val finns flödet och dess nedladdningar kvar, utan mapp, tills Flödesinformation ger flödet en ny; ”Radera flöde…” på dess rad raderar det.",
+     "why": "grammar: the command name as subject reads as an imperative; quoted as a name"
+    },
+    {
+     "key": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "It is the folder of the feeds %@. Either way, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Det är mappen för flödena %@. Oavsett val finns flödena och deras nedladdningar kvar, utan mapp, tills Flödesinformation ger vart och ett en ny; Radera flöde… på ett flödes rad raderar det.",
+     "after": "Det är mappen för flödena %@. Oavsett val finns flödena och deras nedladdningar kvar, utan mapp, tills Flödesinformation ger vart och ett en ny; ”Radera flöde…” på ett flödes rad raderar det.",
+     "why": "grammar: the command name as subject reads as an imperative; quoted as a name"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ lämnades kvar där den är: avsnitt och artiklar stannar i sina flöden; %@ gör ett av dem till en bok i ditt bibliotek.",
+     "after": "%@ lämnades kvar där den är: avsnitt och artiklar stannar i sina flöden; ”%@” gör ett av dem till en bok i ditt bibliotek.",
+     "why": "grammar: the inserted command name ('Flytta till biblioteket…') begins a clause and reads as an imperative; quoted as a name"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "%@ lämnades kvar där de är: avsnitt och artiklar stannar i sina flöden; %@ gör ett av dem till en bok i ditt bibliotek.",
+     "after": "%@ lämnades kvar där de är: avsnitt och artiklar stannar i sina flöden; ”%@” gör ett av dem till en bok i ditt bibliotek.",
+     "why": "grammar: the inserted command name ('Flytta till biblioteket…') begins a clause and reads as an imperative; quoted as a name"
+    },
+    {
+     "key": "Most rows shown",
+     "english": "Most rows shown",
+     "before": "Flest rader som visas",
+     "after": "Högsta antal rader",
+     "why": "natural: 'Flest rader som visas' is a word-for-word copy; the field holds the highest number of rows"
+    },
+    {
+     "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "before": "Ingen har nyare platser eller böcker som den andra saknar, men de skiljer sig åt på andra sätt.",
+     "after": "Ingen av dem har nyare platser eller böcker som den andra saknar, men de skiljer sig åt på andra sätt.",
+     "why": "natural: bare 'Ingen' means 'nobody'; 'Ingen av dem' is 'neither of them'"
+    },
+    {
+     "key": "Neither is newer: each has changes the other lacks.",
+     "english": "Neither is newer: each has changes the other lacks.",
+     "before": "Ingen är nyare: var och en har ändringar som den andra saknar.",
+     "after": "Ingen av dem är nyare: var och en har ändringar som den andra saknar.",
+     "why": "natural: bare 'Ingen' means 'nobody'; 'Ingen av dem' is 'neither of them'"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "one": "Ingen av de %@ markerade böckerna behålls på den här Mac-datorn på ditt val, och %lld behålls för läslistan.",
+      "other": "Ingen av de %@ markerade böckerna behålls på den här Mac-datorn på ditt val, och %lld behålls för läslistan."
+     },
+     "after": {
+      "one": "Du har inte valt att behålla någon av de %@ markerade böckerna på den här Mac-datorn, och %lld behålls för läslistan.",
+      "other": "Du har inte valt att behålla någon av de %@ markerade böckerna på den här Mac-datorn, och %lld behålls för läslistan."
+     },
+     "why": "grammar: 'på ditt val' is not Swedish for 'by your choice'; said as what you chose"
+    },
+    {
+     "key": "Opened Last",
+     "english": "Opened Last",
+     "before": "Öppnad senast",
+     "after": "Senast öppnade",
+     "why": "grammar: the limit keeps several rows, so plural and in the order of 'Senast tillagda', as the description's 'senast öppnade' says"
+    },
+    {
+     "key": "Retry is at the top of the Library window.",
+     "english": "Retry is at the top of the Library window.",
+     "before": "Försök igen finns högst upp i biblioteksfönstret.",
+     "after": "”Försök igen” finns högst upp i biblioteksfönstret.",
+     "why": "grammar: the button name as subject reads as the imperative 'try again'; quoted as a name"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "Stoppa, och Spela upp börjar om",
+     "after": "Stoppa och börja om vid nästa uppspelning",
+     "why": "natural: the command name 'Spela upp' as subject reads as an imperative; the choice said plainly"
+    },
+    {
+     "key": "Stopping the library move before quitting.",
+     "english": "Stopping the library move before quitting.",
+     "before": "Stoppar flytten av biblioteket innan avslut.",
+     "after": "Stoppar flytten av biblioteket innan TextMouth avslutas.",
+     "why": "natural: 'innan avslut' is clipped; Swedish says what quits"
+    },
+    {
+     "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "before": "Ett byte förlorar ändringarna som TextMouth inte kunde spara medan biblioteket inte är tillgängligt.",
+     "after": "Om du byter förlorar du ändringarna som TextMouth inte kunde spara medan biblioteket inte är tillgängligt.",
+     "why": "natural: 'Ett byte förlorar ändringarna' makes the noun the doer; you lose them by switching"
+    },
+    {
+     "key": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "english": "Take it off the reading list, or clear %@ in the Reading List's options first.",
+     "before": "Ta bort den från läslistan, eller rensa %@ i läslistans alternativ först.",
+     "after": "Ta bort den från läslistan, eller avmarkera ”%@” i läslistans alternativ först.",
+     "why": "meaning: the option is a checkbox; 'rensa' means clean out, Apple's Swedish unchecks with 'avmarkera'; its name quoted"
+    },
+    {
+     "key": "TextMouth could not check whether to move it to the Trash.",
+     "english": "TextMouth could not check whether to move it to the Trash.",
+     "before": "TextMouth kunde inte kontrollera om den skulle flyttas till papperskorgen.",
+     "after": "TextMouth kunde inte kontrollera om den skulle läggas i papperskorgen.",
+     "why": "term: the glossary's 'lägga i papperskorgen', as the other removal sentences say"
+    },
+    {
+     "key": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
+     "english": "TextMouth could not read its library index, the file that records your folders, sort settings, and the order of your books.",
+     "before": "TextMouth kunde inte läsa sitt biblioteksindex, filen som registrerar dina mappar, sorteringsinställningar och bokordning.",
+     "after": "TextMouth kunde inte läsa sitt biblioteksindex, filen som lagrar dina mappar, sorteringsinställningar och böckernas ordning.",
+     "why": "natural: 'bokordning' is not a Swedish word; 'böckernas ordning', and a file 'lagrar'"
+    },
+    {
+     "key": "TextMouth could not record the removal in its package, %@.",
+     "english": "TextMouth could not record the removal in its package, %@.",
+     "before": "TextMouth kunde inte registrera borttagningen i dess paket, %@.",
+     "after": "TextMouth kunde inte registrera borttagningen i bokens paket, %@.",
+     "why": "meaning: 'dess paket' points back to the removal; the package is the book's"
+    },
+    {
+     "key": "TextMouth first saves a copy of the old file, and does not rebuild if it cannot.",
+     "english": "TextMouth first saves a copy of the old file, and does not rebuild if it cannot.",
+     "before": "TextMouth sparar först en kopia av den gamla filen och bygger inte om om det inte går.",
+     "after": "TextMouth sparar först en kopia av den gamla filen och bygger bara om när kopian har sparats.",
+     "why": "natural: 'bygger inte om om det inte går' stumbles on 'om om'; same meaning said once"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "english": "TextMouth is opening again on another library, so they stay unsaved in this one.",
+     "before": "TextMouth öppnas igen på ett annat bibliotek, så de förblir osparade i det här.",
+     "after": "TextMouth öppnas igen med ett annat bibliotek, så de förblir osparade i det här.",
+     "why": "grammar: TextMouth opens 'med' a library; 'öppnas igen på' copies the English 'on'"
+    },
+    {
+     "key": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "english": "TextMouth is opening again on another library, so they stay where they are in this one.",
+     "before": "TextMouth öppnas igen på ett annat bibliotek, så de ligger kvar där de är i det här.",
+     "after": "TextMouth öppnas igen med ett annat bibliotek, så de ligger kvar där de är i det här.",
+     "why": "grammar: TextMouth opens 'med' a library; 'öppnas igen på' copies the English 'on'"
+    },
+    {
+     "key": "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes.",
+     "english": "TextMouth is reading “%@” again with other braille file characters. Try again when that finishes.",
+     "before": "TextMouth läser ”%@” igen med andra punktskriftsfilstecken. Försök igen när det är klart.",
+     "after": "TextMouth läser ”%@” igen med andra punktskriftstecken. Försök igen när det är klart.",
+     "why": "natural: the compound 'punktskriftsfilstecken' is hard to read; 'punktskriftstecken' as Speak Info names the setting"
+    },
+    {
+     "key": "TextMouth is switching to another library and opening again on it.",
+     "english": "TextMouth is switching to another library and opening again on it.",
+     "before": "TextMouth byter till ett annat bibliotek och öppnas igen på det.",
+     "after": "TextMouth byter till ett annat bibliotek och öppnas igen med det.",
+     "why": "grammar: TextMouth opens 'med' a library; 'öppnas igen på' copies the English 'on'"
+    },
+    {
+     "key": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "english": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "before": "TextMouth flyttar tillbaka dem när det har byggt klart om sin datamapp.",
+     "after": "TextMouth flyttar tillbaka dem när ombyggnaden av datamappen är klar.",
+     "why": "natural: 'har byggt klart om' tangles the particle verb; said as when the rebuilding ends, like the sentence about the move"
+    },
+    {
+     "key": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "english": "TextMouth reads its file as it reads a file you add: in the encoding the file names, or else the one TextMouth finds.",
+     "before": "TextMouth läser sin fil som en fil du lägger till: med den teckenkodning som filen anger, annars den som TextMouth hittar.",
+     "after": "TextMouth läser bokens fil som en fil du lägger till: med den teckenkodning som filen anger, annars den som TextMouth hittar.",
+     "why": "meaning: reflexive 'sin fil' makes it TextMouth's own file; it is the book's"
+    },
+    {
+     "key": "TextMouth saves them once it has finished rebuilding its data directory.",
+     "english": "TextMouth saves them once it has finished rebuilding its data directory.",
+     "before": "TextMouth sparar dem när det har byggt klart om sin datamapp.",
+     "after": "TextMouth sparar dem när ombyggnaden av datamappen är klar.",
+     "why": "natural: 'har byggt klart om' tangles the particle verb; said as when the rebuilding ends, like the sentence about the move"
+    },
+    {
+     "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
+     "english": {
+      "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
+      "other": "That would put %@ %lld levels deep, but folders nest at most %lld levels."
+     },
+     "before": {
+      "one": "Det skulle placera %@ %lld nivå djupt, men mappar kan kapslas högst %lld nivåer.",
+      "other": "Det skulle placera %@ %lld nivåer djupt, men mappar kan kapslas högst %lld nivåer."
+     },
+     "after": {
+      "one": "Det skulle placera %@ %lld nivå djupt, men mappar kan kapslas högst %lld nivåer djupt.",
+      "other": "Det skulle placera %@ %lld nivåer djupt, men mappar kan kapslas högst %lld nivåer djupt."
+     },
+     "why": "grammar: 'kapslas högst 5 nivåer' needs 'djupt', as the first clause has it"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit sorteras bland H och visas som Hobbit, The. Att skriva H hittar den bland H.",
+     "after": "The Hobbit sorteras bland H och visas som Hobbit, The. Om du skriver H hittas den bland H.",
+     "why": "natural: 'Att skriva H hittar den' makes typing the doer; Swedish says 'om du skriver H hittas den'"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "Punktskriften översätts till vanlig skrift igen med den här koden. Inget kontrollerar att det är rätt val. Om ord läses fel, välj en annan.",
+     "after": "Punktskriften översätts till svartskrift igen med den här koden. Inget kontrollerar att det är rätt val. Om ord läses fel, välj en annan.",
+     "why": "term: Swedish braille readers call print 'svartskrift'; 'vanlig skrift' is vague"
+    },
+    {
+     "key": "The folders %@ and %@ can't both move into %@: their names mean the same folder on this disk.",
+     "english": "The folders %1$@ and %2$@ can't both move into %3$@: their names mean the same folder on this disk.",
+     "before": "Mapparna %@ och %@ kan inte båda flyttas till %@: deras namn betyder samma mapp på den här disken.",
+     "after": "Mapparna %@ och %@ kan inte båda flyttas till %@: deras namn syftar på samma mapp på den här disken.",
+     "why": "natural: names 'syftar på' a folder, as the catalog's own note on this says; 'betyder' is literal"
+    },
+    {
+     "key": "The reading list still keeps it downloaded",
+     "english": "The reading list still keeps it downloaded",
+     "before": "Läslistan håller fortfarande den hämtad",
+     "after": "Läslistan håller den fortfarande hämtad",
+     "why": "grammar: an unstressed object pronoun comes before 'fortfarande' in Swedish"
+    },
+    {
+     "key": "The reading list still keeps them downloaded",
+     "english": "The reading list still keeps them downloaded",
+     "before": "Läslistan håller fortfarande dem hämtade",
+     "after": "Läslistan håller dem fortfarande hämtade",
+     "why": "grammar: an unstressed object pronoun comes before 'fortfarande' in Swedish"
+    },
+    {
+     "key": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "english": "The reading list, the folders' sorts and listening options, and any book whose files aren't in this folder yet won't be in it.",
+     "before": "Läslistan, mapparnas sorteringar och lyssningsalternativ, och alla böcker vars filer inte finns i den här mappen än kommer inte att finnas i det.",
+     "after": "Läslistan, mapparnas sorteringar och lyssningsalternativ och de böcker vars filer inte finns i den här mappen än kommer inte att finnas med i det.",
+     "why": "meaning: 'alla böcker … kommer inte att finnas' can be heard as 'not all books'; 'de böcker' says none of them"
+    },
+    {
+     "key": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "Then take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "Ta sedan bort den från läslistan, eller rensa %@ i läslistans alternativ.",
+     "after": "Ta sedan bort den från läslistan, eller avmarkera ”%@” i läslistans alternativ.",
+     "why": "meaning: the option is a checkbox; 'rensa' means clean out, Apple's Swedish unchecks with 'avmarkera'; its name quoted"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "one": "Det finns ingen vy %@. Gå till vy når %lld vy.",
+      "other": "Det finns ingen vy %@. Gå till vy når %lld vyer."
+     },
+     "after": {
+      "one": "Det finns ingen vy %@. ”Gå till vy” når %lld vy.",
+      "other": "Det finns ingen vy %@. ”Gå till vy” når %lld vyer."
+     },
+     "why": "grammar: the command name as subject reads as an imperative; quoted as a name"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "Titlar sorteras, och hittas genom att skriva, som de är skrivna: The Hobbit finns bland T.",
+     "after": "Titlar sorteras, och hittas när du skriver, som de är skrivna: The Hobbit finns bland T.",
+     "why": "natural: 'hittas genom att skriva' makes the titles do the typing; found 'när du skriver'"
+    },
+    {
+     "key": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let it go, take it off the reading list, or clear %@ in the Reading List's options.",
+     "before": "För att släppa den, ta bort den från läslistan eller rensa %@ i läslistans alternativ.",
+     "after": "För att släppa den, ta bort den från läslistan eller avmarkera ”%@” i läslistans alternativ.",
+     "why": "meaning: the option is a checkbox; 'rensa' means clean out, Apple's Swedish unchecks with 'avmarkera'; its name quoted"
+    },
+    {
+     "key": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "english": "To let them go, take them off the reading list, or clear %@ in the Reading List's options.",
+     "before": "För att släppa dem, ta bort dem från läslistan eller rensa %@ i läslistans alternativ.",
+     "after": "För att släppa dem, ta bort dem från läslistan eller avmarkera ”%@” i läslistans alternativ.",
+     "why": "meaning: the option is a checkbox; 'rensa' means clean out, Apple's Swedish unchecks with 'avmarkera'; its name quoted"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "För att använda en annan mapp, öppna Inställningar, Lagring och välj %1$@ eller %2$@.",
+     "after": "För att använda en annan mapp, öppna ”Inställningar” > ”Lagring” och välj %1$@ eller %2$@.",
+     "why": "term: the glossary writes this settings path as ”Inställningar” > ”Lagring”"
+    },
+    {
+     "key": "Tries again to save every change that could not be saved",
+     "english": "Tries again to save every change that could not be saved",
+     "before": "Försöker spara varje ändring som inte kunde sparas igen.",
+     "after": "Försöker igen att spara varje ändring som inte kunde sparas.",
+     "why": "meaning: 'igen' at the end attached to 'kunde sparas', saying the changes could not be saved again"
+    },
+    {
+     "key": "Waiting for book analysis to finish...",
+     "english": "Waiting for book analysis to finish...",
+     "before": "Väntar på att boksanalysen ska bli klar...",
+     "after": "Väntar på att analysen av böckerna ska bli klar...",
+     "why": "grammar: 'boksanalysen' is a misspelt compound (bok takes no -s); 'analysen av böckerna'"
+    },
+    {
+     "key": "When a book is deleted, %@.",
+     "english": "When a book is deleted, %@.",
+     "before": "När en bok raderas, %@.",
+     "after": "När en bok raderas: %@.",
+     "why": "grammar: the inserted clause ('dess filer läggs…') breaks verb-second order after 'När en bok raderas,'; a colon keeps every value right"
+    },
+    {
+     "key": "When off, removing a book will %@ at once.",
+     "english": "When off, removing a book will %@ at once.",
+     "before": "När den är avstängd kommer borttagning av en bok att %@ direkt.",
+     "after": "När den är avstängd och du tar bort en bok kommer TextMouth att %@ direkt.",
+     "why": "natural: 'borttagning av en bok kommer att' makes the action noun the doer; TextMouth acts when you remove a book"
+    },
+    {
+     "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "När den är på frågar borttagning av en bok först om du vill %@ eller behålla dem i TextMouths biblioteksmapp.",
+     "after": "När den är på och du tar bort en bok frågar TextMouth först om du vill %@ eller behålla dem i TextMouths biblioteksmapp.",
+     "why": "natural: an action noun cannot ask ('frågar borttagning av en bok'); TextMouth asks"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "Var TextMouth skriver sina diagnostikloggar. %1$@ behåller dem med dina böcker, så de flyttas och synkas med biblioteket. %2$@ behåller dem i %3$@, som aldrig synkas. En ändring gäller från nästa rad; befintliga loggar finns kvar.",
+     "after": "Var TextMouth skriver sina diagnostikloggar. ”%1$@” sparar dem tillsammans med dina böcker, så de flyttas och synkas med biblioteket. ”%2$@” sparar dem i %3$@, som aldrig synkas. En ändring gäller från nästa rad; befintliga loggar finns kvar.",
+     "why": "grammar: the choice names ('Inuti datamappen') begin sentences unquoted and read as phrases; quoted, and logs 'sparas' with the books"
+    },
+    {
+     "key": "With %@, %@.",
+     "english": "With %1$@, %2$@.",
+     "before": "Med %@ gäller: %@.",
+     "after": "Med ”%@” gäller: %@.",
+     "why": "grammar: the button's title sits unquoted inside the sentence and reads as part of it; quoted as a name"
+    },
+    {
+     "key": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "english": "With %@, the feed and its downloads stay, listed in no folder until Feed Info gives the feed another; Delete Feed… on its row deletes it.",
+     "before": "Med %@ finns flödet och dess nedladdningar kvar, utan mapp tills Flödesinformation ger flödet en ny; Radera flöde… på dess rad raderar det.",
+     "after": "Med ”%@” finns flödet och dess nedladdningar kvar, utan mapp tills Flödesinformation ger flödet en ny; ”Radera flöde…” på dess rad raderar det.",
+     "why": "grammar: the button's title sits unquoted inside the sentence and reads as part of it; quoted as a name"
+    },
+    {
+     "key": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "english": "With %@, the feeds and their downloads stay, listed in no folder until Feed Info gives each another; Delete Feed… on a feed's row deletes it.",
+     "before": "Med %@ finns flödena och deras nedladdningar kvar, utan mapp tills Flödesinformation ger vart och ett en ny; Radera flöde… på ett flödes rad raderar det.",
+     "after": "Med ”%@” finns flödena och deras nedladdningar kvar, utan mapp tills Flödesinformation ger vart och ett en ny; ”Radera flöde…” på ett flödes rad raderar det.",
+     "why": "grammar: the button's title sits unquoted inside the sentence and reads as part of it; quoted as a name"
+    },
+    {
+     "key": "With %@, the folder and everything in it leave the library, and %@.",
+     "english": "With %1$@, the folder and everything in it leave the library, and %2$@.",
+     "before": "Med %@ lämnar mappen och allt i den biblioteket, och %@.",
+     "after": "Med ”%@” lämnar mappen och allt i den biblioteket, och %@.",
+     "why": "grammar: the button's title sits unquoted inside the sentence and reads as part of it; quoted as a name"
+    },
+    {
+     "key": "With Move Contents Out, the feed's folder moves with the rest.",
+     "english": "With Move Contents Out, the feed's folder moves with the rest.",
+     "before": "Med Flytta ut innehållet flyttas flödets mapp med resten.",
+     "after": "Med ”Flytta ut innehållet” flyttas flödets mapp med resten.",
+     "why": "grammar: the button name 'Flytta ut innehållet' unquoted runs into the sentence; quoted as a name"
+    },
+    {
+     "key": "With Move Contents Out, their folders move with the rest.",
+     "english": "With Move Contents Out, their folders move with the rest.",
+     "before": "Med Flytta ut innehållet flyttas deras mappar med resten.",
+     "after": "Med ”Flytta ut innehållet” flyttas deras mappar med resten.",
+     "why": "grammar: the button name 'Flytta ut innehållet' unquoted runs into the sentence; quoted as a name"
+    },
+    {
+     "key": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "english": "With Move Contents Out, they stay in the library and only the folder is deleted.",
+     "before": "Med Flytta ut innehållet finns de kvar i biblioteket och bara mappen raderas.",
+     "after": "Med ”Flytta ut innehållet” finns de kvar i biblioteket och bara mappen raderas.",
+     "why": "grammar: the button name 'Flytta ut innehållet' unquoted runs into the sentence; quoted as a name"
+    },
+    {
+     "key": "subscribed",
+     "english": "subscribed",
+     "before": "prenumererar",
+     "after": "med prenumeration",
+     "why": "meaning: 'prenumererar' says the feed subscribes; the condition is that you subscribe to it"
+    },
+    {
+     "key": "unsubscribed",
+     "english": "unsubscribed",
+     "before": "prenumererar inte",
+     "after": "utan prenumeration",
+     "why": "meaning: 'prenumererar inte' says the feed does not subscribe; 'utan prenumeration', as the catalog says elsewhere"
+    },
+    {
+     "key": "use the drive's own command to keep the book only online",
+     "english": "use the drive's own command to keep the book only online",
+     "before": "använd molndrivenhetens eget kommando för att bara behålla boken online",
+     "after": "använd molntjänstens eget kommando för att bara behålla boken online",
+     "why": "natural: 'molndrivenhet' is not a Swedish word; the cloud service's own command"
+    }
+   ]
+  }
+ ]
+}
