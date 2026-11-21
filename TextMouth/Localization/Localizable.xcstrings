@@ -18591,19 +18591,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Non è stato possibile leggere %@ capitoli su %lld"
+                  "value" : "Non è stato possibile leggere %@ su %lld di capitoli"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Non è stato possibile leggere %@ capitoli su %lld"
+                  "value" : "Non è stato possibile leggere %@ su %lld capitolo"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Non è stato possibile leggere %@ capitoli su %lld"
+                  "value" : "Non è stato possibile leggere %@ su %lld capitoli"
                 }
               }
             }
@@ -85276,19 +85276,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld di libri di testo"
+                  "value" : "%lld di libri testuali"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libro di testo"
+                  "value" : "%lld libro testuale"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld libri di testo"
+                  "value" : "%lld libri testuali"
                 }
               }
             }
@@ -105783,7 +105783,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aggiunge la velocità con cui si contano, ad esempio 2,0x per un audiolibro non a 1x, o 500 parole al minuto per un libro di testo, nel lettore, in Dove sono?, in Copia posizione di lettura e nelle durate del foglio Intestazioni."
+            "value" : "Aggiunge la velocità su cui si basano i tempi, ad esempio 2,0x per un audiolibro non a 1x, o 500 parole al minuto per un libro testuale, nel lettore, in Dove sono?, in Copia posizione di lettura e nelle durate del foglio Intestazioni."
           }
         },
         "ja" : {
@@ -154871,7 +154871,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "La scelta rende la scorciatoia personale; Ripristina predefinito ripristina dove funziona per impostazione predefinita."
+            "value" : "Scegliere rende tua la scorciatoia; Ripristina predefinito riporta le finestre in cui funziona a quelle predefinite."
           }
         },
         "ja" : {
@@ -201465,7 +201465,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Titolo e inizio di ogni intestazione, come foglio CUE che dà all’audio il nome usato da Audio."
+            "value" : "Titolo e inizio di ogni intestazione, come file CUE che dà all’audio il nome usato da Audio."
           }
         },
         "ja" : {
@@ -215469,7 +215469,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tutte le scorciatoie e dove funzionano tornano ai valori predefiniti. I tuoi tasti andranno persi."
+            "value" : "Tutte le scorciatoie e le finestre in cui funzionano tornano ai valori predefiniti. I tasti che hai scelto andranno persi."
           }
         },
         "ja" : {
@@ -219884,7 +219884,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Esporta non può scrivere nella cartella della libreria di TextMouth. Scegli un’altra cartella."
+            "value" : "L’esportazione non può scrivere nella cartella della libreria di TextMouth. Scegli un’altra cartella."
           }
         },
         "ja" : {
@@ -220021,7 +220021,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Esporta non può scrivere nella cartella in cui TextMouth conserva i capitoli letti, che viene svuotata. Scegli un’altra cartella."
+            "value" : "L’esportazione non può scrivere nella cartella in cui TextMouth conserva i capitoli letti, che viene svuotata. Scegli un’altra cartella."
           }
         },
         "ja" : {
@@ -235256,7 +235256,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Per cinque secondi i due tasti successivi non sono scorciatoie; TextMouth dice se formano una doppia pressione."
+            "value" : "Per cinque secondi, le prossime due pressioni di tasto non attivano scorciatoie; TextMouth dice se formano una doppia pressione."
           }
         },
         "ja" : {
@@ -243949,7 +243949,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Va a una pagina, a una percentuale o a un orario."
+            "value" : "Va a una pagina, a una percentuale o a un tempo."
           }
         },
         "ja" : {
@@ -245873,7 +245873,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Modalità di visualizzazione delle informazioni sull’intestazione"
+            "value" : "Informazioni mostrate per ogni intestazione"
           }
         },
         "ja" : {
@@ -248943,7 +248943,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Quanto acuta suona la voce nel file. Parte dal tono del libro."
+            "value" : "Quanto è acuta la voce nel file. Parte dal tono del libro."
           }
         },
         "ja" : {
@@ -276433,7 +276433,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vai all’orario"
+            "value" : "Vai al tempo"
           }
         },
         "ja" : {
@@ -280073,19 +280073,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Conservati %@ di %lld di capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+                  "value" : "Conservati %@ su %lld di capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Conservati %@ di %lld capitolo fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+                  "value" : "Conservati %@ su %lld capitolo fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Conservati %@ di %lld capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
+                  "value" : "Conservati %@ su %lld capitoli fino a quando TextMouth non viene chiuso, non inizia un’altra esportazione dell’audio parlato o non cambiano la voce, il testo, le sostituzioni o le pause del libro. Per proseguire dal capitolo %@, esporta lo stesso intervallo con la stessa velocità e lo stesso tono."
                 }
               }
             }
@@ -296819,7 +296819,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rendi doppia pressione"
+            "value" : "Imposta doppia pressione"
           }
         },
         "ja" : {
@@ -296956,7 +296956,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Rendi pressione singola"
+            "value" : "Imposta pressione singola"
           }
         },
         "ja" : {
@@ -305648,7 +305648,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Riduci"
+            "value" : "Contrai"
           }
         },
         "ja" : {
@@ -305785,7 +305785,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Riduci tutto"
+            "value" : "Contrai tutto"
           }
         },
         "ja" : {
@@ -326987,7 +326987,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unità di navigazione per i libri di testo"
+            "value" : "Unità di navigazione per i libri testuali"
           }
         },
         "ja" : {
@@ -333295,7 +333295,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessuna finestra della libreria né libro aperti, quindi non c’è nulla da esportare."
+            "value" : "Non ci sono finestre della libreria né libri aperti, quindi non c’è nulla da esportare."
           }
         },
         "ja" : {
@@ -343489,7 +343489,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Non è stato possibile leggere il testo del PDF: non ha testo incorporato e l’OCR non ha potuto funzionare (%@)."
+            "value" : "Non è stato possibile leggere il testo del PDF: non ha testo incorporato e non è stato possibile eseguire l’OCR (%@)."
           }
         },
         "ja" : {
@@ -345108,7 +345108,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nessuna voce installata. Aggiungine una in Impostazioni di Sistema, Accessibilità, Contenuto parlato, poi esporta di nuovo."
+            "value" : "Nessuna voce installata. Aggiungine una in Impostazioni di Sistema, Accessibilità, Contenuti letti ad alta voce, poi esporta di nuovo."
           }
         },
         "ja" : {
@@ -346276,19 +346276,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessuno dei %lld di capitoli ha potuto essere letto"
+                  "value" : "Non è stato possibile leggere nessuno dei %lld di capitoli"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessuno dei %lld capitoli ha potuto essere letto"
+                  "value" : "Non è stato possibile leggere l’unico capitolo"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Nessuno dei %lld capitoli ha potuto essere letto"
+                  "value" : "Non è stato possibile leggere nessuno dei %lld capitoli"
                 }
               }
             }
@@ -353568,19 +353568,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su %@ di %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %@ delle %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su %@ di %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %@ di %lld pagina, quindi manca il testo presente solo nelle sue immagini: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su %@ di %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %@ delle %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               }
             }
@@ -354035,19 +354035,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su tutte le %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su nessuna delle %lld di pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su tutte le %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su %lld pagina, quindi manca il testo presente solo nelle sue immagini: %@."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’OCR non ha potuto funzionare su tutte le %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
+                  "value" : "Non è stato possibile eseguire l’OCR su nessuna delle %lld pagine, quindi manca il testo presente solo nelle loro immagini: %@."
                 }
               }
             }
@@ -354349,7 +354349,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "L’OCR non ha potuto funzionare sull’unica pagina del PDF, quindi manca il testo presente solo nelle sue immagini: %@."
+            "value" : "Non è stato possibile eseguire l’OCR sull’unica pagina del PDF, quindi manca il testo presente solo nelle sue immagini: %@."
           }
         },
         "ja" : {
@@ -385067,7 +385067,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Stamp"
+            "value" : "Stampa schermo"
           }
         },
         "ja" : {
@@ -388766,7 +388766,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Uscendo ora, queste modifiche non verranno salvate:"
+            "value" : "Se esci ora, queste modifiche non verranno salvate:"
           }
         },
         "ja" : {
@@ -427683,7 +427683,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Di’ quante"
+            "value" : "Di’ quanti"
           }
         },
         "ja" : {
@@ -458110,19 +458110,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Velocità: %lld di parole al minuto; frequenza %@, tono %@, volume %@"
+                  "value" : "Velocità: %lld di parole al minuto; velocità del motore %@, tono %@, volume %@"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Velocità: %lld parola al minuto; frequenza %@, tono %@, volume %@"
+                  "value" : "Velocità: %lld parola al minuto; velocità del motore %@, tono %@, volume %@"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Velocità: %lld parole al minuto; frequenza %@, tono %@, volume %@"
+                  "value" : "Velocità: %lld parole al minuto; velocità del motore %@, tono %@, volume %@"
                 }
               }
             }
@@ -475690,7 +475690,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Testo non aggiornato: la trascrizione modificata di %@ ha %@, ma l’audiolibro ne ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo; fino ad allora il libro conserva il suo vecchio testo."
+            "value" : "Testo non aggiornato: la trascrizione modificata di %@ ha %@, ma l’audiolibro ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo; fino ad allora il libro conserva il suo vecchio testo."
           }
         },
         "ja" : {
@@ -480875,7 +480875,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth non ha potuto controllare la tabella “%1$@” di questo Mac: %2$@. Scegliila di nuovo per riprovare."
+            "value" : "TextMouth non ha potuto controllare la tabella “%1$@” di questo Mac: %2$@. Sceglila di nuovo per riprovare."
           }
         },
         "ja" : {
@@ -511225,19 +511225,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’MP3 ha capitoli per i primi %@ delle sue %lld di intestazioni; esporta come M4B per avere un capitolo per ciascuna."
+                  "value" : "L’MP3 ha capitoli per le prime %@ delle sue %lld di intestazioni; esporta come M4B per avere un capitolo per ciascuna."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’MP3 ha capitoli per i primi %@ delle sue %lld intestazione; esporta come M4B per avere un capitolo per ciascuna."
+                  "value" : "L’MP3 ha capitoli per le prime %@ della sua %lld intestazione; esporta come M4B per avere un capitolo per ciascuna."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "L’MP3 ha capitoli per i primi %@ delle sue %lld intestazioni; esporta come M4B per avere un capitolo per ciascuna."
+                  "value" : "L’MP3 ha capitoli per le prime %@ delle sue %lld intestazioni; esporta come M4B per avere un capitolo per ciascuna."
                 }
               }
             }
@@ -589490,7 +589490,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Attiva o disattiva segnalibro"
+            "value" : "Aggiungi o rimuovi segnalibro"
           }
         },
         "ja" : {
@@ -599440,7 +599440,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Digita virgolette dritte: in TextEdit, disattiva Virgolette intelligenti in Modifica, Sostituzioni."
+            "value" : "Digita virgolette dritte: in TextEdit, disattiva Virgolette smart in Modifica, Sostituzioni."
           }
         },
         "ja" : {
@@ -625150,7 +625150,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Windows-874 (thai)"
+            "value" : "Windows-874 (thailandese)"
           }
         },
         "ja" : {
@@ -648007,7 +648007,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "la trascrizione ha %@, ma l’audiolibro ne ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo, e il testo viene mostrato."
+            "value" : "la trascrizione ha %@, mentre l’audiolibro ha %@. Conserva ogni riga di capitolo che inizia con <!-- chapter: e salva di nuovo, e il testo viene mostrato."
           }
         },
         "ja" : {
@@ -673786,7 +673786,7 @@
         "it" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "questo Mac non ce l’ha più"
+            "value" : "non è più presente su questo Mac"
           }
         },
         "ja" : {
