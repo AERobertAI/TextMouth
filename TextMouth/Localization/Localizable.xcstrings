@@ -124298,7 +124298,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Edit Teks dihentikan untuk %@, karena filenya dibaca ulang."
+            "value" : "Edit Teks dihentikan untuk %@, karena file-nya dibaca ulang."
           }
         },
         "it" : {
@@ -160122,7 +160122,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ini milik feed-nya selama masih diunduh. %@ membuang filenya dan mempertahankan posisi serta markahnya."
+            "value" : "Ini milik feed-nya selama masih diunduh. %@ membuang file-nya dan mempertahankan posisi serta markahnya."
           }
         },
         "it" : {
@@ -163373,7 +163373,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak ada file audio di foldernya yang dapat diimpor TextMouth."
+            "value" : "Tidak ada file audio di folder-nya yang dapat diimpor TextMouth."
           }
         },
         "it" : {
@@ -180008,7 +180008,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pastikan foldernya dapat ditulisi, lalu coba lagi."
+            "value" : "Pastikan folder-nya dapat ditulisi, lalu coba lagi."
           }
         },
         "it" : {
@@ -219117,7 +219117,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Membuka dialog Ekspor: audio buku, teksnya, atau filenya sendiri."
+            "value" : "Membuka dialog Ekspor: audio buku, teksnya, atau file-nya sendiri."
           }
         },
         "it" : {
@@ -300329,7 +300329,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth membaca filenya seperti membaca file yang Anda tambahkan: dalam pengodean yang disebutkan file, atau yang ditemukan TextMouth."
+            "value" : "TextMouth membaca file-nya seperti membaca file yang Anda tambahkan: dalam pengodean yang disebutkan file, atau yang ditemukan TextMouth."
           }
         },
         "it" : {
@@ -314705,7 +314705,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Audio buku: filenya, atau trek-nya dalam folder bernama sesuai buku, masing-masing dinamai sesuai babnya."
+            "value" : "Audio buku: file-nya, atau trek-nya dalam folder bernama sesuai buku, masing-masing dinamai sesuai babnya."
           }
         },
         "it" : {
@@ -324304,7 +324304,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Foldernya ada, tetapi TextMouth tidak dapat membaca file identitas pustakanya: %@"
+            "value" : "Folder-nya ada, tetapi TextMouth tidak dapat membaca file identitas pustakanya: %@"
           }
         },
         "it" : {
@@ -324393,7 +324393,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Foldernya ada, tetapi berisi pustaka TextMouth yang berbeda."
+            "value" : "Folder-nya ada, tetapi berisi pustaka TextMouth yang berbeda."
           }
         },
         "it" : {
@@ -324482,7 +324482,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Foldernya ada, tetapi pustaka tidak ada di dalamnya."
+            "value" : "Folder-nya ada, tetapi pustaka tidak ada di dalamnya."
           }
         },
         "it" : {
@@ -328420,7 +328420,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salinan baru menggantikan “%@”, tetapi file salinan lama tidak dapat dihapus dan tetap berada di foldernya: %@"
+            "value" : "Salinan baru menggantikan “%@”, tetapi file salinan lama tidak dapat dihapus dan tetap berada di folder-nya: %@"
           }
         },
         "it" : {
@@ -328509,7 +328509,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Salinan baru menggantikan “%@”, tetapi file salinan lama tidak dapat dipindahkan ke Tempat Sampah dan tetap berada di foldernya: %@"
+            "value" : "Salinan baru menggantikan “%@”, tetapi file salinan lama tidak dapat dipindahkan ke Tempat Sampah dan tetap berada di folder-nya: %@"
           }
         },
         "it" : {
@@ -337563,7 +337563,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Teks %@ dibaca ulang dari filenya sendiri."
+            "value" : "Teks %@ dibaca ulang dari file-nya sendiri."
           }
         },
         "it" : {
@@ -348489,7 +348489,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Unduhan ini tidak ada di folder feed-nya, jadi TextMouth membiarkan filenya apa adanya."
+            "value" : "Unduhan ini tidak ada di folder feed-nya, jadi TextMouth membiarkan file-nya apa adanya."
           }
         },
         "it" : {
@@ -394576,7 +394576,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "filenya tidak dapat dibaca sebagai gambar"
+            "value" : "file-nya tidak dapat dibaca sebagai gambar"
           }
         },
         "it" : {
@@ -394653,7 +394653,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "filenya rusak atau tidak lengkap: %@"
+            "value" : "file-nya rusak atau tidak lengkap: %@"
           }
         },
         "it" : {
@@ -409710,7 +409710,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” tidak dapat dipindahkan kembali setelah pemindahan gagal, jadi filenya ada di %2$@ bukan di %3$@: %4$@"
+            "value" : "“%1$@” tidak dapat dipindahkan kembali setelah pemindahan gagal, jadi file-nya ada di %2$@ bukan di %3$@: %4$@"
           }
         },
         "it" : {
