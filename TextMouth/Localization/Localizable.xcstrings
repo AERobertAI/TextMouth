@@ -20001,7 +20001,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ tersisa secara total"
+            "value" : "Total %@ tersisa"
           }
         },
         "it" : {
@@ -24022,7 +24022,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ tidak diminta lagi, karena drive belum menjawab pembacaan sebelumnya"
+            "value" : "%@ tidak diminta lagi, karena drive belum merespons pembacaan sebelumnya"
           }
         },
         "it" : {
@@ -94930,7 +94930,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Path folder tujuan tidak valid."
+            "value" : "Jalur folder tujuan tidak valid."
           }
         },
         "it" : {
@@ -95484,7 +95484,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nama folder tidak boleh kosong, \".\" atau \"..\", diakhiri dengan \".tmb\", atau dicadangkan oleh TextMouth."
+            "value" : "Nama folder tidak boleh kosong, berupa “.” atau “..”, berakhiran “.tmb”, atau dicadangkan oleh TextMouth."
           }
         },
         "it" : {
@@ -96175,7 +96175,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pemindahan menggeser satu buku sekaligus, dan beberapa buku dipilih. Pilih satu buku, lalu coba lagi."
+            "value" : "Buku dipindahkan satu per satu, sedangkan beberapa buku sedang dipilih. Pilih satu buku, lalu coba lagi."
           }
         },
         "it" : {
@@ -131404,7 +131404,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Buku tidak dapat dipindahkan dalam tampilan ini. Buka folder di Folder atau Daftar Bacaan, lalu coba lagi."
+            "value" : "Buku tidak dapat dipindahkan dalam tampilan ini. Buka folder di tampilan Folder, atau buka Daftar Bacaan, lalu coba lagi."
           }
         },
         "it" : {
@@ -152262,7 +152262,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pilih tujuan untuk memindahkan buku dan subfolder sebelum menghapus \"%@\"."
+            "value" : "Pilih tujuan untuk memindahkan buku dan subfolder sebelum menghapus “%@”."
           }
         },
         "it" : {
@@ -160911,7 +160911,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kondisi %@ hari"
+            "value" : "Hari kondisi %@"
           }
         },
         "it" : {
@@ -161048,7 +161048,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kondisi %@ folder"
+            "value" : "Folder kondisi %@"
           }
         },
         "it" : {
@@ -161185,7 +161185,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kondisi %@ format"
+            "value" : "Format kondisi %@"
           }
         },
         "it" : {
@@ -161596,7 +161596,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kondisi %@ status baca"
+            "value" : "Status baca kondisi %@"
           }
         },
         "it" : {
@@ -161733,7 +161733,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kondisi %@ relasi"
+            "value" : "Relasi kondisi %@"
           }
         },
         "it" : {
@@ -161870,7 +161870,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kondisi %@ teks"
+            "value" : "Teks kondisi %@"
           }
         },
         "it" : {
@@ -167916,7 +167916,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak dapat menghapus \"%@\" dan memindahkan isinya"
+            "value" : "Tidak dapat menghapus “%@” dan memindahkan isinya"
           }
         },
         "it" : {
@@ -168601,7 +168601,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak dapat memindahkan \"%@\""
+            "value" : "Tidak dapat memindahkan “%@”"
           }
         },
         "it" : {
@@ -169834,7 +169834,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak dapat membuang folder: path pustakanya tidak valid atau telah berubah."
+            "value" : "Tidak dapat membuang folder: jalur pustakanya tidak valid atau telah berubah."
           }
         },
         "it" : {
@@ -170108,7 +170108,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tidak dapat mengganti nama \"%@\""
+            "value" : "Tidak dapat mengganti nama “%@”"
           }
         },
         "it" : {
@@ -199541,7 +199541,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Duplikat"
+            "value" : "Duplikatkan"
           }
         },
         "it" : {
@@ -228221,7 +228221,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feed selalu didaftar menurut judul."
+            "value" : "Feed selalu diurutkan menurut judul."
           }
         },
         "it" : {
@@ -228358,7 +228358,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Feed didaftar menurut judul"
+            "value" : "Feed diurutkan menurut judul"
           }
         },
         "it" : {
@@ -258364,7 +258364,7 @@
         "id" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Sedang Berlangsung"
+            "value" : "Sedang Dibaca"
           }
         },
         "it" : {
