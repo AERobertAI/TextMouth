@@ -253,6 +253,12 @@
     "%@ %@, which TextMouth can't export with its structure." : {
       "comment" : "The first sentence of the alert an export shows when a chapter nests too deeply. %1$@ names what nests, such as \"Chapter 2 of Deep Notes\", and %2$@ is the clause that says how deep, such as \"nests quotes, lists, or emphasis more than 128 levels deep\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@, যা TextMouth তার কাঠামোসহ রপ্তানি করতে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -650,6 +656,12 @@
     "%@ - Original Audio" : {
       "comment" : "The name of an exported folder holding a book's audio as it was before its first edit. %@ is the book's title made safe for a file name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ - মূল অডিও"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -727,6 +739,12 @@
     "%@ - Original Files" : {
       "comment" : "The name of an exported folder holding an audiobook's audio files as they were before TextMouth converted them. %@ is the book's title made safe for a file name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ - মূল ফাইল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -804,6 +822,12 @@
     "%@ - Original Recording.%@" : {
       "comment" : "The name of an exported file holding a recording as it was made. %1$@ is the book's title made safe for a file name and %2$@ the file's extension, such as m4a.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ - মূল রেকর্ডিং.%2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1236,6 +1260,12 @@
     "%@ adds a bookmark at the current position." : {
       "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list. %@ is the keyboard shortcut that adds a bookmark, spelled out in words, such as Command + B.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ বর্তমান অবস্থানে একটি বুকমার্ক যোগ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1313,6 +1343,12 @@
     "%@ adds one at the current position." : {
       "comment" : "Help under \"No bookmarks yet.\" in the Bookmarks list, when the add command has no keyboard shortcut. %@ is the name of the Add Bookmark button above the list.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ বর্তমান অবস্থানে একটি যোগ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -1848,6 +1884,12 @@
     "%@ as %@" : {
       "comment" : "The name of a checkbox in the Export dialog while its list or transcript is written in a format. %1$@ is the checkbox's name, such as Headings or Transcript, and %2$@ the name of the format, such as CUE sheet or WebVTT.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ %2$@ হিসেবে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -3671,6 +3713,12 @@
     "%@ does the same for every such chapter of this export, without asking again." : {
       "comment" : "The third sentence of the alert an export shows when a chapter nests too deeply and others may too. %@ is the name of the Export Every Such Chapter as Written button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ এই রপ্তানির এ ধরনের প্রতিটি অধ্যায়ের জন্য একই কাজ করে, আবার জিজ্ঞেস না করেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -6635,6 +6683,12 @@
     "%@ in" : {
       "comment" : "Part of the iPhone reader's Where Am I? for an audiobook: how far into the recording the place is. %@ is the time in words, as in \"2 hours, 13 minutes in\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ভেতরে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -6801,6 +6855,12 @@
     "%@ in the cloud" : {
       "comment" : "Part of a checkbox's label in the Export dialog: how many books hold this item only in the cloud. %@ is a count of books, such as 2 books.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ক্লাউডে %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -6878,6 +6938,12 @@
     "%@ is a Word 6 or Word 95 document, which TextMouth on iPhone can't read yet." : {
       "comment" : "First sentence of the refusal of a Word 6 or Word 95 document, which the iPhone can't read. %@ is the file's quoted name, or \"This file\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ একটি Word 6 বা Word 95 নথি, যা iPhone-এ TextMouth এখনও পড়তে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -6955,6 +7021,12 @@
     "%@ is already in the reading list." : {
       "comment" : "VoiceOver announcement when Add to Reading List added nothing: the one book selected is on the list already. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ইতিমধ্যেই পড়ার তালিকায় আছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -7577,6 +7649,12 @@
     "%@ is in %@, which TextMouth on iPhone can't play yet." : {
       "comment" : "First sentence of the refusal of an audio file the iPhone can't convert. %1$@ is the file's quoted name, or \"This file\". %2$@ is the audio format's name, as in \"Ogg\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ হলো %2$@ ফরম্যাটে, যা iPhone-এ TextMouth এখনও চালাতে পারে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -8886,6 +8964,12 @@
     "%@ isn't in the reading list." : {
       "comment" : "VoiceOver announcement when Remove from Reading List took nothing off: the one book selected is not on the list. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ পড়ার তালিকায় নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -9694,6 +9778,12 @@
     "%@ needs “%@”, one of a Mac's own braille tables, which TextMouth on iPhone doesn't have." : {
       "comment" : "First sentence of the refusal of a braille book that needs a braille table only a Mac has. %1$@ is the file's quoted name, or \"This file\". %2$@ is the table's file name, as in \"fr-bfu-g2.ctb\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@-এর জন্য “%2$@” দরকার, যা একটি Mac-এর নিজস্ব ব্রেইল টেবিল এবং iPhone-এ TextMouth-এ নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -9777,6 +9867,12 @@
     "%@ nests too deeply" : {
       "comment" : "The title of the alert an export shows when a chapter nests quotes, lists, or emphasis too deeply. %@ names what nests, such as \"Chapter 2 of Deep Notes\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ খুব গভীরে নেস্ট করা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -10911,6 +11007,12 @@
     "%@ remaining" : {
       "comment" : "Text of Speak Info, Book Information's braille code and text encoding rows, and the re-read alerts. remaining as a row speaks a time left: \"2 hours, 5 minutes remaining\". Placeholders in order: TimeFormatting.spoken(remaining).\nText of the time bar under the Library list: the time left to read the listed books. %@ is a time, such as 3:20:00.\nThe sleep timer's state as VoiceOver reads it after \"Sleep timer:\" while it counts down. %@ is the time left in minutes and seconds, such as 4:59.\nTime left in the book as Where Am I? speaks it. %@ is the time in words, such as \"3 hours\".\nTime left in the book as the copied reading position shows it. %@ is a clock time such as 3:44:01.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ বাকি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -11065,6 +11167,12 @@
     "%@ remaining in this heading" : {
       "comment" : "Part of the full Where Am I? summary: the time left in the heading being read. %@ is the time in words, such as \"12 minutes\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই হেডিংয়ে %@ বাকি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -11699,6 +11807,12 @@
     "%@ sound" : {
       "comment" : "VoiceOver label of the pop-up button that chooses the sound for one event, in Settings, Sound Effects. %@ is the name of the event, such as Play or Pause.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ শব্দ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -11930,6 +12044,12 @@
     "%@ stops the whole export. Files already written stay." : {
       "comment" : "The last sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Cancel Export button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ পুরো রপ্তানি বন্ধ করে। যেসব ফাইল ইতিমধ্যে লেখা হয়েছে সেগুলো থাকবে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12084,6 +12204,12 @@
     "%@ times speed" : {
       "comment" : "What VoiceOver and braille say for the playback speed of an audiobook, such as \"1.25 times speed\". %@ is the speed's number, such as 1.25.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ গুণ গতি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -12161,6 +12287,12 @@
     "%@ to %@" : {
       "comment" : "A range of three or more consecutive pages of a PDF, in a list of pages. %1$@ is the first page and %2$@ the last, identifiers written without digit grouping.\nPart of a spoken audio export's file name: a range of the book. %1$@ is where it begins and %2$@ where it ends, each a heading's words or the beginning or end of the book, as in \"Chapter 1 to Chapter 3\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ থেকে %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14023,6 +14155,12 @@
     "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual." : {
       "comment" : "The second sentence of the alert an export shows when a chapter nests too deeply. %@ is the name of the Export as Written button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ সেই অধ্যায়টি তার লাইনগুলোর সাধারণ অনুচ্ছেদ হিসেবে লেখে, উদ্ধৃতি ও তালিকার চিহ্ন অক্ষর হিসেবে রেখে, এবং বাকি সবকিছু যথারীতি রপ্তানি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -14100,6 +14238,12 @@
     "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual." : {
       "comment" : "The second sentence of the alert an export shows when a book's text, which has no chapter markers, nests too deeply. %@ is the name of the Export as Written button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ লেখাটি তার লাইনগুলোর সাধারণ অনুচ্ছেদ হিসেবে লেখে, উদ্ধৃতি ও তালিকার চিহ্ন অক্ষর হিসেবে রেখে, এবং বাকি সবকিছু যথারীতি রপ্তানি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16394,6 +16538,12 @@
     "%@, finished %@" : {
       "comment" : "VoiceOver label of a row of Recently Finished in Settings, Stats. %1$@ is the book's title; %2$@ is the date it was finished, such as November 18, 2026.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, শেষ হয়েছে %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -16542,6 +16692,12 @@
     "%@, in %@" : {
       "comment" : "A braille table in words, then the language it is in. %1$@ is the table in words, such as Unified English Braille, uncontracted, and %2$@ the language's name, such as English.\nVoiceOver label of a search match whose place in the book is unknown. %1$@ is the match in its surrounding text, and %2$@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@, %2$@ ভাষায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -19445,6 +19601,12 @@
     "%@: every symbol is read as written" : {
       "comment" : "A choice of the pop-up button that sets how a run of one symbol is read. %@ is the name of the style, Repeat each symbol.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: প্রতিটি চিহ্ন যেমন লেখা তেমন পড়া হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20051,6 +20213,12 @@
     "%@: off while Never collapse is checked" : {
       "comment" : "A choice of the pop-up button that sets how a run of one symbol is read, while the Never collapse checkbox is checked. %@ is the name of the style, Say how many or Leave out. Never collapse is the name of the checkbox.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@: “কখনও সংকুচিত করবেন না” চিহ্নিত থাকলে বন্ধ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -20128,6 +20296,24 @@
     "%@: runs of %lld or more are read as a count" : {
       "comment" : "A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Say how many; %2$lld is the length from which a run is collapsed.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: %2$lld বা তার বেশি দৈর্ঘ্যের ধারা সংখ্যা হিসেবে পড়া হয়"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: %2$lld বা তার বেশি দৈর্ঘ্যের ধারা সংখ্যা হিসেবে পড়া হয়"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -20391,6 +20577,24 @@
     "%@: runs of %lld or more are skipped, with a pause" : {
       "comment" : "A choice of the pop-up button that sets how a run of one symbol is read. %1$@ is the name of the style, Leave out; %2$lld is the length from which a run is collapsed.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: %2$lld বা তার বেশি দৈর্ঘ্যের ধারা বিরতিসহ এড়িয়ে যাওয়া হয়"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$@: %2$lld বা তার বেশি দৈর্ঘ্যের ধারা বিরতিসহ এড়িয়ে যাওয়া হয়"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -20891,6 +21095,12 @@
     "%@x" : {
       "comment" : "The voice pitch as a multiplier of the voice's own, as the pitch sliders say it, such as \"1.2x\". %@ is the multiplier with one decimal.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@x"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -22318,6 +22528,24 @@
     "%lld audiobooks" : {
       "comment" : "A count of finished audiobooks, one item of the Stats pane's breakdown of finished books by kind, such as \"2 audiobooks\". %lld is the number of books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld অডিওবুক"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld অডিওবুক"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -24607,6 +24835,24 @@
     "%lld books finished all time" : {
       "comment" : "What VoiceOver says for the Stats pane's tile of books finished in all, the library's whole history; a colon and the count of each kind may follow. %lld is the number of books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সর্বকালে %lld বই শেষ হয়েছে"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "সর্বকালে %lld বই শেষ হয়েছে"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -24870,6 +25116,24 @@
     "%lld books finished this year" : {
       "comment" : "What VoiceOver says for the Stats pane's tile of books finished this year; a colon and the count of each kind may follow. %lld is the number of books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এ বছর %lld বই শেষ হয়েছে"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "এ বছর %lld বই শেষ হয়েছে"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -28049,6 +28313,24 @@
     "%lld books were already in it." : {
       "comment" : "Second sentence of the announcement after books were added to the reading list: some chosen were on it already. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই আগে থেকেই তাতে ছিল।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই আগে থেকেই তাতে ছিল।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -28563,6 +28845,24 @@
     "%lld books were not in it." : {
       "comment" : "Second sentence of the announcement after books were taken off the reading list: some chosen were not on it. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই তাতে ছিল না।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই তাতে ছিল না।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -29513,6 +29813,24 @@
     "%lld cells" : {
       "comment" : "The value of the Cells per line stepper in the Export dialog's braille options. %lld is the number of braille cells in a line.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld সেল"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld সেল"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -34176,6 +34494,24 @@
     "%lld entries give only a phonetic spelling, so they were set aside." : {
       "comment" : "A sentence of the alert after a pronunciation lexicon import. %lld is the number of entries that give only a phonetic spelling.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld এন্ট্রিতে শুধু ধ্বনিগত বানান আছে, তাই সেগুলো আলাদা করে রাখা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld এন্ট্রিতে শুধু ধ্বনিগত বানান আছে, তাই সেগুলো আলাদা করে রাখা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -34439,6 +34775,24 @@
     "%lld entries were not read, because a lexicon adds at most %@ rules at a time." : {
       "comment" : "A sentence of the alert after a pronunciation lexicon import. %1$lld is the number of entries left unread; %2$@ is the most rules one import adds, written as a grouped number (a fixed cap, always a plural count).",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld এন্ট্রি পড়া হয়নি, কারণ একটি লেক্সিকন একবারে সর্বোচ্চ %2$@টি নিয়ম যোগ করে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%1$lld এন্ট্রি পড়া হয়নি, কারণ একটি লেক্সিকন একবারে সর্বোচ্চ %2$@টি নিয়ম যোগ করে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -35814,6 +36168,24 @@
     "%lld files" : {
       "comment" : "A count of files, part of a checkbox's label in the Export dialog. %lld is the number of files.\nA count of the files of a book that is downloading. %lld is the number of files.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ফাইল"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld ফাইল"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -37673,6 +38045,24 @@
     "%lld items" : {
       "comment" : "A count of a feed's items inside a sentence about a conflicting copy of the feed's record. %lld is the number of items.\nA count of a feed's items when it holds both episodes and articles. %lld is the number of items.\nA count of items an export wrote or could not write, inside a sentence. %lld is the number of items.\nThe total of an archive extraction's count: how many items (files and folders) the archive holds. %lld is the number of items. Follows \"120 of\".",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld আইটেম"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld আইটেম"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -37936,6 +38326,24 @@
     "%lld lines" : {
       "comment" : "The value of the Lines per page stepper in the Export dialog's braille options. %lld is the number of lines on a page.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld লাইন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld লাইন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -38665,6 +39073,24 @@
     "%lld minutes" : {
       "comment" : "A sleep timer's length, as its preset button and the custom minutes' value say it, such as \"10 minutes\". %lld is the number of minutes.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld মিনিট"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld মিনিট"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -42446,6 +42872,12 @@
     "%lld of %lld" : {
       "comment" : "Value of the iPhone reader's Headings button: the place of the heading among the book's headings. %1$lld is the heading's number and %2$lld how many headings the book has.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$lld-এর মধ্যে %1$lld"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -42677,6 +43109,24 @@
     "%lld other books" : {
       "comment" : "A count of finished books of no known kind, one item of the Stats pane's breakdown of finished books by kind, such as \"1 other book\". %lld is the number of books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld অন্যান্য বই"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld অন্যান্য বই"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -44440,6 +44890,24 @@
     "%lld podcast episodes" : {
       "comment" : "A count of finished podcast episodes, one item of the Stats pane's breakdown of finished books by kind, such as \"1 podcast episode\". %lld is the number of episodes.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld পডকাস্ট পর্ব"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld পডকাস্ট পর্ব"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -45564,6 +46032,24 @@
     "%lld rules were already in your rules." : {
       "comment" : "A sentence of the alert after a pronunciation lexicon import. %lld is the number of the lexicon's rules that the user's rules already held.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld নিয়ম আপনার নিয়মগুলোতে আগে থেকেই ছিল।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld নিয়ম আপনার নিয়মগুলোতে আগে থেকেই ছিল।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -45827,6 +46313,24 @@
     "%lld rules were left out: regular expressions and rules that are off cannot be written in a lexicon." : {
       "comment" : "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %lld is the number of rules left out.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld নিয়ম বাদ দেওয়া হয়েছে: রেগুলার এক্সপ্রেশন এবং বন্ধ থাকা নিয়ম লেক্সিকনে লেখা যায় না।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld নিয়ম বাদ দেওয়া হয়েছে: রেগুলার এক্সপ্রেশন এবং বন্ধ থাকা নিয়ম লেক্সিকনে লেখা যায় না।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -47417,6 +47921,24 @@
     "%lld symbols" : {
       "comment" : "VoiceOver value of the stepper that sets the length from which a run of one symbol is collapsed. %lld is the number of symbols.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld চিহ্ন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld চিহ্ন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -47680,6 +48202,24 @@
     "%lld text books" : {
       "comment" : "A count of finished text books, one item of the Stats pane's breakdown of finished books by kind, such as \"4 text books\". %lld is the number of books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টেক্সট বই"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld টেক্সট বই"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -50860,6 +51400,24 @@
     "%lld words per minute" : {
       "comment" : "Announcement of a text book's new speed after it changed. %lld is the speed in words per minute.\nThe value of the Speed slider in the Export dialog's spoken audio options. %lld is the speed in words per minute.\nVoiceOver value of the default speed slider in the Voice settings. %lld is the speed in words per minute.\nWhat VoiceOver says for the playback bar's speed of a text book. %lld is the number of words read in a minute.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "প্রতি মিনিটে %lld শব্দ"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "প্রতি মিনিটে %lld শব্দ"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -52753,6 +53311,12 @@
     "A New Window" : {
       "comment" : "A choice of the Open the next book in pop-up button (Settings, Playback; Feed Info; Folder Settings): the next book opens in a window of its own, and this one stays.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি নতুন উইন্ডো"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -53925,6 +54489,12 @@
     "A new timer replaces the one running." : {
       "comment" : "Note under the sleep timer sheet's New Timer heading while a timer runs: setting one of the timers below stops it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি নতুন টাইমার চলমান টাইমারটিকে প্রতিস্থাপন করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54085,6 +54655,12 @@
     "A number from 2 to 99" : {
       "comment" : "VoiceOver hint of the field that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "২ থেকে ৯৯ পর্যন্ত একটি সংখ্যা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -54245,6 +54821,12 @@
     "A run is one symbol repeated, alone or with single spaces, such as * * * * or ====. Speech rewrites runs before the rules above; the screen and braille keep every symbol." : {
       "comment" : "Caption under the controls of Settings, Text, Repeated Symbols that explains what a run is and that only speech changes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ধারা হলো একটিই চিহ্নের পুনরাবৃত্তি, একা বা একক ফাঁকসহ, যেমন * * * * বা ====। উপরের নিয়মগুলোর আগে স্পিচ ধারা বদলে নেয়; স্ক্রিন ও ব্রেইল প্রতিটি চিহ্ন রাখে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55090,6 +55672,12 @@
     "A web page of the book's text, with a contents list linking each heading." : {
       "comment" : "The hint of the Convert to picker in the Export dialog while HTML is chosen.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের লেখার একটি ওয়েব পেজ, যাতে প্রতিটি হেডিংয়ের লিঙ্কসহ একটি সূচি থাকে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55321,6 +55909,12 @@
     "About" : {
       "comment" : "Heading of the iPhone Settings section that holds the app's version and its logs.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সম্পর্কে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55700,6 +56294,12 @@
     "Add" : {
       "comment" : "Button of the panel for adding a bookmark: adds it, with the note written.\nTitle of the button that adds a new substitution rule, in the rule editor.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যোগ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -55777,6 +56377,24 @@
     "Add %lld Books to Reading List" : {
       "comment" : "Context menu item for the books selected in the Library: adds them to the reading list. Title case. %lld is the number of books selected.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -56040,6 +56658,24 @@
     "Add %lld books to the reading list" : {
       "comment" : "VoiceOver label of the Library's edit-mode bar button that adds the selected books to the reading list. %lld is the number of books selected.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "পড়ার তালিকায় %lld বই যোগ করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -56303,6 +56939,12 @@
     "Add Bookmark" : {
       "comment" : "Button of the Bookmarks list that adds a bookmark at the reading position, and the heading of the panel where its note is written.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক যোগ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57162,6 +57804,12 @@
     "Add it again." : {
       "comment" : "Last sentence of what VoiceOver says at launch when TextMouth had closed during the import of one file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আবার যোগ করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57239,6 +57887,12 @@
     "Add it on your Mac, then send the book here." : {
       "comment" : "Last sentence of every refusal of a file the iPhone app can't import yet: the Mac can add it, and the book then comes to the iPhone.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি আপনার Mac-এ যোগ করুন, তারপর বইটি এখানে পাঠান।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -57559,6 +58213,12 @@
     "Add them again." : {
       "comment" : "Last sentence of what VoiceOver says at launch when TextMouth had closed during the import of several files.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সেগুলো আবার যোগ করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58003,6 +58663,12 @@
     "Added %lld books to the reading list." : {
       "comment" : "VoiceOver announcement after several books were added to the reading list. %lld is the number of books added.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায় %lld বই যোগ করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58080,6 +58746,24 @@
     "Added %lld rules from “%@”." : {
       "comment" : "A sentence of the alert after a pronunciation lexicon import. %1$lld is the number of rules added; %2$@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%2$@” থেকে %1$lld নিয়ম যোগ করা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%2$@” থেকে %1$lld নিয়ম যোগ করা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -58408,6 +59092,12 @@
     "Added to reading list: %@" : {
       "comment" : "VoiceOver announcement after one book was added to the reading list. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায় যোগ করা হয়েছে: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58621,6 +59311,12 @@
     "Adds an Export button to each reader's toolbar. File, Export works either way." : {
       "comment" : "The hint of the Playback settings checkbox that shows the Export button in the reader's toolbar. \"File, Export\" is the menu command.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি রিডারের টুলবারে একটি রপ্তানি বোতাম যোগ করে। ফাইল, রপ্তানি করুন দুভাবেই কাজ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -58864,6 +59560,12 @@
     "Adds the lexicon's entries after your rules; entries with only a phonetic spelling are set aside" : {
       "comment" : "VoiceOver hint of the Import Rules button in Settings, Text, Substitutions: what is added and what is left out.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আপনার নিয়মগুলোর পরে লেক্সিকনের এন্ট্রিগুলো যোগ করে; শুধু ধ্বনিগত বানানের এন্ট্রি আলাদা করে রাখা হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59089,6 +59791,12 @@
     "Adds the selected books to the end of the reading list." : {
       "comment" : "VoiceOver hint of the Library's edit-mode bar button Add to Reading List.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নির্বাচিত বইগুলো পড়ার তালিকার শেষে যোগ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59243,6 +59951,12 @@
     "Adjust minutes" : {
       "comment" : "VoiceOver label of the stepper beside the sleep timer sheet's custom minutes field.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মিনিট সমন্বয় করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -59634,6 +60348,12 @@
     "Afterwards, Play tries the passage again" : {
       "comment" : "VoiceOver hint of the Close button of the speech refusal report.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এরপর চালান বোতাম আবার অংশটি চেষ্টা করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -60377,6 +61097,12 @@
     "All Time" : {
       "comment" : "Title of the Stats pane's tile showing the total listening time.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বকাল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61502,6 +62228,12 @@
     "An e-book with the book's headings, contents, and any page numbers, for Apple Books and other reading apps. It holds no pictures." : {
       "comment" : "The hint of the Convert to picker in the Export dialog while EPUB is chosen. Apple Books is an app's name.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের হেডিং, সূচি এবং পৃষ্ঠা নম্বরসহ একটি ই-বুক, Apple Books ও অন্যান্য পড়ার অ্যাপের জন্য। এতে কোনো ছবি থাকে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -61881,6 +62613,12 @@
     "An unknown error occurred." : {
       "comment" : "Message of an alert about a problem, when nothing more is known about it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি অজানা ত্রুটি ঘটেছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -63808,6 +64546,12 @@
     "Applies when listening goes on to another article" : {
       "comment" : "VoiceOver hint of the Skip finished articles switch in a news feed's Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা অন্য একটি নিবন্ধে এগিয়ে গেলে প্রযোজ্য হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -63885,6 +64629,12 @@
     "Applies when listening goes on to another book" : {
       "comment" : "VoiceOver hint of the Skip finished books switch in a folder's settings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা অন্য একটি বইয়ে এগিয়ে গেলে প্রযোজ্য হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -63962,6 +64712,12 @@
     "Applies when listening goes on to another episode" : {
       "comment" : "VoiceOver hint of the Skip finished episodes switch in a podcast feed's Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা অন্য একটি পর্বে এগিয়ে গেলে প্রযোজ্য হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -64039,6 +64795,12 @@
     "Applies when listening goes on to another item" : {
       "comment" : "VoiceOver hint of the Skip finished items switch in a feed's Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শোনা অন্য একটি আইটেমে এগিয়ে গেলে প্রযোজ্য হয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -65483,6 +66245,12 @@
     "As the table defines" : {
       "comment" : "How a braille table contracts, for a table that says neither its contraction nor its grade: it writes as its own rules define.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টেবিলের সংজ্ঞা অনুযায়ী"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -66330,6 +67098,12 @@
     "Asks for an optional note, then marks the reading position." : {
       "comment" : "VoiceOver hint of the Bookmarks list's Add Bookmark button: it opens the step where an optional note is written, then the bookmark is added where the book is being read.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি ঐচ্ছিক নোট চায়, তারপর পড়ার অবস্থান চিহ্নিত করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -67658,6 +68432,24 @@
     "Audacity labels mark one audio file, and this book's audio is in %lld files." : {
       "comment" : "Why Audacity labels could not be exported, after the file's name in a failure sentence. %lld is the number of audio files the book has, always more than one.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Audacity লেবেল একটি অডিও ফাইল চিহ্নিত করে, আর এই বইয়ের অডিও %lld ফাইলে আছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "Audacity লেবেল একটি অডিও ফাইল চিহ্নিত করে, আর এই বইয়ের অডিও %lld ফাইলে আছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -67921,6 +68713,12 @@
     "Audio" : {
       "comment" : "Name of the book format of an audiobook, a book made of audio files, shown in a book's information, the format column, and the duplicate finder.\nPart of a spoken audio export's file name, after the book's title: the whole book, as in \"Middlemarch - Audio\".\nThe name of the Audio checkbox in the Export dialog: the book's audio.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিও"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -68549,6 +69347,12 @@
     "Audio speed reset to %@" : {
       "comment" : "Announcement after an audiobook's speed returned to normal. %@ is the speed as VoiceOver says it, such as \"1.0 times speed\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিওর গতি %@-এ রিসেট হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69319,6 +70123,12 @@
     "Available only while this feed's articles go on to another article when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next article in pop-up button in a news feed's Feed Info: when it can be used.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু তখনই পাওয়া যায় যখন এই ফিডের নিবন্ধগুলো একটি শেষ হলে অন্য নিবন্ধে এগিয়ে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69396,6 +70206,12 @@
     "Available only while this feed's episodes go on to another episode when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next episode in pop-up button in a podcast feed's Feed Info: when it can be used.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু তখনই পাওয়া যায় যখন এই ফিডের পর্বগুলো একটি শেষ হলে অন্য পর্বে এগিয়ে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69473,6 +70289,12 @@
     "Available only while this feed's items go on to another item when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next item in pop-up button in a feed's Feed Info: when it can be used.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু তখনই পাওয়া যায় যখন এই ফিডের আইটেমগুলো একটি শেষ হলে অন্য আইটেমে এগিয়ে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -69550,6 +70372,12 @@
     "Available only while this folder's books go on to another book when one ends" : {
       "comment" : "VoiceOver hint of the dimmed Open the next book in pop-up button in a folder's settings: when it can be used.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুধু তখনই পাওয়া যায় যখন এই ফোল্ডারের বইগুলো একটি শেষ হলে অন্য বইয়ে এগিয়ে যায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70628,6 +71456,12 @@
     "Beginning" : {
       "comment" : "Part of a spoken audio export's file name: the beginning of the book as one end of the range, as in \"Middlemarch - Beginning to Chapter 2\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শুরু"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -70705,6 +71539,12 @@
     "Beginning of the book" : {
       "comment" : "The first item of the From pop-up in the Export dialog's spoken audio options: the start of the book, with any text before its first heading.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের শুরু"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71824,6 +72664,12 @@
     "Book: %@ (%@)" : {
       "comment" : "A line of the speech refusal report naming the book. %1$@ is its title and %2$@ its format, such as EPUB.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বই: %1$@ (%2$@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -71990,6 +72836,12 @@
     "Bookmark %@" : {
       "comment" : "A bookmark's name, by its number: the first line of its row in the Bookmarks list, and what VoiceOver says after a move to it. %@ is the bookmark's number, an identifier written without digit grouping.\nThe name of a bookmark that has no name of its own, written into an exported list of labels. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72067,6 +72919,12 @@
     "Bookmark %@ added" : {
       "comment" : "VoiceOver announcement after a bookmark was added at the reading position. %@ is the new bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %@ যোগ করা হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72286,6 +73144,12 @@
     "Bookmark %@ removed" : {
       "comment" : "VoiceOver announcement after the bookmark command removed the bookmark at the reading position. %@ is that bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %@ সরানো হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72363,6 +73227,12 @@
     "Bookmark %@, %@, Note: %@, added %@" : {
       "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ its note, written by the listener; %4$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %1$@, %2$@, নোট: %3$@, যোগ করা হয়েছে %4$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72446,6 +73316,12 @@
     "Bookmark %@, %@, added %@" : {
       "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the heading it is under; %3$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %1$@, %2$@, যোগ করা হয়েছে %3$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72529,6 +73405,12 @@
     "Bookmark %@, Note: %@, added %@" : {
       "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ its note, written by the listener; %3$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %1$@, নোট: %2$@, যোগ করা হয়েছে %3$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72612,6 +73494,12 @@
     "Bookmark %@, added %@" : {
       "comment" : "VoiceOver label of a bookmark's row in the Bookmarks list and its rotor, for a bookmark with no note under no heading. %1$@ is the bookmark's number, an identifier written without digit grouping; %2$@ the day it was added, such as October 9, 2026.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %1$@, যোগ করা হয়েছে %2$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72695,6 +73583,12 @@
     "Bookmark note" : {
       "comment" : "VoiceOver label of the note field when adding a bookmark or editing its note.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্কের নোট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -72772,6 +73666,12 @@
     "Bookmarks" : {
       "comment" : "Heading of the group of bookmark keyboard shortcuts in Settings, and the title of the Bookmarks menu.\nThe name of the Bookmarks checkbox in the Export dialog: a list of the book's bookmarks.\nThe name of the bookmarks, wherever it is named: the title of the Bookmarks list over a book's reader (read by VoiceOver as its heading, and the name of its rotor), the reader's Bookmarks toolbar button, and the Bookmarks menu in the menu bar.\nTitle of the Bookmarks menu in the menu bar, which holds the commands that add and move between a book's bookmarks. Only a reader window shows it.\nTitle of the reader toolbar's button that opens the bookmarks sheet.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73165,6 +74065,12 @@
     "Books Finished All Time" : {
       "comment" : "Title of the Stats pane's tile showing how many books were ever finished.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সর্বকালে শেষ করা বই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -73242,6 +74148,12 @@
     "Books Finished This Year" : {
       "comment" : "Title of the Stats pane's tile showing how many books were finished this year.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এ বছর শেষ করা বই"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74018,6 +74930,12 @@
     "Braille" : {
       "comment" : "Name of the book format of a braille file (.brf or .brl), shown in a book's information, the format column, and the duplicate finder.\nThe heading of the Braille tab's only group in Settings.\nThe name of the Braille tab in the Settings window's toolbar.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74225,6 +75143,12 @@
     "Braille Ready Format: pages of braille, for braille displays and embossers." : {
       "comment" : "The hint of the Convert to picker in the Export dialog while BRF is chosen. Braille Ready Format is the name of the file format.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল রেডি ফরম্যাট: ব্রেইল ডিসপ্লে ও এমবসারের জন্য ব্রেইলের পৃষ্ঠা।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74367,6 +75291,12 @@
     "Braille code" : {
       "comment" : "The label of the pop-up that chooses the braille code, in the Braille tab of Settings and in the Export dialog's braille options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল কোড"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74509,6 +75439,12 @@
     "Braille file characters" : {
       "comment" : "The label of the pop-up that chooses which characters a BRF or BRL braille file uses for the braille cells, in the Braille tab of Settings and in the Export dialog's braille options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল ফাইলের অক্ষর"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74586,6 +75522,12 @@
     "Braille page numbers" : {
       "comment" : "The label of the switch in the Export dialog's braille options that numbers the braille pages.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল পৃষ্ঠা নম্বর"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -74740,6 +75682,12 @@
     "Brings the text to the sentence being spoken." : {
       "comment" : "Hint of the iPhone reader's book text while the book plays: activating it moves VoiceOver to the sentence being spoken.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যে বাক্যটি পড়া হচ্ছে, লেখাটিকে সেখানে নিয়ে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75346,6 +76294,12 @@
     "CR LF suits most braille displays and embossers." : {
       "comment" : "The hint of the Line ends pop-up in the Export dialog's braille options. CR LF is a technical name for a line end.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "CR LF বেশিরভাগ ব্রেইল ডিসপ্লে ও এমবসারের জন্য উপযুক্ত।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75423,6 +76377,12 @@
     "Can't play: a call or another app is using the audio." : {
       "comment" : "Announcement when Play fails on the iPhone because a phone call or another app holds the audio.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চালানো যাচ্ছে না: একটি কল বা অন্য একটি অ্যাপ অডিও ব্যবহার করছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75500,6 +76460,12 @@
     "Cancel" : {
       "comment" : "Button of a confirmation in Storage settings that changes nothing.\nButton of a jump panel (Go to Percent, Time or Page) that closes it without jumping.\nButton of the Edit Text explanation alert that stops without opening the editor. Escape presses it.\nButton of the book information sheet that closes it without saving.\nButton of the sheet that shows the library being moved: cancels the move.\nButton that closes a question and changes nothing.\nButton that closes a sheet or answers a question without doing or changing anything.\nButton that closes a sheet or dialog without doing what it offered.\nButton that closes a sheet or dialog without making its change.\nButton that closes an alert or stops waiting, in the reader.\nButton that leaves a sheet, panel, or question without making its change, such as the panel for adding a bookmark or editing its note.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The button of either question that changes nothing.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. The button that closes the sheet, changing nothing.\nThe button in the Export dialog that closes it without exporting.\nTitle and VoiceOver label of the Cancel button of the duplicate-book question.\nTitle of a button that cancels, in the Substitutions settings' question and rule editor.\nTitle of the Cancel button of the Add to Library sheet, which closes it.\nTitle of the button that cancels the removal of the duplicate books selected, in its confirmation.\nTitle of the feed downloads section's button that stops the feed downloads.\nTitle of the question's button that keeps the Record window open; it answers the Escape key.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বাতিল করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -75648,6 +76614,12 @@
     "Cancel Export" : {
       "comment" : "The button of the alert an export shows when a chapter nests too deeply: it stops the whole export.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি বাতিল করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76015,6 +76987,12 @@
     "Cancel Timer" : {
       "comment" : "Button of the sleep timer sheet that stops the running timer.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "টাইমার বাতিল করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76483,6 +77461,12 @@
     "Captions in %@ (.%@), which nearly every player reads: one file, timed from the start of the audio." : {
       "comment" : "The hint of the Transcript's Convert to picker in the Export dialog while SubRip is chosen. %1$@ is the format's name, SubRip, and %2$@ its file extension, srt.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ (.%2$@) ফরম্যাটে ক্যাপশন, যা প্রায় সব প্লেয়ার পড়ে: একটি ফাইল, অডিওর শুরু থেকে সময় ধরে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76566,6 +77550,12 @@
     "Captions in %@, which web browsers and most players read: one file, timed from the start of the audio." : {
       "comment" : "The hint of the Transcript's Convert to picker in the Export dialog while WebVTT is chosen. %@ is the format's name, WebVTT.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ ফরম্যাটে ক্যাপশন, যা ওয়েব ব্রাউজার ও বেশিরভাগ প্লেয়ার পড়ে: একটি ফাইল, অডিওর শুরু থেকে সময় ধরে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -76886,6 +77876,12 @@
     "Cells per line" : {
       "comment" : "The label of the stepper in the Export dialog's braille options that sets how many braille cells each line holds.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতি লাইনে সেল"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77609,6 +78605,12 @@
     "Changes the number by one, from 2 to 99" : {
       "comment" : "VoiceOver hint of the stepper that sets the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সংখ্যাটি একটি করে বদলায়, ২ থেকে ৯৯ পর্যন্ত"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77686,6 +78688,12 @@
     "Changes the speed in steps of %@ times" : {
       "comment" : "Accessibility hint of the audio speed control that adjusts in steps. %@ is the size of one step, such as 0.05.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "গতি %@ গুণ করে ধাপে ধাপে বদলায়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -77763,6 +78771,24 @@
     "Changes the speed in steps of %lld words per minute." : {
       "comment" : "Hint of the iPhone reader's speed control for a text book. %lld is the step, in words a minute.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "গতি প্রতি মিনিটে %lld শব্দ করে ধাপে ধাপে বদলায়।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "গতি প্রতি মিনিটে %lld শব্দ করে ধাপে ধাপে বদলায়।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -79294,6 +80320,12 @@
     "Chapter %@ of %@" : {
       "comment" : "Names what the export's deep-nesting question is about: one chapter of a book. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এর অধ্যায় %1$@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79377,6 +80409,12 @@
     "Chapter %@ of %@ (chapter=%@ in the logs)" : {
       "comment" : "A line of the speech refusal report naming the chapter speech stopped in. %1$@ is the chapter's number counting from 1, %2$@ the number of chapters, and %3$@ the chapter's number counting from 0 as the debug log writes it, each written without digit grouping. Keep \"chapter=\" as it is: it is the log's own tag.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এর মধ্যে অধ্যায় %1$@ (লগে chapter=%3$@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -79549,6 +80587,12 @@
     "Chapter %@ of this book %@, which TextMouth can't export safely. Choose Edit Text, flatten the nesting, and save; then export again." : {
       "comment" : "Why a book's text was not exported: a chapter of it nests quotes, lists, or emphasis too deeply. %1$@ is the chapter's number, an identifier written without digit grouping, and %2$@ the clause that says how deep, such as \"nests quotes, lists, or emphasis more than 128 levels deep\". \"Edit Text\" is a command.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইয়ের অধ্যায় %1$@ %2$@, যা TextMouth নিরাপদে রপ্তানি করতে পারে না। টেক্সট সম্পাদনা করুন বেছে নিন, নেস্টিং সমতল করুন এবং সংরক্ষণ করুন; তারপর আবার রপ্তানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -81575,6 +82619,12 @@
     "Choose" : {
       "comment" : "The confirm button of the folder chooser that the Export dialog opens.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বেছে নিন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -82209,6 +83259,12 @@
     "Choose Folder…" : {
       "comment" : "The button in the Export dialog that chooses the folder to export to.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডার বেছে নিন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -83572,6 +84628,12 @@
     "Choose a pronunciation lexicon file to add as rules." : {
       "comment" : "Message of the Open panel that Import Rules shows, asking for a pronunciation lexicon file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিয়ম হিসেবে যোগ করতে একটি উচ্চারণ লেক্সিকন ফাইল বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85289,6 +86351,12 @@
     "Choose the folder to export to. New Folder makes one." : {
       "comment" : "The message of the folder chooser that the Export dialog opens. \"New Folder\" is the chooser's own button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানির ফোল্ডারটি বেছে নিন। নতুন ফোল্ডার একটি তৈরি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85579,6 +86647,12 @@
     "Chooses the file format. M4B is an audiobook; M4A and MP3 play in more apps. M4B and M4A have a chapter for each heading; an MP3, for the first %@." : {
       "comment" : "The hint of the Format pop-up in the Export dialog's spoken audio options. M4B, M4A, and MP3 are audio file formats. %@ is the number of chapters an MP3 can have, 255.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইল ফরম্যাট বেছে নেয়। M4B একটি অডিওবুক; M4A ও MP3 আরও বেশি অ্যাপে চলে। M4B ও M4A-তে প্রতিটি হেডিংয়ের জন্য একটি অধ্যায় থাকে; MP3-তে প্রথম %@টির জন্য।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85656,6 +86730,12 @@
     "Chooses the folder the checked items are exported to." : {
       "comment" : "The hint of the Choose Folder button in the Export dialog.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যে ফোল্ডারে চিহ্নিত আইটেমগুলো রপ্তানি হবে সেটি বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85733,6 +86813,12 @@
     "Chooses the order of the books." : {
       "comment" : "Hint of the iPhone Library's Sort button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইগুলোর ক্রম বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85810,6 +86896,12 @@
     "Chooses what Play and the skip buttons move by." : {
       "comment" : "Hint of the iPhone reader's Navigation unit control.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চালান ও এড়িয়ে যাওয়ার বোতামগুলো কিসের ভিত্তিতে এগোয় তা বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85887,6 +86979,12 @@
     "Chooses what a book opened from the list does when it ends." : {
       "comment" : "VoiceOver hint of the Reading List's When a book ends pop-up button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তালিকা থেকে খোলা একটি বই শেষ হলে কী হবে তা বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -85964,6 +87062,12 @@
     "Chooses what happens when one of this feed's articles ends" : {
       "comment" : "VoiceOver hint of the pop-up button in a news feed's Feed Info that sets what happens when one of its articles ends.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফিডের একটি নিবন্ধ শেষ হলে কী হবে তা বেছে নেয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86041,6 +87145,12 @@
     "Chooses what happens when one of this feed's episodes ends" : {
       "comment" : "VoiceOver hint of the pop-up button in a podcast feed's Feed Info that sets what happens when one of its episodes ends.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফিডের একটি পর্ব শেষ হলে কী হবে তা বেছে নেয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86118,6 +87228,12 @@
     "Chooses what happens when one of this feed's items ends" : {
       "comment" : "VoiceOver hint of the pop-up button in a feed's Feed Info that sets what happens when one of its items ends.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফিডের একটি আইটেম শেষ হলে কী হবে তা বেছে নেয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86195,6 +87311,12 @@
     "Chooses what happens when one of this folder's books ends" : {
       "comment" : "VoiceOver hint of the pop-up button in a folder's settings that sets what happens when one of its books ends.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফোল্ডারের একটি বই শেষ হলে কী হবে তা বেছে নেয়"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86272,6 +87394,12 @@
     "Chooses what the Library lists." : {
       "comment" : "Hint of the iPhone Library's row that chooses which view of the library is listed.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "লাইব্রেরি কী তালিকাভুক্ত করবে তা বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86349,6 +87477,12 @@
     "Chooses where the next book opens: in this window or a new one. A book open in another window comes forward, and with %@ chosen, this window closes." : {
       "comment" : "VoiceOver hint of the Open the next book in pop-up button in Settings, Playback, also shown under it. %@ is the name of its choice This Window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরের বই কোথায় খুলবে তা বেছে নেয়: এই উইন্ডোতে বা একটি নতুন উইন্ডোতে। অন্য উইন্ডোতে খোলা বই সামনে আসে, এবং %@ বেছে নিলে এই উইন্ডো বন্ধ হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86426,6 +87560,12 @@
     "Chooses where this feed's next article opens." : {
       "comment" : "VoiceOver hint of the Open the next article in pop-up button in a news feed's Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফিডের পরের নিবন্ধ কোথায় খুলবে তা বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86503,6 +87643,12 @@
     "Chooses where this feed's next episode opens." : {
       "comment" : "VoiceOver hint of the Open the next episode in pop-up button in a podcast feed's Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফিডের পরের পর্ব কোথায় খুলবে তা বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86580,6 +87726,12 @@
     "Chooses where this feed's next item opens." : {
       "comment" : "VoiceOver hint of the Open the next item in pop-up button in a feed's Feed Info.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফিডের পরের আইটেম কোথায় খুলবে তা বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -86657,6 +87809,12 @@
     "Chooses where this folder's next book opens." : {
       "comment" : "VoiceOver hint of the Open the next book in pop-up button in a folder's settings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফোল্ডারের পরের বই কোথায় খুলবে তা বেছে নেয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -87854,6 +89012,12 @@
     "Close" : {
       "comment" : "Button that closes a reader view or sheet.\nButton that closes a sheet or window and returns to what is under it, such as the sleep timer sheet over a book's reader, a feed's information sheet, or the reader's own sheets.\nButton that closes a sheet, such as the audio editor's list of markers.\nButton that closes a sheet, such as the sleep timer sheet over a book's reader.\nButton that closes a sheet.\nName of the File menu's Close command, which closes the window, in a sentence saying why a keyboard shortcut cannot take its key.\nThe button in the Export dialog that closes it after an export that did not do everything asked.\nTitle of the button that closes a sheet, such as the speech refusal report.\nTitle of the button that closes the Search Library window.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বন্ধ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -89163,6 +90327,12 @@
     "Collapse runs of at least" : {
       "comment" : "Label of the field and stepper that set the length from which a run of one symbol is collapsed, in Settings, Text, Repeated Symbols. The number of symbols and the word symbols follow it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অন্তত এত দৈর্ঘ্যের ধারা সংকুচিত করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91251,6 +92421,12 @@
     "Contents" : {
       "comment" : "The heading of the contents list written into an exported EPUB's navigation document, and the label of the contents list in an exported web page.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সূচি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91784,6 +92960,12 @@
     "Contracted" : {
       "comment" : "How a braille table contracts, for a table with no grade that shortens words with contractions.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সংক্ষিপ্ত"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91861,6 +93043,12 @@
     "Contracted (Grade %@)" : {
       "comment" : "How a braille table contracts, for a table of one grade that shortens words with contractions. %@ is the grade, an identifier such as 2.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সংক্ষিপ্ত (গ্রেড %@)"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -91938,6 +93126,12 @@
     "Contraction" : {
       "comment" : "The label of the pop-up that chooses how far a braille code contracts words, in the Braille tab of Settings and in the Export dialog's braille options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সংকোচন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92305,6 +93499,12 @@
     "Convert headings to" : {
       "comment" : "The name of the picker beside the Headings checkbox in the Export dialog that chooses the format of the headings list.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "হেডিং রূপান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92465,6 +93665,12 @@
     "Convert to" : {
       "comment" : "The name of the picker beside a checkbox in the Export dialog that chooses the format the text is written in.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রূপান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92542,6 +93748,12 @@
     "Convert transcript to" : {
       "comment" : "The name of the picker beside the Transcript checkbox in the Export dialog that chooses the format of the transcript.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ট্রান্সক্রিপ্ট রূপান্তর করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -92921,6 +94133,12 @@
     "Converting this kind of file isn't available on iPhone yet." : {
       "comment" : "Error text when the iPhone app is asked to convert an audio file in a way only the Mac's helper program can.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ধরনের ফাইল রূপান্তর করা iPhone-এ এখনও সম্ভব নয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -93229,6 +94447,12 @@
     "Copies the whole report as plain text" : {
       "comment" : "VoiceOver hint of the Copy Details button of the speech refusal report.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পুরো প্রতিবেদনটি সাধারণ টেক্সট হিসেবে কপি করে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -93383,6 +94607,12 @@
     "Copy Details" : {
       "comment" : "Title of the button of the speech refusal report that copies the whole report.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিবরণ কপি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -93833,6 +95063,12 @@
     "Could not add the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be added because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক যোগ করা যায়নি: “%@” আর লাইব্রেরিতে নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -94980,6 +96216,12 @@
     "Could not remove the bookmark: “%@” is no longer in the library." : {
       "comment" : "VoiceOver announcement when a bookmark could not be removed because the book left the library while its reader was open. %@ is the book's title, in quotation marks.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক সরানো যায়নি: “%@” আর লাইব্রেরিতে নেই।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -95957,6 +97199,12 @@
     "Couldn't export %@." : {
       "comment" : "A sentence of what an export says once it ends: one file could not be written. %@ is the file's name and the reason, such as \"Headings: TextMouth has not read this book's headings yet\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ রপ্তানি করা যায়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96034,6 +97282,12 @@
     "Couldn't export %@. The first was %@." : {
       "comment" : "A sentence of what an export says once it ends: several files could not be written. %1$@ is a count of items, such as 5 items, and %2$@ the first file's name and reason.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ রপ্তানি করা যায়নি। প্রথমটি ছিল %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -96117,6 +97371,12 @@
     "Couldn't export %@: %@." : {
       "comment" : "A sentence of what an export says once it ends: two or three files could not be written. %1$@ is a count of items, such as 2 items, and %2$@ the files' names with their reasons, separated by semicolons.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%1$@ রপ্তানি করা যায়নি: %2$@।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97023,6 +98283,12 @@
     "Current Streak" : {
       "comment" : "Title of the Stats pane's tile showing how many days in a row the user has listened.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বর্তমান ধারা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97100,6 +98366,12 @@
     "Current Timer" : {
       "comment" : "Heading of the sleep timer sheet's section about the timer running now.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বর্তমান টাইমার"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97177,6 +98449,12 @@
     "Current listening streak" : {
       "comment" : "What VoiceOver says before the count of days of the current listening streak on the Stats pane; a colon and the count follow.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বর্তমান শোনার ধারা"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97497,6 +98775,12 @@
     "Custom minutes" : {
       "comment" : "VoiceOver label of the sleep timer sheet's field of a custom number of minutes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কাস্টম মিনিট"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -97574,6 +98858,12 @@
     "Custom:" : {
       "comment" : "Shown before the sleep timer sheet's field of a custom number of minutes. Hidden from VoiceOver, which reads the field's label.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কাস্টম:"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -98889,6 +100179,12 @@
     "Decrease audio speed by %@ times" : {
       "comment" : "Accessibility label of the button that lowers the audio speed. %@ is the size of one step, such as 0.1.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিওর গতি %@ গুণ কমান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -98966,6 +100262,24 @@
     "Decrease speed by %lld words per minute" : {
       "comment" : "VoiceOver label of the playback bar's button that lowers a text book's speed. %lld is the size of one step in words per minute.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "গতি প্রতি মিনিটে %lld শব্দ কমান"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "গতি প্রতি মিনিটে %lld শব্দ কমান"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -100198,6 +101512,12 @@
     "Delete" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: deletes the bookmark.\nButton of a marker's row in the audio editor's list that deletes the marker.\nName of a filter preset's Delete button, also its VoiceOver action and context menu item.\nName of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + Delete\".\nName of the command that deletes a substitution rule: a row button's label and tooltip, a VoiceOver action, and a context menu item.\nText of the Library tab of Settings, a list of the views the Library window offers (built-in views and the listener's own). The question's button that deletes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "মুছুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -101928,6 +103248,12 @@
     "Delete bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that deletes it. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %@ মুছুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -104052,6 +105378,12 @@
     "Details" : {
       "comment" : "VoiceOver label of the text area holding the whole report of a speech refusal.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিবরণ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -104212,6 +105544,12 @@
     "Details copied" : {
       "comment" : "Announcement after Copy Details copied the report of a speech refusal.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বিবরণ কপি করা হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -105741,6 +107079,12 @@
     "Done" : {
       "comment" : "Button that closes a sheet, such as the filter presets sheet.\nButton that closes the Compare Libraries sheet.\nButton that finishes with a sheet or list and closes it, keeping what was done, such as the Bookmarks list over a book's reader, a feed's information, the OPML import, or the duplicate finder.\nText of the Folder Settings sheet, which shows one library folder's facts and its listening options. The title of the button that closes the sheet.\nTitle of the button that closes a sheet whose changes were already kept, such as Feed Info. Title case.\nTitle of the button that closes the Find Duplicate Books sheet.\nTitle of the toolbar button that leaves edit mode in the Library list, shown while edit mode is on.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সম্পন্ন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -107138,6 +108482,12 @@
     "Download cancelled, so playback stopped." : {
       "comment" : "VoiceOver announcement when the listener cancelled the download of a feed's next episode or article, which playback was waiting for.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ডাউনলোড বাতিল হয়েছে, তাই প্লেব্যাক থেমে গেছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -108073,6 +109423,12 @@
     "Download the next article before this one ends" : {
       "comment" : "Label of the switch in a news feed's Feed Info that downloads the next article before the playing one ends.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি শেষ হওয়ার আগে পরের নিবন্ধ ডাউনলোড করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -108150,6 +109506,12 @@
     "Download the next book before this one ends" : {
       "comment" : "Label of a switch that downloads the next book before the playing one ends (a folder's settings do not show it today).",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি শেষ হওয়ার আগে পরের বই ডাউনলোড করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -108227,6 +109589,12 @@
     "Download the next episode before this one ends" : {
       "comment" : "Label of the switch in a podcast feed's Feed Info that downloads the next episode before the playing one ends.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি শেষ হওয়ার আগে পরের পর্ব ডাউনলোড করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -108304,6 +109672,12 @@
     "Download the next item before this one ends" : {
       "comment" : "Label of the switch in a feed's Feed Info that downloads the next item before the playing one ends.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এটি শেষ হওয়ার আগে পরের আইটেম ডাউনলোড করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -110274,6 +111648,12 @@
     "Downloading the next article: %@" : {
       "comment" : "A sentence of the announcement as a feed's article ends: the next article is being downloaded. %@ is that article's title.\nVoiceOver announcement of Next in Folder when the next item is a feed's article that must be downloaded first. %@ is the article's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরের নিবন্ধ ডাউনলোড হচ্ছে: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -110351,6 +111731,12 @@
     "Downloading the next episode: %@" : {
       "comment" : "A sentence of the announcement as a feed's episode ends: the next episode is being downloaded. %@ is that episode's title.\nVoiceOver announcement of Next in Folder when the next item is a podcast episode that must be downloaded first. %@ is the episode's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পরের পর্ব ডাউনলোড হচ্ছে: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -110641,6 +112027,12 @@
     "Downloading “%@”" : {
       "comment" : "Line of the iPhone's import progress card while a file that is only in iCloud comes down. %@ is the file's name, as in \"Downloading “Dune”\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "“%@” ডাউনলোড হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112311,6 +113703,12 @@
     "Each bookmark's name and place, as Audacity labels, for a book with one audio file." : {
       "comment" : "The hint of the Bookmarks checkbox in the Export dialog.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি বুকমার্কের নাম ও জায়গা, Audacity লেবেল হিসেবে, একটিমাত্র অডিও ফাইলের বইয়ের জন্য।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112388,6 +113786,12 @@
     "Each character listed can form a run. Spaces are ignored, and letters and digits never form runs." : {
       "comment" : "Tooltip and VoiceOver hint of the field listing the symbols that can form a run, in Settings, Text, Repeated Symbols.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "তালিকাভুক্ত প্রতিটি অক্ষর একটি ধারা গড়তে পারে। ফাঁক উপেক্ষা করা হয়, আর অক্ষর ও অঙ্ক কখনও ধারা গড়ে না।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112465,6 +113869,12 @@
     "Each heading's title and start, as Audacity labels, for a book with one audio file." : {
       "comment" : "The hint of the Headings checkbox in the Export dialog while Audacity labels are chosen.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি হেডিংয়ের শিরোনাম ও শুরু, Audacity লেবেল হিসেবে, একটিমাত্র অডিও ফাইলের বইয়ের জন্য।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -112542,6 +113952,12 @@
     "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it." : {
       "comment" : "The hint of the Headings checkbox in the Export dialog while CUE sheet is chosen. \"Audio\" is the name of the Audio checkbox.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি হেডিংয়ের শিরোনাম ও শুরু, একটি CUE শিট হিসেবে, যা অডিওকে সেই নামেই উল্লেখ করে যে নামে অডিও রপ্তানি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -113099,6 +114515,12 @@
     "Edit Bookmark %@" : {
       "comment" : "Heading of the panel for editing a bookmark's note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %@ সম্পাদনা করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -113567,6 +114989,12 @@
     "Edit Note" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a button beside its row, a VoiceOver action, and a context menu item: edits the bookmark's note.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নোট সম্পাদনা করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114550,6 +115978,12 @@
     "Edit note for bookmark %@" : {
       "comment" : "VoiceOver label of the button beside a bookmark's row that edits its note. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %@-এর নোট সম্পাদনা করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -114935,6 +116369,12 @@
     "Editing in another app isn't available on iPhone yet." : {
       "comment" : "Error text when the iPhone app is asked to open a file in another app to edit it and take it back.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অন্য অ্যাপে সম্পাদনা করা iPhone-এ এখনও সম্ভব নয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -115794,6 +117234,12 @@
     "Enable Sound Effects" : {
       "comment" : "Title of the switch in Settings, Sound Effects that turns the short sounds for playback actions on or off.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাউন্ড ইফেক্ট চালু করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116037,6 +117483,12 @@
     "Encoding the audio file…" : {
       "comment" : "The progress of a spoken audio export once every chapter is spoken and the audio file is being made.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "অডিও ফাইল এনকোড করা হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116114,6 +117566,12 @@
     "End" : {
       "comment" : "Name of a key of the keyboard, spoken by VoiceOver and shown in braille in a keyboard shortcut such as \"Command + End\".\nPart of a spoken audio export's file name: the end of the book as one end of the range, as in \"Middlemarch - Chapter 2 to End\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শেষ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116268,6 +117726,12 @@
     "End of book" : {
       "comment" : "Name of the sleep timer that stops where the book ends: its button in the sleep timer sheet, and the timer's state in the reader.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের শেষ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116505,6 +117969,12 @@
     "End of heading" : {
       "comment" : "Name of the sleep timer that stops where the heading playing ends: its button in the sleep timer sheet, and the timer's state in the reader.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "হেডিংয়ের শেষ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116748,6 +118218,12 @@
     "End of the book" : {
       "comment" : "The last item of the To pop-up in the Export dialog's spoken audio options: the end of the book.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের শেষ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116825,6 +118301,12 @@
     "End of the book." : {
       "comment" : "What the iPhone reader says when a move forward by a length of time has nothing left to move to.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বইয়ের শেষ।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -116902,6 +118384,12 @@
     "End of the reading list" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": no book follows it below. Written without its full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকার শেষ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -118256,6 +119744,12 @@
     "Error" : {
       "comment" : "Title of an alert about a problem, when the problem has no more specific title.\nTitle of the reader's alert about a problem that is not an audio failure.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ত্রুটি"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -118951,6 +120445,12 @@
     "Every book above it in the reading list is finished" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends while the list plays upward: the books above it are all finished, and the list passes over finished books. Written without its full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এর উপরের সব বই শেষ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -119028,6 +120528,12 @@
     "Every book after it in the folder is finished" : {
       "comment" : "A sentence of the announcement as a book ends, after \"Finished: <title>.\": every book after it in its library folder is finished, so none plays. Written without its full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারে এর পরের সব বই শেষ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -119105,6 +120611,12 @@
     "Every book before it in the folder is finished" : {
       "comment" : "A sentence of the announcement as a book ends, in a folder or feed that plays the book above: every book before it is finished, so none plays. Written without its full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফোল্ডারে এর আগের সব বই শেষ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -119182,6 +120694,12 @@
     "Every book below it in the reading list is finished" : {
       "comment" : "A sentence of the announcement as a book read from the reading list ends, after \"Finished: <title>.\": the books below it are all finished, and the list passes over finished books. Written without its full stop.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "পড়ার তালিকায় এর নিচের সব বই শেষ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121261,6 +122779,12 @@
     "Export" : {
       "comment" : "The button in the Export dialog that exports the checked items.\nThe title of the Export button in a reader's toolbar.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121338,6 +122862,12 @@
     "Export %@" : {
       "comment" : "The title of the Export dialog for one book. %@ is the book's title.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ রপ্তানি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -121415,6 +122945,24 @@
     "Export %lld Books" : {
       "comment" : "The title of the Export dialog for several books. %lld is the number of books.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই রপ্তানি করুন"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই রপ্তানি করুন"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -121678,6 +123226,24 @@
     "Export %lld Books…" : {
       "comment" : "The title of the library's context-menu command that exports a selection of several books. %lld is the number of books selected.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই রপ্তানি করুন…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই রপ্তানি করুন…"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -122024,6 +123590,12 @@
     "Export Every Such Chapter as Written" : {
       "comment" : "A button of the alert an export shows when a chapter nests too deeply: it writes every such chapter of the export as plain paragraphs, without asking again.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এ ধরনের প্রতিটি অধ্যায় যেমন আছে তেমন রপ্তানি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122101,6 +123673,12 @@
     "Export Failed" : {
       "comment" : "Title of the alert when substitution rules could not be saved as a pronunciation lexicon.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি ব্যর্থ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122462,6 +124040,12 @@
     "Export Rules…" : {
       "comment" : "Title of the button in Settings, Text, Substitutions that saves the rules as a pronunciation lexicon file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিয়ম রপ্তানি করুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122539,6 +124123,12 @@
     "Export To" : {
       "comment" : "The title of the folder chooser that the Export dialog opens.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানির গন্তব্য"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122616,6 +124206,12 @@
     "Export as Written" : {
       "comment" : "The default button of the alert an export shows when a chapter nests too deeply: it writes the chapter as plain paragraphs.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যেমন আছে তেমন রপ্তানি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122693,6 +124289,12 @@
     "Export can't write into TextMouth's library folder. Choose another folder." : {
       "comment" : "Why the Export dialog refuses the folder chosen: it is TextMouth's own library folder or inside it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি TextMouth-এর লাইব্রেরি ফোল্ডারে লিখতে পারে না। অন্য একটি ফোল্ডার বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122770,6 +124372,12 @@
     "Export can't write into the folder where TextMouth keeps spoken chapters, which it empties. Choose another folder." : {
       "comment" : "Why the Export dialog refuses the folder chosen: it is the folder where TextMouth keeps the chapters of a spoken audio export, or inside it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি সেই ফোল্ডারে লিখতে পারে না, যেখানে TextMouth পড়ে শোনানো অধ্যায়গুলো রাখে এবং যেটি সে খালি করে দেয়। অন্য একটি ফোল্ডার বেছে নিন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122847,6 +124455,12 @@
     "Export rules as a pronunciation lexicon file" : {
       "comment" : "VoiceOver label of the Export Rules button in Settings, Text, Substitutions.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিয়মগুলো একটি উচ্চারণ লেক্সিকন ফাইল হিসেবে রপ্তানি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -122924,6 +124538,12 @@
     "Export stopped. Nothing was exported." : {
       "comment" : "What an export says once it ends when it was stopped before it wrote anything.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি থেমে গেছে। কিছুই রপ্তানি হয়নি।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -123001,6 +124621,12 @@
     "Export this book" : {
       "comment" : "The spoken label of the Export button in a reader's toolbar.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বইটি রপ্তানি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -123078,6 +124704,12 @@
     "Export to: %@" : {
       "comment" : "The line in the Export dialog naming the folder the items go to. %@ is the folder's name as Finder shows it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানির গন্তব্য: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -123155,6 +124787,12 @@
     "Exported %@ to %@." : {
       "comment" : "What an export says once it ends. %1$@ is a count of items, such as 3 items, and %2$@ the folder's name as Finder shows it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এ %1$@ রপ্তানি করা হয়েছে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -123238,6 +124876,24 @@
     "Exported %lld rules to “%@”." : {
       "comment" : "A sentence of the alert after substitution rules were saved as a pronunciation lexicon. %1$lld is the number of rules written; %2$@ is the file's name.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%2$@”-এ %1$lld নিয়ম রপ্তানি করা হয়েছে।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "“%2$@”-এ %1$lld নিয়ম রপ্তানি করা হয়েছে।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -124262,6 +125918,12 @@
     "Exporting %lld of %@…" : {
       "comment" : "The progress of an export under way. %1$lld is how many items are written and %2$@ is the total as a count of items, such as 40 items.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%2$@-এর মধ্যে %1$lld রপ্তানি হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124345,6 +126007,12 @@
     "Exporting…" : {
       "comment" : "The progress of an export under way before it has counted its items.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "রপ্তানি হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124422,6 +126090,12 @@
     "Exports the checked items once the braille table just chosen is checked." : {
       "comment" : "The hint of the Export button in the Export dialog while a braille table just chosen in the braille options is still being checked.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এইমাত্র বেছে নেওয়া ব্রেইল টেবিল যাচাই হওয়ার পর চিহ্নিত আইটেমগুলো রপ্তানি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -124499,6 +126173,12 @@
     "Exports the checked items to the folder." : {
       "comment" : "The hint of the Export button in the Export dialog.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "চিহ্নিত আইটেমগুলো ফোল্ডারে রপ্তানি করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -125370,6 +127050,12 @@
     "Fading out" : {
       "comment" : "The sleep timer's state while it fades the sound out before pausing, shown in the sleep timer sheet and the reader.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফেড আউট হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -128904,6 +130590,12 @@
     "Finding what can be exported…" : {
       "comment" : "Shown in the Export dialog while it finds what the books hold.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "কী রপ্তানি করা যায় তা খোঁজা হচ্ছে…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129064,6 +130756,12 @@
     "Finished" : {
       "comment" : "How far a finished book has got, shown and spoken in place of its percent: in the library's row, Speak Info, Where Am I?, and Copy Reading Position.\nText of the Library view editor sheet, which makes and changes a view of the Library window, and of the descriptions of a view's filter. A reading state as the pop-up names it. This is the case .finished.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শেষ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -129360,6 +131058,12 @@
     "Finished: %@" : {
       "comment" : "VoiceOver announcement as a book ends with no book to follow it. %@ is the book's title. Sentences saying why may follow it.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শেষ হয়েছে: %@"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131076,6 +132780,12 @@
     "Follow in Braille" : {
       "comment" : "Switch in iPhone Settings: while a book plays, the book's text moves on with the speech, for a braille display.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইলে অনুসরণ করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -131230,6 +132940,12 @@
     "For trying out with a braille display." : {
       "comment" : "Last sentence of the hint of Follow in Braille in iPhone Settings.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ব্রেইল ডিসপ্লে দিয়ে পরীক্ষার জন্য।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132495,6 +134211,12 @@
     "From" : {
       "comment" : "The label of the pop-up in the Export dialog's spoken audio options that chooses where the spoken audio begins.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "থেকে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -132957,6 +134679,12 @@
     "General" : {
       "comment" : "Heading of the section of Settings, Sound Effects that holds the switch and the volume.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "সাধারণ"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -134539,6 +136267,12 @@
     "Go To" : {
       "comment" : "A command on a bookmark of the Bookmarks list, as a VoiceOver action and a context menu item: moves the book to the bookmark.\nButton of a marker's or a pause's row in the audio editor's list that moves the cursor there.\nLabel of the iPhone reader's button that opens the Go To sheet, and that sheet's title.\nName of a heading row's command that goes to the heading, as a VoiceOver action and a context menu item.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "যান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -135919,6 +137653,12 @@
     "Go to bookmark %@" : {
       "comment" : "VoiceOver label of a button that moves the book to a bookmark. %@ is the bookmark's number, an identifier written without digit grouping.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "বুকমার্ক %@-এ যান"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136061,6 +137801,12 @@
     "Goes back to where the last jump began." : {
       "comment" : "Hint of the iPhone reader's Return button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "শেষ লাফ যেখান থেকে শুরু হয়েছিল সেখানে ফিরে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136138,6 +137884,12 @@
     "Goes to a page, a percent, or a time." : {
       "comment" : "Hint of the iPhone reader's Go To button.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি পৃষ্ঠা, শতাংশ বা সময়ে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136215,6 +137967,12 @@
     "Goes to this bookmark and closes the list." : {
       "comment" : "VoiceOver hint of a bookmark's row in the Bookmarks list.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই বুকমার্কে যায় এবং তালিকা বন্ধ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136292,6 +138050,12 @@
     "Goes to this heading and closes the list." : {
       "comment" : "Hint of a heading's row in the headings list: what choosing it does.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই হেডিংয়ে যায় এবং তালিকা বন্ধ করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136369,6 +138133,12 @@
     "Goes to this result." : {
       "comment" : "Hint of a row in the iPhone's Search in Book results: activating it moves the book to that match.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "এই ফলাফলে যায়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -136683,6 +138453,12 @@
     "Guess the braille code of new books" : {
       "comment" : "The label of the switch in the Braille tab of Settings that turns on guessing the braille code of a book at import.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নতুন বইয়ের ব্রেইল কোড অনুমান করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138752,6 +140528,12 @@
     "How a BRF or BRL file writes each braille cell. Most files use North American Braille ASCII." : {
       "comment" : "The hint of the braille file characters pop-up in the Braille tab of Settings. BRF and BRL are braille file formats, and North American Braille ASCII is the name of a braille character code.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি BRF বা BRL ফাইল প্রতিটি ব্রেইল সেল কীভাবে লেখে। বেশিরভাগ ফাইল North American Braille ASCII ব্যবহার করে।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138829,6 +140611,12 @@
     "How fast the voice speaks in the file. It starts at the book's speed." : {
       "comment" : "The hint of the Speed slider in the Export dialog's spoken audio options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইলে ভয়েস কত দ্রুত বলে। এটি বইয়ের গতি থেকে শুরু হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -138906,6 +140694,12 @@
     "How high the voice sounds in the file. It starts at the book's pitch." : {
       "comment" : "The hint of the Pitch slider in the Export dialog's spoken audio options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "ফাইলে ভয়েস কত উঁচু শোনায়। এটি বইয়ের পিচ থেকে শুরু হয়।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -139066,6 +140860,12 @@
     "How many braille cells each line holds, from 18 to 80." : {
       "comment" : "The hint of the Cells per line stepper in the Export dialog's braille options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি লাইনে কতগুলো ব্রেইল সেল থাকবে, ১৮ থেকে ৮০।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -139143,6 +140943,12 @@
     "How many lines each braille page holds, from 4 to 50." : {
       "comment" : "The hint of the Lines per page stepper in the Export dialog's braille options.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "প্রতিটি ব্রেইল পৃষ্ঠায় কতগুলো লাইন থাকবে, ৪ থেকে ৫০।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -139368,6 +141174,12 @@
     "How the BRF writes each braille cell. Most braille displays and embossers read North American Braille ASCII; those set up for German read Eurobraille. To share with a reader elsewhere, export a PEF." : {
       "comment" : "The hint of the braille file characters pop-up in the Export dialog's braille options. BRF and PEF are braille file formats, and North American Braille ASCII and Eurobraille are names of braille character codes.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "BRF প্রতিটি ব্রেইল সেল কীভাবে লেখে। বেশিরভাগ ব্রেইল ডিসপ্লে ও এমবসার North American Braille ASCII পড়ে; জার্মানের জন্য সাজানোগুলো Eurobraille পড়ে। অন্য কোথাও পাঠকের সঙ্গে ভাগ করতে একটি PEF রপ্তানি করুন।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -139445,6 +141257,12 @@
     "How the voice reads a symbol written several times in a row" : {
       "comment" : "VoiceOver hint of the pop-up button that chooses how the voice reads a run of one symbol.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একই চিহ্ন পরপর কয়েকবার লেখা হলে ভয়েস তা কীভাবে পড়ে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141335,6 +143153,12 @@
     "Import Failed" : {
       "comment" : "Title of the alert when a pronunciation lexicon file could not be imported.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "আমদানি ব্যর্থ হয়েছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -141631,6 +143455,12 @@
     "Import Rules…" : {
       "comment" : "Title of the button in Settings, Text, Substitutions that adds rules from a pronunciation lexicon file.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "নিয়ম আমদানি করুন…"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142235,6 +144065,12 @@
     "Import rules from a pronunciation lexicon file" : {
       "comment" : "VoiceOver label of the Import Rules button in Settings, Text, Substitutions.",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "একটি উচ্চারণ লেক্সিকন ফাইল থেকে নিয়ম আমদানি করুন"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142814,6 +144650,12 @@
     "Importing %@" : {
       "comment" : "What VoiceOver says once as one file or folder starts to import on the iPhone. %@ is its name, as in \"Importing Dune\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ আমদানি হচ্ছে"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142891,6 +144733,12 @@
     "Importing %@ was stopped when TextMouth closed." : {
       "comment" : "First sentence of what VoiceOver says at launch when TextMouth had closed during imports. %@ is the quoted names of one to three files, joined as a list, as in \"“Dune” and “Emma”\".",
       "localizations" : {
+        "bn" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth বন্ধ হয়ে যাওয়ায় %@ আমদানি থেমে গিয়েছিল।"
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
@@ -142968,6 +144816,24 @@
     "Importing %lld books" : {
       "comment" : "What VoiceOver says once as several files or folders start to import on the iPhone. %lld is how many, always two or more.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই আমদানি হচ্ছে"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "%lld বই আমদানি হচ্ছে"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
@@ -143231,6 +145097,24 @@
     "Importing %lld books was stopped when TextMouth closed." : {
       "comment" : "First sentence of what VoiceOver says at launch when TextMouth had closed during the import of four or more files. %lld is how many.",
       "localizations" : {
+        "bn" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth বন্ধ হয়ে যাওয়ায় %lld বই আমদানি থেমে গিয়েছিল।"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth বন্ধ হয়ে যাওয়ায় %lld বই আমদানি থেমে গিয়েছিল।"
+                }
+              }
+            }
+          }
+        },
         "de" : {
           "variations" : {
             "plural" : {
