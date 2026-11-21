@@ -614009,7 +614009,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pelo que um livro deste tipo se move até ter uma unidade própria."
+            "value" : "A unidade pela qual um livro deste tipo se move até ter uma unidade própria."
           }
         },
         "ru" : {
@@ -628075,7 +628075,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Grava este e todos os outros capítulos aninhados fundo demais desta exportação como parágrafos simples de linhas, sem perguntar de novo."
+            "value" : "Grava este e todos os outros capítulos com aninhamento profundo demais desta exportação como parágrafos simples de linhas, sem perguntar de novo."
           }
         },
         "ru" : {
@@ -641431,7 +641431,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "esmaecendo"
+            "value" : "diminuindo o volume"
           }
         },
         "ru" : {
