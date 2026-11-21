@@ -8018,7 +8018,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ 在 %lld 秒后仍未从云端到达"
+                  "value" : "%@ 在 %lld 秒后仍未从云端下载完成"
                 }
               }
             }
@@ -12453,7 +12453,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@ 在 %3$@ 中归档于%2$@，在 %5$@ 中归档于%4$@。"
+            "value" : "%1$@ 在 %3$@ 中存放%2$@，在 %5$@ 中存放%4$@。"
           }
         },
         "zh-Hant" : {
@@ -22048,7 +22048,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ 未再次请求读取，因为驱动器尚未响应之前的读取"
+            "value" : "未再次请求读取 %@，因为驱动器尚未响应之前的读取请求"
           }
         },
         "zh-Hant" : {
@@ -25412,7 +25412,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ 等另外 %lld 个"
+                  "value" : "%@，以及另外 %lld 项"
                 }
               }
             }
@@ -38120,7 +38120,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 个另一个副本没有的书签"
+                  "value" : "另一个副本没有的 %lld 个书签"
                 }
               }
             }
@@ -46362,7 +46362,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld 本另一个副本没有的图书"
+                  "value" : "另一个副本没有的 %lld 本图书"
                 }
               }
             }
@@ -136686,7 +136686,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "选取另一种盲文码，以用它重新读取图书文件。"
+            "value" : "选取另一种盲文码来重新读取图书文件。"
           }
         },
         "zh-Hant" : {
@@ -136811,7 +136811,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "选取另一种编码，以用它重新读取图书文件。"
+            "value" : "选取另一种编码来重新读取图书文件。"
           }
         },
         "zh-Hant" : {
@@ -137960,7 +137960,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "选取其他字符，以用它们重新读取图书文件。"
+            "value" : "选取其他字符来重新读取图书文件。"
           }
         },
         "zh-Hant" : {
@@ -147281,7 +147281,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "条件 %@ 需要要查找的文本。"
+            "value" : "条件 %@ 需要填写要查找的文本。"
           }
         },
         "zh-Hant" : {
@@ -154769,7 +154769,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "无法重新安置文件夹内容"
+            "value" : "无法重新放置文件夹内容"
           }
         },
         "zh-Hant" : {
@@ -211782,7 +211782,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "排序中的最前"
+            "value" : "排序靠前"
           }
         },
         "zh-Hant" : {
@@ -222285,7 +222285,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "上移一级文件夹"
+            "value" : "前往上一级文件夹"
           }
         },
         "zh-Hant" : {
@@ -298897,7 +298897,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "两者都不较新：各自都有对方没有的更改。"
+            "value" : "两者都不比对方新：各自都有对方没有的更改。"
           }
         },
         "zh-Hant" : {
@@ -356060,7 +356060,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "将“%1$@”重新读取为 %2$@？"
+            "value" : "按 %2$@ 重新读取“%1$@”？"
           }
         },
         "zh-Hant" : {
@@ -357542,7 +357542,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "阅读列表：“%1$@”在 %3$@ 中是%2$@，在 %5$@ 中是%4$@。"
+            "value" : "阅读列表：“%1$@”在 %3$@ 中%2$@，在 %5$@ 中%4$@。"
           }
         },
         "zh-Hant" : {
@@ -602558,7 +602558,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "关"
+            "value" : "已开启"
           }
         },
         "zh-Hant" : {
@@ -602683,7 +602683,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "开"
+            "value" : "已关闭"
           }
         },
         "zh-Hant" : {
