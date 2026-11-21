@@ -1,0 +1,534 @@
+{
+ "language": "zh-Hans",
+ "reviews": [
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-20",
+   "fixes": [
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ 已使用其默认键 %2$@",
+     "after": "%1$@ 已占用此操作的默认键 %2$@",
+     "why": "meaning: 其 read as the new holder’s own default; the key is the default of this row’s action, now held by the other action"
+    },
+    {
+     "key": "%@ sound",
+     "english": "%@ sound",
+     "before": "%@ 声音",
+     "after": "“%@”的声音",
+     "why": "meaning: with an event such as 播放, 播放 声音 reads as the command “play a sound”"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ 重试，%2$@ 不存储并退出，%3$@ 保持 TextMouth 打开。",
+     "after": "“%1$@”会再次尝试存储，“%2$@”会退出且不存储，“%3$@”会让 TextMouth 保持打开。",
+     "why": "grammar: with the button names as bare subjects it read 重试 重试; quoted names with 会 make each clause read"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "english": "%@ uses it in the menus",
+     "before": "%@ 已在菜单中使用",
+     "after": "菜单命令“%@”已使用此键",
+     "why": "meaning: said the command is used in the menus; it is the command that uses the key"
+    },
+    {
+     "key": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "english": "%@ was not added back: no copy of the text its package held could be kept first, so TextMouth left the text as it was.",
+     "before": "%@ 未添加回来：无法先保留其包内的文本副本，因此 TextMouth 保持文本不变。",
+     "after": "%@ 未重新添加到资料库：无法先保留其包内文本的副本，因此 TextMouth 未改动文本。",
+     "why": "natural: 添加回来 is a colloquial word-for-word “added back”"
+    },
+    {
+     "key": "%lld words per minute",
+     "english": {
+      "one": "%lld word per minute",
+      "other": "%lld words per minute"
+     },
+     "before": {
+      "other": "每分钟 %lld 个词"
+     },
+     "after": {
+      "other": "每分钟 %lld 字"
+     },
+     "why": "term: the speed is 每分钟 %lld 字 everywhere else in the reader; 个词 was the only exception"
+    },
+    {
+     "key": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "english": "Adds the speed they count at, such as 2.0x for an audiobook not at 1x, or 500 words a minute for a text book, in the reader, Where Am I?, Copy Reading Position, and the Headings sheet's durations.",
+     "before": "添加计数所依据的速度，例如不是 1 倍速的有声书的 2.0x，或文本图书的每分钟 500 字，用于阅读器、“我在哪里”、拷贝阅读位置以及章节标题表单的时长。",
+     "after": "注明时间所依据的速度（例如非 1 倍速的有声书为 2.0x，文本图书为每分钟 500 字），用于阅读器、“我在哪里”、“拷贝阅读位置”和章节标题表单中的时长。",
+     "why": "natural: 计数 (counting) misread “the speed they count at”, and the examples copied English order; command name quoted"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "之后，“播放”会再次尝试该段落。",
+     "after": "之后，“播放”会再次尝试朗读该段落。",
+     "why": "natural: 尝试该段落 (try the passage) leaves out what is tried; 尝试朗读"
+    },
+    {
+     "key": "Artist",
+     "english": "Artist",
+     "before": "艺术家",
+     "after": "艺人",
+     "why": "term: Apple’s Music app calls a track’s artist 艺人"
+    },
+    {
+     "key": "Artist or narrator",
+     "english": "Artist or narrator",
+     "before": "艺术家或讲述者",
+     "after": "艺人或讲述者",
+     "why": "term: Apple’s Music app calls a track’s artist 艺人"
+    },
+    {
+     "key": "Changes the speed in steps of %lld words per minute.",
+     "english": {
+      "one": "Changes the speed in steps of %lld word per minute.",
+      "other": "Changes the speed in steps of %lld words per minute."
+     },
+     "before": {
+      "other": "以每分钟 %lld 个词为步进更改速度。"
+     },
+     "after": {
+      "other": "以每分钟 %lld 字为步进更改速度。"
+     },
+     "why": "term: a text book’s speed is 字 everywhere else in the app; 个词 was a second word for it"
+    },
+    {
+     "key": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "english": "Choosing makes the shortcut yours; Reset to Default restores where it works by default.",
+     "before": "选取后该快捷键即归你所有；“重置为默认设置”会恢复其默认适用范围。",
+     "after": "选取后，此快捷键即成为你的自定设置；“重置为默认设置”会恢复其默认适用范围。",
+     "why": "natural: 归你所有 (becomes your property) is a literal “yours”; choosing makes it a custom setting"
+    },
+    {
+     "key": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
+     "english": "Could not save metadata to the library's copy of “%@”, because that file is missing from the library.",
+     "before": "无法将元数据存储到资料库中“%@”的副本，因为该文件已从资料库中缺失。",
+     "after": "无法将元数据存储到资料库中“%@”的副本，因为资料库中已没有该文件。",
+     "why": "natural: 已从资料库中缺失 is a literal “is missing from the library”"
+    },
+    {
+     "key": "Decrease speed by %lld words per minute",
+     "english": {
+      "one": "Decrease speed by %lld word per minute",
+      "other": "Decrease speed by %lld words per minute"
+     },
+     "before": {
+      "other": "将速度降低每分钟 %lld 个词"
+     },
+     "after": {
+      "other": "将速度降低每分钟 %lld 字"
+     },
+     "why": "term: a text book’s speed is 每分钟 %lld 字 everywhere else in the app; 个词 was a second word for it, and this spoken label takes no 字/分钟, whose slash VoiceOver may read aloud"
+    },
+    {
+     "key": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
+     "english": "Each heading's title and start, as Audacity labels, for a book with one audio file.",
+     "before": "每个章节标题的标题和起点，存为 Audacity 标签，适用于只有一个音频文件的图书。",
+     "after": "每个章节标题的文字和起点，存为 Audacity 标签，适用于只有一个音频文件的图书。",
+     "why": "natural: 章节标题的标题 (the heading’s title) repeats itself; a heading’s 文字"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "每个章节标题的标题和起点，存为 CUE 表，按“音频”导出的方式命名音频。",
+     "after": "每个章节标题的文字和起点，存为 CUE 表，按“音频”导出的方式命名音频。",
+     "why": "natural: 章节标题的标题 (the heading’s title) repeats itself; a heading’s 文字"
+    },
+    {
+     "key": "Each line beginning with <!-- chapter: starts a chapter; keep those lines.",
+     "english": "Each line beginning with <!-- chapter: starts a chapter; keep those lines.",
+     "before": "每行以 <!-- chapter: 开头的内容开始一个章节；请保留这些行。",
+     "after": "每个以 <!-- chapter: 开头的行标示一个章节的开始；请保留这些行。",
+     "why": "natural: 每行以…开头的内容开始一个章节 garbled the subject; now parallel to the page-marker line"
+    },
+    {
+     "key": "End of the reading list",
+     "english": "End of the reading list",
+     "before": "阅读列表结尾",
+     "after": "已到阅读列表结尾",
+     "why": "natural: a bare noun phrase in an announcement; 已到…结尾 as the reader’s End of the book. says"
+    },
+    {
+     "key": "Exporting %lld of %@…",
+     "english": "Exporting %1$lld of %2$@…",
+     "before": "正在导出 %1$lld，共 %2$@…",
+     "after": "正在导出第 %1$lld 个，共 %2$@…",
+     "why": "natural: 正在导出 3，共 40 个项目 left the number without 第…个"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "第二次按键必须在多久内跟上第一次。单按和连按有不同操作的键，会等待这么久后才执行单按的操作。",
+     "after": "两次按键之间允许的最长间隔。单按和连按操作不同的键，会等待这段时间后再执行单按操作。",
+     "why": "natural: 跟上第一次 and 这么久 are a colloquial word-for-word copy of the English"
+    },
+    {
+     "key": "ISO 8859-13 (Baltic)",
+     "english": "ISO 8859-13 (Baltic)",
+     "before": "ISO 8859-13（波罗的海语）",
+     "after": "ISO 8859-13（波罗的海）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "ISO 8859-15 (Western European)",
+     "english": "ISO 8859-15 (Western European)",
+     "before": "ISO 8859-15（西欧语）",
+     "after": "ISO 8859-15（西欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "ISO 8859-2 (Central European)",
+     "english": "ISO 8859-2 (Central European)",
+     "before": "ISO 8859-2（中欧语）",
+     "after": "ISO 8859-2（中欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Increase speed by %lld words per minute",
+     "english": {
+      "one": "Increase speed by %lld word per minute",
+      "other": "Increase speed by %lld words per minute"
+     },
+     "before": {
+      "other": "将速度提高每分钟 %lld 个词"
+     },
+     "after": {
+      "other": "将速度提高每分钟 %lld 字"
+     },
+     "why": "term: a text book’s speed is 每分钟 %lld 字 everywhere else in the app; 个词 was a second word for it, and this spoken label takes no 字/分钟, whose slash VoiceOver may read aloud"
+    },
+    {
+     "key": "Its only page is %@.",
+     "english": "Its only page is %@.",
+     "before": "唯一的页是 %@。",
+     "after": "此图书仅有一页：%@。",
+     "why": "natural: 唯一的页是 is a literal copy of “its only page is”"
+    },
+    {
+     "key": "Jumped to page %@, the %@ page labelled %@.",
+     "english": "Jumped to page %1$@, the %2$@ page labelled %3$@.",
+     "before": "已跳转到页 %1$@，即标注为 %3$@ 的页面中的%2$@个。",
+     "after": "已跳转到第 %1$@ 页，即标注为 %3$@ 的%2$@个页面。",
+     "why": "natural: 页 %1$@ copied the English order; %2$@ is an ordinal such as 第二, so it goes before 个页面"
+    },
+    {
+     "key": "Jumped to page %@.",
+     "english": "Jumped to page %@.",
+     "before": "已跳转到页 %@。",
+     "after": "已跳转到第 %@ 页。",
+     "why": "natural: 页 %@ copied the English order; 第 %@ 页 as elsewhere in the reader"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "将列表中的图书保留下载在这台 Mac 上；每台 Mac 各自选择。取消勾选不会移除已有的下载。",
+     "after": "让列表中的图书在这台 Mac 上保持下载状态；每台 Mac 各自选择。取消勾选不会移除已有的下载。",
+     "why": "natural: 保留下载在这台 Mac 上 is an ungrammatical copy of “keeps downloaded on”"
+    },
+    {
+     "key": "Mac Central European",
+     "english": "Mac Central European",
+     "before": "Mac 中欧语",
+     "after": "Mac 中欧",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Mac Roman (Western European)",
+     "english": "Mac Roman (Western European)",
+     "before": "Mac Roman（西欧语）",
+     "after": "Mac Roman（西欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Metadata saved to the library's copy of “%@”.",
+     "english": "Metadata saved to the library's copy of “%@”.",
+     "before": "元数据已存储到资料库及资料库中“%@”的副本。",
+     "after": "元数据已存储到资料库中“%@”的副本。",
+     "why": "natural: 资料库及资料库中 repeated the library and added what the English does not say"
+    },
+    {
+     "key": "Preview %@ sound",
+     "english": "Preview %@ sound",
+     "before": "试听 %@ 声音",
+     "after": "试听“%@”的声音",
+     "why": "meaning: with an event such as 播放, 试听 播放 声音 reads as a run of commands; the sound of that event"
+    },
+    {
+     "key": "Quitting now leaves these changes unsaved:",
+     "english": "Quitting now leaves these changes unsaved:",
+     "before": "现在退出会使这些更改不被存储：",
+     "after": "现在退出将不会存储以下更改：",
+     "why": "natural: 会使这些更改不被存储 is a stiff causative copy of “leaves these changes unsaved”"
+    },
+    {
+     "key": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "english": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "before": "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 和“文本编辑”。",
+     "after": "富文本，每个章节标题按其大纲级别保留，适用于 Word、Pages 文稿和“文本编辑”。",
+     "why": "term: Apple’s Chinese name of Pages is Pages 文稿, as TextEdit is 文本编辑"
+    },
+    {
+     "key": "Section included: %@",
+     "english": "Section included: %@",
+     "before": "已包含章节：%@",
+     "after": "已包含此部分：%@",
+     "why": "term: 章节 is the glossary’s Chapter; a heading’s section is 部分, as the Skip Section and Include Section commands say"
+    },
+    {
+     "key": "Section skipped: %@",
+     "english": "Section skipped: %@",
+     "before": "已略过章节：%@",
+     "after": "已跳过此部分：%@",
+     "why": "term: 章节 is the glossary’s Chapter; a heading’s section is 部分, as the Skip Section and Include Section commands say"
+    },
+    {
+     "key": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "english": "Shows the page being read, such as Page 12 of 300, beside the percent, for books of more than one page.",
+     "before": "在百分比旁显示正在阅读的页，如第 12 页，共 300 页，适用于多页图书。",
+     "after": "在百分比旁显示正在阅读的页码（如第 12 页，共 300 页），适用于多页图书。",
+     "why": "natural: the example ran into the sentence between commas; parentheses as in the Where Am I? page setting"
+    },
+    {
+     "key": "Sleep timer expired",
+     "english": "Sleep timer expired",
+     "before": "睡眠定时器已到时",
+     "after": "睡眠定时器已结束",
+     "why": "natural: 已到时 is not how Chinese says a timer ran out (到时 reads as “when the time comes”); 已结束"
+    },
+    {
+     "key": "Sleep timer expired at the end of the heading. Playback paused.",
+     "english": "Sleep timer expired at the end of the heading. Playback paused.",
+     "before": "睡眠定时器已在章节标题结尾到时。播放已暂停。",
+     "after": "睡眠定时器已在章节标题结尾处结束。播放已暂停。",
+     "why": "natural: 已到时 is not how Chinese says a timer ran out (到时 reads as “when the time comes”); 已结束"
+    },
+    {
+     "key": "Sleep timer expired. Playback paused.",
+     "english": "Sleep timer expired. Playback paused.",
+     "before": "睡眠定时器已到时。播放已暂停。",
+     "after": "睡眠定时器已结束。播放已暂停。",
+     "why": "natural: 已到时 is not how Chinese says a timer ran out (到时 reads as “when the time comes”); 已结束"
+    },
+    {
+     "key": "Speed: %lld words per minute; rate %@, pitch %@, volume %@",
+     "english": {
+      "one": "Speed: %lld word per minute; rate %@, pitch %@, volume %@",
+      "other": "Speed: %lld words per minute; rate %@, pitch %@, volume %@"
+     },
+     "before": {
+      "other": "速度：每分钟 %lld 个词；速率 %@，音调 %@，音量 %@"
+     },
+     "after": {
+      "other": "速度：每分钟 %lld 字；速率 %@，音调 %@，音量 %@"
+     },
+     "why": "term: a text book’s speed is 字 everywhere else in the app; 个词 was a second word for it"
+    },
+    {
+     "key": "Start of the book.",
+     "english": "Start of the book.",
+     "before": "图书开头。",
+     "after": "已到图书开头。",
+     "why": "natural: a bare noun phrase in an announcement; 已到…, as the reader’s End of the book. says"
+    },
+    {
+     "key": "Start of the reading list",
+     "english": "Start of the reading list",
+     "before": "阅读列表开头",
+     "after": "已到阅读列表开头",
+     "why": "natural: a bare noun phrase in an announcement; 已到…, as the reader’s End of the book. says"
+    },
+    {
+     "key": "Starting: %@",
+     "english": "Starting: %@",
+     "before": "正在开始：%@",
+     "after": "开始播放：%@",
+     "why": "natural: 正在开始 (is starting) names no action; the next book starts playing"
+    },
+    {
+     "key": "Still starting: %@",
+     "english": "Still starting: %@",
+     "before": "仍在开始：%@",
+     "after": "仍在打开：%@",
+     "why": "natural: 仍在开始 names no action; the next book is still opening"
+    },
+    {
+     "key": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "english": "Text not updated: %@ was removed, or its download deleted, so Edit Text has stopped for it.",
+     "before": "文本未更新：%@ 已被移除或其下载已删除，因此“编辑文本”已为其停止。",
+     "after": "文本未更新：%@ 已被移除或其下载已删除，因此其“编辑文本”已停止。",
+     "why": "natural: 已为其停止 is a literal “has stopped for it”; worded as the other Edit Text stopped messages"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "before": "文本未更新：%1$@ 编辑后的文字稿有 %2$@，而有声书有 %3$@。请保留每一行以 <!-- chapter: 开头的行，然后再次存储；在此之前，图书保留其旧文本。",
+     "after": "文本未更新：%1$@ 编辑后的文字稿有 %2$@，而有声书有 %3$@。请保留每个以 <!-- chapter: 开头的行，然后再次存储；在此之前，图书保留其旧文本。",
+     "why": "grammar: 保留每一行以…开头的行 repeated 行 and garbled the object"
+    },
+    {
+     "key": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "english": "TextMouth is finishing up before it quits: %@. It quits when that is done.",
+     "before": "TextMouth 正在完成收尾工作后退出：%@。完成后会自动退出。",
+     "after": "TextMouth 正在完成退出前的收尾工作：%@。完成后即会退出。",
+     "why": "grammar: 正在完成收尾工作后退出 said it finishes up after quitting"
+    },
+    {
+     "key": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "english": "TextMouth reads BRF and BRL files you add from now on with these characters, and recognizes Unicode braille patterns by itself. The Export dialog starts a BRF with them. A book keeps its import characters, which Book Information can change.",
+     "before": "TextMouth 对此后添加的 BRF 和 BRL 文件使用这些字符读取，并自动识别 Unicode 盲文点型。“导出”对话框用它们开始写 BRF。每本图书保留其导入时的字符，可在“图书信息”中更改。",
+     "after": "TextMouth 会用这些字符读取此后添加的 BRF 和 BRL 文件，并自动识别 Unicode 盲文点型。“导出”对话框导出 BRF 时默认使用这些字符。每本图书保留其导入时的字符，可在“图书信息”中更改。",
+     "why": "meaning: 用它们开始写 BRF (begins writing a BRF with them) misread “starts a BRF with them”, the dialog’s default"
+    },
+    {
+     "key": "The %@ page labelled %@",
+     "english": "The %1$@ page labelled %2$@",
+     "before": "标注为 %2$@ 的%1$@页",
+     "after": "标注为 %2$@ 的%1$@个页面",
+     "why": "meaning: 第二页 reads as page 2; 第二个页面 is the second of the pages with that label"
+    },
+    {
+     "key": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "english": "The audio file %@ ends before its audio does, so it could not be converted.",
+     "before": "音频文件 %@ 在音频播完之前就结束了，因此无法转换。",
+     "after": "音频文件 %@ 在其音频结束之前就已截断，因此无法转换。",
+     "why": "meaning: 在音频播完之前 (before the audio finished playing) misread a file that is cut short"
+    },
+    {
+     "key": "The file %@ could not be read quickly enough.",
+     "english": "The file %@ could not be read quickly enough.",
+     "before": "无法足够快地读取文件 %@。",
+     "after": "文件 %@ 读取速度过慢。",
+     "why": "natural: 无法足够快地读取 is a word-for-word “could not be read quickly enough”"
+    },
+    {
+     "key": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "english": "The heading whose section ends the audio, with its subheadings, or the end of the book.",
+     "before": "其章节标题所属部分结束于音频末尾的章节标题（含其子标题），或图书结尾。",
+     "after": "音频结束的位置：某个章节标题所属部分（含其子标题）的末尾，或图书结尾。",
+     "why": "natural: the hint wound the heading around its own section; now parallel to the From hint (音频开始的位置：…)"
+    },
+    {
+     "key": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "english": "The reading list is empty. To add a book, choose Add to Reading List from its context menu, its VoiceOver actions, or the Library menu.",
+     "before": "阅读列表为空。要添加图书，请从其上下文菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。",
+     "after": "阅读列表为空。要添加图书，请从其快捷菜单、VoiceOver 操作或“资料库”菜单中选取“添加到阅读列表”。",
+     "why": "term: Apple’s Chinese calls a context menu 快捷菜单"
+    },
+    {
+     "key": "The recording as it was made, before any edits.",
+     "english": "The recording as it was made, before any edits.",
+     "before": "录音的原始状态，编辑之前。",
+     "after": "录音制作时的原样，未经任何编辑。",
+     "why": "natural: the trailing 编辑之前 dangled after the noun phrase"
+    },
+    {
+     "key": "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
+     "english": "This Kindle book is copy-protected, and TextMouth can't read copy-protected books.",
+     "before": "此 Kindle 图书受版权保护，TextMouth 无法读取受版权保护的图书。",
+     "after": "此 Kindle 图书受拷贝保护，TextMouth 无法读取受拷贝保护的图书。",
+     "why": "meaning: 受版权保护 means under copyright, as nearly every book is; this is copy protection (DRM), as the Audible message says"
+    },
+    {
+     "key": "This book has no pages.",
+     "english": "This book has no pages.",
+     "before": "此图书没有页。",
+     "after": "此图书没有页码。",
+     "why": "natural: 没有页 is not idiomatic; a book without page marks has no 页码"
+    },
+    {
+     "key": "This book's only page is %@.",
+     "english": "This book's only page is %@.",
+     "before": "此图书唯一的页是 %@。",
+     "after": "此图书仅有一页：%@。",
+     "why": "natural: 唯一的页是 is a literal copy of “only page is”"
+    },
+    {
+     "key": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "english": "This file is not a web archive TextMouth can read. It may be damaged, or another kind of file.",
+     "before": "此文件不是 TextMouth 可读取的网页档案。它可能已损坏，或是其他类型的文件。",
+     "after": "此文件不是 TextMouth 可读取的网页归档。它可能已损坏，或是其他类型的文件。",
+     "why": "term: Safari calls a .webarchive 网页归档"
+    },
+    {
+     "key": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "english": "This web archive holds a file of the type “%@”, not a web page or text, so it has nothing to read.",
+     "before": "此网页档案中的文件类型为“%@”，不是网页或文本，因此没有可读取的内容。",
+     "after": "此网页归档中的文件类型为“%@”，不是网页或文本，因此没有可读取的内容。",
+     "why": "term: Safari calls a .webarchive 网页归档"
+    },
+    {
+     "key": "Two presses, %@ apart. Set the time above %@ to count them as one.",
+     "english": "Two presses, %1$@ apart. Set the time above %2$@ to count them as one.",
+     "before": "两次按键相隔 %1$@。请将时间设置为高于 %2$@，才会将它们算作一次。",
+     "after": "两次按键相隔 %1$@。若要将它们算作连按两次，请将时间设为高于 %2$@。",
+     "why": "meaning: 算作一次 (count as one time) reads as a single press; they would count as a double press"
+    },
+    {
+     "key": "Voice language filter",
+     "english": "Voice language filter",
+     "before": "语音语言过滤器",
+     "after": "按语言筛选语音",
+     "why": "natural: 过滤器 is a filter device; a menu that narrows a list is 筛选"
+    },
+    {
+     "key": "Whether each page's last line carries its braille page number.",
+     "english": "Whether each page's last line carries its braille page number.",
+     "before": "每页最后一行是否带有该盲文页码。",
+     "after": "每页最后一行是否带有其盲文页码。",
+     "why": "natural: 该盲文页码 (that braille page number) points at nothing; the page’s own number is 其"
+    },
+    {
+     "key": "Windows-1250 (Central European)",
+     "english": "Windows-1250 (Central European)",
+     "before": "Windows-1250（中欧语）",
+     "after": "Windows-1250（中欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Windows-1252 (Western European)",
+     "english": "Windows-1252 (Western European)",
+     "before": "Windows-1252（西欧语）",
+     "after": "Windows-1252（西欧）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "Windows-1257 (Baltic)",
+     "english": "Windows-1257 (Baltic)",
+     "before": "Windows-1257（波罗的海语）",
+     "after": "Windows-1257（波罗的海）",
+     "why": "natural: 西欧语, 中欧语, and 波罗的海语 name no language; the encoding is named by its region, as CP850（西欧 DOS） is"
+    },
+    {
+     "key": "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "english": "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "before": "它有 %1$@，而有声书有 %2$@。请保留每一行以 <!-- chapter: 开头的行，然后再次存储，文本便会显示。",
+     "after": "它有 %1$@，而有声书有 %2$@。请保留每个以 <!-- chapter: 开头的行，然后再次存储，文本便会显示。",
+     "why": "grammar: 保留每一行以…开头的行 repeated 行 and garbled the object"
+    },
+    {
+     "key": "on the %@ page labelled %@",
+     "english": "on the %1$@ page labelled %2$@",
+     "before": "位于标注为 %2$@ 的%1$@页",
+     "after": "位于标注为 %2$@ 的%1$@个页面",
+     "why": "meaning: 第二页 reads as page 2; 第二个页面 is the second of the pages with that label"
+    },
+    {
+     "key": "the file %@ could not be read quickly enough",
+     "english": "the file %@ could not be read quickly enough",
+     "before": "无法足够快地读取文件 %@",
+     "after": "文件 %@ 读取速度过慢",
+     "why": "natural: 无法足够快地读取 is a word-for-word “could not be read quickly enough”"
+    }
+   ]
+  }
+ ]
+}
