@@ -233012,7 +233012,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trouvé à %@. Quand c’est activé, les filtres de l’éditeur passent par ffmpeg, avec tous ses filtres."
+            "value" : "Trouvé à %@. Si l’option est activée, les filtres de l’éditeur passent par ffmpeg, avec tous ses filtres."
           }
         },
         "he" : {
@@ -291839,7 +291839,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Effectue ces corrections. La transcription d’avant est conservée, donc Annuler le nettoyage peut la remettre."
+            "value" : "Effectue ces corrections. La transcription précédente est conservée, donc Annuler le nettoyage peut la rétablir."
           }
         },
         "he" : {
@@ -333447,7 +333447,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aucun original n’est conservé, donc le retour à l’original est impossible. Annuler reprend les modifications faites depuis le dernier enregistrement."
+            "value" : "Aucun original n’est conservé, donc le retour à l’original est impossible. Annuler défait les modifications faites depuis le dernier enregistrement."
           }
         },
         "he" : {
@@ -346159,7 +346159,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Durée maintenant : %@."
+            "value" : "Nouvelle durée : %@."
           }
         },
         "he" : {
@@ -379554,7 +379554,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Remise en place de la transcription d’avant…"
+            "value" : "Rétablissement de la transcription précédente…"
           }
         },
         "he" : {
@@ -389511,7 +389511,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enregistre sur la sélection, ou au curseur, après un bip. Appuyer à nouveau, ou Arrêter, le termine."
+            "value" : "Enregistre sur la sélection, ou au curseur, après un bip. Enregistrer par-dessus à nouveau, ou Arrêter, le termine."
           }
         },
         "he" : {
@@ -416279,7 +416279,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enregistrer l’enregistrement ?"
+            "value" : "Sauvegarder l’enregistrement ?"
           }
         },
         "he" : {
@@ -417208,7 +417208,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enregistrement enregistré sous %@"
+            "value" : "Enregistrement sauvegardé sous %@"
           }
         },
         "he" : {
@@ -417345,7 +417345,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enregistrement enregistré sous %@."
+            "value" : "Enregistrement sauvegardé sous %@."
           }
         },
         "he" : {
@@ -418167,7 +418167,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enregistre cet enregistrement comme livre audio dans le dossier choisi dans %@, avec un titre indiquant quand il a été fait."
+            "value" : "Sauvegarde cet enregistrement comme livre audio dans le dossier choisi dans %@, avec un titre indiquant quand il a été fait."
           }
         },
         "he" : {
@@ -418578,7 +418578,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enregistrement de %1$@ d’audio en %2$@, le format que ce livre conserve."
+            "value" : "Écriture de %1$@ d’audio en %2$@, le format que ce livre conserve."
           }
         },
         "he" : {
@@ -418715,7 +418715,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Enregistrement de %@ d’audio dans le livre."
+            "value" : "Écriture de %@ d’audio dans le livre."
           }
         },
         "he" : {
@@ -454130,7 +454130,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Arrêter et enregistrer l’enregistrement ?"
+            "value" : "Arrêter et sauvegarder l’enregistrement ?"
           }
         },
         "he" : {
@@ -456646,7 +456646,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Arrête l’enregistrement et l’enregistre dans votre bibliothèque comme livre audio."
+            "value" : "Arrête l’enregistrement et le sauvegarde dans votre bibliothèque comme livre audio."
           }
         },
         "he" : {
@@ -491567,7 +491567,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cet élément n’est pas un fichier ordinaire que TextMouth peut lire."
+            "value" : "Cet élément n’est pas un fichier ordinaire que TextMouth puisse lire."
           }
         },
         "he" : {
@@ -493317,7 +493317,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Le fichier %@ ne contient aucun texte minuté que TextMouth peut utiliser."
+            "value" : "Le fichier %@ ne contient aucun texte minuté que TextMouth puisse utiliser."
           }
         },
         "he" : {
