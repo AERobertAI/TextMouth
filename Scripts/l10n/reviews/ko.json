@@ -501,6 +501,731 @@
      "why": "grammar: the locative particle, as its pair at the top of the library (보관함 최상위에) has"
     }
    ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ isn't an audiobook; only audiobooks can be transcribed.",
+     "english": "%@ isn't an audiobook; only audiobooks can be transcribed.",
+     "before": "%@은(는) 오디오북이 아닙니다. 오디오북만 대본을 만들 수 있습니다.",
+     "after": "%@은(는) 오디오북이 아닙니다. 대본은 오디오북에 대해서만 만들 수 있습니다.",
+     "why": "meaning: 오디오북만 대본을 만들 수 있습니다 made audiobooks the ones that make transcripts"
+    },
+    {
+     "key": "%@ lists %lld feeds. Each gets its own folder, named after it.",
+     "english": {
+      "one": "%@ lists %lld feed. Each gets its own folder, named after it.",
+      "other": "%@ lists %lld feeds. Each gets its own folder, named after it."
+     },
+     "before": {
+      "other": "%1$@에 피드 %2$lld개가 있습니다. 각 피드는 피드 이름을 딴 폴더를 갖습니다."
+     },
+     "after": {
+      "other": "%1$@에 피드 %2$lld개가 있습니다. 피드마다 피드 이름을 딴 폴더가 따로 생깁니다."
+     },
+     "why": "natural: each feed gets a folder, not a feed that owns one (갖습니다 is a literal copy of gets)"
+    },
+    {
+     "key": "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.",
+     "english": "%@ to convert its Ogg audio to AAC. Free some space, and TextMouth converts it at the next launch.",
+     "before": "Ogg 오디오를 AAC로 변환하려면 %@. 공간을 확보하면 TextMouth가 다음 실행 때 변환합니다.",
+     "after": "Ogg 오디오를 AAC로 변환할 디스크 공간이 부족합니다(%@). 공간을 확보하면 TextMouth가 다음 실행 때 변환합니다.",
+     "why": "grammar: %@ is a whole phrase, “Title”: 여유 공간 4.2GB 필요, that could not follow 변환하려면; it now sits in parentheses after the sentence"
+    },
+    {
+     "key": "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.",
+     "english": "%@ to convert their Ogg audio to AAC. Free some space, and TextMouth converts them at the next launch.",
+     "before": "Ogg 오디오를 AAC로 변환하려면 %@. 공간을 확보하면 TextMouth가 다음 실행 때 변환합니다.",
+     "after": "Ogg 오디오를 AAC로 변환할 디스크 공간이 부족합니다(%@). 공간을 확보하면 TextMouth가 다음 실행 때 변환합니다.",
+     "why": "grammar: %@ is a whole phrase, “Title”: 여유 공간 4.2GB 필요, that could not follow 변환하려면; it now sits in parentheses after the sentence"
+    },
+    {
+     "key": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "english": "%@ use plain http, so others can read or change what they send; TextMouth still loads it.",
+     "before": "%@은(는) 암호화되지 않은 http를 사용하므로 다른 사람이 보내는 내용을 읽거나 바꿀 수 있습니다. TextMouth는 그래도 불러옵니다.",
+     "after": "%@은(는) 암호화되지 않은 http를 사용하므로 보내는 내용을 다른 사람이 읽거나 바꿀 수 있습니다. 그래도 TextMouth는 불러옵니다.",
+     "why": "meaning: it said others can read what other people send; it is what the feeds send that others can read"
+    },
+    {
+     "key": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "%@ uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@은(는) 암호화되지 않은 http를 사용하므로 다른 사람이 보내는 내용을 읽거나 바꿀 수 있습니다. TextMouth는 그래도 불러옵니다.",
+     "after": "%@은(는) 암호화되지 않은 http를 사용하므로 보내는 내용을 다른 사람이 읽거나 바꿀 수 있습니다. 그래도 TextMouth는 불러옵니다.",
+     "why": "meaning: it said others can read what other people send; it is what the feed sends that others can read"
+    },
+    {
+     "key": "%lld .%@ files",
+     "english": {
+      "one": "%lld .%@ file",
+      "other": "%lld .%@ files"
+     },
+     "before": {
+      "other": "%1$lld개의 .%2$@ 파일"
+     },
+     "after": {
+      "other": ".%2$@ 파일 %1$lld개"
+     },
+     "why": "natural: the noun before its count, as every other count of files here reads"
+    },
+    {
+     "key": "%lld books processed",
+     "english": {
+      "one": "%lld book processed",
+      "other": "%lld books processed"
+     },
+     "before": {
+      "other": "책 %lld권 처리됨"
+     },
+     "after": {
+      "other": "처리할 책 %lld권"
+     },
+     "why": "meaning: this total follows a count (%lld of %@), so 처리됨 made 3 of 10 read as all 10 processed; now 처리할 책 10권 중 3"
+    },
+    {
+     "key": "%lld of %@",
+     "english": "%1$lld of %2$@",
+     "before": "%1$lld, 전체 %2$@",
+     "after": "%2$@ 중 %1$lld",
+     "why": "meaning: 3, 전체 책 10권 read as all ten done; Korean says the total first: 책 10권 중 3, 트랙 176개 중 12"
+    },
+    {
+     "key": "%lld skipped as duplicates",
+     "english": {
+      "one": "%lld skipped as a duplicate",
+      "other": "%lld skipped as duplicates"
+     },
+     "before": {
+      "other": "중복으로 건너뜀 %lld권"
+     },
+     "after": {
+      "other": "중복으로 %lld권 건너뜀"
+     },
+     "why": "natural: the count before its verb, as 책 %lld권 가져옴 beside it reads"
+    },
+    {
+     "key": "%lld waiting for room on this Mac",
+     "english": {
+      "one": "%lld waiting for room on this Mac",
+      "other": "%lld waiting for room on this Mac"
+     },
+     "before": {
+      "other": "이 Mac: 공간 대기 중 %lld개"
+     },
+     "after": {
+      "other": "이 Mac의 공간 확보 대기 중 %lld개"
+     },
+     "why": "natural: a colon after 이 Mac made a label of a status line"
+    },
+    {
+     "key": "%lld waiting until this Mac is on a network without data limits",
+     "english": {
+      "one": "%lld waiting until this Mac is on a network without data limits",
+      "other": "%lld waiting until this Mac is on a network without data limits"
+     },
+     "before": {
+      "other": "이 Mac: 데이터 제한 없는 네트워크 대기 중 %lld개"
+     },
+     "after": {
+      "other": "이 Mac의 데이터 제한 없는 네트워크 연결 대기 중 %lld개"
+     },
+     "why": "natural: a colon after 이 Mac made a label of a status line"
+    },
+    {
+     "key": "; %@ stay",
+     "english": "; %@ stay",
+     "before": "; %@은(는) 그대로 유지됩니다",
+     "after": ". %@은(는) 그대로 유지됩니다",
+     "why": "punctuation: Korean sentences end with a period, not a semicolon; this clause follows 확인하지 않습니다 in the Unsubscribe announcement"
+    },
+    {
+     "key": "; %@ stays",
+     "english": "; %@ stays",
+     "before": "; %@은(는) 그대로 유지됩니다",
+     "after": ". %@은(는) 그대로 유지됩니다",
+     "why": "punctuation: Korean sentences end with a period, not a semicolon; this clause follows 확인하지 않습니다 in the Unsubscribe announcement"
+    },
+    {
+     "key": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "english": "Apply Filter lists these in this order. Each is a chain of filters in ffmpeg's syntax, such as highpass=f=80,volume=3dB. TextMouth runs its own filters, plus every ffmpeg filter when ffmpeg is installed and turned on above.",
+     "before": "필터 적용에는 이 목록이 이 순서대로 나타납니다. 각 항목은 ffmpeg 구문의 필터 체인이며, 예를 들면 highpass=f=80,volume=3dB입니다. TextMouth는 자체 필터를 실행하고, ffmpeg가 설치되어 위에서 켜져 있으면 모든 ffmpeg 필터도 실행합니다.",
+     "after": "필터 적용에는 이 목록이 이 순서대로 나타납니다. 각 항목은 ffmpeg 구문의 필터 체인이며, 예를 들면 highpass=f=80,volume=3dB입니다. TextMouth는 자체 필터를 실행하고, ffmpeg이 설치되어 위에서 켜져 있으면 모든 ffmpeg 필터도 실행합니다.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 이, not 가"
+    },
+    {
+     "key": "Asks first, then stops checking; the feed and its downloads stay",
+     "english": "Asks first, then stops checking; the feed and its downloads stay",
+     "before": "먼저 확인한 다음 확인을 중단합니다. 피드와 다운로드는 그대로 유지됩니다.",
+     "after": "먼저 물어본 다음 피드 확인을 중단합니다. 피드와 다운로드는 그대로 유지됩니다.",
+     "why": "natural: 확인한 다음 확인을 중단 used one word for asking and for checking the feed"
+    },
+    {
+     "key": "Back Cover",
+     "english": "Back Cover",
+     "before": "뒷표지",
+     "after": "뒤표지",
+     "why": "grammar: spelling; no 사이시옷 before the aspirated ㅍ (뒤표지, as 뒤편)"
+    },
+    {
+     "key": "Checks this feed again from now on, and at once",
+     "english": "Checks this feed again from now on, and at once",
+     "before": "지금부터 이 피드를 다시 확인하며, 즉시 확인합니다.",
+     "after": "이 피드를 지금 바로 확인하고, 앞으로도 계속 확인합니다.",
+     "why": "natural: said check twice in two clauses; now at once, and from now on"
+    },
+    {
+     "key": "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook.",
+     "english": "Choose each folder to import: a DAISY book's folder, with its ncc.html or .opf file, or a folder of audio tracks, which becomes one audiobook.",
+     "before": "가져올 폴더를 각각 선택하십시오. DAISY 책 폴더(ncc.html 또는 .opf 파일 포함) 또는 오디오 트랙 폴더이며, 하나의 오디오북이 됩니다.",
+     "after": "가져올 폴더를 각각 선택하십시오. ncc.html 또는 .opf 파일이 있는 DAISY 책 폴더나, 하나의 오디오북이 되는 오디오 트랙 폴더를 선택할 수 있습니다.",
+     "why": "grammar: the second sentence had no subject and seemed to make both kinds of folder one audiobook"
+    },
+    {
+     "key": "Even Out the Level",
+     "english": "Even Out the Level",
+     "before": "음량 고르게",
+     "after": "음량 고르게 맞추기",
+     "why": "natural: 음량 고르게 stopped at an adverb; a preset name is a whole action, 음량 고르게 맞추기"
+    },
+    {
+     "key": "Feeds refresh only at launch, if that is on, and when you choose %@ or %@",
+     "english": "Feeds refresh only at launch, if that is on, and when you choose %1$@ or %2$@",
+     "before": "피드는 켜져 있는 경우 실행할 때, 그리고 %1$@ 또는 %2$@을(를) 선택할 때만 새로 고칩니다.",
+     "after": "피드는 실행할 때(해당 설정이 켜져 있는 경우)와 %1$@ 또는 %2$@을(를) 선택할 때만 새로 고쳐집니다.",
+     "why": "natural: 켜져 있는 경우 실행할 때 left unclear what is on, and feeds were the subject of the active verb"
+    },
+    {
+     "key": "File %lld of %lld",
+     "english": "File %1$lld of %2$lld",
+     "before": "파일 %1$lld/%2$lld",
+     "after": "파일 %2$lld개 중 %1$lld번째",
+     "why": "voiceover: Korean speech reads 1/3 as a fraction (삼분의 일); now file 1 of 3 in words"
+    },
+    {
+     "key": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+     "english": {
+      "one": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each.",
+      "other": "Found %lld recordings from before TextMouth last quit, under %@. Save or discard each."
+     },
+     "before": {
+      "other": "TextMouth가 마지막으로 종료되기 전의 녹음 %lld개를 %@ 아래에서 찾았습니다. 각각 저장하거나 폐기하십시오."
+     },
+     "after": {
+      "other": "TextMouth가 마지막으로 종료되기 전의 녹음 %lld개를 찾아 %@ 아래에 표시했습니다. 각각 저장하거나 폐기하십시오."
+     },
+     "why": "meaning: %@ is the heading the recordings are listed under, not a place they were found in"
+    },
+    {
+     "key": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
+     "english": "Found a recording from before TextMouth last quit, under %@. Save or discard it.",
+     "before": "TextMouth가 마지막으로 종료되기 전의 녹음 1개를 %@ 아래에서 찾았습니다. 저장하거나 폐기하십시오.",
+     "after": "TextMouth가 마지막으로 종료되기 전의 녹음 1개를 찾아 %@ 아래에 표시했습니다. 저장하거나 폐기하십시오.",
+     "why": "meaning: %@ is the heading the recordings are listed under, not a place they were found in"
+    },
+    {
+     "key": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "english": "Found at %@. When on, the editor's filters run through ffmpeg, with every filter it has.",
+     "before": "%@에 있습니다. 켜면 편집기의 필터가 ffmpeg를 통해 실행되며, ffmpeg의 모든 필터를 사용할 수 있습니다.",
+     "after": "%@에 있습니다. 켜면 편집기의 필터가 ffmpeg을 통해 실행되며, ffmpeg의 모든 필터를 사용할 수 있습니다.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 을, not 를"
+    },
+    {
+     "key": "Hours between refreshes while TextMouth runs, from 1 to 168",
+     "english": "Hours between refreshes while TextMouth runs, from 1 to 168",
+     "before": "새로 고침 사이의 시간(TextMouth 실행 중, 1~168시간).",
+     "after": "TextMouth 실행 중 새로 고침 간격을 1~168시간으로 설정합니다.",
+     "why": "natural: 새로 고침 사이의 시간 is a literal copy of hours between; the hint is now a sentence, as hints are"
+    },
+    {
+     "key": "Import cancelled after %@.",
+     "english": "Import cancelled after %@.",
+     "before": "가져오기가 %@ 후에 취소되었습니다.",
+     "after": "가져오기가 취소되었습니다(%@ 완료).",
+     "why": "grammar: with a count such as 책 10권 중 3 before 후에 the sentence did not read; now cancelled, then what was done"
+    },
+    {
+     "key": "Inner Cover",
+     "english": "Inner Cover",
+     "before": "안쪽 표지",
+     "after": "속표지",
+     "why": "term: the inside cover page of a book or comic is 속표지 in Korean publishing"
+    },
+    {
+     "key": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "english": "It belongs to its feed while it is downloaded. %@ removes its file and keeps its place and bookmarks.",
+     "before": "다운로드된 동안에는 피드에 속해 있습니다. %@은(는) 파일을 제거하고 위치와 북마크는 유지합니다.",
+     "after": "다운로드되어 있는 동안에는 피드에 속해 있습니다. %@은(는) 파일을 제거하고 위치와 북마크는 유지합니다.",
+     "why": "natural: while it is downloaded is a state, 다운로드되어 있는 동안"
+    },
+    {
+     "key": "It runs only through ffmpeg.",
+     "english": "It runs only through ffmpeg.",
+     "before": "ffmpeg로만 실행할 수 있습니다.",
+     "after": "ffmpeg으로만 실행할 수 있습니다.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 으로, not 로"
+    },
+    {
+     "key": "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.",
+     "english": "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.",
+     "before": "레이블과 세미콜론은 ffmpeg가 필요합니다. TextMouth의 자체 필터는 쉼표로 구분한 체인 하나만 사용합니다.",
+     "after": "레이블과 세미콜론에는 ffmpeg이 필요합니다. TextMouth의 자체 필터는 쉼표로 구분한 체인 하나만 사용합니다.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 이, not 가; and what needs it takes 에는"
+    },
+    {
+     "key": "Last opened",
+     "english": "Last opened",
+     "before": "마지막으로 연 시간",
+     "after": "최근 사용일",
+     "why": "term: Apple Finder Korean says 최근 사용일 for Last Opened"
+    },
+    {
+     "key": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "english": "MP3 can't be written: TextMouth's encoder couldn't start, and ffmpeg is missing or off in Storage settings.",
+     "before": "MP3 파일을 쓸 수 없습니다. TextMouth의 인코더를 시작할 수 없고, ffmpeg가 없거나 저장 공간 설정에서 꺼져 있습니다.",
+     "after": "MP3 파일을 쓸 수 없습니다. TextMouth의 인코더를 시작할 수 없고, ffmpeg이 없거나 저장 공간 설정에서 꺼져 있습니다.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 이, not 가"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "other": "이 기사 %lld개를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+     },
+     "after": {
+      "other": "이 기사 %lld개를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
+     },
+     "why": "punctuation: the first sentence had a period and the last none; now one sentence, and 폴더로 이동 as Korean moves to a place"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "other": "이 에피소드 %lld개를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+     },
+     "after": {
+      "other": "이 에피소드 %lld개를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
+     },
+     "why": "punctuation: the first sentence had a period and the last none; now one sentence, and 폴더로 이동 as Korean moves to a place"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "other": "이 항목 %lld개를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다"
+     },
+     "after": {
+      "other": "이 항목 %lld개를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다."
+     },
+     "why": "punctuation: the first sentence had a period and the last none; now one sentence, and 폴더로 이동 as Korean moves to a place"
+    },
+    {
+     "key": "Moves this article into a library folder as a book you can edit; it leaves the feed",
+     "english": "Moves this article into a library folder as a book you can edit; it leaves the feed",
+     "before": "이 기사를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다",
+     "after": "이 기사를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다.",
+     "why": "punctuation: the first sentence had a period and the last none; now one sentence, and 폴더로 이동 as Korean moves to a place"
+    },
+    {
+     "key": "Moves this episode into a library folder as a book you can edit; it leaves the feed",
+     "english": "Moves this episode into a library folder as a book you can edit; it leaves the feed",
+     "before": "이 에피소드를 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다",
+     "after": "이 에피소드를 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다.",
+     "why": "punctuation: the first sentence had a period and the last none; now one sentence, and 폴더로 이동 as Korean moves to a place"
+    },
+    {
+     "key": "Moves this item into a library folder as a book you can edit; it leaves the feed",
+     "english": "Moves this item into a library folder as a book you can edit; it leaves the feed",
+     "before": "이 항목을 편집할 수 있는 책으로 보관함 폴더에 이동합니다. 피드에서는 제거됩니다",
+     "after": "이 항목을 편집할 수 있는 책으로 만들어 보관함 폴더로 이동하며, 피드에서는 제거됩니다.",
+     "why": "punctuation: the first sentence had a period and the last none; now one sentence, and 폴더로 이동 as Korean moves to a place"
+    },
+    {
+     "key": "No chapter markers or markers, so no label file would be written.",
+     "english": "No chapter markers or markers, so no label file would be written.",
+     "before": "챕터 마커나 마커가 없어서 레이블 파일이 쓰이지 않습니다.",
+     "after": "챕터 마커나 마커가 없어서 레이블 파일을 쓰지 않습니다.",
+     "why": "meaning: 쓰이지 않습니다 reads as is not used; the label file is not written"
+    },
+    {
+     "key": "No text was found in the one picture of this comic book archive.",
+     "english": "No text was found in the one picture of this comic book archive.",
+     "before": "이 만화책 압축 파일의 이미지 하나에서 텍스트를 찾지 못했습니다.",
+     "after": "이 만화책 압축 파일에 있는 하나뿐인 이미지에서 텍스트를 찾지 못했습니다.",
+     "why": "meaning: 이미지 하나에서 read as in one of its pictures; the archive has only one"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this comic book archive.",
+     "english": {
+      "one": "No text was found on any of the %lld page of this comic book archive.",
+      "other": "No text was found on any of the %lld pages of this comic book archive."
+     },
+     "before": {
+      "other": "이 만화책 압축 파일의 %lld페이지 어디에서도 텍스트를 찾지 못했습니다."
+     },
+     "after": {
+      "other": "이 만화책 압축 파일의 페이지 %lld개 중 어느 페이지에서도 텍스트를 찾지 못했습니다."
+     },
+     "why": "meaning: %lld페이지 reads as page number N, not N pages"
+    },
+    {
+     "key": "No text was found on any of the %lld pages of this picture.",
+     "english": {
+      "one": "No text was found on any of the %lld page of this picture.",
+      "other": "No text was found on any of the %lld pages of this picture."
+     },
+     "before": {
+      "other": "이 이미지의 %lld페이지 어디에서도 텍스트를 찾지 못했습니다."
+     },
+     "after": {
+      "other": "이 이미지의 페이지 %lld개 중 어느 페이지에서도 텍스트를 찾지 못했습니다."
+     },
+     "why": "meaning: %lld페이지 reads as page number N, not N pages"
+    },
+    {
+     "key": "Only audiobooks can be transcribed.",
+     "english": "Only audiobooks can be transcribed.",
+     "before": "오디오북만 대본을 만들 수 있습니다.",
+     "after": "대본은 오디오북에 대해서만 만들 수 있습니다.",
+     "why": "meaning: 오디오북만 대본을 만들 수 있습니다 made audiobooks the ones that make transcripts"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "%@의 일부를 디코딩할 수 없어 무음으로 유지됩니다.",
+     "after": "%@의 일부를 디코딩할 수 없어 무음으로 처리됩니다.",
+     "why": "natural: kept as silence is 무음으로 처리; 무음으로 유지 says silence was kept"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "other": "파일 %1$lld개(%2$@)의 일부를 디코딩할 수 없어 무음으로 유지됩니다."
+     },
+     "after": {
+      "other": "파일 %1$lld개(%2$@)의 일부를 디코딩할 수 없어 무음으로 처리됩니다."
+     },
+     "why": "natural: kept as silence is 무음으로 처리; 무음으로 유지 says silence was kept"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "%3$@ 마이크로 신호음 뒤에 %2$@ 지점의 %1$@ 구간에 덮어 녹음합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다.",
+     "after": "신호음 뒤에 %3$@(으)로 %2$@ 지점의 %1$@ 구간에 덮어 녹음합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다.",
+     "why": "grammar: %@ is the microphone name, which in Korean often ends in 마이크 (MacBook Pro 마이크), so 마이크로 doubled it; now (으)로, as Ready to record from %@ says"
+    },
+    {
+     "key": "Recording to insert at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording to insert at %1$@, from %2$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "%2$@ 마이크로 신호음 뒤에 %1$@ 지점에 삽입할 녹음을 합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다.",
+     "after": "신호음 뒤에 %2$@(으)로 %1$@ 지점에 삽입할 녹음을 합니다. 덮어 녹음이나 중지로 끝내고, 선택 해제로 폐기합니다.",
+     "why": "grammar: %@ is the microphone name, which in Korean often ends in 마이크 (MacBook Pro 마이크), so 마이크로 doubled it; now (으)로, as Ready to record from %@ says"
+    },
+    {
+     "key": "Redo %@",
+     "english": "Redo %@",
+     "before": "다시 실행: %@",
+     "after": "%@ 다시 실행",
+     "why": "term: Apple puts the edit first (Foundation: %@ 실행 취소, %@ 실행 복귀), as Undo Cleanup is 정리 실행 취소 here"
+    },
+    {
+     "key": "Remove Rumble",
+     "english": "Remove Rumble",
+     "before": "낮은 소음 제거",
+     "after": "저주파 잡음 제거",
+     "why": "meaning: 낮은 소음 reads as quiet noise; rumble is low-frequency noise"
+    },
+    {
+     "key": "Resume",
+     "english": "Resume",
+     "before": "다시 시작",
+     "after": "재개",
+     "why": "meaning: for a paused recording 다시 시작 reads as start over; Apple Voice Memos says 재개 (the glossary has 다시 시작)"
+    },
+    {
+     "key": "Resuming.",
+     "english": "Resuming.",
+     "before": "다시 시작합니다.",
+     "after": "재개합니다.",
+     "why": "meaning: for a paused recording 다시 시작 reads as start over; Apple Voice Memos says 재개 (the glossary has 다시 시작)"
+    },
+    {
+     "key": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "english": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "before": "WordPerfect 문서를 LibreOffice 같은 해당 파일을 읽는 프로그램에서 Word 또는 HTML 파일로 저장한 다음 가져오십시오.",
+     "after": "WordPerfect 문서를 LibreOffice처럼 이 문서를 읽을 수 있는 프로그램에서 Word 또는 HTML 파일로 저장한 다음 가져오십시오.",
+     "why": "natural: LibreOffice 같은 해당 파일을 읽는 프로그램 stacked two modifiers in the wrong order"
+    },
+    {
+     "key": "Show an alert when a refresh brings new episodes",
+     "english": "Show an alert when a refresh brings new episodes",
+     "before": "새로 고침으로 새 에피소드가 생기면 경고 표시",
+     "after": "새로 고침으로 새 에피소드가 생기면 경고창 표시",
+     "why": "term: the glossary word for an alert is 경고창; 경고 alone means a warning"
+    },
+    {
+     "key": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "english": "Subscribed to %@. This feed uses plain http, so others can read or change what it sends; TextMouth still loads it.",
+     "before": "%@ 구독을 시작했습니다. 이 피드는 암호화되지 않은 http를 사용하므로 다른 사람이 보내는 내용을 읽거나 바꿀 수 있습니다. TextMouth는 그래도 불러옵니다.",
+     "after": "%@ 구독을 시작했습니다. 이 피드는 암호화되지 않은 http를 사용하므로 피드가 보내는 내용을 다른 사람이 읽거나 바꿀 수 있습니다. 그래도 TextMouth는 불러옵니다.",
+     "why": "meaning: it said others can read what other people send; it is what the feed sends"
+    },
+    {
+     "key": "Text recognition could not read any of the %lld pages: %@.",
+     "english": {
+      "one": "Text recognition could not read any of the %lld page: %@.",
+      "other": "Text recognition could not read any of the %lld pages: %@."
+     },
+     "before": {
+      "other": "텍스트 인식이 %1$lld페이지를 하나도 읽지 못했습니다: %2$@."
+     },
+     "after": {
+      "other": "텍스트 인식이 페이지 %1$lld개 중 어느 페이지도 읽지 못했습니다: %2$@."
+     },
+     "why": "meaning: %lld페이지를 하나도 read as none of page N; it is none of N pages"
+    },
+    {
+     "key": "Text recognition could not read the only page: %@.",
+     "english": "Text recognition could not read the only page: %@.",
+     "before": "텍스트 인식이 유일한 페이지를 읽지 못했습니다: %@.",
+     "after": "텍스트 인식이 하나뿐인 페이지를 읽지 못했습니다: %@.",
+     "why": "natural: 유일한 페이지 is a literal copy of the only page; Korean says 하나뿐인 페이지"
+    },
+    {
+     "key": "TextMouth can't read “%@” as %@. It may be damaged, or named for another format.",
+     "english": "TextMouth can't read “%1$@” as %2$@. It may be damaged, or named for another format.",
+     "before": "TextMouth가 “%1$@”을(를) %2$@ 포맷으로 읽을 수 없습니다. 손상되었거나 다른 포맷의 이름이 붙어 있을 수 있습니다.",
+     "after": "TextMouth가 “%1$@”을(를) %2$@ 포맷으로 읽을 수 없습니다. 손상되었거나 다른 포맷의 확장자가 붙어 있을 수 있습니다.",
+     "why": "natural: named for another format means its extension is another format; 다른 포맷의 이름 was unclear"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "other": "TextMouth가 이 중 %lld개를 피드의 다음 확인 때 또는 다음에 열릴 때 다시 다운로드합니다."
+     },
+     "after": {
+      "other": "이 중 %lld개는 피드를 다음에 확인할 때나 TextMouth를 다음에 열 때 다시 다운로드됩니다."
+     },
+     "why": "meaning: 다음에 열릴 때 left unclear what opens; it is TextMouth"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth가 이 중 1개를 피드의 다음 확인 때 또는 다음에 열릴 때 다시 다운로드합니다.",
+     "after": "이 중 1개는 피드를 다음에 확인할 때나 TextMouth를 다음에 열 때 다시 다운로드됩니다.",
+     "why": "meaning: 다음에 열릴 때 left unclear what opens; it is TextMouth"
+    },
+    {
+     "key": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "english": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "before": "TextMouth가 각 피드의 최신 항목을 다음 확인 때 또는 다음에 열릴 때 다시 다운로드합니다.",
+     "after": "각 피드의 최신 항목은 피드를 다음에 확인할 때나 TextMouth를 다음에 열 때 다시 다운로드됩니다.",
+     "why": "meaning: 다음에 열릴 때 left unclear what opens; it is TextMouth"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "other": "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 중복된 책의 새 사본 %lld개를 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오."
+     },
+     "after": {
+      "other": "새 사본을 중복으로 유지할지 묻는 질문에 TextMouth가 종료될 때까지 답하지 않았으므로, TextMouth가 중복된 책의 새 사본 %lld개를 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오."
+     },
+     "why": "meaning: 중복 여부를 묻는 질문 asks whether it is a duplicate; the question was whether to keep the new copy as one"
+    },
+    {
+     "key": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copies of %@ to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "before": "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 %@의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오.",
+     "after": "새 사본을 중복으로 유지할지 묻는 질문에 TextMouth가 종료될 때까지 답하지 않았으므로, TextMouth가 %@의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오.",
+     "why": "meaning: 중복 여부를 묻는 질문 asks whether it is a duplicate; the question was whether to keep the new copy as one"
+    },
+    {
+     "key": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "english": "TextMouth moved the new copy of “%@” to the Trash, because the question whether to keep it as a duplicate was never answered before TextMouth closed. To get it back, open the Trash and choose Put Back.",
+     "before": "TextMouth를 닫기 전에 중복 여부를 묻는 질문에 답하지 않았으므로, TextMouth가 “%@”의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오.",
+     "after": "새 사본을 중복으로 유지할지 묻는 질문에 TextMouth가 종료될 때까지 답하지 않았으므로, TextMouth가 “%@”의 새 사본을 휴지통으로 이동했습니다. 되찾으려면 휴지통을 열고 되돌려 놓기를 선택하십시오.",
+     "why": "meaning: 중복 여부를 묻는 질문 asks whether it is a duplicate; the question was whether to keep the new copy as one"
+    },
+    {
+     "key": "TextMouth's own filters don't include “%@”. They are %@; with ffmpeg installed, every filter it has works.",
+     "english": "TextMouth's own filters don't include “%1$@”. They are %2$@; with ffmpeg installed, every filter it has works.",
+     "before": "TextMouth의 자체 필터에는 “%1$@”이(가) 없습니다. 자체 필터는 %2$@입니다. ffmpeg를 설치하면 ffmpeg의 모든 필터를 사용할 수 있습니다.",
+     "after": "TextMouth의 자체 필터에는 “%1$@”이(가) 없습니다. 자체 필터는 %2$@입니다. ffmpeg을 설치하면 ffmpeg의 모든 필터를 사용할 수 있습니다.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 을, not 를"
+    },
+    {
+     "key": "The audio of %@ couldn't be opened for editing.",
+     "english": "The audio of %@ couldn't be opened for editing.",
+     "before": "%@의 오디오를 편집하려고 열 수 없습니다.",
+     "after": "%@의 오디오를 편집용으로 열 수 없습니다.",
+     "why": "natural: 편집하려고 열 수 없습니다 says it could not intend to open it"
+    },
+    {
+     "key": "The feed at %@ is larger than the %lld MB TextMouth reads.",
+     "english": {
+      "one": "The feed at %@ is larger than the %lld MB TextMouth reads.",
+      "other": "The feed at %@ is larger than the %lld MB TextMouth reads."
+     },
+     "before": {
+      "other": "%1$@의 피드가 TextMouth가 읽는 %2$lld MB보다 큽니다."
+     },
+     "after": {
+      "other": "%1$@의 피드가 TextMouth가 읽을 수 있는 최대 크기(%2$lld MB)보다 큽니다."
+     },
+     "why": "natural: TextMouth가 읽는 %lld MB is a literal copy; the number is the largest size it reads"
+    },
+    {
+     "key": "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back.",
+     "english": "The library can't be reached, so TextMouth can't keep the new copy of “%@”. Answer again once it is back.",
+     "before": "보관함에 접근할 수 없어 TextMouth가 “%@”의 새 사본을 유지할 수 없습니다. 보관함이 돌아오면 다시 답하십시오.",
+     "after": "보관함에 접근할 수 없어 TextMouth가 “%@”의 새 사본을 유지할 수 없습니다. 보관함에 다시 접근할 수 있게 되면 다시 답하십시오.",
+     "why": "natural: 보관함이 돌아오면 is a literal copy of once it is back"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "목록은 %@의 변경을 즉시 따릅니다. 다운로드되거나 사라지는 항목은 변경이 10초 동안 유지될 때까지 기다리며, 그때 VoiceOver 음성으로 알려 줍니다.",
+     "after": "%@을(를) 바꾸면 목록에 즉시 반영됩니다. 다운로드되거나 사라지는 항목은 변경이 10초 동안 유지된 다음 처리되며, 그때 VoiceOver가 알려 줍니다.",
+     "why": "natural: 목록은 변경을 따릅니다 is a literal copy of the list follows a change"
+    },
+    {
+     "key": "The original file was kept: it is a folder, and an import never deletes a folder.",
+     "english": "The original file was kept: it is a folder, and an import never deletes a folder.",
+     "before": "원본 파일이 유지되었습니다. 폴더이며, 가져오기는 폴더를 삭제하지 않습니다.",
+     "after": "원본 파일이 유지되었습니다. 원본이 폴더이며, 가져오기는 폴더를 삭제하지 않습니다.",
+     "why": "grammar: 폴더이며 had no subject"
+    },
+    {
+     "key": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "english": "This XML file is not a DTBook book, a Word 2003 XML document, or a PEF braille file, the only XML TextMouth reads.",
+     "before": "이 XML 파일은 TextMouth가 읽는 유일한 XML인 DTBook 책, Word 2003 XML 문서, PEF 점자 파일이 아닙니다.",
+     "after": "이 XML 파일은 TextMouth가 읽을 수 있는 XML인 DTBook 책, Word 2003 XML 문서, PEF 점자 파일 중 어느 것도 아닙니다.",
+     "why": "natural: 유일한 XML named one kind for three, and A, B, C가 아닙니다 can read as not all three"
+    },
+    {
+     "key": "This picture is %@, larger than the %lld megapixels TextMouth reads.",
+     "english": {
+      "one": "This picture is %@, larger than the %lld megapixel TextMouth reads.",
+      "other": "This picture is %@, larger than the %lld megapixels TextMouth reads."
+     },
+     "before": {
+      "other": "이 이미지 크기: %1$@. TextMouth가 읽을 수 있는 %2$lld메가픽셀보다 큽니다."
+     },
+     "after": {
+      "other": "이 이미지는 %1$@(으)로, TextMouth가 읽을 수 있는 %2$lld메가픽셀보다 큽니다."
+     },
+     "why": "natural: 이미지 크기: %@. made a label of the first half of one sentence"
+    },
+    {
+     "key": "Undo %@",
+     "english": "Undo %@",
+     "before": "실행 취소: %@",
+     "after": "%@ 실행 취소",
+     "why": "term: Apple puts the edit first (Foundation: %@ 실행 취소), as Undo Cleanup is 정리 실행 취소 here"
+    },
+    {
+     "key": "Waiting for the data directory move to finish...",
+     "english": "Waiting for the data directory move to finish...",
+     "before": "데이터 폴더 이동이 끝나기를 기다리는 중...",
+     "after": "데이터 디렉터리 이동이 끝나기를 기다리는 중...",
+     "why": "term: the data directory is 데이터 디렉터리 in the 25 other Korean strings"
+    },
+    {
+     "key": "deleting its download",
+     "english": "deleting its download",
+     "before": "다운로드를 삭제하는 것",
+     "after": "다운로드를 삭제하면",
+     "why": "natural: 삭제하는 것은(는) 대본을 잃게 합니다 is a literal copy; the clause now reads 지금 다운로드를 삭제하면 대본이 사라집니다"
+    },
+    {
+     "key": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "english": "ffmpeg couldn't be started. Check it is installed, or turn off Use ffmpeg in Storage settings.",
+     "before": "ffmpeg를 시작할 수 없습니다. 설치되어 있는지 확인하거나 저장 공간 설정에서 ffmpeg 사용을 끄십시오.",
+     "after": "ffmpeg을 시작할 수 없습니다. 설치되어 있는지 확인하거나 저장 공간 설정에서 ffmpeg 사용을 끄십시오.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 을, not 를"
+    },
+    {
+     "key": "ffmpeg couldn't run the filters: %@",
+     "english": "ffmpeg couldn't run the filters: %@",
+     "before": "ffmpeg가 필터를 실행할 수 없습니다: %@",
+     "after": "ffmpeg이 필터를 실행할 수 없습니다: %@",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 이, not 가"
+    },
+    {
+     "key": "ffmpeg isn't installed; TextMouth's own filters are used.",
+     "english": "ffmpeg isn't installed; TextMouth's own filters are used.",
+     "before": "ffmpeg가 설치되어 있지 않아 TextMouth의 자체 필터를 사용합니다.",
+     "after": "ffmpeg이 설치되어 있지 않아 TextMouth의 자체 필터를 사용합니다.",
+     "why": "grammar: ffmpeg is read 에프엠펙 and ends in a consonant, so it takes 이, not 가"
+    },
+    {
+     "key": "file %lld of %lld",
+     "english": "file %1$lld of %2$lld",
+     "before": "파일 %1$lld/%2$lld",
+     "after": "파일 %2$lld개 중 %1$lld번째",
+     "why": "voiceover: the progress bar speaks this, and Korean speech reads 1/3 as a fraction (삼분의 일)"
+    },
+    {
+     "key": "good",
+     "english": "good",
+     "before": "적절",
+     "after": "적절함",
+     "why": "natural: a level word as its siblings are, 큼, 작음, 너무 큼; 적절 alone is a bare root"
+    },
+    {
+     "key": "in chapter %@: %@",
+     "english": "in chapter %1$@: %2$@",
+     "before": "챕터 %1$@: %2$@ 안",
+     "after": "챕터 %1$@: %2$@",
+     "why": "natural: 안 after the title read as inside the title; the status line names the chapter the cursor is in"
+    },
+    {
+     "key": "is being exported, and %@ now would stop the export",
+     "english": "is being exported, and %@ now would stop the export",
+     "before": "내보내는 중이며 지금 %@은(는) 내보내기를 중단시킵니다",
+     "after": "내보내는 중이므로 지금 %@ 내보내기가 중단됩니다",
+     "why": "natural: with %@ as 다운로드를 삭제하면 the clause says if you delete it now the export stops"
+    },
+    {
+     "key": "is being transcribed, and %@ now would lose the transcript",
+     "english": "is being transcribed, and %@ now would lose the transcript",
+     "before": "대본을 만드는 중이며 지금 %@은(는) 대본을 잃게 합니다",
+     "after": "대본을 만드는 중이므로 지금 %@ 대본이 사라집니다",
+     "why": "natural: 대본을 잃게 합니다 is a literal copy of would lose; now if you delete it now the transcript is lost"
+    },
+    {
+     "key": "the top of your library",
+     "english": "the top of your library",
+     "before": "보관함 맨 위",
+     "after": "보관함 최상위",
+     "why": "term: Library Root and at the top of the library say 보관함 최상위; 맨 위 reads as the top of a list"
+    }
+   ]
   }
  ]
 }
