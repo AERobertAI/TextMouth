@@ -1,0 +1,530 @@
+{
+ "language": "ru",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ is the newer. It has %@.",
+     "english": "%1$@ is the newer. It has %2$@.",
+     "before": "Новее: %1$@. Только в ней есть %2$@.",
+     "after": "%1$@ новее. Только в ней есть %2$@.",
+     "why": "natural: «Новее: Эта копия.» set the capitalized copy name after a colon; the copy now opens its own sentence, as the English does"
+    },
+    {
+     "key": "%@ may be signed out or not running.",
+     "english": "%@ may be signed out or not running.",
+     "before": "Возможно, вход в %@ не выполнен или программа не запущена.",
+     "after": "Возможно, вход в %@ не выполнен или приложение не запущено.",
+     "why": "term: this catalog mostly says «приложение» for an app, as newer Apple Russian does (older AppKit strings say «программа»); this part had one of each"
+    },
+    {
+     "key": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "english": "%lld books in this library need a newer version of TextMouth. They are kept as they are, but not shown.",
+     "before": "Книги этой библиотеки (%lld) требуют более новой версии TextMouth. Они хранятся как есть, но не показываются.",
+     "after": "Книг в этой библиотеке, которым нужна более новая версия TextMouth: %lld. Они хранятся как есть, но не показываются.",
+     "why": "meaning: «Книги этой библиотеки (%lld) требуют» reads as all of the library books, with the count as an aside"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "Правка его текста сохраняется рядом с новым чтением как копия в пакете книги.",
+     "after": "Правка текста сохраняется как копия в пакете книги, рядом с результатом повторного чтения.",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes; and «его» had no masculine noun to point to"
+    },
+    {
+     "key": "Choose another in Book Information.",
+     "english": "Choose another in Book Information.",
+     "before": "Выберите другую в разделе «Сведения о книге».",
+     "after": "Выберите другую в окне «Сведения о книге».",
+     "why": "term: Book Information is a window, as the other strings say («в окне «Сведения о книге»»), not a section"
+    },
+    {
+     "key": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "english": "Conditions about books test books, episodes, and articles; conditions about feeds test feeds. A condition never hides a row it does not test.",
+     "before": "Условия о книгах проверяют книги, выпуски и статьи; условия о лентах проверяют ленты. Условие никогда не скрывает строку, которую не проверяет.",
+     "after": "Условия для книг проверяют книги, выпуски и статьи; условия для лент проверяют ленты. Условие никогда не скрывает строку, которую не проверяет.",
+     "why": "natural: «условия о книгах» is a calque (a contract clause about something); a condition is «для» the rows it tests"
+    },
+    {
+     "key": "Could not discard duplicate import",
+     "english": "Could not discard duplicate import",
+     "before": "Не удалось отклонить дубликат импорта",
+     "after": "Не удалось удалить импортированный дубликат",
+     "why": "meaning: «отклонить дубликат импорта» (reject the import duplicate) misreads discarding the newly imported copy"
+    },
+    {
+     "key": "Delete After Import",
+     "english": "Delete After Import",
+     "before": "Удалить после импорта",
+     "after": "Удалять после импорта",
+     "why": "natural: a standing setting takes the imperfective, as its sibling «Спрашивать каждый раз» does"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "Изменение текста для этой книги останавливается; чтобы изменить новое чтение, снова выберите «Изменить текст».",
+     "after": "Изменение текста этой книги прекращается; чтобы изменить новый текст, снова выберите «Изменить текст».",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes; an editing session «прекращается» rather than halts"
+    },
+    {
+     "key": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "english": "Experimental. A sequence of media keys or AirPods controls within a short time window re-arms the last sleep timer, handy after one expires.",
+     "before": "Экспериментально. Последовательность клавиш мультимедиа или жестов AirPods за короткое время заново включает последний таймер сна — удобно, когда он только что сработал.",
+     "after": "Экспериментальная функция. Последовательность клавиш мультимедиа или жестов AirPods за короткое время заново включает последний таймер сна — удобно, когда он только что сработал.",
+     "why": "natural: «Экспериментально.» alone is an adverb, not a label for an experimental feature"
+    },
+    {
+     "key": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "english": "Folder placement and manual order that were stored only in the unreadable index are lost from the library.",
+     "before": "Расположение в папках и ручной порядок, хранившиеся только в нечитаемом индексе, будут потеряны из библиотеки.",
+     "after": "Расположение в папках и ручной порядок, хранившиеся только в нечитаемом индексе, пропадут из библиотеки.",
+     "why": "natural: «будут потеряны из библиотеки» is a calque; Russian loses nothing «из»"
+    },
+    {
+     "key": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "english": "Folders and the Reading List list what they always have. You can move them, and hide the Reading List.",
+     "before": "Папки и «Список для чтения» всегда показывают то, что показывают. Их можно перемещать, а «Список для чтения» можно скрыть.",
+     "after": "«Папки» и «Список для чтения» всегда показывают одно и то же. Их можно перемещать, а «Список для чтения» можно и скрыть.",
+     "why": "natural: «всегда показывают то, что показывают» was a tautology; and Папки lacked the quotes the other view name had"
+    },
+    {
+     "key": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "english": "Guessed from the book's braille. If it reads wrongly, choose Unified English Braille in Braille Code.",
+     "before": "Определено по Брайлю книги. Если книга читается неверно, выберите Unified English Braille в разделе «Код Брайля».",
+     "after": "Код определён предположительно, по Брайлю книги. Если книга читается неверно, выберите Unified English Braille в меню «Код Брайля».",
+     "why": "meaning: «guessed» lost its doubt, as in its siblings; and Braille Code is a pop-up menu, not a section"
+    },
+    {
+     "key": "If the library's own %@ arrives from %@ later, %@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "english": "If the library's own %1$@ arrives from %2$@ later, %3$@ may keep two copies of it, and this Mac and the other would disagree about which library this is.",
+     "before": "Если собственный файл %1$@ библиотеки позже поступит через %2$@, %3$@ может сохранить две копии, и этот Mac и другой не смогут договориться, какая это библиотека.",
+     "after": "Если собственный файл %1$@ библиотеки позже поступит через %2$@, %3$@ может сохранить две копии, и этот Mac и другой будут по-разному определять, какая это библиотека.",
+     "why": "meaning: «не смогут договориться» says the Macs fail to negotiate; they would identify the library differently"
+    },
+    {
+     "key": "In this Mac's Logs folder",
+     "english": "In this Mac's Logs folder",
+     "before": "В папке Logs этого Mac.",
+     "after": "В папке Logs этого Mac",
+     "why": "punctuation: a pop-up choice takes no period, as its sibling «Внутри каталога данных» shows"
+    },
+    {
+     "key": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "english": "Its place, bookmarks, and transcript, if it has any, are kept, and it can be downloaded again.",
+     "before": "Позиция чтения, закладки и расшифровка, если она есть, сохраняются, и книгу можно загрузить снова.",
+     "after": "Позиция чтения, закладки и расшифровка, если она есть, сохраняются, а загрузку можно повторить.",
+     "why": "meaning: the deleted download is a feed item, an episode or article, not a book («книгу»)"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "Его текст заменяется новым чтением.",
+     "after": "Текст книги заменяется результатом повторного чтения.",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes; and «его» had no masculine noun to point to"
+    },
+    {
+     "key": "Keep Original",
+     "english": "Keep Original",
+     "before": "Оставить оригинал",
+     "after": "Оставлять исходный файл",
+     "why": "natural: a standing setting takes the imperfective, as «Спрашивать каждый раз» does; and the pop-up label calls it «исходный файл»"
+    },
+    {
+     "key": "Kept on this Mac for the reading list",
+     "english": "Kept on this Mac for the reading list",
+     "before": "Хранится на этом Mac для списка для чтения",
+     "after": "Хранится на этом Mac, потому что книга в списке для чтения",
+     "why": "natural: «для списка для чтения» stacks two «для»; said as «Книга хранится на этом Mac, потому что она в списке для чтения» elsewhere"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Оставлено на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск книгой вашей библиотеки.",
+     "after": "Оставлено на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск или статью книгой вашей библиотеки.",
+     "why": "meaning: «one» is an episode or an article; «делает выпуск книгой» left the article out"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "Оставлены на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск книгой вашей библиотеки.",
+     "after": "Оставлены на месте: %1$@. Выпуски и статьи остаются в своих лентах; «%2$@» делает выпуск или статью книгой вашей библиотеки.",
+     "why": "meaning: «one» is an episode or an article; «делает выпуск книгой» left the article out"
+    },
+    {
+     "key": "Match",
+     "english": "Match",
+     "before": "Совпадение",
+     "after": "Соответствие",
+     "why": "meaning: the label of the All Conditions / Any Condition pop-up; «Совпадение» is a search hit, not matching a rule"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "few": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld.",
+      "many": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld.",
+      "one": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld.",
+      "other": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; для списка для чтения хранится: %lld."
+     },
+     "after": {
+      "one": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld.",
+      "few": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld.",
+      "many": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld.",
+      "other": "Из выбранных книг (%@) ни одна не хранится на этом Mac по вашему выбору; хранится ради списка для чтения: %lld."
+     },
+     "why": "natural: «для списка для чтения» stacks two «для»"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "Ничто не подтверждает, что выбор верный. Если цифры и знаки препинания звучат неправильно, выберите другое.",
+     "after": "Ничто не подтверждает, что выбор верный. Если цифры и знаки препинания звучат неправильно, выберите другой вариант.",
+     "why": "grammar: neuter «другое» had no noun to agree with"
+    },
+    {
+     "key": "Opens a file picker to import books in any format TextMouth reads.",
+     "english": "Opens a file picker to import books in any format TextMouth reads.",
+     "before": "Открывает выбор файлов, чтобы импортировать книги в любом формате, который читает TextMouth.",
+     "after": "Открывает окно выбора файлов, чтобы импортировать книги в любом формате, который читает TextMouth.",
+     "why": "natural: «открывает выбор файлов» opens a choice; the picker is a window"
+    },
+    {
+     "key": "Opens the last book you were reading",
+     "english": "Opens the last book you were reading",
+     "before": "Открывает последнюю читаемую вами книгу.",
+     "after": "Открывает книгу, которую вы читали последней.",
+     "why": "natural: «последнюю читаемую вами книгу» is a stiff participle phrase"
+    },
+    {
+     "key": "Plain Text",
+     "english": "Plain Text",
+     "before": "Обычный текст",
+     "after": "Простой текст",
+     "why": "term: Apple TextEdit Russian calls plain text «простой текст» (Конвертировать в простой текст)"
+    },
+    {
+     "key": "Position in %@: differs, and both were saved at the same time.",
+     "english": "Position in %@: differs, and both were saved at the same time.",
+     "before": "Позиция в %@: различается, оба сохранены одновременно.",
+     "after": "Позиция в %@: различается, обе сохранены одновременно.",
+     "why": "grammar: «оба» does not agree with the feminine позиции"
+    },
+    {
+     "key": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "english": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "before": "Чтение аудио заняло больше %@ с; TextMouth перестал ждать.",
+     "after": "Чтение аудио заняло больше %@ секунды; TextMouth перестал ждать.",
+     "why": "grammar: the limit always has a fraction, which takes «секунды»; the bare «с» is read aloud as a letter"
+    },
+    {
+     "key": "Reset all rules to factory defaults",
+     "english": "Reset all rules to factory defaults",
+     "before": "Восстановить все правила до заводских значений",
+     "after": "Восстановить заводские значения всех правил",
+     "why": "natural: «восстановить до заводских значений» copies «reset to»; one restores the values"
+    },
+    {
+     "key": "Restore Default",
+     "english": "Restore Default",
+     "before": "Восстановить по умолчанию",
+     "after": "Восстановить настройки по умолчанию",
+     "why": "grammar: «восстановить по умолчанию» has no object; the glossary «по умолчанию» needs a noun to restore"
+    },
+    {
+     "key": "Restore Default…",
+     "english": "Restore Default…",
+     "before": "Восстановить по умолчанию…",
+     "after": "Восстановить настройки по умолчанию…",
+     "why": "grammar: «восстановить по умолчанию» has no object; the glossary «по умолчанию» needs a noun to restore"
+    },
+    {
+     "key": "Restore “%@” to its default?",
+     "english": "Restore “%@” to its default?",
+     "before": "Восстановить «%@» по умолчанию?",
+     "after": "Восстановить настройки по умолчанию для «%@»?",
+     "why": "grammar: «восстановить «%@» по умолчанию» reads as restoring the view by default"
+    },
+    {
+     "key": "Retry did not succeed.",
+     "english": "Retry did not succeed.",
+     "before": "Повторить не удалось.",
+     "after": "Повторная попытка не удалась.",
+     "why": "meaning: «Повторить не удалось» says the retry could not be made, not that it failed"
+    },
+    {
+     "key": "Same Author",
+     "english": "Same Author",
+     "before": "Один автор",
+     "after": "Одинаковый автор",
+     "why": "natural: «Один автор» reads as a single author; matches its sibling «Одинаковый файл (MD5)»"
+    },
+    {
+     "key": "Same ISBN",
+     "english": "Same ISBN",
+     "before": "Один ISBN",
+     "after": "Одинаковый ISBN",
+     "why": "natural: «Один ISBN» reads as a single ISBN; matches its sibling «Одинаковый файл (MD5)»"
+    },
+    {
+     "key": "Same Title",
+     "english": "Same Title",
+     "before": "Одно название",
+     "after": "Одинаковое название",
+     "why": "natural: «Одно название» reads as a single title; matches its sibling «Одинаковый файл (MD5)»"
+    },
+    {
+     "key": "Set its shortcut with %@ in the %@ tab; the default is %@.",
+     "english": "Set its shortcut with %1$@ in the %2$@ tab; the default is %3$@.",
+     "before": "Задайте сочетание клавиш для действия «%1$@» во вкладке «%2$@»; по умолчанию: %3$@.",
+     "after": "Задайте сочетание клавиш для действия «%1$@» на вкладке «%2$@»; по умолчанию: %3$@.",
+     "why": "term: Apple Russian says «на вкладке», not «во вкладке»"
+    },
+    {
+     "key": "Show bookmark button in playback controls",
+     "english": "Show bookmark button in playback controls",
+     "before": "Показывать кнопку закладки в элементах управления воспроизведением",
+     "after": "Показывать кнопку закладки на панели воспроизведения",
+     "why": "natural: «в элементах управления воспроизведением» is a long calque; the button goes on the playback bar, as «на панели воспроизведения» says elsewhere"
+    },
+    {
+     "key": "Show speed controls in playback controls",
+     "english": "Show speed controls in playback controls",
+     "before": "Показывать элементы управления скоростью в элементах управления воспроизведением",
+     "after": "Показывать управление скоростью на панели воспроизведения",
+     "why": "natural: «элементы управления скоростью в элементах управления воспроизведением» repeated itself"
+    },
+    {
+     "key": "Showing the first %lld matches; refine your search",
+     "english": {
+      "one": "Showing the first %lld matches; refine your search",
+      "other": "Showing the first %lld matches; refine your search"
+     },
+     "before": {
+      "few": "Показано %lld совпадения; уточните поиск",
+      "many": "Показано %lld совпадений; уточните поиск",
+      "one": "Показано %lld совпадение; уточните поиск",
+      "other": "Показано %lld совпадения; уточните поиск"
+     },
+     "after": {
+      "one": "Показаны первые совпадения: %lld; уточните поиск",
+      "few": "Показаны первые совпадения: %lld; уточните поиск",
+      "many": "Показаны первые совпадения: %lld; уточните поиск",
+      "other": "Показаны первые совпадения: %lld; уточните поиск"
+     },
+     "why": "meaning: «first» was lost, so the list sounded complete; the colon form also avoids agreeing «первые» with the number"
+    },
+    {
+     "key": "Some files of “%@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %@ again.",
+     "english": "Some files of “%1$@” are only in the cloud, and replacing it now would leave them behind. Download the book, then choose %2$@ again.",
+     "before": "Некоторые файлы книги «%1$@» есть только в облаке, и при замене сейчас они остались бы позади. Загрузите книгу и снова выберите «%2$@».",
+     "after": "Некоторые файлы книги «%1$@» есть только в облаке, и при замене сейчас они остались бы на старом месте. Загрузите книгу и снова выберите «%2$@».",
+     "why": "natural: «остались бы позади» reads as «would be in the past»; the files would stay where they are"
+    },
+    {
+     "key": "Stops saying the code was guessed. The book is not read again.",
+     "english": "Stops saying the code was guessed. The book is not read again.",
+     "before": "Больше не сообщает, что код определён автоматически. Книга не читается заново.",
+     "after": "Больше не сообщает, что код определён предположительно. Книга не читается заново.",
+     "why": "meaning: «guessed» says the code may be wrong; «автоматически» drops that, and «определено по байтам» is automatic too"
+    },
+    {
+     "key": "Test input",
+     "english": "Test input",
+     "before": "Тестовый ввод",
+     "after": "Текст для проверки",
+     "why": "natural: «Тестовый ввод» is programmer jargon; its VoiceOver label already says «Текст для проверки»"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth не удалось сохранить изменённый вами текст в «%@» рядом с новым чтением, поэтому книга оставлена как была.",
+     "after": "TextMouth не удалось сохранить изменённый вами текст в «%@» рядом с результатом повторного чтения, поэтому книга оставлена как была.",
+     "why": "meaning: «новое чтение» is the act of reading, not the text a re-read makes"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "before": "TextMouth перестраивает свою папку данных. Дождитесь окончания и снова выберите «%@».",
+     "after": "TextMouth перестраивает свой каталог данных. Дождитесь окончания и снова выберите «%@».",
+     "why": "term: every other string of this part calls the data directory «каталог данных»; this one alone said «папку данных»"
+    },
+    {
+     "key": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "english": "TextMouth writes %@ with the identity this Mac knows for the library, and opens it.",
+     "before": "TextMouth запишет %@ с идентификатором, который этот Mac знает для библиотеки, и откроет её.",
+     "after": "TextMouth запишет %@ с идентификатором библиотеки, известным этому Mac, и откроет её.",
+     "why": "natural: «который этот Mac знает для библиотеки» is a calque; its twin hint says «идентификатор библиотеки, известный этому Mac»"
+    },
+    {
+     "key": "The %@ of %lld of them are kept.",
+     "english": {
+      "one": "The %@ of %lld of them are kept.",
+      "other": "The %@ of %lld of them are kept."
+     },
+     "before": {
+      "few": "%@ — сохраняются у %lld из них.",
+      "many": "%@ — сохраняются у %lld из них.",
+      "one": "%@ — сохраняются у %lld из них.",
+      "other": "%@ — сохраняются у %lld из них."
+     },
+     "after": {
+      "one": "У %2$lld из них сохраняются: %1$@.",
+      "few": "У %2$lld из них сохраняются: %1$@.",
+      "many": "У %2$lld из них сохраняются: %1$@.",
+      "other": "У %2$lld из них сохраняются: %1$@."
+     },
+     "why": "punctuation: a dash between a subject and its verb is not Russian, and the list began the sentence in lower case; now built as «У каждой сохраняются: %@.»"
+    },
+    {
+     "key": "The %lld selected books are kept on this Mac for the reading list.",
+     "english": {
+      "one": "The %lld selected book is kept on this Mac for the reading list.",
+      "other": "The %lld selected books are kept on this Mac for the reading list."
+     },
+     "before": {
+      "few": "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения.",
+      "many": "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения.",
+      "one": "Выбранная книга (%lld) хранится на этом Mac для списка для чтения.",
+      "other": "Выбранные книги (%lld) хранятся на этом Mac для списка для чтения."
+     },
+     "after": {
+      "one": "Выбранная книга (%lld) хранится на этом Mac, потому что она в списке для чтения.",
+      "few": "Выбранные книги (%lld) хранятся на этом Mac, потому что они в списке для чтения.",
+      "many": "Выбранные книги (%lld) хранятся на этом Mac, потому что они в списке для чтения.",
+      "other": "Выбранные книги (%lld) хранятся на этом Mac, потому что они в списке для чтения."
+     },
+     "why": "natural: «для списка для чтения» stacks two «для»"
+    },
+    {
+     "key": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "english": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "before": "The Hobbit при вводе считается буквой H. Список сохраняет порядок и показывает каждое название так, как оно написано.",
+     "after": "При вводе The Hobbit находится по букве H. Список сохраняет порядок и показывает каждое название так, как оно написано.",
+     "why": "meaning: «считается буквой H» says the title is the letter H; typing H finds it"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "The Hobbit сортируется среди H и показывается как Hobbit, The. Ввод H находит его среди H.",
+     "after": "The Hobbit сортируется среди названий на H и показывается как Hobbit, The. Ввод буквы H находит его среди них.",
+     "why": "natural: «среди H» copies «among the H-s»; Russian sorts among titles on a letter"
+    },
+    {
+     "key": "The book %@ is stored at %@, outside the data directory, so the move cannot carry it.",
+     "english": "The book %1$@ is stored at %2$@, outside the data directory, so the move cannot carry it.",
+     "before": "Книга «%1$@» хранится здесь: %2$@, вне каталога данных, поэтому перемещение не может её захватить.",
+     "after": "Книга «%1$@» хранится здесь: %2$@, вне каталога данных, поэтому её нельзя переместить вместе с ним.",
+     "why": "natural: «перемещение не может её захватить» says the move cannot capture it"
+    },
+    {
+     "key": "The library index is already readable.",
+     "english": "The library index is already readable.",
+     "before": "Индекс библиотеки уже читается.",
+     "after": "Индекс библиотеки уже читается без ошибок.",
+     "why": "meaning: «уже читается» also means is being read right now; the index is readable"
+    },
+    {
+     "key": "The new location, %@, is a link to %@, which cannot be found.",
+     "english": "The new location, %1$@, is a link to %2$@, which cannot be found.",
+     "before": "Новое расположение, %1$@, — ссылка на %2$@, которое не найдено.",
+     "after": "Новое расположение, %1$@, — ссылка на %2$@, который не найден.",
+     "why": "grammar: neuter «которое» had no noun; the sibling sentences take the path as masculine («который»)"
+    },
+    {
+     "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
+     "before": "Этот Брайль похож на английский Брайль, американское издание. Выберите его код в разделе «Сведения о книге».",
+     "after": "Этот Брайль похож на English Braille, American Edition. Выберите этот код Брайля в окне «Сведения о книге».",
+     "why": "term: the code name stays English, as the Braille Code pop-up lists it; Book Information is a window, not a section"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "Названия сортируются и находятся при вводе так, как написаны: The Hobbit среди T.",
+     "after": "Названия сортируются и находятся при вводе так, как написаны: The Hobbit — среди названий на T.",
+     "why": "natural: «среди T» copies «among the T-s»; Russian sorts among titles on a letter"
+    },
+    {
+     "key": "Try again in a moment.",
+     "english": "Try again in a moment.",
+     "before": "Повторите попытку через мгновение.",
+     "after": "Повторите попытку чуть позже.",
+     "why": "natural: «через мгновение» is literary; Apple says «позже»"
+    },
+    {
+     "key": "Type to search the book's transcript",
+     "english": "Type to search the book's transcript",
+     "before": "Принимает текст для поиска по расшифровке книги.",
+     "after": "Ищет введённый текст в расшифровке книги.",
+     "why": "natural: «Принимает текст для поиска» describes a machine taking input; a hint says the result"
+    },
+    {
+     "key": "Type to search the text of every book in the library",
+     "english": "Type to search the text of every book in the library",
+     "before": "Принимает текст для поиска по тексту каждой книги в библиотеке.",
+     "after": "Ищет введённый текст во всех книгах библиотеки.",
+     "why": "natural: «Принимает текст для поиска» describes a machine taking input; a hint says the result"
+    },
+    {
+     "key": "Type to search within the book",
+     "english": "Type to search within the book",
+     "before": "Принимает текст для поиска в книге.",
+     "after": "Ищет введённый текст в книге.",
+     "why": "natural: «Принимает текст для поиска» describes a machine taking input; a hint says the result"
+    },
+    {
+     "key": "What to do with the original file after importing a book",
+     "english": "What to do with the original file after importing a book",
+     "before": "Что сделать с исходным файлом после импорта книги.",
+     "after": "Что делать с исходным файлом после импорта книги.",
+     "why": "natural: a standing setting takes the imperfective «делать», as its choices now do"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Если слов, к которым они привязаны, не осталось, %@, каждое из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "after": "Если слов, к которым они привязаны, не осталось, %@, каждая из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "why": "grammar: «каждое» does not agree with позиция and закладки, both feminine"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "Если слов, к которым они привязаны, не осталось, каждое из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "after": "Если слов, к которым они привязаны, не осталось, каждая из них переходит примерно в ту же точку своей главы или в ближайший фрагмент, общий для двух прочтений.",
+     "why": "grammar: «каждое» does not agree with позиция and закладки, both feminine"
+    },
+    {
+     "key": "at the top of the library",
+     "english": "at the top of the library",
+     "before": "в начале библиотеки",
+     "after": "на верхнем уровне библиотеки",
+     "why": "meaning: the book is in no folder, at the top level; «в начале библиотеки» says at its beginning"
+    },
+    {
+     "key": "guessed",
+     "english": "guessed",
+     "before": "определено автоматически",
+     "after": "определено предположительно",
+     "why": "meaning: «guessed» says the encoding may be wrong; «автоматически» drops that, and «определено по байтам» is automatic too"
+    },
+    {
+     "key": "“%@” could not be moved back after a failed move, so its files are at %@ instead of %@: %@",
+     "english": "“%1$@” could not be moved back after a failed move, so its files are at %2$@ instead of %3$@: %4$@",
+     "before": "«%1$@» не удалось вернуть после неудачного перемещения, поэтому его файлы находятся в %2$@, а не в %3$@: %4$@",
+     "after": "Книгу «%1$@» не удалось вернуть после неудачного перемещения, поэтому её файлы находятся в %2$@, а не в %3$@: %4$@",
+     "why": "grammar: «его файлы» cannot point to a book title; the book is named and its files are «её»"
+    }
+   ]
+  }
+ ]
+}
