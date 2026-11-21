@@ -1439,6 +1439,667 @@
      "why": "meaning: the two verbs were swapped, so being replaced and changed blurred; Replace is تبدیل, as in Replace Existing"
     }
    ]
+  },
+  {
+   "part": 3,
+   "areas": [
+    "reader, formats, and menus",
+    "export, speech, and the iPhone's screens"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ adds one at the current position.",
+     "english": "%@ adds one at the current position.",
+     "before": "%@ موجودہ پوزیشن پر ایک شامل کرتا ہے۔",
+     "after": "“%@” سے موجودہ پوزیشن پر بک مارک شامل ہو جاتا ہے۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ does the same for every such chapter of this export, without asking again.",
+     "english": "%@ does the same for every such chapter of this export, without asking again.",
+     "before": "%@ اس برآمد کے ہر ایسے باب کے لیے یہی کرتا ہے، دوبارہ پوچھے بغیر۔",
+     "after": "“%@” سے اس برآمد کے ہر ایسے باب کے ساتھ یہی ہوتا ہے، دوبارہ پوچھے بغیر۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ has its default, %@",
+     "english": "%1$@ has its default, %2$@",
+     "before": "%1$@ کے پاس اپنی ڈیفالٹ کلید ہے، %2$@",
+     "after": "%1$@ کے پاس اس کی ڈیفالٹ کلید ہے، %2$@",
+     "why": "meaning: the reflexive اپنی gave the other action its own default; the key is this row action default"
+    },
+    {
+     "key": "%@ in",
+     "english": "%@ in",
+     "before": "%@ گزر چکے",
+     "after": "آغاز سے %@",
+     "why": "grammar: the plural گزر چکے could not agree with 1 گھنٹہ or 1 منٹ; آغاز سے needs no verb"
+    },
+    {
+     "key": "%@ of %lld chapters could not be read",
+     "english": {
+      "one": "%@ of %lld chapter could not be read",
+      "other": "%@ of %lld chapters could not be read"
+     },
+     "before": {
+      "one": "%2$lld باب میں سے %1$@ پڑھا نہیں جا سکا",
+      "other": "%2$lld ابواب میں سے %1$@ پڑھے نہیں جا سکے"
+     },
+     "after": {
+      "one": "%2$lld باب میں سے %1$@ کو پڑھا نہیں جا سکا",
+      "other": "%2$lld ابواب میں سے %1$@ کو پڑھا نہیں جا سکا"
+     },
+     "why": "grammar: the plural verb followed the total, so 1 of 12 read as plural; the کو passive fits every count"
+    },
+    {
+     "key": "%@ reset to default: %@",
+     "english": "%1$@ reset to default: %2$@",
+     "before": "%1$@ ڈیفالٹ پر ری سیٹ ہو گئی: %2$@",
+     "after": "%1$@ کو ڈیفالٹ پر ری سیٹ کر دیا گیا: %2$@",
+     "why": "grammar: the feminine verb could not agree with every action name; the کو passive fits all, as recorded for does"
+    },
+    {
+     "key": "%@ stops the whole export. Files already written stay.",
+     "english": "%@ stops the whole export. Files already written stay.",
+     "before": "%@ پوری برآمد روک دیتا ہے۔ لکھی جا چکی فائلیں برقرار رہتی ہیں۔",
+     "after": "“%@” سے پوری برآمد رک جاتی ہے۔ لکھی جا چکی فائلیں برقرار رہتی ہیں۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ tries again, %@ quits without saving, %@ keeps TextMouth open.",
+     "english": "%1$@ tries again, %2$@ quits without saving, %3$@ keeps TextMouth open.",
+     "before": "%1$@ دوبارہ کوشش کرتا ہے، %2$@ بغیر محفوظ کیے بند کرتا ہے، %3$@ TextMouth کو کھلا رکھتا ہے۔",
+     "after": "“%1$@” سے دوبارہ کوشش ہوتی ہے، “%2$@” سے TextMouth محفوظ کیے بغیر بند ہو جاتا ہے، اور “%3$@” سے TextMouth کھلا رہتا ہے۔",
+     "why": "natural: the imperative button names read as commands when made subjects; quoted, each with سے"
+    },
+    {
+     "key": "%@ uses it in the menus",
+     "english": "%@ uses it in the menus",
+     "before": "%@ اسے مینو میں استعمال کرتا ہے",
+     "after": "“%@” اسے مینو میں استعمال کرتا ہے",
+     "why": "natural: the imperative command name read as a command when made the subject; quoted as a name"
+    },
+    {
+     "key": "%@ works in %@.",
+     "english": "%1$@ works in %2$@.",
+     "before": "%1$@ %2$@ میں کام کرتا ہے۔",
+     "after": "“%1$@” %2$@ میں کام کرتا ہے۔",
+     "why": "natural: the imperative command name read as a command when made the subject; quoted as a name"
+    },
+    {
+     "key": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes that chapter as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ اس باب کو اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رکھتا ہے، اور باقی سب کچھ معمول کے مطابق برآمد کرتا ہے۔",
+     "after": "“%@” سے وہ باب اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھا جاتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رہتے ہیں، اور باقی سب کچھ معمول کے مطابق برآمد ہوتا ہے۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "english": "%@ writes the text as plain paragraphs of its lines, with its quote and list marks kept as characters, and exports everything else as usual.",
+     "before": "%@ متن کو اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رکھتا ہے، اور باقی سب کچھ معمول کے مطابق برآمد کرتا ہے۔",
+     "after": "“%@” سے متن اس کی سطروں کے سادہ پیراگرافوں کی صورت میں لکھا جاتا ہے، اس کے اقتباس اور فہرست کے نشانات حروف کی شکل میں رہتے ہیں، اور باقی سب کچھ معمول کے مطابق برآمد ہوتا ہے۔",
+     "why": "natural: the imperative button name read as a command when made the subject; quoted, with سے"
+    },
+    {
+     "key": "%@, edited by hand",
+     "english": "%@, edited by hand",
+     "before": "%@، ہاتھ سے ترمیم شدہ",
+     "after": "%@، دستی طور پر ترمیم شدہ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as part 2 writes it"
+    },
+    {
+     "key": "%lld words per minute",
+     "english": {
+      "one": "%lld word per minute",
+      "other": "%lld words per minute"
+     },
+     "before": {
+      "one": "%lld الفاظ فی منٹ",
+      "other": "%lld الفاظ فی منٹ"
+     },
+     "after": {
+      "one": "%lld لفظ فی منٹ",
+      "other": "%lld الفاظ فی منٹ"
+     },
+     "why": "grammar: the one form had the plural الفاظ, so 1 الفاظ"
+    },
+    {
+     "key": "About",
+     "english": "About",
+     "before": "کے بارے میں",
+     "after": "ایپ کے بارے میں",
+     "why": "grammar: a heading cannot begin with the postposition کے; it needs its object"
+    },
+    {
+     "key": "Afterwards, Play tries the passage again",
+     "english": "Afterwards, Play tries the passage again",
+     "before": "بعد میں، چلائیں دبانے سے یہ حصہ دوبارہ آزمایا جاتا ہے۔",
+     "after": "بعد میں “چلائیں” سے یہ حصہ دوبارہ آزمایا جاتا ہے۔",
+     "why": "voiceover: the hint named pressing (دبانے); Play quoted as the button name"
+    },
+    {
+     "key": "Applies when listening goes on to another article",
+     "english": "Applies when listening goes on to another article",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے مضمون پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسرے مضمون پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Applies when listening goes on to another book",
+     "english": "Applies when listening goes on to another book",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسری کتاب پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسری کتاب پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Applies when listening goes on to another episode",
+     "english": "Applies when listening goes on to another episode",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے ایپی سوڈ پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسرے ایپی سوڈ پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Applies when listening goes on to another item",
+     "english": "Applies when listening goes on to another item",
+     "before": "اس وقت لاگو ہوتا ہے جب سننا کسی دوسرے آئٹم پر جاتا ہے۔",
+     "after": "اس وقت لاگو ہوتا ہے جب پلے بیک کسی دوسرے آئٹم پر جاتا ہے۔",
+     "why": "natural: listening as a subject that goes on is a calque; playback (پلے بیک) moves on"
+    },
+    {
+     "key": "Backward navigation unit",
+     "english": "Backward navigation unit",
+     "before": "پیچھے جانے کی نیویگیشن یونٹ",
+     "after": "پیچھے جانے کا نیویگیشن یونٹ",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Bookmark %@, %@, Note: %@, added %@",
+     "english": "Bookmark %1$@, %2$@, Note: %3$@, added %4$@",
+     "before": "بک مارک %1$@، %2$@، نوٹ: %3$@، شامل کیا گیا %4$@",
+     "after": "بک مارک %1$@، %2$@، نوٹ: %3$@، %4$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Bookmark %@, %@, added %@",
+     "english": "Bookmark %1$@, %2$@, added %3$@",
+     "before": "بک مارک %1$@، %2$@، شامل کیا گیا %3$@",
+     "after": "بک مارک %1$@، %2$@، %3$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Bookmark %@, Note: %@, added %@",
+     "english": "Bookmark %1$@, Note: %2$@, added %3$@",
+     "before": "بک مارک %1$@، نوٹ: %2$@، شامل کیا گیا %3$@",
+     "after": "بک مارک %1$@، نوٹ: %2$@، %3$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Bookmark %@, added %@",
+     "english": "Bookmark %1$@, added %2$@",
+     "before": "بک مارک %1$@، شامل کیا گیا %2$@",
+     "after": "بک مارک %1$@، %2$@ کو شامل کیا گیا",
+     "why": "natural: the day came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "Cells per line",
+     "english": "Cells per line",
+     "before": "فی سطر سیل",
+     "after": "سیل فی سطر",
+     "why": "natural: فی comes between the count and its unit, as in الفاظ فی منٹ"
+    },
+    {
+     "key": "Change this book's forward and backward navigation unit",
+     "english": "Change this book's forward and backward navigation unit",
+     "before": "اس کتاب کی آگے اور پیچھے جانے کی نیویگیشن یونٹ تبدیل کریں",
+     "after": "اس کتاب کا آگے اور پیچھے جانے کا نیویگیشن یونٹ تبدیل کریں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Change this book's forward and backward navigation units",
+     "english": "Change this book's forward and backward navigation units",
+     "before": "اس کتاب کی آگے اور پیچھے جانے کی نیویگیشن یونٹس تبدیل کریں",
+     "after": "اس کتاب کے آگے اور پیچھے جانے کے نیویگیشن یونٹس تبدیل کریں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Choose separate forward and backward navigation units for this book",
+     "english": "Choose separate forward and backward navigation units for this book",
+     "before": "اس کتاب کے لیے آگے اور پیچھے جانے کی الگ الگ نیویگیشن یونٹس منتخب کریں۔",
+     "after": "اس کتاب کے لیے آگے اور پیچھے جانے کے الگ الگ نیویگیشن یونٹس منتخب کرنے دیتا ہے۔",
+     "why": "grammar: یونٹ is masculine; the hint also made third person, as Urdu hints are"
+    },
+    {
+     "key": "Chooses what Play and the skip buttons move by.",
+     "english": "Chooses what Play and the skip buttons move by.",
+     "before": "منتخب کرتا ہے کہ چلائیں اور چھلانگ کے بٹن کس اکائی سے آگے بڑھیں۔",
+     "after": "منتخب کرتا ہے کہ “چلائیں” اور چھلانگ کے بٹن کس اکائی سے آگے بڑھیں۔",
+     "why": "natural: the bare imperative Play read as a verb inside the sentence; quoted as the button name"
+    },
+    {
+     "key": "Close the headings screen and return to the book",
+     "english": "Close the headings screen and return to the book",
+     "before": "سرخیوں کی اسکرین بند کر کے کتاب پر واپس جائیں۔",
+     "after": "سرخیوں کی اسکرین بند کر کے کتاب پر واپس لے جاتا ہے۔",
+     "why": "register: a hint in the imperative; Urdu hints are third person"
+    },
+    {
+     "key": "Comma",
+     "english": "Comma",
+     "before": "کوما",
+     "after": "کاما",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما, as part 2 writes it"
+    },
+    {
+     "key": "Cycle Backward Navigation Unit",
+     "english": "Cycle Backward Navigation Unit",
+     "before": "پیچھے جانے کی نیویگیشن یونٹ بدلیں",
+     "after": "پیچھے جانے کا نیویگیشن یونٹ بدلیں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Cycle Forward Navigation Unit",
+     "english": "Cycle Forward Navigation Unit",
+     "before": "آگے جانے کی نیویگیشن یونٹ بدلیں",
+     "after": "آگے جانے کا نیویگیشن یونٹ بدلیں",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "english": "Each heading's title and start, as a CUE sheet naming the audio as Audio exports it.",
+     "before": "ہر سرخی کا عنوان اور آغاز، ایک CUE شیٹ کی صورت میں جو آڈیو کا نام اسی طرح لکھتی ہے جیسے آڈیو اسے برآمد کرتا ہے۔",
+     "after": "ہر سرخی کا عنوان اور آغاز، ایک CUE شیٹ کی صورت میں جو آڈیو کا نام اسی طرح لکھتی ہے جیسے “آڈیو” اسے برآمد کرتا ہے۔",
+     "why": "natural: Audio is the export item name; quoted, since Urdu has no capital letter to show it"
+    },
+    {
+     "key": "End",
+     "english": "End",
+     "before": "اختتام",
+     "after": "اینڈ",
+     "why": "term: the key is labelled End, beside Home (ہوم); اختتام is the end of a book"
+    },
+    {
+     "key": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "english": "Every shortcut and where it works go back to the defaults. Your own keys are lost.",
+     "before": "ہر شارٹ کٹ اور اس کے کام کرنے کی جگہ ڈیفالٹ پر لوٹ جاتی ہے۔ آپ کی اپنی کلیدیں ختم ہو جائیں گی۔",
+     "after": "ہر شارٹ کٹ اور اس کے کام کرنے کی جگہ ڈیفالٹ پر لوٹ جائیں گے۔ آپ کی اپنی کلیدیں ختم ہو جائیں گی۔",
+     "why": "grammar: two things joined by اور take a plural verb, as part 2 writes it; future, as the next sentence"
+    },
+    {
+     "key": "Export to: %@",
+     "english": "Export to: %@",
+     "before": "یہاں برآمد کریں: %@",
+     "after": "برآمد کا فولڈر: %@",
+     "why": "natural: the line names the folder; یہاں برآمد کریں read as a command"
+    },
+    {
+     "key": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "english": "For five seconds, the next two key presses are not shortcuts; TextMouth says whether they make a double press.",
+     "before": "پانچ سیکنڈ تک اگلے دو بار کلید دبانا شارٹ کٹ نہیں ہوتا؛ TextMouth بتاتا ہے کہ وہ دوہرا دبانا بنے یا نہیں۔",
+     "after": "پانچ سیکنڈ تک اگلی دو بار کلید دبانے سے کوئی شارٹ کٹ نہیں چلتا؛ TextMouth بتاتا ہے کہ ان سے دوہرا دبانا بنتا ہے یا نہیں۔",
+     "why": "grammar: بار (a time) is feminine, so اگلی دو بار; the presses were made the subject of a pressing, not a shortcut"
+    },
+    {
+     "key": "Forward navigation unit",
+     "english": "Forward navigation unit",
+     "before": "آگے جانے کی نیویگیشن یونٹ",
+     "after": "آگے جانے کا نیویگیشن یونٹ",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Forward navigation unit: %@; backward navigation unit: %@",
+     "english": "Forward navigation unit: %1$@; backward navigation unit: %2$@",
+     "before": "آگے کی نیویگیشن یونٹ: %1$@؛ پیچھے کی نیویگیشن یونٹ: %2$@",
+     "after": "آگے جانے کا نیویگیشن یونٹ: %1$@؛ پیچھے جانے کا نیویگیشن یونٹ: %2$@",
+     "why": "grammar: یونٹ is masculine, as the rest of the app writes it"
+    },
+    {
+     "key": "Go To",
+     "english": "Go To",
+     "before": "پر جائیں",
+     "after": "مقام پر جائیں",
+     "why": "grammar: a label cannot begin with the postposition پر; مقام پر جائیں fits all four uses of this key (bookmark, heading, marker, iPhone Go To)"
+    },
+    {
+     "key": "Go back to where you were before browsing headings or bookmarks",
+     "english": "Go back to where you were before browsing headings or bookmarks",
+     "before": "سرخیاں یا بک مارک دیکھنے سے پہلے والی جگہ پر واپس جائیں۔",
+     "after": "سرخیاں یا بک مارک دیکھنے سے پہلے والی جگہ پر واپس لے جاتا ہے۔",
+     "why": "register: a hint in the imperative; Urdu hints are third person"
+    },
+    {
+     "key": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "english": "How high the voice sounds in the file. It starts at the book's pitch.",
+     "before": "فائل میں آواز کتنی اونچی لگتی ہے۔ یہ کتاب کی پچ سے شروع ہوتی ہے۔",
+     "after": "فائل میں آواز کتنی باریک یا بھاری لگتی ہے۔ یہ کتاب کی پچ سے شروع ہوتی ہے۔",
+     "why": "meaning: اونچی آواز is a loud voice; pitch is how thin or deep the voice sounds"
+    },
+    {
+     "key": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "english": "How soon a second press must follow the first. A key with different single and double press actions waits this long before its single press acts.",
+     "before": "دوسری بار دبانا پہلی بار کے کتنی جلدی بعد ہونا چاہیے۔ جس کلید کے ایک بار اور دو بار دبانے کے عمل الگ ہوں وہ ایک بار دبانے پر عمل کرنے سے پہلے اتنی دیر انتظار کرتی ہے۔",
+     "after": "وہ وقت جس کے اندر پہلی بار کے بعد دوسری بار دبانا ضروری ہے۔ جس کلید کے ایک بار اور دو بار دبانے کے عمل الگ ہوں وہ ایک بار دبانے پر عمل کرنے سے پہلے اتنی دیر انتظار کرتی ہے۔",
+     "why": "natural: the first sentence read as a question without its mark; now a description of the setting"
+    },
+    {
+     "key": "It has no pictures, sound, or video, and the text of a picture's description is kept as text.",
+     "english": "It has no pictures, sound, or video, and the text of a picture's description is kept as text.",
+     "before": "اس میں تصاویر، آواز یا ویڈیو نہیں ہیں، اور تصویر کی وضاحت کا متن بطور متن رکھا گیا ہے۔",
+     "after": "اس میں تصاویر، آواز یا ویڈیو نہیں ہیں، اور تصویر کی تفصیل کا متن بطور متن رکھا گیا ہے۔",
+     "why": "term: a picture description is تفصیل, as part 2 writes it; وضاحت means an explanation"
+    },
+    {
+     "key": "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them.",
+     "english": "It lists the book's tracks in play order, each with its heading's title. You can reorder, retitle, and group them under headings of your own, and set the pauses between them.",
+     "before": "یہ کتاب کے ٹریکس کو چلانے کی ترتیب میں ہر ایک کی سرخی کے عنوان کے ساتھ فہرست کرتا ہے۔ آپ انہیں دوبارہ ترتیب دے سکتے ہیں، ان کے عنوان بدل سکتے ہیں، انہیں اپنی سرخیوں کے تحت گروپ کر سکتے ہیں، اور ان کے درمیان وقفے مقرر کر سکتے ہیں۔",
+     "after": "اس میں کتاب کے ٹریکس چلنے کی ترتیب سے درج ہیں، ہر ایک اپنی سرخی کے عنوان کے ساتھ۔ آپ انہیں دوبارہ ترتیب دے سکتے ہیں، ان کے عنوان بدل سکتے ہیں، انہیں اپنی سرخیوں کے تحت گروپ کر سکتے ہیں، اور ان کے درمیان وقفے مقرر کر سکتے ہیں۔",
+     "why": "natural: فہرست کرنا is a calque of to list; درج ہیں says it"
+    },
+    {
+     "key": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "english": "Keeps the list's books downloaded on this Mac; each Mac chooses for itself. Clearing it removes no download.",
+     "before": "فہرست کی کتابیں اس Mac پر ڈاؤن لوڈ رکھتا ہے؛ ہر Mac اپنے لیے منتخب کرتا ہے۔ نشان ہٹانے سے کوئی ڈاؤن لوڈ نہیں ہٹتا۔",
+     "after": "فہرست کی کتابیں اس Mac پر ڈاؤن لوڈ شدہ رکھتا ہے؛ ہر Mac اپنے لیے منتخب کرتا ہے۔ نشان ہٹانے سے کوئی ڈاؤن لوڈ نہیں ہٹتا۔",
+     "why": "grammar: keeps downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun, as part 2 writes it"
+    },
+    {
+     "key": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+     "english": {
+      "one": "Kept %@ of %lld chapter until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch.",
+      "other": "Kept %@ of %lld chapters until TextMouth quits, a different spoken audio export starts, or the book's voice, text, substitutions, or pauses change. To go on from chapter %@, export the same range at the same speed and pitch."
+     },
+     "before": {
+      "one": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld باب میں سے %1$@ رکھا گیا ہے۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔",
+      "other": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld ابواب میں سے %1$@ رکھے گئے ہیں۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔"
+     },
+     "after": {
+      "one": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld باب میں سے %1$@ کو رکھا گیا ہے۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔",
+      "other": "TextMouth بند ہونے تک، یا جب تک کوئی دوسری بولی گئی آڈیو برآمد شروع نہ ہو یا کتاب کی آواز، متن، تبدیلی کے اصول یا وقفے نہ بدلیں، %2$lld ابواب میں سے %1$@ کو رکھا گیا ہے۔ باب %3$@ سے آگے بڑھنے کے لیے اسی رفتار اور پچ پر وہی حد برآمد کریں۔"
+     },
+     "why": "grammar: the plural verb followed the total, so 1 of 12 read as plural; the کو passive fits every count"
+    },
+    {
+     "key": "Left Arrow",
+     "english": "Left Arrow",
+     "before": "بائیں تیر",
+     "after": "بایاں تیر",
+     "why": "grammar: a key name alone takes the direct form بایاں, as the bracket keys do"
+    },
+    {
+     "key": "Left Parenthesis",
+     "english": "Left Parenthesis",
+     "before": "بایاں قوسین",
+     "after": "بایاں قوس",
+     "why": "grammar: قوسین is the pair of parentheses; one sign is قوس"
+    },
+    {
+     "key": "Lines per page",
+     "english": "Lines per page",
+     "before": "فی صفحہ سطریں",
+     "after": "سطریں فی صفحہ",
+     "why": "natural: فی comes between the count and its unit, as in الفاظ فی منٹ"
+    },
+    {
+     "key": "Media controls not released: this book does not hold them.",
+     "english": "Media controls not released: this book does not hold them.",
+     "before": "میڈیا کنٹرولز جاری نہیں کیے گئے: یہ کتاب انہیں نہیں رکھتی۔",
+     "after": "میڈیا کنٹرولز نہیں چھوڑے گئے: یہ کتاب انہیں نہیں رکھتی۔",
+     "why": "meaning: جاری کرنا is to issue; handing the media controls back is چھوڑنا, as Release Media Controls (چھوڑ دیں) says"
+    },
+    {
+     "key": "Media controls released",
+     "english": "Media controls released",
+     "before": "میڈیا کنٹرولز جاری کر دیے گئے",
+     "after": "میڈیا کنٹرولز چھوڑ دیے گئے",
+     "why": "meaning: جاری کرنا is to issue; handing the media controls back is چھوڑنا, as Release Media Controls (چھوڑ دیں) says"
+    },
+    {
+     "key": "Preview %@ sound",
+     "english": "Preview %@ sound",
+     "before": "%@ ساؤنڈ کا پیش منظر",
+     "after": "%@ کے ساؤنڈ کا پیش منظر سنیں",
+     "why": "register: a button takes the imperative, and an audio preview is heard (سنیں), as part 2 writes it; کے joins the event name to its sound"
+    },
+    {
+     "key": "Preview Voice",
+     "english": "Preview Voice",
+     "before": "آواز کا پیش منظر",
+     "after": "آواز کا پیش منظر سنیں",
+     "why": "register: a button takes the imperative; an audio preview is heard (سنیں), as part 2 writes it"
+    },
+    {
+     "key": "Preview selected voice",
+     "english": "Preview selected voice",
+     "before": "منتخب آواز کا پیش منظر",
+     "after": "منتخب آواز کا پیش منظر سنیں",
+     "why": "register: a button takes the imperative; an audio preview is heard (سنیں), as part 2 writes it"
+    },
+    {
+     "key": "Quotation Mark",
+     "english": "Quotation Mark",
+     "before": "حوالے کا نشان",
+     "after": "اقتباسی نشان",
+     "why": "term: حوالہ is a reference or citation; the app calls the sign اقتباسی نشان elsewhere"
+    },
+    {
+     "key": "Right Arrow",
+     "english": "Right Arrow",
+     "before": "دائیں تیر",
+     "after": "دایاں تیر",
+     "why": "grammar: a key name alone takes the direct form دایاں, as the bracket keys do"
+    },
+    {
+     "key": "Right Parenthesis",
+     "english": "Right Parenthesis",
+     "before": "دایاں قوسین",
+     "after": "دایاں قوس",
+     "why": "grammar: قوسین is the pair of parentheses; one sign is قوس"
+    },
+    {
+     "key": "Sound Assignments",
+     "english": "Sound Assignments",
+     "before": "ساؤنڈ تفویض",
+     "after": "ساؤنڈز کا انتخاب",
+     "why": "natural: two nouns side by side without a کا; the section chooses each event sound"
+    },
+    {
+     "key": "Still starting: %@",
+     "english": "Still starting: %@",
+     "before": "ابھی شروع ہو رہا ہے: %@",
+     "after": "اب بھی شروع ہو رہا ہے: %@",
+     "why": "meaning: ابھی is heard as right now; still is اب بھی"
+    },
+    {
+     "key": "Stop At",
+     "english": "Stop At",
+     "before": "یہاں روکیں",
+     "after": "کہاں روکیں",
+     "why": "meaning: یہاں روکیں is stop here; the heading is where in the book the timer stops"
+    },
+    {
+     "key": "Switches to jump to page controls",
+     "english": "Switches to jump to page controls",
+     "before": "صفحے پر چھلانگ لگانے کے کنٹرولز پر منتقل کرتا ہے۔",
+     "after": "صفحے پر چھلانگ لگانے کے کنٹرولز پر لے جاتا ہے۔",
+     "why": "meaning: منتقل کرنا is moving an item; the button takes the listener to the other panel, as part 2 says of moving the cursor"
+    },
+    {
+     "key": "Switches to jump to percent controls",
+     "english": "Switches to jump to percent controls",
+     "before": "فیصد پر چھلانگ لگانے کے کنٹرولز پر منتقل کرتا ہے۔",
+     "after": "فیصد پر چھلانگ لگانے کے کنٹرولز پر لے جاتا ہے۔",
+     "why": "meaning: منتقل کرنا is moving an item; the button takes the listener to the other panel, as part 2 says of moving the cursor"
+    },
+    {
+     "key": "Switches to jump to time controls",
+     "english": "Switches to jump to time controls",
+     "before": "وقت پر چھلانگ لگانے کے کنٹرولز پر منتقل کرتا ہے۔",
+     "after": "وقت پر چھلانگ لگانے کے کنٹرولز پر لے جاتا ہے۔",
+     "why": "meaning: منتقل کرنا is moving an item; the button takes the listener to the other panel, as part 2 says of moving the cursor"
+    },
+    {
+     "key": "Takes %lld to %lld minutes.",
+     "english": "Takes %1$lld to %2$lld minutes.",
+     "before": "%1$lld سے %2$lld منٹ لیتا ہے۔",
+     "after": "%1$lld سے %2$lld منٹ تک قبول کرتا ہے۔",
+     "why": "meaning: لیتا ہے reads as lasting that long; the field accepts those values"
+    },
+    {
+     "key": "Takes %lld to %lld minutes. Return sets the timer and plays the book.",
+     "english": "Takes %1$lld to %2$lld minutes. Return sets the timer and plays the book.",
+     "before": "%1$lld سے %2$lld منٹ لیتا ہے۔ ریٹرن ٹائمر سیٹ کرتا ہے اور کتاب چلاتا ہے۔",
+     "after": "%1$lld سے %2$lld منٹ تک قبول کرتا ہے۔ ریٹرن ٹائمر سیٹ کرتا ہے اور کتاب چلاتا ہے۔",
+     "why": "meaning: لیتا ہے reads as lasting that long; the field accepts those values"
+    },
+    {
+     "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: chapter %1$@ of the edited text of %2$@ %3$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "متن اپ ڈیٹ نہیں ہوا: %2$@ کے ترمیم شدہ متن کے باب %1$@ میں %3$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "after": "متن اپ ڈیٹ نہیں ہوا: %2$@ کے ترمیم شدہ متن کے باب %1$@ میں %3$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "Text not updated: the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "english": "Text not updated: the edited text of %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
+     "before": "متن اپ ڈیٹ نہیں ہوا: %1$@ کے ترمیم شدہ متن میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "after": "متن اپ ڈیٹ نہیں ہوا: %1$@ کے ترمیم شدہ متن میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "Text not updated: the edited transcript of %@ has %@, but the audiobook has %@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "english": "Text not updated: the edited transcript of %1$@ has %2$@, but the audiobook has %3$@. Keep every line beginning with <!-- chapter: and save again; the book keeps its old text until then.",
+     "before": "متن اپ ڈیٹ نہیں ہوا: %1$@ کے ترمیم شدہ ٹرانسکرپٹ میں %2$@ ہیں، لیکن آڈیو بک میں %3$@ ہیں۔ ہر وہ سطر رکھیں جو <!-- chapter: سے شروع ہو اور دوبارہ محفوظ کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "after": "متن اپ ڈیٹ نہیں ہوا: %1$@ کا ترمیم شدہ ٹرانسکرپٹ %2$@ پر مشتمل ہے، لیکن آڈیو بک %3$@ پر۔ <!-- chapter: سے شروع ہونے والی ہر سطر رکھیں اور دوبارہ محفوظ کریں؛ تب تک کتاب اپنا پرانا متن رکھتی ہے۔",
+     "why": "grammar: ہیں after a count fragment read 1 باب ہیں; مشتمل ہے agrees with the transcript for every count"
+    },
+    {
+     "key": "The book has no timed transcript to write as captions.",
+     "english": "The book has no timed transcript to write as captions.",
+     "before": "کتاب میں کیپشنز کے طور پر لکھنے کے لیے وقت بند ٹرانسکرپٹ نہیں ہے۔",
+     "after": "کتاب میں کیپشنز کے طور پر لکھنے کے لیے وقت بندی والا ٹرانسکرپٹ نہیں ہے۔",
+     "why": "natural: وقت بند reads as time-locked; the captions strings beside it say وقت بندی"
+    },
+    {
+     "key": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "The book's voice can't be recorded to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "before": "کتاب کی آواز فائل میں ریکارڈ نہیں کی جا سکتی۔ ریڈر میں %@ بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "after": "کتاب کی آواز فائل میں ریکارڈ نہیں کی جا سکتی۔ ریڈر میں “%@” بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "why": "punctuation: the button name in the sentence is quoted, since Urdu has no capital letters to mark it"
+    },
+    {
+     "key": "The disk lacks room: this needs about %@, and TextMouth keeps %@ free. Free some space, then export again.",
+     "english": "The disk lacks room: this needs about %1$@, and TextMouth keeps %2$@ free. Free some space, then export again.",
+     "before": "ڈسک میں جگہ کم ہے: اس کے لیے تقریباً %1$@ درکار ہے، اور TextMouth %2$@ خالی رکھتا ہے۔ کچھ جگہ خالی کریں، پھر دوبارہ برآمد کریں۔",
+     "after": "ڈسک میں جگہ کم ہے: اس کے لیے تقریباً %1$@ درکار ہے، اور TextMouth %2$@ جگہ خالی رکھتا ہے۔ کچھ جگہ خالی کریں، پھر دوبارہ برآمد کریں۔",
+     "why": "natural: keeping 2 GB free is جگہ خالی رکھنا; خالی alone is cut short, as part 2 says"
+    },
+    {
+     "key": "The file %@ could not be read quickly enough.",
+     "english": "The file %@ could not be read quickly enough.",
+     "before": "فائل %@ کو اتنی تیزی سے پڑھا نہیں جا سکا۔",
+     "after": "فائل %@ کو کافی تیزی سے پڑھا نہیں جا سکا۔",
+     "why": "natural: اتنی تیزی سے (that fast) needs a comparison; quickly enough is کافی تیزی سے"
+    },
+    {
+     "key": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "english": "The speech engine refused to speak the text here, twice, so speech stopped. Play tries again from the same place.",
+     "before": "اسپیچ انجن نے یہاں متن کو دو بار بولنے سے انکار کیا، اس لیے اسپیچ رک گئی۔ چلائیں اسی جگہ سے دوبارہ کوشش کرتا ہے۔",
+     "after": "اسپیچ انجن نے یہاں متن کو دو بار بولنے سے انکار کیا، اس لیے اسپیچ رک گئی۔ “چلائیں” اسی جگہ سے دوبارہ کوشش کرتا ہے۔",
+     "why": "natural: the bare imperative Play read as a command when made the subject; quoted as the button name"
+    },
+    {
+     "key": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "english": "The voice made no sound for “%@”. Check that it speaks the book's language.",
+     "before": "آواز نے “%@” کے لیے کوئی آواز پیدا نہیں کی۔ دیکھیں کہ وہ کتاب کی زبان بولتی ہے۔",
+     "after": "آواز “%@” کے لیے کچھ نہیں بولی۔ دیکھیں کہ وہ کتاب کی زبان بولتی ہے۔",
+     "why": "natural: آواز twice read as the voice made no voice; it said nothing"
+    },
+    {
+     "key": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "english": "Type straight quotation marks: in TextEdit, turn off Smart Quotes under Edit, Substitutions.",
+     "before": "سیدھے اقتباسی نشان ٹائپ کریں: TextEdit میں Edit > Substitutions کے تحت Smart Quotes آف کریں۔",
+     "after": "سیدھے اقتباسی نشان ٹائپ کریں: TextEdit میں Edit، Substitutions کے تحت Smart Quotes آف کریں۔",
+     "why": "punctuation: VoiceOver reads > aloud; the menu path takes the Urdu comma, as the English does"
+    },
+    {
+     "key": "What a book of this kind moves by until it has a unit of its own.",
+     "english": "What a book of this kind moves by until it has a unit of its own.",
+     "before": "اس قسم کی کتاب اس وقت تک کس اکائی سے آگے بڑھتی ہے جب تک اس کی اپنی اکائی نہ ہو۔",
+     "after": "وہ یونٹ جس سے اس قسم کی کتاب آگے بڑھتی ہے، جب تک اس کا اپنا یونٹ نہ ہو۔",
+     "why": "natural: it read as a question without its mark; now a description, with the navigation unit word یونٹ"
+    },
+    {
+     "key": "With \"%@\", Play on a finished book says it is finished; with \"%@\", Play starts it again from the beginning.",
+     "english": "With \"%1$@\", Play on a finished book says it is finished; with \"%2$@\", Play starts it again from the beginning.",
+     "before": "“%1$@” منتخب ہونے پر، مکمل کتاب پر چلائیں بتاتا ہے کہ وہ مکمل ہو چکی ہے؛ “%2$@” منتخب ہونے پر، چلائیں اسے شروع سے دوبارہ شروع کرتا ہے۔",
+     "after": "“%1$@” منتخب ہونے پر، مکمل کتاب پر “چلائیں” بتاتا ہے کہ وہ مکمل ہو چکی ہے؛ “%2$@” منتخب ہونے پر، “چلائیں” اسے شروع سے دوبارہ شروع کرتا ہے۔",
+     "why": "natural: the bare imperative Play read as a command when made the subject; quoted as the button name"
+    },
+    {
+     "key": "built %@",
+     "english": "built %@",
+     "before": "بنایا گیا %@",
+     "after": "%@ کو بنایا گیا",
+     "why": "natural: the date came after its verb in English order; Urdu puts it first, with کو"
+    },
+    {
+     "key": "edited by hand",
+     "english": "edited by hand",
+     "before": "ہاتھ سے ترمیم شدہ",
+     "after": "دستی طور پر ترمیم شدہ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as part 2 writes it"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "after": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "it %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "after": "اس میں %@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "it has %@, where the audiobook has %@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "english": "it has %1$@, where the audiobook has %2$@. Keep every line beginning with <!-- chapter: and save again, and the text shows.",
+     "before": "اس میں %1$@ ہیں، جبکہ آڈیو بک میں %2$@ ہیں۔ ہر وہ سطر رکھیں جو <!-- chapter: سے شروع ہو اور دوبارہ محفوظ کریں، اور متن دکھائی دے گا۔",
+     "after": "یہ %1$@ پر مشتمل ہے، جبکہ آڈیو بک %2$@ پر۔ <!-- chapter: سے شروع ہونے والی ہر سطر رکھیں اور دوبارہ محفوظ کریں، اور متن دکھائی دے گا۔",
+     "why": "grammar: ہیں after a count fragment read 1 باب ہیں; مشتمل ہے agrees with the transcript for every count"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the book opens.",
+     "before": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "after": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور کتاب کھل جائے گی۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "its chapter %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "english": "its chapter %1$@ %2$@, which TextMouth can't read safely. Flatten it and save again, or undo the change, and the text shows.",
+     "before": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ اسے سیدھا کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "after": "اس کے باب %1$@ میں %2$@، جسے TextMouth محفوظ طریقے سے نہیں پڑھ سکتا۔ تہہ بندی کم کر کے دوبارہ محفوظ کریں، یا تبدیلی کالعدم کریں، اور متن دکھائی دے گا۔",
+     "why": "natural: سیدھا کرنا is to straighten; flattening nested markup is reducing its تہہ بندی, the word of the clause before it"
+    },
+    {
+     "key": "the file %@ could not be read quickly enough",
+     "english": "the file %@ could not be read quickly enough",
+     "before": "فائل %@ کو اتنی تیزی سے پڑھا نہیں جا سکا",
+     "after": "فائل %@ کو کافی تیزی سے پڑھا نہیں جا سکا",
+     "why": "natural: اتنی تیزی سے (that fast) needs a comparison; quickly enough is کافی تیزی سے"
+    },
+    {
+     "key": "“%@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %@ button in the reader, then export again.",
+     "english": "“%1$@” is a Personal Voice, which macOS can't record to a file. Choose another voice with the %2$@ button in the reader, then export again.",
+     "before": "“%1$@” ایک Personal Voice ہے، جسے macOS فائل میں ریکارڈ نہیں کر سکتا۔ ریڈر میں %2$@ بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "after": "“%1$@” ایک Personal Voice ہے، جسے macOS فائل میں ریکارڈ نہیں کر سکتا۔ ریڈر میں “%2$@” بٹن سے کوئی دوسری آواز منتخب کریں، پھر دوبارہ برآمد کریں۔",
+     "why": "punctuation: the button name in the sentence is quoted, since Urdu has no capital letters to mark it"
+    }
+   ]
   }
  ]
 }
