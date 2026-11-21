@@ -132536,7 +132536,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Braille Ready Format: páginas em braille, para displays braille e impressoras braille."
+            "value" : "Braille Ready Format: páginas em braille, para linhas braille e impressoras braille."
           }
         },
         "ru" : {
@@ -133358,7 +133358,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pausa"
+            "value" : "Quebra"
           }
         },
         "ru" : {
@@ -134647,7 +134647,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "CR LF serve para a maioria dos displays braille e impressoras braille."
+            "value" : "CR LF serve para a maioria das linhas braille e impressoras braille."
           }
         },
         "ru" : {
@@ -156009,7 +156009,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Limpar tela"
+            "value" : "Limpar exibição"
           }
         },
         "ru" : {
@@ -156694,7 +156694,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Fechar tudo"
+            "value" : "Fechar todas"
           }
         },
         "ru" : {
@@ -235423,7 +235423,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Para experimentar com um display braille."
+            "value" : "Para experimentar com uma linha braille."
           }
         },
         "ru" : {
@@ -235834,7 +235834,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Apagar para frente"
+            "value" : "Apagar adiante"
           }
         },
         "ru" : {
@@ -249795,7 +249795,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Como o BRF grava cada célula braille. A maioria dos displays braille e impressoras braille lê North American Braille ASCII; os configurados para alemão leem Eurobraille. Para compartilhar com um leitor em outro lugar, exporte um PEF."
+            "value" : "Como o BRF grava cada célula braille. A maioria das linhas braille e impressoras braille lê North American Braille ASCII; as configuradas para alemão leem Eurobraille. Para compartilhar com um leitor em outro lugar, exporte um PEF."
           }
         },
         "ru" : {
@@ -305815,7 +305815,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Minimizar tudo"
+            "value" : "Minimizar todas"
           }
         },
         "ru" : {
@@ -307241,7 +307241,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Troca de modo"
+            "value" : "Alterar modo"
           }
         },
         "ru" : {
@@ -367512,7 +367512,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Página para baixo"
+            "value" : "Avançar página"
           }
         },
         "ru" : {
@@ -367649,7 +367649,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Página para cima"
+            "value" : "Retroceder página"
           }
         },
         "ru" : {
@@ -369760,7 +369760,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Colar e manter estilo"
+            "value" : "Colar com o mesmo estilo"
           }
         },
         "ru" : {
@@ -428535,7 +428535,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Scroll Lock"
+            "value" : "Fixar rolagem"
           }
         },
         "ru" : {
