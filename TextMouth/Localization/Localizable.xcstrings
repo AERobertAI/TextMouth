@@ -7098,7 +7098,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pobrano %@"
+            "value" : "Pobrano książkę %@"
           }
         },
         "pt-BR" : {
@@ -17056,7 +17056,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Przeniesiono %1$@ na pozycję %2$@ z %3$@"
+            "value" : "Przeniesiono regułę %1$@ na pozycję %2$@ z %3$@"
           }
         },
         "pt-BR" : {
@@ -24189,7 +24189,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie pobrano %@"
+            "value" : "Nie pobrano książki %@"
           }
         },
         "pt-BR" : {
@@ -31177,7 +31177,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%1$@, prowadzi do %2$@"
+            "value" : "%1$@ – prowadzi do %2$@"
           }
         },
         "pt-BR" : {
@@ -147908,7 +147908,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wybierz folder poza Koszem."
+            "value" : "Wybierz folder poza koszem."
           }
         },
         "pt-BR" : {
@@ -157099,7 +157099,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zamknij arkusz po ustawieniu wyłącznika"
+            "value" : "Zamykaj arkusz po ustawieniu wyłącznika"
           }
         },
         "pt-BR" : {
@@ -157236,7 +157236,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Zamknij arkusz wyłącznika czasowego po jego ustawieniu"
+            "value" : "Zamykaj arkusz wyłącznika czasowego po jego ustawieniu"
           }
         },
         "pt-BR" : {
@@ -189409,7 +189409,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nie przewijaj do tyłu, jeśli wstrzymanie trwało krócej niż ten czas."
+            "value" : "Nie przewija do tyłu, jeśli wstrzymanie trwało krócej niż ten czas."
           }
         },
         "pt-BR" : {
@@ -618667,7 +618667,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy zaznaczone, trafienia muszą mieć taką samą wielkość liter."
+            "value" : "Gdy ta opcja jest zaznaczona, trafienia muszą mieć taką samą wielkość liter."
           }
         },
         "pt-BR" : {
@@ -618804,7 +618804,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy zaznaczone, szukany tekst jest wyrażeniem regularnym ICU."
+            "value" : "Gdy ta opcja jest zaznaczona, szukany tekst jest wyrażeniem regularnym ICU."
           }
         },
         "pt-BR" : {
@@ -619215,7 +619215,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy włączone, szukany tekst jest traktowany jak wyrażenie regularne."
+            "value" : "Gdy ta opcja jest włączona, szukany tekst jest traktowany jak wyrażenie regularne."
           }
         },
         "pt-BR" : {
@@ -619489,7 +619489,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy wyłączone, pliki są trwale usuwane i nie można ich odzyskać."
+            "value" : "Gdy ta opcja jest wyłączona, pliki są trwale usuwane i nie można ich odzyskać."
           }
         },
         "pt-BR" : {
@@ -619626,7 +619626,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy wyłączone, usunięcie książki od razu powoduje: %@."
+            "value" : "Gdy ta opcja jest wyłączona, usunięcie książki od razu powoduje: %@."
           }
         },
         "pt-BR" : {
@@ -620037,7 +620037,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy włączone, pliki usuniętej książki trafiają do kosza, skąd można je odzyskać do czasu opróżnienia kosza."
+            "value" : "Gdy ta opcja jest włączona, pliki usuniętej książki trafiają do kosza, skąd można je odzyskać do czasu opróżnienia kosza."
           }
         },
         "pt-BR" : {
@@ -620174,7 +620174,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gdy włączone, usunięcie książki najpierw pyta, czy wybrać %@, czy zachować pliki w folderze biblioteki TextMouth."
+            "value" : "Gdy ta opcja jest włączona, przed usunięciem książki TextMouth pyta, czy wybrać %@, czy zachować pliki w folderze biblioteki TextMouth."
           }
         },
         "pt-BR" : {
@@ -679400,7 +679400,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„%1$@” jest eksportowana. %2$@, a potem %3$@."
+            "value" : "Książka „%1$@” jest eksportowana. %2$@, a potem %3$@."
           }
         },
         "pt-BR" : {
@@ -679680,7 +679680,7 @@
         "pl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "„%1$@” jest teraz odczytywana jako: %2$@."
+            "value" : "Książka „%1$@” jest teraz odczytywana jako: %2$@."
           }
         },
         "pt-BR" : {
