@@ -1517,6 +1517,20 @@
      "why": "natural: 재생 동작에 … 재생합니다 said play twice"
     },
     {
+     "key": "Plays when Where Am I finishes speaking",
+     "english": "Plays when Where Am I finishes speaking",
+     "before": "내 위치는? 안내가 끝날 때 재생됩니다.",
+     "after": "“내 위치는?” 안내가 끝날 때 재생됩니다.",
+     "why": "punctuation: without quotes the name’s ? ended a sentence in VoiceOver before 안내가"
+    },
+    {
+     "key": "Plays when Where Am I starts speaking",
+     "english": "Plays when Where Am I starts speaking",
+     "before": "내 위치는? 안내가 시작될 때 재생됩니다.",
+     "after": "“내 위치는?” 안내가 시작될 때 재생됩니다.",
+     "why": "punctuation: without quotes the name’s ? ended a sentence in VoiceOver before 안내가"
+    },
+    {
      "key": "Print",
      "english": "Print",
      "before": "인쇄",
@@ -1552,6 +1566,20 @@
      "why": "natural: a book is not reset to a speed; its speed is"
     },
     {
+     "key": "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
+     "english": "Restores the standard list: the ASCII symbols, bullets, dashes, the ellipsis, and box-drawing lines",
+     "before": "표준 목록을 복원합니다. ASCII 기호, 글머리 기호, 대시, 줄임표, 상자 그리기 선.",
+     "after": "ASCII 기호, 글머리 기호, 대시, 줄임표, 상자 그리기 선으로 된 표준 목록을 복원합니다.",
+     "why": "voiceover: the hint ended in a bare list after its sentence"
+    },
+    {
+     "key": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "english": "Rich text, with each heading at its outline level, for Word, Pages, and TextEdit.",
+     "before": "각 표제가 개요 수준으로 표시되는 서식 있는 텍스트로, 사용 앱: Word, Pages, TextEdit.",
+     "after": "각 표제가 개요 수준으로 표시되는 서식 있는 텍스트로, Word, Pages, 텍스트 편집기에서 열 수 있습니다.",
+     "why": "natural: 사용 앱: was a label stuck into the sentence; TextEdit’s Korean name is 텍스트 편집기"
+    },
+    {
      "key": "Save a copy without the password, then import that copy.",
      "english": "Save a copy without the password, then import that copy.",
      "before": "비밀번호 없는 사본을 저장한 다음 그 사본을 가져오십시오.",
@@ -1564,6 +1592,41 @@
      "before": "모두 선택",
      "after": "전체 선택",
      "why": "term: also names the Edit menu’s Select All, which Apple’s Korean menus call 전체 선택"
+    },
+    {
+     "key": "Settings applied as global defaults",
+     "english": "Settings applied as global defaults",
+     "before": "설정이 전체 기본값으로 적용됨",
+     "after": "설정이 전역 기본값으로 적용됨",
+     "why": "term: global defaults is 전역 기본값 in every other string; 전체 기본값 read as a second thing"
+    },
+    {
+     "key": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "english": "Speech from the Mac's voices is for personal, non-commercial use, under Apple's licence.",
+     "before": "Mac 음성으로 만든 음성은 Apple 라이선스에 따라 개인용 비상업적 용도로만 사용할 수 있습니다.",
+     "after": "Mac의 음성으로 만든 오디오는 Apple 라이선스에 따라 개인적인 비상업적 용도로만 사용할 수 있습니다.",
+     "why": "natural: 음성으로 만든 음성 said voice twice for the speech it makes"
+    },
+    {
+     "key": "Speed: %lld words per minute; rate %@, pitch %@, volume %@",
+     "english": {
+      "one": "Speed: %lld word per minute; rate %@, pitch %@, volume %@",
+      "other": "Speed: %lld words per minute; rate %@, pitch %@, volume %@"
+     },
+     "before": {
+      "other": "속도: 분당 %1$lld단어, 비율 %2$@, 음높이 %3$@, 음량 %4$@"
+     },
+     "after": {
+      "other": "속도: 분당 %1$lld단어, 엔진 속도 %2$@, 음높이 %3$@, 음량 %4$@"
+     },
+     "why": "meaning: 비율 (ratio) for the speech engine’s rate"
+    },
+    {
+     "key": "Text as spoken audio",
+     "english": "Text as spoken audio",
+     "before": "음성 오디오로 만든 텍스트",
+     "after": "음성 오디오 형식의 텍스트",
+     "why": "meaning: 음성 오디오로 만든 텍스트 read as text made from audio, a transcript"
     },
     {
      "key": "Text not updated: chapter %@ of the edited text of %@ %@, which TextMouth can't read safely. Flatten it and save again, or undo the change; the book keeps its old text until then.",
@@ -1587,6 +1650,48 @@
      "why": "grammar: 책의 텍스트는 … 다시 읽습니다 made the text the reader; it is read from the original"
     },
     {
+     "key": "TextMouth stopped %@ because %@, and won't try again until TextMouth is closed and opened again.",
+     "english": "TextMouth stopped %1$@ because %2$@, and won't try again until TextMouth is closed and opened again.",
+     "before": "TextMouth가 %2$@ 때문에 %1$@을(를) 중지했으며, TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다.",
+     "after": "TextMouth가 %1$@을(를) 중지했으며(이유: %2$@), TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다.",
+     "why": "grammar: %2$@ is a clause, so 때문에 straight after it cannot read right"
+    },
+    {
+     "key": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "english": "TextMouth stopped %@ earlier because it took too long, and won't try again until TextMouth is closed and opened again.",
+     "before": "TextMouth가 %@을(를) 너무 오래 걸려 이전에 중지했으며, TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다.",
+     "after": "%@이(가) 너무 오래 걸려 TextMouth가 이전에 중지했으며, TextMouth를 닫았다가 다시 열 때까지 다시 시도하지 않습니다.",
+     "why": "grammar: TextMouth가 %@을(를) 너무 오래 걸려 gave took too long no subject"
+    },
+    {
+     "key": "TextMouth stopped the braille translation because %@.",
+     "english": "TextMouth stopped the braille translation because %@.",
+     "before": "TextMouth가 %@ 때문에 점자 번역을 중지했습니다.",
+     "after": "TextMouth가 점자 번역을 중지했습니다(이유: %@).",
+     "why": "grammar: %@ is a clause, so 때문에 straight after it cannot read right"
+    },
+    {
+     "key": "The book has no timed transcript to write as captions.",
+     "english": "The book has no timed transcript to write as captions.",
+     "before": "책에 캡션으로 쓸 시간 정보가 있는 대본이 없습니다.",
+     "after": "책에 자막으로 쓸 시간 정보가 있는 대본이 없습니다.",
+     "why": "term: captions are 자막 in the export’s other strings and in Apple’s Korean"
+    },
+    {
+     "key": "The file %@ failed partway through.",
+     "english": "The file %@ failed partway through.",
+     "before": "파일 %@이(가) 중간에 실패했습니다.",
+     "after": "파일 %@을(를) 재생하는 도중 오류가 발생했습니다.",
+     "why": "natural: 파일이 실패했습니다 makes the file fail; its playback did"
+    },
+    {
+     "key": "The file %@ was stopped because TextMouth's memory grew too large.",
+     "english": "The file %@ was stopped because TextMouth's memory grew too large.",
+     "before": "TextMouth의 메모리가 너무 커져 파일 %@을(를) 중지했습니다.",
+     "after": "TextMouth의 메모리가 너무 커져 파일 %@의 재생을 중지했습니다.",
+     "why": "natural: 파일을 중지했습니다 stops a file; Korean stops its playback"
+    },
+    {
      "key": "The file “%@”",
      "english": "The file “%@”",
      "before": "“%@” 파일은(는)",
@@ -1599,6 +1704,55 @@
      "before": "유일한 챕터를 읽을 수 없었습니다",
      "after": "하나뿐인 챕터를 읽을 수 없습니다",
      "why": "natural: 유일한 챕터 copied only; tense now matches the other chapter warnings"
+    },
+    {
+     "key": "The part of the book chosen has no words to speak.",
+     "english": "The part of the book chosen has no words to speak.",
+     "before": "선택한 책의 부분에는 읽을 단어가 없습니다.",
+     "after": "책에서 선택한 부분에는 읽을 단어가 없습니다.",
+     "why": "natural: 선택한 책의 부분 read as a part of the chosen book"
+    },
+    {
+     "key": "The passage as the book has it, characters %@ to %@ of chapter %@:",
+     "english": "The passage as the book has it, characters %1$@ to %2$@ of chapter %3$@:",
+     "before": "책의 구간, 챕터 %3$@의 문자 %1$@에서 %2$@까지:",
+     "after": "책에 있는 그대로의 구간, 챕터 %3$@의 문자 %1$@에서 %2$@까지:",
+     "why": "meaning: as the book has it was lost, the contrast with the text handed to the engine"
+    },
+    {
+     "key": "The reading list is set to stop when a book ends",
+     "english": "The reading list is set to stop when a book ends",
+     "before": "읽기 목록이 책이 끝나면 중지하도록 설정되어 있음",
+     "after": "읽기 목록은 책이 끝나면 중지하도록 설정되어 있음",
+     "why": "natural: 읽기 목록이 책이 stacked two subjects"
+    },
+    {
+     "key": "The refused text begins here, at character %@.",
+     "english": "The refused text begins here, at character %@.",
+     "before": "거부된 텍스트가 여기서 문자 %@에서 시작됩니다.",
+     "after": "거부된 텍스트는 여기, 문자 %@에서 시작됩니다.",
+     "why": "natural: 여기서 … 에서 said where twice"
+    },
+    {
+     "key": "The refused text ends here, at character %@.",
+     "english": "The refused text ends here, at character %@.",
+     "before": "거부된 텍스트가 여기서 문자 %@에서 끝납니다.",
+     "after": "거부된 텍스트는 여기, 문자 %@에서 끝납니다.",
+     "why": "natural: 여기서 … 에서 said where twice"
+    },
+    {
+     "key": "The transcript as %@ captions, one file timed from the start of the audio.",
+     "english": "The transcript as %@ captions, one file timed from the start of the audio.",
+     "before": "시간 정보가 있는 %@ 캡션 형식의 대본으로, 오디오 시작부터 시간을 맞춘 파일 하나입니다.",
+     "after": "%@ 자막 형식의 대본으로, 오디오 시작부터 시간을 맞춘 파일 하나입니다.",
+     "why": "term: captions are 자막 in the other export strings; 시간 정보가 있는 repeated the timing"
+    },
+    {
+     "key": "The transcript as TextMouth keeps it, in JSON, with its text as Markdown.",
+     "english": "The transcript as TextMouth keeps it, in JSON, with its text as Markdown.",
+     "before": "TextMouth가 보관하는 대로 JSON 형식의 대본이며, 텍스트는 Markdown 형식입니다.",
+     "after": "TextMouth가 보관하는 그대로의 JSON 형식 대본이며, 텍스트는 Markdown 형식입니다.",
+     "why": "natural: 보관하는 대로 JSON 형식의 대본 did not join as one phrase"
     },
     {
      "key": "This PDF needs a password to open.",
@@ -1636,11 +1790,39 @@
      "why": "term: TextEdit’s Korean name is 텍스트 편집기"
     },
     {
+     "key": "Use the global setting (%@)",
+     "english": "Use the global setting (%@)",
+     "before": "전체 설정 사용(%@)",
+     "after": "전역 설정 사용(%@)",
+     "why": "term: global setting is 전역 설정 in every other string"
+    },
+    {
+     "key": "Voice: %@ (%@), %@, %@ quality",
+     "english": "Voice: %1$@ (%2$@), %3$@, %4$@ quality",
+     "before": "음성: %1$@(%2$@), %3$@, %4$@ 품질",
+     "after": "음성: %1$@(%2$@), %3$@, %4$@",
+     "why": "natural: with Apple’s tier word 고품질, 품질 after it was said twice"
+    },
+    {
      "key": "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track.",
      "english": "When you save, TextMouth checks the manifest and rearranges the book, keeping your place in its track.",
      "before": "저장하면 TextMouth가 매니페스트를 확인하고 책을 재배열하며, 현재 트랙의 위치를 유지합니다.",
      "after": "저장하면 TextMouth가 매니페스트를 확인하고 책을 재배열하며, 트랙 안의 현재 위치는 그대로 유지합니다.",
      "why": "meaning: 현재 트랙의 위치 read as where the track sits, not your place in it"
+    },
+    {
+     "key": "Where the audio begins: the book's beginning, or a heading.",
+     "english": "Where the audio begins: the book's beginning, or a heading.",
+     "before": "오디오가 시작되는 위치: 책의 처음 또는 표제.",
+     "after": "오디오가 시작되는 위치로, 책의 처음 또는 표제입니다.",
+     "why": "voiceover: the hint ended in a fragment; now a sentence like the To pop-up’s"
+    },
+    {
+     "key": "While playing, moves Book content on with the speech, even as you read it.",
+     "english": "While playing, moves Book content on with the speech, even as you read it.",
+     "before": "재생하는 동안 책 콘텐츠를 음성에 맞춰 이동하며, 읽는 중에도 마찬가지입니다.",
+     "after": "재생하는 동안 책 내용을 음성에 맞춰 이동하며, 읽는 중에도 마찬가지입니다.",
+     "why": "term: names the element Book content, which VoiceOver reads as 책 내용"
     },
     {
      "key": "at %@ of %@ at %@",
@@ -1683,6 +1865,62 @@
      "before": "챕터 %1$@이(가) TextMouth가 안전하게 읽을 수 없는 구조입니다(%2$@). 구조를 단순하게 만들고 다시 저장하거나 변경을 실행 취소하면 텍스트가 표시됩니다.",
      "after": "챕터 %1$@은(는) TextMouth가 안전하게 읽을 수 없는 구조입니다(%2$@). 구조를 단순하게 만들고 다시 저장하거나 변경을 실행 취소하면 텍스트가 표시됩니다.",
      "why": "natural: 챕터 …이(가) TextMouth가 … 구조입니다 stacked two subjects; the topic 은(는) reads right"
+    },
+    {
+     "key": "stopping %lld speech exports with the chapters they finished kept",
+     "english": {
+      "one": "stopping %lld speech export with the chapters it finished kept",
+      "other": "stopping %lld speech exports with the chapters they finished kept"
+     },
+     "before": {
+      "other": "내보낸 챕터는 보관한 채 음성 내보내기 %lld개 중지"
+     },
+     "after": {
+      "other": "완료한 챕터는 보관한 채 음성 내보내기 %lld개를 중지하는 중"
+     },
+     "why": "natural: an item of the quitting list, worded as the others are (…하는 중)"
+    },
+    {
+     "key": "stopping a speech export with the chapters it finished kept",
+     "english": "stopping a speech export with the chapters it finished kept",
+     "before": "내보낸 챕터는 보관한 채 음성 내보내기 중지",
+     "after": "완료한 챕터는 보관한 채 음성 내보내기를 중지하는 중",
+     "why": "natural: an item of the quitting list, worded as the others are (…하는 중)"
+    },
+    {
+     "key": "stops at the end of the book",
+     "english": "stops at the end of the book",
+     "before": "책의 끝에서 중지됨",
+     "after": "책의 끝에서 중지",
+     "why": "meaning: 중지됨 said the timer had stopped; it will stop there"
+    },
+    {
+     "key": "stops at the end of this heading",
+     "english": "stops at the end of this heading",
+     "before": "이 표제의 끝에서 중지됨",
+     "after": "이 표제의 끝에서 중지",
+     "why": "meaning: 중지됨 said the timer had stopped; it will stop there"
+    },
+    {
+     "key": "the braille helper was stopped because %@",
+     "english": "the braille helper was stopped because %@",
+     "before": "점자 도우미가 %@ 때문에 중지되었습니다",
+     "after": "점자 도우미가 중지되었습니다(이유: %@)",
+     "why": "grammar: %@ is a clause, so 때문에 straight after it cannot read right"
+    },
+    {
+     "key": "the file %@ failed partway through",
+     "english": "the file %@ failed partway through",
+     "before": "파일 %@이(가) 중간에 실패했습니다",
+     "after": "파일 %@을(를) 재생하는 도중 오류가 발생했습니다",
+     "why": "natural: 파일이 실패했습니다 makes the file fail; its playback did"
+    },
+    {
+     "key": "the file %@ was stopped because TextMouth's memory grew too large",
+     "english": "the file %@ was stopped because TextMouth's memory grew too large",
+     "before": "TextMouth의 메모리가 너무 커져 파일 %@을(를) 중지했습니다",
+     "after": "TextMouth의 메모리가 너무 커져 파일 %@의 재생을 중지했습니다",
+     "why": "natural: 파일을 중지했습니다 stops a file; Korean stops its playback"
     }
    ]
   }
