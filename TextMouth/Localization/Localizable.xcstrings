@@ -239893,7 +239893,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kayda hazırlanılıyor"
+            "value" : "Kayda hazırlanıyor"
           }
         },
         "uk" : {
@@ -278604,7 +278604,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Birkaç gün sakla"
+            "value" : "Belirli sayıda gün sakla"
           }
         },
         "uk" : {
@@ -349496,7 +349496,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Henüz kitabın sesinde değil. At bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir."
+            "value" : "Henüz kitabın sesinde değil. At düğmesi bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir."
           }
         },
         "uk" : {
@@ -381833,7 +381833,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Başka bir Mac'ten hazır ayarlar henüz geldi ve bunların yerini aldı. Değişikliği yeniden yapın."
+            "value" : "Başka bir Mac'ten az önce hazır ayarlar geldi ve bunların yerini aldı. Değişikliği yeniden yapın."
           }
         },
         "uk" : {
@@ -416597,7 +416597,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ Yeniden Yazıya Dök"
+            "value" : "Yeniden Yazıya Dök: %@"
           }
         },
         "uk" : {
@@ -418789,7 +418789,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Orijinal ses eski haline döndürülsün mü?"
+            "value" : "Orijinal sese geri dönülsün mü?"
           }
         },
         "uk" : {
@@ -424711,7 +424711,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%@” düzenlemeleri kaydedilsin mi?"
+            "value" : "“%@” için yapılan düzenlemeler kaydedilsin mi?"
           }
         },
         "uk" : {
@@ -490612,7 +490612,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth kapanıyor ve kitabın sesinde bu düzenlemeler henüz yok. At bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir. Vazgeç, TextMouth'u açık tutar."
+            "value" : "TextMouth kapanıyor ve kitabın sesinde bu düzenlemeler henüz yok. At düğmesi bunları geri alır; bu kitabı bir sonraki düzenlediğinizde, başka bir düzenleme yapana kadar Yinele bunları geri getirir. Vazgeç düğmesi TextMouth'u açık tutar."
           }
         },
         "uk" : {
@@ -501881,7 +501881,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bu öğe, TextMouth'un okuyabileceği düz bir dosya değil."
+            "value" : "Bu öğe, TextMouth'un okuyabileceği normal bir dosya değil."
           }
         },
         "uk" : {
@@ -525882,7 +525882,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Disk bu sesi Yapıştır için saklayamayacak kadar dolu."
+            "value" : "Disk bu sesi yapıştırmak için saklayamayacak kadar dolu."
           }
         },
         "uk" : {
@@ -590097,13 +590097,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Çok fazla zamanlı bölüm: sınır %lld."
+                  "value" : "Çok fazla zamanlı pasaj: sınır %lld."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Çok fazla zamanlı bölüm: sınır %lld."
+                  "value" : "Çok fazla zamanlı pasaj: sınır %lld."
                 }
               }
             }
@@ -591244,7 +591244,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ Yazıya Dök"
+            "value" : "Yazıya Dök: %@"
           }
         },
         "uk" : {
@@ -592763,7 +592763,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kitabın sesini yeniden yazıya dökerek transkriptinin yerine geçer."
+            "value" : "Kitabın sesini yeniden yazıya döker ve transkriptini değiştirir."
           }
         },
         "uk" : {
@@ -593591,7 +593591,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yeniden yazıya dökmek onun yerine geçer."
+            "value" : "Yeniden yazıya dökmek onu değiştirir."
           }
         },
         "uk" : {
@@ -593728,7 +593728,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yeniden yazıya dökmek bu transkriptin yerine geçer."
+            "value" : "Yeniden yazıya dökmek bu transkripti değiştirir."
           }
         },
         "uk" : {
@@ -593865,7 +593865,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Yazıya dökmesi %@ sürer."
+            "value" : "Yazıya dökülmesi %@ sürer."
           }
         },
         "uk" : {
@@ -630291,7 +630291,7 @@
         "tr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kurallarınızın kopyası boş. Kuralları Düzenle… onu eklemeniz için açar."
+            "value" : "Kurallarınızın kopyası boş. Kuralları Düzenle… kural eklemeniz için onu açar."
           }
         },
         "uk" : {
