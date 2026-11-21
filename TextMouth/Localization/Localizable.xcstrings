@@ -95371,7 +95371,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Een voorinstelling voor filters heeft een naam nodig."
+            "value" : "Een filtervoorinstelling heeft een naam nodig."
           }
         },
         "pl" : {
@@ -103410,7 +103410,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Toegevoegd %@"
+            "value" : "Toegevoegd: %@"
           }
         },
         "pl" : {
@@ -117383,7 +117383,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vraagt na elke import van een luisterboek of het moet worden getranscribeerd. Uitgeschakeld worden luisterboeken alleen getranscribeerd met Transcribeer audio."
+            "value" : "Vraagt na elke import van een luisterboek of het moet worden getranscribeerd. Als dit uitstaat, worden luisterboeken alleen getranscribeerd met Transcribeer audio."
           }
         },
         "pl" : {
@@ -120427,7 +120427,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” bijgevoegd aan %2$@: %3$@."
+            "value" : "“%1$@” bij %2$@ gevoegd: %3$@."
           }
         },
         "pl" : {
@@ -120570,7 +120570,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "“%1$@” wordt bijgevoegd aan %2$@."
+            "value" : "“%1$@” wordt bij %2$@ gevoegd."
           }
         },
         "pl" : {
@@ -155163,7 +155163,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ruim transcriptie op (experimenteel)…"
+            "value" : "Schoon transcriptie op (experimenteel)…"
           }
         },
         "pl" : {
@@ -155300,7 +155300,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ruim de transcriptie van %@ op"
+            "value" : "Schoon de transcriptie van %@ op"
           }
         },
         "pl" : {
@@ -155443,7 +155443,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opgeruimd op %1$@, met regelversie %2$@: %3$@."
+            "value" : "Opgeschoond op %1$@, met regelversie %2$@: %3$@."
           }
         },
         "pl" : {
@@ -155586,7 +155586,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Transcriptie van %1$@ opgeruimd: %2$@."
+            "value" : "Transcriptie van %1$@ opgeschoond: %2$@."
           }
         },
         "pl" : {
@@ -155723,7 +155723,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De transcriptie wordt opgeruimd…"
+            "value" : "De transcriptie wordt opgeschoond…"
           }
         },
         "pl" : {
@@ -171514,7 +171514,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kan de transcriptie van %1$@ niet opruimen: %2$@"
+            "value" : "Kan de transcriptie van %1$@ niet opschonen: %2$@"
           }
         },
         "pl" : {
@@ -172920,7 +172920,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kan het opruimen van de transcriptie van %1$@ niet ongedaan maken: %2$@"
+            "value" : "Kan het opschonen van de transcriptie van %1$@ niet ongedaan maken: %2$@"
           }
         },
         "pl" : {
@@ -202585,7 +202585,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Wijzig voorinstelling voor filters"
+            "value" : "Wijzig filtervoorinstelling"
           }
         },
         "pl" : {
@@ -217187,7 +217187,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Experimenteel. Deze regels corrigeren woorden die de herkenner anders schrijft dan in voorgelezen boeken. Controleer de wijzigingen voordat je ze toepast; met Maak opruiming ongedaan zet je de transcriptie terug."
+            "value" : "Experimenteel. Deze regels corrigeren woorden die de herkenner anders schrijft dan in voorgelezen boeken. Controleer de wijzigingen voordat je ze toepast; met Maak opschoning ongedaan zet je de transcriptie terug."
           }
         },
         "pl" : {
@@ -237254,7 +237254,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Gevonden op %@. Als dit aan staat, lopen de filters van de editor via ffmpeg, met alle filters die het heeft."
+            "value" : "Gevonden op %@. Als dit aanstaat, lopen de filters van de editor via ffmpeg, met alle filters die het heeft."
           }
         },
         "pl" : {
@@ -272883,7 +272883,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "De opruiming wordt ook vervangen."
+            "value" : "De opschoning wordt ook vervangen."
           }
         },
         "pl" : {
@@ -297659,7 +297659,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Voert deze correcties door. De transcriptie van voorheen blijft bewaard, zodat Maak opruiming ongedaan die kan terugzetten."
+            "value" : "Voert deze correcties door. De transcriptie van voorheen blijft bewaard, zodat Maak opschoning ongedaan die kan terugzetten."
           }
         },
         "pl" : {
@@ -328512,7 +328512,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nieuwe voorinstelling voor filters"
+            "value" : "Nieuwe filtervoorinstelling"
           }
         },
         "pl" : {
@@ -335094,7 +335094,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geen opruiming om ongedaan te maken: de eerdere transcriptie is verdwenen."
+            "value" : "Geen opschoning om ongedaan te maken: de eerdere transcriptie is verdwenen."
           }
         },
         "pl" : {
@@ -336464,7 +336464,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geen voorinstellingen voor filters. Voeg er een toe of herstel de standaardwaarden."
+            "value" : "Geen filtervoorinstellingen. Voeg er een toe of herstel de standaardwaarden."
           }
         },
         "pl" : {
@@ -336601,7 +336601,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Geen voorinstellingen voor filters. Voeg ze toe in de instellingen voor Opslag, onder Audiobewerking."
+            "value" : "Geen filtervoorinstellingen. Voeg ze toe in de instellingen voor Opslag, onder Audiobewerking."
           }
         },
         "pl" : {
@@ -340082,7 +340082,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Er wordt geen origineel bewaard: bewerkingen wijzigen de audio ter plekke en bewaarde bewerkingen kunnen niet ongedaan worden gemaakt."
+            "value" : "Er wordt geen origineel bewaard: bewerkingen wijzigen de audio rechtstreeks en bewaarde bewerkingen kunnen niet ongedaan worden gemaakt."
           }
         },
         "pl" : {
@@ -363465,7 +363465,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opent de voorinstellingen voor filters, om te wijzigen, toe te voegen, te herschikken, te verwijderen of opnieuw in te stellen."
+            "value" : "Opent de filtervoorinstellingen, om te wijzigen, toe te voegen, te herschikken, te verwijderen of opnieuw in te stellen."
           }
         },
         "pl" : {
