@@ -2763,6 +2763,37 @@
      "why": "punctuation: a numeric ordinal (ที่ 11) ran into ซึ่ง with no space"
     }
    ]
+  },
+  {
+   "part": 4,
+   "areas": [
+    "the whole app: words carried across the three parts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "english": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "before": "%@ ไม่มีข้อความถอดเสียงให้ค้นหา ให้ถอดเสียงก่อนด้วยคำสั่ง ถอดเสียงจากไฟล์เสียง",
+     "after": "%@ ไม่มีข้อความถอดเสียงให้ค้นหา ให้ถอดเสียงก่อนโดยใช้คำสั่ง ถอดเสียงจากไฟล์เสียง",
+     "why": "natural: ด้วย before a command's name reads as \"also\"; โดยใช้คำสั่ง names the command, as part 2 writes it"
+    },
+    {
+     "key": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "english": "Keeps the order you set with Move Book Up, Move Book Down, or dragging.",
+     "before": "คงลำดับที่คุณตั้งไว้ด้วย ย้ายหนังสือขึ้น ย้ายหนังสือลง หรือการลาก",
+     "after": "คงลำดับที่คุณตั้งไว้โดยใช้คำสั่ง ย้ายหนังสือขึ้น ย้ายหนังสือลง หรือการลาก",
+     "why": "natural: ด้วย before a command's name reads as \"also\"; โดยใช้คำสั่ง names the command, as part 2 writes it"
+    },
+    {
+     "key": "Transcribe it first, with Transcribe Audio.",
+     "english": "Transcribe it first, with Transcribe Audio.",
+     "before": "ถอดเสียงก่อนด้วย ถอดเสียงจากไฟล์เสียง",
+     "after": "ถอดเสียงก่อนโดยใช้คำสั่ง ถอดเสียงจากไฟล์เสียง",
+     "why": "natural: ด้วย before a command's name reads as \"also\"; โดยใช้คำสั่ง names the command, as part 2 writes it"
+    }
+   ]
   }
  ]
 }
