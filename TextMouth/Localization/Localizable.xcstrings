@@ -141808,7 +141808,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פרק %1$@ בספר הזה %2$@, ו-TextMouth לא יכול לייצא אותו בבטחה. בחר “ערוך טקסט”, שטח את הקינון ושמור; ואז ייצא שוב."
+            "value" : "פרק %1$@ בספר הזה %2$@, ו-TextMouth לא יכול לייצא אותו בבטחה. בחר “ערוך טקסט”, צמצם את הקינון ושמור; ואז ייצא שוב."
           }
         },
         "hi" : {
@@ -152935,7 +152935,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "בוחר את היחידה שבה נגן ולחצני הדילוג מתקדמים."
+            "value" : "בוחר את היחידה שבה “נגן” ולחצני הדילוג מתקדמים."
           }
         },
         "hi" : {
@@ -201447,7 +201447,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "השם וההתחלה של כל כותרת, כגיליון CUE שמצביע על השמע כפי שהאפשרות “שמע” מייצאת אותו."
+            "value" : "השם וההתחלה של כל כותרת, כקובץ CUE שמצביע על השמע כפי שהאפשרות “שמע” מייצאת אותו."
           }
         },
         "hi" : {
@@ -220694,7 +220694,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "יוצאו %1$@ אל %2$@."
+            "value" : "הייצוא אל %2$@ הסתיים: %1$@."
           }
         },
         "hi" : {
@@ -222879,7 +222879,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "מייצא את הפריטים המסומנים אחרי שטבלת הברייל שנבחרה זה עתה נבדקת."
+            "value" : "מייצא את הפריטים המסומנים לאחר שטבלת הברייל שנבחרה זה עתה תיבדק."
           }
         },
         "hi" : {
@@ -243794,7 +243794,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "חוזר למקום שבו התחיל הדילוג האחרון."
+            "value" : "חוזר למקום שבו התחילה הקפיצה האחרונה."
           }
         },
         "hi" : {
@@ -276141,7 +276141,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "דלג לעמוד"
+            "value" : "קפוץ לעמוד"
           }
         },
         "hi" : {
@@ -276278,7 +276278,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "דלג לאחוז"
+            "value" : "קפוץ לאחוז"
           }
         },
         "hi" : {
@@ -276415,7 +276415,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "דלג לזמן"
+            "value" : "קפוץ לזמן"
           }
         },
         "hi" : {
@@ -332592,7 +332592,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פסקה הבאה"
+            "value" : "לפסקה הבאה"
           }
         },
         "hi" : {
@@ -338676,7 +338676,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין ספר הבא ברשימת הקריאה."
+            "value" : "אין ספר נוסף ברשימת הקריאה."
           }
         },
         "hi" : {
@@ -338813,7 +338813,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין ספר הבא ברשימת הקריאה: כל הספרים שמתחת לזה הושלמו."
+            "value" : "אין ספר נוסף ברשימת הקריאה: כל הספרים שמתחת לזה הושלמו."
           }
         },
         "hi" : {
@@ -338950,7 +338950,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין סימנייה הבאה."
+            "value" : "אין עוד סימניות."
           }
         },
         "hi" : {
@@ -339087,7 +339087,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין כותרת הבאה."
+            "value" : "אין עוד כותרות."
           }
         },
         "hi" : {
@@ -339224,7 +339224,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין עמוד הבא."
+            "value" : "אין עוד עמודים."
           }
         },
         "hi" : {
@@ -339361,7 +339361,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין פסקה הבאה."
+            "value" : "אין עוד פסקאות."
           }
         },
         "hi" : {
@@ -339498,7 +339498,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין משפט הבא."
+            "value" : "אין עוד משפטים."
           }
         },
         "hi" : {
@@ -339635,7 +339635,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "אין כותרת משנה הבאה."
+            "value" : "אין עוד כותרות משנה."
           }
         },
         "hi" : {
@@ -355701,7 +355701,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "רק ספר שמציג בבירור English Braille, American Edition משתנה בעת ההוספה. פרטי הספר אומר שהקוד נוחש, ואפשר לבחור בו קוד אחר."
+            "value" : "רק ספר שמציג בבירור English Braille, American Edition משתנה בעת ההוספה. ב“פרטי הספר” מצוין שהקוד נוחש, ואפשר לבחור בו קוד אחר."
           }
         },
         "hi" : {
@@ -384364,7 +384364,7 @@
         "he" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "פסקה קודמת"
+            "value" : "לפסקה הקודמת"
           }
         },
         "hi" : {
