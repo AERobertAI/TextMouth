@@ -6686,7 +6686,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ fait de même pour tous les chapitres de ce type dans cet export, sans redemander."
+            "value" : "%@ fait de même pour tous les chapitres de ce type dans cette exportation, sans redemander."
           }
         },
         "hi" : {
@@ -21041,7 +21041,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ arrête tout l’export. Les fichiers déjà écrits sont conservés."
+            "value" : "%@ arrête toute l’exportation. Les fichiers déjà écrits sont conservés."
           }
         },
         "hi" : {
@@ -130358,7 +130358,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Braille Ready Format : pages de braille, pour les afficheurs braille et les embosseuses."
+            "value" : "Braille Ready Format : pages de braille, pour les plages braille et les embosseuses."
           }
         },
         "hi" : {
@@ -132391,7 +132391,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "CR LF convient à la plupart des afficheurs braille et des embosseuses."
+            "value" : "CR LF convient à la plupart des plages braille et des embosseuses."
           }
         },
         "hi" : {
@@ -445882,7 +445882,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lire à voix haute la progression des imports"
+            "value" : "Lire à voix haute la progression des importations"
           }
         },
         "hi" : {
@@ -464885,7 +464885,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc Modifier le texte s’est arrêté pour lui."
+            "value" : "Texte non mis à jour : %@ a été retiré, ou son téléchargement supprimé, donc la modification de son texte s’est arrêtée."
           }
         },
         "hi" : {
@@ -537120,7 +537120,7 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Les %lld autres chapitres n’ont aucun texte."
+                  "value" : "%lld autre chapitre n’a aucun texte."
                 }
               },
               "other" : {
@@ -577688,7 +577688,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Basculer le signet"
+            "value" : "Ajouter ou retirer un signet"
           }
         },
         "hi" : {
@@ -608135,7 +608135,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en gardant votre place dans sa piste."
+            "value" : "À l’enregistrement, TextMouth vérifie le manifeste et réorganise le livre, en conservant votre position dans sa piste."
           }
         },
         "hi" : {
@@ -608260,7 +608260,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "À l’enregistrement, le livre se met à jour et garde votre place au plus près."
+            "value" : "À l’enregistrement, le livre se met à jour et conserve votre position au plus près."
           }
         },
         "hi" : {
@@ -655521,7 +655521,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "le fichier propre du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier."
+            "value" : "le propre fichier du livre a aussi changé. Rouvrez le livre pour en relire le texte à partir de ce fichier."
           }
         },
         "hi" : {
@@ -655646,7 +655646,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "l’enregistrement du livre ne peut pas être modifié pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour."
+            "value" : "la fiche du livre ne peut pas être modifiée pour l’instant. TextMouth réessaiera à votre prochain enregistrement ou retour."
           }
         },
         "hi" : {
