@@ -61235,7 +61235,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verzeichnis konnte nicht neu aufgebaut werden"
+            "value" : "Datenordner konnte nicht neu aufgebaut werden"
           }
         },
         "es" : {
@@ -105834,7 +105834,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verzeichnis neu aufbauen"
+            "value" : "Datenordner neu aufbauen"
           }
         },
         "es" : {
@@ -105904,7 +105904,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth-Verzeichnis neu aufbauen"
+            "value" : "TextMouth-Datenordner neu aufbauen"
           }
         },
         "es" : {
@@ -105939,7 +105939,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Das Verzeichnis wird neu aufgebaut…"
+            "value" : "Der Datenordner wird neu aufgebaut…"
           }
         },
         "es" : {
@@ -106733,7 +106733,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Erstellt die Verzeichnisstruktur neu und migriert Bücher mit alter Speicherung"
+            "value" : "Erstellt die Ordnerstruktur neu und migriert Bücher mit alter Speicherung."
           }
         },
         "es" : {
@@ -125033,7 +125033,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Speicherordner"
+            "value" : "Datenordner"
           }
         },
         "es" : {
@@ -131254,7 +131254,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth baut gerade sein Datenverzeichnis neu auf. Warte, bis das beendet ist, und wähle dann erneut %@."
+            "value" : "TextMouth baut gerade seinen Datenordner neu auf. Warte, bis das beendet ist, und wähle dann erneut %@."
           }
         },
         "es" : {
@@ -155382,7 +155382,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dadurch wird die Verzeichnisstruktur neu erstellt, und Bücher mit alter Speicherung werden migriert."
+            "value" : "Dadurch wird die Ordnerstruktur neu erstellt, und Bücher mit alter Speicherung werden migriert."
           }
         },
         "es" : {
@@ -161471,7 +161471,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Bis dahin sind das Ändern des Orts und das Neuaufbauen des Verzeichnisses nicht verfügbar."
+            "value" : "Bis dahin sind das Ändern des Orts und das Neuaufbauen des Datenordners nicht verfügbar."
           }
         },
         "es" : {
