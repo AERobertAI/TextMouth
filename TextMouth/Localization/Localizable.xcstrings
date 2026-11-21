@@ -37436,7 +37436,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cancelando após este livro..."
+            "value" : "Cancelando após este livro…"
           }
         }
       }
@@ -37541,7 +37541,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Cancelando..."
+            "value" : "Cancelando…"
           }
         }
       }
@@ -37821,7 +37821,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alterar localização..."
+            "value" : "Alterar localização…"
           }
         }
       }
@@ -39487,7 +39487,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verificando %@..."
+            "value" : "Verificando %@…"
           }
         }
       }
@@ -40053,7 +40053,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escolher outra biblioteca..."
+            "value" : "Escolher outra biblioteca…"
           }
         }
       }
@@ -49006,7 +49006,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Excluir pasta..."
+            "value" : "Excluir pasta…"
           }
         }
       }
@@ -59841,7 +59841,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Extraindo o arquivo compactado..."
+            "value" : "Extraindo o arquivo compactado…"
           }
         }
       }
@@ -59882,7 +59882,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Extraindo “%1$@”: %2$@..."
+            "value" : "Extraindo “%1$@”: %2$@…"
           }
         }
       }
@@ -61620,7 +61620,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Encontrar livros duplicados..."
+            "value" : "Encontrar livros duplicados…"
           }
         }
       }
@@ -77919,7 +77919,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Carregando ISBNs..."
+            "value" : "Carregando ISBNs…"
           }
         }
       }
@@ -77948,7 +77948,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Carregando livro..."
+            "value" : "Carregando livro…"
           }
         }
       }
@@ -81984,19 +81984,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mover %lld de livros para uma pasta..."
+                  "value" : "Mover %lld de livros para uma pasta…"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mover %lld livro para uma pasta..."
+                  "value" : "Mover %lld livro para uma pasta…"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Mover %lld livros para uma pasta..."
+                  "value" : "Mover %lld livros para uma pasta…"
                 }
               }
             }
@@ -82678,7 +82678,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mover pasta..."
+            "value" : "Mover pasta…"
           }
         }
       }
@@ -83057,7 +83057,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Mover para pasta..."
+            "value" : "Mover para pasta…"
           }
         }
       }
@@ -85597,19 +85597,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movendo %lld de livros..."
+                  "value" : "Movendo %lld de livros…"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movendo %lld livro..."
+                  "value" : "Movendo %lld livro…"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Movendo %lld livros..."
+                  "value" : "Movendo %lld livros…"
                 }
               }
             }
@@ -85647,7 +85647,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movendo dados para %@..."
+            "value" : "Movendo dados para %@…"
           }
         }
       }
@@ -85682,7 +85682,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movendo dados para a localização padrão..."
+            "value" : "Movendo dados para a localização padrão…"
           }
         }
       }
@@ -85752,7 +85752,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movendo o conteúdo da pasta..."
+            "value" : "Movendo o conteúdo da pasta…"
           }
         }
       }
@@ -85787,7 +85787,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Movendo a pasta..."
+            "value" : "Movendo a pasta…"
           }
         }
       }
@@ -86930,7 +86930,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Nova pasta..."
+            "value" : "Nova pasta…"
           }
         }
       }
@@ -100299,7 +100299,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Pressione uma tecla..."
+            "value" : "Pressione uma tecla…"
           }
         }
       }
@@ -103118,7 +103118,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lendo o livro novamente..."
+            "value" : "Lendo o livro novamente…"
           }
         }
       }
@@ -103503,7 +103503,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Reconstruindo o diretório de dados..."
+            "value" : "Reconstruindo o diretório de dados…"
           }
         }
       }
@@ -104244,7 +104244,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Opções de recuperação..."
+            "value" : "Opções de recuperação…"
           }
         }
       }
@@ -104413,7 +104413,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Refazer extração de texto..."
+            "value" : "Refazer extração de texto…"
           }
         }
       }
@@ -105372,19 +105372,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Remover %lld de livros da biblioteca..."
+                  "value" : "Remover %lld de livros da biblioteca…"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Remover %lld livro da biblioteca..."
+                  "value" : "Remover %lld livro da biblioteca…"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Remover %lld livros da biblioteca..."
+                  "value" : "Remover %lld livros da biblioteca…"
                 }
               }
             }
@@ -106308,7 +106308,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Remover da biblioteca..."
+            "value" : "Remover da biblioteca…"
           }
         }
       }
@@ -106471,7 +106471,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Remover..."
+            "value" : "Remover…"
           }
         }
       }
@@ -106780,7 +106780,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Renomear pasta..."
+            "value" : "Renomear pasta…"
           }
         }
       }
@@ -106815,7 +106815,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Renomeando a pasta..."
+            "value" : "Renomeando a pasta…"
           }
         }
       }
@@ -122889,7 +122889,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Trocando para a biblioteca em %@..."
+            "value" : "Trocando para a biblioteca em %@…"
           }
         }
       }
@@ -157989,7 +157989,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Usar localização padrão..."
+            "value" : "Usar localização padrão…"
           }
         }
       }
@@ -159289,7 +159289,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando o fim da edição de áudio..."
+            "value" : "Aguardando o fim da edição de áudio…"
           }
         }
       }
@@ -159324,7 +159324,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando o fim da análise dos livros..."
+            "value" : "Aguardando o fim da análise dos livros…"
           }
         }
       }
@@ -159359,7 +159359,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando a leitura dos metadados dos livros..."
+            "value" : "Aguardando a leitura dos metadados dos livros…"
           }
         }
       }
@@ -159394,7 +159394,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando a exclusão dos downloads dos feeds..."
+            "value" : "Aguardando a exclusão dos downloads dos feeds…"
           }
         }
       }
@@ -159429,7 +159429,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando o salvamento dos registros dos feeds..."
+            "value" : "Aguardando o salvamento dos registros dos feeds…"
           }
         }
       }
@@ -159464,7 +159464,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando o fim da extração de texto..."
+            "value" : "Aguardando o fim da extração de texto…"
           }
         }
       }
@@ -159499,7 +159499,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando o fim da importação atual..."
+            "value" : "Aguardando o fim da importação atual…"
           }
         }
       }
@@ -159534,7 +159534,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Aguardando o fim da mudança do diretório de dados..."
+            "value" : "Aguardando o fim da mudança do diretório de dados…"
           }
         }
       }
