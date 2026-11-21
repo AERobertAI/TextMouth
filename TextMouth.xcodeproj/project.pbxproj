@@ -8520,17 +8520,29 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				Base,
+				ar,
+				bn,
 				de,
 				en,
 				es,
 				fr,
+				he,
+				hi,
+				id,
 				it,
 				ja,
 				ko,
+				nl,
+				pl,
 				"pt-BR",
 				ru,
+				sv,
+				th,
+				tr,
 				uk,
+				vi,
 				"zh-Hans",
+				"zh-Hant",
 			);
 			mainGroup = 186811333DB411ED58703F4D;
 			minimizedProjectReferenceProxies = 1;
