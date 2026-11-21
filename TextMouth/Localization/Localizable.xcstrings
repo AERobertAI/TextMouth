@@ -3900,7 +3900,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@が見つからないため、%1$@を作成できません。"
+            "value" : "親フォルダ%2$@が見つからないため、%1$@を作成できません。"
           }
         },
         "ko" : {
@@ -75877,7 +75877,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@中%1$lld完了、%3$lldパーセント"
+            "value" : "%2$@中%1$lld個完了、%3$lldパーセント"
           }
         },
         "ko" : {
@@ -76020,7 +76020,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%2$@中%1$lld完了、%3$lld%%"
+            "value" : "%2$@中%1$lld個完了、%3$lld%%"
           }
         },
         "ko" : {
@@ -104967,7 +104967,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "現在の位置にブックマークを追加または取り除きします。"
+            "value" : "現在の位置にブックマークを追加するか、取り除きます。"
           }
         },
         "ko" : {
@@ -145835,7 +145835,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ライブラリウインドウ上部の%3$@から、%1$@または%2$@を選択してください。"
+            "value" : "ライブラリウインドウ上部の「%3$@」から、「%1$@」または「%2$@」を選択してください。"
           }
         },
         "ko" : {
@@ -149260,7 +149260,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ライブラリの移動先として空のフォルダを選択するか、TextMouth ライブラリを含むフォルダを選択してそれを使用します。"
+            "value" : "ライブラリの移動先となる空のフォルダか、使用する TextMouth ライブラリを含むフォルダを選択してください。"
           }
         },
         "ko" : {
@@ -157218,7 +157218,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "スリープタイマーの設定後にスリープタイマーのシートを閉じる"
+            "value" : "スリープタイマーの設定後にシートを閉じる"
           }
         },
         "ko" : {
@@ -437938,7 +437938,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "ビューのポップアップメニューにこのビューを表示するタイミングを設定します。"
+            "value" : "「ビュー」ポップアップメニューにこのビューを表示するタイミングを設定します。"
           }
         },
         "ko" : {
@@ -461204,7 +461204,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "比較を続けています：これまでに%lld秒。停止するには エスケープキーを押してください。"
+                  "value" : "比較を続けています：これまでに%lld秒。停止するにはエスケープキーを押してください。"
                 }
               }
             }
@@ -483895,7 +483895,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は、ライブラリ内のコピーの編集済みテキストを新しいコピーのテキストの隣に残せなかったため、どちらのコピーもそのままにしました。"
+            "value" : "TextMouth は、ライブラリ内のコピーの編集済みテキストを新しいコピーのテキストとは別に残せなかったため、どちらのコピーもそのままにしました。"
           }
         },
         "ko" : {
@@ -484032,7 +484032,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth は、「%@」で変更したテキストを新しい読み込み結果の隣に残せなかったため、ブックをそのままにしました。"
+            "value" : "TextMouth は、「%@」で変更したテキストを新しい読み込み結果とは別に残せなかったため、ブックをそのままにしました。"
           }
         },
         "ko" : {
@@ -485601,7 +485601,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はライブラリの索引を保存できなかったため、どちらのコピーもそのままにしました。"
+            "value" : "TextMouth はライブラリインデックスを保存できなかったため、どちらのコピーもそのままにしました。"
           }
         },
         "ko" : {
@@ -491386,7 +491386,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "TextMouth はデータフォルダを再構築しています。完了するまで待ってから、もう一度「%@」を選択してください。"
+            "value" : "TextMouth はデータディレクトリを再構築しています。完了するまで待ってから、もう一度「%@」を選択してください。"
           }
         },
         "ko" : {
@@ -522671,7 +522671,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "点字はこのコードで印刷文字に翻訳し直されます。これが正しい選択かどうかは確認されません。単語の読みが正しくない場合は、別のものを選択してください。"
+            "value" : "点字は、このコードで墨字に翻訳し直されます。これが正しい選択かどうかは確認されません。単語の読みが正しくない場合は、別のものを選択してください。"
           }
         },
         "ko" : {
@@ -562709,7 +562709,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "場所、ブックマーク、文字起こしがある場合はそれらも残り、もう一度ダウンロードできます。"
+            "value" : "場所、ブックマーク、文字起こし（ある場合）は残り、もう一度ダウンロードできます。"
           }
         },
         "ko" : {
@@ -637279,7 +637279,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章%@"
+            "value" : "チャプタ%@"
           }
         },
         "ko" : {
@@ -637422,7 +637422,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章%1$@、%2$lld%%"
+            "value" : "チャプタ%1$@、%2$lld%%"
           }
         },
         "ko" : {
@@ -637702,7 +637702,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章%@、メモなし"
+            "value" : "チャプタ%@、メモなし"
           }
         },
         "ko" : {
@@ -637845,7 +637845,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "章%1$@、メモ「%2$@」付き"
+            "value" : "チャプタ%1$@、メモ「%2$@」付き"
           }
         },
         "ko" : {
@@ -666276,7 +666276,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "そのため、そこでの位置とブックマークはライブラリ索引のみから取得しました。"
+            "value" : "そのため、そこでの位置とブックマークはライブラリインデックスのみから取得しました。"
           }
         },
         "ko" : {
@@ -672005,7 +672005,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@内のライブラリ索引"
+            "value" : "%@内のライブラリインデックス"
           }
         },
         "ko" : {
@@ -672142,7 +672142,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@のライブラリ索引"
+            "value" : "%@のライブラリインデックス"
           }
         },
         "ko" : {
@@ -679382,7 +679382,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "「%1$@」を書き出し中です。%2$@、そのあと%3$@。"
+            "value" : "「%1$@」を書き出し中です。%2$@。そのあと、%3$@。"
           }
         },
         "ko" : {
