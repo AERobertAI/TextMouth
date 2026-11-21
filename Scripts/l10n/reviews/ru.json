@@ -525,6 +525,731 @@
      "why": "grammar: «его файлы» cannot point to a book title; the book is named and its files are «её»"
     }
    ]
+  },
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ are in your library, unsubscribed. Choose %@ on a feed's row, or in its %@, to check it again.",
+     "english": "%1$@ are in your library, unsubscribed. Choose %2$@ on a feed's row, or in its %3$@, to check it again.",
+     "before": "%1$@ уже в вашей библиотеке, но вы от них отписались. Выберите %2$@ в строке ленты или в листе %3$@, чтобы снова проверять их.",
+     "after": "%1$@ уже в вашей библиотеке, но вы от них отписались. Выберите %2$@ в строке ленты или в её листе %3$@, чтобы снова проверять эту ленту.",
+     "why": "meaning: it is the one feed whose row is chosen that is checked again; проверять их said one row checks them all"
+    },
+    {
+     "key": "%@ lists %lld feeds. Each gets its own folder, named after it.",
+     "english": {
+      "one": "%@ lists %lld feed. Each gets its own folder, named after it.",
+      "other": "%@ lists %lld feeds. Each gets its own folder, named after it."
+     },
+     "before": {
+      "few": "В %@ указаны %lld ленты. Для каждой создаётся отдельная папка с её названием.",
+      "many": "В %@ указано %lld лент. Для каждой создаётся отдельная папка с её названием.",
+      "one": "В %@ указана %lld лента. Для неё создаётся отдельная папка с её названием.",
+      "other": "В %@ указано %lld ленты. Для каждой создаётся отдельная папка с её названием."
+     },
+     "after": {
+      "one": "В %@ указана %lld лента. Для каждой создаётся отдельная папка с её названием.",
+      "few": "В %@ указаны %lld ленты. Для каждой создаётся отдельная папка с её названием.",
+      "many": "В %@ указано %lld лент. Для каждой создаётся отдельная папка с её названием.",
+      "other": "В %@ указано %lld ленты. Для каждой создаётся отдельная папка с её названием."
+     },
+     "why": "grammar: the one form also serves 21 and 31 feeds, where Для неё (for it) is wrong; Для каждой reads right for every count, as the English Each does"
+    },
+    {
+     "key": "%@ of %@ transcribed",
+     "english": "%1$@ of %2$@ transcribed",
+     "before": "%1$@ из %2$@ расшифровано",
+     "after": "Расшифровано: %1$@ (всего %2$@)",
+     "why": "grammar: из needs the genitive and расшифровано a neuter subject, but the lengths come in the nominative (из 1 час, 1 минута расшифровано); всего takes them as they are"
+    },
+    {
+     "key": "About %@ left",
+     "english": "About %@ left",
+     "before": "Осталось около %@",
+     "after": "Осталось: примерно %@",
+     "why": "grammar: около needs the genitive, but the time comes in the nominative (около 4 минуты, около 1 минута); the colon and примерно read right for every value"
+    },
+    {
+     "key": "Also write the markers as Audacity labels",
+     "english": "Also write the markers as Audacity labels",
+     "before": "Также записать метки в виде меток Audacity",
+     "after": "Также записать метки в файл меток Audacity",
+     "why": "natural: записать метки в виде меток repeats the word; the export writes the markers into an Audacity label file"
+    },
+    {
+     "key": "Attached on %@.",
+     "english": "Attached on %@.",
+     "before": "Прикреплена, %@.",
+     "after": "Прикреплена %@.",
+     "why": "punctuation: Russian puts no comma between Прикреплена and the date that follows it"
+    },
+    {
+     "key": "Checking the feed won't bring it back.",
+     "english": "Checking the feed won't bring it back.",
+     "before": "Проверка ленты его не вернёт.",
+     "after": "Проверка ленты не вернёт удалённое.",
+     "why": "grammar: the sentence serves an article (feminine) as well as an episode, so the masculine его was wrong for articles"
+    },
+    {
+     "key": "Downloads it again, then opens it where you left off",
+     "english": "Downloads it again, then opens it where you left off",
+     "before": "Загружает снова, затем открывает на месте, где вы остановились.",
+     "after": "Загружает снова, затем открывает там, где вы остановились.",
+     "why": "natural: open where you left off is там, где вы остановились; на месте, где is a calque"
+    },
+    {
+     "key": "Every item of %@ is already played.",
+     "english": "Every item of %@ is already played.",
+     "before": "Все элементы ленты %@ уже воспроизведены.",
+     "after": "Все элементы ленты %@ уже прослушаны.",
+     "why": "term: played is прослушан everywhere else (Mark All Played, unplayed, every episode already played); воспроизведены stood alone"
+    },
+    {
+     "key": "It also deletes %@.",
+     "english": "It also deletes %@.",
+     "before": "Также удаляется %@.",
+     "after": "Также будет удалено: %@.",
+     "why": "grammar: the singular удаляется cannot agree with the plural lists it takes, such as the places and bookmarks kept for 3 removed downloads"
+    },
+    {
+     "key": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "english": "It deletes %@: it goes to the Trash, where you can recover it until the Trash is emptied.",
+     "before": "Удаляется %@: это перемещается в Корзину, откуда это можно восстановить, пока Корзина не очищена.",
+     "after": "Удаляется %@: удалённое перемещается в Корзину, откуда его можно восстановить, пока Корзина не очищена.",
+     "why": "natural: это перемещается ... откуда это можно восстановить is stilted; удалённое ... его avoids guessing the gender of the placeholder and reads naturally"
+    },
+    {
+     "key": "It holds %@, which TextMouth does not import.",
+     "english": "It holds %@, which TextMouth does not import.",
+     "before": "В нём есть: %@. TextMouth их не импортирует.",
+     "after": "В нём есть: %@. TextMouth не импортирует такие файлы.",
+     "why": "grammar: их (them) is wrong when the archive holds a single file, such as 1 .txt file; такие файлы fits every count"
+    },
+    {
+     "key": "It holds no files.",
+     "english": "It holds no files.",
+     "before": "В нём нет файлов.",
+     "after": "Внутри нет файлов.",
+     "why": "grammar: the sentence serves a folder (папка, feminine) as well as an archive, so the masculine В нём was wrong for folders"
+    },
+    {
+     "key": "Its cleanup is replaced too.",
+     "english": "Its cleanup is replaced too.",
+     "before": "Его исправление тоже заменяется.",
+     "after": "Её исправление тоже заменяется.",
+     "why": "grammar: its is the transcript (расшифровка) of the book (книга), both feminine, so Его did not agree"
+    },
+    {
+     "key": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "english": "Its file is now “%@”, since TextMouth can't write its old format.",
+     "before": "Теперь его файл называется «%@», так как TextMouth не может записывать в прежнем формате.",
+     "after": "Теперь файл книги называется «%@», так как TextMouth не может записывать в прежнем формате.",
+     "why": "grammar: it is the book (книга, feminine) whose file was renamed, so его did not agree; файл книги names it"
+    },
+    {
+     "key": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "english": "Its tracks run past the end of the audio it names, so it was made for another copy of that audio.",
+     "before": "Её дорожки выходят за конец указанного в ней аудио, поэтому она создана для другой копии этого аудио.",
+     "after": "Его дорожки выходят за конец указанного в нём аудио, поэтому он создан для другой копии этого аудио.",
+     "why": "grammar: the cue sheet is файл CUE (masculine) in every other string, so Её, в ней, and она создана did not agree"
+    },
+    {
+     "key": "Lists markers, chapter markers, and pauses, to go to, name, select, or delete.",
+     "english": "Lists markers, chapter markers, and pauses, to go to, name, select, or delete.",
+     "before": "Показывает список меток, меток глав и пауз, к которым можно перейти, дать им имя, выделить или удалить их.",
+     "after": "Показывает метки, метки глав и паузы, чтобы переходить к ним, называть, выделять или удалять их.",
+     "why": "grammar: к которым governs only перейти, so дать им имя, выделить или удалить их hung loose; чтобы переходить к ним ... удалять их reads as one sentence"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "few": "Отмечены воспроизведёнными %lld элемента ленты %@.",
+      "many": "Отмечено воспроизведёнными %lld элементов ленты %@.",
+      "one": "Отмечен воспроизведённым %lld элемент ленты %@.",
+      "other": "Отмечено воспроизведёнными %lld элемента ленты %@."
+     },
+     "after": {
+      "one": "Отмечен прослушанным %lld элемент ленты %@.",
+      "few": "Отмечены прослушанными %lld элемента ленты %@.",
+      "many": "Отмечено прослушанными %lld элементов ленты %@.",
+      "other": "Отмечено прослушанными %lld элемента ленты %@."
+     },
+     "why": "term: played is прослушан in every other feed string (Mark All Played, Marked episodes played); воспроизведёнными stood alone"
+    },
+    {
+     "key": "Moved %lld articles into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld article into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld articles into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "few": "Перемещены %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld статей в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "one": "Перемещена %lld статья в %@. Теперь это книга библиотеки, и её лента показывает её с пометкой «%@».",
+      "other": "Перемещено %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "after": {
+      "one": "Перемещена %lld статья в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "few": "Перемещены %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld статей в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "other": "Перемещено %lld статьи в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "why": "grammar: the code uses this string only for two or more (one item has its own sentence), so the one form shows only 21, 31 and the like, where книга and её лента were wrong"
+    },
+    {
+     "key": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld episode into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld episodes into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "few": "Перемещены %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld выпусков в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "one": "Перемещён %lld выпуск в %@. Теперь это книга библиотеки, и его лента показывает его с пометкой «%@».",
+      "other": "Перемещено %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "after": {
+      "one": "Перемещён %lld выпуск в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "few": "Перемещены %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld выпусков в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "other": "Перемещено %lld выпуска в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "why": "grammar: the code uses this string only for two or more (one item has its own sentence), so the one form shows only 21, 31 and the like, where книга and его лента were wrong"
+    },
+    {
+     "key": "Moved %lld items into %@. They're library books now, and their feeds list them %@.",
+     "english": {
+      "one": "Moved %lld item into %@. It's a library book now, and its feed lists it %@.",
+      "other": "Moved %lld items into %@. They're library books now, and their feeds list them %@."
+     },
+     "before": {
+      "few": "Перемещены %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld элементов в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "one": "Перемещён %lld элемент в %@. Теперь это книга библиотеки, и его лента показывает его с пометкой «%@».",
+      "other": "Перемещено %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "after": {
+      "one": "Перемещён %lld элемент в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "few": "Перемещены %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "many": "Перемещено %lld элементов в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@».",
+      "other": "Перемещено %lld элемента в %@. Теперь это книги библиотеки, и их ленты показывают их с пометкой «%@»."
+     },
+     "why": "grammar: the code uses this string only for two or more (one item has its own sentence), so the one form shows only 21, 31 and the like, where книга and его лента were wrong"
+    },
+    {
+     "key": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld article into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld articles into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld статей в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "one": "Перемещает %lld статью в папку библиотеки как книгу, которую можно изменять; она покидает свою ленту",
+      "other": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "after": {
+      "one": "Перемещает %lld статью в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "few": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld статей в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "other": "Перемещает %lld статьи в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "why": "grammar: the code uses this string only for counts other than one, so the one form shows only 21, 31 and the like, where как книгу and она покидает were wrong"
+    },
+    {
+     "key": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld episode into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld episodes into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld выпусков в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "one": "Перемещает %lld выпуск в папку библиотеки как книгу, которую можно изменять; он покидает свою ленту",
+      "other": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "after": {
+      "one": "Перемещает %lld выпуск в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "few": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld выпусков в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "other": "Перемещает %lld выпуска в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "why": "grammar: the code uses this string only for counts other than one, so the one form shows only 21, 31 and the like, where как книгу and он покидает were wrong"
+    },
+    {
+     "key": "Moves these %lld items into a library folder as books you can edit; they leave their feeds",
+     "english": {
+      "one": "Moves this %lld item into a library folder as a book you can edit; it leaves the feed",
+      "other": "Moves these %lld items into a library folder as books you can edit; they leave their feeds"
+     },
+     "before": {
+      "few": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld элементов в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "one": "Перемещает %lld элемент в папку библиотеки как книгу, которую можно изменять; он покидает свою ленту",
+      "other": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "after": {
+      "one": "Перемещает %lld элемент в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "few": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "many": "Перемещает %lld элементов в папку библиотеки как книги, которые можно изменять; они покидают свои ленты",
+      "other": "Перемещает %lld элемента в папку библиотеки как книги, которые можно изменять; они покидают свои ленты"
+     },
+     "why": "grammar: the code uses this string only for counts other than one, so the one form shows only 21, 31 and the like, where как книгу and он покидает were wrong"
+    },
+    {
+     "key": "Opens it",
+     "english": "Opens it",
+     "before": "Открывает его.",
+     "after": "Открывает.",
+     "why": "grammar: the hint serves an article (feminine) as well as an episode, so его was wrong for articles; the bare verb matches Загружает, затем открывает"
+    },
+    {
+     "key": "Opens its book in your library",
+     "english": "Opens its book in your library",
+     "before": "Открывает его книгу в вашей библиотеке.",
+     "after": "Открывает книгу в вашей библиотеке.",
+     "why": "grammar: the hint serves an article (feminine) as well as an episode, so его книгу was wrong for articles"
+    },
+    {
+     "key": "Part of %@ could not be decoded and is kept as silence.",
+     "english": "Part of %@ could not be decoded and is kept as silence.",
+     "before": "Часть %@ не удалось декодировать, она сохранена как тишина.",
+     "after": "Часть %@ не удалось декодировать, и она заменена тишиной.",
+     "why": "natural: kept as silence means the part is replaced by silence; сохранена как тишина (saved as silence) is a calque"
+    },
+    {
+     "key": "Part of %lld files, %@, could not be decoded and is kept as silence.",
+     "english": {
+      "one": "Part of %lld file, %@, could not be decoded and is kept as silence.",
+      "other": "Part of %lld files, %@, could not be decoded and is kept as silence."
+     },
+     "before": {
+      "few": "Часть %lld файлов, %@, не удалось декодировать, она сохранена как тишина.",
+      "many": "Часть %lld файлов, %@, не удалось декодировать, она сохранена как тишина.",
+      "one": "Часть %lld файла, %@, не удалось декодировать, она сохранена как тишина.",
+      "other": "Часть %lld файла, %@, не удалось декодировать, она сохранена как тишина."
+     },
+     "after": {
+      "one": "Часть %lld файла, %@, не удалось декодировать, и она заменена тишиной.",
+      "few": "Части %lld файлов, %@, не удалось декодировать, и они заменены тишиной.",
+      "many": "Части %lld файлов, %@, не удалось декодировать, и они заменены тишиной.",
+      "other": "Части %lld файла, %@, не удалось декодировать, и они заменены тишиной."
+     },
+     "why": "meaning: Часть 3 файлов reads as some of the 3 files; Части says parts of each file failed, as the English means, and заменены тишиной replaces the calque"
+    },
+    {
+     "key": "Pasted %@ back where they were cut.",
+     "english": "Pasted %@ back where they were cut.",
+     "before": "Вставлено %@ обратно на место вырезания.",
+     "after": "Вставлено обратно на место вырезания: %@.",
+     "why": "grammar: Вставлено cannot agree with lengths such as 1 минута; the colon form matches Скопировано: and Вырезано:"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "Вставлено %1$@ поверх %2$@.",
+     "after": "Вставлено: %1$@ поверх фрагмента длиной %2$@.",
+     "why": "grammar: поверх needs the genitive, but the length comes in the nominative (поверх 3 секунды), and Вставлено cannot agree with 1 минута; длиной takes the length as it is"
+    },
+    {
+     "key": "Paused at %@.",
+     "english": "Paused at %@.",
+     "before": "Пауза на %@.",
+     "after": "Пауза на отметке %@.",
+     "why": "grammar: на cannot take a time in words in the nominative (на 12 минут, 4 секунды); на отметке is how every other editor line places a time"
+    },
+    {
+     "key": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "english": "Presets from another Mac just arrived and replaced these. Make the change again.",
+     "before": "Пресеты с другого Mac только что пришли и заменили эти. Повторите изменение.",
+     "after": "Только что пришли пресеты с другого Mac и заменили текущие. Повторите изменение.",
+     "why": "natural: заменили эти leaves эти without its noun; текущие (the current ones) is how Russian says it"
+    },
+    {
+     "key": "Recording over %@ at %@, from %@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "english": "Recording over %1$@ at %2$@, from %3$@, after the beep. Punch In or Stop ends it; Clear Selection discards it.",
+     "before": "Запись поверх %1$@ с отметки %2$@, с микрофона «%3$@», после сигнала. «Записать поверх» или «Остановить» завершает её; «Снять выделение» отбрасывает.",
+     "after": "Запись поверх фрагмента длиной %1$@ с отметки %2$@, с микрофона «%3$@», после сигнала. «Записать поверх» или «Остановить» завершает её; «Снять выделение» отбрасывает.",
+     "why": "grammar: поверх needs the genitive, but the length comes in the nominative (поверх 2 секунды, поверх 1 минута); поверх фрагмента длиной takes it as it is"
+    },
+    {
+     "key": "Replaced %@ with %@ of new recording, which is selected.",
+     "english": "Replaced %1$@ with %2$@ of new recording, which is selected.",
+     "before": "Заменено %1$@ новой записью длительностью %2$@, она выделена.",
+     "after": "Фрагмент длиной %1$@ заменён новой записью длительностью %2$@, она выделена.",
+     "why": "grammar: Заменено cannot agree with lengths such as 1 минута; Фрагмент длиной ... заменён reads right for every length"
+    },
+    {
+     "key": "Reset All to Defaults",
+     "english": "Reset All to Defaults",
+     "before": "Сбросить всё по умолчанию",
+     "after": "Восстановить стандартные пресеты",
+     "why": "natural: Сбросить всё по умолчанию reads as reset by default; the button puts back the premade presets"
+    },
+    {
+     "key": "Resuming.",
+     "english": "Resuming.",
+     "before": "Продолжение.",
+     "after": "Запись продолжается.",
+     "why": "natural: Продолжение alone reads as a sequel (to be continued); the recording is what resumes"
+    },
+    {
+     "key": "Reverted to the original audio. Redo brings back the %lld edits.",
+     "english": {
+      "one": "Reverted to the original audio. Redo brings back the %lld edit.",
+      "other": "Reverted to the original audio. Redo brings back the %lld edits."
+     },
+     "before": {
+      "few": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld.",
+      "many": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld.",
+      "one": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld.",
+      "other": "Возвращено исходное аудио. «Повторить» вернёт правок: %lld."
+     },
+     "after": {
+      "one": "Возвращено исходное аудио. «Повторить» вернёт %lld правку.",
+      "few": "Возвращено исходное аудио. «Повторить» вернёт %lld правки.",
+      "many": "Возвращено исходное аудио. «Повторить» вернёт %lld правок.",
+      "other": "Возвращено исходное аудио. «Повторить» вернёт %lld правки."
+     },
+     "why": "natural: вернёт правок: %lld is a broken count after a verb; the four forms read as Russian counts"
+    },
+    {
+     "key": "Selection from %@ to %@; %@ long.",
+     "english": "Selection from %1$@ to %2$@; %3$@ long.",
+     "before": "Выделение от %1$@ до %2$@, длительность %3$@.",
+     "after": "Выделение с отметки %1$@ до отметки %2$@, длительность %3$@.",
+     "why": "grammar: от and до need the genitive, but the times come in the nominative (от 1 минута, 5 секунд); с отметки ... до отметки takes them as they are"
+    },
+    {
+     "key": "Still finding the pauses. Try again in a moment.",
+     "english": "Still finding the pauses. Try again in a moment.",
+     "before": "Паузы ещё ищутся. Повторите попытку через мгновение.",
+     "after": "Поиск пауз ещё идёт. Повторите попытку чуть позже.",
+     "why": "natural: Паузы ещё ищутся and через мгновение are calques; Поиск пауз ещё идёт and чуть позже are the plain wording"
+    },
+    {
+     "key": "Stopped. Back at %@.",
+     "english": "Stopped. Back at %@.",
+     "before": "Остановлено. Возврат на %@.",
+     "after": "Остановлено. Возврат к отметке %@.",
+     "why": "grammar: на cannot take a time in words in the nominative (на 1 минута, 5 секунд); к отметке takes it as it is, as the other editor lines do"
+    },
+    {
+     "key": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "english": "TextMouth is still carrying out your last answer. Wait until it finishes.",
+     "before": "TextMouth всё ещё выполняет ваш последний ответ. Дождитесь окончания.",
+     "after": "TextMouth всё ещё обрабатывает ваш последний ответ. Дождитесь окончания.",
+     "why": "natural: an answer is not executed (выполняет ответ); обрабатывает says it is still being carried out"
+    },
+    {
+     "key": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+     "english": {
+      "one": "TextMouth moved %lld new copy of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back.",
+      "other": "TextMouth moved %lld new copies of duplicate books to the Trash, because the questions whether to keep them as duplicates were never answered before TextMouth closed. To get them back, open the Trash and choose Put Back."
+     },
+     "before": {
+      "few": "TextMouth переместил в Корзину %lld новые копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "many": "TextMouth переместил в Корзину %lld новых копий дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "one": "TextMouth переместил в Корзину %lld новую копию дубликата книги, потому что вопрос, оставлять ли её как дубликат, остался без ответа до закрытия TextMouth. Чтобы вернуть её, откройте Корзину и выберите «Вернуть на место».",
+      "other": "TextMouth переместил в Корзину %lld новой копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место»."
+     },
+     "after": {
+      "one": "TextMouth переместил в Корзину %lld новую копию дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "few": "TextMouth переместил в Корзину %lld новые копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "many": "TextMouth переместил в Корзину %lld новых копий дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место».",
+      "other": "TextMouth переместил в Корзину %lld новой копии дубликатов книг, потому что вопросы, оставлять ли их как дубликаты, остались без ответа до закрытия TextMouth. Чтобы вернуть их, откройте Корзину и выберите «Вернуть на место»."
+     },
+     "why": "grammar: the code uses this string only for four books or more, so the one form shows only 21, 31 and the like, where the singular question, её and вернуть её were wrong"
+    },
+    {
+     "key": "That page names %lld feeds. Choose one, then Subscribe.",
+     "english": {
+      "one": "That page names %lld feed. Choose one, then Subscribe.",
+      "other": "That page names %lld feeds. Choose one, then Subscribe."
+     },
+     "before": {
+      "few": "На этой странице указаны %lld ленты. Выберите одну, затем «Подписаться».",
+      "many": "На этой странице указано %lld лент. Выберите одну, затем «Подписаться».",
+      "one": "На этой странице указана %lld лента. Выберите её, затем «Подписаться».",
+      "other": "На этой странице указано %lld ленты. Выберите одну, затем «Подписаться»."
+     },
+     "after": {
+      "one": "На этой странице указана %lld лента. Выберите одну, затем «Подписаться».",
+      "few": "На этой странице указаны %lld ленты. Выберите одну, затем «Подписаться».",
+      "many": "На этой странице указано %lld лент. Выберите одну, затем «Подписаться».",
+      "other": "На этой странице указано %lld ленты. Выберите одну, затем «Подписаться»."
+     },
+     "why": "grammar: the one form also serves 21 feeds, where Выберите её (choose it) is wrong; Выберите одну reads right for every count, as the English Choose one does"
+    },
+    {
+     "key": "The bookInfo.json file did not read back as it was written.",
+     "english": "The bookInfo.json file did not read back as it was written.",
+     "before": "Файл bookInfo.json не прочитался обратно в том виде, в каком был записан.",
+     "after": "Файл bookInfo.json при повторном чтении не совпал с записанным.",
+     "why": "natural: не прочитался обратно is a colloquial calque of read back; при повторном чтении не совпал с записанным says what failed"
+    },
+    {
+     "key": "The feed stays in your library with its settings and %@, and %@ checks it again.",
+     "english": "The feed stays in your library with its settings and %1$@, and %2$@ checks it again.",
+     "before": "Лента остаётся в вашей библиотеке с настройками и %1$@; чтобы снова проверять её, выберите %2$@.",
+     "after": "Лента остаётся в вашей библиотеке с настройками, как и %1$@; чтобы снова проверять её, выберите %2$@.",
+     "why": "grammar: с настройками и %1$@ needs the instrumental, but the downloads come in the nominative (её 2 загруженных выпуска); как и takes the nominative"
+    },
+    {
+     "key": "The feed “%@” stays with it.",
+     "english": "The feed “%@” stays with it.",
+     "before": "Лента «%@» остаётся вместе с ним.",
+     "after": "Лента «%@» тоже остаётся.",
+     "why": "grammar: it is the one item that could not be deleted, an episode or an article, so the masculine с ним was wrong for articles"
+    },
+    {
+     "key": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "english": "The list follows a change of %@ at once; what downloads or goes waits until the change has stayed for ten seconds, and VoiceOver announces it then.",
+     "before": "Список сразу следует за изменением параметра %@; то, что загружается или удаляется, ждёт, пока изменение не продержится десять секунд, и тогда VoiceOver объявляет об этом.",
+     "after": "Список меняется сразу при изменении параметра %@; загрузка и удаление ждут, пока изменение не продержится десять секунд, и тогда VoiceOver объявляет о них.",
+     "why": "natural: Список сразу следует за изменением reads as the list comes after the change; the list changes at once, and downloading and removing wait"
+    },
+    {
+     "key": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "english": "The place, bookmarks, and transcript kept for it are deleted too.",
+     "before": "Позиция чтения, закладки и расшифровка, сохранённые для него, тоже удаляются.",
+     "after": "Сохранённые позиция чтения, закладки и расшифровка тоже удаляются.",
+     "why": "grammar: the sentence serves an article (feminine) as well as an episode, so для него was wrong for articles"
+    },
+    {
+     "key": "The podcast directory at %@ couldn't answer the search (error %@). Try again later.",
+     "english": "The podcast directory at %1$@ couldn't answer the search (error %2$@). Try again later.",
+     "before": "Каталог подкастов %1$@ не смог ответить на поиск (ошибка %2$@). Повторите попытку позже.",
+     "after": "Каталог подкастов %1$@ не смог выполнить поиск (ошибка %2$@). Повторите попытку позже.",
+     "why": "natural: a directory answers or refuses a request, not a search (ответить на поиск); выполнить поиск is the plain wording"
+    },
+    {
+     "key": "The podcast directory couldn't answer the search. Try again later.",
+     "english": "The podcast directory couldn't answer the search. Try again later.",
+     "before": "Каталог подкастов не смог ответить на поиск. Повторите попытку позже.",
+     "after": "Каталог подкастов не смог выполнить поиск. Повторите попытку позже.",
+     "why": "natural: a directory answers a request, not a search (ответить на поиск); выполнить поиск is the plain wording"
+    },
+    {
+     "key": "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.",
+     "english": "The podcast directory refused the search; it allows about 20 a minute. Wait a minute and try again.",
+     "before": "Каталог подкастов отклонил поиск: он допускает около 20 запросов в минуту. Подождите минуту и повторите попытку.",
+     "after": "Каталог подкастов отклонил поисковый запрос: он допускает около 20 запросов в минуту. Подождите минуту и повторите попытку.",
+     "why": "natural: what the directory refused is the search request (поисковый запрос), not the search"
+    },
+    {
+     "key": "The podcast's own transcript, downloaded with the episode on %@.",
+     "english": "The podcast's own transcript, downloaded with the episode on %@.",
+     "before": "Собственная расшифровка подкаста, загруженная вместе с выпуском, %@.",
+     "after": "Собственная расшифровка подкаста, загруженная вместе с выпуском %@.",
+     "why": "punctuation: Russian puts no comma between загруженная вместе с выпуском and the date it was downloaded"
+    },
+    {
+     "key": "The search couldn't be sent, because the directory's address isn't a web address.",
+     "english": "The search couldn't be sent, because the directory's address isn't a web address.",
+     "before": "Не удалось отправить поиск, потому что адрес каталога не является веб-адресом.",
+     "after": "Не удалось отправить поисковый запрос, потому что адрес каталога не является веб-адресом.",
+     "why": "natural: what could not be sent is the search request (поисковый запрос), not the search"
+    },
+    {
+     "key": "The transcript runs to %@, past the audio's end at %@, so it is for other audio.",
+     "english": "The transcript runs to %1$@, past the audio's end at %2$@, so it is for other audio.",
+     "before": "Расшифровка идёт до %1$@, за концом аудио (%2$@), поэтому она относится к другому аудио.",
+     "after": "Расшифровка идёт до отметки %1$@, за концом аудио (%2$@), поэтому она относится к другому аудио.",
+     "why": "grammar: до needs the genitive, but the time comes in words in the nominative (до 1 час, 2 минуты); до отметки takes it as it is"
+    },
+    {
+     "key": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "english": "The transcript's text didn't read back as one chapter per chapter of the book.",
+     "before": "Текст расшифровки не прочитался как одна глава на каждую главу книги.",
+     "after": "Текст расшифровки при повторном чтении не совпал с главами книги.",
+     "why": "natural: не прочитался как is a colloquial calque of read back as; при повторном чтении не совпал с главами книги says what failed"
+    },
+    {
+     "key": "The transcript's times don't fit together, so TextMouth can't use it.",
+     "english": "The transcript's times don't fit together, so TextMouth can't use it.",
+     "before": "Времена в расшифровке не согласуются между собой, поэтому TextMouth не может её использовать.",
+     "after": "Временные метки в расшифровке не согласуются между собой, поэтому TextMouth не может её использовать.",
+     "why": "meaning: Времена reads as eras or grammatical tenses; the times in a transcript are its временные метки"
+    },
+    {
+     "key": "This picture is %@, larger than the %lld megapixels TextMouth reads.",
+     "english": {
+      "one": "This picture is %@, larger than the %lld megapixel TextMouth reads.",
+      "other": "This picture is %@, larger than the %lld megapixels TextMouth reads."
+     },
+     "before": {
+      "few": "Размер этого изображения — %@, больше предела в %lld мегапикселя, который читает TextMouth.",
+      "many": "Размер этого изображения — %@, больше предела в %lld мегапикселей, который читает TextMouth.",
+      "one": "Размер этого изображения — %@, больше предела в %lld мегапиксель, который читает TextMouth.",
+      "other": "Размер этого изображения — %@, больше предела в %lld мегапикселя, который читает TextMouth."
+     },
+     "after": {
+      "one": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселя.",
+      "few": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселей.",
+      "many": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселей.",
+      "other": "Размер этого изображения — %@, а TextMouth читает не больше %lld мегапикселя."
+     },
+     "why": "natural: предела ..., который читает TextMouth says TextMouth reads a limit; the a TextMouth читает не больше form matches the page-count sentence beside it"
+    },
+    {
+     "key": "To download it again, choose %@ on its row.",
+     "english": "To download it again, choose %@ on its row.",
+     "before": "Чтобы загрузить его снова, выберите %@ в его строке.",
+     "after": "Чтобы начать загрузку заново, выберите %@ в её строке.",
+     "why": "grammar: it follows Загрузка «…» остановлена (feminine), and the item may be an article, so the masculine его did not agree"
+    },
+    {
+     "key": "To download the other %lld again, choose %@ on their rows.",
+     "english": {
+      "one": "To download the other %lld again, choose %@ on its row.",
+      "other": "To download the other %lld again, choose %@ on their rows."
+     },
+     "before": {
+      "few": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "many": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "one": "Чтобы снова загрузить оставшийся (%lld), выберите %@ в его строке.",
+      "other": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках."
+     },
+     "after": {
+      "one": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "few": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "many": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках.",
+      "other": "Чтобы снова загрузить остальные (%lld), выберите %@ в их строках."
+     },
+     "why": "grammar: the code uses this string only for two or more (one other has its own), so the one form shows only 21, 31 and the like, where the singular оставшийся was wrong"
+    },
+    {
+     "key": "To download the other one again, choose %@ on its row.",
+     "english": "To download the other one again, choose %@ on its row.",
+     "before": "Чтобы снова загрузить оставшийся, выберите %@ в его строке.",
+     "after": "Чтобы снова загрузить оставшуюся, выберите %@ в её строке.",
+     "why": "grammar: the one left is one of the stopped загрузки (feminine), so the masculine оставшийся did not agree"
+    },
+    {
+     "key": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "english": "Too long to keep for pasting. To move it, paste right after cutting.",
+     "before": "Слишком длинное, чтобы хранить для вставки. Чтобы переместить его, вставьте сразу после вырезания.",
+     "after": "Фрагмент слишком длинный, чтобы хранить его для вставки. Чтобы переместить его, вставьте сразу после вырезания.",
+     "why": "natural: Слишком длинное has no subject; the stretch (фрагмент) is what is too long"
+    },
+    {
+     "key": "Transcribed %@: %@ in %@.",
+     "english": "Transcribed %1$@: %2$@ in %3$@.",
+     "before": "Расшифровано «%1$@»: %2$@ за %3$@.",
+     "after": "Расшифровано «%1$@»: %2$@, время: %3$@.",
+     "why": "grammar: за needs the accusative, but the time comes in the nominative (за 51 секунда, за 1 минута); время: takes it as it is"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "Обрезано до выделенного: сохранено %@.",
+     "after": "Обрезано до выделенного. Осталось: %@.",
+     "why": "grammar: сохранено cannot agree with lengths such as 1 минута; the colon form reads right for every length"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new articles%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new articles%2$@.",
+     "before": "Отписка от %1$@: TextMouth больше не проверяет новые статьи%2$@.",
+     "after": "Вы отписались от %1$@: TextMouth больше не проверяет её на новые статьи%2$@.",
+     "why": "natural: Отписка от reads as a heading (and отписка also means a brush-off reply); Вы отписались is how Russian says it, and проверять её на matches the other unsubscribe strings"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new episodes%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new episodes%2$@.",
+     "before": "Отписка от %1$@: TextMouth больше не проверяет новые выпуски%2$@.",
+     "after": "Вы отписались от %1$@: TextMouth больше не проверяет её на новые выпуски%2$@.",
+     "why": "natural: Отписка от reads as a heading (and отписка also means a brush-off reply); Вы отписались is how Russian says it, and проверять её на matches the other unsubscribe strings"
+    },
+    {
+     "key": "Unsubscribed from %@: TextMouth no longer checks it for new items%@.",
+     "english": "Unsubscribed from %1$@: TextMouth no longer checks it for new items%2$@.",
+     "before": "Отписка от %1$@: TextMouth больше не проверяет новые элементы%2$@.",
+     "after": "Вы отписались от %1$@: TextMouth больше не проверяет её на новые элементы%2$@.",
+     "why": "natural: Отписка от reads as a heading (and отписка also means a brush-off reply); Вы отписались is how Russian says it, and проверять её на matches the other unsubscribe strings"
+    },
+    {
+     "key": "a package of its name is in both its library folder and its feed's",
+     "english": "a package of its name is in both its library folder and its feed's",
+     "before": "пакет с таким именем есть и в его папке библиотеки, и в папке его ленты",
+     "after": "пакет с таким именем есть и в папке библиотеки, и в папке ленты",
+     "why": "grammar: the clause follows a title that may be an article (feminine), so его did not always agree; the folders need no pronoun"
+    },
+    {
+     "key": "by %@",
+     "english": "by %@",
+     "before": "от %@",
+     "after": "автор: %@",
+     "why": "meaning: от reads as from (a sender); a book row and a podcast line name the author, автор:, as the search heading does"
+    },
+    {
+     "key": "it lasts no time",
+     "english": "it lasts no time",
+     "before": "её длительность равна нулю",
+     "after": "длительность равна нулю",
+     "why": "grammar: the subject is Звук (masculine) in the sentence this completes, so её длительность did not agree"
+    },
+    {
+     "key": "its file could not be read as a picture",
+     "english": "its file could not be read as a picture",
+     "before": "его файл не удалось прочитать как изображение",
+     "after": "файл не удалось прочитать как изображение",
+     "why": "grammar: the reason follows страница 3 (feminine) or страницы 1 и 2 (plural), so the masculine его did not agree"
+    },
+    {
+     "key": "its file is damaged or incomplete: %@",
+     "english": "its file is damaged or incomplete: %@",
+     "before": "его файл повреждён или неполон: %@",
+     "after": "файл повреждён или неполон: %@",
+     "why": "grammar: the reason follows страница 3 (feminine) or страницы 1 и 2 (plural), so the masculine его did not agree"
+    },
+    {
+     "key": "its package is in neither its library folder nor its feed's",
+     "english": "its package is in neither its library folder nor its feed's",
+     "before": "его пакета нет ни в папке библиотеки, ни в папке ленты",
+     "after": "пакета нет ни в папке библиотеки, ни в папке ленты",
+     "why": "grammar: the clause follows a title that may be an article (feminine), so его did not always agree; the folders need no pronoun"
+    },
+    {
+     "key": "its picture could not be decoded",
+     "english": "its picture could not be decoded",
+     "before": "его изображение не удалось декодировать",
+     "after": "изображение не удалось декодировать",
+     "why": "grammar: the reason follows страница 3 (feminine) or страницы 1 и 2 (plural), so the masculine его did not agree"
+    },
+    {
+     "key": "its row names no package the library manages",
+     "english": "its row names no package the library manages",
+     "before": "в его строке не указан пакет, которым управляет библиотека",
+     "after": "в строке не указан пакет, которым управляет библиотека",
+     "why": "grammar: the clause follows a title that may be an article (feminine), so его did not always agree"
+    },
+    {
+     "key": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "english": "“%@” is recording. Stop or discard it with Clear Selection, then quit.",
+     "before": "«%@» записывает. Остановите запись или отбросьте её командой «Снять выделение», затем завершите работу TextMouth.",
+     "after": "В редакторе аудио «%@» идёт запись. Остановите её или отбросьте командой «Снять выделение», затем завершите работу TextMouth.",
+     "why": "natural: «книга» записывает makes the book the one recording; the English names the editor window by its title, which Russian says as в редакторе аудио"
+    },
+    {
+     "key": "“%@” is still working. Quit once the change is done.",
+     "english": "“%@” is still working. Quit once the change is done.",
+     "before": "«%@» ещё выполняется. Завершите работу TextMouth, когда изменение закончится.",
+     "after": "В редакторе аудио «%@» ещё выполняется изменение. Завершите работу TextMouth, когда оно закончится.",
+     "why": "natural: «книга» ещё выполняется makes the book the thing running; it is a change in its audio editor that is under way"
+    }
+   ]
   }
  ]
 }
