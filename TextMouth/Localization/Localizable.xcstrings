@@ -193277,7 +193277,7 @@
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "여기서 거부됨: 이 윈도우가 열려 있는 동안 %lld회"
+                  "value" : "여기서 거부됨: 이 윈도우가 열려 있는 동안 %lld회."
                 }
               }
             }
@@ -283132,7 +283132,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "그래도 공간을 확보하려면 Finder에서 보기를 선택한 다음 %@"
+            "value" : "그래도 공간을 확보하려면 Finder에서 보기를 선택한 다음 %@."
           }
         },
         "pt-BR" : {
