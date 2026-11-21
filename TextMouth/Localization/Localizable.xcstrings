@@ -123503,7 +123503,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Begin automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert."
+            "value" : "Begint automatisch met afspelen wanneer je naar een kop, bladwijzer of zoekresultaat navigeert."
           }
         },
         "pl" : {
@@ -148998,7 +148998,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Kies een stem om mee te lezen. De wijziging gaat direct in."
+            "value" : "Kiest de stem voor het voorlezen. De wijziging gaat direct in."
           }
         },
         "pl" : {
@@ -162305,7 +162305,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Vraag bevestiging voordat een boek wordt verwijderd"
+            "value" : "Vraag om bevestiging voordat een boek wordt weggehaald"
           }
         },
         "pl" : {
@@ -178786,7 +178786,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan dit overschrijven."
+            "value" : "Standaardtoonhoogte voor nieuwe boeken. 1,0 is normaal. Elk boek kan hiervan afwijken."
           }
         },
         "pl" : {
@@ -179060,7 +179060,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Standaardsnelheid voor nieuwe boeken. Elk boek kan dit overschrijven met een eigen snelheid."
+            "value" : "Standaardsnelheid voor nieuwe boeken. Elk boek kan een eigen snelheid hebben."
           }
         },
         "pl" : {
@@ -189403,7 +189403,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ga niet terug als de pauze korter is dan dit."
+            "value" : "Spoelt niet terug als de pauze korter is dan dit."
           }
         },
         "pl" : {
@@ -200387,7 +200387,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "EPUB-boeken met dezelfde ISBN-identificatie."
+            "value" : "EPUB-boeken met hetzelfde ISBN."
           }
         },
         "pl" : {
@@ -244515,7 +244515,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Verlaag het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd."
+            "value" : "Verlaagt het volume geleidelijk voordat de slaaptimer pauzeert. Bij 0 wordt direct gepauzeerd."
           }
         },
         "pl" : {
@@ -252255,7 +252255,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Als het bestand later van %@ aankomt, benoemt het dezelfde bibliotheek."
+            "value" : "Als het bestand later van %@ aankomt, verwijst het naar dezelfde bibliotheek."
           }
         },
         "pl" : {
@@ -254590,7 +254590,7 @@
         "nl" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Importeer het opnieuw, wat naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap zijn plaats inneemt, of verwijder het uit de bibliotheek en verplaats de gegevensmap dan opnieuw."
+            "value" : "Importeer het opnieuw, waarna TextMouth naar het duplicaat vraagt, en kies Vervang bestaande zodat de kopie in de gegevensmap de plaats ervan inneemt, of haal het uit de bibliotheek weg en verplaats de gegevensmap dan opnieuw."
           }
         },
         "pl" : {
