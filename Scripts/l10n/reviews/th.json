@@ -1,0 +1,947 @@
+{
+ "language": "th",
+ "reviews": [
+  {
+   "part": 1,
+   "areas": [
+    "library",
+    "storage and settings"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%@ Copy %@",
+     "english": "%1$@ Copy %2$@",
+     "before": "สำเนาของ %1$@ %2$@",
+     "after": "สำเนาที่ %2$@ ของ %1$@",
+     "why": "meaning: the copy's number after the view's name read as part of the name (a copy of a view called Notes 2); now the 2nd copy of the view"
+    },
+    {
+     "key": "%@ has no transcript text to search now, because its edited text can't be used: %@",
+     "english": "%1$@ has no transcript text to search now, because its edited text can't be used: %2$@",
+     "before": "%1$@ ยังไม่มีข้อความถอดเสียงให้ค้นหา เพราะใช้ข้อความที่แก้ไขไม่ได้: %2$@",
+     "after": "%1$@ ยังไม่มีข้อความถอดเสียงให้ค้นหา เพราะข้อความที่แก้ไขแล้วใช้ไม่ได้: %2$@",
+     "why": "meaning: ใช้ข้อความที่แก้ไขไม่ได้ reads as uses text that cannot be edited; now the edited text cannot be used"
+    },
+    {
+     "key": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "english": "%@ has no transcript to search. Transcribe it first, with Transcribe Audio.",
+     "before": "%@ ไม่มีข้อความถอดเสียงให้ค้นหา ให้ถอดเสียงก่อนด้วย ถอดเสียงจากไฟล์เสียง",
+     "after": "%@ ไม่มีข้อความถอดเสียงให้ค้นหา ให้ถอดเสียงก่อนด้วยคำสั่ง ถอดเสียงจากไฟล์เสียง",
+     "why": "natural: a clause-final ด้วย reads as a softener (please), leaving the command name as a separate order; คำสั่ง ties the name to with"
+    },
+    {
+     "key": "%lld bookmarks",
+     "english": {
+      "one": "%lld bookmark",
+      "other": "%lld bookmarks"
+     },
+     "before": {
+      "other": "%lld ที่คั่นหน้า"
+     },
+     "after": {
+      "other": "ที่คั่นหน้า %lld รายการ"
+     },
+     "why": "grammar: Thai counts as noun, number, classifier; %lld ที่คั่นหน้า had no classifier, unlike the catalog's other bookmark counts"
+    },
+    {
+     "key": "%lld books in the cloud were skipped.",
+     "english": {
+      "one": "%lld book in the cloud was skipped.",
+      "other": "%lld books in the cloud were skipped."
+     },
+     "before": {
+      "other": "ข้ามหนังสือ %lld เล่มที่อยู่ในคลาวด์"
+     },
+     "after": {
+      "other": "ข้ามหนังสือ %lld เล่มที่อยู่ในคลาวด์ไปแล้ว"
+     },
+     "why": "meaning: ข้ามหนังสือ %lld เล่ม read as an order (skip N books); ไปแล้ว reports what was skipped"
+    },
+    {
+     "key": "%lld books whose edited text can't be used yet were skipped.",
+     "english": {
+      "one": "%lld book whose edited text can't be used yet was skipped.",
+      "other": "%lld books whose edited text can't be used yet were skipped."
+     },
+     "before": {
+      "other": "ข้ามหนังสือ %lld เล่มที่ยังใช้ข้อความที่แก้ไขไม่ได้"
+     },
+     "after": {
+      "other": "ข้ามหนังสือ %lld เล่มไปแล้ว เพราะข้อความที่แก้ไขไว้ยังใช้ไม่ได้"
+     },
+     "why": "meaning: read as an order to skip, and ใช้ข้อความที่แก้ไขไม่ได้ read as uses uneditable text; now N books were skipped because their edited text can't be used yet"
+    },
+    {
+     "key": "%lld downloads",
+     "english": {
+      "one": "%lld download",
+      "other": "%lld downloads"
+     },
+     "before": {
+      "other": "ไฟล์ดาวน์โหลด %lld ไฟล์"
+     },
+     "after": {
+      "other": "รายการดาวน์โหลด %lld รายการ"
+     },
+     "why": "term: the glossary's Download (noun) is รายการดาวน์โหลด, as Delete Downloads says it; ไฟล์ดาวน์โหลด was a second word"
+    },
+    {
+     "key": "%lld downloads will be deleted.",
+     "english": {
+      "one": "%lld download will be deleted.",
+      "other": "%lld downloads will be deleted."
+     },
+     "before": {
+      "other": "ไฟล์ดาวน์โหลด %lld ไฟล์จะถูกลบ"
+     },
+     "after": {
+      "other": "รายการดาวน์โหลด %lld รายการจะถูกลบ"
+     },
+     "why": "term: the glossary's Download (noun), as the Delete Downloads button that asks this says it"
+    },
+    {
+     "key": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "english": "A folder name can't be empty, \".\" or \"..\", end in \".tmb\", or be reserved by TextMouth.",
+     "before": "ชื่อโฟลเดอร์ต้องไม่ว่างเปล่า ไม่เป็น \".\" หรือ \"..\" ไม่ลงท้ายด้วย \".tmb\" และไม่เป็นชื่อที่ TextMouth สงวนไว้",
+     "after": "ชื่อโฟลเดอร์ต้องไม่ว่างเปล่า ไม่ใช่ “.” หรือ “..” ไม่ลงท้ายด้วย “.tmb” และไม่ใช่ชื่อที่ TextMouth สงวนไว้",
+     "why": "punctuation: Thai quotation marks, as the rest of the Thai catalog writes them; ไม่ใช่, not ไม่เป็น, before a name"
+    },
+    {
+     "key": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "english": "Always offers a view all the time. When Applicable offers it only while it lists something: the Reading List while it holds a book, episode, or article, and Feeds while there is a feed. Hidden leaves it out. A window keeps its view until you choose another.",
+     "before": "เสมอ จะแสดงมุมมองตลอดเวลา เมื่อเกี่ยวข้อง จะแสดงเฉพาะเมื่อมีรายการอยู่ คือรายการอ่านเมื่อมีหนังสือ ตอน หรือบทความ และฟีดเมื่อมีฟีด ซ่อน จะไม่แสดงมุมมอง หน้าต่างจะคงมุมมองของตนไว้จนกว่าจะเลือกมุมมองอื่น",
+     "after": "“เสมอ” จะแสดงมุมมองตลอดเวลา “เมื่อเกี่ยวข้อง” จะแสดงเฉพาะเมื่อมีรายการอยู่ คือรายการอ่านเมื่อมีหนังสือ ตอน หรือบทความ และฟีดเมื่อมีฟีด “ซ่อน” จะไม่แสดงมุมมองนั้น หน้าต่างจะคงมุมมองของตนไว้จนกว่าจะเลือกมุมมองอื่น",
+     "why": "natural: the three choice names ran into the sentences (Always will show...); quoted as names, as Thai marks a choice's name"
+    },
+    {
+     "key": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "english": "An edit of its text is kept beside the new reading, as a copy in the book's package.",
+     "before": "การแก้ไขข้อความจะถูกเก็บไว้ข้างการอ่านใหม่ เป็นสำเนาในแพ็กเกจของหนังสือ",
+     "after": "ข้อความที่แก้ไขไว้จะถูกเก็บเป็นสำเนาในแพ็กเกจของหนังสือ คู่กับข้อความที่อ่านได้ใหม่",
+     "why": "meaning: the new reading is the text a re-read makes, not การอ่านใหม่ (an act of reading again); ข้าง (beside) was literal"
+    },
+    {
+     "key": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "Asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "ถามว่าจะ %@ หรือเก็บไว้ในโฟลเดอร์ไลบรารี TextMouth",
+     "after": "ถามว่าจะ%@ หรือเก็บไว้ในโฟลเดอร์ไลบรารี TextMouth",
+     "why": "punctuation: %@ is a Thai verb phrase (ย้ายไฟล์ไปที่ถังขยะ), so no space inside จะ + verb"
+    },
+    {
+     "key": "Cancel New Folder",
+     "english": "Cancel New Folder",
+     "before": "ยกเลิกโฟลเดอร์ใหม่",
+     "after": "ยกเลิกการสร้างโฟลเดอร์",
+     "why": "natural: the button closes the new folder's fields without making it; ยกเลิกโฟลเดอร์ใหม่ (cancel the new folder) copied the English words"
+    },
+    {
+     "key": "Choose another braille code to read the book's file again with it.",
+     "english": "Choose another braille code to read the book's file again with it.",
+     "before": "เลือกรหัสอักษรเบรลล์อื่นเพื่ออ่านไฟล์ของหนังสือใหม่ด้วยรหัสนั้น",
+     "after": "เลือกรหัสอักษรเบรลล์อื่นเพื่ออ่านไฟล์ของหนังสืออีกครั้งด้วยรหัสนั้น",
+     "why": "meaning: ไฟล์ของหนังสือใหม่ reads as the new book's file; อีกครั้ง says read again"
+    },
+    {
+     "key": "Choose another encoding to read the book's file again in it.",
+     "english": "Choose another encoding to read the book's file again in it.",
+     "before": "เลือกการเข้ารหัสอื่นเพื่ออ่านไฟล์ของหนังสือใหม่ด้วยการเข้ารหัสนั้น",
+     "after": "เลือกการเข้ารหัสอื่นเพื่ออ่านไฟล์ของหนังสืออีกครั้งด้วยการเข้ารหัสนั้น",
+     "why": "meaning: ไฟล์ของหนังสือใหม่ reads as the new book's file; อีกครั้ง says read again"
+    },
+    {
+     "key": "Choose another in Book Information.",
+     "english": "Choose another in Book Information.",
+     "before": "เลือกอย่างอื่นในข้อมูลหนังสือ",
+     "after": "เลือกการเข้ารหัสอื่นในข้อมูลหนังสือ",
+     "why": "meaning: another means another text encoding; เลือกอย่างอื่น (choose something else) lost it"
+    },
+    {
+     "key": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "english": "Choose no per-book control, one shared picker, or a menu with separate forward and backward pickers",
+     "before": "เลือกไม่ใช้ตัวควบคุมต่อหนังสือ ตัวเลือกร่วมหนึ่งตัว หรือเมนูที่มีตัวเลือกไปข้างหน้าและย้อนกลับแยกกัน",
+     "after": "เลือกระหว่างไม่มีตัวควบคุมสำหรับแต่ละเล่ม ตัวเลือกร่วมหนึ่งตัว หรือเมนูที่มีตัวเลือกไปข้างหน้าและย้อนกลับแยกกัน",
+     "why": "meaning: เลือกไม่ใช้ spread the negation over all three choices (choose not to use any); now a choice among the three"
+    },
+    {
+     "key": "Choose other characters to read the book's file again with them.",
+     "english": "Choose other characters to read the book's file again with them.",
+     "before": "เลือกอักขระอื่นเพื่ออ่านไฟล์ของหนังสือใหม่ด้วยอักขระเหล่านั้น",
+     "after": "เลือกอักขระอื่นเพื่ออ่านไฟล์ของหนังสืออีกครั้งด้วยอักขระเหล่านั้น",
+     "why": "meaning: ไฟล์ของหนังสือใหม่ reads as the new book's file; อีกครั้ง says read again"
+    },
+    {
+     "key": "Choose where to move the books and subfolders before deleting \"%@\".",
+     "english": "Choose where to move the books and subfolders before deleting \"%@\".",
+     "before": "เลือกที่จะย้ายหนังสือและโฟลเดอร์ย่อยไปก่อนลบ \"%@\"",
+     "after": "เลือกตำแหน่งที่จะย้ายหนังสือและโฟลเดอร์ย่อยไปก่อนลบ “%@”",
+     "why": "meaning: เลือกที่จะย้าย means choose to move, not choose where to move; Thai quotation marks"
+    },
+    {
+     "key": "Chosen By",
+     "english": "Chosen By",
+     "before": "เลือกโดย",
+     "after": "เลือกตาม",
+     "why": "meaning: the pop-up names the order a limit keeps rows by; เลือกโดย says chosen by someone"
+    },
+    {
+     "key": "Closes Search Library; results stay for next time",
+     "english": "Closes Search Library; results stay for next time",
+     "before": "ปิด ค้นหาในไลบรารี ผลลัพธ์จะยังอยู่สำหรับครั้งถัดไป",
+     "after": "ปิดหน้าต่าง ค้นหาในไลบรารี ผลลัพธ์จะยังอยู่สำหรับครั้งถัดไป",
+     "why": "natural: ปิด followed by the bare name read as two commands (close; search the library); the window is named"
+    },
+    {
+     "key": "Closes this view without making a book",
+     "english": "Closes this view without making a book",
+     "before": "ปิดมุมมองนี้โดยไม่สร้างหนังสือ",
+     "after": "ปิดชีตนี้โดยไม่สร้างหนังสือ",
+     "why": "meaning: this view is the New Book from Text sheet; มุมมอง is the app's word for a Library view"
+    },
+    {
+     "key": "Compare Libraries in Storage settings lists every difference.",
+     "english": "Compare Libraries in Storage settings lists every difference.",
+     "before": "เปรียบเทียบไลบรารีในการตั้งค่าที่เก็บข้อมูล จะแสดงทุกความแตกต่าง",
+     "after": "คำสั่ง เปรียบเทียบไลบรารี ในการตั้งค่าที่เก็บข้อมูลจะแสดงความแตกต่างทั้งหมด",
+     "why": "natural: the bare command name opened the sentence as an order (compare the libraries); คำสั่ง makes it the subject"
+    },
+    {
+     "key": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "english": "Comparing this library with the copy in the folder you chose, to say which is newer. This can take up to a minute; choose Stop Comparing to skip it.",
+     "before": "กำลังเปรียบเทียบไลบรารีนี้กับสำเนาในโฟลเดอร์ที่เลือกเพื่อบอกว่าอันไหนใหม่กว่า อาจใช้เวลาถึงหนึ่งนาที เลือก หยุดเปรียบเทียบ เพื่อข้ามขั้นตอนนี้",
+     "after": "กำลังเปรียบเทียบไลบรารีนี้กับสำเนาในโฟลเดอร์ที่เลือก เพื่อบอกว่าสำเนาใดใหม่กว่า อาจใช้เวลาถึงหนึ่งนาที เลือก หยุดเปรียบเทียบ เพื่อข้ามขั้นตอนนี้",
+     "why": "register: อันไหน is colloquial; สำเนาใด names the copy, as the interface's formal style does"
+    },
+    {
+     "key": "Condition %@",
+     "english": "Condition %@",
+     "before": "เงื่อนไข %@",
+     "after": "เงื่อนไขที่ %@",
+     "why": "meaning: %@ is the condition's number; เงื่อนไข 2 reads as a count, เงื่อนไขที่ 2 as condition number 2"
+    },
+    {
+     "key": "Condition %@ days",
+     "english": "Condition %@ days",
+     "before": "เงื่อนไข %@ วัน",
+     "after": "จำนวนวันของเงื่อนไขที่ %@",
+     "why": "meaning: เงื่อนไข 2 วัน read as a condition of 2 days; now the days field of condition number 2"
+    },
+    {
+     "key": "Condition %@ folder",
+     "english": "Condition %@ folder",
+     "before": "เงื่อนไข %@ โฟลเดอร์",
+     "after": "โฟลเดอร์ของเงื่อนไขที่ %@",
+     "why": "meaning: เงื่อนไข 2 โฟลเดอร์ read as 2 folders; now the folder pop-up of condition number 2"
+    },
+    {
+     "key": "Condition %@ format",
+     "english": "Condition %@ format",
+     "before": "เงื่อนไข %@ รูปแบบ",
+     "after": "รูปแบบของเงื่อนไขที่ %@",
+     "why": "meaning: เงื่อนไข 2 รูปแบบ read as 2 formats; now the format pop-up of condition number 2"
+    },
+    {
+     "key": "Condition %@ includes subfolders",
+     "english": "Condition %@ includes subfolders",
+     "before": "เงื่อนไข %@ รวมโฟลเดอร์ย่อย",
+     "after": "เงื่อนไขที่ %@ รวมโฟลเดอร์ย่อย",
+     "why": "meaning: %@ is the condition's number, so the ordinal ที่, as in the other condition labels"
+    },
+    {
+     "key": "Condition %@ needs the text to look for.",
+     "english": "Condition %@ needs the text to look for.",
+     "before": "เงื่อนไข %@ ต้องมีข้อความที่จะค้นหา",
+     "after": "เงื่อนไขที่ %@ ต้องมีข้อความที่จะค้นหา",
+     "why": "meaning: %@ is the condition's number, so the ordinal ที่, as in the other condition labels"
+    },
+    {
+     "key": "Condition %@ reading state",
+     "english": "Condition %@ reading state",
+     "before": "เงื่อนไข %@ สถานะการอ่าน",
+     "after": "สถานะการอ่านของเงื่อนไขที่ %@",
+     "why": "meaning: the number before the field's name read as a count; now the reading state pop-up of condition number 2"
+    },
+    {
+     "key": "Condition %@ relation",
+     "english": "Condition %@ relation",
+     "before": "เงื่อนไข %@ ความสัมพันธ์",
+     "after": "ความสัมพันธ์ของเงื่อนไขที่ %@",
+     "why": "meaning: the number before the field's name read as a count; now the relation pop-up of condition number 2"
+    },
+    {
+     "key": "Condition %@ text",
+     "english": "Condition %@ text",
+     "before": "เงื่อนไข %@ ข้อความ",
+     "after": "ข้อความของเงื่อนไขที่ %@",
+     "why": "meaning: the number before the field's name read as a count; now the text field of condition number 2"
+    },
+    {
+     "key": "Could not delete \"%@\" and move its contents",
+     "english": "Could not delete \"%@\" and move its contents",
+     "before": "ลบ \"%@\" และย้ายเนื้อหาไม่ได้",
+     "after": "ลบ “%@” และย้ายเนื้อหาไม่ได้",
+     "why": "punctuation: Thai quotation marks, as the rest of the Thai catalog writes them"
+    },
+    {
+     "key": "Could not move \"%@\"",
+     "english": "Could not move \"%@\"",
+     "before": "ย้าย \"%@\" ไม่ได้",
+     "after": "ย้าย “%@” ไม่ได้",
+     "why": "punctuation: Thai quotation marks, as the rest of the Thai catalog writes them"
+    },
+    {
+     "key": "Could not rename \"%@\"",
+     "english": "Could not rename \"%@\"",
+     "before": "เปลี่ยนชื่อ \"%@\" ไม่ได้",
+     "after": "เปลี่ยนชื่อ “%@” ไม่ได้",
+     "why": "punctuation: Thai quotation marks, as the rest of the Thai catalog writes them"
+    },
+    {
+     "key": "Current pattern: %@",
+     "english": "Current pattern: %@",
+     "before": "รูปแบบปัจจุบัน: %@",
+     "after": "แพตเทิร์นปัจจุบัน: %@",
+     "why": "term: the glossary's Pattern is แพตเทิร์น, since รูปแบบ already means Format"
+    },
+    {
+     "key": "Deleted %@. %@ selected, %lld of %lld.",
+     "english": "Deleted %1$@. %2$@ selected, %3$lld of %4$lld.",
+     "before": "ลบ %1$@ แล้ว, เลือก %2$@, %3$lld จาก %4$lld",
+     "after": "ลบ %1$@ แล้ว, เลือก %2$@ แล้ว, %3$lld จาก %4$lld",
+     "why": "meaning: เลือก %2$@ without แล้ว read as an order to select the view; it reports the view selected now"
+    },
+    {
+     "key": "Deselect All",
+     "english": "Deselect All",
+     "before": "ไม่เลือกทั้งหมด",
+     "after": "เลิกเลือกทั้งหมด",
+     "why": "term: Apple's Thai Deselect All is เลิกเลือกทั้งหมด (Photos' Edit menu); ไม่เลือก reads as do not select"
+    },
+    {
+     "key": "Deselect all books",
+     "english": "Deselect all books",
+     "before": "ไม่เลือกหนังสือทั้งหมด",
+     "after": "เลิกเลือกหนังสือทั้งหมด",
+     "why": "term: Apple's Thai deselect is เลิกเลือก, as in Deselect All; ไม่เลือก reads as do not select"
+    },
+    {
+     "key": "Deselects this book.",
+     "english": "Deselects this book.",
+     "before": "ไม่เลือกหนังสือเล่มนี้",
+     "after": "เลิกเลือกหนังสือเล่มนี้",
+     "why": "term: Apple's Thai deselect is เลิกเลือก, as in Deselect All; ไม่เลือก reads as do not select"
+    },
+    {
+     "key": "Done. Moved %lld books.",
+     "english": {
+      "one": "Done. Moved %lld book.",
+      "other": "Done. Moved %lld books."
+     },
+     "before": {
+      "other": "เสร็จแล้ว ย้ายหนังสือ %lld เล่ม"
+     },
+     "after": {
+      "other": "เสร็จแล้ว ย้ายหนังสือแล้ว %lld เล่ม"
+     },
+     "why": "meaning: ย้ายหนังสือ %lld เล่ม read as an order (move N books); แล้ว reports the move"
+    },
+    {
+     "key": "Download of the next article cancelled, so playback stopped.",
+     "english": "Download of the next article cancelled, so playback stopped.",
+     "before": "ยกเลิกการดาวน์โหลดบทความถัดไป การเล่นจึงหยุด",
+     "after": "ยกเลิกการดาวน์โหลดบทความถัดไปแล้ว การเล่นจึงหยุด",
+     "why": "meaning: without แล้ว the first clause read as an order to cancel the download; it reports a cancellation"
+    },
+    {
+     "key": "Download of the next episode cancelled, so playback stopped.",
+     "english": "Download of the next episode cancelled, so playback stopped.",
+     "before": "ยกเลิกการดาวน์โหลดตอนถัดไป การเล่นจึงหยุด",
+     "after": "ยกเลิกการดาวน์โหลดตอนถัดไปแล้ว การเล่นจึงหยุด",
+     "why": "meaning: without แล้ว the first clause read as an order to cancel the download; it reports a cancellation"
+    },
+    {
+     "key": "Download of the previous article cancelled, so playback stopped.",
+     "english": "Download of the previous article cancelled, so playback stopped.",
+     "before": "ยกเลิกการดาวน์โหลดบทความก่อนหน้า การเล่นจึงหยุด",
+     "after": "ยกเลิกการดาวน์โหลดบทความก่อนหน้าแล้ว การเล่นจึงหยุด",
+     "why": "meaning: without แล้ว the first clause read as an order to cancel the download; it reports a cancellation"
+    },
+    {
+     "key": "Download of the previous episode cancelled, so playback stopped.",
+     "english": "Download of the previous episode cancelled, so playback stopped.",
+     "before": "ยกเลิกการดาวน์โหลดตอนก่อนหน้า การเล่นจึงหยุด",
+     "after": "ยกเลิกการดาวน์โหลดตอนก่อนหน้าแล้ว การเล่นจึงหยุด",
+     "why": "meaning: without แล้ว the first clause read as an order to cancel the download; it reports a cancellation"
+    },
+    {
+     "key": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "english": "Edit Text stops for this book; choose Edit Text again to edit the new reading.",
+     "before": "แก้ไขข้อความจะหยุดสำหรับหนังสือเล่มนี้ เลือกแก้ไขข้อความอีกครั้งเพื่อแก้ไขการอ่านใหม่",
+     "after": "แก้ไขข้อความจะหยุดสำหรับหนังสือเล่มนี้ เลือกแก้ไขข้อความอีกครั้งเพื่อแก้ไขข้อความที่อ่านได้ใหม่",
+     "why": "meaning: the new reading is the text a re-read makes, not การอ่านใหม่ (an act of reading again)"
+    },
+    {
+     "key": "Edit mode, %lld of %lld book selected",
+     "english": "Edit mode, %1$lld of %2$lld book selected",
+     "before": "โหมดแก้ไข, เลือกหนังสือ %1$lld จาก %2$lld เล่ม",
+     "after": "โหมดแก้ไข, เลือกหนังสือแล้ว %1$lld จาก %2$lld เล่ม",
+     "why": "meaning: เลือกหนังสือ without แล้ว read as an order to select; the label states how many are selected, as the edit bar's เลือกแล้ว does"
+    },
+    {
+     "key": "Edit mode, %lld of %lld books selected",
+     "english": "Edit mode, %1$lld of %2$lld books selected",
+     "before": "โหมดแก้ไข, เลือกหนังสือ %1$lld จาก %2$lld เล่ม",
+     "after": "โหมดแก้ไข, เลือกหนังสือแล้ว %1$lld จาก %2$lld เล่ม",
+     "why": "meaning: เลือกหนังสือ without แล้ว read as an order to select; the label states how many are selected, as the edit bar's เลือกแล้ว does"
+    },
+    {
+     "key": "Exact file content match — the strongest indicator",
+     "english": "Exact file content match — the strongest indicator",
+     "before": "ตรงกับเนื้อหาไฟล์ทุกประการ ซึ่งเป็นตัวบ่งชี้ที่แน่นที่สุด",
+     "after": "ตรงกับเนื้อหาไฟล์ทุกประการ ซึ่งเป็นตัวบ่งชี้ที่ชัดเจนที่สุด",
+     "why": "meaning: แน่นที่สุด means tightest; the strongest indicator is the clearest one (ชัดเจนที่สุด)"
+    },
+    {
+     "key": "Files not read",
+     "english": "Files not read",
+     "before": "ไฟล์ที่ไม่ได้อ่าน",
+     "after": "ไฟล์ที่อ่านไม่ได้",
+     "why": "meaning: the list holds files the comparison could not read; ไฟล์ที่ไม่ได้อ่าน says files it did not read"
+    },
+    {
+     "key": "Folders is always shown: every folder and feed opens there.",
+     "english": "Folders is always shown: every folder and feed opens there.",
+     "before": "โฟลเดอร์แสดงเสมอ: ทุกโฟลเดอร์และฟีดเปิดที่นี่",
+     "after": "มุมมองโฟลเดอร์จะแสดงเสมอ: ทุกโฟลเดอร์และฟีดจะเปิดในมุมมองนี้",
+     "why": "meaning: Folders is the view, and there is that view; ที่นี่ said here, and bare โฟลเดอร์ read as folders in general"
+    },
+    {
+     "key": "Gesture pattern",
+     "english": "Gesture pattern",
+     "before": "ลำดับท่าทาง",
+     "after": "แพตเทิร์นท่าทาง",
+     "why": "term: the glossary's Pattern is แพตเทิร์น, as the summary under this list (Current pattern) and every other pattern string say it"
+    },
+    {
+     "key": "Getting Your Library",
+     "english": "Getting Your Library",
+     "before": "กำลังรับไลบรารี",
+     "after": "กำลังโหลดไลบรารีของคุณ",
+     "why": "natural: กำลังรับไลบรารี (receiving the library) copied getting; the screen waits while the library's files arrive"
+    },
+    {
+     "key": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "english": "Import it again, which asks about the duplicate, and choose Replace Existing so that the copy stored in the data directory takes its place, or remove it from the library, then move the data directory again.",
+     "before": "นำเข้าอีกครั้ง ซึ่งจะถามเกี่ยวกับรายการซ้ำ แล้วเลือก แทนที่รายการที่มีอยู่ เพื่อให้สำเนาที่เก็บในโฟลเดอร์ข้อมูลถูกแทนที่ หรือนำออกจากไลบรารี แล้วย้ายโฟลเดอร์ข้อมูลอีกครั้ง",
+     "after": "นำเข้าอีกครั้ง ซึ่งจะถามเกี่ยวกับรายการซ้ำ แล้วเลือก แทนที่รายการที่มีอยู่ เพื่อให้สำเนาที่เก็บในโฟลเดอร์ข้อมูลเข้าไปแทนที่ หรือนำหนังสือออกจากไลบรารี แล้วย้ายโฟลเดอร์ข้อมูลอีกครั้ง",
+     "why": "meaning: subject and object were swapped: the copy in the data directory takes the book's place, it is not the one replaced"
+    },
+    {
+     "key": "Its text is replaced by the new reading.",
+     "english": "Its text is replaced by the new reading.",
+     "before": "ข้อความของหนังสือจะถูกแทนที่ด้วยการอ่านใหม่",
+     "after": "ข้อความของหนังสือจะถูกแทนที่ด้วยข้อความที่อ่านได้ใหม่",
+     "why": "meaning: the new reading is the text a re-read makes, not การอ่านใหม่ (an act of reading again)"
+    },
+    {
+     "key": "Kept on this Mac for the reading list",
+     "english": "Kept on this Mac for the reading list",
+     "before": "เก็บไว้ใน Mac เครื่องนี้สำหรับรายการอ่าน",
+     "after": "ถูกเก็บไว้ใน Mac เครื่องนี้สำหรับรายการอ่าน",
+     "why": "meaning: the note repeated the Keep on This Mac command (เก็บไว้ใน Mac เครื่องนี้), so it read as an order; ถูก makes it the book's state"
+    },
+    {
+     "key": "Left %@ where it is: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where it is: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "คง %1$@ ไว้ที่เดิม: ตอนและบทความจะอยู่ในฟีดของตน ส่วน %2$@ จะทำให้เป็นหนังสือของไลบรารี",
+     "after": "%1$@ ยังอยู่ที่เดิม: ตอนและบทความจะอยู่ในฟีดของตน ส่วนคำสั่ง %2$@ จะทำให้รายการเป็นหนังสือในไลบรารีของคุณ",
+     "why": "meaning: คง %1$@ ไว้ที่เดิม read as an order (keep it where it is); the announcement reports that the item stayed, and คำสั่ง marks the command's name"
+    },
+    {
+     "key": "Left %@ where they are: episodes and articles stay in their feeds; %@ makes one a book of your library.",
+     "english": "Left %1$@ where they are: episodes and articles stay in their feeds; %2$@ makes one a book of your library.",
+     "before": "คง %1$@ ไว้ที่เดิม: ตอนและบทความจะอยู่ในฟีดของตน ส่วน %2$@ จะทำให้แต่ละรายการเป็นหนังสือของไลบรารี",
+     "after": "%1$@ ยังอยู่ที่เดิม: ตอนและบทความจะอยู่ในฟีดของตน ส่วนคำสั่ง %2$@ จะทำให้รายการเป็นหนังสือในไลบรารีของคุณ",
+     "why": "meaning: คง %1$@ ไว้ที่เดิม read as an order (keep them where they are); the announcement reports that the items stayed, and คำสั่ง marks the command's name"
+    },
+    {
+     "key": "Make sure its folder can be written to, then try again.",
+     "english": "Make sure its folder can be written to, then try again.",
+     "before": "ตรวจสอบว่าเขียนลงในโฟลเดอร์ของมันได้ แล้วลองอีกครั้ง",
+     "after": "ตรวจสอบว่าเขียนลงในโฟลเดอร์นั้นได้ แล้วลองอีกครั้ง",
+     "why": "register: ของมัน (its, said of a thing) is colloquial; the interface says โฟลเดอร์นั้น"
+    },
+    {
+     "key": "Makes a view of your own from the conditions you choose.",
+     "english": "Makes a view of your own from the conditions you choose.",
+     "before": "สร้างมุมมองของตนเองจากเงื่อนไขที่เลือก",
+     "after": "สร้างมุมมองของคุณเองจากเงื่อนไขที่เลือก",
+     "why": "grammar: ของตนเอง refers back to the subject, the command; the view is the listener's own (ของคุณเอง)"
+    },
+    {
+     "key": "Makes your own view with these conditions and sort.",
+     "english": "Makes your own view with these conditions and sort.",
+     "before": "สร้างมุมมองของตนเองด้วยเงื่อนไขและการเรียงลำดับเหล่านี้",
+     "after": "สร้างมุมมองของคุณเองด้วยเงื่อนไขและการเรียงลำดับเหล่านี้",
+     "why": "grammar: ของตนเอง refers back to the subject, the command; the view is the listener's own (ของคุณเอง)"
+    },
+    {
+     "key": "Most rows shown",
+     "english": "Most rows shown",
+     "before": "แสดงแถวมากที่สุด",
+     "after": "จำนวนแถวสูงสุดที่แสดง",
+     "why": "meaning: the limit field's label; แสดงแถวมากที่สุด read as an order to show the most rows"
+    },
+    {
+     "key": "Move \"%@\"",
+     "english": "Move \"%@\"",
+     "before": "ย้าย \"%@\"",
+     "after": "ย้าย “%@”",
+     "why": "punctuation: Thai quotation marks, as the rest of the Thai catalog writes them"
+    },
+    {
+     "key": "Move Contents of \"%@\"",
+     "english": "Move Contents of \"%@\"",
+     "before": "ย้ายเนื้อหาของ \"%@\"",
+     "after": "ย้ายเนื้อหาของ “%@”",
+     "why": "punctuation: Thai quotation marks, as the rest of the Thai catalog writes them"
+    },
+    {
+     "key": "Moved %@ above %@",
+     "english": "Moved %1$@ above %2$@",
+     "before": "ย้าย %1$@ ไปไว้เหนือ %2$@",
+     "after": "ย้าย %1$@ ไปไว้เหนือ %2$@ แล้ว",
+     "why": "meaning: without แล้ว the announcement read as an order (move it above); it reports the move"
+    },
+    {
+     "key": "Moved %@ below %@",
+     "english": "Moved %1$@ below %2$@",
+     "before": "ย้าย %1$@ ไปไว้ใต้ %2$@",
+     "after": "ย้าย %1$@ ไปไว้ใต้ %2$@ แล้ว",
+     "why": "meaning: without แล้ว the announcement read as an order (move it below); it reports the move"
+    },
+    {
+     "key": "Moved to %@, %@.",
+     "english": "Moved to %1$@, %2$@.",
+     "before": "ย้ายไปที่ %1$@, %2$@",
+     "after": "ไปที่ %1$@ แล้ว, %2$@",
+     "why": "meaning: ย้ายไปที่ read as an order to move (relocate) something; the reader's place went to the result, so ไปที่ ... แล้ว"
+    },
+    {
+     "key": "Moved to %@.",
+     "english": "Moved to %@.",
+     "before": "ย้ายไปที่ %@",
+     "after": "ไปที่ %@ แล้ว",
+     "why": "meaning: ย้ายไปที่ read as an order to move (relocate) something; the reader's place went to the result, so ไปที่ ... แล้ว"
+    },
+    {
+     "key": "Moved to the match, %@.",
+     "english": "Moved to the match, %@.",
+     "before": "ย้ายไปที่รายการที่ตรงกัน, %@",
+     "after": "ไปที่รายการที่ตรงกันแล้ว, %@",
+     "why": "meaning: ย้ายไปที่ read as an order to move (relocate) something; the reader's place went to the match, so ไปที่ ... แล้ว"
+    },
+    {
+     "key": "Moved to the match.",
+     "english": "Moved to the match.",
+     "before": "ย้ายไปที่รายการที่ตรงกัน",
+     "after": "ไปที่รายการที่ตรงกันแล้ว",
+     "why": "meaning: ย้ายไปที่ read as an order to move (relocate) something; the reader's place went to the match, so ไปที่ ... แล้ว"
+    },
+    {
+     "key": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "english": "Neither has newer places or books the other lacks, but they differ in other ways.",
+     "before": "ไม่มีฝ่ายใดมีตำแหน่งหรือหนังสือใหม่กว่าที่อีกฝ่ายไม่มี แต่ต่างกันในด้านอื่น",
+     "after": "ไม่มีสำเนาใดมีตำแหน่งที่ใหม่กว่าหรือหนังสือที่อีกสำเนาไม่มี แต่ต่างกันในด้านอื่น",
+     "why": "natural: ฝ่าย names parties to a dispute; the copies are สำเนา and อีกสำเนา, as the other comparison strings say"
+    },
+    {
+     "key": "Neither is newer: each has changes the other lacks.",
+     "english": "Neither is newer: each has changes the other lacks.",
+     "before": "ไม่มีฝ่ายใดใหม่กว่า: แต่ละฝ่ายมีการเปลี่ยนแปลงที่อีกฝ่ายไม่มี",
+     "after": "ไม่มีสำเนาใดใหม่กว่า: แต่ละสำเนามีการเปลี่ยนแปลงที่อีกสำเนาไม่มี",
+     "why": "natural: ฝ่าย names parties to a dispute; the copies are สำเนา and อีกสำเนา, as the other comparison strings say"
+    },
+    {
+     "key": "New Folder cancelled.",
+     "english": "New Folder cancelled.",
+     "before": "ยกเลิกโฟลเดอร์ใหม่แล้ว",
+     "after": "ยกเลิกการสร้างโฟลเดอร์แล้ว",
+     "why": "natural: ยกเลิกโฟลเดอร์ใหม่ copied the English words; matches the Cancel New Folder button, ยกเลิกการสร้างโฟลเดอร์"
+    },
+    {
+     "key": "New Folder cancelled. %@: %@.",
+     "english": "New Folder cancelled. %1$@: %2$@.",
+     "before": "ยกเลิกโฟลเดอร์ใหม่แล้ว %1$@: %2$@",
+     "after": "ยกเลิกการสร้างโฟลเดอร์แล้ว %1$@: %2$@",
+     "why": "natural: ยกเลิกโฟลเดอร์ใหม่ copied the English words; matches the Cancel New Folder button, ยกเลิกการสร้างโฟลเดอร์"
+    },
+    {
+     "key": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+     "english": {
+      "one": "None of the %@ selected books is kept on this Mac by your choice, and %lld is kept for the reading list.",
+      "other": "None of the %@ selected books is kept on this Mac by your choice, and %lld are kept for the reading list."
+     },
+     "before": {
+      "other": "หนังสือที่เลือก %@ เล่มไม่มีเล่มใดถูกเก็บไว้ใน Mac เครื่องนี้ตามที่เลือก และ %lld เล่มถูกเก็บไว้สำหรับรายการอ่าน"
+     },
+     "after": {
+      "other": "จากหนังสือที่เลือก %@ เล่ม ไม่มีเล่มใดที่คุณสั่งให้เก็บไว้ใน Mac เครื่องนี้ และ %lld เล่มถูกเก็บไว้สำหรับรายการอ่าน"
+     },
+     "why": "meaning: ตามที่เลือก read as as selected, losing by your choice (Keep on This Mac) against kept for the reading list"
+    },
+    {
+     "key": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "english": "Nothing checks that this is the right choice. If numbers and punctuation sound wrong, choose another.",
+     "before": "ไม่มีสิ่งใดตรวจสอบว่านี่คือตัวเลือกที่ถูกต้อง หากตัวเลขและเครื่องหมายวรรคตอนฟังผิดปกติ ให้เลือกอย่างอื่น",
+     "after": "ไม่มีวิธีตรวจสอบว่านี่คือตัวเลือกที่ถูกต้อง หากตัวเลขและเครื่องหมายวรรคตอนฟังดูผิด ให้เลือกรหัสอื่น",
+     "why": "natural: ไม่มีสิ่งใดตรวจสอบ copied the English idiom; nothing can tell, so no way to check; another means another code"
+    },
+    {
+     "key": "Open in a reader window",
+     "english": "Open in a reader window",
+     "before": "เปิดในหน้าต่างตัวอ่าน",
+     "after": "เปิดอยู่ในหน้าต่างตัวอ่าน",
+     "why": "meaning: a summary's state (the book is open in a reader window); เปิดในหน้าต่างตัวอ่าน read as the command to open it"
+    },
+    {
+     "key": "Re-extract All",
+     "english": "Re-extract All",
+     "before": "ดึงทั้งหมดอีกครั้ง",
+     "after": "ดึงข้อความทั้งหมดอีกครั้ง",
+     "why": "natural: Thai needs the object; ดึงทั้งหมดอีกครั้ง (pull everything again) left out the text"
+    },
+    {
+     "key": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "english": "Reading the audio took longer than %@ seconds; TextMouth stopped waiting.",
+     "before": "การอ่านเสียงใช้เวลานานกว่า %@ วินาที TextMouth จึงหยุดรอ",
+     "after": "การอ่านไฟล์เสียงใช้เวลานานกว่า %@ วินาที TextMouth จึงหยุดรอ",
+     "why": "meaning: การอ่านเสียง reads as reading aloud; it is the audio file that took too long to read"
+    },
+    {
+     "key": "Reading the audio took longer than %lld minutes; TextMouth stopped waiting.",
+     "english": {
+      "one": "Reading the audio took longer than %lld minute; TextMouth stopped waiting.",
+      "other": "Reading the audio took longer than %lld minutes; TextMouth stopped waiting."
+     },
+     "before": {
+      "other": "การอ่านเสียงใช้เวลานานกว่า %lld นาที TextMouth จึงหยุดรอ"
+     },
+     "after": {
+      "other": "การอ่านไฟล์เสียงใช้เวลานานกว่า %lld นาที TextMouth จึงหยุดรอ"
+     },
+     "why": "meaning: การอ่านเสียง reads as reading aloud; it is the audio file that took too long to read"
+    },
+    {
+     "key": "Reading the audio took longer than %lld seconds; TextMouth stopped waiting.",
+     "english": {
+      "one": "Reading the audio took longer than %lld second; TextMouth stopped waiting.",
+      "other": "Reading the audio took longer than %lld seconds; TextMouth stopped waiting."
+     },
+     "before": {
+      "other": "การอ่านเสียงใช้เวลานานกว่า %lld วินาที TextMouth จึงหยุดรอ"
+     },
+     "after": {
+      "other": "การอ่านไฟล์เสียงใช้เวลานานกว่า %lld วินาที TextMouth จึงหยุดรอ"
+     },
+     "why": "meaning: การอ่านเสียง reads as reading aloud; it is the audio file that took too long to read"
+    },
+    {
+     "key": "Reading the book again...",
+     "english": "Reading the book again...",
+     "before": "กำลังอ่านหนังสือใหม่...",
+     "after": "กำลังอ่านหนังสืออีกครั้ง...",
+     "why": "meaning: อ่านหนังสือใหม่ reads as reading a new book; อีกครั้ง says again"
+    },
+    {
+     "key": "Rebuilding the data directory...",
+     "english": "Rebuilding the data directory...",
+     "before": "กำลังสร้างโฟลเดอร์ข้อมูลใหม่...",
+     "after": "กำลังสร้างโฟลเดอร์ข้อมูลขึ้นใหม่...",
+     "why": "meaning: สร้างโฟลเดอร์ข้อมูลใหม่ reads as making a new data folder; ขึ้นใหม่ says rebuilding it"
+    },
+    {
+     "key": "Remove condition %@",
+     "english": "Remove condition %@",
+     "before": "นำเงื่อนไข %@ ออก",
+     "after": "นำเงื่อนไขที่ %@ ออก",
+     "why": "meaning: %@ is the condition's number, so the ordinal ที่, as in the other condition labels"
+    },
+    {
+     "key": "Sets when the View pop-up offers this view",
+     "english": "Sets when the View pop-up offers this view",
+     "before": "กำหนดเวลาที่เมนูป๊อปอัปมุมมองเสนอมุมมองนี้",
+     "after": "กำหนดว่าเมนูป๊อปอัปมุมมองจะแสดงมุมมองนี้เมื่อใด",
+     "why": "natural: กำหนดเวลาที่ (sets the time at which) copied when; the pop-up shows a view, it does not propose (เสนอ) one"
+    },
+    {
+     "key": "Show at Most",
+     "english": "Show at Most",
+     "before": "แสดงมากที่สุด",
+     "after": "แสดงไม่เกิน",
+     "why": "meaning: the limit checkbox (show at most N); แสดงมากที่สุด says show the most"
+    },
+    {
+     "key": "Some changes are not saved.",
+     "english": "Some changes are not saved.",
+     "before": "บางการเปลี่ยนแปลงยังไม่ได้บันทึก",
+     "after": "การเปลี่ยนแปลงบางอย่างยังไม่ได้บันทึก",
+     "why": "grammar: บาง cannot come before การเปลี่ยนแปลง; Thai says การเปลี่ยนแปลงบางอย่าง, as the next sentence does"
+    },
+    {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "หยุด และการเล่นเริ่มใหม่ตั้งแต่ต้น",
+     "after": "หยุด แล้วเริ่มใหม่ตั้งแต่ต้นเมื่อสั่งเล่น",
+     "why": "meaning: การเล่นเริ่มใหม่ said playback starts over by itself, like Loop to Start; the book stops, and Play then starts it from the beginning"
+    },
+    {
+     "key": "Stopped after %@ of %@:",
+     "english": "Stopped after %1$@ of %2$@:",
+     "before": "หยุดหลังจาก %1$@ จาก %2$@:",
+     "after": "หยุดหลังค้นหาไปแล้ว %1$@ จาก%2$@:",
+     "why": "natural: หยุดหลังจาก 300 จาก หนังสือ 750 เล่ม stacked two จาก; %2$@ starts with a Thai word, so no space before it"
+    },
+    {
+     "key": "Stops saying the code was guessed. The book is not read again.",
+     "english": "Stops saying the code was guessed. The book is not read again.",
+     "before": "เลิกบอกว่ารหัสนี้เป็นการคาดเดา ไม่มีการอ่านหนังสือใหม่",
+     "after": "เลิกบอกว่ารหัสนี้เป็นการคาดเดา ไม่มีการอ่านหนังสืออีกครั้ง",
+     "why": "meaning: การอ่านหนังสือใหม่ reads as reading a new book; อีกครั้ง says again"
+    },
+    {
+     "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "before": "การสลับจะทำให้การเปลี่ยนแปลงที่ TextMouth บันทึกไม่ได้สูญหายขณะที่ไลบรารีไม่พร้อมใช้งาน",
+     "after": "การสลับจะทำให้การเปลี่ยนแปลงที่ TextMouth บันทึกไม่ได้ขณะที่ไลบรารีไม่พร้อมใช้งานสูญหายไป",
+     "why": "meaning: the while clause came after สูญหาย, so it said the changes are lost while the library is unavailable; it belongs to couldn't save"
+    },
+    {
+     "key": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "english": "TextMouth couldn't keep the edited text of the copy in your library beside the new copy's text, so it left both copies as they are.",
+     "before": "TextMouth เก็บข้อความที่แก้ไขของสำเนาในไลบรารีไว้ข้างข้อความของสำเนาใหม่ไม่ได้ จึงปล่อยทั้งสองสำเนาไว้ตามเดิม",
+     "after": "TextMouth เก็บข้อความที่แก้ไขของสำเนาในไลบรารีไว้คู่กับข้อความของสำเนาใหม่ไม่ได้ จึงปล่อยทั้งสองสำเนาไว้ตามเดิม",
+     "why": "natural: ไว้ข้าง (beside) was literal; คู่กับ, as the other strings about a kept edit say"
+    },
+    {
+     "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
+     "before": "TextMouth เก็บข้อความที่เปลี่ยนไว้ใน “%@” ข้างการอ่านใหม่ไม่ได้ จึงปล่อยหนังสือไว้ตามเดิม",
+     "after": "TextMouth เก็บข้อความที่คุณเปลี่ยนไว้ใน “%@” คู่กับข้อความที่อ่านได้ใหม่ไม่ได้ จึงปล่อยหนังสือไว้ตามเดิม",
+     "why": "meaning: the new reading is the text a re-read makes, not การอ่านใหม่ (an act of reading again); ข้าง was literal"
+    },
+    {
+     "key": "TextMouth is reading the library's text again. Try again when that finishes.",
+     "english": "TextMouth is reading the library's text again. Try again when that finishes.",
+     "before": "TextMouth กำลังอ่านข้อความของไลบรารีใหม่ ลองอีกครั้งเมื่อเสร็จ",
+     "after": "TextMouth กำลังอ่านข้อความของไลบรารีอีกครั้ง ลองอีกครั้งเมื่อเสร็จ",
+     "why": "meaning: ข้อความของไลบรารีใหม่ reads as the new library's text; อีกครั้ง says again"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory.",
+     "english": "TextMouth is rebuilding its data directory.",
+     "before": "TextMouth กำลังสร้างโฟลเดอร์ข้อมูลใหม่",
+     "after": "TextMouth กำลังสร้างโฟลเดอร์ข้อมูลขึ้นใหม่",
+     "why": "meaning: สร้างโฟลเดอร์ข้อมูลใหม่ reads as making a new data folder; ขึ้นใหม่ says rebuilding it"
+    },
+    {
+     "key": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "english": "TextMouth is rebuilding its data directory. Wait until that finishes, then choose %@ again.",
+     "before": "TextMouth กำลังสร้างโฟลเดอร์ข้อมูลใหม่ รอจนเสร็จ แล้วเลือก %@ อีกครั้ง",
+     "after": "TextMouth กำลังสร้างโฟลเดอร์ข้อมูลขึ้นใหม่ รอจนเสร็จ แล้วเลือก %@ อีกครั้ง",
+     "why": "meaning: สร้างโฟลเดอร์ข้อมูลใหม่ reads as making a new data folder; ขึ้นใหม่ says rebuilding it"
+    },
+    {
+     "key": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "english": "TextMouth moves them back once it has finished rebuilding its data directory.",
+     "before": "TextMouth จะย้ายกลับเมื่อสร้างโฟลเดอร์ข้อมูลใหม่เสร็จ",
+     "after": "TextMouth จะย้ายกลับเมื่อสร้างโฟลเดอร์ข้อมูลขึ้นใหม่เสร็จ",
+     "why": "meaning: สร้างโฟลเดอร์ข้อมูลใหม่ reads as making a new data folder; ขึ้นใหม่ says rebuilding it"
+    },
+    {
+     "key": "TextMouth saves them once it has finished rebuilding its data directory.",
+     "english": "TextMouth saves them once it has finished rebuilding its data directory.",
+     "before": "TextMouth จะบันทึกการเปลี่ยนแปลงเมื่อสร้างโฟลเดอร์ข้อมูลใหม่เสร็จ",
+     "after": "TextMouth จะบันทึกการเปลี่ยนแปลงเมื่อสร้างโฟลเดอร์ข้อมูลขึ้นใหม่เสร็จ",
+     "why": "meaning: สร้างโฟลเดอร์ข้อมูลใหม่ reads as making a new data folder; ขึ้นใหม่ says rebuilding it"
+    },
+    {
+     "key": "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered.",
+     "english": "The View pop-up of a Library window offers these views in this order. A new window opens at the first one offered.",
+     "before": "เมนูป๊อปอัปมุมมองของหน้าต่างไลบรารีเสนอมุมมองเหล่านี้ตามลำดับนี้ หน้าต่างใหม่จะเปิดที่มุมมองแรกที่เสนอ",
+     "after": "เมนูป๊อปอัปมุมมองของหน้าต่างไลบรารีแสดงมุมมองเหล่านี้ตามลำดับนี้ หน้าต่างใหม่จะเปิดที่มุมมองแรกที่แสดง",
+     "why": "natural: a pop-up shows its views; เสนอ (propose) copied offers"
+    },
+    {
+     "key": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "english": "The braille is translated to print again with this code. Nothing checks that it is the right choice. If words read wrongly, choose another.",
+     "before": "อักษรเบรลล์จะถูกแปลเป็นตัวพิมพ์อีกครั้งด้วยรหัสนี้ ไม่มีสิ่งใดตรวจสอบว่าเป็นตัวเลือกที่ถูกต้อง หากอ่านคำผิด ให้เลือกรหัสอื่น",
+     "after": "อักษรเบรลล์จะถูกแปลเป็นตัวพิมพ์อีกครั้งด้วยรหัสนี้ ไม่มีวิธีตรวจสอบว่าเป็นตัวเลือกที่ถูกต้อง หากอ่านคำผิด ให้เลือกรหัสอื่น",
+     "why": "natural: ไม่มีสิ่งใดตรวจสอบ copied the English idiom; nothing can tell, so no way to check"
+    },
+    {
+     "key": "The download of “%@” will be deleted.",
+     "english": "The download of “%@” will be deleted.",
+     "before": "ไฟล์ดาวน์โหลดของ “%@” จะถูกลบ",
+     "after": "รายการดาวน์โหลดของ “%@” จะถูกลบ",
+     "why": "term: the glossary's Download (noun), as the Delete Download command that asks this says it"
+    },
+    {
+     "key": "The original at %@ is a folder or link, so a copy of it cannot be checked.",
+     "english": "The original at %@ is a folder or link, so a copy of it cannot be checked.",
+     "before": "ต้นฉบับที่ %@ เป็นโฟลเดอร์หรือลิงก์ จึงตรวจสอบสำเนาของมันไม่ได้",
+     "after": "ต้นฉบับที่ %@ เป็นโฟลเดอร์หรือลิงก์ จึงตรวจสอบสำเนาของต้นฉบับนั้นไม่ได้",
+     "why": "register: ของมัน (its, said of a thing) is colloquial; the interface names the thing"
+    },
+    {
+     "key": "The reading list still keeps %lld of them downloaded",
+     "english": {
+      "one": "The reading list still keeps %lld of them downloaded",
+      "other": "The reading list still keeps %lld of them downloaded"
+     },
+     "before": {
+      "other": "รายการอ่านยังเก็บ %lld เล่มไว้ดาวน์โหลดอยู่"
+     },
+     "after": {
+      "other": "รายการอ่านยังเก็บการดาวน์โหลดของ %lld เล่มไว้"
+     },
+     "why": "meaning: เก็บ %lld เล่มไว้ดาวน์โหลด read as keeping them in order to download; the reading list keeps their downloads, as the Remove Download refusals say"
+    },
+    {
+     "key": "The reading list still keeps it downloaded",
+     "english": "The reading list still keeps it downloaded",
+     "before": "รายการอ่านยังเก็บเล่มนั้นไว้ดาวน์โหลดอยู่",
+     "after": "รายการอ่านยังเก็บการดาวน์โหลดของเล่มนั้นไว้",
+     "why": "meaning: เก็บเล่มนั้นไว้ดาวน์โหลด read as keeping it in order to download; the reading list keeps its download"
+    },
+    {
+     "key": "The reading list still keeps them downloaded",
+     "english": "The reading list still keeps them downloaded",
+     "before": "รายการอ่านยังเก็บเล่มเหล่านั้นไว้ดาวน์โหลดอยู่",
+     "after": "รายการอ่านยังเก็บการดาวน์โหลดของเล่มเหล่านั้นไว้",
+     "why": "meaning: เก็บเล่มเหล่านั้นไว้ดาวน์โหลด read as keeping them in order to download; the reading list keeps their downloads"
+    },
+    {
+     "key": "The text changed since the search; moved to the nearest match.",
+     "english": "The text changed since the search; moved to the nearest match.",
+     "before": "ข้อความเปลี่ยนไปตั้งแต่ค้นหา จึงย้ายไปที่รายการที่ตรงกันที่ใกล้ที่สุด",
+     "after": "ข้อความเปลี่ยนไปตั้งแต่ค้นหา จึงไปที่รายการที่ตรงกันที่ใกล้ที่สุดแทน",
+     "why": "natural: the reader's place goes to the match (ไปที่), as the other search announcements say; ย้าย means relocate"
+    },
+    {
+     "key": "There is no view %@. Go to View reaches %lld views.",
+     "english": {
+      "one": "There is no view %@. Go to View reaches %lld view.",
+      "other": "There is no view %@. Go to View reaches %lld views."
+     },
+     "before": {
+      "other": "ไม่มีมุมมอง %@ คำสั่ง ไปที่มุมมอง ไปถึงได้ %lld มุมมอง"
+     },
+     "after": {
+      "other": "ไม่มีมุมมองที่ %@ คำสั่ง ไปที่มุมมอง ไปได้ %lld มุมมอง"
+     },
+     "why": "meaning: %@ is the view's number, so the ordinal ที่; ไปถึงได้ (arrive at) copied reaches"
+    },
+    {
+     "key": "This re-extracts the cached text of every book, which may take a while for a large library.",
+     "english": "This re-extracts the cached text of every book, which may take a while for a large library.",
+     "before": "การดำเนินการนี้จะดึงข้อความที่แคชไว้ของทุกเล่มอีกครั้ง ซึ่งอาจใช้เวลาสักครู่สำหรับไลบรารีขนาดใหญ่",
+     "after": "การดำเนินการนี้จะดึงข้อความที่แคชไว้ของทุกเล่มอีกครั้ง ซึ่งอาจใช้เวลานานสำหรับไลบรารีขนาดใหญ่",
+     "why": "meaning: สักครู่ means a moment; a large library may take a long while (นาน)"
+    },
+    {
+     "key": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "english": "Titles sort, and are found by typing, as they are written: The Hobbit is among the T's.",
+     "before": "ชื่อเรื่องจะเรียงลำดับและค้นพบด้วยการพิมพ์ตามที่เขียน The Hobbit อยู่ในกลุ่ม T",
+     "after": "ชื่อเรื่องจะเรียงลำดับและพบได้ด้วยการพิมพ์ตามที่เขียนไว้ The Hobbit อยู่ในกลุ่ม T",
+     "why": "natural: ค้นพบ means discover; a title is found by typing (พบได้)"
+    },
+    {
+     "key": "To free the space anyway, choose Show in Finder, then %@.",
+     "english": "To free the space anyway, choose Show in Finder, then %@.",
+     "before": "หากต้องการเพิ่มพื้นที่ว่างต่อไป ให้เลือก แสดงใน Finder แล้ว %@",
+     "after": "หากยังต้องการเพิ่มพื้นที่ว่าง ให้เลือก แสดงใน Finder แล้ว %@",
+     "why": "meaning: ต่อไป (further, from now on) does not say anyway; หากยังต้องการ is to free the space all the same"
+    },
+    {
+     "key": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@",
+     "english": {
+      "one": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld second in all, %@",
+      "other": "Unread: %@ wasn't read, because TextMouth stopped waiting after %lld seconds in all, %@"
+     },
+     "before": {
+      "other": "ไม่ได้อ่าน: ไม่ได้อ่าน %@ เพราะ TextMouth หยุดรอหลังจากรวม %lld วินาที, %@"
+     },
+     "after": {
+      "other": "ไม่ได้อ่าน: ไม่ได้อ่าน %@ เพราะ TextMouth หยุดรอหลังผ่านไปรวม %lld วินาที, %@"
+     },
+     "why": "grammar: หลังจากรวม %lld วินาที (after combining N seconds) lost the verb; now after N seconds in all had passed"
+    },
+    {
+     "key": "Waiting for feed downloads to be deleted...",
+     "english": "Waiting for feed downloads to be deleted...",
+     "before": "กำลังรอให้ลบการดาวน์โหลดฟีด...",
+     "after": "กำลังรอให้ลบรายการดาวน์โหลดของฟีด...",
+     "why": "term: the glossary's Download (noun), as Delete Downloads says it; ลบการดาวน์โหลด could read as stopping a download"
+    },
+    {
+     "key": "When off, removing a book will %@ at once.",
+     "english": "When off, removing a book will %@ at once.",
+     "before": "เมื่อปิด การนำหนังสือออกจะ %@ ทันที",
+     "after": "เมื่อปิด การนำหนังสือออกจะ%@ทันที",
+     "why": "punctuation: %@ is a Thai verb phrase (ย้ายไฟล์ไปที่ถังขยะ), so no spaces inside จะ + verb + ทันที"
+    },
+    {
+     "key": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "english": "When on, removing a book first asks whether to %@ or keep them in the TextMouth library folder.",
+     "before": "เมื่อเปิด การนำหนังสือออกจะถามก่อนว่าจะ %@ หรือเก็บไว้ในโฟลเดอร์ไลบรารี TextMouth",
+     "after": "เมื่อเปิด การนำหนังสือออกจะถามก่อนว่าจะ%@ หรือเก็บไว้ในโฟลเดอร์ไลบรารี TextMouth",
+     "why": "punctuation: %@ is a Thai verb phrase (ย้ายไฟล์ไปที่ถังขยะ), so no space inside จะ + verb"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "ที่ที่ TextMouth เขียนบันทึกการทำงานสำหรับวินิจฉัย %@ เก็บไว้กับหนังสือของคุณ จึงย้ายและซิงค์ไปกับไลบรารี %@ เก็บไว้ใน %@ ซึ่งไม่เคยซิงค์ การเปลี่ยนแปลงมีผลตั้งแต่บรรทัดถัดไป บันทึกที่มีอยู่จะคงไว้",
+     "after": "ที่ที่ TextMouth เขียนบันทึกการทำงานสำหรับวินิจฉัย ตัวเลือก %@ จะเก็บไว้กับหนังสือของคุณ จึงย้ายและซิงค์ไปกับไลบรารี ตัวเลือก %@ จะเก็บไว้ใน %@ ซึ่งไม่ซิงค์เลย การเปลี่ยนแปลงมีผลตั้งแต่บรรทัดถัดไป บันทึกที่มีอยู่จะคงไว้",
+     "why": "meaning: ไม่เคยซิงค์ said has never synced, not never syncs; ตัวเลือก marks the two choice names as the subjects"
+    },
+    {
+     "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "หากไม่เหลือคำใดของรายการเหล่านั้น, %@, แต่ละรายการจะไปที่จุดประมาณเดียวกันในบทของตน หรือไปที่ข้อความที่ใกล้ที่สุดที่การอ่านทั้งสองแบบมีร่วมกัน",
+     "after": "หากไม่เหลือคำเดิมของรายการเหล่านั้นเลย %@ แต่ละรายการจะไปที่จุดเดียวกันโดยประมาณในบทของตน หรือไปที่ข้อความช่วงที่ใกล้ที่สุดซึ่งข้อความทั้งสองฉบับมีร่วมกัน",
+     "why": "meaning: the two readings are the old and new text (ข้อความทั้งสองฉบับ), not two ways of reading; spaces, not commas, set off the example"
+    },
+    {
+     "key": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "english": "Where none of their words are left, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
+     "before": "หากไม่เหลือคำใดของรายการเหล่านั้น แต่ละรายการจะไปที่จุดประมาณเดียวกันในบทของตน หรือไปที่ข้อความที่ใกล้ที่สุดที่การอ่านทั้งสองแบบมีร่วมกัน",
+     "after": "หากไม่เหลือคำเดิมของรายการเหล่านั้นเลย แต่ละรายการจะไปที่จุดเดียวกันโดยประมาณในบทของตน หรือไปที่ข้อความช่วงที่ใกล้ที่สุดซึ่งข้อความทั้งสองฉบับมีร่วมกัน",
+     "why": "meaning: the two readings are the old and new text (ข้อความทั้งสองฉบับ), not two ways of reading"
+    },
+    {
+     "key": "guessed",
+     "english": "guessed",
+     "before": "คาดเดา",
+     "after": "จากการคาดเดา",
+     "why": "natural: how the encoding was found, beside จากเครื่องหมายลำดับไบต์; the bare verb คาดเดา read as guess"
+    },
+    {
+     "key": "recognized by its bytes",
+     "english": "recognized by its bytes",
+     "before": "รู้จากไบต์ของไฟล์",
+     "after": "ตรวจพบจากไบต์ของไฟล์",
+     "why": "register: รู้จาก is colloquial; ตรวจพบ (detected) is the interface's word for what the bytes show"
+    },
+    {
+     "key": "the download of “%@”",
+     "english": "the download of “%@”",
+     "before": "ไฟล์ดาวน์โหลดของ “%@”",
+     "after": "รายการดาวน์โหลดของ “%@”",
+     "why": "term: the glossary's Download (noun), as the Delete Download command says it"
+    }
+   ]
+  }
+ ]
+}
