@@ -58000,7 +58000,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "第 %1$lld 本，共 %2$lld 本：“%3$@”，%4$@"
+            "value" : "第 %1$lld 本图书，共 %2$lld 本：“%3$@”，%4$@"
           }
         }
       }
@@ -109353,7 +109353,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "定时器到期时，先逐渐降低音量再暂停。0 表示立即暂停。"
+            "value" : "睡眠定时器到期时，先逐渐降低音量再暂停。0 表示立即暂停。"
           }
         }
       }
@@ -173951,7 +173951,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "阅读列表，第 %1$lld 本，共 %2$lld 本"
+            "value" : "阅读列表，第 %1$lld 本图书，共 %2$lld 本"
           }
         }
       }
