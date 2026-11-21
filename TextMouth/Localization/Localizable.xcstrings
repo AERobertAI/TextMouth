@@ -113308,7 +113308,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv” > ”Exportera” fungerar i båda fallen."
+            "value" : "Lägger till en Exportera-knapp i varje läsares verktygsfält. ”Arkiv”, ”Exportera” fungerar i båda fallen."
           }
         },
         "th" : {
@@ -374208,7 +374208,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ingen röst är installerad. Lägg till en i ”Systeminställningar” > ”Hjälpmedel” > ”Uppläst innehåll” och exportera sedan igen."
+            "value" : "Ingen röst är installerad. Lägg till en i ”Systeminställningar”, ”Hjälpmedel”, ”Uppläst innehåll”, och exportera sedan igen."
           }
         },
         "th" : {
@@ -374357,7 +374357,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Inga röster är installerade. Lägg till röster i ”Inställningar” > ”Hjälpmedel” > ”Uppläst innehåll”."
+            "value" : "Inga röster är installerade. Lägg till röster i ”Inställningar”, ”Hjälpmedel”, ”Uppläst innehåll”."
           }
         },
         "th" : {
@@ -650380,7 +650380,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera” > ”Ersättningar”."
+            "value" : "Skriv raka citattecken: i TextEdit stänger du av ”Smarta citattecken” under ”Redigera”, ”Ersättningar”."
           }
         },
         "th" : {
