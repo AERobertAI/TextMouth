@@ -7217,7 +7217,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ decorrido"
+            "value" : "Tempo decorrido: %@"
           }
         },
         "ru" : {
@@ -10741,19 +10741,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ não baixou nada há %lld de segundos."
+                  "value" : "%@ está há %lld de segundos sem baixar nada."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ não baixou nada há %lld segundo."
+                  "value" : "%@ está há %lld segundo sem baixar nada."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ não baixou nada há %lld segundos."
+                  "value" : "%@ está há %lld segundos sem baixar nada."
                 }
               }
             }
@@ -136680,7 +136680,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Correspondência que diferencia maiúsculas de minúsculas"
+            "value" : "Diferenciar maiúsculas de minúsculas"
           }
         },
         "ru" : {
@@ -150423,7 +150423,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Escolhe nenhum controle por livro, um seletor compartilhado ou um menu com seletores separados para avançar e retroceder."
+            "value" : "Escolhe entre nenhum controle por livro, um seletor compartilhado ou um menu com seletores separados para avançar e retroceder."
           }
         },
         "ru" : {
@@ -177964,7 +177964,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Tom padrão para livros novos. 1.0 é o normal. Cada livro pode substituí-lo."
+            "value" : "Tom padrão para livros novos. 1,0 é o normal. Cada livro pode substituí-lo."
           }
         },
         "ru" : {
@@ -488206,7 +488206,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O TextMouth está reconstruindo seu diretório de dados. Espere até terminar e escolha %@ novamente."
+            "value" : "O TextMouth está reconstruindo a pasta de dados. Espere até terminar e escolha %@ novamente."
           }
         },
         "ru" : {
@@ -571886,7 +571886,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Este braille parece braille inglês, edição americana. Escolha o código braille dele em Informações do livro."
+            "value" : "Este braille parece ser English Braille, American Edition. Escolha o código braille dele em Informações do livro."
           }
         },
         "ru" : {
@@ -609543,7 +609543,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Arquivo da web"
+            "value" : "Arquivo web"
           }
         },
         "ru" : {
@@ -622423,7 +622423,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Dentro dos últimos"
+            "value" : "Nos últimos"
           }
         },
         "ru" : {
@@ -662010,7 +662010,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "então a posição e os marcadores dela ali foram tirados apenas do índice da biblioteca."
+            "value" : "então a posição e os marcadores do livro ali foram tirados apenas do índice da biblioteca."
           }
         },
         "ru" : {
@@ -662147,7 +662147,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "então nada em %@ foi comparado."
+            "value" : "então nada do que %@ tem foi comparado."
           }
         },
         "ru" : {
@@ -667274,7 +667274,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o marcador de identidade de %@"
+            "value" : "o marcador de identidade que %@ tem"
           }
         },
         "ru" : {
@@ -667411,7 +667411,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o marcador de identidade da biblioteca em %@"
+            "value" : "o marcador de identidade que %@ tem"
           }
         },
         "ru" : {
@@ -667685,7 +667685,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o índice da biblioteca em %@"
+            "value" : "o índice da biblioteca que %@ tem"
           }
         },
         "ru" : {
@@ -667822,7 +667822,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o índice da biblioteca de %@"
+            "value" : "o índice da biblioteca que %@ tem"
           }
         },
         "ru" : {
@@ -668239,7 +668239,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o registro de %1$@ em %2$@"
+            "value" : "o registro de %1$@ que %2$@ tem"
           }
         },
         "ru" : {
