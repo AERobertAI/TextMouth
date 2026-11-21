@@ -645,6 +645,27 @@
      "why": "natural: \"Azalan Sırala\" sets an adjective before the verb; Apple's Turkish says \"Azalan Şekilde Sırala\""
     },
     {
+     "key": "Stop, and Play Starts Over",
+     "english": "Stop, and Play Starts Over",
+     "before": "Dur ve Oynat Baştan Başlatır",
+     "after": "Dur ve Sonraki Oynatmada Baştan Başla",
+     "why": "meaning: \"Dur ve Oynat ...\" is heard as two commands, stop and play; the book stops, and the next play starts it over"
+    },
+    {
+     "key": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "english": "Switching loses the changes TextMouth couldn't save while the library isn't available.",
+     "before": "Geçiş yapmak, kitaplık kullanılamıyorken TextMouth'un kaydedemediği değişiklikleri kaybettirir.",
+     "after": "Geçiş yaparsanız, kitaplık kullanılamıyorken TextMouth'un kaydedemediği değişiklikler kaybolur.",
+     "why": "natural: \"Geçiş yapmak ... kaybettirir\" made the act of switching cause the loss; now \"if you switch, the changes are lost\", as Use This Library's refusal says"
+    },
+    {
+     "key": "Test this rule against the input",
+     "english": "Test this rule against the input",
+     "before": "Bu kuralı girdiye karşı sına",
+     "after": "Bu kuralı girdi üzerinde sına",
+     "why": "natural: \"girdiye karşı sına\" copies English \"test against\"; Turkish tests a rule on the input"
+    },
+    {
      "key": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
      "english": "TextMouth couldn't keep the text you changed in “%@” beside the new reading, so it left the book as it was.",
      "before": "TextMouth, “%@” içinde değiştirdiğiniz metni yeni okumanın yanında saklayamadı, bu yüzden kitabı olduğu gibi bıraktı.",
@@ -682,6 +703,27 @@
      "why": "natural: \"tell\" here is to determine (belirlemek), not to say (söylemek)"
     },
     {
+     "key": "TextMouth moved %@ to the current library format, but with a problem:",
+     "english": "TextMouth moved %@ to the current library format, but with a problem:",
+     "before": "TextMouth geçerli kitaplık biçimine kitap taşıdı (%@), ancak bir sorunla:",
+     "after": "%@, TextMouth tarafından geçerli kitaplık biçimine taşındı, ancak bir sorun çıktı:",
+     "why": "natural: \"kitap taşıdı (1 kitap), ancak bir sorunla:\" said book twice and left the clause unfinished; the count is now the subject, TextMouth the agent"
+    },
+    {
+     "key": "TextMouth moved %@ to the current library format, but with problems:",
+     "english": "TextMouth moved %@ to the current library format, but with problems:",
+     "before": "TextMouth geçerli kitaplık biçimine kitap taşıdı (%@), ancak sorunlarla:",
+     "after": "%@, TextMouth tarafından geçerli kitaplık biçimine taşındı, ancak sorunlar çıktı:",
+     "why": "natural: \"kitap taşıdı (3 kitap), ancak sorunlarla:\" said book twice and left the clause unfinished; the count is now the subject, TextMouth the agent"
+    },
+    {
+     "key": "TextMouth will open the library in %@ the next time it opens, but it couldn't open again by itself: %@",
+     "english": "TextMouth will open the library in %1$@ the next time it opens, but it couldn't open again by itself: %2$@",
+     "before": "TextMouth bir sonraki açılışında şu kitaplığı açacak: %1$@, ancak kendi kendine yeniden açılamadı: %2$@",
+     "after": "TextMouth bir sonraki açılışında %1$@ içindeki kitaplığı açacak, ancak kendi kendine yeniden açılamadı: %2$@",
+     "why": "punctuation: a path after a colon, then a comma and a second colon; the path now sits in the sentence, with one colon before the reason"
+    },
+    {
      "key": "That would put %@ %lld levels deep, but folders nest at most %lld levels.",
      "english": {
       "one": "That would put %@ %lld level deep, but folders nest at most %lld levels.",
@@ -698,6 +740,13 @@
      "why": "grammar: the refused move needs the conditional (taşırdı), not the aorist \"koyar\" (it puts)"
     },
     {
+     "key": "The %@ in the list will be replaced by TextMouth's %@.",
+     "english": "The %1$@ in the list will be replaced by TextMouth's %2$@.",
+     "before": "Listedeki %1$@, TextMouth'un %2$@ ile değiştirilecek.",
+     "after": "Listedeki %1$@, TextMouth'un sunduğu %2$@ ile değiştirilecek.",
+     "why": "grammar: \"TextMouth'un 16 varsayılan kural ile\" needs a possessive the count's own words cannot carry; a participle (sunduğu) needs none"
+    },
+    {
      "key": "The %@ of %lld of them are kept.",
      "english": {
       "one": "The %@ of %lld of them are kept.",
@@ -712,6 +761,34 @@
       "other": "Bunlardan %2$lld tanesi için şunlar saklanır: %1$@."
      },
      "why": "grammar: \"Bunlardan 2 tanesinin yerler ve yer imleri\" lacks the possessive the parts' own words cannot carry; now \"for 2 of them these are kept:\""
+    },
+    {
+     "key": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "english": "The Hobbit counts as an H when you type. The list keeps its order and shows each title as it is written.",
+     "before": "“The Hobbit” yazarken H harfi sayılır. Liste sırasını korur ve her başlığı yazıldığı gibi gösterir.",
+     "after": "Yazarken “The Hobbit”, H ile başlayan bir başlık sayılır. Liste sırasını korur ve her başlığı yazıldığı gibi gösterir.",
+     "why": "grammar: \"H harfi sayılır\" lacked \"as\"; The Hobbit counts as a title that starts with H"
+    },
+    {
+     "key": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "english": "The Hobbit sorts among the H's and shows as Hobbit, The. Typing H finds it among the H's.",
+     "before": "“The Hobbit” H'ler arasında sıralanır ve “Hobbit, The” olarak görünür. H yazmak onu H'ler arasında bulur.",
+     "after": "“The Hobbit” H'ler arasında sıralanır ve “Hobbit, The” olarak görünür. H yazdığınızda H'ler arasında bulunur.",
+     "why": "natural: \"H yazmak onu bulur\" made the act of typing the subject; now \"when you type H, it is found among the H's\""
+    },
+    {
+     "key": "The book %@ is stored at %@, outside the data directory, so the move cannot carry it.",
+     "english": "The book %1$@ is stored at %2$@, outside the data directory, so the move cannot carry it.",
+     "before": "Kitap “%1$@” veri klasörünün dışında depolanıyor (%2$@); bu yüzden taşıma onu taşıyamaz.",
+     "after": "“%1$@” kitabı veri klasörünün dışında (%2$@) depolanıyor; bu yüzden taşımaya dahil edilemez.",
+     "why": "natural: \"Kitap “X”\" kept the English order, and \"taşıma onu taşıyamaz\" (the move cannot move it) doubled the verb"
+    },
+    {
+     "key": "The copy was already complete when Cancel was pressed, so the move went ahead.",
+     "english": "The copy was already complete when Cancel was pressed, so the move went ahead.",
+     "before": "Vazgeç düğmesine basıldığında kopya zaten tamamlanmıştı; bu yüzden taşıma sürdü.",
+     "after": "Vazgeç düğmesine basıldığında kopya zaten tamamlanmıştı; bu yüzden taşıma yine de yapıldı.",
+     "why": "natural: \"taşıma sürdü\" can read as \"the move lasted\"; it went ahead, so it was done anyway"
     },
     {
      "key": "Their %@ are kept.",
@@ -737,11 +814,25 @@
      "why": "punctuation: the command name Görünüme Git stood bare as the subject; quoted and called a command"
     },
     {
+     "key": "There's no library in %@ to use, and none to move there while the library isn't available.",
+     "english": "There's no library in %@ to use, and none to move there while the library isn't available.",
+     "before": "Şurada kullanılacak kitaplık yok ve kitaplık kullanılamıyorken oraya taşınacak bir kitaplık da yok: %@.",
+     "after": "%@ içinde kullanılacak bir kitaplık yok; kitaplık kullanılamıyorken oraya taşınacak bir kitaplık da yok.",
+     "why": "natural: \"Şurada ... oraya ...: %@\" named the place only after \"there\" pointed to it; the path now comes first"
+    },
+    {
      "key": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
      "english": "This braille looks like English Braille, American Edition. Choose its Braille Code in Book Information.",
      "before": "Bu braille, English Braille, American Edition gibi görünüyor. Braille Kodu'nu Kitap Bilgileri'nde seçin.",
      "after": "Bu braille, English Braille, American Edition gibi görünüyor. Kodunu Kitap Bilgilerindeki Braille Kodu menüsünden seçin.",
      "why": "punctuation: no apostrophe after translated names (Braille Kodu'nu, Kitap Bilgileri'nde); the code is chosen in the Braille Code pop-up"
+    },
+    {
+     "key": "To use another folder, open Settings, Storage, and choose %@ or %@.",
+     "english": "To use another folder, open Settings, Storage, and choose %1$@ or %2$@.",
+     "before": "Başka bir klasör kullanmak için Ayarlar'ı açın, Depolama'yı seçin ve “%1$@” veya “%2$@” seçeneğini seçin.",
+     "after": "Başka bir klasör kullanmak için Ayarları açın, Depolama sekmesini seçin ve “%1$@” veya “%2$@” seçeneğini seçin.",
+     "why": "punctuation: no apostrophe after translated names (Ayarlar'ı, Depolama'yı); Storage is named as the tab it is"
     },
     {
      "key": "Unread: %@ couldn't be read (%@), %@",
@@ -790,11 +881,60 @@
      "why": "natural: \"Okunamadı: X okunmadı\" said the same thing twice; the label now names the file"
     },
     {
+     "key": "What happens when a book finishes playing",
+     "english": "What happens when a book finishes playing",
+     "before": "Bir kitabın oynatılması bittiğinde ne olacağı.",
+     "after": "Bir kitabın oynatılması bittiğinde ne olacağını belirler.",
+     "why": "voiceover: a hint is a sentence with a third-person verb; \"ne olacağı.\" was a bare noun clause"
+    },
+    {
+     "key": "What happens when you hold Shift and skip backward",
+     "english": "What happens when you hold Shift and skip backward",
+     "before": "Shift tuşunu basılı tutup geri atladığınızda ne olacağı.",
+     "after": "Shift tuşunu basılı tutup geri atladığınızda ne olacağını belirler.",
+     "why": "voiceover: a hint is a sentence with a third-person verb; \"ne olacağı.\" was a bare noun clause"
+    },
+    {
+     "key": "What happens when you hold Shift and skip forward",
+     "english": "What happens when you hold Shift and skip forward",
+     "before": "Shift tuşunu basılı tutup ileri atladığınızda ne olacağı.",
+     "after": "Shift tuşunu basılı tutup ileri atladığınızda ne olacağını belirler.",
+     "why": "voiceover: a hint is a sentence with a third-person verb; \"ne olacağı.\" was a bare noun clause"
+    },
+    {
+     "key": "What happens when you skip backward",
+     "english": "What happens when you skip backward",
+     "before": "Geri atladığınızda ne olacağı.",
+     "after": "Geri atladığınızda ne olacağını belirler.",
+     "why": "voiceover: a hint is a sentence with a third-person verb; \"ne olacağı.\" was a bare noun clause"
+    },
+    {
+     "key": "What happens when you skip forward",
+     "english": "What happens when you skip forward",
+     "before": "İleri atladığınızda ne olacağı.",
+     "after": "İleri atladığınızda ne olacağını belirler.",
+     "why": "voiceover: a hint is a sentence with a third-person verb; \"ne olacağı.\" was a bare noun clause"
+    },
+    {
+     "key": "What to do with the original file after importing a book",
+     "english": "What to do with the original file after importing a book",
+     "before": "Bir kitabı içe aktardıktan sonra orijinal dosyayla ne yapılacağı.",
+     "after": "Bir kitabı içe aktardıktan sonra orijinal dosyayla ne yapılacağını belirler.",
+     "why": "voiceover: a hint is a sentence with a third-person verb; \"ne yapılacağı.\" was a bare noun clause"
+    },
+    {
      "key": "When a book is deleted, %@.",
      "english": "When a book is deleted, %@.",
      "before": "Bir kitap silindiğinde: %@.",
      "after": "Bir kitap silindiğinde %@.",
      "why": "punctuation: the colon cut the sentence in two; \"Bir kitap silindiğinde dosyaları ... gider.\" reads as one sentence"
+    },
+    {
+     "key": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "english": "When articles are ignored, a book whose metadata names French, German, Spanish, Italian, Portuguese, Dutch, Catalan, Swedish, Danish, or Norwegian passes over that language's articles, such as Le and Die, and The.",
+     "before": "Artikeller yoksayıldığında, meta verisi Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe olan bir kitap, o dilin Le ve Die gibi artiklerini ve The kelimeyi atlar.",
+     "after": "Artikeller yoksayıldığında, meta verisinde dil olarak Fransızca, Almanca, İspanyolca, İtalyanca, Portekizce, Felemenkçe, Katalanca, İsveççe, Danca veya Norveççe belirtilen bir kitap, o dilin Le ve Die gibi artikellerini ve The kelimesini atlar.",
+     "why": "grammar: \"artiklerini\" misspelt artikellerini, \"The kelimeyi\" lacked the compound's possessive (kelimesini), and the metadata names the language"
     },
     {
      "key": "When off, removing a book will %@ at once.",
@@ -809,6 +949,20 @@
      "before": "Açıkken bir kitabı kaldırmak önce şunlardan birini sorar: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
      "after": "Açıkken, bir kitabı kaldırdığınızda önce hangisini istediğiniz sorulur: %@ veya dosyaları TextMouth kitaplık klasöründe tut.",
      "why": "meaning: \"şunlardan birini sorar\" said it asks one of the two; it asks which of the two you want"
+    },
+    {
+     "key": "When resuming playback, rewind to the start of this unit",
+     "english": "When resuming playback, rewind to the start of this unit",
+     "before": "Oynatma devam ederken bu birimin başına geri sarar.",
+     "after": "Oynatma sürdürüldüğünde bu birimin başına geri sarar.",
+     "why": "meaning: \"Oynatma devam ederken\" says \"while playback goes on\"; the rewind happens when playback is resumed"
+    },
+    {
+     "key": "Where TextMouth writes its diagnostic logs. %@ keeps them with your books, so they move and sync with the library. %@ keeps them in %@, which never syncs. A change applies from the next line; existing logs stay.",
+     "english": "Where TextMouth writes its diagnostic logs. %1$@ keeps them with your books, so they move and sync with the library. %2$@ keeps them in %3$@, which never syncs. A change applies from the next line; existing logs stay.",
+     "before": "TextMouth'un tanılama günlüklerini nereye yazacağı. %1$@ bunları kitaplarınızla birlikte tutar; böylece kitaplıkla birlikte taşınır ve eşzamanlanır. %2$@ bunları şurada tutar: %3$@; burası hiçbir zaman eşzamanlanmaz. Değişiklik bir sonraki satırdan itibaren uygulanır; mevcut günlükler kalır.",
+     "after": "TextMouth'un tanılama günlüklerini nereye yazacağını seçer. “%1$@” bunları kitaplarınızla birlikte tutar; böylece kitaplıkla birlikte taşınır ve eşzamanlanır. “%2$@” bunları şurada tutar: %3$@; burası hiçbir zaman eşzamanlanmaz. Değişiklik bir sonraki satırdan itibaren uygulanır; mevcut günlükler kalır.",
+     "why": "punctuation: the pop-up's choices held by placeholders are quoted, since they stood bare as subjects, and the hint opens with a sentence, not a noun clause"
     },
     {
      "key": "Where none of their words are left, %@, each goes to about the same point in its chapter, or to the nearest passage the two readings share.",
