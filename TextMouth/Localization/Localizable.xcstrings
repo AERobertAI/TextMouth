@@ -357296,6 +357296,12 @@
             "state" : "machine_translated",
             "value" : "测试输入文本"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "測試輸入文字"
+          }
         }
       }
     },
@@ -357396,6 +357402,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "测试结果：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "測試結果：%@"
           }
         }
       }
@@ -357498,6 +357510,12 @@
             "state" : "machine_translated",
             "value" : "根据输入测试此规则"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "以輸入內容測試此規則"
+          }
         }
       }
     },
@@ -357598,6 +357616,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "文本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文字"
           }
         }
       }
@@ -358412,6 +358436,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "文本提取进度：已完成 %1$lld，共 %2$lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文字擷取進度：已完成 %1$lld，共 %2$lld"
           }
         }
       }
@@ -360204,6 +360234,12 @@
             "state" : "machine_translated",
             "value" : "无法存储文本替换规则：%@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法儲存文字取代規則：%@"
+          }
         }
       }
     },
@@ -360304,6 +360340,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "文本替换规则已存储。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文字取代規則已儲存。"
           }
         }
       }
@@ -360708,6 +360750,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 已在另一台 Mac 上打开"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 已在另一部 Mac 上打開"
           }
         }
       }
@@ -361736,6 +361784,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法读取文件夹 %1$@：%2$@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法讀取資料夾 %1$@：%2$@。"
           }
         }
       }
@@ -363294,6 +363348,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 无法检查是否要将它移到废纸篓。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法確認是否要移到垃圾桶。"
+          }
         }
       }
     },
@@ -363597,6 +363657,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 无法将 %@ 移到当前的资料库格式。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法將 %@ 移到目前的書庫格式。"
+          }
         }
       }
     },
@@ -363697,6 +363763,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法读取其资料库索引，该文件记录了你的文件夹、排序设置和图书的顺序。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法讀取它的書庫索引，也就是記錄你的資料夾、排序設定和書籍順序的檔案。"
           }
         }
       }
@@ -364001,6 +364073,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 无法从先前的索引中读取阅读列表。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法讀取先前索引中的閱讀列表。"
+          }
         }
       }
     },
@@ -364101,6 +364179,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法从不可读的索引中读取阅读列表。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法從無法讀取的索引中讀取閱讀列表。"
           }
         }
       }
@@ -364203,6 +364287,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 无法从先前的索引中读取阅读列表或排序设置。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法讀取先前索引中的閱讀列表或排序設定。"
+          }
         }
       }
     },
@@ -364303,6 +364393,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法从不可读的索引中读取阅读列表或排序设置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法從無法讀取的索引中讀取閱讀列表或排序設定。"
           }
         }
       }
@@ -364405,6 +364501,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 无法从先前的索引中读取排序设置。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法讀取先前索引中的排序設定。"
+          }
         }
       }
     },
@@ -364505,6 +364607,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法从不可读的索引中读取排序设置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法從無法讀取的索引中讀取排序設定。"
           }
         }
       }
@@ -364809,6 +364917,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 无法存储 %@ 的副本，因此未更改该文件。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法儲存 %@ 的副本，因此讓該檔案維持不變。"
+          }
         }
       }
     },
@@ -364909,6 +365023,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法存储不可读文件的副本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法儲存該無法讀取檔案的副本。"
           }
         }
       }
@@ -365212,6 +365332,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法从 %@ 获取资料库的文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法從 %@ 取得書庫的檔案。"
           }
         }
       }
@@ -365717,6 +365843,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无法在 Finder 中打开 %@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 無法在 Finder 中打開 %@。"
           }
         }
       }
@@ -367093,6 +367225,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 没有读取该文件的权限。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 沒有讀取該檔案的權限。"
+          }
         }
       }
     },
@@ -368316,6 +368454,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 会先存储旧文件的副本，如果无法存储就不会重建。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會先儲存舊檔案的副本，如果無法儲存就不會重建。"
+          }
         }
       }
     },
@@ -368726,6 +368870,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 没有合并它，也没有移除它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 尚未合併或移除它。"
+          }
         }
       }
     },
@@ -369028,6 +369178,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 已在移动其数据目录。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 已在移動其資料目錄。"
           }
         }
       }
@@ -369489,6 +369645,18 @@
               }
             }
           }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth 也在「%@」上打開（%lld 分鐘前仍在使用）。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -369589,6 +369757,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 也在“%@”上打开（不到一分钟前活跃）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 也在「%@」上打開（不到一分鐘前仍在使用）。"
           }
         }
       }
@@ -369792,6 +369966,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 正在获取它们，它们到达后资料库会打开。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 現在正在取得這些檔案，檔案抵達後會打開書庫。"
+          }
         }
       }
     },
@@ -369892,6 +370072,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 正在文件夹之间移动图书。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 正在資料夾之間移動書籍。"
           }
         }
       }
@@ -370196,6 +370382,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 正在另一个资料库上重新打开，因此它们在此资料库中保持未存储。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中保持未儲存。"
+          }
         }
       }
     },
@@ -370296,6 +370488,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 正在另一个资料库上重新打开，因此它们在此资料库中保持原位。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 正在另一個書庫上重新打開，因此它們在這個書庫中維持原處。"
           }
         }
       }
@@ -370909,6 +371107,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 正在重建其数据目录。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 正在重建其資料目錄。"
+          }
         }
       }
     },
@@ -371414,6 +371618,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 仍在使用 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 仍在使用 %@。"
+          }
         }
       }
     },
@@ -371515,6 +371725,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 正在切换到另一个资料库并在其上重新打开。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 正在切換到另一個書庫，並在其上重新打開。"
+          }
         }
       }
     },
@@ -371615,6 +371831,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 无权在 %@ 中进行更改。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 不被允許在 %@ 中做更改。"
           }
         }
       }
@@ -372127,6 +372349,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 将它留在了那里，并仍在使用 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 把它留在那裡，並仍在使用 %@。"
+          }
         }
       }
     },
@@ -372632,6 +372860,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 将它们留在了那里，并仍在使用 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 把它們留在那裡，並仍在使用 %@。"
+          }
         }
       }
     },
@@ -372834,6 +373068,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 会根据此文件夹中的图书建立新的资料库索引。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會依此資料夾中的書籍建立新的書庫索引。"
+          }
         }
       }
     },
@@ -372935,6 +373175,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 已将 %@ 移到当前的资料库格式，但出现了一个问题："
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 已將 %@ 移到目前的書庫格式，但有一個問題："
+          }
         }
       }
     },
@@ -373035,6 +373281,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 已将 %@ 移到当前的资料库格式，但出现了一些问题："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 已將 %@ 移到目前的書庫格式，但有一些問題："
           }
         }
       }
@@ -373692,6 +373944,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 会在完成文件夹之间的图书移动后将它们移回。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會在資料夾之間的書籍移動完成後將它們移回。"
+          }
         }
       }
     },
@@ -373792,6 +374050,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 会在完成数据目录的重建后将它们移回。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會在重建資料目錄完成後將它們移回。"
           }
         }
       }
@@ -373894,6 +374158,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 会在其数据目录的移动结束后将它们移回。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會在資料目錄的移動結束後將它們移回。"
+          }
         }
       }
     },
@@ -373994,6 +374264,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 需要连接驱动器“%@”才能打开资料库。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 需要連接磁碟「%@」才能打開書庫。"
           }
         }
       }
@@ -374922,6 +375198,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 会在完成文件夹之间的图书移动后存储它们。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會在資料夾之間的書籍移動完成後儲存它們。"
+          }
         }
       }
     },
@@ -375023,6 +375305,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 会在完成数据目录的重建后存储它们。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會在重建資料目錄完成後儲存它們。"
+          }
         }
       }
     },
@@ -375123,6 +375411,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 会在其数据目录的移动结束后存储它们。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會在資料目錄的移動結束後儲存它們。"
           }
         }
       }
@@ -376291,6 +376585,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 已等待它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 已等待過它。"
+          }
         }
       }
     },
@@ -376397,6 +376697,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 将打开 %1$@ 中的资料库，而不是不可用的 %2$@ 中的资料库。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會打開位於 %1$@ 的書庫，而不是無法使用的 %2$@ 中的書庫。"
           }
         }
       }
@@ -376505,6 +376811,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 下次打开时会打开 %1$@ 中的资料库，但无法自行重新打开：%2$@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 下次打開時會打開位於 %1$@ 的書庫，但它無法自行重新打開：%2$@"
+          }
         }
       }
     },
@@ -376606,6 +376918,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 将退出并重新打开以载入它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會結束並重新打開以載入它。"
+          }
         }
       }
     },
@@ -376706,6 +377024,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 将退出并重新打开以启动它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會結束並重新打開以開始它。"
           }
         }
       }
@@ -376814,6 +377138,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 将在默认位置 %1$@ 新建一个空资料库，而不是使用不可用的 %2$@ 中的资料库。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會在預設位置 %1$@ 開始新的空書庫，而不是無法使用的 %2$@ 中的書庫。"
+          }
         }
       }
     },
@@ -376921,6 +377251,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 将停止使用 %1$@（%2$@）中的资料库，改为打开 %3$@ 中的资料库。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 將停止使用位於 %1$@（%2$@）的書庫，改為打開位於 %3$@ 的書庫。"
+          }
         }
       }
     },
@@ -377022,6 +377358,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 会为资料库写入带有新标识的 %@，并打开它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會寫入 %@，內含書庫的新身分，然後打開書庫。"
+          }
         }
       }
     },
@@ -377122,6 +377464,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 会写入带有这台 Mac 所知的资料库标识的 %@，并打开它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 會寫入 %@，內含這部 Mac 所知的書庫身分，然後打開書庫。"
           }
         }
       }
@@ -378881,6 +379229,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这样会将图书的副本保留在云端。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "那樣會保留這本書籍在雲端的副本。"
           }
         }
       }
@@ -380663,6 +381017,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "列表中的 %1$@ 将被 TextMouth 的 %2$@ 替换。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "清單中的 %1$@ 將被 TextMouth 的 %2$@ 取代。"
           }
         }
       }
@@ -383555,6 +383915,18 @@
               }
             }
           }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "所選的 %lld 本書籍已保留在這部 Mac 上。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -383904,6 +384276,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "所选的 %lld 本图书因阅读列表而保留在这台 Mac 上。"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "所選的 %lld 本書籍因閱讀列表而保留在這部 Mac 上。"
                 }
               }
             }
@@ -385221,6 +385605,12 @@
             "state" : "machine_translated",
             "value" : "输入时，The Hobbit 按 H 计算。列表保持原有顺序，并按原样显示每个标题。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輸入時，The Hobbit 算作 H。列表維持原來的順序，並照原樣顯示每個書名。"
+          }
         }
       }
     },
@@ -385321,6 +385711,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "The Hobbit 排在 H 之中，显示为 Hobbit, The。输入 H 即可在 H 之中找到它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "The Hobbit 排在 H 之中，顯示為 Hobbit, The。輸入 H 會在 H 之中找到它。"
           }
         }
       }
@@ -386892,6 +387288,12 @@
             "state" : "machine_translated",
             "value" : "该归档展开后为 %1$@，但存放 TextMouth 资料库的磁盘只有 %2$@ 可用空间，而 TextMouth 要保留其中的 %3$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "封存檔會展開為 %1$@，但存放 TextMouth 書庫的磁碟只有 %2$@ 可用空間，而 TextMouth 要保留其中的 %3$@。"
+          }
         }
       }
     },
@@ -386998,6 +387400,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "该归档展开后为 %1$@，超过了 TextMouth 从含有音频或其他归档的归档中提取的 %2$@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "封存檔會展開為 %1$@，超過 TextMouth 從含有音訊或其他封存檔的封存檔中擷取的 %2$@ 上限。"
           }
         }
       }
@@ -387106,6 +387514,12 @@
             "state" : "machine_translated",
             "value" : "该归档展开后为 %1$@，超过了 TextMouth 从不含音频的归档中提取的 %2$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "封存檔會展開為 %1$@，超過 TextMouth 從不含音訊的封存檔中擷取的 %2$@ 上限。"
+          }
         }
       }
     },
@@ -387212,6 +387626,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "该归档包含 %1$@ 个文件和文件夹，超过了 TextMouth 单次导入所提取的 %2$@ 个。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "封存檔含有 %1$@ 個檔案和資料夾，超過 TextMouth 一次輸入所擷取的 %2$@ 個。"
           }
         }
       }
@@ -387516,6 +387936,12 @@
             "state" : "machine_translated",
             "value" : "该归档包含的内容超过了它声明的 %@，因此提取已停止。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "封存檔的內容超過它所宣告的 %@，因此已停止擷取。"
+          }
         }
       }
     },
@@ -387723,6 +388149,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "其中的归档“%1$@”展开后为 %2$@，但存放 TextMouth 资料库的磁盘只有 %3$@ 可用空间，而 TextMouth 要保留其中的 %4$@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "其中的封存檔「%1$@」會展開為 %2$@，但存放 TextMouth 書庫的磁碟只有 %3$@ 可用空間，而 TextMouth 要保留其中的 %4$@。"
           }
         }
       }
@@ -390484,6 +390916,12 @@
             "state" : "machine_translated",
             "value" : "图书 %1$@ 存放在数据目录之外的 %2$@，因此无法随移动一并带走。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍 %1$@ 儲存在資料目錄外的 %2$@，因此移動時無法帶著它。"
+          }
         }
       }
     },
@@ -391209,6 +391647,12 @@
             "state" : "machine_translated",
             "value" : "这本图书已保留在这台 Mac 上，并且在这台 Mac 保持下载的阅读列表中，因此无法移除其下载内容。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書籍已保留在這部 Mac 上，也在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除它的下載內容。"
+          }
         }
       }
     },
@@ -391309,6 +391753,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这本图书已保留在这台 Mac 上，因此无法移除其下载内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書籍已保留在這部 Mac 上，因此無法移除其下載內容。"
           }
         }
       }
@@ -391619,6 +392069,12 @@
             "state" : "machine_translated",
             "value" : "这本图书在这台 Mac 保持下载的阅读列表中，因此无法移除其下载内容。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書籍在閱讀列表上，而這部 Mac 會保持閱讀列表的下載，因此無法移除其下載內容。"
+          }
         }
       }
     },
@@ -391826,6 +392282,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这本图书已打开，因此无法移除其下载内容。请先关闭它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書籍已打開，因此無法移除其下載內容。請先關閉它。"
           }
         }
       }
@@ -392860,6 +393322,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这本图书的文件尚未到达这台 Mac。%@ 可能仍在同步它们。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這本書籍的檔案尚未在這部 Mac 上。%@ 可能仍在同步。"
           }
         }
       }
@@ -395202,6 +395670,12 @@
             "state" : "machine_translated",
             "value" : "云服务"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "雲端服務"
+          }
         }
       }
     },
@@ -395404,6 +395878,12 @@
             "state" : "machine_translated",
             "value" : "在资料库中制作的副本与原件不一致，因此已丢弃该副本。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫中製作的副本與原始檔案不符，因此已捨棄該副本。"
+          }
         }
       }
     },
@@ -395504,6 +395984,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "按下“取消”时副本已经完成，因此移动继续进行。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "按下「取消」時副本已完成，因此移動繼續進行。"
           }
         }
       }
@@ -395915,6 +396401,12 @@
             "state" : "machine_translated",
             "value" : "当前数据目录不存在。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "目前的資料目錄不存在。"
+          }
         }
       }
     },
@@ -396015,6 +396507,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "当前目录将作为恢复数据保留。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "目前的目錄會保留作為復原資料。"
           }
         }
       }
@@ -396218,6 +396716,12 @@
             "state" : "machine_translated",
             "value" : "数据目录没有“日志”文件夹，因此日志会写入 %@，直到它有该文件夹为止。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "資料目錄中沒有日誌資料夾，因此在有之前，日誌會存放到 %@。"
+          }
         }
       }
     },
@@ -396318,6 +396822,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "数据目录缺失，因此日志会写入 %@，直到它恢复为止。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "資料目錄不見了，因此在它回來之前，日誌會存放到 %@。"
           }
         }
       }
@@ -396425,6 +396935,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "无法写入数据目录的“日志”文件夹（%1$@），因此日志会写入 %2$@，直到可以写入为止。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法寫入資料目錄的日誌資料夾（%1$@），因此在可寫入之前，日誌會存放到 %2$@。"
           }
         }
       }
@@ -397050,6 +397566,12 @@
             "state" : "machine_translated",
             "value" : "未移除 %@ 的下载内容"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未移除 %@ 的下載內容"
+          }
         }
       }
     },
@@ -397359,6 +397881,12 @@
             "state" : "machine_translated",
             "value" : "未移除 %1$@ 的下载内容：%2$@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未移除 %1$@ 的下載內容：%2$@"
+          }
         }
       }
     },
@@ -397459,6 +397987,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "驱动器“%@”未连接。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "磁碟「%@」未連接。"
           }
         }
       }
@@ -400790,6 +401324,12 @@
             "state" : "machine_translated",
             "value" : "无法读取该文件。%@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法讀取檔案。%@"
+          }
         }
       }
     },
@@ -400890,6 +401430,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 读取该文件时，文件消失了。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 讀取檔案時，檔案消失了。"
           }
         }
       }
@@ -401318,6 +401864,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "文件本身未被更改。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "檔案本身沒有更改。"
           }
         }
       }
@@ -402787,6 +403339,12 @@
             "state" : "machine_translated",
             "value" : "找不到文件夹 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "找不到資料夾 %@。"
+          }
         }
       }
     },
@@ -403140,6 +403698,18 @@
               }
             }
           }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "資料夾 %@ 還含有 %lld 個其他項目：%@。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -403348,6 +403918,12 @@
             "state" : "machine_translated",
             "value" : "文件夹 %1$@ 位于 %2$@ 中，尚未下载到这台 Mac。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "資料夾 %1$@ 在 %2$@ 中，尚未在這部 Mac 上。"
+          }
         }
       }
     },
@@ -403448,6 +404024,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "文件夹 %@ 在废纸篓中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "資料夾 %@ 在垃圾桶中。"
           }
         }
       }
@@ -404610,6 +405192,12 @@
             "state" : "machine_translated",
             "value" : "文件夹存在，但 TextMouth 无法读取其资料库标识文件：%@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "資料夾在那裡，但 TextMouth 無法讀取其書庫身分檔案：%@"
+          }
         }
       }
     },
@@ -404711,6 +405299,12 @@
             "state" : "machine_translated",
             "value" : "文件夹存在，但其中是另一个 TextMouth 资料库。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "資料夾在那裡，但裡面是另一個 TextMouth 書庫。"
+          }
         }
       }
     },
@@ -404811,6 +405405,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "文件夹存在，但其中没有资料库。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "資料夾在那裡，但書庫不在其中。"
           }
         }
       }
@@ -405430,6 +406030,12 @@
             "state" : "machine_translated",
             "value" : "在你选取 %1$@ 或 %2$@ 之前，索引不会更改，它们仍可从资料库顶部的 %3$@ 中选取。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在你選擇 %1$@ 或 %2$@ 之前不會更改索引，這兩個選項會保留在書庫頂端的 %3$@ 中。"
+          }
         }
       }
     },
@@ -405941,6 +406547,12 @@
             "state" : "machine_translated",
             "value" : "资料库的包名称 %1$@ 下已有不同的内容，因此已将其存储到新的包 %2$@ 中，其原始文件保留在 %3$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫的封裝名稱 %1$@ 下已有不同內容，因此它存放在新的封裝 %2$@ 中，原始檔案保留在 %3$@。"
+          }
         }
       }
     },
@@ -406041,6 +406653,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "位于 %@ 的资料库不可用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "位於 %@ 的書庫無法使用。"
           }
         }
       }
@@ -406345,6 +406963,12 @@
             "state" : "machine_translated",
             "value" : "图书打开时无法移动资料库。请先关闭 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫有書籍打開時無法移動。請先關閉 %@。"
+          }
         }
       }
     },
@@ -406446,6 +407070,12 @@
             "state" : "machine_translated",
             "value" : "图书打开时无法移动资料库。请先关闭它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫有書籍打開時無法移動。請先關閉它。"
+          }
         }
       }
     },
@@ -406546,6 +407176,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "有图书打开时无法移动资料库。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫有書籍打開時無法移動。"
           }
         }
       }
@@ -406755,6 +407391,12 @@
             "state" : "machine_translated",
             "value" : "无法读取资料库索引。请先在资料库窗口中选取“重试”或“重建资料库索引”。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法讀取書庫索引。請先在書庫視窗中選擇「再試一次」或「重建書庫索引」。"
+          }
         }
       }
     },
@@ -406855,6 +407497,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "无法读取资料库索引，因此资料库更改没有被存储。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法讀取書庫索引，因此未儲存書庫的更改。"
           }
         }
       }
@@ -406957,6 +407605,12 @@
             "state" : "machine_translated",
             "value" : "无法读取资料库索引。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法讀取書庫索引。"
+          }
         }
       }
     },
@@ -407057,6 +407711,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "资料库索引已可读取。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫索引已可讀取。"
           }
         }
       }
@@ -407159,6 +407819,12 @@
             "state" : "machine_translated",
             "value" : "仍然无法读取资料库索引。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫索引仍然無法讀取。"
+          }
         }
       }
     },
@@ -407259,6 +407925,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "资料库索引未重建。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫索引尚未重建。"
           }
         }
       }
@@ -407361,6 +408033,12 @@
             "state" : "machine_translated",
             "value" : "已成功读取资料库索引。你的资料库有 %@，更改已恢复存储。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已成功讀取書庫索引。你的書庫有 %@，且更改已再次儲存。"
+          }
         }
       }
     },
@@ -407461,6 +408139,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "资料库索引已重建，包含 %@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫索引已重建，含有 %@。"
           }
         }
       }
@@ -407664,6 +408348,12 @@
             "state" : "machine_translated",
             "value" : "资料库仍位于 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫仍在 %@。"
+          }
         }
       }
     },
@@ -407865,6 +408555,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "资料库不可用，因此日志会写入 %@，直到它可用为止。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫無法使用，因此在可使用之前，日誌會存放到 %@。"
           }
         }
       }
@@ -408181,6 +408877,12 @@
             "state" : "machine_translated",
             "value" : "资料库不在云文件夹中，因此其图书始终在这台 Mac 上。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫不在雲端資料夾中，因此其書籍一律在這部 Mac 上。"
+          }
         }
       }
     },
@@ -408281,6 +408983,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "资料库现在显示根据磁盘上的图书重建的临时列表。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫現在顯示依磁碟上的書籍重建的暫時清單。"
           }
         }
       }
@@ -408389,6 +409097,12 @@
             "state" : "machine_translated",
             "value" : "资料库的标识文件在这台 Mac 上，但其索引 %1$@ 尚未从 %2$@ 到达。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫的身分檔案在這部 Mac 上，但它的索引 %1$@ 尚未從 %2$@ 抵達。"
+          }
         }
       }
     },
@@ -408495,6 +409209,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "资料库的索引在这台 Mac 上，但其标识文件 %1$@ 尚未从 %2$@ 到达。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫的索引在這部 Mac 上，但它的身分檔案 %1$@ 尚未從 %2$@ 抵達。"
           }
         }
       }
@@ -409126,6 +409846,12 @@
             "state" : "machine_translated",
             "value" : "迁移后的副本缺少 %@ 的内容。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移轉後的副本缺少 %@ 的內容。"
+          }
         }
       }
     },
@@ -409226,6 +409952,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "无法验证迁移后的资料库索引。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法驗證移轉後的書庫索引。"
           }
         }
       }
@@ -409328,6 +410060,12 @@
             "state" : "machine_translated",
             "value" : "整个序列允许花费的最长时间。时间窗口越短，误触发越少，但需要按得越快。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "整個序列可花費的最長時間。較短的範圍表示較少意外符合，但需要更快地按下。"
+          }
         }
       }
     },
@@ -409428,6 +410166,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "移动已取消，因此没有任何更改。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "已取消移動，因此沒有任何更改。"
           }
         }
       }
@@ -409750,6 +410494,12 @@
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 包含当前数据目录 %2$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 包含目前的資料目錄 %2$@。"
+          }
         }
       }
     },
@@ -409850,6 +410600,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "新位置 %@ 是文件，而不是文件夹。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %@ 是檔案，不是資料夾。"
           }
         }
       }
@@ -409958,6 +410714,12 @@
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 是指向 %2$@ 的链接，但找不到 %2$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 是指向 %2$@ 的連結，但找不到它。"
+          }
         }
       }
     },
@@ -410064,6 +410826,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 位于当前数据目录 %2$@ 之内。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 在目前的資料目錄 %2$@ 之內。"
           }
         }
       }
@@ -410172,6 +410940,12 @@
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 就是当前数据目录，%2$@ 通向它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 就是目前的資料目錄，%2$@ 指向這裡。"
+          }
         }
       }
     },
@@ -410272,6 +411046,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "新位置 %@ 就是当前数据目录。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %@ 就是目前的資料目錄。"
           }
         }
       }
@@ -410380,6 +411160,12 @@
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 通向 %2$@，而它包含当前数据目录 %3$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 指向 %2$@，其中包含目前的資料目錄 %3$@。"
+          }
         }
       }
     },
@@ -410486,6 +411272,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 通向 %2$@，而它位于当前数据目录 %3$@ 之内。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 指向 %2$@，它在目前的資料目錄 %3$@ 之內。"
           }
         }
       }
@@ -410594,6 +411386,12 @@
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 通向 %2$@，而它就是当前数据目录，%3$@ 通向它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 指向 %2$@，那就是目前的資料目錄，%3$@ 指向這裡。"
+          }
         }
       }
     },
@@ -410700,6 +411498,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "新位置 %1$@ 通向 %2$@，而它就是当前数据目录。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "新位置 %1$@ 指向 %2$@，那就是目前的資料目錄。"
           }
         }
       }
@@ -411509,6 +412313,12 @@
             "state" : "machine_translated",
             "value" : "位于 %@ 的原件是文件夹或链接，因此无法检查其副本。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "位於 %@ 的原始檔案是資料夾或連結，因此無法檢查它的副本。"
+          }
         }
       }
     },
@@ -411716,6 +412526,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "无法读取位于 %@ 的原始文件以检查其副本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法讀取位於 %@ 的原始檔案來檢查它的副本。"
           }
         }
       }
@@ -412019,6 +412835,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 中缺少原始文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 中沒有原始檔案。"
           }
         }
       }
@@ -412738,6 +413560,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "导入后，原始文件将保持不变。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輸入後會保持原始檔案不動。"
           }
         }
       }
@@ -416428,6 +417256,12 @@
             "state" : "machine_translated",
             "value" : "先前的索引保留在 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "先前的索引保留在 %@。"
+          }
         }
       }
     },
@@ -417286,6 +418120,18 @@
               }
             }
           }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "閱讀列表仍保留其中 %lld 本的下載內容"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -417386,6 +418232,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "阅读列表仍保持下载它"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "閱讀列表仍保留它的下載內容"
           }
         }
       }
@@ -417488,6 +418340,12 @@
             "state" : "machine_translated",
             "value" : "阅读列表仍保持下载它们"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "閱讀列表仍保留它們的下載內容"
+          }
         }
       }
     },
@@ -417588,6 +418446,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "阅读列表、文件夹的排序和收听选项，以及文件尚未在此文件夹中的图书，都不会在其中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "閱讀列表、資料夾的排序與聆聽選項，以及檔案尚未在此資料夾中的任何書籍，都不會在其中。"
           }
         }
       }
@@ -419039,6 +419903,12 @@
             "state" : "machine_translated",
             "value" : "位于 %@ 的已存储副本保留着旧数据。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "位於 %@ 的已儲存副本保留了舊資料。"
+          }
         }
       }
     },
@@ -419341,6 +420211,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "所选的数据目录不是空的。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "所選的資料目錄不是空的。"
           }
         }
       }
@@ -423401,6 +424277,12 @@
             "state" : "machine_translated",
             "value" : "无法读取的资料库索引已不存在，因此 TextMouth 将根据你的图书重建的资料库存储为新索引，包含 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法讀取的書庫索引已不存在，因此 TextMouth 將依你的書籍重建的書庫儲存為新索引，含有 %@。"
+          }
         }
       }
     },
@@ -424310,6 +425192,12 @@
             "state" : "machine_translated",
             "value" : "它们的原始文件未被更改。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "它們的原始檔案沒有更改。"
+          }
         }
       }
     },
@@ -424511,6 +425399,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "然后将它从阅读列表中移除，或在阅读列表的选项中取消勾选 %@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "然後請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。"
           }
         }
       }
@@ -424915,6 +425809,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 处是一个文件，而不是文件夹。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "位於 %@ 的是檔案，不是資料夾。"
           }
         }
       }
@@ -425931,6 +426831,18 @@
               }
             }
           }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "可用空間不足以容納另外 %lld 本書籍"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -426037,6 +426949,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "那里没有足够的可用空间存放资料库：它需要 %1$@，而可用空间为 %2$@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫放在那裡可用空間不足：它需要 %1$@，目前可用 %2$@。"
           }
         }
       }
@@ -426387,6 +427305,18 @@
                 "stringUnit" : {
                   "state" : "machine_translated",
                   "value" : "可用空间不足，无法下载 %lld 本阅读列表中的图书"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "可用空間不足，無法下載 %lld 本閱讀列表書籍"
                 }
               }
             }
@@ -427008,6 +427938,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "%@ 中没有可使用的资料库，而在资料库不可用时也没有可移到那里的资料库。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "%@ 中沒有可使用的書庫，且書庫無法使用時也沒有可移到該處的書庫。"
           }
         }
       }
@@ -428346,6 +429282,12 @@
             "state" : "machine_translated",
             "value" : "它们仍保留在 %@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "它們仍保留在 %@"
+          }
         }
       }
     },
@@ -429570,6 +430512,12 @@
             "state" : "machine_translated",
             "value" : "这台 Mac 不知道资料库的标识，因此无法恢复它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 Mac 不知道書庫的身分，因此無法還原它。"
+          }
         }
       }
     },
@@ -429771,6 +430719,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这台 Mac 处于离线状态，因此无法从 %@ 下载这本图书。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這部 Mac 處於離線狀態，因此無法從 %@ 下載這本書籍。"
           }
         }
       }
@@ -437204,6 +438158,12 @@
             "state" : "machine_translated",
             "value" : "这是临时资料库，资料库更改没有被存储。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這是暫時的書庫，書庫更改不會儲存。"
+          }
         }
       }
     },
@@ -437304,6 +438264,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这是 TextMouth 正在使用的资料库：%@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這是 TextMouth 正在使用的書庫：%@。"
           }
         }
       }
@@ -437714,6 +438680,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这会将所有数据从 %1$@ 移回默认位置 %2$@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這會將所有資料從 %1$@ 移回預設位置 %2$@。"
           }
         }
       }
@@ -438976,6 +439948,12 @@
             "state" : "machine_translated",
             "value" : "这会重新提取每本图书的缓存文本，资料库较大时可能需要一些时间。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這會重新擷取每本書籍的快取文字，書庫很大時可能需要一些時間。"
+          }
         }
       }
     },
@@ -439189,6 +440167,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "这会重新创建目录结构，并迁移使用旧存储方式的图书。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "這會重新建立目錄結構，並移轉使用舊儲存方式的書籍。"
           }
         }
       }
@@ -440521,6 +441505,12 @@
             "state" : "machine_translated",
             "value" : "时间窗口"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "時間範圍"
+          }
         }
       }
     },
@@ -440621,6 +441611,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "时间窗口：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "時間範圍：%@"
           }
         }
       }
@@ -441890,6 +442886,12 @@
             "state" : "machine_translated",
             "value" : "标题"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書名"
+          }
         }
       }
     },
@@ -441990,6 +442992,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "标题按书写的原样排序，也按原样通过输入查找：The Hobbit 在 T 之中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書名會照原樣排序，也照原樣輸入尋找：The Hobbit 在 T 之中。"
           }
         }
       }
@@ -442192,6 +443200,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "到 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往 %@"
           }
         }
       }
@@ -442950,6 +443964,12 @@
             "state" : "machine_translated",
             "value" : "要强制释放空间，请选取“在 Finder 中显示”，然后 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "若仍要釋出空間，請選擇「在 Finder 中顯示」，然後%@。"
+          }
         }
       }
     },
@@ -443354,6 +444374,12 @@
             "state" : "machine_translated",
             "value" : "要让它不再保留，请将它从阅读列表中移除，或在阅读列表的选项中取消勾选 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "若要讓它釋出，請將它從閱讀列表中移除，或清除閱讀列表選項中的 %@。"
+          }
         }
       }
     },
@@ -443455,6 +444481,12 @@
             "state" : "machine_translated",
             "value" : "要让它们不再保留，请将它们从阅读列表中移除，或在阅读列表的选项中取消勾选 %@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "若要讓它們釋出，請將它們從閱讀列表中移除，或清除閱讀列表選項中的 %@。"
+          }
         }
       }
     },
@@ -443555,6 +444587,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "到默认位置 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "前往預設位置 %@"
           }
         }
       }
@@ -443662,6 +444700,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "要使用其他文件夹，请打开“设置”>“存储”，然后选取 %1$@ 或 %2$@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "若要使用其他資料夾，請打開「設定」，選擇「儲存空間」，然後選擇 %1$@ 或 %2$@。"
           }
         }
       }
@@ -444079,6 +445123,12 @@
             "state" : "machine_translated",
             "value" : "连同其中的归档，该归档展开后共 %1$@，超过了 TextMouth 从含有音频或其他归档的归档中提取的 %2$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "連同其中的封存檔，此封存檔會展開為 %1$@，超過 TextMouth 從含有音訊或其他封存檔的封存檔中擷取的 %2$@ 上限。"
+          }
         }
       }
     },
@@ -444186,6 +445236,12 @@
             "state" : "machine_translated",
             "value" : "连同其中的归档，该归档展开后共 %1$@，超过了 TextMouth 从不含音频的归档中提取的 %2$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "連同其中的封存檔，此封存檔會展開為 %1$@，超過 TextMouth 從不含音訊的封存檔中擷取的 %2$@ 上限。"
+          }
         }
       }
     },
@@ -444292,6 +445348,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "连同其中的归档，该归档共包含 %1$@ 个文件和文件夹，超过了 TextMouth 单次导入所提取的 %2$@ 个。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "連同其中的封存檔，此封存檔含有 %1$@ 個檔案和資料夾，超過 TextMouth 一次輸入所擷取的 %2$@ 個。"
           }
         }
       }
@@ -448997,6 +450059,12 @@
             "state" : "machine_translated",
             "value" : "再次尝试存储所有未能存储的更改。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "再次嘗試儲存所有未能儲存的更改。"
+          }
         }
       }
     },
@@ -450144,6 +451212,12 @@
             "state" : "machine_translated",
             "value" : "请稍后重试。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "請稍後再試一次。"
+          }
         }
       }
     },
@@ -450244,6 +451318,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "请在该移动完成后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "移動完成後再試一次。"
           }
         }
       }
@@ -450453,6 +451533,12 @@
             "state" : "machine_translated",
             "value" : "请在其完成后重试。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "該動作完成後再試一次。"
+          }
         }
       }
     },
@@ -450553,6 +451639,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "请重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "請再試一次。"
           }
         }
       }
@@ -455592,6 +456684,12 @@
             "state" : "machine_translated",
             "value" : "无法读取的文件"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "無法讀取的檔案"
+          }
         }
       }
     },
@@ -456721,6 +457819,12 @@
             "state" : "machine_translated",
             "value" : "在此之前，无法更改位置和重建目录。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在此之前，無法更改位置與重建目錄。"
+          }
         }
       }
     },
@@ -456922,6 +458026,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "未命名规则"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "未命名的規則"
           }
         }
       }
@@ -457327,6 +458437,12 @@
             "state" : "machine_translated",
             "value" : "正在更新文本缓存"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在更新文字快取"
+          }
         }
       }
     },
@@ -457434,6 +458550,12 @@
             "state" : "machine_translated",
             "value" : "使用 %1$@ 和 %2$@，或拖移来重新排序。规则从上到下依次应用。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "使用 %1$@ 和 %2$@，或拖移，來重新排列。規則由上而下套用。"
+          }
         }
       }
     },
@@ -457534,6 +458656,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "使用默认位置…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "使用預設位置…"
           }
         }
       }
@@ -457838,6 +458966,12 @@
             "state" : "machine_translated",
             "value" : "使用此资料库"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "使用此書庫"
+          }
         }
       }
     },
@@ -457938,6 +459072,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "要使用此资料库吗？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "要使用此書庫嗎？"
           }
         }
       }
@@ -458147,6 +459287,12 @@
             "state" : "machine_translated",
             "value" : "解析器更新后请使用它。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在解析器更新後使用它。"
+          }
         }
       }
     },
@@ -458349,6 +459495,12 @@
             "state" : "machine_translated",
             "value" : "使用正则表达式匹配"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "使用正則表達式比對"
+          }
         }
       }
     },
@@ -458449,6 +459601,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "使用默认位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "使用預設位置"
           }
         }
       }
@@ -458651,6 +459809,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "在从备份恢复该文件、修复其权限，或将 TextMouth 更新到存储它的版本之后使用此项。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在從備份還原檔案、修正其權限，或將 TextMouth 更新到儲存它的版本之後，請使用此項。"
           }
         }
       }
@@ -458954,6 +460118,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "同时在两台 Mac 上使用同一个资料库，可能会丢失阅读位置和更改。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在兩部 Mac 上同時使用同一個書庫，可能會遺失閱讀位置和更改。"
           }
         }
       }
@@ -460065,6 +461235,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "语音语言"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "語音語言"
           }
         }
       }
@@ -461290,6 +462466,12 @@
             "state" : "machine_translated",
             "value" : "等待同步"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "等待同步"
+          }
         }
       }
     },
@@ -461390,6 +462572,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "正在等待音频编辑完成…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待音訊編輯完成…"
           }
         }
       }
@@ -461492,6 +462680,12 @@
             "state" : "machine_translated",
             "value" : "正在等待图书分析完成…"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待書籍分析完成…"
+          }
         }
       }
     },
@@ -461592,6 +462786,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "正在等待读取图书元数据…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待書籍中繼資料讀取完成…"
           }
         }
       }
@@ -461694,6 +462894,12 @@
             "state" : "machine_translated",
             "value" : "正在等待删除订阅源下载内容…"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待訂閱源下載內容刪除完成…"
+          }
         }
       }
     },
@@ -461794,6 +463000,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "正在等待存储订阅源记录…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待訂閱源記錄儲存完成…"
           }
         }
       }
@@ -461896,6 +463108,12 @@
             "state" : "machine_translated",
             "value" : "正在等待文本提取完成…"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待文字擷取完成…"
+          }
         }
       }
     },
@@ -461996,6 +463214,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "正在等待当前导入完成…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正在等待目前的輸入完成…"
           }
         }
       }
@@ -462906,6 +464130,12 @@
             "state" : "machine_translated",
             "value" : "图书播放结束时的行为。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍播放完畢時會發生的事。"
+          }
         }
       }
     },
@@ -463006,6 +464236,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "按住 Shift 并快退时的行为。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "按住 Shift 並向後跳轉時會發生的事。"
           }
         }
       }
@@ -463108,6 +464344,12 @@
             "state" : "machine_translated",
             "value" : "按住 Shift 并快进时的行为。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "按住 Shift 並向前跳轉時會發生的事。"
+          }
         }
       }
     },
@@ -463208,6 +464450,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "快退时的行为。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向後跳轉時會發生的事。"
           }
         }
       }
@@ -463310,6 +464558,12 @@
             "state" : "machine_translated",
             "value" : "快进时的行为。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "向前跳轉時會發生的事。"
+          }
         }
       }
     },
@@ -463410,6 +464664,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "导入图书后如何处理原始文件。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "輸入書籍後如何處理原始檔案。"
           }
         }
       }
@@ -466085,6 +467345,12 @@
             "state" : "machine_translated",
             "value" : "忽略冠词时，元数据标明法语、德语、西班牙语、意大利语、葡萄牙语、荷兰语、加泰罗尼亚语、瑞典语、丹麦语或挪威语的图书，会略过该语言的冠词，例如 Le、Die 和 The。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "忽略冠詞時，中繼資料註明為法文、德文、西班牙文、義大利文、葡萄牙文、荷蘭文、加泰蘭文、瑞典文、丹麥文或挪威文的書籍，會略過該語言的冠詞（例如 Le 和 Die）以及 The。"
+          }
         }
       }
     },
@@ -466185,6 +467451,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "图书结束时"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍結束時"
           }
         }
       }
@@ -466590,6 +467862,12 @@
             "state" : "machine_translated",
             "value" : "启用后，跳转到章节标题、书签或搜索结果后会自动开始播放。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "啟用後，前往標題、書籤或搜尋結果後會自動開始播放。"
+          }
         }
       }
     },
@@ -466791,6 +468069,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "启用后，请在模式中使用 \\b 表示单词边界。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "啟用後，在模式中使用 \\b 表示單字邊界。"
           }
         }
       }
@@ -467094,6 +468378,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "关闭后，表单会保持打开，显示剩余时间和重置按钮。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "關閉時，面板會保持打開，並顯示剩餘時間和重置按鈕。"
           }
         }
       }
@@ -467498,6 +468788,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "继续播放时，倒带到此单位的开头。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "繼續播放時，倒轉到此單位的開頭。"
           }
         }
       }
@@ -468515,6 +469811,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 写入诊断日志的位置。%1$@ 会将日志与你的图书放在一起，因此它们会随资料库移动和同步。%2$@ 会将日志保存在 %3$@ 中，不会同步。更改从下一行起生效；现有日志保持不变。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 寫入診斷日誌的位置。%1$@ 會將日誌與你的書籍放在一起，因此日誌會隨書庫移動和同步。%2$@ 會將日誌保留在 %3$@，那裡永遠不會同步。更改會從下一行起套用；現有的日誌會保留。"
+          }
         }
       }
     },
@@ -469335,6 +470637,12 @@
             "state" : "machine_translated",
             "value" : "TextMouth 拷贝数据期间，%1$@ 被更改为通向 %2$@，而不是 %3$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 拷貝資料時，%1$@ 被改成指向 %2$@，而不是 %3$@。"
+          }
         }
       }
     },
@@ -469688,6 +470996,18 @@
               }
             }
           }
+        },
+        "zh-Hant" : {
+          "variations" : {
+            "plural" : {
+              "other" : {
+                "stringUnit" : {
+                  "state" : "machine_translated",
+                  "value" : "TextMouth 拷貝資料時，有 %lld 個項目出現在 %@：%@。"
+                }
+              }
+            }
+          }
         }
       }
     },
@@ -469788,6 +471108,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "TextMouth 拷贝数据期间，%@ 处放入了其他内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "TextMouth 拷貝資料時，有其他內容被放到 %@。"
           }
         }
       }
@@ -470097,6 +471423,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "仅整词"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "僅限完整單字"
           }
         }
       }
@@ -473556,6 +474888,12 @@
             "state" : "machine_translated",
             "value" : "你可以在此新建文件夹。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你可以在這裡建立新資料夾。"
+          }
         }
       }
     },
@@ -473656,6 +474994,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "你可以打开和阅读图书，阅读位置也仍会随每本图书存储，但在你选取下面的某个选项之前，资料库本身的更改不会被存储。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你可以打開並閱讀書籍，閱讀位置也仍會與每本書籍一起儲存，但在你選擇以下其中一個選項之前，不會儲存書庫本身的更改。"
           }
         }
       }
@@ -474798,6 +476142,12 @@
             "state" : "machine_translated",
             "value" : "你的图书和阅读位置都会保留。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你的書籍和閱讀位置都會保留。"
+          }
         }
       }
     },
@@ -475434,6 +476784,12 @@
             "state" : "machine_translated",
             "value" : "你的资料库（%1$@）将在后台上传到 %2$@。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你的書庫（%1$@）將在背景上傳到 %2$@。"
+          }
         }
       }
     },
@@ -475635,6 +476991,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "你的资料库将在后台上传到 %@。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你的書庫將在背景上傳到 %@。"
           }
         }
       }
@@ -476046,6 +477408,12 @@
             "state" : "machine_translated",
             "value" : "图书的记录 %@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍的記錄 %@"
+          }
         }
       }
     },
@@ -476147,6 +477515,12 @@
             "state" : "machine_translated",
             "value" : "订阅源的单集索引 %@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "訂閱源的單集索引 %@"
+          }
         }
       }
     },
@@ -476247,6 +477621,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "订阅源的记录 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "訂閱源的記錄 %@"
           }
         }
       }
@@ -478285,6 +479665,12 @@
             "state" : "machine_translated",
             "value" : "另一台 Mac"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "另一部 Mac"
+          }
         }
       }
     },
@@ -480064,6 +481450,12 @@
             "state" : "machine_translated",
             "value" : "图书更改"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書籍的更改"
+          }
         }
       }
     },
@@ -480378,6 +481770,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "第 %1$@ 章，存储于 %2$@，以及 %3$@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "第 %1$@ 章，%2$@ 儲存，以及 %3$@"
           }
         }
       }
@@ -480991,6 +482389,12 @@
             "state" : "machine_translated",
             "value" : "选取 Make online-only"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選擇「設為僅限線上」"
+          }
         }
       }
     },
@@ -481091,6 +482495,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "选取“移除下载”"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "選擇「移除下載內容」"
           }
         }
       }
@@ -483319,6 +484729,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "订阅源订阅信息"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "訂閱源的訂閱項目"
           }
         }
       }
@@ -486547,6 +487963,12 @@
             "state" : "machine_translated",
             "value" : "iCloud 云盘可能已关闭或已退出登录，或者这台 Mac 可能处于离线状态。请检查这些，然后选取“重试”。"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 可能已關閉或已登出，或是這部 Mac 可能已離線。請檢查，然後選擇「再試一次」。"
+          }
         }
       }
     },
@@ -486647,6 +488069,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "iCloud 云盘可能已关闭或已退出登录。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "iCloud Drive 可能已關閉或已登出。"
           }
         }
       }
@@ -492848,6 +494276,12 @@
             "state" : "machine_translated",
             "value" : "资料库更改"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫更改"
+          }
         }
       }
     },
@@ -492948,6 +494382,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "收听统计"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "聆聽統計資料"
           }
         }
       }
@@ -495698,6 +497138,12 @@
             "state" : "machine_translated",
             "value" : "没有存储的位置，以及 %@"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "沒有儲存的位置，以及 %@"
+          }
         }
       }
     },
@@ -498391,6 +499837,12 @@
             "state" : "machine_translated",
             "value" : "原始文件"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "原始檔案"
+          }
         }
       }
     },
@@ -498794,6 +500246,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "权限被拒绝"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "權限遭拒"
           }
         }
       }
@@ -500366,6 +501824,12 @@
             "state" : "machine_translated",
             "value" : "正则"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "正則"
+          }
         }
       }
     },
@@ -500983,6 +502447,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "設定"
           }
         }
       }
@@ -503110,6 +504580,12 @@
             "state" : "machine_translated",
             "value" : "文本替换规则"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "文字取代規則"
+          }
         }
       }
     },
@@ -504372,6 +505848,12 @@
             "state" : "machine_translated",
             "value" : "云端"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "雲端"
+          }
         }
       }
     },
@@ -504472,6 +505954,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "云服务"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "雲端服務"
           }
         }
       }
@@ -506290,6 +507778,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "资料库索引 %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "書庫索引 %@"
           }
         }
       }
@@ -508733,6 +510227,12 @@
             "state" : "machine_translated",
             "value" : "使用 Google Drive 的“Offline Access”菜单"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "使用 Google Drive 的「離線存取」選單"
+          }
         }
       }
     },
@@ -508833,6 +510333,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "使用该云盘自带的命令，让这本图书仅保留在线"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "使用該磁碟機本身的指令，讓書籍僅保留在線上"
           }
         }
       }
@@ -509490,6 +510996,12 @@
             "state" : "machine_translated",
             "value" : "整词"
           }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "單字"
+          }
         }
       }
     },
@@ -509691,6 +511203,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "你已停止比较"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "你停止了比較"
           }
         }
       }
@@ -510553,6 +512071,12 @@
           "stringUnit" : {
             "state" : "machine_translated",
             "value" : "“%1$@”在移动失败后无法移回，因此其文件位于 %2$@，而不是 %3$@：%4$@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "machine_translated",
+            "value" : "在失敗的移動之後，無法將「%1$@」移回，因此它的檔案在 %2$@，而不是 %3$@：%4$@"
           }
         }
       }
