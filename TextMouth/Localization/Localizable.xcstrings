@@ -16338,19 +16338,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de arquivos baixados"
+                  "value" : "%lld de downloads"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld arquivo baixado"
+                  "value" : "%lld download"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld arquivos baixados"
+                  "value" : "%lld downloads"
                 }
               }
             }
@@ -16475,19 +16475,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld de arquivos baixados serão excluídos."
+                  "value" : "%lld de downloads serão excluídos."
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld arquivo baixado será excluído."
+                  "value" : "%lld download será excluído."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld arquivos baixados serão excluídos."
+                  "value" : "%lld downloads serão excluídos."
                 }
               }
             }
@@ -48612,19 +48612,19 @@
               "many" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Excluir %lld de arquivos baixados"
+                  "value" : "Excluir %lld de downloads"
                 }
               },
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Excluir %lld arquivo baixado"
+                  "value" : "Excluir %lld download"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Excluir %lld arquivos baixados"
+                  "value" : "Excluir %lld downloads"
                 }
               }
             }
@@ -48796,7 +48796,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Excluir arquivo baixado"
+            "value" : "Excluir download"
           }
         }
       }
@@ -48831,7 +48831,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Excluir arquivos baixados"
+            "value" : "Excluir downloads"
           }
         }
       }
@@ -71101,7 +71101,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "É a pasta do feed %@. De qualquer forma, o feed e seus arquivos baixados permanecem, sem pasta, até que Informações do feed dê outra a ele; Excluir feed… na linha dele o exclui."
+            "value" : "É a pasta do feed %@. De qualquer forma, o feed e seus downloads permanecem, sem pasta, até que Informações do feed dê outra a ele; Excluir feed… na linha dele o exclui."
           }
         }
       }
@@ -71136,7 +71136,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "É a pasta dos feeds %@. De qualquer forma, os feeds e seus arquivos baixados permanecem, sem pasta, até que Informações do feed dê outra a cada um; Excluir feed… na linha de um feed o exclui."
+            "value" : "É a pasta dos feeds %@. De qualquer forma, os feeds e seus downloads permanecem, sem pasta, até que Informações do feed dê outra a cada um; Excluir feed… na linha de um feed o exclui."
           }
         }
       }
@@ -95590,7 +95590,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Abre os ajustes do feed: para onde vão os arquivos baixados, o que ele lista e baixa, e o que acontece quando um episódio termina."
+            "value" : "Abre os ajustes do feed: para onde vão os downloads, o que ele lista e baixa, e o que acontece quando um episódio termina."
           }
         }
       }
@@ -137307,7 +137307,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O arquivo baixado de “%@” será excluído."
+            "value" : "O download de “%@” será excluído."
           }
         }
       }
@@ -137838,7 +137838,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "O feed %@ permanece, com seus arquivos baixados, sem pasta até que Informações do feed dê outra a ele."
+            "value" : "O feed %@ permanece, com seus downloads, sem pasta até que Informações do feed dê outra a ele."
           }
         }
       }
@@ -138337,7 +138337,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Os feeds %@ permanecem, com seus arquivos baixados, sem pasta até que Informações do feed dê uma a cada um."
+            "value" : "Os feeds %@ permanecem, com seus downloads, sem pasta até que Informações do feed dê uma a cada um."
           }
         }
       }
@@ -162769,7 +162769,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Com %@, o feed e seus arquivos baixados permanecem, sem pasta, até que Informações do feed dê outra a ele; Excluir feed… na linha dele o exclui."
+            "value" : "Com %@, o feed e seus downloads permanecem, sem pasta, até que Informações do feed dê outra a ele; Excluir feed… na linha dele o exclui."
           }
         }
       }
@@ -162804,7 +162804,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Com %@, os feeds e seus arquivos baixados permanecem, sem pasta, até que Informações do feed dê uma a cada um; Excluir feed… na linha de um feed o exclui."
+            "value" : "Com %@, os feeds e seus downloads permanecem, sem pasta, até que Informações do feed dê uma a cada um; Excluir feed… na linha de um feed o exclui."
           }
         }
       }
@@ -174311,7 +174311,7 @@
         "pt-BR" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "o arquivo baixado de “%@”"
+            "value" : "o download de “%@”"
           }
         }
       }
