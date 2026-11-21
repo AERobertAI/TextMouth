@@ -1,0 +1,695 @@
+{
+ "language": "ur",
+ "reviews": [
+  {
+   "part": 2,
+   "areas": [
+    "feeds and import",
+    "audio and transcripts"
+   ],
+   "reviewer": "Claude Opus 5.5",
+   "date": "2026-11-21",
+   "fixes": [
+    {
+     "key": "%lld were subscribed already.",
+     "english": {
+      "one": "%lld was subscribed already.",
+      "other": "%lld were subscribed already."
+     },
+     "before": {
+      "one": "%lld فیڈ پہلے ہی سبسکرائب تھی۔",
+      "other": "%lld فیڈز پہلے ہی سبسکرائب تھیں۔"
+     },
+     "after": {
+      "one": "%lld فیڈ پہلے ہی سبسکرائب شدہ تھی۔",
+      "other": "%lld فیڈز پہلے ہی سبسکرائب شدہ تھیں۔"
+     },
+     "why": "grammar: the bare verb stem سبسکرائب needs شدہ to describe a feed that is subscribed"
+    },
+    {
+     "key": "Cleaned up on %@, with rules version %@: %@.",
+     "english": "Cleaned up on %1$@, with rules version %2$@: %3$@.",
+     "before": "%1$@ کو، قواعد کے ورژن %2$@ کے ساتھ، صاف کیا گیا: %3$@۔",
+     "after": "%1$@ کو، اصولوں کے ورژن %2$@ کے ساتھ، صاف کیا گیا: %3$@۔",
+     "why": "term: the glossary and entries 851 and 881 say اصول for the cleanup rules; قواعد also means grammar"
+    },
+    {
+     "key": "Copied %@.",
+     "english": "Copied %@.",
+     "before": "%@ کاپی کیا گیا۔",
+     "after": "کاپی کیا گیا: %@۔",
+     "why": "grammar: %@ کاپی کیا گیا cannot agree with a plural length such as 3 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Cut %@.",
+     "english": "Cut %@.",
+     "before": "%@ کاٹا گیا۔",
+     "after": "کاٹا گیا: %@۔",
+     "why": "grammar: %@ کاٹا گیا cannot agree with a plural length such as 2.5 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Deleted %@.",
+     "english": "Deleted %@.",
+     "before": "%@ حذف ہو گیا۔",
+     "after": "حذف کر دیا گیا: %@۔",
+     "why": "grammar: a singular masculine verb cannot agree with a list of what went (the feed, its downloads) or a view name; the colon form fits both"
+    },
+    {
+     "key": "Description",
+     "english": "Description",
+     "before": "وضاحت",
+     "after": "تفصیل",
+     "why": "term: Urdu interfaces (YouTube, Windows) call a description تفصیل; وضاحت means an explanation"
+    },
+    {
+     "key": "Description of %@",
+     "english": "Description of %@",
+     "before": "%@ کی وضاحت",
+     "after": "%@ کی تفصیل",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "Downloaded",
+     "english": "Downloaded",
+     "before": "ڈاؤن لوڈ ہو چکا",
+     "after": "ڈاؤن لوڈ شدہ",
+     "why": "grammar: the masculine ہو چکا does not fit a book row (کتاب is feminine); the state adjective fits every row"
+    },
+    {
+     "key": "Every article listed, downloads by hand",
+     "english": "Every article listed, downloads by hand",
+     "before": "ہر مضمون فہرست میں، ڈاؤن لوڈ ہاتھ سے",
+     "after": "ہر مضمون فہرست میں، دستی ڈاؤن لوڈ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as the glossary does for Manual Order"
+    },
+    {
+     "key": "Every episode listed, downloads by hand",
+     "english": "Every episode listed, downloads by hand",
+     "before": "ہر ایپی سوڈ فہرست میں، ڈاؤن لوڈ ہاتھ سے",
+     "after": "ہر ایپی سوڈ فہرست میں، دستی ڈاؤن لوڈ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as the glossary does for Manual Order"
+    },
+    {
+     "key": "Every item listed, downloads by hand",
+     "english": "Every item listed, downloads by hand",
+     "before": "ہر آئٹم فہرست میں، ڈاؤن لوڈ ہاتھ سے",
+     "after": "ہر آئٹم فہرست میں، دستی ڈاؤن لوڈ",
+     "why": "natural: ہاتھ سے copies the English by hand; Urdu interfaces say دستی, as the glossary does for Manual Order"
+    },
+    {
+     "key": "Extracting archive...",
+     "english": "Extracting archive...",
+     "before": "آرکائیو نکالی جا رہی ہے...",
+     "after": "آرکائیو سے مواد نکالا جا رہا ہے...",
+     "why": "meaning: آرکائیو نکالی جا رہی ہے says the archive itself is being pulled out; the files come out of it, as entry 199 says"
+    },
+    {
+     "key": "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.",
+     "english": "Filters in ffmpeg's syntax, separated by commas; options follow an equals sign, separated by colons.",
+     "before": "ffmpeg کی نحو میں فلٹرز، کوما سے الگ کیے گئے؛ آپشنز برابر کے نشان کے بعد آتے ہیں اور کولن سے الگ ہوتے ہیں۔",
+     "after": "ffmpeg کی نحو میں فلٹرز، کاما سے الگ کیے گئے؛ آپشنز برابر کے نشان کے بعد آتے ہیں اور کولن سے الگ ہوتے ہیں۔",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما, as کاپی writes copy"
+    },
+    {
+     "key": "Import cancelled while extracting the archive, before any book was imported.",
+     "english": "Import cancelled while extracting the archive, before any book was imported.",
+     "before": "آرکائیو نکالتے وقت درآمد منسوخ کر دی گئی، کوئی کتاب درآمد ہونے سے پہلے۔",
+     "after": "کوئی کتاب درآمد ہونے سے پہلے، آرکائیو سے مواد نکالتے وقت درآمد منسوخ کر دی گئی۔",
+     "why": "natural: the trailing before-clause copied the English order, and the archive was not itself extracted"
+    },
+    {
+     "key": "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.",
+     "english": "Labels and semicolons need ffmpeg. TextMouth's own filters take one comma-separated chain.",
+     "before": "لیبلز اور سیمی کولن کے لیے ffmpeg درکار ہے۔ TextMouth کے اپنے فلٹرز کوما سے الگ کی ہوئی ایک زنجیر لیتے ہیں۔",
+     "after": "لیبلز اور سیمی کولن کے لیے ffmpeg درکار ہے۔ TextMouth کے اپنے فلٹرز کاما سے الگ کی ہوئی ایک زنجیر لیتے ہیں۔",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما, as کاپی writes copy"
+    },
+    {
+     "key": "Listen and Move",
+     "english": "Listen and Move",
+     "before": "سنیں اور منتقل کریں",
+     "after": "سنیں اور آگے پیچھے جائیں",
+     "why": "meaning: منتقل کریں is moving an item; these buttons move the cursor, so go back and forth"
+    },
+    {
+     "key": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "after": {
+      "one": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "why": "grammar: keeps the newest downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun ڈاؤن لوڈ"
+    },
+    {
+     "key": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode and article, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "after": {
+      "one": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ اور مضمون کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "why": "grammar: keeps the newest downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun ڈاؤن لوڈ"
+    },
+    {
+     "key": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+     "english": {
+      "one": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings.",
+      "other": "Lists every episode, keeps the newest %lld downloaded, and removes older downloads it made, keeping their place, bookmarks, and settings."
+     },
+     "before": {
+      "one": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "after": {
+      "one": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔",
+      "other": "ہر ایپی سوڈ کو فہرست میں دکھاتا ہے، تازہ ترین %lld کو ڈاؤن لوڈ شدہ رکھتا ہے، اور اپنے بنائے ہوئے پرانے ڈاؤن لوڈز ہٹا دیتا ہے، ان کی جگہ، بک مارکس اور ترتیبات رکھتے ہوئے۔"
+     },
+     "why": "grammar: keeps the newest downloaded needs the adjective ڈاؤن لوڈ شدہ, not the noun ڈاؤن لوڈ"
+    },
+    {
+     "key": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't played, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔"
+     },
+     "after": {
+      "one": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں چلائے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔"
+     },
+     "why": "grammar: فہرست کرنا is not an Urdu verb; list more is to show more in the list"
+    },
+    {
+     "key": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+     "english": {
+      "one": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more.",
+      "other": "Lists the newest %lld you haven't read, and every download. Downloads only what you ask for; the others keep their records and return when you list more."
+     },
+     "before": {
+      "one": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور زیادہ فہرست کرنے پر واپس آ جاتے ہیں۔"
+     },
+     "after": {
+      "one": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔",
+      "other": "جو آپ نے نہیں پڑھے ان میں سے تازہ ترین %lld، اور ہر ڈاؤن لوڈ کو فہرست میں دکھاتا ہے۔ صرف وہی ڈاؤن لوڈ کرتا ہے جو آپ مانگیں؛ باقی اپنے ریکارڈ رکھتے ہیں اور مزید فہرست میں دکھانے پر واپس آ جاتے ہیں۔"
+     },
+     "why": "grammar: فہرست کرنا is not an Urdu verb; list more is to show more in the list"
+    },
+    {
+     "key": "Mark All Played",
+     "english": "Mark All Played",
+     "before": "تمام کو چلایا گیا نشان زد کریں",
+     "after": "تمام کو بطور چلایا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the played one, not mark as played"
+    },
+    {
+     "key": "Mark All Read",
+     "english": "Mark All Read",
+     "before": "تمام کو پڑھا گیا نشان زد کریں",
+     "after": "تمام کو بطور پڑھا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the read one, not mark as read"
+    },
+    {
+     "key": "Mark Played",
+     "english": "Mark Played",
+     "before": "چلایا گیا نشان زد کریں",
+     "after": "بطور چلایا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the played one, not mark as played"
+    },
+    {
+     "key": "Mark Read",
+     "english": "Mark Read",
+     "before": "پڑھا گیا نشان زد کریں",
+     "after": "بطور پڑھا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the read one, not mark as read"
+    },
+    {
+     "key": "Mark Unplayed",
+     "english": "Mark Unplayed",
+     "before": "نہ چلایا گیا نشان زد کریں",
+     "after": "بطور نہ چلایا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the unplayed one, not mark as unplayed"
+    },
+    {
+     "key": "Mark Unread",
+     "english": "Mark Unread",
+     "before": "نہ پڑھا گیا نشان زد کریں",
+     "after": "بطور نہ پڑھا گیا نشان زد کریں",
+     "why": "grammar: without بطور (as) the command reads mark the unread one, not mark as unread"
+    },
+    {
+     "key": "Marked %lld articles of %@ read.",
+     "english": {
+      "one": "Marked %lld article of %@ read.",
+      "other": "Marked %lld articles of %@ read."
+     },
+     "before": {
+      "one": "%2$@ کا %1$lld مضمون پڑھا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld مضامین پڑھے گئے نشان زد کیے گئے۔"
+     },
+     "after": {
+      "one": "%2$@ کا %1$lld مضمون بطور پڑھا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld مضامین بطور پڑھا گیا نشان زد کیے گئے۔"
+     },
+     "why": "grammar: marked as read needs بطور, as the command Mark Read now has"
+    },
+    {
+     "key": "Marked %lld episodes of %@ played.",
+     "english": {
+      "one": "Marked %lld episode of %@ played.",
+      "other": "Marked %lld episodes of %@ played."
+     },
+     "before": {
+      "one": "%2$@ کا %1$lld ایپی سوڈ چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld ایپی سوڈ چلائے گئے نشان زد کیے گئے۔"
+     },
+     "after": {
+      "one": "%2$@ کا %1$lld ایپی سوڈ بطور چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld ایپی سوڈ بطور چلایا گیا نشان زد کیے گئے۔"
+     },
+     "why": "grammar: marked as played needs بطور, as the command Mark Played now has"
+    },
+    {
+     "key": "Marked %lld items of %@ played.",
+     "english": {
+      "one": "Marked %lld item of %@ played.",
+      "other": "Marked %lld items of %@ played."
+     },
+     "before": {
+      "one": "%2$@ کا %1$lld آئٹم چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld آئٹم چلائے گئے نشان زد کیے گئے۔"
+     },
+     "after": {
+      "one": "%2$@ کا %1$lld آئٹم بطور چلایا گیا نشان زد کیا گیا۔",
+      "other": "%2$@ کے %1$lld آئٹم بطور چلایا گیا نشان زد کیے گئے۔"
+     },
+     "why": "grammar: marked as played needs بطور, as the command Mark Played now has"
+    },
+    {
+     "key": "Marked “%@” played.",
+     "english": "Marked “%@” played.",
+     "before": "“%@” چلایا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور چلایا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as played needs بطور, as the command Mark Played now has"
+    },
+    {
+     "key": "Marked “%@” read.",
+     "english": "Marked “%@” read.",
+     "before": "“%@” پڑھا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور پڑھا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as read needs بطور, as the command Mark Read now has"
+    },
+    {
+     "key": "Marked “%@” unplayed.",
+     "english": "Marked “%@” unplayed.",
+     "before": "“%@” نہ چلایا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور نہ چلایا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as unplayed needs بطور, as the command Mark Unplayed now has"
+    },
+    {
+     "key": "Marked “%@” unread.",
+     "english": "Marked “%@” unread.",
+     "before": "“%@” نہ پڑھا گیا نشان زد کیا گیا۔",
+     "after": "“%@” بطور نہ پڑھا گیا نشان زد کیا گیا۔",
+     "why": "grammar: marked as unread needs بطور, as the command Mark Unread now has"
+    },
+    {
+     "key": "No Thanks",
+     "english": "No Thanks",
+     "before": "نہیں شکریہ",
+     "after": "نہیں، شکریہ",
+     "why": "punctuation: Urdu writes No, thanks with a comma, which VoiceOver also hears as a pause"
+    },
+    {
+     "key": "Not Downloaded",
+     "english": "Not Downloaded",
+     "before": "ڈاؤن لوڈ نہیں ہوا",
+     "after": "ڈاؤن لوڈ شدہ نہیں",
+     "why": "grammar: the masculine ہوا does not fit a book row (feminine); the state adjective fits every row and pairs with Downloaded"
+    },
+    {
+     "key": "Pasted %@ over %@.",
+     "english": "Pasted %1$@ over %2$@.",
+     "before": "%2$@ کی جگہ %1$@ چسپاں کیا گیا۔",
+     "after": "چسپاں کیا گیا: %2$@ کی جگہ %1$@۔",
+     "why": "grammar: the singular verb cannot agree with a plural pasted length; the lengths now follow a colon"
+    },
+    {
+     "key": "Pasted %@.",
+     "english": "Pasted %@.",
+     "before": "%@ چسپاں کیا گیا۔",
+     "after": "چسپاں کیا گیا: %@۔",
+     "why": "grammar: %@ چسپاں کیا گیا cannot agree with a plural length such as 3 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Post a notification for each feed with new episodes",
+     "english": "Post a notification for each feed with new episodes",
+     "before": "نئے ایپی سوڈ والی ہر فیڈ کے لیے اطلاع پوسٹ کریں",
+     "after": "نئے ایپی سوڈ والی ہر فیڈ کے لیے اطلاع بھیجیں",
+     "why": "natural: اطلاع پوسٹ کریں copies the English post; Urdu sends (بھیجنا) a notification"
+    },
+    {
+     "key": "Preview filters before applying",
+     "english": "Preview filters before applying",
+     "before": "لاگو کرنے سے پہلے فلٹرز کا پیش منظر دیکھیں",
+     "after": "لاگو کرنے سے پہلے فلٹرز کا پیش منظر سنیں",
+     "why": "meaning: a filter preview is played and heard, not seen"
+    },
+    {
+     "key": "Published by",
+     "english": "Published by",
+     "before": "شائع کنندہ",
+     "after": "ناشر",
+     "why": "term: شائع کنندہ is a rare coinage; ناشر is the common word and the glossary word for Publisher"
+    },
+    {
+     "key": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "english": "Records over the selection, or at the cursor, after a beep. Again, or Stop, ends it.",
+     "before": "بیپ کے بعد انتخاب پر، یا کرسر پر، ریکارڈ کرتا ہے۔ یہی بٹن دوبارہ، یا “روکیں”، اسے ختم کرتا ہے۔",
+     "after": "بیپ کے بعد انتخاب پر، یا کرسر پر، ریکارڈ کرتا ہے۔ اسے دوبارہ منتخب کرنے سے، یا “روکیں” سے، ریکارڈنگ ختم ہو جاتی ہے۔",
+     "why": "voiceover: the hint named its control (بٹن); it now says choosing it again, or Stop, ends the recording"
+    },
+    {
+     "key": "Redid %@.",
+     "english": "Redid %@.",
+     "before": "%@ دوبارہ کیا گیا۔",
+     "after": "دوبارہ کیا گیا: %@۔",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ دوبارہ کیا گیا stacked two verbs; the name now follows a colon"
+    },
+    {
+     "key": "Redo %@",
+     "english": "Redo %@",
+     "before": "%@ دوبارہ کریں",
+     "after": "دوبارہ کریں: %@",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ دوبارہ کریں stacked two commands; the name now follows a colon"
+    },
+    {
+     "key": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "english": "Save WordPerfect documents as Word or HTML files in a program that reads them, such as LibreOffice, then import those.",
+     "before": "WordPerfect دستاویزات کو ایسے پروگرام میں جو انہیں پڑھ سکے، جیسے LibreOffice، Word یا HTML فائلوں کے طور پر محفوظ کریں، پھر انہیں درآمد کریں۔",
+     "after": "WordPerfect دستاویزات کو LibreOffice جیسے کسی ایسے پروگرام میں جو انہیں پڑھ سکے، Word یا HTML فائلوں کے طور پر محفوظ کریں، پھر انہیں درآمد کریں۔",
+     "why": "meaning: LibreOffice، Word یا HTML was heard as one list of three; the example now sits inside its own phrase"
+    },
+    {
+     "key": "Saved as",
+     "english": "Saved as",
+     "before": "اس کے طور پر محفوظ",
+     "after": "محفوظ شدہ فارمیٹ",
+     "why": "natural: اس کے طور پر محفوظ (saved as this) copied the English as a label; the label names the format the audio is saved in"
+    },
+    {
+     "key": "Selected %@.",
+     "english": "Selected %@.",
+     "before": "%@ منتخب کیا گیا۔",
+     "after": "منتخب کیا گیا: %@۔",
+     "why": "grammar: %@ منتخب کیا گیا cannot agree with a plural length such as 2.5 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Selected all %@.",
+     "english": "Selected all %@.",
+     "before": "پورا %@ منتخب کیا گیا۔",
+     "after": "پورا آڈیو منتخب کیا گیا: %@۔",
+     "why": "grammar: پورا %@ cannot agree with a plural length such as 3 منٹ (پورے تین منٹ); the length now follows a colon"
+    },
+    {
+     "key": "Selected the %@ before chapter 1.",
+     "english": "Selected the %@ before chapter 1.",
+     "before": "باب 1 سے پہلے کا %@ منتخب کیا گیا۔",
+     "after": "باب 1 سے پہلے کا حصہ منتخب کیا گیا: %@۔",
+     "why": "grammar: کا %@ منتخب کیا گیا cannot agree with a plural length such as 12 سیکنڈ; the length now follows a colon"
+    },
+    {
+     "key": "Shorten Long Pauses",
+     "english": "Shorten Long Pauses",
+     "before": "لمبے وقفے کم کریں",
+     "after": "لمبے وقفے مختصر کریں",
+     "why": "meaning: کم کریں reads as fewer long pauses; the preset makes each one shorter"
+    },
+    {
+     "key": "Show Description…",
+     "english": "Show Description…",
+     "before": "وضاحت دکھائیں…",
+     "after": "تفصیل دکھائیں…",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+     "english": {
+      "one": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens.",
+      "other": "TextMouth downloads %lld of them again at their feeds' next checks, or the next time it opens."
+     },
+     "before": {
+      "one": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+      "other": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔"
+     },
+     "after": {
+      "one": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+      "other": "TextMouth ان میں سے %lld کو ان کی فیڈز کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔"
+     },
+     "why": "grammar: the noun چیک is masculine, as in آخری چیک ناکام رہا"
+    },
+    {
+     "key": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "english": "TextMouth downloads 1 of them again at its feed's next check, or the next time it opens.",
+     "before": "TextMouth ان میں سے 1 کو اس کی فیڈ کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "after": "TextMouth ان میں سے 1 کو اس کی فیڈ کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "why": "grammar: the noun چیک is masculine, as in آخری چیک ناکام رہا"
+    },
+    {
+     "key": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "english": "TextMouth downloads each feed's newest again at its next check, or the next time it opens.",
+     "before": "TextMouth ہر فیڈ کے تازہ ترین کو اس کی اگلی چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "after": "TextMouth ہر فیڈ کے تازہ ترین کو اس کی اگلے چیک پر، یا اگلی بار کھلنے پر، دوبارہ ڈاؤن لوڈ کرتا ہے۔",
+     "why": "grammar: the noun چیک is masculine, as in آخری چیک ناکام رہا"
+    },
+    {
+     "key": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "english": "TextMouth isn't allowed to post notifications. Turn them on in System Settings, Notifications, TextMouth.",
+     "before": "TextMouth کو اطلاعات پوسٹ کرنے کی اجازت نہیں ہے۔ انہیں سسٹم ترتیبات، اطلاعات، TextMouth میں آن کریں۔",
+     "after": "TextMouth کو اطلاعات بھیجنے کی اجازت نہیں ہے۔ انہیں سسٹم ترتیبات، اطلاعات، TextMouth میں آن کریں۔",
+     "why": "natural: اطلاع پوسٹ کرنا copies the English post; Urdu sends (بھیجنا) notifications"
+    },
+    {
+     "key": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "english": "TextMouth keeps the original file of audio it converts at import. An original takes about as much disk space as its converted file, or twice as much when uncompressed. Export offers it as the Original file. A feed episode's original is not kept: it can be downloaded again.",
+     "before": "TextMouth درآمد کے وقت تبدیل کی جانے والی آڈیو کی اصل فائل رکھتا ہے۔ ایک اصل فائل تقریباً اتنی ہی ڈسک جگہ لیتی ہے جتنی اس کی تبدیل شدہ فائل، یا غیر کمپریسڈ ہو تو دگنی۔ برآمد اسے اصل فائل کے طور پر پیش کرتا ہے۔ فیڈ کے ایپی سوڈ کی اصل فائل نہیں رکھی جاتی: اسے دوبارہ ڈاؤن لوڈ کیا جا سکتا ہے۔",
+     "after": "TextMouth درآمد کے وقت تبدیل کی جانے والی آڈیو کی اصل فائل رکھتا ہے۔ ایک اصل فائل تقریباً اتنی ہی ڈسک جگہ لیتی ہے جتنی اس کی تبدیل شدہ فائل، یا غیر کمپریسڈ ہو تو دگنی۔ برآمد اسے اصل فائل کے طور پر پیش کرتی ہے۔ فیڈ کے ایپی سوڈ کی اصل فائل نہیں رکھی جاتی: اسے دوبارہ ڈاؤن لوڈ کیا جا سکتا ہے۔",
+     "why": "grammar: برآمد (Export) is feminine, as درآمد is throughout"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads was deleted.",
+     "english": {
+      "one": "The %@ kept for %lld removed download was deleted.",
+      "other": "The %@ kept for %lld removed downloads was deleted."
+     },
+     "before": {
+      "one": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔",
+      "other": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔"
+     },
+     "after": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈز کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔"
+     },
+     "why": "grammar: the part kept may be feminine (جگہ) or masculine (ٹرانسکرپٹ); the invariant محفوظ and کو need no agreement"
+    },
+    {
+     "key": "The %@ kept for %lld removed downloads were deleted.",
+     "english": {
+      "one": "The %@ kept for %lld removed download were deleted.",
+      "other": "The %@ kept for %lld removed downloads were deleted."
+     },
+     "before": {
+      "one": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔",
+      "other": "%@ کو، جو ہٹائے گئے %lld ڈاؤن لوڈ کے لیے رکھا گیا تھا، حذف کر دیا گیا۔"
+     },
+     "after": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈز کے لیے محفوظ %1$@ کو حذف کر دیا گیا۔"
+     },
+     "why": "grammar: the parts kept may be feminine (جگہیں) or masculine (بک مارکس); the invariant محفوظ and کو need no agreement"
+    },
+    {
+     "key": "The archive also holds %lld other books that were not imported; unzip it to import them.",
+     "english": {
+      "one": "The archive also holds %lld other book that was not imported; unzip it to import it.",
+      "other": "The archive also holds %lld other books that were not imported; unzip it to import them."
+     },
+     "before": {
+      "one": "آرکائیو میں %lld اور کتاب بھی ہے جو درآمد نہیں ہوئی؛ اسے درآمد کرنے کے لیے ان زپ کریں۔",
+      "other": "آرکائیو میں %lld اور کتابیں بھی ہیں جو درآمد نہیں ہوئیں؛ انہیں درآمد کرنے کے لیے ان زپ کریں۔"
+     },
+     "after": {
+      "one": "آرکائیو میں %lld اور کتاب بھی ہے جو درآمد نہیں ہوئی؛ اسے درآمد کرنے کے لیے آرکائیو کو ان زپ کریں۔",
+      "other": "آرکائیو میں %lld اور کتابیں بھی ہیں جو درآمد نہیں ہوئیں؛ انہیں درآمد کرنے کے لیے آرکائیو کو ان زپ کریں۔"
+     },
+     "why": "meaning: without its object, unzip seemed to apply to the book; it is the archive that is unzipped"
+    },
+    {
+     "key": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
+     "english": "The book's audio holds edits its history lost, so they stay, to save or undo next time you edit this book.",
+     "before": "کتاب کے آڈیو میں ایسی ترامیم ہیں جو اس کی تاریخ سے کھو گئیں، اس لیے وہ رہتی ہیں، تاکہ اس کتاب میں اگلی بار ترمیم کرتے وقت انہیں محفوظ یا کالعدم کیا جا سکے۔",
+     "after": "کتاب کے آڈیو میں ایسی ترامیم ہیں جو اس کی سرگزشت سے کھو گئیں، اس لیے وہ رہتی ہیں، تاکہ اس کتاب میں اگلی بار ترمیم کرتے وقت انہیں محفوظ یا کالعدم کیا جا سکے۔",
+     "why": "term: تاریخ is date elsewhere in the app (تاریخ %@); Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history couldn't be read. A copy was kept in the book's package.",
+     "english": "The edit history couldn't be read. A copy was kept in the book's package.",
+     "before": "ترامیم کی تاریخ پڑھی نہیں جا سکی۔ ایک کاپی کتاب کے پیکیج میں رکھی گئی۔",
+     "after": "ترامیم کی سرگزشت پڑھی نہیں جا سکی۔ ایک کاپی کتاب کے پیکیج میں رکھی گئی۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history is only in the cloud, not on this Mac yet.",
+     "english": "The edit history is only in the cloud, not on this Mac yet.",
+     "before": "ترامیم کی تاریخ صرف کلاؤڈ میں ہے، ابھی اس Mac پر نہیں۔",
+     "after": "ترامیم کی سرگزشت صرف کلاؤڈ میں ہے، ابھی اس Mac پر نہیں۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history names a file outside the book, so it isn't used.",
+     "english": "The edit history names a file outside the book, so it isn't used.",
+     "before": "ترامیم کی تاریخ کتاب سے باہر کی ایک فائل کا نام لیتی ہے، اس لیے اسے استعمال نہیں کیا جاتا۔",
+     "after": "ترامیم کی سرگزشت کتاب سے باہر کی ایک فائل کا نام لیتی ہے، اس لیے اسے استعمال نہیں کیا جاتا۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The edit history of %@ couldn't be read.",
+     "english": "The edit history of %@ couldn't be read.",
+     "before": "%@ کی ترامیم کی تاریخ پڑھی نہیں جا سکی۔",
+     "after": "%@ کی ترامیم کی سرگزشت پڑھی نہیں جا سکی۔",
+     "why": "term: ترامیم کی تاریخ also reads the date of the edits; Android and Chrome say سرگزشت for History"
+    },
+    {
+     "key": "The transcript and the text made from it are deleted.",
+     "english": "The transcript and the text made from it are deleted.",
+     "before": "ٹرانسکرپٹ اور اس سے بنا متن حذف ہو جاتا ہے۔",
+     "after": "ٹرانسکرپٹ اور اس سے بنا متن حذف ہو جاتے ہیں۔",
+     "why": "grammar: two things joined by اور (the transcript and its text) take a plural verb"
+    },
+    {
+     "key": "There is not enough free disk space to convert %@: it needs %@ free.",
+     "english": "There is not enough free disk space to convert %1$@: it needs %2$@ free.",
+     "before": "%1$@ کو تبدیل کرنے کے لیے ڈسک پر کافی خالی جگہ نہیں ہے: اسے %2$@ خالی درکار ہے۔",
+     "after": "%1$@ کو تبدیل کرنے کے لیے ڈسک پر کافی خالی جگہ نہیں ہے: اسے %2$@ خالی جگہ درکار ہے۔",
+     "why": "natural: needs 4 GB free is خالی جگہ (free space) in Urdu; خالی alone is cut short"
+    },
+    {
+     "key": "There's an empty filter between two commas.",
+     "english": "There's an empty filter between two commas.",
+     "before": "دو کوما کے درمیان ایک خالی فلٹر ہے۔",
+     "after": "دو کاما کے درمیان ایک خالی فلٹر ہے۔",
+     "why": "meaning: کوما is coma (the medical state); the punctuation mark is کاما"
+    },
+    {
+     "key": "This article has no description.",
+     "english": "This article has no description.",
+     "before": "اس مضمون کی کوئی وضاحت نہیں ہے۔",
+     "after": "اس مضمون کی کوئی تفصیل نہیں ہے۔",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "english": "This book has no valid managed package. Remove it from the library only, or repair its storage before deleting it.",
+     "before": "اس کتاب کا کوئی درست منظم پیکیج نہیں ہے۔ اسے صرف لائبریری سے ہٹائیں، یا حذف کرنے سے پہلے اس کا اسٹوریج مرمت کریں۔",
+     "after": "اس کتاب کا کوئی درست منظم پیکیج نہیں ہے۔ اسے صرف لائبریری سے ہٹائیں، یا حذف کرنے سے پہلے اس کے اسٹوریج کی مرمت کریں۔",
+     "why": "grammar: مرمت کرنا takes its object with کی"
+    },
+    {
+     "key": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "english": "This comic book archive holds more than the %@ pictures TextMouth reads.",
+     "before": "اس کامک بک آرکائیو میں %@ سے زیادہ تصاویر ہیں جنہیں TextMouth پڑھتا ہے۔",
+     "after": "TextMouth زیادہ سے زیادہ %@ تصاویر پڑھتا ہے، اور اس کامک بک آرکائیو میں اس سے زیادہ ہیں۔",
+     "why": "meaning: the relative clause said TextMouth reads the pictures; the English says it reads at most that many"
+    },
+    {
+     "key": "This episode has no description.",
+     "english": "This episode has no description.",
+     "before": "اس ایپی سوڈ کی کوئی وضاحت نہیں ہے۔",
+     "after": "اس ایپی سوڈ کی کوئی تفصیل نہیں ہے۔",
+     "why": "term: Description is تفصیل, as in Urdu interfaces; وضاحت means an explanation"
+    },
+    {
+     "key": "Trimmed to the selection: %@ kept.",
+     "english": "Trimmed to the selection: %@ kept.",
+     "before": "انتخاب تک تراشا گیا: %@ رکھا گیا۔",
+     "after": "انتخاب تک تراشا گیا: %@ باقی۔",
+     "why": "grammar: %@ رکھا گیا cannot agree with a plural length such as 3 منٹ; باقی needs no agreement, as in About %@ left"
+    },
+    {
+     "key": "Undid %@.",
+     "english": "Undid %@.",
+     "before": "%@ کالعدم کیا گیا۔",
+     "after": "کالعدم کیا گیا: %@۔",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ کالعدم کیا گیا stacked two verbs; the name now follows a colon"
+    },
+    {
+     "key": "Undo %@",
+     "english": "Undo %@",
+     "before": "%@ کالعدم کریں",
+     "after": "کالعدم کریں: %@",
+     "why": "grammar: an edit's name is a command (2.5 سیکنڈ کاٹیں), so %@ کالعدم کریں stacked two commands; the name now follows a colon"
+    },
+    {
+     "key": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "english": "When checked, this feed follows the setting in Settings, %@; uncheck it to give the feed its own",
+     "before": "جب نشان زد ہو تو یہ فیڈ ترتیبات، %@، کی ترتیب کی پیروی کرتی ہے؛ اسے اپنی ترتیب دینے کے لیے نشان ہٹائیں۔",
+     "after": "جب نشان زد ہو تو یہ فیڈ ترتیبات، %@، کی ترتیب کی پیروی کرتی ہے؛ فیڈ کو اس کی اپنی ترتیب دینے کے لیے نشان ہٹائیں۔",
+     "why": "meaning: in a command اپنی refers to the listener, so it read give it your own setting; the feed gets its own"
+    },
+    {
+     "key": "extracting the archive",
+     "english": "extracting the archive",
+     "before": "آرکائیو نکالنا",
+     "after": "آرکائیو سے مواد نکالنا",
+     "why": "meaning: آرکائیو نکالنا says the archive itself is pulled out; the files come out of it"
+    },
+    {
+     "key": "its row names no package the library manages",
+     "english": "its row names no package the library manages",
+     "before": "اس کی صف کسی ایسے پیکیج کا نام نہیں دیتی جسے لائبریری منظم کرتی ہے",
+     "after": "اس کی صف میں کسی ایسے پیکیج کا نام نہیں جسے لائبریری منظم کرتی ہے",
+     "why": "meaning: نام دینا is to give a name; the row mentions no package, as entries 275 and 506 say with نام لینا"
+    },
+    {
+     "key": "the %@ kept for %lld removed downloads",
+     "english": {
+      "one": "the %@ kept for %lld removed download",
+      "other": "the %@ kept for %lld removed downloads"
+     },
+     "before": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے رکھی گئی %1$@",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے رکھی گئی %1$@"
+     },
+     "after": {
+      "one": "ہٹائے گئے %2$lld ڈاؤن لوڈ کے لیے محفوظ %1$@",
+      "other": "ہٹائے گئے %2$lld ڈاؤن لوڈز کے لیے محفوظ %1$@"
+     },
+     "why": "grammar: the feminine رکھی گئی cannot agree with a list such as places and bookmarks; the invariant محفوظ fits any list"
+    },
+    {
+     "key": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "english": "“%@” changed while it was being replaced, so TextMouth left both copies as they are. Choose Replace Existing again.",
+     "before": "“%@” کے بدلے جانے کے دوران وہ تبدیل ہو گئی، اس لیے TextMouth نے دونوں کاپیاں جیسی تھیں ویسی ہی رہنے دیں۔ “موجودہ کو تبدیل کریں” دوبارہ منتخب کریں۔",
+     "after": "“%@” کو تبدیل کیے جانے کے دوران وہ بدل گئی، اس لیے TextMouth نے دونوں کاپیاں جیسی تھیں ویسی ہی رہنے دیں۔ “موجودہ کو تبدیل کریں” دوبارہ منتخب کریں۔",
+     "why": "meaning: the two verbs were swapped, so being replaced and changed blurred; Replace is تبدیل, as in Replace Existing"
+    }
+   ]
+  }
+ ]
+}
