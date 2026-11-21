@@ -2878,13 +2878,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ innehåller också %lld bok som en nyare TextMouth lade till. Den behålls."
+                  "value" : "%@ innehåller också %lld bok som en nyare version av TextMouth har lagt till, och den behålls."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%@ innehåller också %lld böcker som en nyare TextMouth lade till. De behålls."
+                  "value" : "%@ innehåller också %lld böcker som en nyare version av TextMouth har lagt till, och de behålls."
                 }
               }
             }
@@ -49263,13 +49263,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld bok behållen på den här Mac-datorn"
+                  "value" : "%lld bok behålls på den här Mac-datorn"
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld böcker behållna på den här Mac-datorn"
+                  "value" : "%lld böcker behålls på den här Mac-datorn"
                 }
               }
             }
@@ -64817,13 +64817,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld fil kunde inte läsas, så jämförelsen kan sakna skillnader."
+                  "value" : "%lld fil kunde inte läsas, så jämförelsen kan ha missat skillnader."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld filer kunde inte läsas, så jämförelsen kan sakna skillnader."
+                  "value" : "%lld filer kunde inte läsas, så jämförelsen kan ha missat skillnader."
                 }
               }
             }
@@ -88228,13 +88228,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld vy kräver en nyare TextMouth. Den behålls som den är och visas inte."
+                  "value" : "%lld vy kräver en nyare version av TextMouth. Den behålls som den är och visas inte."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "%lld vyer kräver en nyare TextMouth. De behålls som de är och visas inte."
+                  "value" : "%lld vyer kräver en nyare version av TextMouth. De behålls som de är och visas inte."
                 }
               }
             }
@@ -96223,7 +96223,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "En flytt flyttar en bok i taget, och flera är markerade. Markera en bok och försök igen."
+            "value" : "Det går bara att flytta en bok i taget, och flera är markerade. Markera en bok och försök igen."
           }
         },
         "th" : {
@@ -104318,7 +104318,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Senast tillagd"
+            "value" : "Senast tillagda"
           }
         },
         "th" : {
@@ -109449,7 +109449,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Alltid erbjuder en vy hela tiden. När det är tillämpligt erbjuder den bara medan den listar något: Läslistan medan den innehåller en bok, ett avsnitt eller en artikel, och Flöden medan det finns ett flöde. Dold utelämnar den. Ett fönster behåller sin vy tills du väljer en annan."
+            "value" : "”Alltid” erbjuder en vy hela tiden. ”När det är tillämpligt” erbjuder den bara medan den listar något: Läslistan medan den innehåller en bok, ett avsnitt eller en artikel, och Flöden medan det finns ett flöde. ”Dold” utelämnar den. Ett fönster behåller sin vy tills du väljer en annan."
           }
         },
         "th" : {
@@ -133905,13 +133905,13 @@
               "one" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Men %@ innehåller också %lld bok som en nyare TextMouth lade till: den behålls där den är, och det gör även varje mapp som innehåller en."
+                  "value" : "Men %@ innehåller också %lld bok som en nyare version av TextMouth har lagt till: den behålls där den är, och det gör även varje mapp som innehåller den."
                 }
               },
               "other" : {
                 "stringUnit" : {
                   "state" : "machine_translated",
-                  "value" : "Men %@ innehåller också %lld böcker som en nyare TextMouth lade till: de behålls där de är, och det gör även varje mapp som innehåller en."
+                  "value" : "Men %@ innehåller också %lld böcker som en nyare version av TextMouth har lagt till: de behålls där de är, och det gör även varje mapp som innehåller någon av dem."
                 }
               }
             }
@@ -159863,7 +159863,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Jämför bibliotek under Lagring i inställningarna listar varje skillnad."
+            "value" : "”Jämför bibliotek” under Lagring i inställningarna listar varje skillnad."
           }
         },
         "th" : {
@@ -161507,7 +161507,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Villkor %@ behöver texten att leta efter."
+            "value" : "Villkor %@ behöver en text att söka efter."
           }
         },
         "th" : {
@@ -169745,7 +169745,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det gick inte att flytta mappens innehåll till sin nya plats"
+            "value" : "Det gick inte att flytta mappens innehåll"
           }
         },
         "th" : {
@@ -192285,7 +192285,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av nästa artikel avbröts, så uppspelningen stoppades."
+            "value" : "Nedladdningen av nästa artikel avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -192422,7 +192422,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av nästa artikel avbröts."
+            "value" : "Nedladdningen av nästa artikel avbröts."
           }
         },
         "th" : {
@@ -192559,7 +192559,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av nästa avsnitt avbröts, så uppspelningen stoppades."
+            "value" : "Nedladdningen av nästa avsnitt avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -192696,7 +192696,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av nästa avsnitt avbröts."
+            "value" : "Nedladdningen av nästa avsnitt avbröts."
           }
         },
         "th" : {
@@ -192833,7 +192833,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av föregående artikel avbröts, så uppspelningen stoppades."
+            "value" : "Nedladdningen av föregående artikel avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -192970,7 +192970,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av föregående artikel avbröts."
+            "value" : "Nedladdningen av föregående artikel avbröts."
           }
         },
         "th" : {
@@ -193107,7 +193107,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av föregående avsnitt avbröts, så uppspelningen stoppades."
+            "value" : "Nedladdningen av föregående avsnitt avbröts, så uppspelningen stoppades."
           }
         },
         "th" : {
@@ -193244,7 +193244,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Hämtningen av föregående avsnitt avbröts."
+            "value" : "Nedladdningen av föregående avsnitt avbröts."
           }
         },
         "th" : {
@@ -204390,7 +204390,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Redigera text stoppas för den här boken; välj Redigera text igen för att redigera den nya läsningen."
+            "value" : "”Redigera text” avslutas för den här boken; välj ”Redigera text” igen för att redigera den nya läsningen."
           }
         },
         "th" : {
@@ -215785,7 +215785,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Allt"
+            "value" : "allt"
           }
         },
         "th" : {
@@ -215922,7 +215922,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Allt i %@"
+            "value" : "allt i %@"
           }
         },
         "th" : {
@@ -268573,7 +268573,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det är mappen för flödet %@. Oavsett val finns flödet och dess nedladdningar kvar, utan mapp, tills Flödesinformation ger flödet en ny; Radera flöde… på dess rad raderar det."
+            "value" : "Det är mappen för flödet %@. Oavsett val finns flödet och dess nedladdningar kvar, utan mapp, tills Flödesinformation ger flödet en ny; ”Radera flöde…” på dess rad raderar det."
           }
         },
         "th" : {
@@ -268710,7 +268710,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Det är mappen för flödena %@. Oavsett val finns flödena och deras nedladdningar kvar, utan mapp, tills Flödesinformation ger vart och ett en ny; Radera flöde… på ett flödes rad raderar det."
+            "value" : "Det är mappen för flödena %@. Oavsett val finns flödena och deras nedladdningar kvar, utan mapp, tills Flödesinformation ger vart och ett en ny; ”Radera flöde…” på ett flödes rad raderar det."
           }
         },
         "th" : {
@@ -284059,7 +284059,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ lämnades kvar där den är: avsnitt och artiklar stannar i sina flöden; %@ gör ett av dem till en bok i ditt bibliotek."
+            "value" : "%@ lämnades kvar där den är: avsnitt och artiklar stannar i sina flöden; ”%@” gör ett av dem till en bok i ditt bibliotek."
           }
         },
         "th" : {
@@ -284202,7 +284202,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "%@ lämnades kvar där de är: avsnitt och artiklar stannar i sina flöden; %@ gör ett av dem till en bok i ditt bibliotek."
+            "value" : "%@ lämnades kvar där de är: avsnitt och artiklar stannar i sina flöden; ”%@” gör ett av dem till en bok i ditt bibliotek."
           }
         },
         "th" : {
@@ -308131,7 +308131,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Flest rader som visas"
+            "value" : "Högsta antal rader"
           }
         },
         "th" : {
@@ -327440,7 +327440,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ingen har nyare platser eller böcker som den andra saknar, men de skiljer sig åt på andra sätt."
+            "value" : "Ingen av dem har nyare platser eller böcker som den andra saknar, men de skiljer sig åt på andra sätt."
           }
         },
         "th" : {
@@ -327577,7 +327577,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Ingen är nyare: var och en har ändringar som den andra saknar."
+            "value" : "Ingen av dem är nyare: var och en har ändringar som den andra saknar."
           }
         },
         "th" : {
@@ -360064,7 +360064,7 @@
         "sv" : {
           "stringUnit" : {
             "state" : "machine_translated",
-            "value" : "Öppnad senast"
+            "value" : "Senast öppnade"
           }
         },
         "th" : {
